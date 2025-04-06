@@ -1,0 +1,58 @@
+### MYTHIC DUNGEONS GENERATOR SETTINGS ###
+# While there are plenty of comments here, it's recommended to check the wiki for further explanations and examples of some of these config options.
+# https://git.lumine.io/mythiccraft/MythicDungeons/-/wikis/Procedural-Dungeons
+
+# The layout decides how rooms are generated. Included layout modes are:
+# BRANCHING - Generates linearly, with a chance to generate branches. (Configured under 'BranchSettings')
+# MINECRAFTY - Generates the dungeon similarly to Minecraft's Strongholds and Nether Fortresses by trying to generate a room at every connector.
+Layout: BRANCHING
+# General settings applicable to all generated dungeons.
+General:
+  # A valid Spigot material (must be a block) that will surround all the dungeon rooms. (Set to AIR if you want no surrounding block.)
+  # See https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Material.html for a list of material names.
+  SurroundingBlock: STONE
+  # The minimum number of rooms a MINECRAFTY dungeon must generate with.
+  MinRooms: 8
+  # The maximum number of rooms a MINECRAFTY dungeon is allowed to have.
+  MaxRooms: 16
+  # Whether to force the dungeon to have at least the above minimum room count. Set to false if your dungeon is having trouble generating enough rooms.
+  StrictRoomCount: true
+
+# Config options used when generating with the BRANCHING layout mode.
+BranchSettings:
+  # This is the MAIN SECTION of the dungeon; the first "branch" if you will. We call this the "trunk".
+  # NOTE: This one is required for the dungeon to generate and cannot be renamed. If it's missing, default values will be used.
+  TRUNK:
+    # A list of rooms this branch can use. Leave empty to use all rooms. ([] means empty). EXAMPLE:
+    # Rooms:
+    # - stairs1
+    # - bend1
+    # - hallway1
+    Rooms: []
+    # A list of possible rooms this branch could end with. Same format as the above rooms list.
+    EndRooms: []
+    # How heavily the generator favors generating in a straight line (when possible.) Range from 0 to 1.0
+    # NOTE: This is a priority system, not a guarantee!
+    Straightness: 0.5
+    # The minimum number of rooms the trunk will have. (In this case, this is the amount of rooms in the main section of the dungeon.)
+    MinRooms: 12
+    # The maximum number of rooms the trunk can have.
+    MaxRooms: 24
+    # Whether to force the branch to have at least the above minimum room count. Set to false if your dungeon is having trouble generating enough rooms.
+    StrictRoomCount: true
+  # Here is an example of an alternate branch. The name here can be whatever you want!
+  deep_branch:
+    Rooms: []
+    EndRooms: []
+    Straightness: 0.5
+    # The minimum number of rooms this type of branch can have.
+    MinRooms: 6
+    # The maximum number of rooms this type of branch can have.
+    MaxRooms: 12
+    StrictRoomCount: true
+    # A range of how many rooms into the dungeon this branch can generate. Supports operators such as >, >=, <, <=, etc.
+    Depth: 8
+    # A range of how many times this branch can generate. Supports operators such as >, >=, <, <=, etc.
+    Occurrences: 0-1
+    # Whether to force this branch to occur at least the above times. Set to false if your dungeon is having trouble generating enough branches.
+    StrictBranchCount: true

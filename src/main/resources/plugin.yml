@@ -1,0 +1,84 @@
+name: MythicDungeons
+prefix: MythicDungeons
+version: 2.1.0-SNAPSHOT
+main: net.playavalon.mythicdungeons.MythicDungeons
+api-version: 1.16
+authors: [ MarcatoSound, Aestrus ]
+softdepend:
+  - MythicMobs
+  - MythicQuests
+  - PlaceholderAPI
+  - Citizens
+  - Vault
+  - Multiverse-Inventories
+commands:
+  md:
+    description: The core command.
+    aliases: [ dungeon, mythicdungeons ]
+    permission: mythicdungeons.core
+  leave:
+    description: Shorthand for /dungeon leave
+    permission: mythicdungeons.quickleave
+  ready:
+    description: Used to ready up when in-queue for a dungeon.
+    permission: mythicdungeons.ready
+  notready:
+    description: Used to cancel a queue for a dungeon.
+    permission: mythicdungeons.notready
+  recruit:
+    description: Used to create and join party listings.
+    permission: mythicdungeons.recruit
+  stuck:
+    description: Shorthand for /dungeon stuck
+    permission: mythicdungeons.quickstuck
+  rewards:
+    description: Used to view the rewards inventory
+    aliases: [ drewards ]
+    permission: mythicdungeons.rewards
+  party:
+    description: Internal MythicDungeons party command
+    aliases: [ dparty ]
+    permission: mythicdungeons.party
+  p:
+    description: Used to access party chat
+    permission: mythicdungeons.party.chat
+permissions:
+  mythicdungeons.*:
+    description: Gives all the permissions.
+    children:
+      mythicdungeons.core: true
+      mythicdungeons.quickleave: true
+      mythicdungeons.ready: true
+      mythicdungeons.notready: true
+      mythicdungeons.recruit: true
+      mythicdungeons.quickstuck: true
+      mythicdungeons.rewards: true
+      mythicdungeons.party: true
+      mythicdungeons.party.chat: true
+  mythicdungeons.core:
+    description: MythicDungeons core command permission.
+    default: true
+  mythicdungeons.quickleave:
+    description: MythicDungeons shorthand leave permission.
+    default: true
+  mythicdungeons.ready:
+    description: MythicDungeons ready up permission.
+    default: true
+  mythicdungeons.notready:
+    description: MythicDungeons unready permission.
+    default: true
+  mythicdungeons.recruit:
+    description: MythicDungeons recruit permission.
+    default: true
+  mythicdungeons.quickstuck:
+    description: MythicDungeons shorthand stuck permission.
+    default: true
+  mythicdungeons.rewards:
+    description: MythicDungeons rewards permission.
+    default: true
+  mythicdungeons.party:
+    description: MythicDungeons party system permission.
+    default: true
+  mythicdungeons.party.chat:
+    description: MythicDungeons party chat permission.
+    default: true

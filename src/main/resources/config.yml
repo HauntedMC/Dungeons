@@ -1,0 +1,45 @@
+General:
+  # What plugin to use for the party system. Defaults to DungeonParties, which is provided by Mythic Dungeons.
+  PartyPlugin: Default
+  # Enable or disable the built-in party-chat system
+  PartyChat: false
+  # The max number of instances that can be run on this server.
+  MaxInstances: 10
+  # The interval between autosaves of the dungeon while in edit mode in seconds. 0 disables autosave. (NOT RECOMMENDED)
+  AutoSaveInterval: 300
+  # What the function builder item's material is. Must be a valid Spigot material.
+  # Useful if you have another plugin that also uses FEATHER for a tool, like goPaint
+  FunctionBuilderItem: FEATHER
+  # Whether the `/md stuck` command kills the player.
+  StuckKillsPlayer: false
+  # Whether only the party leader is allowed to start a dungeon for the party.
+  LeaderOnlyQueue: true
+  # Whether to require all party members confirm they're ready before entering a dungeon after the play command is run.
+  # Note: This check is used if there is no queue to get into the dungeon.
+  ReadyCheckOnCommand: true
+  # Whether to require all party members confirm they're ready before entering a dungeon after waiting in the queue.
+  ReadyCheckInQueue: true
+  # How long in seconds the ready check (from when a dungeon becomes available) will wait for all players to be ready.
+  ReadyCheckTime: 45
+  # Whether to send all ready players into the dungeon when the above timer expires.
+  StartWithoutUnreadyPlayers: false
+  # Whether to require the party leader to be ready when starting without all players.
+  ReadyCheckRequireLeader: true
+  PartyFinder:
+    # Whether to automatically broadcast party recruitments regularly.
+    AutoBroadcast: true
+    # How many minutes there should be between each broadcast of a recruitment listing.
+    ListingBroadcastPeriod: 5
+  # What Multiverse-Inventories group to use for all dungeons.
+  MultiverseGroup: default
+# Settings related to procedural (room-based) dungeon generation.
+Generator:
+  # How long the generator will spend trying to create a valid dungeon layout in seconds. If you have particularly complex dungeons, consider increasing this.
+  # NOTE: This is handled async and will NOT lock up your server! Yay! This is useful if you have very large dungeons or rooms with lots of restrictive rules.
+  Timeout: 5
+# These config options have potential to cause unforeseen issues and strangeness.
+Experimental:
+  # Whether entities standing on moving blocks will move with the block.
+  # WARNING :: Upwards movement will not work unless `allow-flight` in server.properties is set to TRUE! Use at your own risk!
+  # WARNING 2 :: Jumping from a moving block DOES NOT WORK due to ping latency! We are investigating if this can be fixed but it seems unlikely due to vanilla limitations.
+  MovingBlocksMoveEntities: false
