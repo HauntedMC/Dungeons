@@ -28,7 +28,7 @@ public class RoomGUIHandler {
 
       assert meta != null;
 
-      meta.setDisplayName(HelperUtils.colorize("&7Empty Slot"));
+      meta.displayName(HelperUtils.component("&7Empty Slot"));
       openSlotItem.setItemMeta(meta);
    }
 

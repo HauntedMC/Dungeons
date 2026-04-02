@@ -97,7 +97,7 @@ public class LootTable implements ConfigurationSerializable {
 
       assert meta != null;
 
-      meta.setDisplayName(HelperUtils.colorize("&7Empty Slot"));
+      meta.displayName(HelperUtils.component("&7Empty Slot"));
       this.openSlotItem.setItemMeta(meta);
    }
 

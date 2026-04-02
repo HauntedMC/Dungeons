@@ -3,6 +3,7 @@ package nl.hauntedmc.dungeons.util;
 import com.google.common.collect.Lists;
 import java.io.File;
 import java.sql.Timestamp;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -14,35 +15,60 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import net.kyori.adventure.title.Title;
 import nl.hauntedmc.dungeons.Dungeons;
 import nl.hauntedmc.dungeons.api.blocks.MovingBlock;
 import nl.hauntedmc.dungeons.api.parents.instances.InstancePlayable;
 import nl.hauntedmc.dungeons.util.math.MathUtils;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.Damageable;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.event.Event.Result;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.util.BoundingBox;
 
 public final class HelperUtils {
+   private static final char SECTION_CHAR = '\u00A7';
    private static final Pattern ANGLE_HEX_PATTERN = Pattern.compile("<(#[a-fA-F0-9]{6})>");
    private static final LegacyComponentSerializer LEGACY_COMPONENT_SERIALIZER = LegacyComponentSerializer.builder()
-      .character(ChatColor.COLOR_CHAR)
+      .character(SECTION_CHAR)
       .hexColors()
       .useUnusualXRepeatedCharacterHexFormat()
       .build();
+   private static final PlainTextComponentSerializer PLAIN_TEXT_COMPONENT_SERIALIZER = PlainTextComponentSerializer.plainText();
+   private static final String LEGACY_COLOR_CODES = "0123456789AaBbCcDdEeFfKkLlMmNnOoRrXx";
+   private static final String LEGACY_FORMAT_CODES = "KkLlMmNnOo";
 
    public static String colorize(String s) {
-      return s == null ? null : ChatColor.translateAlternateColorCodes('&', s);
+      if (s == null) {
+         return null;
+      }
+
+      char[] characters = s.toCharArray();
+      for (int i = 0; i < characters.length - 1; i++) {
+         if (characters[i] == '&' && LEGACY_COLOR_CODES.indexOf(characters[i + 1]) >= 0) {
+            characters[i] = SECTION_CHAR;
+            characters[i + 1] = Character.toLowerCase(characters[i + 1]);
+         }
+      }
+
+      return new String(characters);
    }
 
    public static String fullColor(String s) {
@@ -54,6 +80,10 @@ public final class HelperUtils {
    }
 
    public static List<Component> components(List<String> lines) {
+      if (lines == null || lines.isEmpty()) {
+         return List.of();
+      }
+
       return lines.stream().map(HelperUtils::component).toList();
    }
 
@@ -61,9 +91,141 @@ public final class HelperUtils {
       return component == null ? "" : LEGACY_COMPONENT_SERIALIZER.serialize(component);
    }
 
+   public static String plainText(Component component) {
+      return component == null ? "" : PLAIN_TEXT_COMPONENT_SERIALIZER.serialize(component);
+   }
+
+   public static String playerDisplayName(Player player) {
+      return player == null ? "" : serialize(player.displayName());
+   }
+
+   public static String humanize(String value) {
+      if (value == null || value.isBlank()) {
+         return "";
+      }
+
+      String[] parts = value.toLowerCase(Locale.ROOT).split("_");
+      StringBuilder output = new StringBuilder();
+      for (String part : parts) {
+         if (part.isEmpty()) {
+            continue;
+         }
+
+         if (!output.isEmpty()) {
+            output.append(' ');
+         }
+
+         output.append(Character.toUpperCase(part.charAt(0)));
+         if (part.length() > 1) {
+            output.append(part.substring(1));
+         }
+      }
+
+      return output.toString();
+   }
+
+   public static String itemDisplayName(ItemStack item) {
+      if (item == null) {
+         return "";
+      }
+
+      return itemDisplayName(item.getItemMeta(), item.getType());
+   }
+
+   public static String itemDisplayName(ItemMeta meta, org.bukkit.Material material) {
+      if (meta != null) {
+         String displayName = serialize(meta.displayName());
+         if (!displayName.isEmpty()) {
+            return displayName;
+         }
+
+         String itemName = serialize(meta.itemName());
+         if (!itemName.isEmpty()) {
+            return itemName;
+         }
+      }
+
+      return humanize(material.name());
+   }
+
+   public static double getMaxHealth(Damageable entity) {
+      if (entity instanceof LivingEntity living) {
+         AttributeInstance attribute = living.getAttribute(Attribute.MAX_HEALTH);
+         if (attribute != null) {
+            return attribute.getValue();
+         }
+      }
+
+      return entity.getHealth();
+   }
+
+   public static void setMaxHealth(LivingEntity entity, double maxHealth) {
+      AttributeInstance attribute = entity.getAttribute(Attribute.MAX_HEALTH);
+      if (attribute != null) {
+         attribute.setBaseValue(maxHealth);
+      }
+   }
+
+   public static void showTitle(Player player, String title, String subtitle, int fadeIn, int stay, int fadeOut) {
+      Title.Times times = Title.Times.times(
+         Duration.ofMillis(Math.max(fadeIn, 0) * 50L),
+         Duration.ofMillis(Math.max(stay, 0) * 50L),
+         Duration.ofMillis(Math.max(fadeOut, 0) * 50L)
+      );
+      player.showTitle(Title.title(component(title), component(subtitle), times));
+   }
+
+   public static void resetTitle(Player player) {
+      player.resetTitle();
+   }
+
+   public static boolean isInteractionDenied(PlayerInteractEvent event) {
+      return event.useInteractedBlock() == Result.DENY || event.useItemInHand() == Result.DENY;
+   }
+
+   public static void denyInteraction(PlayerInteractEvent event) {
+      event.setUseInteractedBlock(Result.DENY);
+      event.setUseItemInHand(Result.DENY);
+   }
+
+   public static String getLastColors(String input) {
+      if (input == null || input.isEmpty()) {
+         return "";
+      }
+
+      StringBuilder active = new StringBuilder();
+      for (int i = 0; i < input.length() - 1; i++) {
+         if (input.charAt(i) != SECTION_CHAR) {
+            continue;
+         }
+
+         char code = Character.toLowerCase(input.charAt(i + 1));
+         if (code == 'x' && i + 13 < input.length()) {
+            String hex = input.substring(i, i + 14);
+            if (hex.matches("(?i)\u00A7x(\u00A7[0-9a-f]){6}")) {
+               active.setLength(0);
+               active.append(hex);
+               i += 13;
+               continue;
+            }
+         }
+
+         if (isLegacyColorCode(code)) {
+            active.setLength(0);
+            if (code != 'r') {
+               active.append(SECTION_CHAR).append(code);
+            }
+         } else if (LEGACY_FORMAT_CODES.indexOf(code) >= 0) {
+            active.append(SECTION_CHAR).append(code);
+         }
+      }
+
+      return active.toString();
+   }
+
    public static boolean hasPermission(CommandSender sender, String node) {
       if (!sender.hasPermission("*") && !sender.hasPermission(node)) {
-         sender.sendMessage(ChatColor.RED + "You do not have permission to do that. (" + node + ")");
+         sender.sendMessage(colorize("&cYou do not have permission to do that. (" + node + ")"));
          return false;
       } else {
          return true;
@@ -423,11 +585,15 @@ public final class HelperUtils {
    }
 
    private static String toLegacyHex(String hex) {
-      StringBuilder output = new StringBuilder().append(ChatColor.COLOR_CHAR).append('x');
+      StringBuilder output = new StringBuilder().append(SECTION_CHAR).append('x');
       for (char character : hex.substring(1).toLowerCase(Locale.ROOT).toCharArray()) {
-         output.append(ChatColor.COLOR_CHAR).append(character);
+         output.append(SECTION_CHAR).append(character);
       }
 
       return output.toString();
+   }
+
+   private static boolean isLegacyColorCode(char code) {
+      return (code >= '0' && code <= '9') || (code >= 'a' && code <= 'f') || code == 'r';
    }
 }

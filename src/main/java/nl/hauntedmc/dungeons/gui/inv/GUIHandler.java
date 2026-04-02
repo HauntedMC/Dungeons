@@ -32,7 +32,6 @@ import nl.hauntedmc.dungeons.player.DungeonPlayer;
 import nl.hauntedmc.dungeons.util.entity.ItemUtils;
 import nl.hauntedmc.dungeons.util.version.ReflectionUtils;
 import nl.hauntedmc.dungeons.util.HelperUtils;
-import org.apache.commons.lang3.text.WordUtils;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -114,7 +113,7 @@ public class GUIHandler {
 
       for (FunctionCategory category : FunctionCategory.values()) {
          String catName = category.name().toLowerCase();
-         GUIWindow gui = new GUIWindow("functions_" + catName, 27, "&8" + WordUtils.capitalize(catName) + " Functions");
+         GUIWindow gui = new GUIWindow("functions_" + catName, 27, "&8" + HelperUtils.humanize(catName) + " Functions");
          gui.addButton(0, backButton);
          int i = 1;
 
@@ -285,7 +284,7 @@ public class GUIHandler {
 
       for (TriggerCategory category : TriggerCategory.values()) {
          String catName = category.name().toLowerCase();
-         GUIWindow gui = new GUIWindow("triggers_" + catName, 27, "&8" + WordUtils.capitalize(catName) + " Triggers");
+         GUIWindow gui = new GUIWindow("triggers_" + catName, 27, "&8" + HelperUtils.humanize(catName) + " Triggers");
          gui.addButton(0, backButton);
          int i = 1;
 

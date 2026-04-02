@@ -95,7 +95,7 @@ public class GUIWindow implements Listener {
       if (this.inventories.containsKey(player)) {
          gui = this.inventories.get(player);
       } else {
-         gui = new GUIInventory(this, Bukkit.createInventory(player, this.size, this.display));
+         gui = new GUIInventory(this, Bukkit.createInventory(player, this.size, StringUtils.component(this.display)));
          this.inventories.put(player, gui);
       }
 

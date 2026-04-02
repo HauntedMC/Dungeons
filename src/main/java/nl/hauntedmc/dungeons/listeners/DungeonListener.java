@@ -1,7 +1,11 @@
 package nl.hauntedmc.dungeons.listeners;
 
+import io.papermc.paper.event.player.AsyncChatEvent;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import nl.hauntedmc.dungeons.Dungeons;
@@ -37,7 +41,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -49,6 +52,8 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.BoundingBox;
 
 public class DungeonListener implements Listener {
+   private final Set<UUID> pendingRoomNameInputs = ConcurrentHashMap.newKeySet();
+
    @EventHandler(
       priority = EventPriority.HIGH
    )
@@ -254,86 +259,28 @@ public class DungeonListener implements Listener {
    @EventHandler(
       priority = EventPriority.LOWEST
    )
-   public void onRoomNameInput(AsyncPlayerChatEvent event) {
+   public void onRoomNameInput(AsyncChatEvent event) {
       Player player = event.getPlayer();
       DungeonPlayer aPlayer = Dungeons.inst().getDungeonPlayer(player);
       if (aPlayer != null) {
          if (aPlayer.getInstance() != null) {
             InstanceEditableProcedural instance = aPlayer.getInstance().as(InstanceEditableProcedural.class);
             if (instance != null) {
-               DungeonProcedural dungeon = instance.getDungeon();
                if (aPlayer.isAwaitingRoomName()) {
                   event.setCancelled(true);
-                  String message = event.getMessage();
-                  Pattern pat = Pattern.compile("[^a-z0-9]", Pattern.CASE_INSENSITIVE);
-                  Matcher matcher = pat.matcher(message);
-                  if (matcher.find()) {
-                     LangUtils.sendMessage(player, "instance.editmode.room-name-invalid");
-                  } else {
-                     event.setMessage("");
-                     aPlayer.setAwaitingRoomName(false);
-                     DungeonRoomContainer room;
-                     Connector connector = aPlayer.getActiveConnector();
-                     if (aPlayer.isAddingWhitelistEntry()) {
-                         room = aPlayer.getActiveRoom();
-                         DungeonRoomContainer targetRoom = dungeon.getRoom(message);
-                        if (targetRoom != null) {
-                           player.playSound(player.getLocation(), "minecraft:entity.experience_orb.pickup", 0.5F, 1.2F);
-                           if (connector != null) {
-                              connector.getRoomWhitelist().add(new WhitelistEntry(targetRoom));
-                              LangUtils.sendMessage(player, "instance.editmode.room-whitelist.add-success", message);
-                           } else {
-                              room.getRoomWhitelist().add(new WhitelistEntry(targetRoom));
-                              LangUtils.sendMessage(player, "instance.editmode.room-whitelist.add-success", message);
-                              aPlayer.setAddingWhitelistEntry(false);
-                           }
-                        }
-                     } else if (aPlayer.isEditingWhitelistEntry()) {
-                         DungeonRoomContainer targetRoom = dungeon.getRoom(message);
-                        if (targetRoom != null) {
-                           player.playSound(player.getLocation(), "minecraft:entity.experience_orb.pickup", 0.5F, 1.2F);
-                           player.sendMessage(HelperUtils.colorize("&cNOT IMPLEMENTED!"));
-                           aPlayer.setEditingWhitelistEntry(false);
-                        }
-                     } else if (aPlayer.isRemovingWhitelistEntry()) {
-                         room = aPlayer.getActiveRoom();
-                         DungeonRoomContainer targetRoom = dungeon.getRoom(message);
-                        if (targetRoom != null) {
-                           player.playSound(player.getLocation(), "minecraft:entity.experience_orb.pickup", 0.5F, 1.2F);
-                           List<WhitelistEntry> snapshot = null;
-                           if (connector != null) {
-                              snapshot = new ArrayList<>(connector.getRoomWhitelist());
-                           }
-
-                           if (snapshot == null) {
-                              snapshot = new ArrayList<>(room.getRoomWhitelist());
-                           }
-
-                           for (WhitelistEntry entry : snapshot) {
-                              if (entry.getRoomName().equals(message)) {
-                                 if (connector != null) {
-                                    connector.getRoomWhitelist().remove(entry);
-                                 } else {
-                                    room.getRoomWhitelist().remove(entry);
-                                 }
-                              }
-                           }
-
-                           LangUtils.sendMessage(player, "instance.editmode.room-whitelist.remove-success", message);
-                           aPlayer.setRemovingWhitelistEntry(false);
-                        }
-                     } else {
-                        player.playSound(player.getLocation(), "minecraft:entity.experience_orb.pickup", 0.5F, 1.2F);
-                        BoundingBox bounds = HelperUtils.captureBoundingBox(aPlayer.getPos1(), aPlayer.getPos2());
-                        room = dungeon.defineRoom(message, bounds);
-                        if (room != null) {
-                           Bukkit.getScheduler().runTask(Dungeons.inst(), () -> instance.setRoomLabel(room));
-                           LangUtils.sendMessage(player, "instance.editmode.room-created", message);
-                           aPlayer.setPos1(null);
-                           aPlayer.setPos2(null);
-                        }
-                     }
+                  UUID playerId = player.getUniqueId();
+                  if (!this.pendingRoomNameInputs.add(playerId)) {
+                     return;
                   }
+
+                  String message = HelperUtils.plainText(event.originalMessage());
+                  Bukkit.getScheduler().runTask(Dungeons.inst(), () -> {
+                     try {
+                        this.handleRoomNameInput(player, aPlayer, instance, message);
+                     } finally {
+                        this.pendingRoomNameInputs.remove(playerId);
+                     }
+                  });
                }
             }
          }
@@ -425,6 +372,75 @@ public class DungeonListener implements Listener {
    public void onDungeonFinish(PlayerFinishDungeonEvent event) {
       DungeonPlayer mPlayer = event.getMPlayer();
       mPlayer.clearDungeonSavePoint(event.getDungeon().getWorldName());
+   }
+
+   private void handleRoomNameInput(Player player, DungeonPlayer aPlayer, InstanceEditableProcedural instance, String message) {
+      if (!aPlayer.isAwaitingRoomName()) {
+         return;
+      }
+
+      Pattern pat = Pattern.compile("[^a-z0-9]", Pattern.CASE_INSENSITIVE);
+      Matcher matcher = pat.matcher(message);
+      if (matcher.find()) {
+         LangUtils.sendMessage(player, "instance.editmode.room-name-invalid");
+         return;
+      }
+
+      DungeonProcedural dungeon = instance.getDungeon();
+      aPlayer.setAwaitingRoomName(false);
+      DungeonRoomContainer room;
+      Connector connector = aPlayer.getActiveConnector();
+      if (aPlayer.isAddingWhitelistEntry()) {
+         room = aPlayer.getActiveRoom();
+         DungeonRoomContainer targetRoom = dungeon.getRoom(message);
+         if (targetRoom != null) {
+            player.playSound(player.getLocation(), "minecraft:entity.experience_orb.pickup", 0.5F, 1.2F);
+            if (connector != null) {
+               connector.getRoomWhitelist().add(new WhitelistEntry(targetRoom));
+            } else {
+               room.getRoomWhitelist().add(new WhitelistEntry(targetRoom));
+               aPlayer.setAddingWhitelistEntry(false);
+            }
+
+            LangUtils.sendMessage(player, "instance.editmode.room-whitelist.add-success", message);
+         }
+      } else if (aPlayer.isEditingWhitelistEntry()) {
+         DungeonRoomContainer targetRoom = dungeon.getRoom(message);
+         if (targetRoom != null) {
+            player.playSound(player.getLocation(), "minecraft:entity.experience_orb.pickup", 0.5F, 1.2F);
+            player.sendMessage(HelperUtils.colorize("&cNOT IMPLEMENTED!"));
+            aPlayer.setEditingWhitelistEntry(false);
+         }
+      } else if (aPlayer.isRemovingWhitelistEntry()) {
+         room = aPlayer.getActiveRoom();
+         DungeonRoomContainer targetRoom = dungeon.getRoom(message);
+         if (targetRoom != null) {
+            player.playSound(player.getLocation(), "minecraft:entity.experience_orb.pickup", 0.5F, 1.2F);
+            List<WhitelistEntry> snapshot = connector != null ? new ArrayList<>(connector.getRoomWhitelist()) : new ArrayList<>(room.getRoomWhitelist());
+            for (WhitelistEntry entry : snapshot) {
+               if (entry.getRoomName().equals(message)) {
+                  if (connector != null) {
+                     connector.getRoomWhitelist().remove(entry);
+                  } else {
+                     room.getRoomWhitelist().remove(entry);
+                  }
+               }
+            }
+
+            LangUtils.sendMessage(player, "instance.editmode.room-whitelist.remove-success", message);
+            aPlayer.setRemovingWhitelistEntry(false);
+         }
+      } else {
+         player.playSound(player.getLocation(), "minecraft:entity.experience_orb.pickup", 0.5F, 1.2F);
+         BoundingBox bounds = HelperUtils.captureBoundingBox(aPlayer.getPos1(), aPlayer.getPos2());
+         room = dungeon.defineRoom(message, bounds);
+         if (room != null) {
+            instance.setRoomLabel(room);
+            LangUtils.sendMessage(player, "instance.editmode.room-created", message);
+            aPlayer.setPos1(null);
+            aPlayer.setPos2(null);
+         }
+      }
    }
 
    @EventHandler

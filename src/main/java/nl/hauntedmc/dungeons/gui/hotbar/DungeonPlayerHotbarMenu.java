@@ -16,7 +16,6 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCreativeEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -145,29 +144,6 @@ public abstract class DungeonPlayerHotbarMenu extends DungeonPlayerHotbar implem
       }
    }
 
-   @EventHandler(
-      priority = EventPriority.LOWEST
-   )
-   public void onChat(AsyncPlayerChatEvent event) {
-      Player player = event.getPlayer();
-      DungeonPlayer aPlayer = Dungeons.inst().getDungeonPlayer(player);
-      if (aPlayer != null) {
-         if (aPlayer.getCurrentHotbar() == this) {
-            if (aPlayer.isChatListening()) {
-               MenuItem menuItem = this.menuItems.get(this.selected);
-               if (menuItem != null) {
-                  menuItem.runChatActions(event);
-                  event.setMessage("");
-                  player.playSound(player.getLocation(), "minecraft:entity.experience_orb.pickup", 0.5F, 1.2F);
-                  event.setCancelled(true);
-                  aPlayer.setChatListening(false);
-                  this.buildMenu();
-               }
-            }
-         }
-      }
-   }
-
    @EventHandler
    public void onClickHotbarItem(InventoryClickEvent event) {
       Player player = (Player)event.getWhoClicked();
@@ -263,7 +239,7 @@ public abstract class DungeonPlayerHotbarMenu extends DungeonPlayerHotbar implem
    }
 
    public static DungeonPlayerHotbarMenu create() {
-      return new PaperDungeonPlayerHotbarMenu() {};
+      return new DungeonPlayerHotbarMenu() {};
    }
 
    public HashMap<Integer, MenuItem> getMenuItems() {

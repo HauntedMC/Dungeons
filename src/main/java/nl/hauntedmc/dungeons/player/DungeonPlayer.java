@@ -120,7 +120,7 @@ public final class DungeonPlayer {
       if (Dungeons.inst().isEnabled()) {
          this.player.getInventory().setContents(this.savedInventory);
          this.player.getInventory().setArmorContents(this.savedArmor);
-         this.player.setHealth(Math.min(this.savedHealth, this.player.getMaxHealth()));
+         this.player.setHealth(Math.min(this.savedHealth, HelperUtils.getMaxHealth(this.player)));
          this.player.setFoodLevel(this.savedFood);
       } else {
          this.player.getInventory().setContents(this.savedInventory);

@@ -14,7 +14,6 @@ import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
 import nl.hauntedmc.dungeons.player.DungeonPlayer;
 import nl.hauntedmc.dungeons.util.file.LangUtils;
 import nl.hauntedmc.dungeons.util.HelperUtils;
-import org.apache.commons.lang3.text.WordUtils;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.data.Openable;
@@ -24,7 +23,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 
 @DeclaredFunction
 public class FunctionDoorControl extends DungeonFunction {
@@ -102,7 +100,7 @@ public class FunctionDoorControl extends DungeonFunction {
       if (event.getPlayer().getWorld() == this.instance.getInstanceWorld()) {
          Player player = event.getPlayer();
          if (event.getHand() != EquipmentSlot.OFF_HAND) {
-            if (!event.isCancelled()) {
+            if (!HelperUtils.isInteractionDenied(event)) {
                if (event.getClickedBlock() != null) {
                   Location blockLoc = event.getClickedBlock().getLocation();
                   Location aboveLoc = blockLoc.clone();
@@ -111,22 +109,10 @@ public class FunctionDoorControl extends DungeonFunction {
                   belowLoc.setY(blockLoc.getY() - 1.0);
                   if (blockLoc.equals(this.location) || aboveLoc.equals(this.location) || belowLoc.equals(this.location)) {
                      if (this.locked) {
-                        event.setCancelled(true);
+                        HelperUtils.denyInteraction(event);
                         if (this.trigger instanceof TriggerKeyItem keyTrigger) {
                            ItemStack keyItem = keyTrigger.getItem();
-                           ItemMeta keyMeta = keyItem.getItemMeta();
-
-                           assert keyMeta != null;
-
-                           String itemName;
-                           if (keyMeta.getDisplayName().isEmpty()) {
-                              String materialName = keyItem.getType().toString().toLowerCase();
-                              itemName = WordUtils.capitalizeFully(materialName.replace("_", " "));
-                           } else {
-                              itemName = keyMeta.getDisplayName();
-                           }
-
-                           LangUtils.sendMessage(player, "instance.functions.doors.locked-key", itemName);
+                           LangUtils.sendMessage(player, "instance.functions.doors.locked-key", HelperUtils.itemDisplayName(keyItem));
                         } else {
                            LangUtils.sendMessage(player, "instance.functions.doors.locked");
                         }

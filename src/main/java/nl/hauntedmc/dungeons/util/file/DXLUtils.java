@@ -30,6 +30,7 @@ import org.bukkit.WorldCreator;
 import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
+import org.bukkit.block.sign.Side;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -155,7 +156,7 @@ public final class DXLUtils {
    }
 
    private static DungeonFunction signToFunction(DungeonClassic dungeon, Sign sign, ConfigurationSection messageData) {
-      String[] lines = sign.getLines();
+      String[] lines = sign.getSide(Side.FRONT).lines().stream().map(HelperUtils::plainText).toArray(String[]::new);
       DungeonFunction function = null;
       DungeonTrigger trigger = null;
       String var7 = lines[0].toLowerCase(Locale.ROOT);

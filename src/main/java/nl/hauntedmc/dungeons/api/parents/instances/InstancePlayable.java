@@ -103,7 +103,7 @@ public abstract class InstancePlayable extends AbstractInstance {
 
          for (DungeonPlayer aPlayer : this.players) {
             if (this.dungeon.getConfig().getBoolean("General.ShowTitleOnStart", false)) {
-               aPlayer.getPlayer().sendTitle(HelperUtils.fullColor(this.config.getString("General.DisplayName", "&cA Dungeon")), "", 10, 70, 10);
+               HelperUtils.showTitle(aPlayer.getPlayer(), this.config.getString("General.DisplayName", "&cA Dungeon"), "", 10, 70, 10);
             }
 
             HelperUtils.forceTeleport(aPlayer.getPlayer(), this.startLoc);

@@ -6,6 +6,7 @@ import nl.hauntedmc.dungeons.Dungeons;
 import nl.hauntedmc.dungeons.api.parents.dungeons.AbstractDungeon;
 import nl.hauntedmc.dungeons.util.file.LangUtils;
 import nl.hauntedmc.dungeons.util.HelperUtils;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
@@ -66,8 +67,8 @@ public final class ItemUtils {
       ItemStack feather = new ItemStack(Dungeons.inst().getFunctionBuilderMaterial());
       ItemMeta meta = feather.getItemMeta();
       List<String> lore = new ArrayList<>(LangUtils.getMessageList("general.function-editor-lore"));
-      meta.setLore(lore);
-      meta.setItemName(LangUtils.getMessage("general.function-editor-name", false));
+      meta.lore(HelperUtils.components(lore));
+      meta.itemName(HelperUtils.component(LangUtils.getMessage("general.function-editor-name", false)));
       meta.addAttributeModifier(Attribute.BLOCK_INTERACTION_RANGE, new AttributeModifier(new NamespacedKey(Dungeons.inst(), "reach"), 5.5, Operation.ADD_NUMBER));
 
       feather.setItemMeta(meta);
@@ -75,11 +76,15 @@ public final class ItemUtils {
    }
 
    public static boolean isFunctionTool(ItemStack item) {
+      if (item == null || item.getType() == Material.AIR) {
+         return false;
+      }
+
       ItemMeta meta = item.getItemMeta();
       if (meta == null) {
          return false;
       } else {
-          return meta.getItemName().equals(LangUtils.getMessage("general.function-editor-name", false));
+          return HelperUtils.serialize(meta.itemName()).equals(LangUtils.getMessage("general.function-editor-name", false));
       }
    }
 
@@ -87,8 +92,8 @@ public final class ItemUtils {
       ItemStack tool = new ItemStack(Dungeons.inst().getRoomEditorMaterial());
       ItemMeta meta = tool.getItemMeta();
       List<String> lore = new ArrayList<>(LangUtils.getMessageList("general.room-editor-lore"));
-      meta.setLore(lore);
-      meta.setItemName(LangUtils.getMessage("general.room-editor-name", false));
+      meta.lore(HelperUtils.components(lore));
+      meta.itemName(HelperUtils.component(LangUtils.getMessage("general.room-editor-name", false)));
       meta.addAttributeModifier(Attribute.BLOCK_INTERACTION_RANGE, new AttributeModifier(new NamespacedKey(Dungeons.inst(), "reach"), 5.5, Operation.ADD_NUMBER));
 
       tool.setItemMeta(meta);
@@ -96,11 +101,15 @@ public final class ItemUtils {
    }
 
    public static boolean isRoomTool(ItemStack item) {
+      if (item == null || item.getType() == Material.AIR) {
+         return false;
+      }
+
       ItemMeta meta = item.getItemMeta();
       if (meta == null) {
          return false;
       } else {
-         return meta.getItemName().equals(LangUtils.getMessage("general.room-editor-name", false));
+         return HelperUtils.serialize(meta.itemName()).equals(LangUtils.getMessage("general.room-editor-name", false));
       }
    }
 
@@ -110,7 +119,7 @@ public final class ItemUtils {
       PersistentDataContainer data = meta.getPersistentDataContainer();
       NamespacedKey keyData = new NamespacedKey(Dungeons.inst(), "dungeonkey");
       data.set(keyData, PersistentDataType.INTEGER, 1);
-      meta.setDisplayName(HelperUtils.colorize("&6Dungeon Key"));
+      meta.displayName(HelperUtils.component("&6Dungeon Key"));
       key.setItemMeta(meta);
       return key;
    }
@@ -146,13 +155,11 @@ public final class ItemUtils {
    }
 
    public static String getItemDisplayName(ItemStack item) {
-      ItemMeta meta = item.getItemMeta();
-      String displayName = meta.getDisplayName();
-      if (displayName.isEmpty()) {
-         displayName = item.getType().toString();
+      if (item == null || item.getType() == Material.AIR) {
+         return "";
       }
 
-      return displayName;
+      return HelperUtils.itemDisplayName(item);
    }
 
    public static boolean isItemBanned(AbstractDungeon dungeon, ItemStack itemStack) {
@@ -180,15 +187,17 @@ public final class ItemUtils {
 
       assert meta != null;
 
-      meta.setDisplayName(HelperUtils.colorize(" "));
+      meta.displayName(HelperUtils.component(" "));
       item.setItemMeta(meta);
       return item;
    }
 
    public static ItemStack skullFromName(ItemStack item, String name) {
-      SkullMeta meta = (SkullMeta)item.getItemMeta();
-      meta.setOwner(name);
-      item.setItemMeta(meta);
+      if (item.getItemMeta() instanceof SkullMeta meta) {
+         meta.setOwningPlayer(Bukkit.getOfflinePlayer(name));
+         item.setItemMeta(meta);
+      }
+
       return item;
    }
 

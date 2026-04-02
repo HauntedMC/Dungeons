@@ -10,6 +10,7 @@ import nl.hauntedmc.dungeons.api.party.IDungeonParty;
 import nl.hauntedmc.dungeons.player.DungeonPlayer;
 import nl.hauntedmc.dungeons.player.party.DungeonPartyWrapper;
 import nl.hauntedmc.dungeons.player.party.partyfinder.RecruitmentListing;
+import nl.hauntedmc.dungeons.util.HelperUtils;
 import nl.hauntedmc.dungeons.util.file.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -272,7 +273,7 @@ public class PAPIPlaceholders extends PlaceholderExpansion {
                return " ";
             }
 
-            return party.getPlayers().get(index).getDisplayName();
+            return HelperUtils.playerDisplayName(party.getPlayers().get(index));
          }
       }
 

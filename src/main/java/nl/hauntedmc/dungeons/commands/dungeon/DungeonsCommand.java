@@ -366,7 +366,7 @@ public class DungeonsCommand extends Command<Dungeons> {
                return true;
             } else if (args.length == 3) {
                dungeon.addAccessCooldown(kickPlayer);
-               LangUtils.sendMessage(sender, "commands.setcooldown.success", kickPlayer.getDisplayName(), dungeon.getWorldName());
+               LangUtils.sendMessage(sender, "commands.setcooldown.success", HelperUtils.playerDisplayName(kickPlayer), dungeon.getWorldName());
                LangUtils.sendMessage(sender, "commands.setcooldown.cooldown-time", StringUtils.formatDate(dungeon.getNextUnlockTime()));
                return true;
             } else {
@@ -382,7 +382,7 @@ public class DungeonsCommand extends Command<Dungeons> {
                   );
                } else {
                   dungeon.addAccessCooldown(kickPlayer, resetTime);
-                  LangUtils.sendMessage(sender, "commands.setcooldown.success", kickPlayer.getDisplayName(), dungeon.getWorldName());
+                  LangUtils.sendMessage(sender, "commands.setcooldown.success", HelperUtils.playerDisplayName(kickPlayer), dungeon.getWorldName());
                   LangUtils.sendMessage(sender, "commands.setcooldown.cooldown-time", StringUtils.formatDate(resetTime));
                }
                 return true;

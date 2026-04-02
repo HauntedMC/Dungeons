@@ -1,5 +1,6 @@
 package nl.hauntedmc.dungeons.dungeons.triggers;
 
+import io.papermc.paper.event.player.AsyncChatEvent;
 import java.util.Map;
 import nl.hauntedmc.dungeons.Dungeons;
 import nl.hauntedmc.dungeons.api.annotations.DeclaredTrigger;
@@ -12,14 +13,13 @@ import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ChatMenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
 import nl.hauntedmc.dungeons.util.HelperUtils;
-import org.apache.commons.lang3.StringUtils;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
 
 @DeclaredTrigger
 public class TriggerChat extends DungeonTrigger {
@@ -55,11 +55,11 @@ public class TriggerChat extends DungeonTrigger {
    @EventHandler(
       priority = EventPriority.LOW
    )
-   public void onChat(AsyncPlayerChatEvent event) {
+   public void onChat(AsyncChatEvent event) {
       World world = event.getPlayer().getWorld();
       if (world == this.instance.getInstanceWorld()) {
          Player player = event.getPlayer();
-         String message = event.getMessage();
+         String message = HelperUtils.plainText(event.originalMessage());
          boolean matched = false;
          if (this.exact) {
             if (this.caseSensitive) {
@@ -70,19 +70,20 @@ public class TriggerChat extends DungeonTrigger {
                matched = true;
             }
          } else if (this.caseSensitive) {
-            if (StringUtils.contains(message, this.text)) {
+            if (message.contains(this.text)) {
                matched = true;
             }
-         } else if (StringUtils.containsIgnoreCase(message, this.text)) {
+         } else if (message.toLowerCase(java.util.Locale.ROOT).contains(this.text.toLowerCase(java.util.Locale.ROOT))) {
             matched = true;
          }
 
          if (matched) {
             if (this.matchesRoom(player.getLocation())) {
-               event.setMessage("");
-               player.playSound(player.getLocation(), "minecraft:entity.experience_orb.pickup", 0.5F, 1.2F);
                event.setCancelled(true);
-               this.trigger(Dungeons.inst().getDungeonPlayer(player));
+               Bukkit.getScheduler().runTask(Dungeons.inst(), () -> {
+                  player.playSound(player.getLocation(), "minecraft:entity.experience_orb.pickup", 0.5F, 1.2F);
+                  this.trigger(Dungeons.inst().getDungeonPlayer(player));
+               });
             }
          }
       }

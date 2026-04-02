@@ -44,8 +44,8 @@ import nl.hauntedmc.dungeons.gui.inv.PlayGUIHandler;
 import nl.hauntedmc.dungeons.gui.inv.RecruitGUIHandler;
 import nl.hauntedmc.dungeons.gui.inv.RoomGUIHandler;
 import nl.hauntedmc.dungeons.listeners.DynamicListener;
+import nl.hauntedmc.dungeons.listeners.DungeonListener;
 import nl.hauntedmc.dungeons.listeners.PAPIPlaceholders;
-import nl.hauntedmc.dungeons.listeners.PaperListener;
 import nl.hauntedmc.dungeons.listeners.dungeonlisteners.EditListener;
 import nl.hauntedmc.dungeons.listeners.dungeonlisteners.InstanceListener;
 import nl.hauntedmc.dungeons.listeners.dungeonlisteners.PlayListener;
@@ -169,7 +169,7 @@ public final class Dungeons extends JavaPlugin {
         this.lootTableManager = new LootTableManager();
         new CommandManager(this);
         this.movingBlockManager = new MovingBlockManager();
-        Bukkit.getPluginManager().registerEvents(new PaperListener(), this);
+        Bukkit.getPluginManager().registerEvents(new DungeonListener(), this);
 
         if (this.partyPluginName.equalsIgnoreCase("Default")) {
             this.partiesEnabled = true;

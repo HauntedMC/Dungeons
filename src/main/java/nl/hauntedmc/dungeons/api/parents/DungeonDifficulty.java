@@ -9,6 +9,7 @@ import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.components.CustomModelDataComponent;
 
 public class DungeonDifficulty {
    private final String namespace;
@@ -31,17 +32,14 @@ public class DungeonDifficulty {
          ItemMeta meta = this.icon.getItemMeta();
          int model = config.getInt("Icon.CustomModelData", -1);
          if (model > -1) {
-            meta.setCustomModelData(model);
+            CustomModelDataComponent component = meta.getCustomModelDataComponent();
+            component.setFloats(List.of((float)model));
+            meta.setCustomModelDataComponent(component);
          }
 
-         meta.setDisplayName(HelperUtils.fullColor(config.getString("Icon.Display", this.namespace)));
-         List<String> lore = new ArrayList<>();
-
-         for (String line : config.getStringList("Icon.Lore")) {
-            lore.add(HelperUtils.fullColor(line));
-         }
-
-         meta.setLore(lore);
+         meta.displayName(HelperUtils.component(config.getString("Icon.Display", this.namespace)));
+         List<String> lore = new ArrayList<>(config.getStringList("Icon.Lore"));
+         meta.lore(HelperUtils.components(lore));
          this.icon.setItemMeta(meta);
       } catch (IllegalArgumentException var8) {
          Dungeons.inst().getLogger().warning("Difficulty level " + this.namespace + " has an invalid icon! Please use a valid Spigot material.");

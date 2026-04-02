@@ -62,7 +62,7 @@ public class InstanceListener {
             this.instance.removePlayer(aPlayer);
             this.instance.dispose();
             if (player.isDead()) {
-               player.spigot().respawn();
+               aPlayer.setDead(false);
             }
 
             aPlayer.setDisconnecting(false);

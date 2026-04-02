@@ -3,6 +3,7 @@ package nl.hauntedmc.dungeons.listeners.dungeonlisteners;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import net.kyori.adventure.text.Component;
 import nl.hauntedmc.dungeons.Dungeons;
 import nl.hauntedmc.dungeons.api.parents.dungeons.AbstractDungeon;
 import nl.hauntedmc.dungeons.api.parents.elements.DungeonFunction;
@@ -107,7 +108,7 @@ public class PlayListener extends InstanceListener {
             if (!aPlayer.isDead()) {
                aPlayer.setDead(true);
                if (this.instance.getConfig().getBoolean("Rules.HideDeathMessages", false)) {
-                  event.setDeathMessage("");
+                  event.deathMessage(Component.empty());
                }
 
                if (this.instance.isLivesEnabled()) {

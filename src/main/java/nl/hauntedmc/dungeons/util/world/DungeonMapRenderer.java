@@ -68,7 +68,7 @@ public class DungeonMapRenderer extends MapRenderer {
          }
 
          MapCursorCollection cursors = new MapCursorCollection();
-         MapCursor cursor = new MapCursor((byte)0, (byte)0, this.getDirectionId(player.getFacing()), (byte)0, true);
+         MapCursor cursor = new MapCursor((byte)0, (byte)0, this.getDirectionId(player.getFacing()), MapCursor.Type.PLAYER, true);
          cursors.addCursor(cursor);
          canvas.setCursors(cursors);
          int floor = (loc.getBlockY() - 128) / this.floorDepth;

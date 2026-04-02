@@ -3,9 +3,7 @@ package nl.hauntedmc.dungeons.gui.hotbar.menuitems;
 import nl.hauntedmc.dungeons.Dungeons;
 import nl.hauntedmc.dungeons.player.DungeonPlayer;
 import nl.hauntedmc.dungeons.util.HelperUtils;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerEvent;
 
 public abstract class ChatMenuItem extends MenuItem {
@@ -25,14 +23,10 @@ public abstract class ChatMenuItem extends MenuItem {
    public abstract void onSelect(Player var1);
 
    @Override
-   public void onChat(AsyncPlayerChatEvent event) {
-      Player player = event.getPlayer();
+   public void onChat(Player player, String message) {
       DungeonPlayer aPlayer = Dungeons.inst().getDungeonPlayer(player);
-      String message = event.getMessage();
-      Bukkit.getScheduler().runTask(Dungeons.inst(), () -> {
-         this.onInput(player, HelperUtils.fullColor(message));
-         aPlayer.setHotbar(this.menu);
-      });
+      this.onInput(player, HelperUtils.fullColor(message));
+      aPlayer.setHotbar(this.menu);
    }
 
    public abstract void onInput(Player var1, String var2);

@@ -1,7 +1,6 @@
 package nl.hauntedmc.dungeons.dungeons.functions;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import nl.hauntedmc.dungeons.Dungeons;
 import nl.hauntedmc.dungeons.api.annotations.DeclaredFunction;
@@ -17,7 +16,6 @@ import nl.hauntedmc.dungeons.player.DungeonPlayer;
 import nl.hauntedmc.dungeons.util.entity.ItemUtils;
 import nl.hauntedmc.dungeons.util.file.LangUtils;
 import nl.hauntedmc.dungeons.util.HelperUtils;
-import org.apache.commons.lang3.text.WordUtils;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
@@ -63,7 +61,7 @@ public class FunctionGiveItem extends DungeonFunction {
    @Override
    public void runFunction(TriggerFireEvent triggerEvent, List<DungeonPlayer> targets) {
       if (this.item != null) {
-         ItemStack item = this.item;
+         ItemStack item = this.item.clone();
 
           if (ItemUtils.verifyDungeonItem(this.item)) {
               ItemMeta preMeta = item.getItemMeta();
@@ -74,26 +72,19 @@ public class FunctionGiveItem extends DungeonFunction {
 
           item.addUnsafeEnchantments(this.item.getEnchantments());
 
-          if (!targets.isEmpty() && !this.drop) {
+         if (!targets.isEmpty() && !this.drop) {
             for (DungeonPlayer mPlayer : targets) {
-               ItemMeta meta = item.getItemMeta();
-
-               assert meta != null;
-
-               String itemName = meta.getDisplayName();
-               if (itemName.isEmpty()) {
-                  itemName = WordUtils.capitalizeFully(item.getType().name().toLowerCase(Locale.ROOT).replace("_", " "));
-               }
+               String itemName = HelperUtils.itemDisplayName(item);
 
                Player player = mPlayer.getPlayer();
                if (this.notify) {
                   LangUtils.sendMessage(player, "instance.functions.item-dispenser", String.valueOf(item.getAmount()), itemName);
                }
 
-               ItemUtils.giveOrDropSilently(player, item);
+               ItemUtils.giveOrDropSilently(player, item.clone());
             }
          } else {
-            this.instance.getInstanceWorld().dropItem(this.location, item);
+            this.instance.getInstanceWorld().dropItem(this.location, item.clone());
          }
       }
    }

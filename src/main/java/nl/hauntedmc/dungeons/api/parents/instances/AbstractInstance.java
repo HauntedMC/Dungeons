@@ -312,7 +312,7 @@ public abstract class AbstractInstance {
             }
 
             if (!this.config.getBoolean("General.KeepHealthOnEnter", false)) {
-               player.setHealth(player.getMaxHealth());
+               player.setHealth(HelperUtils.getMaxHealth(player));
             }
 
             if (!this.config.getBoolean("General.KeepFoodOnEnter", false)) {

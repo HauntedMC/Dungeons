@@ -54,111 +54,65 @@ public class QueueData {
          Dungeons.inst().getDungeonManager().createInstance(this.dungeon.getWorldName(), this.aPlayer.getPlayer(), this.difficulty);
          Dungeons.inst().getQueueManager().unqueue(this.aPlayer);
       } else {
-         Bukkit.getScheduler()
-            .runTaskAsynchronously(
-               Dungeons.inst(),
-               () -> {
-                  this.latch = new AbortableCountDownLatch(this.players.size());
-                  this.readyCheckWaiting = true;
-                  Dungeons.inst().getProviderManager().updatePartyPlayers(this.party);
+         this.latch = new AbortableCountDownLatch(this.players.size());
+         this.readyCheckWaiting = true;
+         if (this.party != null) {
+            Dungeons.inst().getProviderManager().updatePartyPlayers(this.party);
+         }
 
-                  for (UUID uuid : this.players) {
-                     DungeonPlayer aPlayer = Dungeons.inst().getDungeonPlayer(uuid);
-                     if (aPlayer.hasParty()) {
-                        Player player = aPlayer.getPlayer();
-                        player.playSound(player.getLocation(), "entity.player.levelup", 1.0F, 0.7F);
-                        player.playSound(player.getLocation(), "block.beacon.activate", 1.0F, 0.7F);
-                        LangUtils.sendMessage(player, "instance.queue.dungeon-ready", this.dungeon.getWorldName());
-                        StringUtils.sendReadyCheckMessage(player);
-                     }
-                  }
+         for (UUID uuid : this.players) {
+            DungeonPlayer aPlayer = Dungeons.inst().getDungeonPlayer(uuid);
+            if (aPlayer.hasParty()) {
+               Player player = aPlayer.getPlayer();
+               player.playSound(player.getLocation(), "entity.player.levelup", 1.0F, 0.7F);
+               player.playSound(player.getLocation(), "block.beacon.activate", 1.0F, 0.7F);
+               LangUtils.sendMessage(player, "instance.queue.dungeon-ready", this.dungeon.getWorldName());
+               StringUtils.sendReadyCheckMessage(player);
+            }
+         }
 
-                  int countdownTime = Dungeons.inst().getConfig().getInt("General.ReadyCheckTime", 45);
-                  this.countdownStatus = countdownTime + 1;
-                  this.countdownTimer = new BukkitRunnable() {
-                     public void run() {
-                        QueueData.this.countdownStatus--;
-                        if (QueueData.this.countdownStatus <= 0) {
-                           this.cancel();
-                        } else {
-                           for (UUID uuidx : QueueData.this.players) {
-                              Player player = Bukkit.getPlayer(uuidx);
-                              if (player != null) {
-                                 player.sendTitle(
-                                    LangUtils.getMessage("instance.queue.dungeon-ready-title", false),
-                                    HelperUtils.colorize("&e" + QueueData.this.countdownStatus),
-                                    0,
-                                    25,
-                                    0
-                                 );
-                              }
-                           }
-                        }
-                     }
-                  };
-                  this.countdownTimer.runTaskTimerAsynchronously(Dungeons.inst(), 0L, 20L);
+         int countdownTime = Dungeons.inst().getConfig().getInt("General.ReadyCheckTime", 45);
+         this.countdownStatus = countdownTime + 1;
+         this.countdownTimer = new BukkitRunnable() {
+            public void run() {
+               QueueData.this.countdownStatus--;
+               if (QueueData.this.countdownStatus <= 0) {
+                  this.cancel();
+                  return;
+               }
 
-                  try {
-                     boolean ready = this.latch.await(countdownTime, TimeUnit.SECONDS);
-                     if (!ready) {
-                        this.readyCheckWaiting = false;
-                        if (Dungeons.inst().getConfig().getBoolean("General.StartWithoutUnreadyPlayers", false)
-                           && (
-                              !Dungeons.inst().getConfig().getBoolean("General.ReadyCheckRequireLeader", true)
-                                 || this.readyPlayers.contains(this.aPlayer.getPlayer().getUniqueId())
-                           )) {
-                           for (UUID uuidx : this.players) {
-                              DungeonPlayer aPlayer = Dungeons.inst().getDungeonPlayer(uuidx);
-                              Player player = aPlayer.getPlayer();
-                              aPlayer.setAwaitingDungeon(false);
-                              if (!this.readyPlayers.contains(uuidx)) {
-                                 this.party.removePlayer(player);
-                              }
-                           }
-
-                           if (!this.party.hasPlayer(this.aPlayer.getPlayer())) {
-                              this.aPlayer = Dungeons.inst().getDungeonPlayer(this.party.getLeader().getUniqueId());
-                           }
-
-                           Dungeons.inst().getDungeonManager().createInstance(this.dungeon.getWorldName(), this.aPlayer.getPlayer(), this.difficulty);
-                        } else {
-                           for (UUID uuidxx : this.players) {
-                              DungeonPlayer aPlayer = Dungeons.inst().getDungeonPlayer(uuidxx);
-                              Player player = aPlayer.getPlayer();
-                              player.playSound(player.getLocation(), "block.beacon.deactivate", 1.0F, 0.7F);
-                              LangUtils.sendMessage(player, "instance.queue.not-all-ready");
-                              aPlayer.setAwaitingDungeon(false);
-                           }
-                        }
-
-                        Dungeons.inst().getQueueManager().unqueue(this.aPlayer);
-                        return;
-                     }
-
-                     this.countdownTimer.cancel();
-
-                     for (UUID uuidxx : this.players) {
-                        DungeonPlayer aPlayer = Dungeons.inst().getDungeonPlayer(uuidxx);
-                        Player player = aPlayer.getPlayer();
-                        LangUtils.sendMessage(player, "instance.queue.all-ready");
-                        player.sendTitle(" ", " ", 0, 0, 0);
-                     }
-
-                     Dungeons.inst().getDungeonManager().createInstance(this.dungeon.getWorldName(), this.aPlayer.getPlayer(), this.difficulty);
-                     Dungeons.inst().getQueueManager().unqueue(this.aPlayer);
-                  } catch (InterruptedException var7) {
-                     this.countdownTimer.cancel();
-                     Dungeons.inst().getQueueManager().unqueue(this.aPlayer);
-
-                     for (UUID uuidxx : this.players) {
-                        DungeonPlayer aPlayer = Dungeons.inst().getDungeonPlayer(uuidxx);
-                        Player player = aPlayer.getPlayer();
-                        player.sendTitle(" ", " ", 0, 0, 0);
-                        aPlayer.setAwaitingDungeon(false);
-                     }
+               for (UUID uuid : QueueData.this.players) {
+                  Player player = Bukkit.getPlayer(uuid);
+                  if (player != null) {
+                     HelperUtils.showTitle(
+                        player,
+                        LangUtils.getMessage("instance.queue.dungeon-ready-title", false),
+                        "&e" + QueueData.this.countdownStatus,
+                        0,
+                        25,
+                        0
+                     );
                   }
                }
-            );
+            }
+         };
+         this.countdownTimer.runTaskTimer(Dungeons.inst(), 0L, 20L);
+
+         Bukkit.getScheduler().runTaskAsynchronously(Dungeons.inst(), () -> {
+            boolean ready;
+            boolean interrupted = false;
+            try {
+               ready = this.latch.await(countdownTime, TimeUnit.SECONDS);
+            } catch (InterruptedException var4) {
+               Thread.currentThread().interrupt();
+               ready = false;
+               interrupted = true;
+            }
+
+            boolean finalReady = ready;
+            boolean finalInterrupted = interrupted;
+            Bukkit.getScheduler().runTask(Dungeons.inst(), () -> this.finishReadyCheck(finalReady, finalInterrupted));
+         });
       }
    }
 
@@ -173,7 +127,7 @@ public class QueueData {
             LangUtils.sendMessage(
                player,
                "commands.ready.success",
-               aPlayer.getPlayer().getDisplayName(),
+               HelperUtils.playerDisplayName(aPlayer.getPlayer()),
                String.valueOf(this.readyPlayers.size()),
                String.valueOf(this.players.size())
             );
@@ -188,7 +142,7 @@ public class QueueData {
          DungeonPlayer queuePlayer = Dungeons.inst().getDungeonPlayer(uuid);
          Player player = queuePlayer.getPlayer();
          player.playSound(player.getLocation(), "block.beacon.deactivate", 1.0F, 0.7F);
-         LangUtils.sendMessage(player, "commands.notready.cancel", aPlayer.getPlayer().getDisplayName());
+         LangUtils.sendMessage(player, "commands.notready.cancel", HelperUtils.playerDisplayName(aPlayer.getPlayer()));
       }
 
       this.latch.abort();
@@ -216,5 +170,68 @@ public class QueueData {
 
    public boolean isReadyCheckWaiting() {
       return this.readyCheckWaiting;
+   }
+
+   private void finishReadyCheck(boolean ready, boolean interrupted) {
+      this.readyCheckWaiting = false;
+      if (this.countdownTimer != null) {
+         this.countdownTimer.cancel();
+      }
+
+      if (interrupted) {
+         Dungeons.inst().getQueueManager().unqueue(this.aPlayer);
+
+         for (UUID uuid : this.players) {
+            DungeonPlayer aPlayer = Dungeons.inst().getDungeonPlayer(uuid);
+            Player player = aPlayer.getPlayer();
+            HelperUtils.resetTitle(player);
+            aPlayer.setAwaitingDungeon(false);
+         }
+
+         return;
+      }
+
+      if (!ready) {
+         boolean canStartWithoutUnreadyPlayers = Dungeons.inst().getConfig().getBoolean("General.StartWithoutUnreadyPlayers", false)
+            && (!Dungeons.inst().getConfig().getBoolean("General.ReadyCheckRequireLeader", true)
+               || this.readyPlayers.contains(this.aPlayer.getPlayer().getUniqueId()));
+         if (canStartWithoutUnreadyPlayers) {
+            for (UUID uuid : this.players) {
+               DungeonPlayer aPlayer = Dungeons.inst().getDungeonPlayer(uuid);
+               Player player = aPlayer.getPlayer();
+               aPlayer.setAwaitingDungeon(false);
+               if (this.party != null && !this.readyPlayers.contains(uuid)) {
+                  this.party.removePlayer(player);
+               }
+            }
+
+            if (this.party != null && !this.party.hasPlayer(this.aPlayer.getPlayer())) {
+               this.aPlayer = Dungeons.inst().getDungeonPlayer(this.party.getLeader().getUniqueId());
+            }
+
+            Dungeons.inst().getDungeonManager().createInstance(this.dungeon.getWorldName(), this.aPlayer.getPlayer(), this.difficulty);
+         } else {
+            for (UUID uuid : this.players) {
+               DungeonPlayer aPlayer = Dungeons.inst().getDungeonPlayer(uuid);
+               Player player = aPlayer.getPlayer();
+               player.playSound(player.getLocation(), "block.beacon.deactivate", 1.0F, 0.7F);
+               LangUtils.sendMessage(player, "instance.queue.not-all-ready");
+               aPlayer.setAwaitingDungeon(false);
+            }
+         }
+
+         Dungeons.inst().getQueueManager().unqueue(this.aPlayer);
+         return;
+      }
+
+      for (UUID uuid : this.players) {
+         DungeonPlayer aPlayer = Dungeons.inst().getDungeonPlayer(uuid);
+         Player player = aPlayer.getPlayer();
+         LangUtils.sendMessage(player, "instance.queue.all-ready");
+         HelperUtils.resetTitle(player);
+      }
+
+      Dungeons.inst().getDungeonManager().createInstance(this.dungeon.getWorldName(), this.aPlayer.getPlayer(), this.difficulty);
+      Dungeons.inst().getQueueManager().unqueue(this.aPlayer);
    }
 }
