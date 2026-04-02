@@ -2,9 +2,10 @@ package nl.hauntedmc.dungeons.api.generation;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import nl.hauntedmc.dungeons.Dungeons;
-import nl.hauntedmc.dungeons.util.version.NBTEditor;
+import nl.hauntedmc.dungeons.util.world.BlockNbtUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -20,14 +21,14 @@ public class StructurePieceBlock implements Cloneable {
    private final int z;
    private BlockData blockData;
    @Nullable
-   private NBTEditor.NBTCompound blockNbt;
+   private String blockNbt;
    private static final Map<String, BlockData> dataCache = new HashMap<>();
 
-   public StructurePieceBlock(Location loc, BlockData data, NBTEditor.NBTCompound nbt) {
+   public StructurePieceBlock(Location loc, BlockData data, String nbt) {
       this(new Vector3i(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()), data, nbt);
    }
 
-   public StructurePieceBlock(Vector3i pos, BlockData data, @Nullable NBTEditor.NBTCompound nbt) {
+   public StructurePieceBlock(Vector3i pos, BlockData data, @Nullable String nbt) {
       this.x = pos.x;
       this.y = pos.y;
       this.z = pos.z;
@@ -46,11 +47,11 @@ public class StructurePieceBlock implements Cloneable {
    public void placeAt(Location loc) {
       World world = loc.getWorld();
       world.setBlockData(loc, this.blockData);
-      NBTEditor.set(world.getBlockAt(loc), this.blockNbt);
+      BlockNbtUtils.applyTileSnbt(world.getBlockAt(loc), this.blockNbt);
    }
 
    public static StructurePieceBlock from(Block block) {
-      NBTEditor.NBTCompound compound = NBTEditor.getNBTCompound(block);
+      String compound = BlockNbtUtils.readTileSnbt(block);
       return new StructurePieceBlock(block.getLocation(), block.getBlockData().clone(), compound);
    }
 
@@ -76,7 +77,7 @@ public class StructurePieceBlock implements Cloneable {
          } else if (this.z != compare.z) {
             return false;
          } else {
-            return this.blockData.equals(compare.blockData) && (this.blockNbt == null || this.blockNbt.equals(compare.blockNbt)) && (compare.blockNbt == null || compare.blockNbt.equals(this.blockNbt));
+            return this.blockData.equals(compare.blockData) && Objects.equals(this.blockNbt, compare.blockNbt);
          }
       }
    }
@@ -119,7 +120,7 @@ public class StructurePieceBlock implements Cloneable {
    }
 
    @Nullable
-   public NBTEditor.NBTCompound getBlockNbt() {
+   public String getBlockNbt() {
       return this.blockNbt;
    }
 }

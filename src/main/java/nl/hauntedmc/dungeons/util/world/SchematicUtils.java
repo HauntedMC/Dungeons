@@ -15,7 +15,6 @@ import java.util.zip.InflaterOutputStream;
 import nl.hauntedmc.dungeons.Dungeons;
 import nl.hauntedmc.dungeons.api.generation.StructurePiece;
 import nl.hauntedmc.dungeons.api.generation.StructurePieceBlock;
-import nl.hauntedmc.dungeons.util.version.NBTEditor;
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.block.data.BlockData;
@@ -45,7 +44,7 @@ public final class SchematicUtils {
             blockDatas.append(blockData.getAsString(true));
          }
 
-         String nbtStr = block.getBlockNbt() != null ? block.getBlockNbt().toJson() : null;
+         String nbtStr = block.getBlockNbt();
          if (!blockStrEmpty) {
             blocksStr.append("!");
          } else {
@@ -86,7 +85,7 @@ public final class SchematicUtils {
                   String[] posSplit = posString.split(",");
                   Vector3i pos = new Vector3i(Integer.parseInt(posSplit[0]), Integer.parseInt(posSplit[1]), Integer.parseInt(posSplit[2]));
                   BlockData blockData = data.get(blockDataPointer);
-                  NBTEditor.NBTCompound blockNbt = !nbtStr.equals("null") ? NBTEditor.NBTCompound.fromJson(nbtStr) : null;
+                  String blockNbt = !nbtStr.equals("null") ? BlockNbtUtils.normalizeSnbt(nbtStr) : null;
                   struct.add(new StructurePieceBlock(pos, blockData, blockNbt));
                }
             }

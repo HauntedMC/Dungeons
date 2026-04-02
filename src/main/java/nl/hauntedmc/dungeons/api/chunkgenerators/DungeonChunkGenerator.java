@@ -9,7 +9,7 @@ import java.util.Random;
 import nl.hauntedmc.dungeons.Dungeons;
 import nl.hauntedmc.dungeons.api.generation.StructurePieceBlock;
 import nl.hauntedmc.dungeons.api.generation.rooms.InstanceRoom;
-import nl.hauntedmc.dungeons.util.version.NBTEditor;
+import nl.hauntedmc.dungeons.util.world.BlockNbtUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -102,11 +102,11 @@ public class DungeonChunkGenerator extends FullBlockGenerator {
 
                   World world = Bukkit.getWorld(worldInfo.getName());
                   if (world != null) {
-                     NBTEditor.NBTCompound weTag = holder.getBlockNbt();
+                     String weTag = holder.getBlockNbt();
                      if (weTag != null) {
                         Bukkit.getScheduler().runTaskLater(Dungeons.inst(), () -> {
                            if (Bukkit.getWorlds().contains(world)) {
-                              NBTEditor.set(world.getBlockAt(bTarget.x, (int)y, bTarget.z), weTag);
+                              BlockNbtUtils.applyTileSnbt(world.getBlockAt(bTarget.x, (int)y, bTarget.z), weTag);
                               this.nbtCount--;
                            }
                         }, this.nbtCount);

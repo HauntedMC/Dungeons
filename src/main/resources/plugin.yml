@@ -2,7 +2,7 @@ name: Dungeons
 prefix: Dungeons
 version: ${project.version}
 main: nl.hauntedmc.dungeons.Dungeons
-api-version: 1.16
+api-version: 1.21
 author: HauntedMC
 softdepend:
   - PlaceholderAPI

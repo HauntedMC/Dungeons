@@ -22,6 +22,7 @@
         <commons-lang3.version>3.20.0</commons-lang3.version>
         <placeholderapi.version>2.12.2</placeholderapi.version>
         <objenesis.version>3.4</objenesis.version>
+        <item-nbt-api.version>2.15.5</item-nbt-api.version>
 
         <maven-enforcer-plugin.version>3.6.2</maven-enforcer-plugin.version>
         <maven-resources-plugin.version>3.5.0</maven-resources-plugin.version>
@@ -94,6 +95,12 @@
                         <configuration>
                             <minimizeJar>true</minimizeJar>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <relocations>
+                                <relocation>
+                                    <pattern>de.tr7zw.changeme.nbtapi</pattern>
+                                    <shadedPattern>nl.hauntedmc.dungeons.libs.nbtapi</shadedPattern>
+                                </relocation>
+                            </relocations>
                         </configuration>
                     </execution>
                 </executions>
@@ -119,6 +126,10 @@
         <repository>
             <id>placeholderapi</id>
             <url>https://repo.extendedclip.com/content/repositories/placeholderapi/</url>
+        </repository>
+        <repository>
+            <id>codemc-repo</id>
+            <url>https://repo.codemc.io/repository/maven-public/</url>
         </repository>
     </repositories>
 
@@ -165,6 +176,11 @@
             <groupId>org.objenesis</groupId>
             <artifactId>objenesis</artifactId>
             <version>${objenesis.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>de.tr7zw</groupId>
+            <artifactId>item-nbt-api</artifactId>
+            <version>${item-nbt-api.version}</version>
         </dependency>
     </dependencies>
 </project>
