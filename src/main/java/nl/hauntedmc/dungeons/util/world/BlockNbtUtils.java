@@ -55,10 +55,8 @@ public final class BlockNbtUtils {
          }
 
          NBT.modify(tileState, writable -> {
-            writable.clearNBT();
             writable.mergeCompound(parsed);
          });
-         tileState.update(true, false);
       } catch (Exception exception) {
          logError(exception);
       }
