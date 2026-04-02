@@ -1,0 +1,537 @@
+# Ondersteunt '&'-kleurcodes en hexcodes! Hex-formaat: <#000000>
+# Gebruik $1, $2, enz. voor argumenten
+general:
+  prefix: "<#9753f5>[Dungeons]"
+  # De itemnaam van de functie-editor tool.
+  function-editor-name: "&6Functiebouwer"
+  function-editor-lore:
+    - "&6----------------------"
+    - "&eRechtsklik op een blok"
+    - "&eom een functie te maken!"
+  room-editor-name: "&dKamer-editor"
+  room-editor-lore:
+    - "&d----------------------"
+    - "&eRechtsklik selecteert eerste hoek."
+    - "&eLinksklik selecteert tweede hoek."
+    - ""
+    - "&eRechtsklik binnen een kamer"
+    - "&eom de instellingen te bewerken."
+  # Welke taal gebruikt wordt voor bepaalde systeemmeldingen (zoals cooldowns).
+  # Lijst met locales: https://www.oracle.com/java/technologies/javase/jdk8-jre8-suported-locales.html#util-text
+  # LET OP: Niet alle vertalingen worden misschien ondersteund!
+  java-locale: "nl-NL"
+
+######################
+## COMMANDO BERICHTEN ##
+######################
+# Berichten die door commands getoond worden.
+
+commands:
+  # /recruit
+  recruit:
+    no-party-system: "&cEr staat geen party-systeem op deze server!"
+    already-recruiting: "&cJe bent al aan het recruiten!"
+    leader-only: "&cAlleen de partyleider kan mensen recruiten!"
+    recruit-for: "&eWaar recruit je voor? (max 3 woorden)"
+    setup:
+      # $1 = Max. aantal tekens.
+      too-many-characters: "&cMag niet langer zijn dan $1 tekens!"
+      # $1 = Max. aantal woorden.
+      too-many-words: "&cMag niet langer zijn dan $1 woorden!"
+      # $1 = De recruitment-label (waarvoor de party recruit).
+      label-set: "&bLabel gezet op '&6$1&b'!"
+      description: "&eTyp een beschrijving voor meer details!"
+      # $1 = De recruitment-beschrijving.
+      description-set: "&bBeschrijving gezet op '&6$1&b'!"
+      players: "&eHoeveel spelers wil je recruiten?"
+      party-too-small: "&cParty moet minstens 2 spelers hebben!"
+      party-too-big: "&cParty mag niet meer dan 12 spelers hebben!"
+      # $1 = Het aantal spelers voor deze recruitment.
+      players-set: "&bAantal spelers gezet op '&6$1&b'!"
+      password: "&eVoer een wachtwoord in om te beperken wie kan joinen! Gebruik 'none' voor geen wachtwoord."
+      no-spaces: "&cWachtwoord mag geen spaties bevatten!"
+      # $1 = Het wachtwoord.
+      password-set: "&bWachtwoord voor recruitment gezet op '&6$1&b'!"
+      open-recruitment: "&bRecruitment staat open voor iedereen!"
+      complete: "&bRecruitment setup klaar!"
+    cancel:
+      not-recruiting: "&cJe bent nu niet aan het recruiten!"
+      success: "&eJe hebt de recruitment geannuleerd."
+    join:
+      unspecified: "&cJe moet een speler opgeven om te joinen!"
+      join-self: "&cJe kunt je eigen party niet joinen!"
+      player-not-found: "&cGeen speler met die naam gevonden!"
+      not-recruiting: "&cDeze speler is niet aan het recruiten!"
+  # /dungeon leave
+  leave:
+    not-in-dungeon: "&cJe zit nu niet in een dungeon!"
+    left-queue: "&eJe hebt het betreden van de dungeon met je party geannuleerd."
+  # /ready
+  ready:
+    not-queued: "&cJe staat nu niet in de wachtrij voor een dungeon!"
+    # $1 = Naam van de speler die ready is.
+    # $2 = Aantal spelers dat ready is.
+    # $3 = Totaal aantal spelers dat nodig is.
+    success: "&a&l$1 &ais klaar om de dungeon in te gaan! &b($2/$3)"
+  # /notready
+  notready:
+    not-queued: "&cJe staat nu niet in de wachtrij voor een dungeon!"
+    # $1 = Naam van de speler die heeft geannuleerd.
+    cancel: "&c&l$1 &cheeft de dungeon geannuleerd."
+  # /stuck EN /dungeon stuck
+  stuck:
+    not-in-dungeon: "&cJe zit nu niet in een dungeon!"
+    success: "&dOeps! We sturen je naar je laatste checkpoint."
+  # /dungeon loot
+  loot:
+    create:
+      # $1 = Naam van de opgegeven loottabel.
+      already-exists: "&cEr bestaat al een tabel met de naam '&6$1&c'!"
+      # $1 = Naam van de loottabel.
+      success: "&aNieuwe loottabel '&6$1&a' aangemaakt!"
+    remove:
+      # $1 = Naam van de loottabel.
+      success: "&eLoottabel '&6$1&e' verwijderd!"
+    edit:
+      # $1 = Naam van de loottabel.
+      not-found: "&cGeen loottabel gevonden met de naam '&6$1&c'!"
+      # $1 = Naam van de loottabel.
+      already-editing: "&cIemand is deze loottabel '&6$1&c' al aan het bewerken!"
+  # /dungeon play
+  play:
+    # $1 = Opgegeven spelernaam.
+    player-not-found: "&cGeen speler gevonden met naam '&6$1&c'!"
+    console-needs-player: "&cVanaf console moet je de speler opgeven!"
+    already-in-dungeon: "&cJe zit al in een dungeon!"
+    already-in-queue: "&cJe staat al in de wachtrij voor een andere dungeon!"
+    # $1 = Opgegeven dungeonnaam.
+    dungeon-not-found: "&cGeen dungeon gevonden met naam '&6$1&c'!"
+    party-lead-only: "&cAlleen de partyleider kan een dungeon starten!"
+    # $1 = Speler die al in een dungeon zit.
+    player-in-dungeon: "&6&l$1 &czit al in een andere dungeon!"
+    requirements-not-met: "&6&l$1 &cvoldoet niet aan de eisen voor deze dungeon!"
+    instances-full: "&cAlle instances zitten vol! Je krijgt een melding zodra er plek is."
+    how-to-cancel: "&bJe wacht op een dungeon! Gebruik &6/dungeon leave &bom te annuleren."
+  lives:
+    not-in-dungeon: "&cJe zit nu niet in een dungeon!"
+    infinite-lives: "&eJe hebt &6oneindig &elevens over."
+    # $1 = Aantal levens over.
+    lives-remaining: "&eJe hebt &6$1 &elevens over."
+  join:
+    not-in-dungeon: "&cDeze speler zit momenteel niet in een dungeon!"
+  kick:
+    not-in-dungeon: "&cDeze speler zit momenteel niet in een dungeon!"
+    kick-alert: "&cJe bent door een admin uit de dungeon gekickt."
+  status:
+    # $1 = Totaal aantal draaiende dungeon-instances.
+    total-instances: "&eTotaal aantal instances: $1"
+    # $1 = Totaal aantal spelers over alle instances.
+    total-players: "&eTotaal aantal spelers: $1"
+    # $1 = Aantal instances van een specifieke dungeon.
+    dungeon-instances: "&e - Instances: $1"
+    # $1 = Aantal spelers over alle instances van een specifieke dungeon.
+    dungeon-players: "&e - Spelers: $1"
+    # $1 = Opgegeven dungeonnaam.
+    dungeon-not-found: "&cGeen dungeon gevonden met naam '&6$1&c'!"
+    none-loaded: "&eEr zijn geen instances van deze dungeon geladen!"
+  reload:
+    config-reloading: "&eConfigs en loottabellen herladen..."
+    config-reloaded: "&aConfigs herladen!"
+    all-dungeons-reloading: "&eAlle dungeons herladen..."
+    all-dungeons-reloaded: "&aDungeons herladen!"
+    reload-all-warning: "&cHiermee kick je alle spelers die nu in een dungeon zitten!"
+    reload-all-confirm: "&cGebruik &6/dungeon reload all &cnog een keer om te bevestigen."
+    # $1 = Dungeon die herladen wordt
+    dungeon-reloading: "&eDungeon $1 herladen..."
+    # $1 = Dungeon die herladen is
+    dungeon-reloaded: "&a$1 herladen!"
+    # $1 = Opgegeven dungeonnaam.
+    dungeon-not-found: "&cGeen dungeon gevonden met naam '&6$1&c'!"
+    # $1 = Dungeon die we willen herladen.
+    reload-dungeon-warning: "&cHiermee kick je iedereen die nu in $1 zit!"
+    # $1 = Dungeon die we willen herladen.
+    reload-dungeon-confirm: "&cGebruik &6/dungeon reload $1 &cnog een keer om te bevestigen."
+  create:
+    already-exists: "&cEr bestaat al een dungeon met deze naam!"
+    failed-to-create: "&cDungeon aanmaken mislukt! Check de console..."
+    # $1 = Opgegeven dungeonnaam.
+    success: "&aLege dungeon &6$1 &a succesvol aangemaakt"
+  edit:
+    already-in-dungeon: "&cJe zit al in een dungeon!"
+    # $1 = Opgegeven dungeonnaam.
+    dungeon-not-found: "&cGeen dungeon gevonden met naam '&6$1&c'!"
+    no-permission: "&cJe hebt geen rechten om die dungeon te bewerken!"
+    loading: "Dungeon laden..."
+  delete:
+    # $1 = Opgegeven dungeonnaam.
+    dungeon-not-found: "&cGeen dungeon gevonden met naam '&6$1&c'!"
+    edit-in-progress: "&cIemand is deze dungeon momenteel aan het bewerken!"
+    delete-warning: "&cWeet je zeker dat je deze dungeon wilt verwijderen? (Back-ups blijven bestaan.)"
+    delete-confirm: "&bVoer het command nog een keer uit om te bevestigen."
+    notification: "&cDe dungeon is verwijderd door een admin!"
+    # $1 = De verwijderde dungeon.
+    success: "&cDungeon '$1' is verwijderd."
+  addkey:
+    # $1 = Opgegeven dungeonnaam.
+    dungeon-not-found: "&cGeen dungeon gevonden met naam '&6$1&c'!"
+    no-permission: "&cJe hebt geen rechten om die dungeon te bewerken!"
+    no-held-item: "&cJe houdt niks vast in je hand!"
+    success: "&aItem in je hand toegevoegd als toegangssleutel voor deze dungeon!"
+  removekey:
+    # $1 = Opgegeven dungeonnaam.
+    dungeon-not-found: "&cGeen dungeon gevonden met naam '&6$1&c'!"
+    no-permission: "&cJe hebt geen rechten om die dungeon te bewerken!"
+    no-held-item: "&cJe houdt niks vast in je hand!"
+    no-key-found: "&cGeen sleutel gevonden die overeenkomt met het item in je hand."
+    success: "&aItem in je hand verwijderd uit de toegangssleutels."
+  clearkeys:
+    dungeon-not-found: "&cGeen dungeon gevonden met naam '&6$1&c'!"
+    no-permission: "&cJe hebt geen rechten om die dungeon te bewerken!"
+    success: "&aAlle toegangssleutels voor deze dungeon zijn verwijderd!"
+  setlobby:
+    not-in-dungeon: "&cJe bent nu niet een dungeon aan het bewerken!"
+    # $1 = X
+    # $2 = Y
+    # $3 = Z
+    # $4 = YAW
+    success: "&aDungeonlobby gezet op &6X: $1 Y: $2 Z: $3 YAW: $4"
+  setspawn:
+    not-in-dungeon: "&cJe bent nu niet een dungeon aan het bewerken!"
+    # $1 = X
+    # $2 = Y
+    # $3 = Z
+    # $4 = YAW
+    success: "&aDungeonspawn gezet op &6X: $1 Y: $2 Z: $3 YAW: $4"
+  setexit:
+    # $1 = Opgegeven dungeonnaam.
+    dungeon-not-found: "&cGeen dungeon gevonden met naam '&6$1&c'!"
+    # $1 = X
+    # $2 = Y
+    # $3 = Z
+    # $4 = YAW
+    success: "&aDungeon-exit gezet op &6X: $1 Y: $2 Z: $3 YAW: $4"
+  banitem:
+    not-in-dungeon: "&cJe bent nu niet een dungeon aan het bewerken!"
+    success: "&eJe huidige item is toegevoegd aan de 'verboden items'-lijst."
+  unbanitem:
+    not-in-dungeon: "&cJe bent nu niet een dungeon aan het bewerken!"
+    not-banned: "&cDit item is niet verboden in deze dungeon!"
+    success: "&eItem verwijderd uit de 'verboden items'-lijst."
+  dungeonitem:
+    not-in-dungeon: "&cJe bent nu niet een dungeon aan het bewerken!"
+    success: "&eItem in je hand is nu een dungeon-item."
+  functiontool:
+    not-in-dungeon: "&cJe bent nu niet een dungeon aan het bewerken!"
+  roomtool:
+    not-in-procedural: "&cDeze tool is alleen voor procedurele dungeons!"
+  save:
+    not-in-dungeon: "&cJe bent nu niet een dungeon aan het bewerken!"
+    saving: "&eDungeon opslaan..."
+    # $1 = Naam van de dungeon.
+    success: "&aOpslaan van &6$1 &ais klaar!"
+  import:
+    # $1 = Wereldnaam.
+    world-not-found: "&cEr bestaat geen wereld met de naam &6$1&c."
+    # $1 = Dimension type.
+    invalid-dimension: "&c$1 is geen geldige dimensie!"
+    failed: "&cDungeon importeren mislukt! Check de console..."
+    # $1 = Wereldnaam.
+    success: "&aDungeon &6$1 &asuccesvol geïmporteerd"
+  dxlimport:
+    # $1 = DXL-mapnaam.
+    importing: "&eBezig DXL-map '&6$1&e' om te zetten..."
+    failed: "&c&lMISLUKT! &cDXL-map importeren is niet gelukt! Check de console."
+    success: "&a&lSucces! &aDXL-map importeren voltooid!"
+    check-console: "&dZie console voor functies die je handmatig moet instellen!"
+    clean-signs: "&dGebruik &6&l/dungeon cleansigns &dom DXL-bordjes te verwijderen!"
+  cleansigns:
+    not-in-dungeon: "&cJe bent nu niet een dungeon aan het bewerken!"
+    # $1 = Aantal opgeruimde bordjes.
+    success: "&e&6$1 &ebordjes opgeruimd. (Interact-triggers uitgezonderd.)"
+  setcooldown:
+    # $1 = Dungeonnaam.
+    dungeon-not-found: "&cGeen dungeon gevonden met naam '&6$1&c'!"
+    # $1 = Spelernaam.
+    player-not-found: "&cGeen speler gevonden met naam '&6$1&c'!"
+    invalid-duration: "&cOngeldige duur! Vul een nummer in en gebruik &6s (seconden), m (minuten), h (uren) of d (dagen)&c."
+    # $1 = Spelernaam.
+    # $2 = Dungeonnaam.
+    success: "&eCooldown gezet voor &6$1 &eop dungeon &6$2&e!"
+    # $1 = Tijd waarop de dungeon weer beschikbaar is.
+    cooldown-time: "&eDungeon unlockt weer om &6$1"
+  # /party
+  party:
+    # Basiscommand.
+    not-in-party: "&cJe zit niet in een party. Gebruik &6/party invite [spelernaam] &com een party aan te maken."
+    # /party invite
+    invite:
+      # $1 = Spelernaam.
+      player-not-found: "&cGeen speler gevonden met naam '&6$1&c'"
+      player-is-self: "&dHet is geen party als je alleen bent!"
+      # $1 = Spelernaam.
+      player-is-in-a-party: "&6$1 &czit al in een party!"
+      sender-not-leader: "&cAlleen de partyleider kan spelers uitnodigen!"
+      player-is-in-sender-party: "&cDie speler zit al in jouw party!"
+      success: "&bUitnodiging gestuurd naar &6$1&b."
+    # /party join
+    join:
+      no-pending-invites: "&cJe hebt momenteel geen party-uitnodigingen."
+    # /party leave
+    leave:
+      not-in-party: "&cJe zit nu niet in een party."
+      # $1 = Naam van de partyleider.
+      success: "&bJe hebt de party van &6$1 &bverlaten."
+    # /party givelead
+    givelead:
+      not-in-party: "&cJe zit nu niet in een party."
+      not-party-lead: "&cAlleen de partyleider kan de leiding overdragen."
+      # $1 = Spelernaam.
+      player-not-found: "&cGeen speler met naam '&6$1&c' in de party."
+    # /party kick
+    kick:
+      not-in-party: "&cJe zit nu niet in een party."
+      not-party-lead: "&cAlleen de partyleider kan spelers kicken."
+      # $1 = Spelernaam.
+      player-not-found: "&cGeen speler met naam '&6$1&c' in de party."
+      player-is-self: "&dJe weet dat er ook een leave-commando is, toch?"
+    # /party disband
+    disband:
+      not-in-party: "&cJe zit nu niet in een party."
+      not-party-lead: "&cAlleen de partyleider kan de party disbanden."
+    # /party chat
+    chat:
+      not-in-party: "&cJe zit nu niet in een party."
+    # /party spy
+    spy:
+      enabled: "&aJe bekijkt nu party-berichten van andere spelers!"
+      disabled: "&cJe bekijkt geen party-berichten meer van anderen."
+
+#######################
+## INSTANCE BERICHTEN ##
+#######################
+# Berichten voor het draaien van dungeon-instances.
+
+instance:
+  menu:
+    difficulty-select: "&8Kies Moeilijkheid"
+  loading: "Dungeon laden..."
+  is-saving: "&cDungeon wordt opgeslagen! Even geduld en probeer opnieuw."
+  timed-out: "&cDungeon laden duurde te lang! Vraag een admin om de console te checken."
+  loaded: "Dungeon geladen!"
+  failed: "&cDungeon laden mislukt! Vraag een admin om de console te checken."
+  stealth-join: "&7Je bent als toeschouwer binnengekomen; je telt niet mee als deelnemer."
+  prevent-teleport-in: "&cJe kunt niet teleporteren naar een lopende dungeon!"
+  requirements:
+    # $1 = Naam van de speler die niet voldoet.
+    requirements-not-met: "&6$1 &cvoldoet niet aan de eisen van deze dungeon!"
+    # $1 = Maximale partygrootte.
+    party-too-big: "&cDeze dungeon accepteert max &6$1 &cspelers per party."
+    # $1 = Minimale partygrootte.
+    party-too-small: "&cDeze dungeon vereist minstens &6$1 &cspelers."
+    # $1 = Benodigde permissie.
+    no-permission: "&cMissende permissie: &6$1"
+    on-cooldown: "&cJe moet wachten voordat je deze dungeon weer kunt spelen!"
+    # $1 = Tijd waarop de dungeon weer beschikbaar is.
+    cooldown-time: "&eUnlockt op: &6$1"
+    # $1 = Dungeon die eerst afgerond moet zijn.
+    complete-required: "&cJe moet eerst de dungeon &6$1 &cvoltooien!"
+    # $1 = Benodigde hoeveelheid geld.
+    not-enough-money: "&cJe hebt niet genoeg geld om deze dungeon te spelen! Kosten: &6$1"
+    # $1 = Bedrag dat is afgeschreven.
+    money-deducted: "&eJe hebt &6$1 &ebetaald om de dungeon te betreden!"
+    # $1 = Naam van het verboden item.
+    banned-item: "&cDit item is verboden in deze dungeon: &6$1"
+    no-access-key: "&cJe mist een toegangssleutel voor deze dungeon!"
+  events:
+    # $1 = Speler die de dungeon verliet.
+    player-leave: "&6$1 &eheeft de dungeon verlaten."
+    # $1 = Speler die gekickt werd omdat hij/zij offline was.
+    player-kicked: "&6$1 &cis gekickt omdat die offline was!"
+    # $1 = Speler die is teruggekeerd.
+    player-returned: "&6$1 &ais teruggekeerd naar de dungeon!"
+    # $1 = Speler die een leven verloor.
+    # $2 = Aantal levens over.
+    life-lost: "&6$1 &cis gestorven! Hij/zij heeft nog &6$2 &clevens..."
+    # $1 = Speler die al z’n levens kwijt is.
+    all-lives-lost: "&6$1 &cheeft al z’n levens verloren!"
+    all-lives-lost-and-spectating: "&cAlle spelers hebben geen levens meer! Gebruik &6/dungeon leave &com te verlaten."
+    all-lives-lost-and-spectating-auto-close: "&cAlle spelers hebben geen levens meer! Dungeon wordt gesloten."
+    # $1 = Speler die sleutels erft.
+    key-inheritance: "&eDe sleutels zijn gegeven aan &6$1&e."
+    # $1 = Speler die dungeon-items erft.
+    dungeon-item-inheritance: "&eDe dungeon-items zijn gegeven aan &6$1&e."
+    enderpearl-deny: "&cEnderpearls zijn hier niet toegestaan!"
+    chorus-fruit-deny: "&cChorusfruit is hier niet toegestaan!"
+    bucket-deny: "&cEmmers zijn hier niet toegestaan!"
+    item-banned: "&cDit item is verboden in deze dungeon!"
+    command-deny: "&cDat command is niet toegestaan in deze dungeon!"
+    spectate-deny: "&cJe kunt geen spelers buiten de dungeon spectaten!"
+  queue:
+    # $1 = Naam van de dungeon.
+    dungeon-ready: "&eDungeon '&6$1&e' is nu beschikbaar! Ben je klaar?"
+    click-one: " &eKlik er één →  "
+    ready-button: "&b&l[KLAAR!] "
+    cancel-button: "&c&l[ANNULEREN] "
+    dungeon-ready-title: "&6Dungeon klaar!"
+    not-all-ready: "&cNiet alle spelers waren klaar! Wachtrij geannuleerd..."
+    all-ready: "&eAlle spelers zijn klaar. Dungeon betreden!"
+  editmode:
+    autosaving: "&e&lDungeon autosaven..."
+    autosaved: "&a&lAutosave klaar!"
+    function-select: "&eKies welke functie je hier wilt bouwen!"
+    # $1 = Naam van de geselecteerde functie.
+    function-selected: "&eFunctie geselecteerd: $1"
+    room-click-required: "&cJe moet op een blok klikken om een hoek te kiezen."
+    room-select-1: "&eEerste hoek geselecteerd."
+    room-select-2: "&eTweede hoek geselecteerd."
+    room-name-request: "&eWat is de naam van deze kamer? &bGebruik de roomtool opnieuw om te annuleren."
+    room-name-invalid: "&cKamernaam mag geen spaties of symbolen bevatten! Probeer opnieuw."
+    room-create-cancelled: "&eAanmaken van kamer geannuleerd."
+    # $1 = Nieuwe kamernaam.
+    room-created: "&aNieuwe kamer &6$1 &aaangemaakt!"
+    room-edit-cancelled: "&eNieuwe kamer-afbakening geannuleerd."
+    # $1 = Kamernaam.
+    room-edited: "&aGebied voor kamer &6$1 &aaangepast!"
+    room-connectors-outside: "&eLET OP! Er zitten connectors buiten het kamergebied!"
+    function-outside-room: "&cKan geen functies buiten een kamer plaatsen!"
+    room-whitelist:
+      add-prompt: "&eTyp de naam van de kamer die je wilt toevoegen, of rechtsklik op een blok erin."
+      # $1 = Kamernaam.
+      add-success: "&aKamer &6$1 &atoegevoegd aan de whitelist!"
+      edit-prompt: "&eTyp de naam van de kamer om gewicht aan te passen, of rechtsklik op een blok erin."
+      remove-prompt: "&eKlik de kamers die je van de whitelist wilt verwijderen."
+      # $1 = Kamernaam.
+      remove-success: "&cKamer &6$1 &cverwijderd van de whitelist."
+  rewards:
+    gui-display-name: "Beloningen"
+    # $1 = XP-bedrag.
+    xp-received: "&aJe hebt $1 experience gekregen!"
+    # $1 = Level-bedrag.
+    levels-received: "&aJe hebt $1 experiencelevels gekregen!"
+    rewards-inv-info: "&eDeze items gaan naar je belonings-inventaris! Je krijgt ze na afloop van de dungeon."
+    view-rewards-info: "&bBekijk je beloningen met &l/rewards"
+    already-received: "&cJe hebt deze beloning onlangs al opgehaald!"
+    # $1 = Wanneer beloningen weer beschikbaar zijn.
+    cooldown-time: "&eUnlockt op: &6$1"
+    on-cooldown: ""
+    added-to-inv: "&eNiet gepakte beloningen zijn aan je inventaris toegevoegd."
+    added-to-rewards-inv: "&eNiet gepakte beloningen zijn naar je belonings-inventaris verplaatst."
+    unclaimed-rewards: "&eJe hebt openstaande beloningen! &b&lKlik hier om ze te bekijken!"
+    invalid-loottable: "&cERROR: Deze kist heeft een ongeldige loottabel! Meld dit bij een admin!"
+  time-limit:
+    # $1 = Dungeonnaam.
+    ten-minute-warning: "&eNog 10 minuten om &6$1 &ete halen."
+    # $1 = Dungeonnaam.
+    five-minute-warning: "&eNog 5 minuten om &6$1 &ete halen."
+    # $1 = Dungeonnaam.
+    one-minute-warning: "&eNog 1 minuut om &6$1 &ete halen."
+    # $1 = Dungeonnaam.
+    times-up: "&cTijd is op!! Dungeon wordt afgesloten..."
+  functions:
+    start-dungeon-ready: "&eJe bent klaar om de dungeon te starten."
+    finish-dungeon: "&aJe hebt $1&a voltooid!"
+    checkpoint: "&eRespawn-checkpoint bereikt!"
+    savepoint: "&eJe start bij het laatste checkpoint van de partyleider!"
+    # $1 = Nieuw aantal levens.
+    # $2 = + of - verandering.
+    lives-editor: "&eJe hebt nu &6$1 &elevens. ($2&e)"
+    # $1 = Hoeveelheid item.
+    # $2 = Itemnaam.
+    item-dispenser: "&aJe kreeg &b$1 &6$2&a!"
+    # $1 = Dungeonnaam.
+    keys:
+      key-ground: "&eDe party heeft een sleutel gevonden! Hij ligt op de grond..."
+      # $1 = Spelernaam.
+      key-player: "&6$1 &eheeft een sleutel gevonden!"
+      # $1 = Partyleider.
+      key-leader: "&eDe party vond een sleutel! De sleutel is gegeven aan &6$1"
+    doors:
+      lock: "&cDe deur gaat op slot!"
+      unlock: "&aDe deur gaat open!"
+      # $1 = Sleutel-item.
+      locked-key: "&cDe deur zit op slot! Je hebt een &6$1 &cnodig!"
+      locked: "&cDe deur zit op slot!"
+    reviver:
+      no-uses: "&cDeze reviver kan geen spelers meer terugbrengen!"
+      infinite-uses: "&aJe kunt deze reviver onbeperkt gebruiken."
+      # $1 = Resterende keren.
+      uses-remaining: "&aJe kunt deze reviver nog &6$1 &akeer gebruiken."
+      # $1 = Speler die we proberen te reviven.
+      not-in-dungeon: "&cGeprobeerd om &6$1&c te reviven, maar die zit niet meer in de dungeon!"
+      not-dead: "&cDeze speler is niet dood!"
+      # $1 = Speler die is gerevived.
+      revived: "&a&l$1 &ais gerevived!!"
+
+####################
+## PARTY BERICHTEN ##
+####################
+# Berichten rondom het party-systeem.
+party:
+  prefix: "&b[Party]"
+  invite:
+    # $1 = Naam van de uitnodiger.
+    message: "&6$1 &bheeft je uitgenodigd voor de party."
+    join-prompt: "&e&l[JOINEN]"
+    # $1 = Naam van de uitnodiger.
+    expired: "&cDe party-uitnodiging van &6$1 &cis verlopen..."
+  # $1 = Naam van de speler die joint.
+  join: "&6$1 &bis gejoined!"
+  # $1 = Naam van de speler die vertrekt.
+  leave: "&6$1 &bheeft de party verlaten!"
+  kick:
+    # $1 = Naam van de eigenaar die kickte.
+    kicked-player-alert: "&cJe bent gekickt uit de party van &6$1&c."
+    # $1 = Naam van de gekickte speler.
+    party-kicked-player-alert: "&6$1 &cis uit de party gekickt."
+    # $1 = Naam van speler die te lang offline was.
+    offline-too-long: "&6$1 &cis uit de party gekickt omdat die te lang offline was!"
+  disband: "&cDe party is opgeheven."
+  new-leader:
+    # $1 = Naam van de nieuwe partyleider.
+    success: "&6$1 &bis nu de partyleider!"
+    # $1 = Speler die leider zou worden.
+    failure: "&cSpeler &6$1 &cis geen partylid."
+  # Getoond bij /party
+  # $1 = Naam van de partyleider.
+  info: "&b&lParty van &6$1"
+  # $1 = Naam van speler die inlogt.
+  login: "&6$1 &bis teruggekeerd in de party."
+  # $1 = Naam van speler die uitlogt.
+  logout: "&6$1 &bis uitgelogd."
+  # Getoond wanneer recruitment is geannuleerd omdat de leider wegging.
+  recruit:
+    # $1 = Naam van de host.
+    # $2 = Naam van de recruitment listing.
+    listing: "&6&l$1 &erecruite voor '&b$2&e'!"
+    cancel-leader-left: "&cRecruitment geannuleerd omdat de partyleider weg is."
+    join:
+      button: "&b&l--[KLIK OM TE JOINEN]--"
+      cancel: "&cJoinen van deze recruitment geannuleerd..."
+    already-in-party: "&cJe zit al in deze party!"
+    listing-expired: "&cDeze party is niet langer aan het recruiten!"
+    password:
+      request: "&eVoer het wachtwoord in voor deze recruitment."
+      no-spaces: "&cWachtwoorden mogen geen spaties bevatten!"
+      incorrect: "&cOnjuist wachtwoord, probeer opnieuw! (Let op hoofdletters.)"
+      correct: "&bWachtwoord geaccepteerd!"
+    # $1 = Party grootte
+    complete: "&bRecruitment compleet! &a$1/$1 &bspelers gevonden!"
+  chat:
+    enable: "&bPartychat ingeschakeld."
+    disable: "&bPartychat uitgeschakeld."
+    # $1 = Weergavenaam van de zender.
+    # $2 = Bericht.
+    format: "&b[Party] &6$1&f: &b$2"
+    # $1 = Naam van de partyleider van de zender.
+    # $2 = Weergavenaam van de zender.
+    # $3 = Bericht.
+    spy-format: "&7[Party van $1] &f&6$2&f: &b$3"
+
+############################
+## DIVERSEN BERICHTEN ##
+############################
+# Berichten die niet in een andere categorie vallen.
+
+misc:
+  item-dropped: "&cJe inventaris zit vol! Item is op de grond gedropt..."
+  rewards-unavailable: "&cNiet alle beloningen zijn voor jou beschikbaar in deze dungeon!"

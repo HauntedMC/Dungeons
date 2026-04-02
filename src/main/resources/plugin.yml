@@ -1,0 +1,59 @@
+name: Dungeons
+prefix: Dungeons
+version: ${project.version}
+main: nl.hauntedmc.dungeons.Dungeons
+api-version: 1.16
+author: HauntedMC
+softdepend:
+  - PlaceholderAPI
+  - Vault
+commands:
+  dungeon:
+    description: The core command.
+    aliases: [ dungeons , hd ]
+    permission: dungeons.core
+  ready:
+    description: Used to ready up when in-queue for a dungeon.
+    permission: dungeons.ready
+  notready:
+    description: Used to cancel a queue for a dungeon.
+    permission: dungeons.notready
+  recruit:
+    description: Used to create and join party listings.
+    permission: dungeons.recruit
+  dungeonrewards:
+    description: Used to view the rewards inventory
+    aliases: [ drewards ]
+    permission: dungeons.rewards
+permissions:
+  dungeons.*:
+    description: Gives all the permissions.
+    children:
+      dungeons.core: true
+      dungeons.quickleave: true
+      dungeons.ready: true
+      dungeons.notready: true
+      dungeons.recruit: true
+      dungeons.quickstuck: true
+      dungeons.rewards: true
+  dungeons.core:
+    description: dungeons core command permission.
+    default: true
+  dungeons.quickleave:
+    description: dungeons shorthand leave permission.
+    default: true
+  dungeons.ready:
+    description: dungeons ready up permission.
+    default: true
+  dungeons.notready:
+    description: dungeons unready permission.
+    default: true
+  dungeons.recruit:
+    description: dungeons recruit permission.
+    default: true
+  dungeons.quickstuck:
+    description: dungeons shorthand stuck permission.
+    default: true
+  dungeons.rewards:
+    description: dungeons rewards permission.
+    default: true
