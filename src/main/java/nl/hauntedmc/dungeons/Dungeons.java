@@ -66,8 +66,8 @@ import nl.hauntedmc.dungeons.managers.TriggerManager;
 import nl.hauntedmc.dungeons.player.DungeonPlayer;
 import nl.hauntedmc.dungeons.player.party.DungeonPartyWrapper;
 import nl.hauntedmc.dungeons.util.file.LangUtils;
-import nl.hauntedmc.dungeons.util.version.ReflectionUtils;
 import nl.hauntedmc.dungeons.util.HelperUtils;
+import nl.hauntedmc.dungeons.util.reflection.ClassReflectionUtils;
 import nl.hauntedmc.dungeons.util.tasks.ProcessTimer;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -92,7 +92,7 @@ public final class Dungeons extends JavaPlugin {
     private Material roomEditorMaterial;
     private boolean stuckKillsPlayer;
     private boolean inheritedVelocityEnabled;
-    private GUIAPI GUIAPI;
+    private GUIAPI guiApi;
     private Economy economy;
     private boolean partiesEnabled;
     private String partyPluginName;
@@ -113,52 +113,87 @@ public final class Dungeons extends JavaPlugin {
     private final DynamicListener elementEventHandler = new DynamicListener();
     private final DynamicListener instanceEventHandler = new DynamicListener();
 
+    @Override
     public void onEnable() {
-        Dungeons plugin = this;
+        this.initializePluginState();
+        this.ensureDataDirectories();
+        this.initializeLanguageResources();
+        this.loadRuntimeConfiguration();
+        this.registerConfigurationSerializers();
+        this.initializeManagers();
+        this.registerCoreListeners();
+        this.initializePartySupport();
+        this.registerOptionalIntegrations();
+        this.setupEconomy();
+        this.registerElementSerialization();
+        this.registerRuntimeTypes();
+        this.initializeGuiMenus();
+        this.loadDungeonManager();
+        this.restoreOnlinePlayers();
+        this.logStartupSummary();
+    }
+
+    private void initializePluginState() {
         this.saveDefaultConfig();
         this.config = this.getConfig();
         this.defaultDungeonConfig = new YamlConfiguration();
         this.thirdPartyProvider = false;
         logPrefix = HelperUtils.fullColor("<#9753f5>[Dungeons] ");
+    }
 
-        this.dungeonFiles = new File(plugin.getDataFolder(), "maps");
-        this.backupFolder = new File(plugin.getDataFolder(), "backups");
-        if (!this.backupFolder.exists() || !this.backupFolder.isDirectory()) {
-            this.backupFolder.mkdir();
+    private void ensureDataDirectories() {
+        this.dungeonFiles = new File(this.getDataFolder(), "maps");
+        this.backupFolder = new File(this.getDataFolder(), "backups");
+        this.createDirectory(this.dungeonFiles);
+        this.createDirectory(this.backupFolder);
+        this.createDirectory(new File(this.getDataFolder(), "globalplayerdata"));
+    }
+
+    private void createDirectory(File directory) {
+        if (!directory.exists()) {
+            directory.mkdir();
         }
+    }
 
-        File playerDataFolder = new File(plugin.getDataFolder(), "globalplayerdata");
-        if (!playerDataFolder.exists()) {
-            playerDataFolder.mkdir();
-        }
-
+    private void initializeLanguageResources() {
         LangUtils.init();
         LangUtils.saveMissingValues();
+    }
 
-        try {
-            this.functionBuilderMaterial = Material.getMaterial(this.config.getString("General.FunctionBuilderItem", "FEATHER"));
-        } catch (IllegalArgumentException var6) {
-            inst().getLogger().info(HelperUtils.colorize("&cWARNING :: FunctionBuilderItem in config.yml must be a valid material! Using FEATHER by default..."));
-            this.functionBuilderMaterial = Material.FEATHER;
-        }
-
-        try {
-            this.roomEditorMaterial = Material.getMaterial(this.config.getString("General.RoomEditorItem", "GOLDEN_AXE"));
-        } catch (IllegalArgumentException var5) {
-            inst().getLogger().info(HelperUtils.colorize("&cWARNING :: RoomEditorItem in config.yml must be a valid material! Using GOLDEN_AXE by default..."));
-            this.roomEditorMaterial = Material.GOLDEN_AXE;
-        }
-
+    private void loadRuntimeConfiguration() {
+        this.loadConfiguredMaterials();
         this.stuckKillsPlayer = this.config.getBoolean("General.StuckKillsPlayer", false);
         this.inheritedVelocityEnabled = this.config.getBoolean("Experimental.MovingBlocksMoveEntities", false);
-        this.GUIAPI = new GUIAPI(this);
+        this.partyPluginName = this.config.getString("General.PartyPlugin", "Default");
+    }
+
+    private void loadConfiguredMaterials() {
+        this.functionBuilderMaterial = this.readConfiguredMaterial("General.FunctionBuilderItem", Material.FEATHER, "FunctionBuilderItem");
+        this.roomEditorMaterial = this.readConfiguredMaterial("General.RoomEditorItem", Material.GOLDEN_AXE, "RoomEditorItem");
+    }
+
+    private Material readConfiguredMaterial(String path, Material fallback, String label) {
+        String configured = this.config.getString(path, fallback.name());
+        Material material = Material.getMaterial(configured);
+        if (material != null) {
+            return material;
+        }
+
+        inst().getLogger().info(HelperUtils.colorize("&cWARNING :: " + label + " in config.yml must be a valid material! Using " + fallback.name() + " by default..."));
+        return fallback;
+    }
+
+    private void registerConfigurationSerializers() {
         ConfigurationSerialization.registerClass(PlayerLootData.class);
         ConfigurationSerialization.registerClass(LootCooldown.class);
         ConfigurationSerialization.registerClass(FunctionTargetType.class);
         ConfigurationSerialization.registerClass(LootTable.class);
         ConfigurationSerialization.registerClass(LootTableItem.class);
         ConfigurationSerialization.registerClass(VariableEditMode.class);
-        this.partyPluginName = this.config.getString("General.PartyPlugin", "Default");
+    }
+
+    private void initializeManagers() {
+        this.guiApi = new GUIAPI(this);
         this.playerManager = new PlayerManager();
         this.providerManager = new PartyProviderManager();
         this.activeInstances = new ArrayList<>();
@@ -167,44 +202,51 @@ public final class Dungeons extends JavaPlugin {
         this.conditionManager = new ConditionManager();
         this.queueManager = new QueueManager();
         this.lootTableManager = new LootTableManager();
-        new CommandManager(this);
         this.movingBlockManager = new MovingBlockManager();
-        Bukkit.getPluginManager().registerEvents(new DungeonListener(), this);
+        new CommandManager(this);
+    }
 
+    private void registerCoreListeners() {
+        Bukkit.getPluginManager().registerEvents(new DungeonListener(), this);
+        Bukkit.getPluginManager().registerEvents(new HotbarMenuManager(), this);
+    }
+
+    private void initializePartySupport() {
         if (this.partyPluginName.equalsIgnoreCase("Default")) {
             this.partiesEnabled = true;
             this.listingManager = new PartyRecruitmentManager();
             RecruitGUIHandler.initPartyBrowser();
-        } else if (this.partyPluginName.equalsIgnoreCase("None")) {
-            this.partiesEnabled = false;
-        } else {
-            if (Bukkit.getPluginManager().getPlugin(this.partyPluginName) != null) {
-                this.partiesEnabled = true;
-
-                if (Bukkit.getPluginManager().getPlugin(this.partyPluginName) == null) {
-                    this.partiesEnabled = false;
-                    inst().getLogger().info(HelperUtils.colorize("&cERROR :: '" + this.partyPluginName + "' was not found! Party support not enabled."));
-                }
-
-                if (this.partiesEnabled) {
-                    inst().getLogger().info(HelperUtils.fullColor("&d" + this.partyPluginName + " plugin found! Enabled party support."));
-                    RecruitGUIHandler.initPartyBrowser();
-                    DungeonPartyWrapper.setPartyPlugin(this.partyPluginName);
-                }
-            } else {
-                inst().getLogger().info(HelperUtils.colorize("&cERROR :: Party plugin is set to '" + this.partyPluginName + "', but no such plugin was found!"));
-            }
+            return;
         }
 
-        HotbarMenuManager hotbarMenus = new HotbarMenuManager();
-        Bukkit.getPluginManager().registerEvents(hotbarMenus, this);
+        if (this.partyPluginName.equalsIgnoreCase("None")) {
+            this.partiesEnabled = false;
+            return;
+        }
 
+        if (Bukkit.getPluginManager().getPlugin(this.partyPluginName) == null) {
+            inst().getLogger().info(HelperUtils.colorize("&cERROR :: Party plugin is set to '" + this.partyPluginName + "', but no such plugin was found!"));
+            this.partiesEnabled = false;
+            return;
+        }
+
+        this.partiesEnabled = true;
+        inst().getLogger().info(HelperUtils.fullColor("&d" + this.partyPluginName + " plugin found! Enabled party support."));
+        RecruitGUIHandler.initPartyBrowser();
+        DungeonPartyWrapper.setPartyPlugin(this.partyPluginName);
+    }
+
+    private void registerOptionalIntegrations() {
         if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
             new PAPIPlaceholders().register();
         }
+    }
 
-        this.setupEconomy();
+    private void registerElementSerialization() {
         SerializableFile.register(this);
+    }
+
+    private void registerRuntimeTypes() {
         this.registerInstanceListener(PlayListener.class);
         this.registerInstanceListener(EditListener.class);
         this.registerDungeonType(DungeonClassic.class, "classic", "default");
@@ -219,10 +261,9 @@ public final class Dungeons extends JavaPlugin {
         this.registerConditions("nl.hauntedmc.dungeons.dungeons.conditions");
         this.registerFunction(FunctionLootTableRewards.class);
         this.registerTrigger(TriggerMobDeath.class);
+    }
 
-        inst().getLogger().info(HelperUtils.fullColor("&d* Loaded &6" + this.functionManager.getAll().size() + " &dfunctions."));
-        inst().getLogger().info(HelperUtils.fullColor("&d* Loaded &6" + this.triggerManager.getAll().size() + " &dtriggers."));
-        inst().getLogger().info(HelperUtils.fullColor("&d* Loaded &6" + this.conditionManager.getAll().size() + " &dconditions."));
+    private void initializeGuiMenus() {
         GUIHandler.initFunctionMenu();
         GUIHandler.initTriggerMenu();
         GUIHandler.initConditionsMenus();
@@ -237,13 +278,22 @@ public final class Dungeons extends JavaPlugin {
         HotbarMenuHandler.initRoomEditMenu();
         HotbarMenuHandler.initRoomRulesMenu();
         inst().getLogger().info(HelperUtils.fullColor("&dGUI menus initialized!"));
-        this.dungeons = new DungeonManager();
-        if (!Bukkit.getOnlinePlayers().isEmpty()) {
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                plugin.getPlayerManager().put(player);
-            }
-        }
+    }
 
+    private void loadDungeonManager() {
+        this.dungeons = new DungeonManager();
+    }
+
+    private void restoreOnlinePlayers() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            this.playerManager.put(player);
+        }
+    }
+
+    private void logStartupSummary() {
+        inst().getLogger().info(HelperUtils.fullColor("&d* Loaded &6" + this.functionManager.getAll().size() + " &dfunctions."));
+        inst().getLogger().info(HelperUtils.fullColor("&d* Loaded &6" + this.triggerManager.getAll().size() + " &dtriggers."));
+        inst().getLogger().info(HelperUtils.fullColor("&d* Loaded &6" + this.conditionManager.getAll().size() + " &dconditions."));
         inst().getLogger().info(HelperUtils.fullColor("&dDungeons v" + this.getVersion() + " &ainitialized! Happy dungeon-ing!"));
     }
 
@@ -309,15 +359,7 @@ public final class Dungeons extends JavaPlugin {
     public void reloadConfigs() {
         this.reloadConfig();
         this.config = this.getConfig();
-
-        try {
-            this.functionBuilderMaterial = Material.getMaterial(this.config.getString("General.FunctionBuilderItem", "FEATHER"));
-        } catch (IllegalArgumentException var2) {
-            inst().getLogger().info(HelperUtils.colorize("&cWARNING: FunctionBuilderItem in config.yml must be a valid material! Using FEATHER by default..."));
-            this.functionBuilderMaterial = Material.FEATHER;
-        }
-
-        this.stuckKillsPlayer = this.config.getBoolean("General.StuckKillsPlayer", false);
+        this.loadRuntimeConfiguration();
         LangUtils.init();
         this.lootTableManager = new LootTableManager();
     }
@@ -453,7 +495,7 @@ public final class Dungeons extends JavaPlugin {
 
     public <T extends InstanceListener> void registerInstanceListener(Class<T> type) {
         List<Method> eventMethods = new ArrayList<>();
-        ReflectionUtils.getAnnotatedMethods(eventMethods, type, EventHandler.class);
+        ClassReflectionUtils.collectAnnotatedMethods(eventMethods, type, EventHandler.class);
 
         for (Method method : eventMethods) {
             EventHandler handler = method.getAnnotation(EventHandler.class);
@@ -587,8 +629,13 @@ public final class Dungeons extends JavaPlugin {
         return this.inheritedVelocityEnabled;
     }
 
+    public GUIAPI getGuiApi() {
+        return this.guiApi;
+    }
+
+    @Deprecated(forRemoval = false)
     public GUIAPI getAvnAPI() {
-        return this.GUIAPI;
+        return this.getGuiApi();
     }
 
     public Economy getEconomy() {

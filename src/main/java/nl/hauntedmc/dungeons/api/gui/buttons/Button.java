@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 import nl.hauntedmc.dungeons.api.gui.actions.Action;
-import nl.hauntedmc.dungeons.api.gui.utility.StringUtils;
+import nl.hauntedmc.dungeons.api.gui.text.GuiTextUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
@@ -25,7 +25,7 @@ public class Button {
       this.id = id;
       this.item = new ItemStack(mat);
       ItemMeta meta = this.item.getItemMeta();
-      meta.displayName(StringUtils.component(display));
+      meta.displayName(GuiTextUtils.component(display));
       meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
       this.item.setItemMeta(meta);
       this.commands = new ArrayList<>();
@@ -82,18 +82,18 @@ public class Button {
 
    public final void setDisplayName(String display) {
       ItemMeta meta = this.item.getItemMeta();
-      meta.displayName(StringUtils.component(display));
+      meta.displayName(GuiTextUtils.component(display));
       this.item.setItemMeta(meta);
    }
 
    public final String getDisplayName() {
       ItemMeta meta = this.item.getItemMeta();
-      return StringUtils.serialize(meta.displayName());
+      return GuiTextUtils.serialize(meta.displayName());
    }
 
    public final void setLore(List<String> lore) {
       ItemMeta meta = this.item.getItemMeta();
-      meta.lore(StringUtils.components(lore));
+      meta.lore(GuiTextUtils.components(lore));
       this.item.setItemMeta(meta);
    }
 
@@ -106,7 +106,7 @@ public class Button {
          lore = new ArrayList<>(meta.lore());
       }
 
-      lore.addAll(StringUtils.components(lines));
+      lore.addAll(GuiTextUtils.components(lines));
       meta.lore(lore);
       this.item.setItemMeta(meta);
    }
@@ -120,7 +120,7 @@ public class Button {
          lore = new ArrayList<>(meta.lore());
       }
 
-      lore.add(StringUtils.component(line));
+      lore.add(GuiTextUtils.component(line));
       meta.lore(lore);
       this.item.setItemMeta(meta);
    }

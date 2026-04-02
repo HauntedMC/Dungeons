@@ -61,7 +61,7 @@ public class FunctionRevivePlayer extends DungeonFunction {
             }
 
             aPlayer.setActiveFunction(this);
-            Dungeons.inst().getAvnAPI().openGUI(player, "revivalmenu");
+            Dungeons.inst().getGuiApi().openGUI(player, "revivalmenu");
          }
       }
    }

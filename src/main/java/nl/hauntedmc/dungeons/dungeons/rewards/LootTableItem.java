@@ -47,7 +47,7 @@ public class LootTableItem implements ConfigurationSerializable {
       Button backButton = new Button("back", Material.RED_STAINED_GLASS_PANE, "&cBack");
       backButton.addAction("click", event -> {
          Player player = (Player)event.getWhoClicked();
-         Dungeons.inst().getAvnAPI().openGUI(player, "loottable_" + table.getNamespace());
+         Dungeons.inst().getGuiApi().openGUI(player, "loottable_" + table.getNamespace());
       });
       this.itemMenu.addButton(4, backButton);
       Button minButton = new Button("min", Material.COAL, "&aMinimum Items");

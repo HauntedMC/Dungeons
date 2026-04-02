@@ -245,7 +245,7 @@ public class LootTable implements ConfigurationSerializable {
 
    private void editLootItem(LootTableItem lootItem, Player player) {
       lootItem.loadMenu(this);
-      Dungeons.inst().getAvnAPI().openGUI(player, "loottable_" + this.namespace + "_item");
+      Dungeons.inst().getGuiApi().openGUI(player, "loottable_" + this.namespace + "_item");
    }
 
    private void updateMinButton(Button minButton) {

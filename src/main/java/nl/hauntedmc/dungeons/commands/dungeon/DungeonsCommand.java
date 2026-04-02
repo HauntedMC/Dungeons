@@ -58,12 +58,12 @@ public class DungeonsCommand extends Command<Dungeons> {
          return true;
       } else {
          LootTableManager lootTableManager = this.getPlugin().getLootTableManager();
-         GUIAPI GUIAPI = this.getPlugin().getAvnAPI();
+         GUIAPI guiApi = this.getPlugin().getGuiApi();
          QueueManager queueManager = this.getPlugin().getQueueManager();
          String var7 = args[0];
           return switch (var7) {
               case "help" -> handleHelpCommand(sender, args);
-              case "loot" -> handleLootCommand(sender, args, lootTableManager, GUIAPI);
+              case "loot" -> handleLootCommand(sender, args, lootTableManager, guiApi);
               case "play" -> this.handlePlayCommand(sender, args, queueManager);
               case "stuck" -> this.handleStuckCommand(sender, args);
               case "lives" -> this.handleLivesCommand(sender);
@@ -1268,7 +1268,7 @@ public class DungeonsCommand extends Command<Dungeons> {
             if (useDifficulty) {
                if (difficulty.isEmpty()) {
                   if (showMenu) {
-                     this.getPlugin().getAvnAPI().openGUI(playerx, "difficulty_" + dungeon.getWorldName());
+                     this.getPlugin().getGuiApi().openGUI(playerx, "difficulty_" + dungeon.getWorldName());
                      return true;
                   }
                } else if (!HelperUtils.hasPermission(sender, "dungeons.play.difficulty")) {
@@ -1283,7 +1283,7 @@ public class DungeonsCommand extends Command<Dungeons> {
 
    }
 
-   private static boolean handleLootCommand(CommandSender sender, String[] args, LootTableManager lootTableManager, GUIAPI GUIAPI) {
+   private static boolean handleLootCommand(CommandSender sender, String[] args, LootTableManager lootTableManager, GUIAPI guiApi) {
       if (!(sender instanceof Player player)) {
          return true;
       } else if (!HelperUtils.hasPermission(sender, "dungeons.loottables")) {
@@ -1307,7 +1307,7 @@ public class DungeonsCommand extends Command<Dungeons> {
 
                      lootTableManager.put(new LootTable(args[2]));
                      LangUtils.sendMessage(player, "commands.loot.create.success", args[2]);
-                     GUIAPI.openGUI(player, "loottable_" + args[2]);
+                     guiApi.openGUI(player, "loottable_" + args[2]);
                   }
                    return true;
                 case "remove":
@@ -1333,7 +1333,7 @@ public class DungeonsCommand extends Command<Dungeons> {
                         }
 
                         table.setEditor(player);
-                        GUIAPI.openGUI(player, "loottable_" + args[2]);
+                        guiApi.openGUI(player, "loottable_" + args[2]);
                      }
                   }
                    return true;

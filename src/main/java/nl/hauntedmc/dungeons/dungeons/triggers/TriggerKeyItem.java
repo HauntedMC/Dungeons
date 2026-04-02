@@ -137,7 +137,7 @@ public class TriggerKeyItem extends DungeonTrigger {
          @Override
          public void onSelect(PlayerEvent event) {
             Player player = event.getPlayer();
-            Dungeons.inst().getAvnAPI().openGUI(player, "selectitem_trigger");
+            Dungeons.inst().getGuiApi().openGUI(player, "selectitem_trigger");
          }
       });
       this.menu.addMenuItem(new ToggleMenuItem() {

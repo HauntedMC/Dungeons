@@ -5,7 +5,7 @@ import java.util.*;
 import javax.annotation.Nullable;
 import nl.hauntedmc.dungeons.Dungeons;
 import nl.hauntedmc.dungeons.api.annotations.SavedField;
-import nl.hauntedmc.dungeons.util.version.ReflectionUtils;
+import nl.hauntedmc.dungeons.util.reflection.ClassReflectionUtils;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.MemorySection;
 import org.bukkit.plugin.Plugin;
@@ -31,7 +31,7 @@ public interface SerializableFile {
    default void initFields(Map<String, Object> values) {
       try {
          List<Field> fields = new ArrayList<>();
-         ReflectionUtils.getAnnotatedFields(fields, this.getClass(), SavedField.class);
+         ClassReflectionUtils.collectAnnotatedFields(fields, this.getClass(), SavedField.class);
          for (Field field : fields) {
             field.setAccessible(true);
             SavedField saveData = field.getAnnotation(SavedField.class);
@@ -120,7 +120,7 @@ public interface SerializableFile {
       Map<String, Object> values = new HashMap<>();
       try {
          List<Field> fields = new ArrayList<>();
-         ReflectionUtils.getAnnotatedFields(fields, this.getClass(), SavedField.class);
+         ClassReflectionUtils.collectAnnotatedFields(fields, this.getClass(), SavedField.class);
          for (Field field : fields) {
             field.setAccessible(true);
             String configVar = field.getName();

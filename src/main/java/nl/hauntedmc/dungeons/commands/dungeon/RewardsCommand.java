@@ -17,7 +17,7 @@ public class RewardsCommand extends Command<Dungeons> {
       if (!(sender instanceof Player player)) {
          return false;
       } else {
-         this.getPlugin().getAvnAPI().openGUI(player, "rewards");
+         this.getPlugin().getGuiApi().openGUI(player, "rewards");
          return true;
       }
    }

@@ -11,7 +11,7 @@ import nl.hauntedmc.dungeons.api.parents.instances.AbstractInstance;
 import nl.hauntedmc.dungeons.listeners.ElementListener;
 import nl.hauntedmc.dungeons.gui.hotbar.DungeonPlayerHotbarMenu;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
-import nl.hauntedmc.dungeons.util.version.ReflectionUtils;
+import nl.hauntedmc.dungeons.util.reflection.ClassReflectionUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
@@ -44,7 +44,7 @@ public abstract class DungeonElement implements ConfigurationSerializable {
       if (this.config != null) {
          try {
             List<Field> fields = new ArrayList<>();
-            ReflectionUtils.getAnnotatedFields(fields, this.getClass(), SavedField.class);
+            ClassReflectionUtils.collectAnnotatedFields(fields, this.getClass(), SavedField.class);
 
             for (Field field : fields) {
                field.setAccessible(true);
@@ -91,7 +91,7 @@ public abstract class DungeonElement implements ConfigurationSerializable {
 
       try {
          List<Field> fields = new ArrayList<>();
-         ReflectionUtils.getAllFields(fields, this.getClass());
+         ClassReflectionUtils.collectAllFields(fields, this.getClass());
 
          for (Field field : fields) {
             field.setAccessible(true);

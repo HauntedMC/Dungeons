@@ -110,7 +110,7 @@ public class FunctionGiveItem extends DungeonFunction {
          @Override
          public void onSelect(PlayerEvent event) {
             Player player = event.getPlayer();
-            Dungeons.inst().getAvnAPI().openGUI(player, "selectitem_function");
+            Dungeons.inst().getGuiApi().openGUI(player, "selectitem_function");
          }
       });
       this.menu.addMenuItem(new ToggleMenuItem() {

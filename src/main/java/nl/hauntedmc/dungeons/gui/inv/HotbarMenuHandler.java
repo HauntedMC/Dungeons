@@ -63,7 +63,7 @@ public class HotbarMenuHandler {
          @Override
          public void onSelect(PlayerEvent event) {
             Player player = event.getPlayer();
-            Dungeons.inst().getAvnAPI().openGUI(player, "triggermenu");
+            Dungeons.inst().getGuiApi().openGUI(player, "triggermenu");
          }
       });
       functionEditMenu.addMenuItem(new MenuItem() {
@@ -544,7 +544,7 @@ public class HotbarMenuHandler {
             DungeonPlayer aPlayer = Dungeons.inst().getDungeonPlayer(player);
             DungeonRoomContainer room = aPlayer.getActiveRoom();
             if (room != null) {
-               Dungeons.inst().getAvnAPI().openGUI(player, "whitelist_" + room.getDungeon().getWorldName() + "_" + room.getNamespace());
+               Dungeons.inst().getGuiApi().openGUI(player, "whitelist_" + room.getDungeon().getWorldName() + "_" + room.getNamespace());
             }
          }
       });

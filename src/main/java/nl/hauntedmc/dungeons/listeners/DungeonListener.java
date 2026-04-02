@@ -143,7 +143,7 @@ public class DungeonListener implements Listener {
 
                            LangUtils.sendMessage(player, "instance.editmode.function-select");
                            aPlayer.setTargetLocation(blockLoc);
-                           Dungeons.inst().getAvnAPI().openGUI(player, "functionmenu");
+                           Dungeons.inst().getGuiApi().openGUI(player, "functionmenu");
                         }
                      }
                   }
