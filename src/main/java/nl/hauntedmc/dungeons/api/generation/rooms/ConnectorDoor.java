@@ -136,7 +136,7 @@ public class ConnectorDoor implements SerializableFile {
       for (SimpleLocation rawLoc : this.locations) {
          Location loc = rawLoc.asLocation(player.getWorld());
          BoundingBox blockBox = new BoundingBox(loc.getX(), loc.getY(), loc.getZ(), loc.getX() + 1.0, loc.getY() + 1.0, loc.getZ() + 1.0);
-         ParticleUtils.displayBoundingBox(player, ParticleUtils.getVersionParticle("DUST"), new DustOptions(Color.LIME, 0.25F), blockBox);
+         ParticleUtils.displayBoundingBox(player, Particle.DUST, new DustOptions(Color.LIME, 0.25F), blockBox);
          loc.setX(loc.getX() + 0.5);
          loc.setY(loc.getY() + 0.7);
          loc.setZ(loc.getZ() + 0.5);

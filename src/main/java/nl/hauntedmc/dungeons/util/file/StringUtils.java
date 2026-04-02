@@ -5,10 +5,8 @@ import java.util.Date;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import net.md_5.bungee.api.ChatColor;
-import net.md_5.bungee.api.chat.ClickEvent;
-import net.md_5.bungee.api.chat.TextComponent;
-import net.md_5.bungee.api.chat.ClickEvent.Action;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
 import nl.hauntedmc.dungeons.Dungeons;
 import nl.hauntedmc.dungeons.util.HelperUtils;
 import org.bukkit.command.CommandSender;
@@ -36,24 +34,18 @@ public final class StringUtils {
    }
 
    public static void sendClickableLink(Player player, String message, String url) {
-      TextComponent component = new TextComponent(TextComponent.fromLegacyText(ChatColor.translateAlternateColorCodes('&', message)));
-      component.setClickEvent(new ClickEvent(Action.OPEN_URL, url));
-      player.spigot().sendMessage(component);
+      player.sendMessage(HelperUtils.component(message).clickEvent(ClickEvent.openUrl(url)));
    }
 
    public static void sendClickableCommand(Player player, String message, String command) {
-      TextComponent component = new TextComponent(TextComponent.fromLegacyText(ChatColor.translateAlternateColorCodes('&', message)));
-      component.setClickEvent(new ClickEvent(Action.RUN_COMMAND, "/" + command));
-      player.spigot().sendMessage(component);
+      player.sendMessage(HelperUtils.component(message).clickEvent(ClickEvent.runCommand("/" + command)));
    }
 
    public static void sendReadyCheckMessage(Player player) {
-      TextComponent component = new TextComponent(TextComponent.fromLegacyText(LangUtils.getMessage("instance.queue.click-one")));
-      TextComponent componentA = new TextComponent(TextComponent.fromLegacyText(LangUtils.getMessage("instance.queue.ready-button", false)));
-      componentA.setClickEvent(new ClickEvent(Action.RUN_COMMAND, "/ready"));
-      TextComponent componentB = new TextComponent(TextComponent.fromLegacyText(LangUtils.getMessage("instance.queue.cancel-button", false)));
-      componentB.setClickEvent(new ClickEvent(Action.RUN_COMMAND, "/notready"));
-      player.spigot().sendMessage(component, componentA, componentB);
+      Component message = HelperUtils.component(LangUtils.getMessage("instance.queue.click-one"))
+         .append(HelperUtils.component(LangUtils.getMessage("instance.queue.ready-button", false)).clickEvent(ClickEvent.runCommand("/ready")))
+         .append(HelperUtils.component(LangUtils.getMessage("instance.queue.cancel-button", false)).clickEvent(ClickEvent.runCommand("/notready")));
+      player.sendMessage(message);
    }
 
    public static String formatDate(Date date) {

@@ -1,7 +1,6 @@
 package nl.hauntedmc.dungeons.util;
 
 import com.google.common.collect.Lists;
-import java.awt.Color;
 import java.io.File;
 import java.sql.Timestamp;
 import java.util.*;
@@ -13,20 +12,20 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import net.md_5.bungee.api.ChatColor;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import nl.hauntedmc.dungeons.Dungeons;
 import nl.hauntedmc.dungeons.api.blocks.MovingBlock;
 import nl.hauntedmc.dungeons.api.parents.instances.InstancePlayable;
-import nl.hauntedmc.dungeons.util.file.ColorUtils;
 import nl.hauntedmc.dungeons.util.math.MathUtils;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
@@ -35,35 +34,31 @@ import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.util.BoundingBox;
 
 public final class HelperUtils {
+   private static final Pattern ANGLE_HEX_PATTERN = Pattern.compile("<(#[a-fA-F0-9]{6})>");
+   private static final LegacyComponentSerializer LEGACY_COMPONENT_SERIALIZER = LegacyComponentSerializer.builder()
+      .character(ChatColor.COLOR_CHAR)
+      .hexColors()
+      .useUnusualXRepeatedCharacterHexFormat()
+      .build();
+
    public static String colorize(String s) {
       return s == null ? null : ChatColor.translateAlternateColorCodes('&', s);
    }
 
    public static String fullColor(String s) {
-      StringBuilder sb = new StringBuilder();
-      String[] strs = s.split("(?=(<#[a-fA-F0-9]*>))");
-      Pattern pat = Pattern.compile("(<(#[a-fA-F0-9]*)>)(.*)");
+      return colorize(replaceHexColors(s, ANGLE_HEX_PATTERN));
+   }
 
-      for (String str : strs) {
-         Matcher matcher = pat.matcher(str);
-         if (matcher.find()) {
-            try {
-               ChatColor.class.getDeclaredMethod("of", String.class);
-               sb.append(ChatColor.of(matcher.group(2)));
-            } catch (NoSuchMethodException var13) {
-               String hex = matcher.group(2);
-               Color color = Color.decode(hex);
-               ChatColor cColor = ColorUtils.fromRGB(color.getRed(), color.getGreen(), color.getBlue());
-               sb.append(cColor);
-            }
+   public static Component component(String s) {
+      return s == null ? Component.empty() : LEGACY_COMPONENT_SERIALIZER.deserialize(fullColor(s));
+   }
 
-            sb.append(matcher.group(3));
-         } else {
-            sb.append(str);
-         }
-      }
+   public static List<Component> components(List<String> lines) {
+      return lines.stream().map(HelperUtils::component).toList();
+   }
 
-      return colorize(sb.toString());
+   public static String serialize(Component component) {
+      return component == null ? "" : LEGACY_COMPONENT_SERIALIZER.serialize(component);
    }
 
    public static boolean hasPermission(CommandSender sender, String node) {
@@ -371,20 +366,6 @@ public final class HelperUtils {
       world.setChunkForceLoaded(spawn.getBlockX() >> 4, spawn.getBlockZ() >> 4, false);
    }
 
-   public static Enchantment getVersionEnchantment(String name) {
-      Enchantment particle = Enchantment.getByName(name);
-      if (particle == null) {
-         String var2 = name.toUpperCase();
-          particle = switch (var2) {
-              case "UNBREAKING" -> Enchantment.getByName("DURABILITY");
-              case "AQUA_AFFINITY" -> Enchantment.getByName("WATER_WORKER");
-              default -> Enchantment.MENDING;
-          };
-      }
-
-      return particle;
-   }
-
    public static Location findSafeLocationInBox(World world, BoundingBox box) {
       int timeout = Dungeons.inst().getConfig().getInt("Generator.Timeout", 5);
       long startTime = System.currentTimeMillis();
@@ -426,4 +407,27 @@ public final class HelperUtils {
       return loc;
    }
 
+   private static String replaceHexColors(String input, Pattern pattern) {
+      if (input == null) {
+         return null;
+      }
+
+      Matcher matcher = pattern.matcher(input);
+      StringBuilder output = new StringBuilder();
+      while (matcher.find()) {
+         matcher.appendReplacement(output, Matcher.quoteReplacement(toLegacyHex(matcher.group(1))));
+      }
+
+      matcher.appendTail(output);
+      return output.toString();
+   }
+
+   private static String toLegacyHex(String hex) {
+      StringBuilder output = new StringBuilder().append(ChatColor.COLOR_CHAR).append('x');
+      for (char character : hex.substring(1).toLowerCase(Locale.ROOT).toCharArray()) {
+         output.append(ChatColor.COLOR_CHAR).append(character);
+      }
+
+      return output.toString();
+   }
 }

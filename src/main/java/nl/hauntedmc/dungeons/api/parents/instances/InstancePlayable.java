@@ -28,7 +28,6 @@ import nl.hauntedmc.dungeons.player.DungeonPlayer;
 import nl.hauntedmc.dungeons.util.world.DungeonMapRenderer;
 import nl.hauntedmc.dungeons.util.entity.ItemUtils;
 import nl.hauntedmc.dungeons.util.file.LangUtils;
-import nl.hauntedmc.dungeons.util.version.ReflectionUtils;
 import nl.hauntedmc.dungeons.util.HelperUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -185,7 +184,6 @@ public abstract class InstancePlayable extends AbstractInstance {
          if (ent != null) {
 
             ent.remove();
-            Bukkit.getScheduler().runTaskLater(Dungeons.inst(), () -> ReflectionUtils.forcePurgeEntity(ent), 5L);
          }
       }
 

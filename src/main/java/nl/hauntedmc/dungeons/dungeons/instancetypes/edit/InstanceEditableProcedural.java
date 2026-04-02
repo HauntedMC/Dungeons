@@ -54,7 +54,7 @@ public class InstanceEditableProcedural extends InstanceEditable {
                for (DungeonPlayer aPlayer : new ArrayList<>(InstanceEditableProcedural.this.players)) {
                   Player player = aPlayer.getPlayer();
                   if (!(loc.distance(player.getLocation()) > 10.0)) {
-                     player.spawnParticle(ParticleUtils.getVersionParticle("DUST"), loc, 12, 0.25, 0.25, 0.25, dustOptions);
+                     player.spawnParticle(Particle.DUST, loc, 12, 0.25, 0.25, 0.25, dustOptions);
                      player.spawnParticle(Particle.END_ROD, loc, 1, 0.25, 0.25, 0.25, 0.01);
                   }
                }
@@ -208,13 +208,13 @@ public class InstanceEditableProcedural extends InstanceEditable {
          spawn.add(0.0, 0.5, 0.0);
          spawn.setWorld(this.instanceWorld);
          DustOptions dustOptions = new DustOptions(Color.YELLOW, 1.0F);
-         player.spawnParticle(ParticleUtils.getVersionParticle("DUST"), spawn, 12, 0.1, 1.0, 0.1, dustOptions);
+         player.spawnParticle(Particle.DUST, spawn, 12, 0.1, 1.0, 0.1, dustOptions);
       }
 
       for (Connector connector : room.getConnectors()) {
          Location loc = connector.getLocation().asLocation();
          BoundingBox blockBox = new BoundingBox(loc.getX(), loc.getY(), loc.getZ(), loc.getX() + 1.0, loc.getY() + 1.0, loc.getZ() + 1.0);
-         ParticleUtils.displayBoundingBox(player, ParticleUtils.getVersionParticle("DUST"), blockBox);
+         ParticleUtils.displayBoundingBox(player, Particle.DUST, blockBox);
          loc.setX(loc.getX() + 0.5);
          loc.setY(loc.getY() + 0.7);
          loc.setZ(loc.getZ() + 0.5);

@@ -23,7 +23,6 @@ import nl.hauntedmc.dungeons.player.DungeonPlayer;
 import nl.hauntedmc.dungeons.util.entity.DisplayHandler;
 import nl.hauntedmc.dungeons.util.entity.ItemUtils;
 import nl.hauntedmc.dungeons.util.file.LangUtils;
-import nl.hauntedmc.dungeons.util.version.ReflectionUtils;
 import nl.hauntedmc.dungeons.util.HelperUtils;
 import nl.hauntedmc.dungeons.util.tasks.ProcessTimer;
 import org.apache.commons.io.FileUtils;
@@ -427,9 +426,6 @@ public abstract class AbstractInstance {
                aPlayer.setSavedPosition(null);
             }
 
-            if (Dungeons.inst().isEnabled()) {
-               Bukkit.getScheduler().runTaskLater(Dungeons.inst(), () -> ReflectionUtils.updateCombatTracker(player), 310L);
-            }
          }
       }
    }
@@ -512,7 +508,7 @@ public abstract class AbstractInstance {
    }
 
    public void registerTriggerListener(DungeonTrigger element) {
-      Class<? extends DungeonTrigger> elementClazz = (Class<? extends DungeonTrigger>)element.getClass();
+      Class<? extends DungeonTrigger> elementClazz = element.getClass();
       List<DungeonTrigger> elements = this.triggerListeners.computeIfAbsent(elementClazz, k -> new ArrayList<>());
       elements.add(element);
    }
@@ -530,7 +526,7 @@ public abstract class AbstractInstance {
    }
 
    public void registerFunctionListener(DungeonFunction element) {
-      Class<? extends DungeonFunction> elementClazz = (Class<? extends DungeonFunction>)element.getClass();
+      Class<? extends DungeonFunction> elementClazz = element.getClass();
       List<DungeonFunction> elements = this.functionListeners.computeIfAbsent(elementClazz, k -> new ArrayList<>());
       elements.add(element);
    }

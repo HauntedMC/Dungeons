@@ -121,7 +121,6 @@ public final class Dungeons extends JavaPlugin {
         this.thirdPartyProvider = false;
         logPrefix = HelperUtils.fullColor("<#9753f5>[Dungeons] ");
 
-        ReflectionUtils.prepMemoryLeakKiller();
         this.dungeonFiles = new File(plugin.getDataFolder(), "maps");
         this.backupFolder = new File(plugin.getDataFolder(), "backups");
         if (!this.backupFolder.exists() || !this.backupFolder.isDirectory()) {
