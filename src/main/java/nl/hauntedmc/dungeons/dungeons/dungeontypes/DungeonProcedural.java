@@ -159,6 +159,7 @@ public class DungeonProcedural extends AbstractDungeon {
       return instance;
    }
 
+   @SuppressWarnings("removal")
    public void saveGamerulesFrom(World world) {
       for (String rule : world.getGameRules()) {
          this.ruleConfig.set("Gamerule." + rule, world.getGameRuleValue(rule));
@@ -180,6 +181,7 @@ public class DungeonProcedural extends AbstractDungeon {
       }
    }
 
+   @SuppressWarnings("removal")
    public void loadGamerulesTo(World world) {
       for (String rule : world.getGameRules()) {
          String val = this.ruleConfig.getString("Gamerule." + rule);

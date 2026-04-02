@@ -1,7 +1,6 @@
 package nl.hauntedmc.dungeons.util;
 
 import com.google.common.collect.Lists;
-import io.papermc.paper.entity.TeleportFlag.EntityState;
 import java.awt.Color;
 import java.io.File;
 import java.sql.Timestamp;
@@ -17,21 +16,13 @@ import java.util.regex.Pattern;
 import net.md_5.bungee.api.ChatColor;
 import nl.hauntedmc.dungeons.Dungeons;
 import nl.hauntedmc.dungeons.api.blocks.MovingBlock;
-import nl.hauntedmc.dungeons.api.parents.dungeons.AbstractDungeon;
 import nl.hauntedmc.dungeons.api.parents.instances.InstancePlayable;
-import nl.hauntedmc.dungeons.util.entity.ItemUtils;
-import nl.hauntedmc.dungeons.util.entity.ParticleUtils;
 import nl.hauntedmc.dungeons.util.file.ColorUtils;
-import nl.hauntedmc.dungeons.util.file.DXLUtils;
-import nl.hauntedmc.dungeons.util.file.StringUtils;
 import nl.hauntedmc.dungeons.util.math.MathUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.Particle;
 import org.bukkit.World;
-import org.bukkit.Particle.DustOptions;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.ConfigurationSection;
@@ -40,7 +31,6 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.util.BoundingBox;
 
@@ -89,162 +79,8 @@ public final class HelperUtils {
       return sender.hasPermission("*") || sender.hasPermission(node);
    }
 
-   @Deprecated(
-      forRemoval = true
-   )
-   public static double round(double value, int places) {
-      return MathUtils.round(value, places);
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static int getRandomNumberInRange(int min, int max) {
-      return MathUtils.getRandomNumberInRange(min, max);
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static double getRandomDoubleInRange(double min, double max) {
-      return MathUtils.getRandomDoubleInRange(min, max);
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static boolean getRandomBoolean(double chance) {
-      return MathUtils.getRandomBoolean(chance);
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static boolean isNegative(double d) {
-      return MathUtils.isNegative(d);
-   }
-
    public static Timestamp getFutureTimeInSeconds(int seconds) {
       return new Timestamp(System.currentTimeMillis() + seconds * 1000L);
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static void giveOrDrop(Player player, ItemStack item) {
-      ItemUtils.giveOrDrop(player, item);
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static void giveOrDrop(Player player, ItemStack... items) {
-      ItemUtils.giveOrDrop(player, items);
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static void giveOrDropSilently(Player player, ItemStack item) {
-      ItemUtils.giveOrDropSilently(player, item);
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static ItemStack getFunctionTool() {
-      return ItemUtils.getFunctionTool();
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static boolean isFunctionTool(ItemStack item) {
-      return ItemUtils.isFunctionTool(item);
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static ItemStack getRoomTool() {
-      return ItemUtils.getRoomTool();
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static boolean isRoomTool(ItemStack item) {
-      return ItemUtils.isRoomTool(item);
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static ItemStack getDefaultKeyItem() {
-      return ItemUtils.getDefaultKeyItem();
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static boolean verifyKeyItem(ItemStack item) {
-      return ItemUtils.verifyKeyItem(item);
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static boolean verifyDungeonItem(ItemStack item) {
-      return ItemUtils.verifyDungeonItem(item);
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static String getItemDisplayName(ItemStack item) {
-      return ItemUtils.getItemDisplayName(item);
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static boolean isItemBanned(AbstractDungeon dungeon, ItemStack itemStack) {
-      return ItemUtils.isItemBanned(dungeon, itemStack);
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static ItemStack getBlockedMenuItem() {
-      return ItemUtils.getBlockedMenuItem();
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static ItemStack getBlockedMenuItem(Material mat) {
-      return ItemUtils.getBlockedMenuItem(mat);
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static ItemStack skullFromName(ItemStack item, String name) {
-      return ItemUtils.skullFromName(item, name);
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static ItemStack getPlayerHead(Player player) {
-      return ItemUtils.getPlayerHead(player);
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static boolean convertFromDXL(String worldName) {
-      return DXLUtils.convertFromDXL(worldName);
    }
 
    public static List<Player> getPlayersWithin(Location loc, double radius, GameMode... gameModes) {
@@ -259,62 +95,6 @@ public final class HelperUtils {
 
        }
        return players;
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static Optional<Integer> readIntegerInput(CommandSender sender, String string) {
-      return StringUtils.readIntegerInput(sender, string);
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static Optional<Double> readDoubleInput(Player player, String string) {
-      return StringUtils.readDoubleInput(player, string);
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static void sendClickableLink(Player player, String message, String url) {
-      StringUtils.sendClickableLink(player, message, url);
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static void sendClickableCommand(Player player, String message, String command) {
-      StringUtils.sendClickableCommand(player, message, command);
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static void sendReadyCheckMessage(Player player) {
-      StringUtils.sendReadyCheckMessage(player);
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static String formatDate(Date date) {
-      return StringUtils.formatDate(date);
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static Date convertDurationString(String durString) {
-      return StringUtils.convertDurationString(durString);
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static String formatDuration(long durationInMillis) {
-      return StringUtils.formatDuration(durationInMillis);
    }
 
    public static org.bukkit.Color hexToColor(String colorStr) {
@@ -508,97 +288,6 @@ public final class HelperUtils {
       return area;
    }
 
-   @Deprecated(
-      forRemoval = true
-   )
-   public static void displayBoundingBox(Player to, int ticks, BoundingBox... boxes) {
-      ParticleUtils.displayBoundingBox(to, ticks, boxes);
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static void displayBoundingBox(Player to, int ticks, Particle particle, BoundingBox... boxes) {
-      ParticleUtils.displayBoundingBox(to, ticks, particle, boxes);
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static void displayBoundingBox(Player to, BoundingBox... boxes) {
-      ParticleUtils.displayBoundingBox(to, boxes);
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static void displayStructureBox(Player to, BoundingBox... boxes) {
-      ParticleUtils.displayStructureBox(to, boxes);
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static void clearStructureBox(World world, BoundingBox... boxes) {
-      ParticleUtils.clearStructureBox(world, boxes);
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static void clearStructureBox(Player player, BoundingBox... boxes) {
-      ParticleUtils.clearStructureBox(player, boxes);
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static void displayBoundingBox(Player to, Particle particle, BoundingBox... boxes) {
-      ParticleUtils.displayBoundingBox(to, particle, boxes);
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static void displayBoundingBox(Player to, Particle particle, DustOptions opt, BoundingBox... boxes) {
-      ParticleUtils.displayBoundingBox(to, particle, opt, boxes);
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static void drawLine(Player to, Location pos1, Location pos2, Particle particle) {
-      ParticleUtils.drawLine(to, pos1, pos2, particle);
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static void drawLine(Player to, Location pos1, Location pos2, Particle particle, DustOptions opt) {
-      ParticleUtils.drawLine(to, pos1, pos2, particle, opt);
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static void drawOutline3D(Player to, BoundingBox region, Particle particle) {
-      ParticleUtils.drawOutline3D(to, region, particle);
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static void drawOutline3D(Player to, BoundingBox region, Particle particle, DustOptions opt) {
-      ParticleUtils.drawOutline3D(to, region, particle, opt);
-   }
-
-   @Deprecated(
-      forRemoval = true
-   )
-   public static Particle getVersionParticle(String name) {
-      return ParticleUtils.getVersionParticle(name);
-   }
-
    public static boolean compareVars(InstancePlayable instance, String comparison) {
       String parsed = parseVars(instance, comparison);
       if (parsed == null) {
@@ -664,25 +353,22 @@ public final class HelperUtils {
    }
 
    public static void forceTeleport(Entity ent, Location loc) {
-      if (Dungeons.inst().isSupportsTeleportFlags()) {
-         if (Dungeons.inst().isSupportsTeleportAsync()) {
-            ent.teleportAsync(loc, TeleportCause.PLUGIN, EntityState.RETAIN_PASSENGERS);
-         } else {
-            ent.teleport(loc, TeleportCause.PLUGIN, EntityState.RETAIN_PASSENGERS);
-         }
-      } else {
-         List<Entity> passengers = ent.getPassengers();
+      List<Entity> passengers = new ArrayList<>(ent.getPassengers());
 
-         for (Entity passenger : passengers) {
-            ent.removePassenger(passenger);
-         }
-
-         ent.teleportAsync(loc);
-
-         for (Entity passenger : passengers) {
-            ent.addPassenger(passenger);
-         }
+      for (Entity passenger : passengers) {
+         ent.removePassenger(passenger);
       }
+
+      ent.teleport(loc, TeleportCause.PLUGIN);
+
+      for (Entity passenger : passengers) {
+         ent.addPassenger(passenger);
+      }
+   }
+
+   public static void releaseSpawnChunk(World world) {
+      Location spawn = world.getSpawnLocation();
+      world.setChunkForceLoaded(spawn.getBlockX() >> 4, spawn.getBlockZ() >> 4, false);
    }
 
    public static Enchantment getVersionEnchantment(String name) {

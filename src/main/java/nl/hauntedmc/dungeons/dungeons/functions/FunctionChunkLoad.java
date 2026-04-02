@@ -14,6 +14,7 @@ import nl.hauntedmc.dungeons.api.parents.elements.FunctionCategory;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ChatMenuItem;
 import nl.hauntedmc.dungeons.player.DungeonPlayer;
+import nl.hauntedmc.dungeons.util.file.StringUtils;
 import nl.hauntedmc.dungeons.util.HelperUtils;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
@@ -100,7 +101,7 @@ public class FunctionChunkLoad extends DungeonFunction {
 
          @Override
          public void onInput(Player player, String message) {
-            Optional<Integer> optRadius = HelperUtils.readIntegerInput(player, message);
+            Optional<Integer> optRadius = StringUtils.readIntegerInput(player, message);
             FunctionChunkLoad.this.radius = Math.max(optRadius.orElse(FunctionChunkLoad.this.radius), 0);
             player.sendMessage(Dungeons.logPrefix + HelperUtils.colorize("&aSet radius to '&6" + FunctionChunkLoad.this.radius + "&a'"));
          }

@@ -1,6 +1,5 @@
 package nl.hauntedmc.dungeons.api.blocks;
 
-import io.papermc.paper.entity.TeleportFlag.EntityState;
 import nl.hauntedmc.dungeons.Dungeons;
 import nl.hauntedmc.dungeons.util.math.MathUtils;
 import nl.hauntedmc.dungeons.util.HelperUtils;
@@ -176,15 +175,11 @@ public class MovingBlock {
 
    public void updateEntity() {
       Location modLocation = this.location.clone().add(0.5, 0.0, 0.5);
-      if (Dungeons.inst().isSupportsTeleportFlags()) {
-         this.stand.teleport(modLocation, EntityState.RETAIN_PASSENGERS);
-      } else {
-         this.stand.removePassenger(this.shulker);
-         this.stand.removePassenger(this.fallingBlock);
-         this.stand.teleport(modLocation);
-         this.stand.addPassenger(this.shulker);
-         this.stand.addPassenger(this.fallingBlock);
-      }
+      this.stand.removePassenger(this.shulker);
+      this.stand.removePassenger(this.fallingBlock);
+      this.stand.teleport(modLocation);
+      this.stand.addPassenger(this.shulker);
+      this.stand.addPassenger(this.fallingBlock);
    }
 
    public void applyInheritedVelocityToPassengers(double inheritedX, double inheritedY, double inheritedZ) {

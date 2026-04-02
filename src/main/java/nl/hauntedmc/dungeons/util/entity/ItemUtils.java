@@ -68,7 +68,7 @@ public final class ItemUtils {
       List<String> lore = new ArrayList<>(LangUtils.getMessageList("general.function-editor-lore"));
       meta.setLore(lore);
       meta.setItemName(LangUtils.getMessage("general.function-editor-name", false));
-      meta.addAttributeModifier(Attribute.BLOCK_INTERACTION_RANGE, new AttributeModifier("reach", 5.5, Operation.ADD_NUMBER));
+      meta.addAttributeModifier(Attribute.BLOCK_INTERACTION_RANGE, new AttributeModifier(new NamespacedKey(Dungeons.inst(), "reach"), 5.5, Operation.ADD_NUMBER));
 
       feather.setItemMeta(meta);
       return feather;
@@ -89,7 +89,7 @@ public final class ItemUtils {
       List<String> lore = new ArrayList<>(LangUtils.getMessageList("general.room-editor-lore"));
       meta.setLore(lore);
       meta.setItemName(LangUtils.getMessage("general.room-editor-name", false));
-      meta.addAttributeModifier(Attribute.BLOCK_INTERACTION_RANGE, new AttributeModifier("reach", 5.5, Operation.ADD_NUMBER));
+      meta.addAttributeModifier(Attribute.BLOCK_INTERACTION_RANGE, new AttributeModifier(new NamespacedKey(Dungeons.inst(), "reach"), 5.5, Operation.ADD_NUMBER));
 
       tool.setItemMeta(meta);
       return tool;

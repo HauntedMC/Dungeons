@@ -154,14 +154,6 @@ public abstract class DungeonFunction extends DungeonElement implements Cloneabl
       this.instance.unregisterFunctionListener(this);
    }
 
-   @Deprecated
-   public void executeForPlayer(TriggerFireEvent triggerEvent) {
-   }
-
-   @Deprecated
-   public void executeForParty(TriggerFireEvent triggerEvent) {
-   }
-
    public abstract void runFunction(TriggerFireEvent var1, List<DungeonPlayer> var2);
 
    public void onExecute(TriggerFireEvent triggerEvent) {

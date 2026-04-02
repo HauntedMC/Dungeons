@@ -1,6 +1,5 @@
 package nl.hauntedmc.dungeons.dungeons.functions;
 
-import io.papermc.paper.entity.TeleportFlag.EntityState;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -21,7 +20,6 @@ import nl.hauntedmc.dungeons.util.file.StringUtils;
 import nl.hauntedmc.dungeons.util.HelperUtils;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
 @DeclaredFunction
@@ -79,16 +77,7 @@ public class FunctionRevivePlayer extends DungeonFunction {
                if (instance.getLivingPlayers().contains(aPlayer)) {
                   LangUtils.sendMessage(reviver.getPlayer(), "instance.functions.reviver.not-dead");
                } else {
-                  if (Dungeons.inst().isSupportsTeleportFlags()) {
-                     player.teleport(reviver.getPlayer().getLocation(), EntityState.RETAIN_PASSENGERS);
-                  } else {
-                     List<Entity> passengers = player.getPassengers();
-                     player.eject();
-                     player.teleport(reviver.getPlayer().getLocation());
-                     if (!passengers.isEmpty()) {
-                        player.addPassenger(passengers.getFirst());
-                     }
-                  }
+                  HelperUtils.forceTeleport(player, reviver.getPlayer().getLocation());
 
                   GameMode gamemode = GameMode.valueOf(instance.getDungeon().getConfig().getString("General.Gamemode", "ADVENTURE").toUpperCase(Locale.ROOT));
                   player.setGameMode(gamemode);

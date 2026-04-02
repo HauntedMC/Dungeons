@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
-import net.kyori.adventure.util.TriState;
 import nl.hauntedmc.dungeons.Dungeons;
 import nl.hauntedmc.dungeons.api.events.DungeonDisposeEvent;
 import nl.hauntedmc.dungeons.api.events.DungeonEndEvent;
@@ -29,7 +28,7 @@ import nl.hauntedmc.dungeons.util.HelperUtils;
 import nl.hauntedmc.dungeons.util.tasks.ProcessTimer;
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
-import org.bukkit.GameRule;
+import org.bukkit.GameRules;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
@@ -127,7 +126,6 @@ public abstract class AbstractInstance {
       loader.generateStructures(false);
       loader.type(WorldType.FLAT);
       loader.generator(chunkHandler);
-      loader.keepSpawnLoaded(TriState.TRUE);
       this.initMap(loader);
    }
 
@@ -151,7 +149,7 @@ public abstract class AbstractInstance {
    }
 
    protected void applyWorldRules() {
-      this.instanceWorld.setKeepSpawnInMemory(false);
+      HelperUtils.releaseSpawnChunk(this.instanceWorld);
       this.instanceWorld.setAutoSave(false);
       if (!this.config.getBoolean("Rules.SpawnMobs", false)) {
          for (SpawnCategory cat : SpawnCategory.values()) {
@@ -171,7 +169,7 @@ public abstract class AbstractInstance {
       }
 
       if (this.config.getBoolean("Rules.DisableRandomTick", true)) {
-         this.instanceWorld.setGameRule(GameRule.RANDOM_TICK_SPEED, 0);
+         this.instanceWorld.setGameRule(GameRules.RANDOM_TICK_SPEED, 0);
       }
 
       this.onApplyWorldRules();
@@ -429,7 +427,6 @@ public abstract class AbstractInstance {
                aPlayer.setSavedPosition(null);
             }
 
-            player.setLastDamageCause(null);
             if (Dungeons.inst().isEnabled()) {
                Bukkit.getScheduler().runTaskLater(Dungeons.inst(), () -> ReflectionUtils.updateCombatTracker(player), 310L);
             }

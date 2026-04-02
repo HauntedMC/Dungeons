@@ -1,6 +1,5 @@
 package nl.hauntedmc.dungeons.listeners;
 
-import io.papermc.paper.entity.TeleportFlag.EntityState;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -31,7 +30,6 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -61,17 +59,7 @@ public class DungeonListener implements Listener {
          aPlayer.setPlayer(player);
          Location savedLocation = aPlayer.getSavedPosition();
          if (aPlayer.getInstance() == null && savedLocation != null) {
-            if (Dungeons.inst().isSupportsTeleportFlags()) {
-               player.teleport(savedLocation, EntityState.RETAIN_PASSENGERS);
-            } else {
-               List<Entity> passengers = player.getPassengers();
-               player.eject();
-               player.teleport(savedLocation);
-               if (!passengers.isEmpty()) {
-                  player.addPassenger(passengers.getFirst());
-               }
-            }
-
+            HelperUtils.forceTeleport(player, savedLocation);
             player.setGameMode(aPlayer.getSavedGameMode());
          }
 
@@ -90,17 +78,7 @@ public class DungeonListener implements Listener {
          aPlayer = Dungeons.inst().getDungeonPlayer(player);
          Location exitLoc = aPlayer.getExitLocation();
          if (exitLoc != null) {
-            if (Dungeons.inst().isSupportsTeleportFlags()) {
-               player.teleport(exitLoc, EntityState.RETAIN_PASSENGERS);
-            } else {
-               List<Entity> passengers = player.getPassengers();
-               player.eject();
-               player.teleport(exitLoc);
-               if (!passengers.isEmpty()) {
-                  player.addPassenger(passengers.getFirst());
-               }
-            }
-
+            HelperUtils.forceTeleport(player, exitLoc);
             aPlayer.clearExitLocation();
          }
       }
@@ -466,7 +444,7 @@ public class DungeonListener implements Listener {
       Pattern p = Pattern.compile("(_[0-9]*)?$");
       String name = p.matcher(instName).replaceFirst("");
       if (Dungeons.inst().getDungeons().get(name) != null) {
-         world.setKeepSpawnInMemory(false);
+         HelperUtils.releaseSpawnChunk(world);
          world.setAutoSave(false);
       }
    }

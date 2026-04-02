@@ -92,8 +92,6 @@ public final class Dungeons extends JavaPlugin {
     private Material roomEditorMaterial;
     private boolean stuckKillsPlayer;
     private boolean inheritedVelocityEnabled;
-    private boolean supportsTeleportFlags;
-    private boolean supportsTeleportAsync = true;
     private GUIAPI GUIAPI;
     private Economy economy;
     private boolean partiesEnabled;
@@ -122,9 +120,6 @@ public final class Dungeons extends JavaPlugin {
         this.defaultDungeonConfig = new YamlConfiguration();
         this.thirdPartyProvider = false;
         logPrefix = HelperUtils.fullColor("<#9753f5>[Dungeons] ");
-
-        this.supportsTeleportFlags = true;
-        this.supportsTeleportAsync = true;
 
         ReflectionUtils.prepMemoryLeakKiller();
         this.dungeonFiles = new File(plugin.getDataFolder(), "maps");
@@ -591,14 +586,6 @@ public final class Dungeons extends JavaPlugin {
 
     public boolean isInheritedVelocityEnabled() {
         return this.inheritedVelocityEnabled;
-    }
-
-    public boolean isSupportsTeleportFlags() {
-        return this.supportsTeleportFlags;
-    }
-
-    public boolean isSupportsTeleportAsync() {
-        return this.supportsTeleportAsync;
     }
 
     public GUIAPI getAvnAPI() {

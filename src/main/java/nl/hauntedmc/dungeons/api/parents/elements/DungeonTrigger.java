@@ -14,7 +14,6 @@ import nl.hauntedmc.dungeons.api.parents.instances.AbstractInstance;
 import nl.hauntedmc.dungeons.api.parents.instances.InstanceEditable;
 import nl.hauntedmc.dungeons.api.parents.instances.InstancePlayable;
 import nl.hauntedmc.dungeons.dungeons.instancetypes.edit.InstanceEditableProcedural;
-import nl.hauntedmc.dungeons.dungeons.instancetypes.play.InstanceClassic;
 import nl.hauntedmc.dungeons.dungeons.instancetypes.play.InstanceContinuous;
 import nl.hauntedmc.dungeons.gui.hotbar.DungeonPlayerHotbarMenu;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
@@ -193,18 +192,6 @@ public abstract class DungeonTrigger extends DungeonElement implements Cloneable
    }
 
    public void onTrigger(TriggerFireEvent event) {
-   }
-
-   @Deprecated
-   public final void triggerPlayer(DungeonPlayer aPlayer) {
-      new TriggerFireEvent(aPlayer, this);
-      this.trigger();
-   }
-
-   @Deprecated
-   public final void triggerParty(InstanceClassic instance) {
-      new TriggerFireEvent(instance, this);
-      this.trigger();
    }
 
    public final void trigger() {

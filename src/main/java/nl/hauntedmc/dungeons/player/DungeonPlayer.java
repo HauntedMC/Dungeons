@@ -1,6 +1,5 @@
 package nl.hauntedmc.dungeons.player;
 
-import io.papermc.paper.entity.TeleportFlag.EntityState;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -24,7 +23,6 @@ import nl.hauntedmc.dungeons.util.HelperUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -280,16 +278,7 @@ public final class DungeonPlayer {
    }
 
    public void sendToCheckpoint() {
-      if (Dungeons.inst().isSupportsTeleportFlags()) {
-         this.player.teleport(this.dungeonRespawn, EntityState.RETAIN_PASSENGERS);
-      } else {
-         List<Entity> passengers = this.player.getPassengers();
-         this.player.eject();
-         this.player.teleport(this.dungeonRespawn);
-         if (!passengers.isEmpty()) {
-            this.player.addPassenger(passengers.getFirst());
-         }
-      }
+      HelperUtils.forceTeleport(this.player, this.dungeonRespawn);
    }
 
    public void setSavedPosition(Location loc) {

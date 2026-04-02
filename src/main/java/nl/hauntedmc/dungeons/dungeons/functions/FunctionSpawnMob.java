@@ -160,7 +160,7 @@ public class FunctionSpawnMob extends DungeonFunction {
                      AttributeInstance attrib = living.getAttribute(Attribute.ATTACK_DAMAGE);
                      if (attrib != null) {
                         living.getAttribute(Attribute.ATTACK_DAMAGE)
-                           .addModifier(new AttributeModifier("dungeon_level", finalDamageMod - 1.0, Operation.MULTIPLY_SCALAR_1));
+                           .addModifier(new AttributeModifier(new NamespacedKey(Dungeons.inst(), "dungeon_level"), finalDamageMod - 1.0, Operation.MULTIPLY_SCALAR_1));
                      }
                   }
 

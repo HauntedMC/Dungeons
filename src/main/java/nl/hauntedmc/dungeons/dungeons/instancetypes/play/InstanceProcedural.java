@@ -18,7 +18,6 @@ import nl.hauntedmc.dungeons.dungeons.dungeontypes.DungeonProcedural;
 import nl.hauntedmc.dungeons.util.HelperUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3i;
 
@@ -26,7 +25,6 @@ public class InstanceProcedural extends InstancePlayable {
    protected DungeonProcedural dungeon;
    private Map<UUID, InstanceRoom> roomsByUUID;
    private Collection<InstanceRoom> rooms;
-   private BukkitRunnable roomParticles;
    private Layout builder;
 
    public InstanceProcedural(DungeonProcedural dungeon, CountDownLatch latch) {
