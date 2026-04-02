@@ -122,7 +122,7 @@ public class FunctionDelayed extends FunctionMulti {
          @Override
          public void onSelect(PlayerEvent event) {
             Player player = event.getPlayer();
-            Dungeons.inst().getAvnAPI().openGUI(player, "functionmenu");
+            Dungeons.inst().getGuiApi().openGUI(player, "functionmenu");
          }
       });
       this.menu.addMenuItem(new MenuItem() {

@@ -13,8 +13,8 @@ import nl.hauntedmc.dungeons.api.parents.TriggerCategory;
 import nl.hauntedmc.dungeons.api.parents.elements.DungeonTrigger;
 import nl.hauntedmc.dungeons.api.parents.instances.AbstractInstance;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
-import nl.hauntedmc.dungeons.util.version.ReflectionUtils;
 import nl.hauntedmc.dungeons.util.HelperUtils;
+import nl.hauntedmc.dungeons.util.reflection.ClassReflectionUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
@@ -59,7 +59,7 @@ public final class TriggerManager {
          }
 
          List<Method> eventMethods = new ArrayList<>();
-         ReflectionUtils.getAnnotatedMethods(eventMethods, triggerClass, EventHandler.class);
+         ClassReflectionUtils.collectAnnotatedMethods(eventMethods, triggerClass, EventHandler.class);
 
          for (Method method : eventMethods) {
             EventHandler handler = method.getAnnotation(EventHandler.class);

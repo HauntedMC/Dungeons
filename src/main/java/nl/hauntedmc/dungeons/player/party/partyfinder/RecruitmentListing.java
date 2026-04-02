@@ -1,8 +1,11 @@
 package nl.hauntedmc.dungeons.player.party.partyfinder;
 
+import io.papermc.paper.event.player.AsyncChatEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import nl.hauntedmc.dungeons.Dungeons;
 import nl.hauntedmc.dungeons.api.party.IDungeonParty;
 import nl.hauntedmc.dungeons.player.DungeonPlayer;
@@ -18,7 +21,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.Nullable;
 
@@ -33,6 +35,7 @@ public class RecruitmentListing implements Listener {
    private final List<UUID> players;
    private BukkitRunnable broadcaster;
    private final List<UUID> passwordPromptedPlayers;
+   private final ConcurrentMap<UUID, Boolean> pendingPasswordInputs = new ConcurrentHashMap<>();
 
    public RecruitmentListing(DungeonPlayer host, String label, String description, int partySize, String password) {
       this.host = host;
@@ -68,7 +71,7 @@ public class RecruitmentListing implements Listener {
                   for (Player player : Bukkit.getOnlinePlayers()) {
                      if (!RecruitmentListing.this.players.contains(player.getUniqueId())) {
                         LangUtils.sendMessage(
-                           player, "party.recruit.listing", RecruitmentListing.this.host.getPlayer().getDisplayName(), RecruitmentListing.this.label
+                           player, "party.recruit.listing", HelperUtils.playerDisplayName(RecruitmentListing.this.host.getPlayer()), RecruitmentListing.this.label
                         );
                         StringUtils.sendClickableCommand(
                            player, LangUtils.getMessage("party.recruit.join.button"), "recruit join " + RecruitmentListing.this.host.getPlayer().getName()
@@ -80,7 +83,7 @@ public class RecruitmentListing implements Listener {
          }
       };
       this.broadcaster
-         .runTaskTimerAsynchronously(
+         .runTaskTimer(
             Dungeons.inst(), 0L, Dungeons.inst().getConfig().getInt("General.PartyFinder.ListingBroadcastPeriod", 5) * 1200L
          );
    }
@@ -158,25 +161,39 @@ public class RecruitmentListing implements Listener {
    @EventHandler(
       priority = EventPriority.LOW
    )
-   public void listenForPassword(AsyncPlayerChatEvent event) {
+   public void listenForPassword(AsyncChatEvent event) {
       Player player = event.getPlayer();
       if (this.passwordPromptedPlayers.contains(player.getUniqueId())) {
-         String message = event.getMessage();
          event.setCancelled(true);
-         event.setMessage("");
-         if (message.equals("cancel")) {
-            LangUtils.sendMessage(player, "party.recruit.join.cancel");
-            this.passwordPromptedPlayers.remove(player.getUniqueId());
-         } else if (message.contains(" ")) {
-            LangUtils.sendMessage(player, "party.recruit.password.no-spaces");
-         } else if (!message.equals(this.password)) {
-            LangUtils.sendMessage(player, "party.recruit.password.incorrect");
-         } else {
-            LangUtils.sendMessage(player, "party.recruit.password.correct");
-            this.passwordPromptedPlayers.remove(player.getUniqueId());
-            DungeonPlayer aPlayer = Dungeons.inst().getDungeonPlayer(player);
-            this.addPlayer(aPlayer);
+         UUID playerId = player.getUniqueId();
+         if (this.pendingPasswordInputs.putIfAbsent(playerId, Boolean.TRUE) != null) {
+            return;
          }
+
+         String message = HelperUtils.plainText(event.originalMessage());
+         Bukkit.getScheduler().runTask(Dungeons.inst(), () -> {
+            try {
+               this.handlePasswordInput(player, message);
+            } finally {
+               this.pendingPasswordInputs.remove(playerId);
+            }
+         });
+      }
+   }
+
+   private void handlePasswordInput(Player player, String message) {
+      if (message.equals("cancel")) {
+         LangUtils.sendMessage(player, "party.recruit.join.cancel");
+         this.passwordPromptedPlayers.remove(player.getUniqueId());
+      } else if (message.contains(" ")) {
+         LangUtils.sendMessage(player, "party.recruit.password.no-spaces");
+      } else if (!message.equals(this.password)) {
+         LangUtils.sendMessage(player, "party.recruit.password.incorrect");
+      } else {
+         LangUtils.sendMessage(player, "party.recruit.password.correct");
+         this.passwordPromptedPlayers.remove(player.getUniqueId());
+         DungeonPlayer aPlayer = Dungeons.inst().getDungeonPlayer(player);
+         this.addPlayer(aPlayer);
       }
    }
 

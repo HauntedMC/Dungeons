@@ -495,7 +495,7 @@ public abstract class Layout implements Cloneable {
          @Override
          public void onSelect(PlayerEvent event) {
             Player player = event.getPlayer();
-            Dungeons.inst().getAvnAPI().openGUI(player, "connector_whitelist");
+            Dungeons.inst().getGuiApi().openGUI(player, "connector_whitelist");
          }
       });
       this.connectorEditMenu.addMenuItem(new MenuItem() {

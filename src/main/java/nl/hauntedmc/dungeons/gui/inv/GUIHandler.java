@@ -30,9 +30,8 @@ import nl.hauntedmc.dungeons.dungeons.triggers.gates.TriggerGate;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.player.DungeonPlayer;
 import nl.hauntedmc.dungeons.util.entity.ItemUtils;
-import nl.hauntedmc.dungeons.util.version.ReflectionUtils;
 import nl.hauntedmc.dungeons.util.HelperUtils;
-import org.apache.commons.lang3.text.WordUtils;
+import nl.hauntedmc.dungeons.util.reflection.ClassReflectionUtils;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -48,7 +47,7 @@ public class GUIHandler {
       catButton.addLore(HelperUtils.colorize("&8Checkpoint, start, signals, etc."));
       catButton.addAction("click", event -> {
          Player player = (Player)event.getWhoClicked();
-         Dungeons.inst().getAvnAPI().openGUI(player, "functions_dungeon");
+         Dungeons.inst().getGuiApi().openGUI(player, "functions_dungeon");
       });
       gui.addButton(11, catButton);
       catButton = new Button("category_player", Material.PLAYER_HEAD, "&aPlayer Functions");
@@ -58,7 +57,7 @@ public class GUIHandler {
       catButton.addLore(HelperUtils.colorize("&8Messages, keys, commands, etc."));
       catButton.addAction("click", event -> {
          Player player = (Player)event.getWhoClicked();
-         Dungeons.inst().getAvnAPI().openGUI(player, "functions_player");
+         Dungeons.inst().getGuiApi().openGUI(player, "functions_player");
       });
       gui.addButton(12, catButton);
       catButton = new Button("category_location", Material.COMPASS, "&dLocation Functions");
@@ -68,7 +67,7 @@ public class GUIHandler {
       catButton.addLore(HelperUtils.colorize("&8Mob spawners, sounds, doors, etc."));
       catButton.addAction("click", event -> {
          Player player = (Player)event.getWhoClicked();
-         Dungeons.inst().getAvnAPI().openGUI(player, "functions_location");
+         Dungeons.inst().getGuiApi().openGUI(player, "functions_location");
       });
       gui.addButton(13, catButton);
       catButton = new Button("category_meta", Material.NETHER_STAR, "&bMeta Functions");
@@ -78,7 +77,7 @@ public class GUIHandler {
       catButton.addLore(HelperUtils.colorize("&8Multi-functions, randoms, skills, etc."));
       catButton.addAction("click", event -> {
          Player player = (Player)event.getWhoClicked();
-         Dungeons.inst().getAvnAPI().openGUI(player, "functions_meta");
+         Dungeons.inst().getGuiApi().openGUI(player, "functions_meta");
       });
       gui.addButton(14, catButton);
       catButton = new Button("category_room", Material.JIGSAW, "&cRoom Functions");
@@ -96,7 +95,7 @@ public class GUIHandler {
             if (proc == null) {
                player.sendMessage(Dungeons.logPrefix + HelperUtils.colorize("&cThese functions are only available in randomly generated dungeons!"));
             } else {
-               Dungeons.inst().getAvnAPI().openGUI(player, "functions_room");
+               Dungeons.inst().getGuiApi().openGUI(player, "functions_room");
             }
          }
       });
@@ -109,12 +108,12 @@ public class GUIHandler {
       Button backButton = new Button("back", Material.RED_STAINED_GLASS_PANE, "&c&lBACK");
       backButton.addAction("click", event -> {
          Player player = (Player)event.getWhoClicked();
-         Dungeons.inst().getAvnAPI().openGUI(player, "functionmenu");
+         Dungeons.inst().getGuiApi().openGUI(player, "functionmenu");
       });
 
       for (FunctionCategory category : FunctionCategory.values()) {
          String catName = category.name().toLowerCase();
-         GUIWindow gui = new GUIWindow("functions_" + catName, 27, "&8" + WordUtils.capitalize(catName) + " Functions");
+         GUIWindow gui = new GUIWindow("functions_" + catName, 27, "&8" + HelperUtils.humanize(catName) + " Functions");
          gui.addButton(0, backButton);
          int i = 1;
 
@@ -158,7 +157,7 @@ public class GUIHandler {
                         dungeon.addFunction(aPlayer.getTargetLocation(), function);
                         instance.addFunctionLabel(function);
                         function.setInstance(instance);
-                        Dungeons.inst().getAvnAPI().openGUI(player, "triggermenu");
+                        Dungeons.inst().getGuiApi().openGUI(player, "triggermenu");
                      } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException | InstantiationException var8x) {
                         Dungeons.inst().getLogger().severe(Dungeons.logPrefix + var8x.getMessage());
 
@@ -207,7 +206,7 @@ public class GUIHandler {
       button.addLore(HelperUtils.colorize("&8Dungeon start, signals, etc."));
       button.addAction("click", event -> {
          Player player = (Player)event.getWhoClicked();
-         Dungeons.inst().getAvnAPI().openGUI(player, "triggers_dungeon");
+         Dungeons.inst().getGuiApi().openGUI(player, "triggers_dungeon");
       });
       gui.addButton(11, button);
       button = new Button("category_player", Material.PLAYER_HEAD, "&aPlayer Triggers");
@@ -217,7 +216,7 @@ public class GUIHandler {
       button.addLore(HelperUtils.colorize("&8Right-click, player death, etc."));
       button.addAction("click", event -> {
          Player player = (Player)event.getWhoClicked();
-         Dungeons.inst().getAvnAPI().openGUI(player, "triggers_player");
+         Dungeons.inst().getGuiApi().openGUI(player, "triggers_player");
       });
       gui.addButton(12, button);
       button = new Button("category_meta", Material.STRUCTURE_BLOCK, "&bMeta Triggers");
@@ -227,7 +226,7 @@ public class GUIHandler {
       button.addLore(HelperUtils.colorize("&8AND gates, OR gates, etc."));
       button.addAction("click", event -> {
          Player player = (Player)event.getWhoClicked();
-         Dungeons.inst().getAvnAPI().openGUI(player, "triggers_meta");
+         Dungeons.inst().getGuiApi().openGUI(player, "triggers_meta");
       });
       gui.addButton(13, button);
       button = new Button("category_general", Material.COMPASS, "&5General Triggers");
@@ -237,7 +236,7 @@ public class GUIHandler {
       button.addLore(HelperUtils.colorize("&8Mob deaths, redstone signal, etc."));
       button.addAction("click", event -> {
          Player player = (Player)event.getWhoClicked();
-         Dungeons.inst().getAvnAPI().openGUI(player, "triggers_general");
+         Dungeons.inst().getGuiApi().openGUI(player, "triggers_general");
       });
       gui.addButton(14, button);
       button = new Button("category_room", Material.JIGSAW, "&cRoom Triggers");
@@ -255,7 +254,7 @@ public class GUIHandler {
             if (proc == null) {
                player.sendMessage(Dungeons.logPrefix + HelperUtils.colorize("&cThese triggers are only available in randomly generated dungeons!"));
             } else {
-               Dungeons.inst().getAvnAPI().openGUI(player, "triggers_room");
+               Dungeons.inst().getGuiApi().openGUI(player, "triggers_room");
             }
          }
       });
@@ -280,12 +279,12 @@ public class GUIHandler {
       Button backButton = new Button("back", Material.RED_STAINED_GLASS_PANE, "&c&lBACK");
       backButton.addAction("click", event -> {
          Player player = (Player)event.getWhoClicked();
-         Dungeons.inst().getAvnAPI().openGUI(player, "triggermenu");
+         Dungeons.inst().getGuiApi().openGUI(player, "triggermenu");
       });
 
       for (TriggerCategory category : TriggerCategory.values()) {
          String catName = category.name().toLowerCase();
-         GUIWindow gui = new GUIWindow("triggers_" + catName, 27, "&8" + WordUtils.capitalize(catName) + " Triggers");
+         GUIWindow gui = new GUIWindow("triggers_" + catName, 27, "&8" + HelperUtils.humanize(catName) + " Triggers");
          gui.addButton(0, backButton);
          int i = 1;
 
@@ -475,7 +474,7 @@ public class GUIHandler {
                button.addLore("");
                button.addLore(HelperUtils.colorize("&6Options:"));
                List<Field> fields = new ArrayList<>();
-               ReflectionUtils.getAnnotatedFields(fields, condition.getClass(), SavedField.class);
+               ClassReflectionUtils.collectAnnotatedFields(fields, condition.getClass(), SavedField.class);
 
                for (Field field : fields) {
                   if (field.getAnnotation(Hidden.class) == null) {
@@ -602,7 +601,7 @@ public class GUIHandler {
                   button.addLore("");
                   button.addLore(HelperUtils.colorize("&6Options:"));
                   List<Field> fields = new ArrayList<>();
-                  ReflectionUtils.getAnnotatedFields(fields, trigger.getClass(), SavedField.class);
+                  ClassReflectionUtils.collectAnnotatedFields(fields, trigger.getClass(), SavedField.class);
 
                   for (Field field : fields) {
                      if (field.getAnnotation(Hidden.class) == null) {
@@ -703,7 +702,7 @@ public class GUIHandler {
                   button.addLore("");
                   button.addLore(HelperUtils.colorize("&6Options:"));
                   List<Field> fields = new ArrayList<>();
-                  ReflectionUtils.getAnnotatedFields(fields, targetFunction.getClass(), SavedField.class);
+                  ClassReflectionUtils.collectAnnotatedFields(fields, targetFunction.getClass(), SavedField.class);
 
                   for (Field field : fields) {
                      if (field.getAnnotation(Hidden.class) == null) {
@@ -802,7 +801,7 @@ public class GUIHandler {
                   button.addLore("");
                   button.addLore(HelperUtils.colorize("&6Options:"));
                   List<Field> fields = new ArrayList<>();
-                  ReflectionUtils.getAnnotatedFields(fields, targetFunction.getClass(), SavedField.class);
+                  ClassReflectionUtils.collectAnnotatedFields(fields, targetFunction.getClass(), SavedField.class);
 
                   for (Field field : fields) {
                      if (field.getAnnotation(Hidden.class) == null) {
@@ -835,7 +834,7 @@ public class GUIHandler {
                      Player clickPlayer = (Player)clickEvent.getWhoClicked();
                      DungeonPlayer clickAPlayer = Dungeons.inst().getDungeonPlayer(clickPlayer);
                      clickAPlayer.setActiveFunction(targetFunction);
-                     Dungeons.inst().getAvnAPI().openGUI(clickPlayer, "triggermenu");
+                     Dungeons.inst().getGuiApi().openGUI(clickPlayer, "triggermenu");
                   });
                   guiInv.setButton(slot, button);
                   slot++;

@@ -78,7 +78,7 @@ public class RecruitCommand extends Command<Dungeons> {
              return true;
          } else {
             if (args[0].equalsIgnoreCase("browse")) {
-               Dungeons.inst().getAvnAPI().openGUI(player, "partybrowser");
+               Dungeons.inst().getGuiApi().openGUI(player, "partybrowser");
             }
 
             return false;

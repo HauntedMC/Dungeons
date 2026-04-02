@@ -5,7 +5,7 @@ import java.util.Map.Entry;
 import nl.hauntedmc.dungeons.api.gui.GUIAPI;
 import nl.hauntedmc.dungeons.api.gui.actions.Action;
 import nl.hauntedmc.dungeons.api.gui.buttons.Button;
-import nl.hauntedmc.dungeons.api.gui.utility.StringUtils;
+import nl.hauntedmc.dungeons.api.gui.text.GuiTextUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -33,7 +33,7 @@ public class GUIWindow implements Listener {
    public GUIWindow(String namespace, int size, String displayname) {
       this.namespace = namespace;
       this.size = size;
-      this.display = StringUtils.fullColor(displayname);
+      this.display = GuiTextUtils.fullColor(displayname);
       this.inventories = new HashMap<>();
       this.buttons = new HashMap<>();
       this.openActions = new HashMap<>();
@@ -95,7 +95,7 @@ public class GUIWindow implements Listener {
       if (this.inventories.containsKey(player)) {
          gui = this.inventories.get(player);
       } else {
-         gui = new GUIInventory(this, Bukkit.createInventory(player, this.size, this.display));
+         gui = new GUIInventory(this, Bukkit.createInventory(player, this.size, GuiTextUtils.component(this.display)));
          this.inventories.put(player, gui);
       }
 

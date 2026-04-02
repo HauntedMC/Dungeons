@@ -4,10 +4,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
-
-import net.kyori.adventure.text.Component;
 import nl.hauntedmc.dungeons.api.gui.actions.Action;
-import nl.hauntedmc.dungeons.api.gui.utility.StringUtils;
+import nl.hauntedmc.dungeons.api.gui.text.GuiTextUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
@@ -27,7 +25,7 @@ public class Button {
       this.id = id;
       this.item = new ItemStack(mat);
       ItemMeta meta = this.item.getItemMeta();
-      meta.displayName(Component.text(StringUtils.fullColor(display)));
+      meta.displayName(GuiTextUtils.component(display));
       meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
       this.item.setItemMeta(meta);
       this.commands = new ArrayList<>();
@@ -84,52 +82,52 @@ public class Button {
 
    public final void setDisplayName(String display) {
       ItemMeta meta = this.item.getItemMeta();
-      meta.setDisplayName(StringUtils.fullColor(display));
+      meta.displayName(GuiTextUtils.component(display));
       this.item.setItemMeta(meta);
    }
 
    public final String getDisplayName() {
       ItemMeta meta = this.item.getItemMeta();
-      return meta.getDisplayName();
+      return GuiTextUtils.serialize(meta.displayName());
    }
 
    public final void setLore(List<String> lore) {
       ItemMeta meta = this.item.getItemMeta();
-      meta.setLore(lore);
+      meta.lore(GuiTextUtils.components(lore));
       this.item.setItemMeta(meta);
    }
 
    public final void addLore(List<String> lines) {
       ItemMeta meta = this.item.getItemMeta();
-      ArrayList<String> lore;
-      if (meta.getLore() == null) {
+      ArrayList<net.kyori.adventure.text.Component> lore;
+      if (meta.lore() == null) {
          lore = new ArrayList<>();
       } else {
-         lore = new ArrayList<>(meta.getLore());
+         lore = new ArrayList<>(meta.lore());
       }
 
-      lore.addAll(lines);
-      meta.setLore(lore);
+      lore.addAll(GuiTextUtils.components(lines));
+      meta.lore(lore);
       this.item.setItemMeta(meta);
    }
 
    public final void addLore(String line) {
       ItemMeta meta = this.item.getItemMeta();
-      ArrayList<String> lore;
-      if (meta.getLore() == null) {
+      ArrayList<net.kyori.adventure.text.Component> lore;
+      if (meta.lore() == null) {
          lore = new ArrayList<>();
       } else {
-         lore = new ArrayList<>(meta.getLore());
+         lore = new ArrayList<>(meta.lore());
       }
 
-      lore.add(line);
-      meta.setLore(lore);
+      lore.add(GuiTextUtils.component(line));
+      meta.lore(lore);
       this.item.setItemMeta(meta);
    }
 
    public final void clearLore() {
       ItemMeta meta = this.item.getItemMeta();
-      meta.setLore(new ArrayList<>());
+      meta.lore(List.of());
       this.item.setItemMeta(meta);
    }
 

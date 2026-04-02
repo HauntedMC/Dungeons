@@ -61,7 +61,7 @@ public class FunctionTitle extends DungeonFunction {
 
             title = HelperUtils.parseVars(instance, title);
             subtitle = HelperUtils.parseVars(instance, subtitle);
-            player.sendTitle(HelperUtils.fullColor(title), HelperUtils.fullColor(subtitle), this.fadeIn, this.stay, this.fadeOut);
+            HelperUtils.showTitle(player, title, subtitle, this.fadeIn, this.stay, this.fadeOut);
          }
       }
    }

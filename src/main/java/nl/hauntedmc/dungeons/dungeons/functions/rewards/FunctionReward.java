@@ -165,7 +165,7 @@ public class FunctionReward extends DungeonFunction {
             }
          }
 
-         Dungeons.inst().getAvnAPI().openGUI(player, this.instancedGUIName);
+         Dungeons.inst().getGuiApi().openGUI(player, this.instancedGUIName);
          if (!this.playerRewards.contains(player.getUniqueId())) {
             this.playerRewards.add(player.getUniqueId());
          }
@@ -533,7 +533,7 @@ public class FunctionReward extends DungeonFunction {
          @Override
          public void onSelect(PlayerEvent event) {
             Player player = event.getPlayer();
-            Dungeons.inst().getAvnAPI().openGUI(player, FunctionReward.this.rewardsGUIName);
+            Dungeons.inst().getGuiApi().openGUI(player, FunctionReward.this.rewardsGUIName);
          }
       });
       this.menu.addMenuItem(new ChatMenuItem() {

@@ -25,7 +25,7 @@ public class DisplayHandler {
       if (display == null) {
          return null;
       } else {
-         display.setText(HelperUtils.fullColor(text.replace("\\n", "\n")));
+         display.text(HelperUtils.component(text.replace("\\n", "\n")));
          display.setViewRange(viewRange / 64.0F);
          return display;
       }
@@ -38,7 +38,7 @@ public class DisplayHandler {
          TextDisplay display = loc.getWorld().spawn(loc, TextDisplay.class);
          display.setAlignment(TextAlignment.CENTER);
          display.setBillboard(Billboard.CENTER);
-         display.setText(HelperUtils.fullColor(text));
+         display.text(HelperUtils.component(text));
          display.setViewRange(viewRange / 64.0F);
          if (isLabel) {
             display.getPersistentDataContainer().set(new NamespacedKey(Dungeons.inst(), "dungeonhologram"), PersistentDataType.BOOLEAN, true);
@@ -56,7 +56,7 @@ public class DisplayHandler {
          TextDisplay newDisplay = loc.getWorld().spawn(loc, TextDisplay.class);
          newDisplay.setAlignment(TextAlignment.CENTER);
          newDisplay.setBillboard(Billboard.CENTER);
-         newDisplay.setText(display.getText());
+         newDisplay.text(display.text());
          newDisplay.setViewRange(display.getViewRange());
          newDisplay.getPersistentDataContainer().set(new NamespacedKey(Dungeons.inst(), "dungeonhologram"), PersistentDataType.BOOLEAN, true);
          this.textHolograms.put(loc, newDisplay);

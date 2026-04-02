@@ -3,8 +3,6 @@ package nl.hauntedmc.dungeons.dungeons.functions;
 import java.util.List;
 import java.util.Map;
 import me.clip.placeholderapi.PlaceholderAPI;
-import net.md_5.bungee.api.ChatMessageType;
-import net.md_5.bungee.api.chat.TextComponent;
 import nl.hauntedmc.dungeons.Dungeons;
 import nl.hauntedmc.dungeons.api.annotations.DeclaredFunction;
 import nl.hauntedmc.dungeons.api.annotations.SavedField;
@@ -63,10 +61,10 @@ public class FunctionMessage extends DungeonFunction {
             message = HelperUtils.parseVars(instance, message);
             switch (this.messageType) {
                case 0:
-                  player.sendMessage(HelperUtils.fullColor(message));
+                  player.sendMessage(HelperUtils.component(message));
                   break;
                case 1:
-                  player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(HelperUtils.fullColor(message)));
+                  player.sendActionBar(HelperUtils.component(message));
             }
          }
       }

@@ -79,7 +79,7 @@ public abstract class TriggerGate extends DungeonTrigger {
             if (TriggerGate.this.triggers.size() >= 54) {
                player.sendMessage(Dungeons.logPrefix + HelperUtils.colorize("&cYou can't add any more triggers to this gate!"));
             } else {
-               Dungeons.inst().getAvnAPI().openGUI(player, "triggermenu");
+               Dungeons.inst().getGuiApi().openGUI(player, "triggermenu");
             }
          }
       });
@@ -93,7 +93,7 @@ public abstract class TriggerGate extends DungeonTrigger {
          @Override
          public void onSelect(PlayerEvent event) {
             Player player = event.getPlayer();
-            Dungeons.inst().getAvnAPI().openGUI(player, "editgatetrigger");
+            Dungeons.inst().getGuiApi().openGUI(player, "editgatetrigger");
          }
       });
       this.menu.addMenuItem(new MenuItem() {
@@ -106,7 +106,7 @@ public abstract class TriggerGate extends DungeonTrigger {
          @Override
          public void onSelect(PlayerEvent event) {
             Player player = event.getPlayer();
-            Dungeons.inst().getAvnAPI().openGUI(player, "removegatetrigger");
+            Dungeons.inst().getGuiApi().openGUI(player, "removegatetrigger");
          }
       });
    }

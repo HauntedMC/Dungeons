@@ -353,7 +353,7 @@ public abstract class DungeonTrigger extends DungeonElement implements Cloneable
             if (DungeonTrigger.this.conditions.size() >= 54) {
                player.sendMessage(Dungeons.logPrefix + HelperUtils.colorize("&cYou can't add any more conditions to this trigger!"));
             } else {
-               Dungeons.inst().getAvnAPI().openGUI(player, "conditionsmenu");
+               Dungeons.inst().getGuiApi().openGUI(player, "conditionsmenu");
             }
          }
       });
@@ -367,7 +367,7 @@ public abstract class DungeonTrigger extends DungeonElement implements Cloneable
          @Override
          public void onSelect(PlayerEvent event) {
             Player player = event.getPlayer();
-            Dungeons.inst().getAvnAPI().openGUI(player, "editcondition");
+            Dungeons.inst().getGuiApi().openGUI(player, "editcondition");
          }
       });
       this.conditionsMenu.addMenuItem(new MenuItem() {
@@ -380,7 +380,7 @@ public abstract class DungeonTrigger extends DungeonElement implements Cloneable
          @Override
          public void onSelect(PlayerEvent event) {
             Player player = event.getPlayer();
-            Dungeons.inst().getAvnAPI().openGUI(player, "removecondition");
+            Dungeons.inst().getGuiApi().openGUI(player, "removecondition");
          }
       });
    }

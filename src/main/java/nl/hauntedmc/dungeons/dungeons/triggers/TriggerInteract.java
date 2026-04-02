@@ -46,7 +46,7 @@ public class TriggerInteract extends DungeonTrigger {
    @EventHandler
    public void onInteract(PlayerInteractEvent event) {
       if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
-         if (!event.isCancelled()) {
+         if (!HelperUtils.isInteractionDenied(event)) {
             if (!event.getPlayer().getGameMode().equals(GameMode.SPECTATOR)) {
                World world = event.getPlayer().getWorld();
                if (world == this.instance.getInstanceWorld()) {

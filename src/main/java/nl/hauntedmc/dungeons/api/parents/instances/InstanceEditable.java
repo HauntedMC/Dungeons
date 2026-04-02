@@ -6,8 +6,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
-import net.md_5.bungee.api.ChatMessageType;
-import net.md_5.bungee.api.chat.TextComponent;
 import nl.hauntedmc.dungeons.Dungeons;
 import nl.hauntedmc.dungeons.api.parents.dungeons.AbstractDungeon;
 import nl.hauntedmc.dungeons.api.parents.elements.DungeonFunction;
@@ -17,7 +15,6 @@ import nl.hauntedmc.dungeons.dungeons.triggers.TriggerInteract;
 import nl.hauntedmc.dungeons.listeners.dungeonlisteners.EditListener;
 import nl.hauntedmc.dungeons.player.DungeonPlayer;
 import nl.hauntedmc.dungeons.util.file.LangUtils;
-import nl.hauntedmc.dungeons.util.entity.ParticleUtils;
 import nl.hauntedmc.dungeons.util.HelperUtils;
 import nl.hauntedmc.dungeons.util.tasks.ProcessTimer;
 import org.apache.commons.io.FileUtils;
@@ -84,7 +81,7 @@ public class InstanceEditable extends AbstractInstance {
                for (DungeonPlayer aPlayer : InstanceEditable.this.players) {
                   Player player = aPlayer.getPlayer();
                   if (!(loc.distance(player.getLocation()) > 15.0)) {
-                     player.spawnParticle(ParticleUtils.getVersionParticle("DUST"), loc, 12, 0.25, 0.25, 0.25, dustOptions);
+                     player.spawnParticle(Particle.DUST, loc, 12, 0.25, 0.25, 0.25, dustOptions);
                      player.spawnParticle(Particle.END_ROD, loc, 1, 0.25, 0.25, 0.25, 0.01);
                   }
                }
@@ -109,17 +106,13 @@ public class InstanceEditable extends AbstractInstance {
 
    public void autosave() {
       for (DungeonPlayer mPlayer : this.players) {
-         mPlayer.getPlayer()
-            .spigot()
-            .sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(LangUtils.getMessage("instance.editmode.autosaving")));
+         mPlayer.getPlayer().sendActionBar(HelperUtils.component(LangUtils.getMessage("instance.editmode.autosaving")));
       }
 
       new ProcessTimer().run("Autosave of " + this.dungeon.getWorldName(), this::saveWorld);
 
       for (DungeonPlayer mPlayer : this.players) {
-         mPlayer.getPlayer()
-            .spigot()
-            .sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(LangUtils.getMessage("instance.editmode.autosaved")));
+         mPlayer.getPlayer().sendActionBar(HelperUtils.component(LangUtils.getMessage("instance.editmode.autosaved")));
       }
    }
 

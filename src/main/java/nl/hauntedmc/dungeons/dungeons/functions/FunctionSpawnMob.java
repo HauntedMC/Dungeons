@@ -154,8 +154,8 @@ public class FunctionSpawnMob extends DungeonFunction {
                   }
 
                   if (instance.getInstanceWorld().spawnEntity(spawnPoint, type) instanceof LivingEntity living) {
-                     living.setMaxHealth(living.getMaxHealth() * finalHealthMod);
-                     living.setHealth(living.getMaxHealth());
+                     HelperUtils.setMaxHealth(living, HelperUtils.getMaxHealth(living) * finalHealthMod);
+                     living.setHealth(HelperUtils.getMaxHealth(living));
                      FunctionSpawnMob.this.applyRoomTag(living);
                      AttributeInstance attrib = living.getAttribute(Attribute.ATTACK_DAMAGE);
                      if (attrib != null) {

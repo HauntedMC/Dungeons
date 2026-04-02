@@ -19,7 +19,7 @@ import org.bukkit.util.Vector;
 
 public final class ParticleUtils {
    public static void displayBoundingBox(Player to, int ticks, BoundingBox... boxes) {
-      displayBoundingBox(to, ticks, getVersionParticle("WAX_OFF"), boxes);
+      displayBoundingBox(to, ticks, Particle.WAX_OFF, boxes);
    }
 
    public static void displayBoundingBox(final Player to, int ticks, final Particle particle, final BoundingBox... boxes) {
@@ -33,7 +33,7 @@ public final class ParticleUtils {
    }
 
    public static void displayBoundingBox(Player to, BoundingBox... boxes) {
-      displayBoundingBox(to, getVersionParticle("WAX_OFF"), boxes);
+      displayBoundingBox(to, Particle.WAX_OFF, boxes);
    }
 
    public static void displayStructureBox(Player to, BoundingBox... boxes) {
@@ -73,7 +73,7 @@ public final class ParticleUtils {
 
    public static void drawLine(Player to, Location pos1, Location pos2, Particle particle) {
       DustOptions dustOptions = null;
-      if (particle == getVersionParticle("DUST")) {
+      if (particle == Particle.DUST) {
          dustOptions = new DustOptions(Color.RED, 0.5F);
       }
 
@@ -87,7 +87,7 @@ public final class ParticleUtils {
          double gap = distance / points;
          Vector add = pos1.toVector().subtract(pos2.toVector()).normalize().multiply(gap);
          Location start = pos1.clone();
-         if (particle == getVersionParticle("DUST") && opt == null) {
+         if (particle == Particle.DUST && opt == null) {
             opt = new DustOptions(Color.RED, 0.5F);
          }
 
@@ -134,21 +134,4 @@ public final class ParticleUtils {
       drawLine(to, t4, t3, particle, opt);
    }
 
-   public static Particle getVersionParticle(String name) {
-      Particle particle;
-      try {
-         particle = Particle.valueOf(name);
-      } catch (IllegalArgumentException var5) {
-         String var3 = name.toUpperCase();
-          particle = switch (var3) {
-              case "DUST" -> Particle.valueOf("REDSTONE");
-              case "HAPPY_VILLAGER" -> Particle.valueOf("VILLAGER_HAPPY");
-              case "ENTITY_EFFECT" -> Particle.valueOf("MOB_SPELL");
-              case "EFFECT" -> Particle.valueOf("MOB_SPELL_AMBIENT");
-              default -> Particle.ASH;
-          };
-      }
-
-      return particle;
-   }
 }

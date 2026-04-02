@@ -132,7 +132,7 @@ public class FunctionMulti extends DungeonFunction {
             if (FunctionMulti.this.functions.size() >= 54) {
                player.sendMessage(Dungeons.logPrefix + HelperUtils.colorize("&cYou can't add any more functions!"));
             } else {
-               Dungeons.inst().getAvnAPI().openGUI(player, "functionmenu");
+               Dungeons.inst().getGuiApi().openGUI(player, "functionmenu");
             }
          }
       });
@@ -146,7 +146,7 @@ public class FunctionMulti extends DungeonFunction {
          @Override
          public void onSelect(PlayerEvent event) {
             Player player = event.getPlayer();
-            Dungeons.inst().getAvnAPI().openGUI(player, "editmultifunction");
+            Dungeons.inst().getGuiApi().openGUI(player, "editmultifunction");
          }
       });
       this.menu.addMenuItem(new MenuItem() {
@@ -159,7 +159,7 @@ public class FunctionMulti extends DungeonFunction {
          @Override
          public void onSelect(PlayerEvent event) {
             Player player = event.getPlayer();
-            Dungeons.inst().getAvnAPI().openGUI(player, "removemultifunction");
+            Dungeons.inst().getGuiApi().openGUI(player, "removemultifunction");
          }
       });
       this.menu.addMenuItem(new MenuItem() {
@@ -172,7 +172,7 @@ public class FunctionMulti extends DungeonFunction {
          @Override
          public void onSelect(PlayerEvent event) {
             Player player = event.getPlayer();
-            Dungeons.inst().getAvnAPI().openGUI(player, "editmultifunctiontriggers");
+            Dungeons.inst().getGuiApi().openGUI(player, "editmultifunctiontriggers");
          }
       });
    }

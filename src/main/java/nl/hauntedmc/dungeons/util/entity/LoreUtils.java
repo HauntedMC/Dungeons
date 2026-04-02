@@ -2,7 +2,7 @@ package nl.hauntedmc.dungeons.util.entity;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.bukkit.ChatColor;
+import nl.hauntedmc.dungeons.util.HelperUtils;
 
 public final class LoreUtils {
 
@@ -28,7 +28,7 @@ public final class LoreUtils {
 
             String newLine = unwrapedLine.substring(0, splitIndex);
             newLine = newLine.replaceFirst("\\s++$", "");
-            String chatColor = ChatColor.getLastColors(newLine);
+            String chatColor = HelperUtils.getLastColors(newLine);
             unwrapedLine = chatColor + unwrapedLine.substring(splitIndex);
             wrapedLore.add(newLine);
          }

@@ -35,7 +35,7 @@ public class RecruitGUIHandler {
             }
 
             lore.addFirst("");
-            lore.addFirst(HelperUtils.fullColor("&a" + listing.getParty().getPlayers().size() + "/" + listing.getPartySize() + " &7| " + host.getDisplayName()));
+            lore.addFirst(HelperUtils.fullColor("&a" + listing.getParty().getPlayers().size() + "/" + listing.getPartySize() + " &7| " + HelperUtils.playerDisplayName(host)));
             button.setLore(lore);
             button.addAction("join", click -> {
                Player clicker = (Player)click.getWhoClicked();

@@ -7,7 +7,6 @@ import nl.hauntedmc.dungeons.gui.hotbar.DungeonPlayerHotbarMenu;
 import nl.hauntedmc.dungeons.player.DungeonPlayer;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 
@@ -32,7 +31,7 @@ public abstract class MenuItem {
    protected MenuButton button;
    protected List<MenuAction<PlayerEvent>> selectActions = new ArrayList<>();
    protected List<MenuAction<PlayerEvent>> clickActions = new ArrayList<>();
-   protected List<MenuAction<AsyncPlayerChatEvent>> chatActions = new ArrayList<>();
+   protected List<ChatInputAction> chatActions = new ArrayList<>();
    protected List<MenuAction<PlayerItemHeldEvent>> hoverActions = new ArrayList<>();
 
    public abstract void buildButton();
@@ -42,7 +41,7 @@ public abstract class MenuItem {
    public void onClick(PlayerEvent event) {
    }
 
-   public void onChat(AsyncPlayerChatEvent event) {
+   public void onChat(Player player, String message) {
    }
 
    public void onHover(PlayerItemHeldEvent event) {
@@ -67,11 +66,11 @@ public abstract class MenuItem {
       }
    }
 
-   public void runChatActions(AsyncPlayerChatEvent event) {
-      this.onChat(event);
+   public void runChatActions(Player player, String message) {
+      this.onChat(player, message);
 
-      for (MenuAction<AsyncPlayerChatEvent> action : this.chatActions) {
-         action.run(event);
+      for (ChatInputAction action : this.chatActions) {
+         action.run(player, message);
       }
    }
 
@@ -97,5 +96,10 @@ public abstract class MenuItem {
 
    public MenuButton getButton() {
       return this.button;
+   }
+
+   @FunctionalInterface
+   public interface ChatInputAction {
+      void run(Player player, String message);
    }
 }

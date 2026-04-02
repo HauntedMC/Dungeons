@@ -1,9 +1,15 @@
 package nl.hauntedmc.dungeons.managers;
 
+import io.papermc.paper.event.player.AsyncChatEvent;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import nl.hauntedmc.dungeons.Dungeons;
 import nl.hauntedmc.dungeons.gui.hotbar.DungeonPlayerHotbarMenu;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuItem;
 import nl.hauntedmc.dungeons.player.DungeonPlayer;
+import nl.hauntedmc.dungeons.util.HelperUtils;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -13,7 +19,6 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCreativeEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
@@ -22,6 +27,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
 public final class HotbarMenuManager implements Listener {
+   private final Set<UUID> pendingChatInputs = ConcurrentHashMap.newKeySet();
+
    @EventHandler(
       priority = EventPriority.LOW
    )
@@ -90,9 +97,9 @@ public final class HotbarMenuManager implements Listener {
    }
 
    @EventHandler(
-      priority = EventPriority.LOW
+      priority = EventPriority.LOWEST
    )
-   public void onChat(AsyncPlayerChatEvent event) {
+   public void onChat(AsyncChatEvent event) {
       Player player = event.getPlayer();
       DungeonPlayer aPlayer = Dungeons.inst().getDungeonPlayer(player);
       if (aPlayer != null) {
@@ -100,12 +107,27 @@ public final class HotbarMenuManager implements Listener {
             if (aPlayer.isChatListening()) {
                MenuItem menuItem = menu.getMenuItems().get(menu.getSelected());
                if (menuItem != null) {
-                  menuItem.runChatActions(event);
-                  event.setMessage("");
-                  player.playSound(player.getLocation(), "minecraft:entity.experience_orb.pickup", 0.5F, 1.2F);
                   event.setCancelled(true);
-                  aPlayer.setChatListening(false);
-                  menu.buildMenu();
+                  UUID playerId = player.getUniqueId();
+                  if (!this.pendingChatInputs.add(playerId)) {
+                     return;
+                  }
+
+                  String message = HelperUtils.plainText(event.originalMessage());
+                  Bukkit.getScheduler().runTask(Dungeons.inst(), () -> {
+                     try {
+                        if (!aPlayer.isChatListening()) {
+                           return;
+                        }
+
+                        menuItem.runChatActions(player, message);
+                        player.playSound(player.getLocation(), "minecraft:entity.experience_orb.pickup", 0.5F, 1.2F);
+                     } finally {
+                        aPlayer.setChatListening(false);
+                        menu.buildMenu();
+                        this.pendingChatInputs.remove(playerId);
+                     }
+                  });
                }
             }
          }

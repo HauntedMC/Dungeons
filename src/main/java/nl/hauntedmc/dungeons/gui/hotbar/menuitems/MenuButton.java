@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import nl.hauntedmc.dungeons.util.HelperUtils;
 import org.bukkit.Material;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
@@ -23,19 +24,19 @@ public class MenuButton {
    public void setDisplayName(String displayName) {
       this.displayName = HelperUtils.fullColor(displayName);
       ItemMeta meta = this.item.getItemMeta();
-      meta.setDisplayName(this.displayName);
+      meta.displayName(HelperUtils.component(this.displayName));
       this.item.setItemMeta(meta);
    }
 
    public void addLore(String line) {
       ItemMeta meta = this.item.getItemMeta();
-      List<String> lore = meta.getLore();
+      List<net.kyori.adventure.text.Component> lore = meta.lore();
       if (lore == null) {
          lore = new ArrayList<>();
       }
 
-      lore.add(HelperUtils.fullColor(line));
-      meta.setLore(lore);
+      lore.add(HelperUtils.component(line));
+      meta.lore(lore);
       this.item.setItemMeta(meta);
    }
 
@@ -46,9 +47,9 @@ public class MenuButton {
 
    public void setEnchanted(boolean enchanted) {
       if (enchanted) {
-         this.item.addUnsafeEnchantment(HelperUtils.getVersionEnchantment("AQUA_AFFINITY"), 1);
+         this.item.addUnsafeEnchantment(Enchantment.AQUA_AFFINITY, 1);
       } else {
-         this.item.removeEnchantment(HelperUtils.getVersionEnchantment("AQUA_AFFINITY"));
+         this.item.removeEnchantment(Enchantment.AQUA_AFFINITY);
       }
 
    }

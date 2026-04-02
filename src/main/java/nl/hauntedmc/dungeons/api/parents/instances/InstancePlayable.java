@@ -28,7 +28,6 @@ import nl.hauntedmc.dungeons.player.DungeonPlayer;
 import nl.hauntedmc.dungeons.util.world.DungeonMapRenderer;
 import nl.hauntedmc.dungeons.util.entity.ItemUtils;
 import nl.hauntedmc.dungeons.util.file.LangUtils;
-import nl.hauntedmc.dungeons.util.version.ReflectionUtils;
 import nl.hauntedmc.dungeons.util.HelperUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -104,7 +103,7 @@ public abstract class InstancePlayable extends AbstractInstance {
 
          for (DungeonPlayer aPlayer : this.players) {
             if (this.dungeon.getConfig().getBoolean("General.ShowTitleOnStart", false)) {
-               aPlayer.getPlayer().sendTitle(HelperUtils.fullColor(this.config.getString("General.DisplayName", "&cA Dungeon")), "", 10, 70, 10);
+               HelperUtils.showTitle(aPlayer.getPlayer(), this.config.getString("General.DisplayName", "&cA Dungeon"), "", 10, 70, 10);
             }
 
             HelperUtils.forceTeleport(aPlayer.getPlayer(), this.startLoc);
@@ -185,7 +184,6 @@ public abstract class InstancePlayable extends AbstractInstance {
          if (ent != null) {
 
             ent.remove();
-            Bukkit.getScheduler().runTaskLater(Dungeons.inst(), () -> ReflectionUtils.forcePurgeEntity(ent), 5L);
          }
       }
 
