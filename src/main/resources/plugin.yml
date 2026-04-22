@@ -1,0 +1,11 @@
+name: Dungeons
+prefix: Dungeons
+version: ${project.version}
+main: nl.hauntedmc.dungeons.plugin.DungeonsPlugin
+api-version: 1.21
+author: HauntedMC
+commands:
+  dungeon:
+    description: Main dungeon command
+    usage: /<command>
+    aliases: [du]

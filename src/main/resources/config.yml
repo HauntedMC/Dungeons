@@ -1,0 +1,55 @@
+instances:
+  # int. Maximum dungeon instances allowed across the whole server. Set 0 for no global limit.
+  max_active: 10
+
+commands:
+  # int. Entries shown per page in paginated /dungeon list output. Use a positive integer.
+  list_page_size: 10
+
+editor:
+  # int. Seconds to wait for an editor world to finish loading. Use a positive integer.
+  open_timeout_seconds: 10
+  # int. Seconds between automatic editor saves. Set 0 to disable autosave.
+  autosave_interval_seconds: 300
+
+  tools:
+    # material. Bukkit material for the function tool. Must be a non-AIR material name.
+    function_item: FEATHER
+    # int. Hotbar slot for the function tool. Use 0-8.
+    function_slot: 0
+    # material. Bukkit material for the room tool. Must be a non-AIR material name.
+    room_item: GOLDEN_AXE
+    # int. Hotbar slot for the room tool. Use 0-8 and keep it different from function_slot.
+    room_slot: 1
+
+  preview:
+    # int. Ticks between editor preview updates. 20 = once per second.
+    update_interval_ticks: 20
+
+    function_markers:
+      # bool. Show particle markers above functions while editing.
+      enabled: true
+      # number. Max distance in blocks for function markers in static edit mode.
+      static_visible_radius_blocks: 15
+      # number. Max distance in blocks for function markers in branching edit mode.
+      branching_visible_radius_blocks: 10
+
+    branching_room_bounds:
+      # bool. Show nearby room outlines while holding the room tool in branching edit mode.
+      enabled: true
+      # number. Extra block range around the player to render room outlines.
+      visible_radius_blocks: 20
+
+generation:
+  # int. Seconds allowed for branching layout generation before it aborts.
+  layout_timeout_seconds: 5
+  # int. Seconds allowed when searching a safe spawn inside a region.
+  safe_spawn_search_timeout_seconds: 5
+
+team:
+  # int. Seconds before a pending team invite expires. Use a positive integer.
+  invite_expiry_seconds: 120
+  # int. Seconds before an unstarted team auto-disbands. Set 0 to disable.
+  unstarted_expiry_seconds: 1800
+  # list[int]. Countdown moments that warn players before a disbanded team's instance closes.
+  disbanded_instance_warning_seconds: [60, 30, 10, 5, 4, 3, 2, 1]

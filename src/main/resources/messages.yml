@@ -1,0 +1,1035 @@
+general:
+  prefix: <#5E55AD>[Dungeons]
+  java-locale: nl-NL
+  errors:
+    no-permission: '&cJe hebt hier geen permissie voor.'
+    players-only: '&cAlleen spelers kunnen dit doen.'
+  items:
+    dungeon-key:
+      name: '&6Dungeon Key'
+    function-tool:
+      name: '&d&lFunction Tool'
+      lore:
+      - '&7Gebruik dit item om functions te plaatsen'
+      - '&7of bestaande functions te bewerken.'
+    room-tool:
+      name: '&6&lRoom Tool'
+      lore:
+      - '&7Gebruik dit item om rooms te selecteren'
+      - '&7en branching room instellingen te bewerken.'
+commands:
+  root:
+    header: <#5E55AD>-= Dungeons versie {version} =-
+    help: '&d/dungeon help &7Open de command help pagina''s.'
+    list: '&d/dungeon list [filter] [page] &7Bekijk beschikbare dungeons.'
+    play: '&d/dungeon play <dungeon>[:difficulty] [player] &7Start een dungeon run.'
+    team: '&d/dungeon team <create|invite|kick|revoke|accept|deny|leave|delete|info> &7Beheer tijdelijke dungeon teams.'
+    leave: '&d/dungeon leave &7Verlaat je huidige dungeon of queue.'
+    stuck: '&d/dungeon stuck &7Ga terug naar je laatste checkpoint.'
+    lives: '&d/dungeon lives &7Toon je resterende levens.'
+    rewards: '&d/dungeon rewards &7Open je openstaande beloningen.'
+    config: '&d/dungeon config <dungeon> list &7Bekijk live map en generator instellingen.'
+    edit: '&d/dungeon edit ... &7Werk in de huidige editor sessie.'
+    loot: '&d/dungeon loot <create|edit|remove|list> &7Beheer loot tables.'
+    dungeon: '&d/dungeon dungeon ... &7Beheer opgeslagen dungeon definities.'
+    player: '&d/dungeon player <player> ... &7Beheer speler-specifieke dungeon status.'
+    instance: '&d/dungeon instance ... &7Werk met live dungeon instances.'
+    debug: '&d/dungeon debug ... &7Gebruik debug tools voor instances.'
+  help:
+    header: <#5E55AD>-= Dungeons versie {version} =-
+    footer: <#5E55AD>-= Pagina {page} van {total_pages} =-
+    help: '&a/dungeon help &b[pagina] &f| &eToon dit help menu.'
+    list: '&a/dungeon list &b[filter] [pagina] &f| &eBekijk beschikbare dungeons.'
+    play: '&a/dungeon play &6<dungeon>[:difficulty] [player] &f| &eStart een dungeon run.'
+    team: '&a/dungeon team ... &f| &eBeheer tijdelijke dungeon teams.'
+    leave: '&a/dungeon leave &f| &eVerlaat de huidige dungeon of queue.'
+    stuck: '&a/dungeon stuck &f| &eStuur jezelf veilig naar je laatste checkpoint.'
+    lives: '&a/dungeon lives &f| &eToon hoeveel levens je nog hebt.'
+    rewards: '&a/dungeon rewards &f| &eOpen je openstaande dungeon beloningen.'
+    config: '&a/dungeon config &6<dungeon> ... &f| &eBekijk of wijzig live dungeon instellingen.'
+    edit: '&a/dungeon edit ... &f| &eWerk in de huidige dungeon editor sessie.'
+    loot: '&a/dungeon loot ... &f| &eBeheer loot tables.'
+    dungeon: '&a/dungeon dungeon ... &f| &eBeheer opgeslagen dungeon definities.'
+    player: '&a/dungeon player &6<player> ... &f| &ePas speler-specifieke dungeon status aan.'
+    instance: '&a/dungeon instance ... &f| &eWerk met live dungeon instances.'
+    debug: '&a/dungeon debug ... &f| &eGebruik debug tools voor instances.'
+  list:
+    usage: '&a/dungeon list &b[filter] [pagina] &f| &eBekijk beschikbare dungeons.'
+    header: <#5E55AD>-= Beschikbare Dungeons =-
+    line: ' &d{dungeon} &8• &f{display} &8• &fteam {team_size} &8• &fdifficulties {difficulties}'
+    no-match: '&cGeen dungeons gevonden voor die filter.'
+    footer: <#5E55AD>-= Pagina {page} van {total_pages} =-
+    default-difficulty: standaard
+  play:
+    usage: '&a/dungeon play &6<dungeon>[:difficulty] [player] &f| &eStart een dungeon run voor de speler.'
+    console-needs-player: '&cDe console moet een speler opgeven.'
+    player-not-found: '&cSpeler ''&6{player}&c'' is niet online of bestaat niet.'
+    already-in-queue: '&cDie speler staat al in de dungeon queue.'
+    already-in-dungeon: '&cDie speler zit al in een dungeon.'
+    already-in-dungeon-self: '&cJe zit al in een dungeon.'
+    dungeon-not-found: '&cDungeon ''&6{dungeon}&c'' bestaat niet.'
+    instances-full: '&cEr is momenteel geen vrije instance beschikbaar voor deze dungeon.'
+    how-to-cancel: '&7Gebruik &d/dungeon leave &7om de queue te verlaten.'
+    on-cooldown: '&cJe hebt nog access cooldown voor &6{dungeon}&c.'
+    missing-key: '&cJe hebt de benodigde key voor &6{dungeon}&c niet.'
+    team:
+      only-leader-start: '&cAlleen de team leider kan de dungeon starten.'
+      already-locked: '&cJe team staat al in de wachtrij of draait al een dungeon.'
+      members-must-be-online: '&cAlle teamleden moeten online zijn voordat je de dungeon kunt starten.'
+      members-must-be-free: '&cAlle teamleden moeten vrij zijn voordat je de dungeon kunt starten.'
+      member-on-cooldown: '&c{player} staat nog op access cooldown voor &6{dungeon}&c.'
+      member-missing-key: '&c{player} heeft de benodigde key voor &6{dungeon}&c niet.'
+      team-too-large: '&cDeze groep is te groot voor deze dungeon ({count}/{max} spelers).'
+      open-too-large: '&cDeze groep is te groot voor een open dungeon instance ({count}/{max} spelers).'
+  leave:
+    left-dungeon: '&aJe hebt dungeon &6{dungeon}&a verlaten.'
+    left-queue: '&aJe hebt de dungeon queue verlaten.'
+    not-in-dungeon: '&cJe zit niet in een dungeon of queue.'
+  stuck:
+    usage: '&a/dungeon stuck &f| &eStuur jezelf veilig naar je laatste checkpoint.'
+    not-in-dungeon: '&cJe zit niet in een dungeon.'
+    success: '&aJe wordt teruggestuurd naar je laatste checkpoint.'
+  lives:
+    not-in-dungeon: '&cJe zit niet in een dungeon.'
+    infinite-lives: '&aJe hebt oneindig veel levens in deze dungeon.'
+    lives-remaining: '&aJe hebt nog &6{lives}&a leven(s).'
+  rewards:
+    usage: '&a/dungeon rewards &f| &eOpen je openstaande dungeon beloningen.'
+    empty: '&7Je hebt momenteel geen openstaande dungeon beloningen.'
+  team:
+    help:
+      lines:
+      - '&a/dungeon team create &f| &eMaak een tijdelijk dungeon team.'
+      - '&a/dungeon team invite &6<player> &f| &eNodig een speler uit voor je team.'
+      - '&a/dungeon team kick &6<player> &f| &eZet een teamlid uit je team zolang jullie niet in een dungeon zitten.'
+      - '&a/dungeon team revoke &6<player> &f| &eTrek een openstaande invite in.'
+      - '&a/dungeon team accept &f| &eAccepteer je openstaande invite.'
+      - '&a/dungeon team deny &f| &eWeiger je openstaande invite.'
+      - '&a/dungeon team leave &f| &eVerlaat een team waar je lid van bent.'
+      - '&a/dungeon team delete &f| &eVerwijder je team als leider.'
+      - '&a/dungeon team info &f| &eToon je huidige team.'
+    unknown-subcommand: '&cOnbekend team subcommand.'
+    no-team: '&cJe hebt geen dungeon team.'
+    no-team-create-hint: '&cJe hebt geen dungeon team. Maak er een met &d/dungeon team create&c.'
+    not-in-team: '&cJe zit niet in een dungeon team.'
+    already-in-team: '&cJe zit al in een dungeon team.'
+    locked: '&cJe kunt het team niet meer aanpassen nadat het in de wachtrij staat of is gestart.'
+    create:
+      in-dungeon: '&cJe kunt geen team maken terwijl je in een dungeon zit.'
+      in-queue: '&cJe kunt geen team maken terwijl je in de dungeon queue staat of al onderweg bent naar een dungeon.'
+      success: '&aTijdelijk dungeon team aangemaakt. Nodig spelers uit met &d/dungeon team invite <player>&a.'
+      expiry-info: '&7Als er niet op tijd een dungeon wordt gestart, wordt het team automatisch verwijderd.'
+    invite:
+      usage: '&a/dungeon team invite &6<player> &f| &eNodig een speler uit voor je tijdelijke dungeon team.'
+      only-leader: '&cAlleen de team leider kan spelers uitnodigen.'
+      self: '&cJe kunt jezelf niet uitnodigen.'
+      already-member: '&cDie speler zit al in jouw team.'
+      target-in-team: '&cDie speler zit al in een dungeon team.'
+      target-busy: '&cDie speler zit al in een dungeon, queue, of wordt al naar een dungeon gestuurd.'
+      sent: '&a&d{player}&a is uitgenodigd voor je dungeon team.'
+      received: '&d{player}&a heeft je uitgenodigd voor een dungeon team.'
+      how-to-respond: '&7Gebruik &d/dungeon team accept &7om toe te treden of &d/dungeon team deny &7om te weigeren.'
+      none: '&cJe hebt geen openstaande dungeon team invite.'
+      expired: '&cDie dungeon team invite is verlopen.'
+      team-missing: '&cDat dungeon team bestaat niet meer.'
+      team-locked: '&cDat dungeon team staat al in de wachtrij of zit al in een dungeon.'
+      target-busy-self: '&cJe kunt geen dungeon team accepteren terwijl je in een dungeon zit, in queue staat, of al onderweg bent naar een dungeon.'
+      denied-self: '&7Je hebt de dungeon team invite geweigerd.'
+      denied-other: '&c{player} heeft je dungeon team invite geweigerd.'
+    kick:
+      usage: '&a/dungeon team kick &6<player> &f| &eZet een teamlid uit je team zolang jullie niet in een dungeon zitten.'
+      only-leader: '&cAlleen de team leider kan teamleden verwijderen.'
+      self: '&cJe kunt jezelf niet uit het team zetten.'
+      not-member: '&cDie speler zit niet in jouw dungeon team.'
+      started: '&cJe kunt geen teamleden verwijderen terwijl jullie in een dungeon zitten.'
+      removed-self: '&cJe bent uit het dungeon team gezet.'
+      removed-other: '&e{player} is uit het dungeon team gezet.'
+    revoke:
+      usage: '&a/dungeon team revoke &6<player> &f| &eTrek een openstaande invite in.'
+      only-leader: '&cAlleen de team leider kan invites intrekken.'
+      no-invite: '&cEr staat geen openstaande invite voor die speler vanuit jouw team.'
+      success: '&aDe dungeon team invite voor &d{player}&a is ingetrokken.'
+      notified: '&eJe dungeon team invite van &d{leader}&e is ingetrokken.'
+    member-joined: '&a{player} is toegetreden tot het dungeon team.'
+    joined: '&aJe bent toegetreden tot het dungeon team van &d{leader}&a.'
+    leave-hint: '&7Gebruik &d/dungeon team leave &7als je het team later wilt verlaten.'
+    delete:
+      only-leader: '&cAlleen de team leider kan het team verwijderen.'
+      started: '&cJe team zit al in een dungeon. Gebruik &d/dungeon leave &com de run als leider te stoppen.'
+      starting: '&cJe team is al bezig met starten en kan niet meer aangepast worden.'
+    deleted-by-leader: '&cHet dungeon team is verwijderd door de leider.'
+    leave:
+      leader-cannot-leave: '&cJe bent de team leider en kunt je eigen team niet verlaten.'
+      leader-started-hint: '&7Gebruik &d/dungeon leave &7om de run te stoppen, of &d/dungeon team delete &7voordat de dungeon start.'
+      self: '&aJe hebt het dungeon team verlaten.'
+      other: '&e{player} heeft het dungeon team verlaten.'
+      started-self: '&eJe hebt het dungeon team verlaten en kunt deze run niet opnieuw joinen.'
+      started-other: '&e{player} heeft het dungeon team verlaten.'
+    info:
+      leader: '&dTeam leider: &f{leader}'
+      members: '&dLeden: &f{members}'
+      state: '&dStatus: &f{state}'
+      dungeon: '&dDungeon: &f{dungeon} &7({difficulty})'
+      leader-controls-started: '&dLeider opties: &fGebruik /dungeon leave of /dungeon team delete om zelf te vertrekken en het team te ontbinden.'
+      leader-controls-idle: '&dLeider opties: &fGebruik /dungeon team delete om het team te verwijderen.'
+      member-controls-started: '&dLid opties: &fGebruik /dungeon team leave om het team en de run te verlaten.'
+      member-controls-idle: '&dLid opties: &fGebruik /dungeon team leave om het team te verlaten.'
+      states:
+        running: actief
+        queued: in wachtrij
+        idle: gereed
+      labels:
+        default-difficulty: standaard
+    queued: '&aHet team staat nu in de wachtrij voor &d{dungeon}&a. De leider neemt iedereen mee naar dezelfde instance.'
+    started: '&aJe dungeon team is instance &d{instance}&a binnengegaan.'
+    started-hint: '&7Als de leider vertrekt of het team ontbindt, blijft de dungeon tijdelijk open voor de overgebleven spelers.'
+    expired: '&cJe dungeon team is verlopen omdat er niet op tijd een dungeon is gestart.'
+    deleted-leader-offline: '&cHet dungeon team is verwijderd omdat de leider offline ging.'
+    deleted-leader-left-dungeon: '&cHet team is verwijderd omdat de leider de dungeon heeft verlaten.'
+    deleted-dungeon-ended: '&7Je tijdelijke dungeon team is verwijderd omdat de dungeon is geëindigd.'
+  loot:
+    usage: '&a/dungeon loot &6<create|edit|remove|list> &f| &eBeheer loot tables.'
+    create:
+      usage: '&a/dungeon loot create &6<name> &f| &eMaak een nieuwe loot table.'
+      already-exists: '&cLoot table ''&6{loot_table}&c'' bestaat al.'
+      success: '&aLoot table &6{loot_table}&a is aangemaakt.'
+    edit:
+      usage: '&a/dungeon loot edit &6<loot table> &f| &eOpen de loot table editor.'
+      not-found: '&cLoot table ''&6{loot_table}&c'' bestaat niet.'
+      already-editing: '&cDeze loot table wordt al door iemand anders bewerkt.'
+    remove:
+      usage: '&a/dungeon loot remove &6<loot table> &f| &eVerwijder de loot table.'
+      success: '&aLoot table &6{loot_table}&a is verwijderd.'
+    list:
+      usage: '&a/dungeon loot list &b[filter] [pagina] &f| &eBekijk bestaande loot tables.'
+      header: <#5E55AD>-= Loot Tables =-
+      line: ' &d{loot_table} &8• &f{min}-{max} items &8• &fduplicates {duplicates} &8• &feditor {editor}'
+      no-match: '&cGeen loot tables gevonden voor die filter.'
+      footer: <#5E55AD>-= Pagina {page} van {total_pages} =-
+      no-editor: niemand
+  config:
+    help:
+      header: <#5E55AD>-= Dungeon Config Help =-
+      lines:
+      - '&d/dungeon config <dungeon> list [filter] &7Bekijk bewerkbare map en generator instellingen.'
+      - '&d/dungeon config <dungeon> <setting> &7Lees de huidige waarde.'
+      - '&d/dungeon config <dungeon> <setting> <value> &7Schrijf een nieuwe waarde weg.'
+      - '&7Voorbeelden: &d/dungeon config current display-name &6&lCrypt'
+      - '&7             &d/dungeon config current spawn-mobs false'
+      - '&7             &d/dungeon config current layout branching'
+      - '&7             &d/dungeon config current exit-location here'
+    files:
+      main: <#5E55AD>[config.yml]
+      generation: <#5E55AD>[generation.yml]
+    unknown-setting: '&cOnbekende bewerkbare instelling ''&6{setting}&c''. Gebruik &6/dungeon config {dungeon} list&c.'
+    location-player-only: '&cLocatie instellingen kunnen alleen door een speler met &6here&c worden gezet.'
+    updated: '&a{setting}&a voor &6{dungeon}&a is bijgewerkt naar &e{value}&a.'
+    updated-live: '&7Deze wijziging is direct live in de bewerkte map staat.'
+    updated-runtime: '&7Nieuwe instances nemen dit direct over. Al geladen instances behouden hun huidige runtime staat.'
+    setting-value: '&d{setting} &8= &f{value} &7| {description}'
+    list-header: '<#5E55AD>-= Dungeon Config: {dungeon} =-'
+    list-usage: '&7Gebruik &d/dungeon config {dungeon} <setting> <value>&7 om een instelling te wijzigen.'
+    list-shortcut: '&7Snelkoppeling: &d/dungeon config current list &7werkt terwijl je in de dungeon editor zit.'
+    setting-line: ' &d{setting} &8= &f{value} &7| {description}'
+    no-match: '&cGeen bewerkbare instellingen gevonden voor die filter.'
+    invalid-value: '&cOngeldige waarde voor &6{setting}&c. {reason}'
+  dungeon:
+    help:
+      lines:
+      - '&a/dungeon dungeon create &6<name> [type] [generator] &f| &eMaak een nieuwe dungeon.'
+      - '&a/dungeon dungeon import &6<world> [type] &f| &eImporteer een world als dungeon.'
+      - '&a/dungeon dungeon delete &6<dungeon> &f| &eVerwijder een dungeon.'
+      - '&a/dungeon dungeon reload &b[dungeon|all] &f| &eHerlaad configs of dungeon data.'
+      - '&a/dungeon dungeon list &b[filter] [pagina] &f| &eBekijk opgeslagen dungeons.'
+      - '&a/dungeon dungeon info &6<dungeon> &f| &eToon statische dungeon info.'
+      - '&a/dungeon dungeon status &b[dungeon] &f| &eToon instance status.'
+      - '&a/dungeon dungeon keys <add|remove|clear> &6<dungeon> &f| &eBeheer access keys.'
+      - '&a/dungeon dungeon exit set &6<dungeon> &f| &eStel de exit locatie in.'
+    create:
+      usage: '&a/dungeon dungeon create &6<name> [type] [generator] &f| &eMaak een nieuwe lege dungeon.'
+      already-exists: '&cEr bestaat al een dungeon met die naam.'
+      world-conflict: '&cDe naam ''&6{world}&c'' is al in gebruik door een server world(folder). Kies een andere dungeonnaam.'
+      failed-to-create: '&cAanmaken van de dungeon is mislukt. Controleer de console voor details.'
+      success: '&aDungeon &6{dungeon}&a is aangemaakt.'
+    import:
+      usage: '&a/dungeon dungeon import &6<world> &b[type] &f| &eImporteer een world als dungeon.'
+      already-exists: '&cEr bestaat al een dungeon met de naam ''&6{world}&c''.'
+      world-not-found: '&cWorld ''&6{world}&c'' kon niet worden gevonden.'
+      world-loaded: '&cWorld ''&6{world}&c'' is momenteel geladen. Unload die world eerst voor je hem importeert.'
+      invalid-dimension: '&cDimensie ''&6{dimension}&c'' is ongeldig.'
+      failed: '&cImporteren van de dungeon is mislukt. Controleer de console voor details.'
+      success: '&aWorld &6{world}&a is succesvol geïmporteerd als dungeon.'
+    delete:
+      usage: '&a/dungeon dungeon delete &6<dungeon> &f| &eVerwijder een dungeon. Gebruik het nogmaals om te bevestigen.'
+      dungeon-not-found: '&cDungeon ''&6{dungeon}&c'' bestaat niet.'
+      edit-in-progress: '&cDeze dungeon wordt momenteel bewerkt en kan nu niet verwijderd worden.'
+      delete-warning: '&eJe staat op het punt deze dungeon te verwijderen.'
+      delete-confirm: '&eGebruik hetzelfde command opnieuw binnen 10 seconden om te bevestigen.'
+      notification: '&cDe dungeon waarin je zat is verwijderd.'
+      success: '&aDungeon &6{dungeon}&a is verwijderd.'
+    reload:
+      usage: '&a/dungeon dungeon reload &b[dungeon|all] &f| &eHerlaad configs of een dungeon.'
+      config-reloading: '&eConfigs worden herladen...'
+      config-reloaded: '&aConfigs zijn herladen.'
+      all-dungeons-reloading: '&eAlle dungeons worden herladen...'
+      all-dungeons-reloaded: '&aAlle dungeons zijn herladen.'
+      dungeon-not-found: '&cDungeon ''&6{dungeon}&c'' bestaat niet.'
+      dungeon-reloading: '&eDungeon &6{dungeon}&e wordt herladen...'
+      dungeon-reloaded: '&aDungeon &6{dungeon}&a is herladen.'
+      reload-dungeon-warning: '&eEr draaien nog actieve instances van &6{dungeon}&e.'
+      reload-dungeon-confirm: '&eGebruik hetzelfde command opnieuw om het herladen te forceren.'
+      reloaded-by-admin: '&cDe dungeon is herladen door een admin.'
+    list:
+      usage: '&a/dungeon dungeon list &b[filter] [pagina] &f| &eBekijk opgeslagen dungeons.'
+      header: <#5E55AD>-= Dungeon Definities =-
+      line: ' &d{dungeon} &8• &f{display} &8• &ftype {type} &8• &finstances {instances} &8• &fteam {team_size} &8• &fdifficulties {difficulties}'
+      no-match: '&cGeen dungeons gevonden voor die filter.'
+      footer: <#5E55AD>-= Pagina {page} van {total_pages} =-
+    info:
+      usage: '&a/dungeon dungeon info &6<dungeon> &f| &eToon statische dungeon info.'
+      header: <#5E55AD>---[ {dungeon} INFO ]---
+      display: '&dDisplay naam: &f{display}'
+      type: '&dType: &f{type}'
+      team-size: '&dMax team grootte: &f{team_size}'
+      instances: '&dActieve instances: &f{count}'
+      locations: '&dLocaties: &flobby={lobby} &8• &fstart={start} &8• &fexit={exit}'
+      difficulties: '&dDifficulties: &f{difficulties}'
+      keys: '&dAccess keys: &f{count}'
+      access-cooldown: '&dAccess cooldown: &f{state}'
+      edit-session: '&dEditor open: &f{state}'
+      labels:
+        set: ingesteld
+        not-set: ontbreekt
+        enabled: ingeschakeld
+        disabled: uitgeschakeld
+    status:
+      usage: '&a/dungeon dungeon status &b[dungeon] &f| &eToon info over actieve dungeon instances.'
+      global-header: <#5E55AD>-= Dungeons versie {version} =-
+      total-instances: '&dActieve instances: &f{count}'
+      total-players: '&dSpelers in instances: &f{count}'
+      dungeon-section-header: ' <#5E55AD>[ {dungeon} ]'
+      dungeon-instances: '&dInstances: &f{count}'
+      dungeon-players: '&dSpelers: &f{count}'
+      dungeon-not-found: '&cDungeon ''&6{dungeon}&c'' bestaat niet.'
+      dungeon-header: <#5E55AD>---[ {dungeon} STATUS ]---
+      none-loaded: '&7Er zijn geen instances van deze dungeon geladen.'
+      instance-line: ' &e[ {instance} ]'
+      edit-session-label: '&6EDIT SESSIE'
+      player-line: '&6 • {player}'
+    keys:
+      add:
+        usage: '&a/dungeon dungeon keys add &6<dungeon> &f| &eMaak het item in je hand een access key.'
+        dungeon-not-found: '&cDungeon ''&6{dungeon}&c'' bestaat niet.'
+        no-permission: '&cJe hebt geen permissie om deze dungeon te bewerken.'
+        no-held-item: '&cJe moet een item in je hand hebben.'
+        success: '&aHet item in je hand is toegevoegd als access key.'
+      remove:
+        usage: '&a/dungeon dungeon keys remove &6<dungeon> &f| &eVerwijder het item in je hand als access key.'
+        dungeon-not-found: '&cDungeon ''&6{dungeon}&c'' bestaat niet.'
+        no-permission: '&cJe hebt geen permissie om deze dungeon te bewerken.'
+        no-held-item: '&cJe moet een item in je hand hebben.'
+        success: '&aDe access key is verwijderd.'
+        no-key-found: '&cEr is geen bijpassende access key gevonden.'
+        no-key-found-detail: '&cEr is voor deze dungeon geen access key gevonden die overeenkomt met het item in je hand.'
+      clear:
+        usage: '&a/dungeon dungeon keys clear &6<dungeon> &f| &eVerwijder alle access keys.'
+        dungeon-not-found: '&cDungeon ''&6{dungeon}&c'' bestaat niet.'
+        no-permission: '&cJe hebt geen permissie om deze dungeon te bewerken.'
+        success: '&aAlle access keys zijn verwijderd.'
+    exit:
+      set:
+        usage: '&a/dungeon dungeon exit set &6<dungeon> &f| &eStel de exit locatie van de dungeon in.'
+        dungeon-not-found: '&cDungeon ''&6{dungeon}&c'' bestaat niet.'
+        success: '&aExit locatie ingesteld op &f{x}, {y}, {z}&a met yaw &f{yaw}&a.'
+  edit:
+    help:
+      lines:
+      - '&a/dungeon edit open &6<dungeon> &f| &eOpen een edit sessie.'
+      - '&a/dungeon edit close &f| &eSluit je huidige edit sessie.'
+      - '&a/dungeon edit save &f| &eSla de huidige edit sessie op.'
+      - '&a/dungeon edit lobby set &f| &eStel de lobby spawn in.'
+      - '&a/dungeon edit start set &f| &eStel de start spawn in.'
+      - '&a/dungeon edit items <ban|unban|mark-dungeon> &f| &eBeheer items in de editor.'
+      - '&a/dungeon edit tools <function|room> &f| &eHerstel editor tools.'
+      - '&a/dungeon edit signs clean &f| &eVerwijder function signs.'
+    open:
+      usage: '&a/dungeon edit open &6<dungeon> &f| &eOpen een edit sessie van de dungeon.'
+      already-in-dungeon: '&cJe zit al in een dungeon.'
+      dungeon-not-found: '&cDungeon ''&6{dungeon}&c'' bestaat niet.'
+      loading: '&eDungeon wordt geladen voor bewerken...'
+      no-permission: '&cJe hebt geen permissie om deze dungeon te bewerken.'
+    close:
+      usage: '&a/dungeon edit close &f| &eSluit je huidige edit sessie.'
+      not-in-editor: '&cJe zit momenteel niet in een dungeon editor.'
+      success: '&aJe editorsessie voor dungeon &6{dungeon}&a is gesloten.'
+    save:
+      not-in-dungeon: '&cJe zit niet in een dungeon editor.'
+      saving: '&eDungeon wordt opgeslagen...'
+      success: '&aDungeon &6{dungeon}&a is opgeslagen.'
+      failed: '&cOpslaan van dungeon ''&6{dungeon}&c'' is mislukt. Controleer de console voor details.'
+    lobby:
+      set:
+        usage: '&a/dungeon edit lobby set &f| &eStel de lobby spawn van de dungeon in.'
+        not-in-dungeon: '&cJe zit niet in een dungeon editor.'
+        success: '&aLobby spawn ingesteld op &f{x}, {y}, {z}&a met yaw &f{yaw}&a.'
+    start:
+      set:
+        usage: '&a/dungeon edit start set &f| &eStel de start spawn van de dungeon in.'
+        not-in-dungeon: '&cJe zit niet in een dungeon editor.'
+        not-editing: '&cJe bent momenteel geen dungeon aan het bewerken.'
+        success: '&aStart spawn ingesteld op &f{x}, {y}, {z}&a met yaw &f{yaw}&a.'
+    items:
+      ban:
+        usage: '&a/dungeon edit items ban &f| &eBlokkeer het item in je hand in deze dungeon.'
+        not-in-dungeon: '&cJe zit niet in een dungeon editor.'
+        success: '&aHet item in je hand is geblokkeerd in deze dungeon.'
+      unban:
+        usage: '&a/dungeon edit items unban &f| &eHef de blokkade op voor het item in je hand.'
+        not-in-dungeon: '&cJe zit niet in een dungeon editor.'
+        success: '&aHet item in je hand is weer toegestaan in deze dungeon.'
+        not-banned: '&cDit item stond niet op de ban lijst.'
+      mark-dungeon:
+        usage: '&a/dungeon edit items mark-dungeon &f| &eMaak het item in je hand een dungeon item.'
+        not-in-dungeon: '&cJe zit niet in een dungeon editor.'
+        success: '&aHet item in je hand is nu een dungeon item.'
+    tools:
+      function:
+        not-in-dungeon: '&cJe zit niet in de dungeon editor.'
+        restored: '&aDe function tool is hersteld naar slot &6{slot}&a.'
+      room:
+        not-in-branching: '&cDe room tool werkt alleen in branching dungeons.'
+        restored: '&aDe room tool is hersteld naar slot &6{slot}&a.'
+    signs:
+      clean:
+        usage: '&a/dungeon edit signs clean &f| &eVerwijder alle signs op function locaties.'
+        not-in-dungeon: '&cJe zit momenteel niet in een dungeon editor.'
+        success: '&a{count} sign(s) verwijderd.'
+  player:
+    help:
+      lines:
+      - '&a/dungeon player &6<player> cooldown set <dungeon> [duur] &f| &eStel een access cooldown in.'
+      - '&a/dungeon player &6<player> cooldown clear <dungeon> &f| &eVerwijder een access cooldown.'
+      - '&a/dungeon player &6<player> queue clear &f| &eRuim queue of awaiting status op.'
+      - '&a/dungeon player &6<player> status &f| &eToon dungeon status van een speler.'
+    status:
+      usage: '&a/dungeon player &6<player> status &f| &eToon dungeon status van een speler.'
+      header: '<#5E55AD>---[ SPELER STATUS: {player} ]---'
+      instance: '&dInstance: &f{value}'
+      queue:
+        label: '&dQueue: &f{value}'
+        entry: '{dungeon} ({difficulty}, {mode})'
+        modes:
+          solo: solo
+          team-leader: teamleider
+          team-member: teamlid
+      awaiting: '&dWacht op start: &f{value}'
+      team:
+        label: '&dTeam: &f{value}'
+        states:
+          idle: gereed
+          queued: in wachtrij
+          running: actief
+        as-leader: leider van {count} spelers ({state})
+        as-member: lid van {leader} met {count} spelers ({state})
+      reserved-key: '&dGereserveerde key: &f{value}'
+      cooldowns-header: '&dAccess cooldowns:'
+      cooldowns-none: '&dAccess cooldowns: &fgeen'
+      cooldown-line: ' &6• {dungeon}: {time}'
+      labels:
+        none: geen
+        'yes': ja
+        'no': nee
+        default-difficulty: standaard
+    cooldown:
+      set:
+        usage: '&a/dungeon player &6<player> cooldown set <dungeon> [duur] &f| &eStel de access cooldown in voor de doelspeler.'
+        dungeon-not-found: '&cDungeon ''&6{dungeon}&c'' bestaat niet.'
+        player-not-found: '&cSpeler ''&6{player}&c'' is niet online of bestaat niet.'
+        success: '&aDe access cooldown voor &d{player}&a in dungeon &6{dungeon}&a is ingesteld.'
+        cooldown-time: '&7Cooldown verloopt op: &f{time}'
+        invalid-duration: '&cOngeldige duur opgegeven.'
+        invalid-duration-format: '&cOngeldige duur. Gebruik een getal met &6s, m, h of d&c.'
+      clear:
+        usage: '&a/dungeon player &6<player> cooldown clear <dungeon> &f| &eVerwijder een access cooldown.'
+        none: '&c{player} heeft geen access cooldown voor &6{dungeon}&c.'
+        success: '&aDe access cooldown voor &d{player}&a in &6{dungeon}&a is verwijderd.'
+        target: '&eJe access cooldown voor &6{dungeon}&e is verwijderd door een admin.'
+    queue:
+      clear:
+        usage: '&a/dungeon player &6<player> queue clear &f| &eRuim queue of awaiting status op.'
+        none: '&cEr was geen queue of awaiting status om op te ruimen voor &d{player}&c.'
+        success: '&aDe queue of awaiting status voor &d{player}&a is opgeschoond.'
+        target: '&eEen admin heeft je queue of awaiting status opgeschoond.'
+      cleared:
+        target: '&eEen admin heeft je uit de dungeon queue en uit je team gehaald.'
+        team: '&e{player} is door een admin uit de dungeon queue en uit het team gehaald.'
+  instance:
+    help:
+      lines:
+      - '&a/dungeon instance join-player &6<player> &f| &eGa naar de dungeon van een speler.'
+      - '&a/dungeon instance kick-player &6<player> &f| &eKick een speler uit zijn dungeon.'
+      - '&a/dungeon instance map &f| &eGeef jezelf de map van je huidige instance.'
+    join-player:
+      usage: '&a/dungeon instance join-player &6<player> &f| &eStuur jezelf naar de dungeon van de speler.'
+      not-in-dungeon: '&cDie speler zit niet in een dungeon.'
+      success: '&aJe bent naar dungeon &6{dungeon}&a van &d{player}&a gestuurd.'
+    kick-player:
+      usage: '&a/dungeon instance kick-player &6<player> &f| &eKick de speler uit zijn dungeon.'
+      not-in-dungeon: '&c{player} zit niet in een dungeon.'
+      kick-alert: '&cJe bent uit de dungeon gekickt door een admin.'
+      success: '&a{player} is uit de dungeon gezet.'
+    map:
+      usage: '&a/dungeon instance map &f| &eGeef jezelf de map van je huidige dungeon instance.'
+      not-in-dungeon: '&cJe zit niet in een actieve dungeon instance.'
+      success: '&aDe kaart van je huidige dungeon instance is in je inventory geplaatst.'
+  debug:
+    help:
+      lines:
+      - '&a/dungeon debug doors test &6<door> &f| &eToggle een specifieke deur in de huidige room.'
+      - '&a/dungeon debug doors test-all &f| &eToggle alle geldige deuren in de huidige room.'
+instance:
+  lifecycle:
+    loading: '&eDungeon &6{dungeon}&e wordt geladen...'
+    entered: '&aJe bent dungeon &6{dungeon}&a binnengegaan.'
+    load-failed: '&cHet laden van dungeon &6{dungeon}&c is mislukt.'
+    load-timeout: '&cHet laden van dungeon &6{dungeon}&c duurde te lang.'
+    is-saving: '&cDeze dungeon wordt momenteel al opgeslagen.'
+    stealth-join: '&7Je bent stilletjes de instance binnengegaan.'
+    entry-denied: '&cJe hebt geen toegang tot deze dungeon instance.'
+  editor:
+    open-failed: '&cDe editorsessie voor dungeon &6{dungeon}&c kon niet worden geopend.'
+    open-timeout: '&cHet openen van de editorsessie voor dungeon &6{dungeon}&c duurde te lang.'
+  play:
+    time-limit:
+      ten-minute-warning: '&eNog 10 minuten over in &6{dungeon}&e.'
+      five-minute-warning: '&eNog 5 minuten over in &6{dungeon}&e.'
+      one-minute-warning: '&eNog 1 minuut over in &6{dungeon}&e.'
+      times-up: '&cDe tijd is op.'
+    events:
+      player-returned: '&e{player} is teruggekeerd naar de dungeon.'
+      player-leave: '&e{player} heeft de dungeon verlaten.'
+      player-kicked: '&c{player} is uit de dungeon verwijderd.'
+      team-disbanded-shutdown: '&cHet dungeon team is ontbonden. Deze dungeon sluit over &6{seconds}&c seconden. Gebruik &d/dungeon leave &com veilig te vertrekken.'
+      team-disbanded-timeout: '&cDe uitlooptijd na het ontbinden van het team is verstreken. De dungeon wordt nu gesloten.'
+      life-lost: '&e{player} verloor een leven. &7Nog over: &f{lives}'
+      all-lives-lost: '&c{player} heeft alle levens verloren.'
+      all-lives-lost-and-spectating: '&c{player} heeft alle levens verloren en spectate nu.'
+      all-lives-lost-and-spectating-auto-close: '&cIedereen spectate nu. De dungeon wordt gesloten.'
+      bucket-deny: '&cEmmers zijn niet toegestaan in deze dungeon.'
+      chorus-fruit-deny: '&cChorus fruit is niet toegestaan in deze dungeon.'
+      command-deny: '&cDat command is niet toegestaan in deze dungeon.'
+      dungeon-item-inheritance: '&eDungeon items zijn overgedragen aan {player}.'
+      key-inheritance: '&eKeys zijn overgedragen aan {player}.'
+      enderpearl-deny: '&cEnder pearls zijn niet toegestaan in deze dungeon.'
+      item-banned: '&cDat item is niet toegestaan in deze dungeon.'
+      spectate-deny: '&cJe kunt dat niet doen terwijl je spectate.'
+    functions:
+      checkpoint: '&aCheckpoint opgeslagen.'
+      savepoint: '&aJe bent teruggezet naar je savepoint.'
+      start-dungeon-ready: '&aDe dungeon is klaar om te starten.'
+      finish-dungeon: '&aDungeon &6{dungeon}&a voltooid.'
+      item-dispenser: '&aJe ontving &6{amount}x&a &f{item}&a.'
+      keys:
+        key-player: '&e{player} ontving een dungeon key.'
+        key-ground: '&eEr is een dungeon key op de grond gevallen.'
+      lives-editor: '&aLevens aangepast naar &6{lives}&a ({operation}).'
+      doors:
+        lock: '&cDeur vergrendeld.'
+        unlock: '&aDeur ontgrendeld.'
+        locked: '&cDeze deur is vergrendeld.'
+        locked-key: '&cDeze deur is vergrendeld. Vereiste key: &f{key}'
+      reviver:
+        infinite-uses: '&7Deze reviver kan onbeperkt worden gebruikt.'
+        no-uses: '&cDeze reviver kan niet meer worden gebruikt.'
+        not-dead: '&cDie speler is niet dood.'
+        not-in-dungeon: '&c{player} zit niet in deze dungeon.'
+        revived: '&a{player} is weer tot leven gewekt.'
+        uses-remaining: '&eNog &6{uses}&e gebruik(en) over.'
+    rewards:
+      gui-name: '&dDungeon beloningen'
+      added-to-inv: '&aBeloning direct aan je inventaris toegevoegd.'
+      added-to-rewards-inv: '&aBeloning toegevoegd aan je beloningeninventaris.'
+      already-received: '&cJe hebt deze beloning al ontvangen.'
+      cooldown-time: '&7Beloning weer beschikbaar op: &f{time}'
+      invalid-loottable: '&cDe ingestelde loot table bestaat niet.'
+      unavailable: '&cJe hebt nog beloningen op cooldown.'
+      xp-received: '&aJe ontving &6{xp}&a XP.'
+      levels-received: '&aJe ontving &6{levels}&a level(s).'
+      view-rewards-info: '&7Klik om je openstaande beloningen te bekijken.'
+      rewards-inv-info: '&7Open je inventaris met dungeon beloningen.'
+      unclaimed-rewards: '&eJe hebt nog openstaande dungeon beloningen.'
+editor:
+  session:
+    autosaving: '&eAutosave bezig...'
+    autosaved: '&aAutosave voltooid.'
+    autosave-failed: '&cAutosave mislukt. Controleer de console.'
+    status-line: '&7Edit mode actief. Slot {function_slot} en {room_slot} zijn gereserveerd voor de function tool en room tool.'
+    tip-edit-existing: '&7Tip: plaats een block op een bestaande function en klik er met de function tool op om die te bewerken.'
+    tip-config-list: '&7Tip: gebruik /dungeon config current list om live map en generator instellingen te bekijken.'
+    actionbar-menu: '&dEditor menu &8• &7Rechtsklik selecteert &8• &7Linksklik alternatief &8• &7Q terug &8• &7F sluiten'
+    actionbar-status: '&dEdit mode actief &8• &7Slot {function_slot} en {room_slot} zijn gereserveerd &8• &7/dungeon config current list'
+    function-outside-room: '&cJe kunt hier geen function plaatsen omdat deze buiten een room ligt.'
+    function-select: '&aSelecteer een function om hier te plaatsen.'
+    function-selected: '&aFunction geselecteerd: &f{function}'
+    room-click-required: '&cKlik twee hoeken aan om een room te selecteren.'
+    room-connectors-outside: '&cConnectoren buiten rooms zijn niet toegestaan.'
+    room-create-cancelled: '&cRoom aanmaken geannuleerd.'
+    room-created: '&aRoom &6{room}&a is aangemaakt.'
+    room-edit-cancelled: '&cRoom bewerken geannuleerd.'
+    room-edited: '&aRoom &6{room}&a is bijgewerkt.'
+    room-exists: '&cDaar bestaat al een room.'
+    room-name-request: '&eTyp een naam voor deze room in de chat.'
+    room-select-1: '&aEerste hoek van de room ingesteld.'
+    room-select-2: '&aTweede hoek van de room ingesteld.'
+    room-whitelist:
+      add-prompt: '&eTyp de naam van de room die je aan de whitelist wilt toevoegen.'
+      remove-prompt: '&eKlik op een room in de whitelist om die te verwijderen.'
+      remove-success: '&aRoom &6{room}&a is uit de whitelist verwijderd.'
+    hotbar-controls:
+    - '&7Editor hotbar controls:'
+    - '&7Rechtsklik selecteert het gemarkeerde slot.'
+    - '&7Linksklik voert de klikactie van dat slot uit.'
+    - '&7Q gaat één menu terug.'
+    - '&7F sluit de editor hotbar.'
+    - '&7Tip: plaats een block op een bestaande function en klik er met de function tool op om die te bewerken.'
+    hotbar:
+      function-copied: '&eFunction gekopieerd.'
+      function-cut: '&eFunction geknipt.'
+      look-at-block-paste: '&cKijk naar een block om de function te plakken.'
+      function-already-here: '&cHier staat al een function.'
+      function-pasted: '&eFunction op het aangeklikte block geplakt.'
+      function-cut-pasted: '&eFunction geknipt en op het aangeklikte block geplakt.'
+      function-deleted: '&cFunction verwijderd.'
+      look-at-block-connector: '&cKijk naar een block om een connector te selecteren of aan te maken.'
+      block-not-in-room: '&cDit block ligt niet binnen de geselecteerde room.'
+      connector-edge-only: '&cRoom connectoren moeten aan de rand van een room geplaatst worden.'
+      connector-added: '&aRoom connector toegevoegd op de doel locatie.'
+      room-weight-prompt: '&eHoe zwaar moet deze room meetellen? Hogere waarden maken de room waarschijnlijker.'
+      room-weight-current: '&eHuidige waarde: &6{weight}'
+      room-weight-set: '&aStandaard weight van de room ingesteld op ''&6{weight}&a''.'
+      room-weight-note: '&bLet op: je kunt connectoren ook een eigen weight per room geven.'
+      look-at-block-spawn: '&cKijk naar een block om de spawn van deze room te zetten of te verwijderen.'
+      room-spawn-removed: '&eDe spawn van deze room is verwijderd.'
+      room-spawn-set: '&aDe spawn van deze room is gezet op het block waar je naar kijkt. Gebruik linksklik om de kijkrichting in te stellen.'
+      room-spawn-added-starting: '&bDeze room is ook toegevoegd aan de lijst met mogelijke start rooms.'
+      room-spawn-direction-set: '&aSpawn richting ingesteld op ''&6{yaw}&a'' graden.'
+      room-shrunk: '&aRoom 1 block verkleind richting {direction}.'
+      room-expanded: '&aRoom 1 block vergroot richting {direction}.'
+      room-delete-confirm: '&eWeet je zeker dat je deze room wilt verwijderen? Klik nogmaals om te bevestigen.'
+      room-deleted: '&cDe geselecteerde room is verwijderd.'
+      room-occurrences-prompt: '&eHoe vaak moet deze room genereren? Ondersteunt ranges zoals 0-3 of 2+.'
+      room-occurrences-set: '&aGeneration limit voor deze room ingesteld op ''&6{occurrences}&a'' kopieën.'
+      current-value: '&eHuidige waarde: &6{value}'
+      room-depth-prompt: '&eHoe diep in de dungeon mag deze room genereren? Ondersteunt ranges zoals 0-3 of 2+.'
+      room-depth-set: '&aGeneration depth voor deze room ingesteld op ''&6{depth}&a''.'
+      closed: '&eDe editor hotbar is gesloten.'
+      went-back: '&eEén editor menu teruggegaan.'
+  condition:
+    chance:
+      ask-chance: '&eWat is de kans dat deze trigger afgaat? Gebruik een waarde tussen 0.0 en 1.0.'
+      chance-set: '&aKans ingesteld op ''&6{chance}&a'''
+      current-chance: '&eHuidige kans: &6{chance}'
+    difficulty:
+      ask-difficulty: '&eWelk difficulty level moet worden gebruikt?'
+      current-difficulty: '&eHuidige vereiste difficulty: &6{difficulty}'
+      difficulty-set: '&aDifficulty ingesteld op ''&6{difficulty}&a'''
+    instance-variable:
+      ask-expression: '&eWelke expressie moet deze conditie controleren?'
+      examples: '&eVoorbeelden: "<variable_name> = 5", "<variable_name> < 8"'
+      expression-set: '&aExpressie ingesteld op ''&6{expression}&a'''
+    mob-within:
+      ask-count: '&eHoeveel zijn er nodig?'
+      ask-mob: '&eWelk mobtype moet worden gebruikt?'
+      ask-radius: '&eWat moet de straal in blokken zijn?'
+      count-set: '&aAantal ingesteld op ''&6{count}&a'''
+      exact: '&aGeschakeld naar ''&6vereist exact aantal&a'''
+      invalid-mob: '&cOngeldig mobtype! Voer een geldige Bukkit entity type in.'
+      minimum: '&aGeschakeld naar ''&6vereist minimaal aantal&a'''
+      mob-set: '&aMob ingesteld op ''&6{mob}&a'''
+      radius-set: '&aStraal ingesteld op ''&6{radius}&a'''
+    negated: '&aGeschakeld naar ''&6Condition &cmoet NIET &6waar zijn&a'''
+    normal: '&aGeschakeld naar ''&6Condition &bmoet &6waar zijn&a'''
+    players-within:
+      ask-count: '&eHoeveel zijn er nodig?'
+      ask-radius: '&eWat moet de straal in blokken zijn?'
+      count-set: '&aAantal ingesteld op ''&6{count}&a'''
+      exact: '&aGeschakeld naar ''&6vereist exact aantal&a'''
+      minimum: '&aGeschakeld naar ''&6vereist minimaal aantal&a'''
+      radius-set: '&aStraal ingesteld op ''&6{radius}&a'''
+    status:
+      ask-status: '&eWelke status moet de dungeon hebben?'
+      current-status: '&eHuidige vereiste status: &6{status}'
+      status-set: '&aStatus ingesteld op ''&6{status}&a'''
+    time-elapsed:
+      ask-max: '&eWat is het maximum?'
+      ask-min: '&eWat is het minimum?'
+      current-time: '&eHuidige time: &6{time}'
+      max-set: '&aMaximum ingesteld op ''&6{time}&a'''
+      min-set: '&aMinimum ingesteld op ''&6{time}&a'''
+  function:
+    allow-block:
+      breaking-allowed: '&aGeschakeld naar ''&6Blokken breken toegestaan&a'''
+      breaking-denied: '&aGeschakeld naar ''&6Blokken breken verboden&a'''
+      buckets-allowed: '&aGeschakeld naar ''&6Buckets gebruiken toegestaan&a'''
+      buckets-denied: '&aGeschakeld naar ''&6Buckets gebruiken verboden&a'''
+      placing-allowed: '&aGeschakeld naar ''&6Blokken plaatsen toegestaan&a'''
+      placing-denied: '&aGeschakeld naar ''&6Blokken plaatsen verboden&a'''
+    block-editor:
+      ask-direction: '&eWelke richting moet het blok op kijken?'
+      ask-place-block: '&eWelk blok moet hier geplaatst worden?'
+      ask-remove-block: '&eWelk blok moet hier verwijderd worden? Gebruik ''ANY'' voor elk blok.'
+      axis-set: '&aAs ingesteld op ''&6{axis}&a'''
+      block-set: '&aBlok ingesteld op ''&6{block}&a'''
+      current-block: '&eHuidig blok: &6{block}'
+      current-direction: '&eHuidige richting: &6{direction}'
+      direction-set: '&aRichting ingesteld op ''&6{direction}&a'''
+      invalid-direction: '&cJe moet een geldige richting opgeven!'
+      invalid-material: '&cJe moet een geldig block material opgeven!'
+      mode-place: '&aGeschakeld naar ''&6function &bplaatst &6het opgegeven blok&a'''
+      mode-remove: '&aGeschakeld naar ''&6function &cverwijdert &6het blok&a'''
+      no-direction-for-block: '&cVoor dit bloktype kun je geen richting instellen!'
+      no-direction-while-removing: '&cJe kunt geen richting instellen terwijl je een blok verwijdert!'
+      valid-axis-directions: '&bGeldige richtingen voor dit bloktype zijn: X, Y, Z'
+      valid-materials-link: '&bKlik hier voor een lijst met geldige materialen.'
+      valid-directions-link: '&bKlik hier voor een lijst met geldige richtingen.'
+    checkpoint:
+      direction-set: '&aRichting ingesteld op ''&6{yaw}&a'''
+      disabled: '&c&lUITGESCHAKELD'
+      enabled: '&a&lINGESCHAKELD'
+      rejoin-note: '&bAls de speler vertrekt zonder de dungeon af te maken, start die de volgende keer hier.'
+    chunk-load:
+      ask-radius: '&eWat moet de straal in blokken zijn?'
+      radius-set: '&aStraal ingesteld op ''&6{radius}&a'''
+    command:
+      ask-command: '&eWelk command moet deze function uitvoeren? Zonder de slash.'
+      command-set: '&aCommand ingesteld op ''&6{command}&a'''
+      current-command: '&eHuidig command: &6{command}'
+      for-each-player: '&aGeschakeld naar ''&6Voer het command één keer per speler uit&a'''
+      run-once: '&aGeschakeld naar ''&6Voer het command één keer uit&a'''
+    delayed:
+      ask-delay: '&eHoeveel ticks vertraging moet er zijn?'
+      delay-set: '&aVertraging ingesteld op ''&6{delay}&a'' ticks.'
+      no-function: '&cJe hebt nog geen function ingesteld!'
+    door-control:
+      auto: '&aGeschakeld naar ''&6Deur opent en sluit automatisch&a'''
+      locked-default: '&aGeschakeld naar ''&6Deur standaard vergrendeld&a'''
+      manual: '&aGeschakeld naar ''&6Deur opent en sluit niet automatisch&a'''
+      unlocked-default: '&aGeschakeld naar ''&6Deur standaard ontgrendeld&a'''
+    finish-dungeon:
+      leave-after: '&aGeschakeld naar ''&6Speler verlaat de dungeon na triggeren&a'''
+      stay-after: '&aGeschakeld naar ''&6Speler blijft in de dungeon na triggeren&a'''
+    give-item:
+      do-not-notify: '&aSpelers &cworden NIET &ageïnformeerd wanneer ze het item ontvangen.'
+      drop-at-location: '&aGedrag ingesteld op ''&6Item wordt op deze locatie gedropt&a'''
+      give-to-targets: '&aGedrag ingesteld op ''&6Item wordt aan de target speler(s) gegeven&a'''
+      notify: '&aSpelers &bworden &ageïnformeerd wanneer ze het item ontvangen.'
+    hologram:
+      ask-message: '&eWelke message moet worden getoond?'
+      ask-message-multiline: '&eWelke message moet getoond worden? &bGebruik \n voor nieuwe regels.'
+      ask-radius: '&eWat moet de straal in blokken zijn?'
+      click-again-set-location: '&eKlik nog een keer om de locatie in te stellen op waar je nu staat.'
+      current-location: '&eHuidige locatie is &6X:{x}, Y:{y}, Z:{z}'
+      current-location-none: '&eHuidige locatie is &6GEEN'
+      current-message: '&eHuidige message:
+
+        &6{message}'
+      default-invisible: '&aGeschakeld naar ''&6Hologram is &cONZICHTBAAR &6standaard&a'''
+      default-visible: '&aGeschakeld naar ''&6Hologram is &bZICHTBAAR &6standaard&a'''
+      location-set-standing: '&aLocatie ingesteld op waar je nu staat!'
+      message-set: '&aMessage ingesteld op:
+
+        &6{message}'
+      radius-set: '&aStraal ingesteld op ''&6{radius}&a'''
+    instance-variable:
+      ask-name: '&eWat is de naam?'
+      ask-value-add: '&eHoeveel moeten we bij de variabele optellen?'
+      ask-value-set: '&eWaarop moet de variabele worden gezet?'
+      ask-value-subtract: '&eHoeveel moeten we van de variabele aftrekken?'
+      current-name: '&eHuidige naam: &6{name}'
+      current-value: '&eHuidige waarde: &6{value}'
+      mode-set: '&aMode ingesteld op ''&6{mode}&a'''
+      name-set: '&aNaam ingesteld op ''&6{name}&a'''
+      value-set: '&aWaarde ingesteld op ''&6{value}&a'''
+    lives:
+      amount-set: '&aLives ingesteld op ''&6{amount}&a'''
+      ask-gain: '&eHoeveel lives moet de speler erbij krijgen?'
+      ask-multiply: '&eMet hoeveel moeten we de lives van de speler vermenigvuldigen?'
+      ask-set: '&eWaarop moeten we de lives van de speler zetten?'
+      mode-set: '&aMode ingesteld op ''&6{mode}&a'''
+    loot-table-rewards:
+      ask-exp: '&eHoeveel EXP moet deze reward geven?'
+      ask-levels: '&eHoeveel levels moet deze reward geven?'
+      ask-loot-table: '&eWat is de unieke naam van de loot table?'
+      current-loot-table: '&eHuidige loot table: &6{loot_table}'
+      exp-set: '&aEXP reward ingesteld op ''&6{xp}&a'''
+      levels-set: '&aLevel reward ingesteld op ''&6{levels}&a'''
+      loot-table-set: '&aLoot table ingesteld op ''&6{loot_table}&a'''
+      warning-no-spaces: '&cWAARSCHUWING: Loot tables mogen geen spaties in hun naam hebben!'
+      warning-not-found: '&cWAARSCHUWING: Er bestaat geen loot table met deze naam!'
+      warning-spaces-replaced: '&cAlle spaties worden vervangen door underscores.'
+    message:
+      ask-message: '&eWelke message moet worden getoond?'
+      current-message: '&eHuidige message:
+
+        &6{message}'
+      message-set: '&aMessage ingesteld op:
+
+        &6{message}'
+      type-set: '&aType ingesteld op ''&6{type}&a'''
+    multi:
+      max-functions-reached: '&cJe kunt niet meer functions toevoegen!'
+    no-trigger: '&eDeze function heeft geen trigger!'
+    play-sound:
+      ask-category: '&eWelke sound category moet worden gebruikt?'
+      ask-pitch: '&eWelke pitch moet het geluid hebben?'
+      ask-sound: '&eWelk geluid moet worden afgespeeld?'
+      ask-volume: '&eWelk volume moet het geluid hebben?'
+      category-set: '&aSound category ingesteld op ''&6{category}&a'''
+      current-category: '&eHuidige category: &6{category}'
+      current-pitch: '&eHuidige pitch: &6{pitch}'
+      current-sound: '&eHuidig geluid: &6{sound}'
+      current-volume: '&eHuidig volume: &6{volume}'
+      invalid-category: '&cOngeldige category! Geldige categories zijn:'
+      location-function: '&aGeschakeld naar ''&6Speel het geluid af op de &bfunction locatie&a'''
+      location-player: '&aGeschakeld naar ''&6Speel het geluid af op de &bplayer locatie&a'''
+      pitch-set: '&aPitch ingesteld op ''&6{pitch}&a'''
+      sound-set: '&aGeluid ingesteld op ''&6{sound}&a'''
+      valid-categories: '&c{categories}'
+      volume-set: '&aVolume ingesteld op ''&6{volume}&a'''
+    random-reward:
+      ask-max: '&eWat is het maximum?'
+      ask-min: '&eWat is het minimum?'
+      max-set: '&aMaximum ingesteld op ''&6{max}&a'''
+      min-set: '&aMinimum ingesteld op ''&6{min}&a'''
+    redstone-block:
+      ask-count: '&eHoeveel zijn er nodig?'
+      ask-delay: '&eHoeveel ticks vertraging moet er zijn?'
+      ask-rate: '&eWat moet het interval zijn?'
+      count-set: '&aAantal ingesteld op ''&6{count}&a'''
+      delay-set: '&aVertraging ingesteld op ''&6{delay}&a'' ticks.'
+      rate-set: '&aRate ingesteld op ''&6{rate}&a'''
+    remote-trigger:
+      ask-range: '&eHoe ver reikt het signaal? Gebruik 0 voor oneindig.'
+      ask-signal: '&eWat is de naam van het signaal?'
+      current-range: '&eHuidig bereik: &6{range}'
+      current-signal: '&eHuidige signaalnaam: &6{signal}'
+      range-set: '&aBereik ingesteld op ''&6{range}&a'''
+      signal-set: '&aSignaalnaam ingesteld op ''&6{signal}&a'''
+    repeater:
+      ask-delay: '&eHoeveel ticks vertraging moet er zijn?'
+      ask-max-repeats: '&eHoeveel keer moet de function maximaal draaien?'
+      ask-rate: '&eWat moet het interval zijn?'
+      delay-set: '&aVertraging ingesteld op ''&6{delay}&a'' ticks.'
+      interval-set: '&aInterval ingesteld op ''&6{interval}&a'' ticks tussen elke uitvoering.'
+      max-repeats-set: '&aMaximaal aantal herhalingen ingesteld op ''&6{max_repeats}&a'''
+      no-function: '&cJe hebt nog geen function ingesteld!'
+    revive-player:
+      ask-lives-after: '&eHoeveel lives moet de speler hebben na het reviven?'
+      ask-max-revives: '&eHoe vaak kunnen spelers deze reviver gebruiken? Gebruik 0 voor oneindig.'
+      lives-after-set: '&aLives na revival ingesteld op ''&6{lives}&a'''
+      max-revives-set: '&aMaximum revives ingesteld op ''&6{max_revives}&a'''
+    reward:
+      ask-cooldown-minutes: '&eHoe lang moet de cooldown zijn in minuten?'
+      ask-exp: '&eHoeveel EXP moet deze reward geven?'
+      ask-levels: '&eHoeveel levels moet deze reward geven?'
+      ask-reset-hour: '&eOp welk uur van de dag moet de reward resetten?'
+      ask-reset-monthday: '&eOp welke dag van de maand moet de reward resetten?'
+      ask-reset-weekday: '&eOp welke dag van de week moet de reward resetten?'
+      cooldown-disabled: '&aCooldown uitgeschakeld.'
+      cooldown-enabled: '&aCooldown ingeschakeld!'
+      cooldown-time-set: '&aCooldown tijd ingesteld op ''&6{time}&a'''
+      cooldown-type-set: '&aCooldown type ingesteld op ''&6{type}&a'''
+      custom-cooldown-disabled: '&aCustom reward cooldown uitgeschakeld.'
+      custom-cooldown-enabled: '&aCustom reward cooldown ingeschakeld!'
+      exp-set: '&aEXP reward ingesteld op ''&6{xp}&a'''
+      levels-set: '&aLevel reward ingesteld op ''&6{levels}&a'''
+      reset-day-set: '&aReset dag ingesteld op ''&6{day}&a'''
+      saved: '&aRewards opgeslagen!'
+    room-door:
+      action-set: '&aDeur actie ingesteld op ''&6{action}&a'''
+      ask-door-name: '&eWat is de naam van de deur?'
+      current-door: '&eHuidige deur: &6{door}'
+      do-not-keep-entrance-open: '&aGeschakeld naar ''&6Houd ingang niet open&a'''
+      door-set: '&aDeur ingesteld op ''&6{door}&a'''
+      enter-all: '&eVoer ''&6all&e'' in voor alle levende spelers in de dungeon.'
+      keep-entrance-open: '&aGeschakeld naar ''&6Houd ingang open&a'''
+      warning-door-not-found: '&cLet op! Er is geen deur met die naam in deze room. Weet je zeker dat je hem goed hebt ingevoerd?'
+    sequence:
+      loops: '&aGeschakeld naar ''&6sequence loopt wanneer hij klaar is&a'''
+      no-loop: '&aGeschakeld naar ''&6sequence loopt NIET wanneer hij klaar is&a'''
+    set-difficulty:
+      ask-difficulty: '&eWelk difficulty level moet worden gebruikt?'
+      current-difficulty: '&eHuidige vereiste difficulty: &6{difficulty}'
+      difficulty-set: '&aDifficulty ingesteld op ''&6{difficulty}&a'''
+    set-status:
+      ask-status: '&eWelke status moet de dungeon hebben?'
+      current-status: '&eHuidige vereiste status: &6{status}'
+      status-set: '&aStatus ingesteld op ''&6{status}&a'''
+    spawn-mob:
+      ask-count: '&eHoeveel zijn er nodig?'
+      ask-delay: '&eHoeveel ticks vertraging moet er zijn?'
+      ask-interval: '&eHoeveel ticks moet de vertraging tussen spawns zijn?'
+      ask-mob: '&eWelk mobtype moet worden gebruikt?'
+      count-set: '&aAantal ingesteld op ''&6{count}&a'''
+      current-mob: '&eHuidige mob: &6{mob}'
+      delay-set: '&aVertraging ingesteld op ''&6{delay}&a'' ticks.'
+      direction-set: '&aRichting ingesteld op ''&6{yaw}&a'''
+      interval-set: '&aInterval ingesteld op ''&6{interval}&a'' ticks tussen elke uitvoering.'
+      invalid-mob: '&cOngeldig mobtype! Voer een geldige Bukkit entity type in.'
+      mob-set: '&aMob ingesteld op ''&6{mob}&a'''
+    target-type-set: '&aTarget type ingesteld op ''&6{target_type}&a'''
+    teleport:
+      click-again-set-location: '&eKlik nog een keer om de locatie in te stellen op waar je nu staat.'
+      current-location: '&eHuidige locatie is &6X:{x}, Y:{y}, Z:{z}'
+      current-location-none: '&eHuidige locatie is &6GEEN'
+      location-set-standing: '&aLocatie ingesteld op waar je nu staat!'
+    title:
+      ask-fade-in: '&eHoeveel ticks moet de title nodig hebben om in te faden?'
+      ask-fade-out: '&eHoeveel ticks moet de title nodig hebben om uit te faden?'
+      ask-stay: '&eHoeveel ticks moet de title zichtbaar blijven?'
+      ask-subtitle: '&eWat moet de subtitel zijn?'
+      ask-title: '&eWat moet de titel zijn?'
+      current-subtitle: '&eHuidige subtitel: &6{subtitle}'
+      current-title: '&eHuidige titel: &6{title}'
+      fade-in-set: '&aFade in tijd ingesteld op ''&6{fade_in}&a'''
+      fade-out-set: '&aFade out tijd ingesteld op ''&6{fade_out}&a'''
+      stay-set: '&aTitle duur ingesteld op ''&6{stay}&a'''
+      subtitle-set: '&aSubtitel ingesteld op ''&6{subtitle}&a'''
+      title-set: '&aTitel ingesteld op ''&6{title}&a'''
+  layout:
+    connector-door:
+      ask-name: '&eWat is de naam?'
+      block-added: '&aDeurblok toegevoegd aan de lijst met deurblokken.'
+      block-removed: '&cDeurblok verwijderd uit de lijst met deurblokken.'
+      current-name: '&eHuidige naam: &6{name}'
+      name-note: '&bLet op: je kunt deze naam gebruiken om de deur te openen en te sluiten met functions en mechanics!'
+      name-set: '&aNaam ingesteld op ''&6{name}&a'''
+      open-menu-info: '&bBouw en configureer een custom deur voor gebruik met functions en mechanics!'
+      sound-disabled: '&aGeschakeld naar ''&6Speel GEEN geluid af wanneer de deur opent of sluit&a'''
+      sound-enabled: '&aGeschakeld naar ''&6Speel geluid af wanneer de deur opent of sluit&a'''
+      start-closed: '&aGeschakeld naar ''&6Deur start &cGESLOTEN&a'''
+      start-open: '&aGeschakeld naar ''&6Deur start &bOPEN &6als er een aangrenzende room is&a'''
+    connector:
+      already-here: '&cHier zit al een connector!'
+      copied: '&eConnector gekopieerd!'
+      cut: '&eConnector geknipt!'
+      cut-pasted: '&eConnector geknipt en geplakt naar het aangeklikte blok!'
+      delete-confirm: '&eWeet je zeker dat je deze connector wilt verwijderen? Klik nog een keer om te bevestigen.'
+      must-be-on-edge: '&cRoom connectors moeten aan de rand van een room worden geplaatst!'
+      pasted: '&eConnector geplakt op het aangeklikte blok!'
+      removed: '&cConnector verwijderd.'
+    minecrafty:
+      ask-success-chance: '&eHoe groot is de kans dat een room op deze connector genereert? Gebruik 0.0 tot 100.00.'
+      current-success-chance: '&eHuidige kans: &6{chance}%'
+      success-chance-note: '&bLet op: 100% is geen garantie. Rooms hebben nog steeds genoeg ruimte nodig om te kunnen genereren.'
+      success-chance-set: '&aGenereerkans ingesteld op ''&6{chance}%&a'''
+  trigger:
+    block-detector:
+      ask-block: '&eWelk blok moet hier geplaatst of gebroken worden? Gebruik ''ANY'' voor elk blok.'
+      block-set: '&aBlok ingesteld op ''&6{block}&a'''
+      current-block: '&eHuidig blok: &6{block}'
+      invalid-material: '&cJe moet een geldig block material opgeven!'
+      on-break: '&aDetector ingesteld op ''&6trigger bij &bbreken&a'''
+      on-place: '&aDetector ingesteld op ''&6trigger bij &bplaatsen&a'''
+    chat:
+      allow-repeat: '&aGeschakeld naar ''&6Opnieuw triggeren toegestaan&a'''
+      ask-text: '&eWelke tekst moet de speler in chat typen?'
+      case-insensitive: '&aGeschakeld naar ''&6Hoofdletters maken niet uit&a'''
+      case-sensitive: '&aGeschakeld naar ''&6Hoofdletters moeten overeenkomen&a'''
+      current-text: '&eHuidige tekst: &6{text}'
+      match-contains: '&aGeschakeld naar ''&6Message moet de vereiste tekst bevatten&a'''
+      match-exact: '&aGeschakeld naar ''&6Message moet exact overeenkomen&a'''
+      prevent-repeat: '&aGeschakeld naar ''&6Opnieuw triggeren voorkomen&a'''
+      text-set: '&aVereiste tekst ingesteld op ''&6{text}&a'''
+    distance:
+      allow-repeat: '&aGeschakeld naar ''&6Opnieuw triggeren toegestaan&a'''
+      allow-repeat-note: '&bDit betekent dat hij alleen opnieuw triggert wanneer opnieuw het minimum aantal vereiste spelers wordt gedetecteerd.'
+      ask-player-count: '&eHoeveel spelers moeten binnen bereik zijn?'
+      ask-radius: '&eWat moet de straal in blokken zijn?'
+      behaviour-all-in-range: '&aGedrag ingesteld op ''&6trigger voor elke speler binnen bereik&a'''
+      behaviour-nearest: '&aGedrag ingesteld op ''&6trigger voor de dichtstbijzijnde speler&a'''
+      count-set: '&aAantal ingesteld op ''&6{count}&a'''
+      count-set-all: '&aAantal spelers ingesteld op ''&6iedereen aanwezig&a'''
+      enter-all: '&eVoer ''&6all&e'' in voor alle levende spelers in de dungeon.'
+      prevent-repeat: '&aGeschakeld naar ''&6Opnieuw triggeren voorkomen&a'''
+      radius-set: '&aStraal ingesteld op ''&6{radius}&a'''
+    gate:
+      max-triggers-reached: '&cJe kunt niet meer triggers aan deze gate toevoegen!'
+    interact:
+      allow-repeat: '&aGeschakeld naar ''&6Opnieuw triggeren toegestaan&a'''
+      prevent-repeat: '&aGeschakeld naar ''&6Opnieuw triggeren voorkomen&a'''
+    key-item:
+      allow-repeat: '&aGeschakeld naar ''&6Opnieuw triggeren toegestaan&a'''
+      click-type-set: '&aVereist click type ingesteld op ''&6{click_type}&a'''
+      consume: '&aGeschakeld naar ''&6item &bwordt &6verbruikt bij gebruik&a'''
+      do-not-consume: '&aGeschakeld naar ''&6item &cwordt NIET &6verbruikt bij gebruik&a'''
+      prevent-repeat: '&aGeschakeld naar ''&6Opnieuw triggeren voorkomen&a'''
+      use-anywhere: '&aGeschakeld naar ''&6item &bkan &6overal gebruikt worden&a'''
+      use-here-only: '&aGeschakeld naar ''&6item &cmoet &6bij deze function gebruikt worden&a'''
+    leave-dungeon:
+      allow-leave: '&aGeschakeld naar ''&6Speler mag de dungeon verlaten&a'''
+      allow-repeat: '&aGeschakeld naar ''&6Opnieuw triggeren toegestaan&a'''
+      block-leave: '&aGeschakeld naar ''&6Speler mag de dungeon niet verlaten&a'''
+      prevent-repeat: '&aGeschakeld naar ''&6Opnieuw triggeren voorkomen&a'''
+    max-conditions-reached: '&cJe kunt niet meer conditions aan deze trigger toevoegen!'
+    mob-death:
+      allow-repeat: '&aGeschakeld naar ''&6Opnieuw triggeren toegestaan&a'''
+      ask-count: '&eHoeveel zijn er nodig?'
+      ask-mob: '&eWelk mobtype moet worden gebruikt?'
+      ask-radius: '&eWat moet de straal in blokken zijn?'
+      count-set: '&aAantal ingesteld op ''&6{count}&a'''
+      current-mob: '&eHuidige mob: &6{mob}'
+      current-radius: '&eHuidige straal: &6{radius}'
+      mob-set: '&aMob ingesteld op ''&6{mob}&a'''
+      prevent-repeat: '&aGeschakeld naar ''&6Opnieuw triggeren voorkomen&a'''
+      radius-set: '&aStraal ingesteld op ''&6{radius}&a'''
+    player-death:
+      allow-repeat: '&aGeschakeld naar ''&6Opnieuw triggeren toegestaan&a'''
+      ask-count: '&eHoeveel zijn er nodig?'
+      count-all: '&aGeschakeld naar ''&6Tel alle player deaths mee&a'''
+      count-one-per-player: '&aGeschakeld naar ''&6Tel maximaal één death per speler&a'''
+      count-set: '&aAantal ingesteld op ''&6{count}&a'''
+      prevent-repeat: '&aGeschakeld naar ''&6Opnieuw triggeren voorkomen&a'''
+    redstone:
+      allow-repeat: '&aGeschakeld naar ''&6Opnieuw triggeren toegestaan&a'''
+      prevent-repeat: '&aGeschakeld naar ''&6Opnieuw triggeren voorkomen&a'''
+    remote:
+      allow-repeat: '&aGeschakeld naar ''&6Opnieuw triggeren toegestaan&a'''
+      ask-signal: '&eWat is de naam van het signaal?'
+      current-signal: '&eHuidige signaalnaam: &6{signal}'
+      prevent-repeat: '&aGeschakeld naar ''&6Opnieuw triggeren voorkomen&a'''
+      require-conditions-now: '&aGeschakeld naar ''&6Conditions moeten waar zijn op het moment van triggeren&a'''
+      signal-set: '&aSignaalnaam ingesteld op ''&6{signal}&a'''
+      wait-after-trigger: '&aGeschakeld naar ''&6Wacht op conditions na het triggeren&a'''
+    room-door-change:
+      allow-repeat: '&aGeschakeld naar ''&6Opnieuw triggeren toegestaan&a'''
+      ask-door: '&eWat is de naam van de deur die deze trigger activeert? Gebruik ''any'' voor elke deur.'
+      current-door: '&eHuidige deur: &6{door}'
+      door-set: '&aDeur ingesteld op ''&6{door}&a'''
+      on-close: '&aGeschakeld naar ''&6Trigger wanneer deze deur &cSLUIT&a'''
+      on-open: '&aGeschakeld naar ''&6Trigger wanneer deze deur &bOPENT&a'''
+      prevent-repeat: '&aGeschakeld naar ''&6Opnieuw triggeren voorkomen&a'''
+    same-room-not-required: '&aGeschakeld naar ''&6trigger mag van overal komen&a'''
+    same-room-required: '&aGeschakeld naar ''&6trigger moet uit dezelfde room komen&a'''
+menus:
+  common:
+    empty-slot: '&7Leeg slot'
+  difficulty-select:
+    title: '&dSelecteer difficulty'
+  functions:
+    branching-only: '&cDeze functions zijn alleen beschikbaar in branching dungeons.'
+    requires-trigger: '&cDeze function heeft een trigger nodig!'
+  items:
+    saved-for-function: '&aItem opgeslagen voor deze function!'
+    saved-for-trigger: '&aItem opgeslagen voor deze trigger!'
+  remove:
+    condition-from-trigger: '&cCondition {name} verwijderd van de trigger.'
+    function: '&cFunction {name} verwijderd.'
+    trigger: '&cTrigger {name} verwijderd.'
+  rooms:
+    no-functionality-here: '&cHier zit nog geen functionaliteit op. Deze knop kan later worden vervangen door uitleg.'
+  triggers:
+    branching-only: '&cDeze triggers zijn alleen beschikbaar in branching dungeons.'
+input:
+  invalid-decimal: '&cVoer een geldig getal in. Bijvoorbeeld 1.2, 7.5 of 42.'
+  invalid-integer: '&cVoer een geldig geheel getal in. Bijvoorbeeld 1, 7 of 42.'

@@ -1,0 +1,31 @@
+generator:
+  # string: branching | minecrafty
+  layout: branching
+  # material. Bukkit block name used to seal unused connectors. Use AIR to leave them open.
+  seal_open_connectors_with: STONE
+  room_target:
+    # int. Minimum total rooms when layout = minecrafty.
+    min: 8
+    # int. Maximum total rooms when layout = minecrafty.
+    max: 16
+    # bool. True = fail generation if the minimum cannot be reached.
+    enforce_minimum: true
+
+branching:
+  # section. Used only when layout = branching.
+  trunk:
+    # list of room ids. Empty = all rooms.
+    room_pool: []
+    # list of room ids. Empty = automatic end room selection.
+    end_room_pool: []
+    # decimal from 0.0 to 1.0. Higher values prefer straighter paths.
+    straightness: 0.5
+    room_target:
+      # int. Minimum rooms in the main path.
+      min: 12
+      # int. Maximum rooms in the main path.
+      max: 24
+      # bool. True = fail if the main path stays below the minimum.
+      enforce_minimum: true
+  # section. Add named branch ids here to enable optional side paths.
+  branches: {}

@@ -1,0 +1,204 @@
+dungeon:
+  # string: STATIC | BRANCHING | OPEN
+  type: STATIC
+  # string. Name shown in menus, chat and titles.
+  display_name: "&bNieuwe Dungeon"
+  # bool. Show the display name in a title when the run begins.
+  show_title_on_start: false
+  # string: NORMAL | NETHER | THE_END
+  environment: NORMAL
+  # string. Generator id, for example NATURAL, dungeons:void or dungeons:block.STONE.
+  chunk_generator: dungeons:void
+
+locations:
+  lobby:
+    # bool. Enable a lobby phase before the run starts.
+    enabled: false
+    # location or null. Keys: x, y, z, yaw, pitch.
+    spawn: null
+  # location or null. Player entry point for the dungeon.
+  start: null
+  # location or null. Destination used when leaving the dungeon.
+  exit: null
+  # bool. True = always send leaving players to locations.exit.
+  exit_on_leave: false
+
+players:
+  # string: SURVIVAL | ADVENTURE | CREATIVE | SPECTATOR
+  gamemode: SURVIVAL
+  # int. Lives per player. 0 = unlimited.
+  lives: 0
+  # bool. True = dead players become spectators. False = they are removed from the run.
+  spectate_on_death: true
+  # bool. Only used when spectate_on_death is true.
+  close_when_everyone_spectates: true
+  keep_on_entry:
+    # bool flags. True = keep the player's current state on entry.
+    inventory: true
+    health: false
+    food: false
+    potion_effects: true
+    experience: true
+  # bool. Give dungeon-tagged items to remaining players when someone leaves.
+  transfer_dungeon_items: true
+  offline_kick:
+    # bool. Remove disconnected players from active runs.
+    enabled: true
+    # int seconds. Delay before the offline player is removed.
+    delay_seconds: 300
+
+team:
+  # int. Maximum players allowed to start this dungeon together.
+  max_size: 4
+  # int seconds. Grace period before a started run is shut down after team disband.
+  disband_shutdown_delay_seconds: 180
+
+runs:
+  # int. Maximum active runs for this dungeon. 0 = unlimited.
+  max_active: 10
+  # int minutes. 0 = no time limit.
+  time_limit_minutes: 0
+  # int ticks. Delay before an empty run is cleaned up.
+  cleanup_delay_ticks: 0
+
+open:
+  # int. Only used for OPEN dungeons. 0 = unlimited.
+  max_players: 0
+  # bool. Keep one world preloaded for faster joins.
+  preload_world: true
+
+rewards:
+  # bool. True = queue rewards and hand them out on completion.
+  deliver_on_finish: false
+  loot_cooldown:
+    # bool. Enable reward loot cooldown tracking.
+    enabled: false
+    # bool. True = track cooldown per reward function. False = share one cooldown for the dungeon.
+    track_per_reward: true
+    # string: TIMER | HOURLY | DAILY | WEEKLY | MONTHLY
+    period: DAILY
+    # int. TIMER = minutes. Other periods = reset hour from 0 to 23.
+    value: 0
+    # int. WEEKLY = 1-7. MONTHLY = 1-31.
+    reset_day: 1
+
+access:
+  cooldown:
+    # bool. Prevent players from starting again until the cooldown expires.
+    enabled: false
+    # bool. True = only the team leader must satisfy the cooldown.
+    leader_only: false
+    # bool flags. Choose when the cooldown should be applied.
+    on_start: false
+    on_finish: true
+    on_leave: true
+    on_lives_depleted: false
+    # string: TIMER | HOURLY | DAILY | WEEKLY | MONTHLY
+    period: TIMER
+    # int. TIMER = minutes. Other periods = reset hour from 0 to 23.
+    value: 60
+    # int. WEEKLY = 1-7. MONTHLY = 1-31.
+    reset_day: 1
+  keys:
+    # bool. Consume a matching key when the run starts.
+    consume_on_entry: false
+    # bool. True = only the team leader needs a key.
+    leader_only: false
+    # list of item stacks. Prefer editing this with /dungeon addkey.
+    items: []
+
+difficulty:
+  # bool. Enable named difficulty presets.
+  enabled: false
+  # bool. Show the difficulty menu before starting.
+  use_menu: false
+  presets:
+    # map key. This id is used in commands and menus.
+    HARD:
+      icon:
+        # string. Bukkit material name.
+        material: DIAMOND
+        # int. Use -1 to disable custom model data.
+        custom_model_data: -1
+        # string. Display name shown in the selector.
+        display_name: "&cHard"
+        # list of strings. Lore lines for the selector item.
+        lore:
+          - "&cOnly for the truest gamers."
+      scaling:
+        # decimal. 1.0 = unchanged, 1.5 = +50%.
+        mob_health: 1.5
+        # decimal. 1.0 = unchanged, 1.5 = +50%.
+        mob_count: 1.5
+        # decimal. 1.0 = unchanged, 1.25 = +25%.
+        mob_damage: 1.25
+        # ranged number string. Example: 1-3, 0, 2+.
+        bonus_loot: "1-3"
+
+rules:
+  spawning:
+    # bool flags for natural spawning inside the run.
+    natural_mobs: true
+    animals: true
+    monsters: true
+  building:
+    # bool flags for player building permissions.
+    break_blocks: true
+    place_blocks: true
+    place_entities: false
+    break_placed_blocks: false
+    # lists of Bukkit material names.
+    break_whitelist: []
+    break_blacklist: []
+    place_whitelist: []
+    place_blacklist: []
+  movement:
+    # bool flags for movement and utility items.
+    buckets: true
+    ender_pearls: true
+    chorus_fruit: false
+  world:
+    # bool flags for world behavior inside the run.
+    freeze_random_ticks: true
+    prevent_plant_growth: true
+    prevent_explosion_block_damage: false
+  combat:
+    # bool flags for combat rules.
+    pvp: false
+    hide_death_messages: false
+    prevent_durability_loss:
+      # bool. True = prevent durability loss for matching items.
+      armor: false
+      weapons: false
+      tools: false
+  commands:
+    # bool. Allow every command unless it is denied below.
+    allow_all: false
+    # list of command labels allowed when allow_all is false.
+    allow_list:
+      - dungeon leave
+      - dungeon stuck
+      - dungeon lives
+      - dungeon team info
+      - dungeon team leave
+      - dungeon help
+      - chatreport
+    # list of command labels blocked even when allow_all is true.
+    deny_list: []
+  items:
+    # list of Bukkit material names banned inside the run.
+    banned_materials: []
+    # list of item stacks banned inside the run. Prefer /dungeon banitem.
+    banned_items: []
+    # bool flags for interacting with banned items.
+    allow_pickup_banned: false
+    allow_craft_banned: false
+    allow_storage_banned: false
+  entities:
+    # lists of Bukkit entity type names.
+    damage_protected: []
+    interact_protected: []
+
+map:
+  # int blocks. Floor depth used by dungeon maps.
+  floor_depth: 3
