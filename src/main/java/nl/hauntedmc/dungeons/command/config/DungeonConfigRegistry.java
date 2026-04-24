@@ -60,6 +60,8 @@ public final class DungeonConfigRegistry {
     private static final List<DungeonConfigEntry> rootEntries = new ArrayList<>();
 
     static {
+        register(main("enabled", "Enables or disables joining this dungeon.", "dungeon.enabled",
+                DungeonConfigValueType.BOOLEAN, suggestions(BOOLEAN_VALUES)));
         register(main("display-name", "Shown in menus, messages and titles.", "dungeon.display_name",
                 DungeonConfigValueType.COLOR_STRING, aliases("name")));
         register(main("dimension", "World environment for new instances.", "dungeon.environment",

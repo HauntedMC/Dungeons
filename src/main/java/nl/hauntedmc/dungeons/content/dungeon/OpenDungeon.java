@@ -162,6 +162,10 @@ public class OpenDungeon extends StaticDungeon {
             @Nullable String difficultyName,
             int currentGlobalInstances,
             int maxGlobalInstances) {
+        if (!this.isEnabled()) {
+            return false;
+        }
+
         int normalizedPlayers = Math.max(1, requestedPlayers);
         if (!this.canEverFitTeamSize(normalizedPlayers)) {
             return false;

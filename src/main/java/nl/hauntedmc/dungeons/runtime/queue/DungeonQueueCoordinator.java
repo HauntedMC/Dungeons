@@ -350,13 +350,21 @@ public final class DungeonQueueCoordinator {
         return null;
     }
 
-        private boolean startQueue(DungeonQueueEntry queue) {
+    private boolean startQueue(DungeonQueueEntry queue) {
         if (this.dungeonManager == null || !this.prepareQueueEntryForStart(queue)) {
             return false;
         }
 
         List<DungeonPlayerSession> queuedPlayers = this.resolveQueuedPlayers(queue);
         if (queuedPlayers.size() != queue.getPlayers().size()) {
+            return false;
+        }
+
+        if (!queue.getDungeon().isEnabled()) {
+            this.notifyPlayers(
+                    queuedPlayers,
+                    "commands.play.disabled",
+                    LangUtils.placeholder("dungeon", queue.getDungeon().getWorldName()));
             return false;
         }
 
@@ -395,9 +403,17 @@ public final class DungeonQueueCoordinator {
         return started;
     }
 
-        private boolean validateSoloRequest(DungeonPlayerSession dungeonPlayer, DungeonDefinition dungeon) {
+    private boolean validateSoloRequest(DungeonPlayerSession dungeonPlayer, DungeonDefinition dungeon) {
         Player player = dungeonPlayer.getPlayer();
         if (player == null || !player.isOnline()) {
+            return false;
+        }
+
+        if (!dungeon.isEnabled()) {
+            LangUtils.sendMessage(
+                    player,
+                    "commands.play.disabled",
+                    LangUtils.placeholder("dungeon", dungeon.getWorldName()));
             return false;
         }
 
@@ -483,8 +499,12 @@ public final class DungeonQueueCoordinator {
                 LangUtils.placeholder("dungeon", dungeon.getWorldName()));
     }
 
-        private boolean canRemainQueued(DungeonQueueEntry queue) {
+    private boolean canRemainQueued(DungeonQueueEntry queue) {
         if (this.dungeonManager == null) {
+            return false;
+        }
+
+        if (!queue.getDungeon().isEnabled()) {
             return false;
         }
 
@@ -615,8 +635,16 @@ public final class DungeonQueueCoordinator {
         }
     }
 
-        private boolean validateTeamEntryRequirements(
+    private boolean validateTeamEntryRequirements(
             DungeonDefinition dungeon, Player leader, List<DungeonPlayerSession> members) {
+        if (!dungeon.isEnabled()) {
+            LangUtils.sendMessage(
+                    leader,
+                    "commands.play.disabled",
+                    LangUtils.placeholder("dungeon", dungeon.getWorldName()));
+            return false;
+        }
+
         return this.validateTeamCooldownRequirements(dungeon, leader, members, true)
                 && this.validateTeamAccessKeyRequirements(dungeon, leader, members, true);
     }

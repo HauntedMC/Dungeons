@@ -64,6 +64,7 @@ public abstract class DungeonDefinition {
     protected final File folder;
     protected final FileConfiguration config;
     protected FileConfiguration lootConfig;
+    protected boolean enabled;
     protected String displayName;
     protected int maxTeamSize;
     protected boolean lobbyEnabled;
@@ -241,6 +242,7 @@ public abstract class DungeonDefinition {
      */
     @SuppressWarnings("unchecked")
     protected void loadRuntimeSettingsFromConfig() {
+        this.enabled = this.config.getBoolean("dungeon.enabled", true);
         this.displayName =
                 ColorUtils.fullColor(this.config.getString("dungeon.display_name", "&c" + this.worldName));
         int configuredMaxTeamSize = this.config.getInt("team.max_size", DEFAULT_MAX_TEAM_SIZE);
@@ -380,11 +382,15 @@ public abstract class DungeonDefinition {
         return this.instances.size();
     }
 
-        public boolean canAcceptStartNow(
+    public boolean canAcceptStartNow(
             int requestedPlayers,
             @Nullable String difficultyName,
             int currentGlobalInstances,
             int maxGlobalInstances) {
+        if (!this.enabled) {
+            return false;
+        }
+
         int normalizedPlayers = Math.max(1, requestedPlayers);
         boolean hasGlobalCapacity =
                 maxGlobalInstances <= 0 || currentGlobalInstances < maxGlobalInstances;
@@ -463,11 +469,19 @@ public abstract class DungeonDefinition {
         return this.instantiate(player, difficultyName, requestedPlayers, null);
     }
 
-        public boolean instantiate(
+    public boolean instantiate(
             Player player,
             String difficultyName,
             int requestedPlayers,
             @Nullable UUID startedTeamLeaderId) {
+        if (!this.enabled) {
+            LangUtils.sendMessage(
+                    player,
+                    "commands.play.disabled",
+                    LangUtils.placeholder("dungeon", this.getWorldName()));
+            return false;
+        }
+
         int normalizedPlayers = Math.max(1, requestedPlayers);
         if (!this.canFitTeamSize(normalizedPlayers)) {
             this.sendTeamTooLargeMessage(player, normalizedPlayers);
@@ -1112,11 +1126,15 @@ public abstract class DungeonDefinition {
         return this.config;
     }
 
-        public String getDisplayName() {
+    public String getDisplayName() {
         return this.displayName;
     }
 
-        public int getMaxTeamSize() {
+    public boolean isEnabled() {
+        return this.enabled;
+    }
+
+    public int getMaxTeamSize() {
         return this.maxTeamSize;
     }
 

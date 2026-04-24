@@ -1,6 +1,8 @@
 dungeon:
   # string: STATIC | BRANCHING | OPEN
   type: STATIC
+  # bool. Enables this dungeon for playable runs.
+  enabled: true
   # string. Name shown in menus, chat and titles.
   display_name: "&bNieuwe Dungeon"
   # bool. Show the display name in a title when the run begins.

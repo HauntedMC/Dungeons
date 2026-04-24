@@ -1185,6 +1185,65 @@ public final class DungeonCommand implements TabExecutor {
     }
 
     /**
+     * Runs handle set dungeon enabled command.
+     */
+    private boolean handleSetDungeonEnabledCommand(CommandSender sender, String[] args, boolean enabled) {
+        if (!CommandUtils.hasPermission(sender, "dungeons.admin")) {
+            return false;
+        }
+
+        if (args.length != 2) {
+            LangUtils.sendMessage(sender, enabled ? "commands.dungeon.enable.usage" : "commands.dungeon.disable.usage");
+            return true;
+        }
+
+        DungeonDefinition dungeon = this.dungeonManager.get(args[1]);
+        if (dungeon == null) {
+            LangUtils.sendMessage(sender, enabled ? "commands.dungeon.enable.dungeon-not-found"
+                    : "commands.dungeon.disable.dungeon-not-found", LangUtils.placeholder("dungeon", args[1]));
+            return true;
+        }
+
+        if (dungeon.isEnabled() == enabled) {
+            LangUtils.sendMessage(sender, enabled ? "commands.dungeon.enable.already-enabled"
+                    : "commands.dungeon.disable.already-disabled",
+                    LangUtils.placeholder("dungeon", dungeon.getWorldName()));
+            return true;
+        }
+
+        dungeon.setSaveConfig("dungeon.enabled", enabled);
+        if (!enabled) {
+            this.clearQueuedStartsForDisabledDungeon(dungeon);
+        }
+
+        LangUtils.sendMessage(sender, enabled ? "commands.dungeon.enable.success" : "commands.dungeon.disable.success",
+                LangUtils.placeholder("dungeon", dungeon.getWorldName()));
+        return true;
+    }
+
+    /**
+     * Runs clear queued starts for disabled dungeon.
+     */
+    private void clearQueuedStartsForDisabledDungeon(DungeonDefinition dungeon) {
+        for (DungeonQueueEntry queue : this.queueManager.snapshotQueues()) {
+            if (queue.getDungeon() != dungeon) {
+                continue;
+            }
+
+            for (UUID playerId : new ArrayList<>(queue.getPlayers())) {
+                DungeonPlayerSession playerSession = this.playerManager.get(playerId);
+                Player player = playerSession == null ? null : playerSession.getPlayer();
+                if (player != null && player.isOnline()) {
+                    LangUtils.sendMessage(player, "commands.play.disabled",
+                            LangUtils.placeholder("dungeon", dungeon.getWorldName()));
+                }
+            }
+
+            this.dungeonQueueCoordinator.discardQueue(queue);
+        }
+    }
+
+    /**
      * Runs handle set spawn command.
      */
     private boolean handleSetSpawnCommand(CommandSender sender, String[] args) {
@@ -2011,6 +2070,16 @@ public final class DungeonCommand implements TabExecutor {
             return true;
         }
 
+        if (!dungeon.isEnabled()) {
+            LangUtils.sendMessage(sender, "commands.play.disabled",
+                    LangUtils.placeholder("dungeon", dungeon.getWorldName()));
+            if (!sender.equals(targetPlayer)) {
+                LangUtils.sendMessage(targetPlayer, "commands.play.disabled",
+                        LangUtils.placeholder("dungeon", dungeon.getWorldName()));
+            }
+            return true;
+        }
+
         boolean useDifficulty = dungeon.isUseDifficultyLevels();
         boolean showMenu = dungeon.isShowDifficultyMenu();
         if (useDifficulty) {
@@ -2313,6 +2382,8 @@ public final class DungeonCommand implements TabExecutor {
                 LangUtils.placeholder("difficulties", this.formatDungeonDifficulties(dungeon)));
         LangUtils.sendMessage(sender, "commands.dungeon.info.keys",
                 LangUtils.placeholder("count", String.valueOf(dungeon.getValidKeys().size())));
+        LangUtils.sendMessage(sender, "commands.dungeon.info.enabled",
+                LangUtils.placeholder("state", this.formatEnabledState(dungeon.isEnabled())));
         LangUtils.sendMessage(sender, "commands.dungeon.info.access-cooldown",
                 LangUtils.placeholder("state", this.formatEnabledState(dungeon.isAccessCooldownEnabled())));
         LangUtils.sendMessage(sender, "commands.dungeon.info.edit-session",
@@ -3044,6 +3115,11 @@ public final class DungeonCommand implements TabExecutor {
                 case "info" ->
                     DungeonCommand.this.handleDungeonInfoCommand(sender, DungeonCommand.this.shiftArgs(args));
                 case "status" -> DungeonCommand.this.handleStatusCommand(sender, DungeonCommand.this.shiftArgs(args));
+                case "enable" ->
+                    DungeonCommand.this.handleSetDungeonEnabledCommand(sender, DungeonCommand.this.shiftArgs(args), true);
+                case "disable" ->
+                    DungeonCommand.this.handleSetDungeonEnabledCommand(sender, DungeonCommand.this.shiftArgs(args),
+                            false);
                 case "keys" -> this.handleKeysCommand(sender, args);
                 case "exit" -> this.handleExitCommand(sender, args);
                 default -> {
@@ -3061,12 +3137,12 @@ public final class DungeonCommand implements TabExecutor {
             List<String> options = new ArrayList<>();
             if (args.length == 2) {
                 DungeonCommand.this.addMatchingLiteralOptions(options, args[1], "create", "import", "delete", "reload",
-                        "list", "info", "status", "keys", "exit");
+                        "list", "info", "status", "enable", "disable", "keys", "exit");
                 return options;
             }
 
             switch (args[1].toLowerCase(Locale.ROOT)) {
-                case "delete", "info", "status" -> {
+                case "delete", "info", "status", "enable", "disable" -> {
                     if (args.length == 3) {
                         DungeonCommand.this.addMatchingDungeonNames(options, args[2]);
                     }

@@ -68,6 +68,7 @@ commands:
     already-in-dungeon: '&cDie speler zit al in een dungeon.'
     already-in-dungeon-self: '&cJe zit al in een dungeon.'
     dungeon-not-found: '&cDungeon ''&6{dungeon}&c'' bestaat niet.'
+    disabled: '&cDungeon ''&6{dungeon}&c'' is momenteel uitgeschakeld.'
     instances-full: '&cEr is momenteel geen vrije instance beschikbaar voor deze dungeon.'
     how-to-cancel: '&7Gebruik &d/dungeon leave &7om de queue te verlaten.'
     on-cooldown: '&cJe hebt nog access cooldown voor &6{dungeon}&c.'
@@ -240,6 +241,8 @@ commands:
       - '&a/dungeon dungeon import &6<world> [type] &f| &eImporteer een world als dungeon.'
       - '&a/dungeon dungeon delete &6<dungeon> &f| &eVerwijder een dungeon.'
       - '&a/dungeon dungeon reload &b[dungeon|all] &f| &eHerlaad configs of dungeon data.'
+      - '&a/dungeon dungeon enable &6<dungeon> &f| &eSchakel een dungeon in voor spelen.'
+      - '&a/dungeon dungeon disable &6<dungeon> &f| &eSchakel een dungeon uit voor spelen.'
       - '&a/dungeon dungeon list &b[filter] [pagina] &f| &eBekijk opgeslagen dungeons.'
       - '&a/dungeon dungeon info &6<dungeon> &f| &eToon statische dungeon info.'
       - '&a/dungeon dungeon status &b[dungeon] &f| &eToon instance status.'
@@ -279,6 +282,16 @@ commands:
       reload-dungeon-warning: '&eEr draaien nog actieve instances van &6{dungeon}&e.'
       reload-dungeon-confirm: '&eGebruik hetzelfde command opnieuw om het herladen te forceren.'
       reloaded-by-admin: '&cDe dungeon is herladen door een admin.'
+    enable:
+      usage: '&a/dungeon dungeon enable &6<dungeon> &f| &eSchakel een dungeon in voor spelen.'
+      dungeon-not-found: '&cDungeon ''&6{dungeon}&c'' bestaat niet.'
+      already-enabled: '&eDungeon ''&6{dungeon}&e'' is al ingeschakeld.'
+      success: '&aDungeon ''&6{dungeon}&a'' is nu ingeschakeld voor spelen.'
+    disable:
+      usage: '&a/dungeon dungeon disable &6<dungeon> &f| &eSchakel een dungeon uit voor spelen.'
+      dungeon-not-found: '&cDungeon ''&6{dungeon}&c'' bestaat niet.'
+      already-disabled: '&eDungeon ''&6{dungeon}&e'' is al uitgeschakeld.'
+      success: '&aDungeon ''&6{dungeon}&a'' is nu uitgeschakeld voor spelen.'
     list:
       usage: '&a/dungeon dungeon list &b[filter] [pagina] &f| &eBekijk opgeslagen dungeons.'
       header: <#5E55AD>-= Dungeon Definities =-
@@ -295,6 +308,7 @@ commands:
       locations: '&dLocaties: &flobby={lobby} &8• &fstart={start} &8• &fexit={exit}'
       difficulties: '&dDifficulties: &f{difficulties}'
       keys: '&dAccess keys: &f{count}'
+      enabled: '&dSpeelbaar: &f{state}'
       access-cooldown: '&dAccess cooldown: &f{state}'
       edit-session: '&dEditor open: &f{state}'
       labels:
