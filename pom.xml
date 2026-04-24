@@ -7,7 +7,7 @@
     <groupId>nl.hauntedmc.dungeons</groupId>
     <artifactId>dungeons</artifactId>
     <name>Dungeons</name>
-    <version>1.1.0</version>
+    <version>1.1.1</version>
     <url>https://www.hauntedmc.nl</url>
     <packaging>jar</packaging>
 
