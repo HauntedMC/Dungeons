@@ -38,7 +38,7 @@ jobs:
           path: target/${{ env.TARGET_NAME }}.jar
 
       - name: Create GitHub release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           name: Dungeons ${{ github.ref_name }}
           draft: false
