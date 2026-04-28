@@ -77,6 +77,7 @@ public abstract class DungeonDefinition {
     protected Map<String, DungeonDifficulty> difficultyLevels;
     protected List<ItemStack> customBannedItems;
     protected List<String> bannedItems;
+    protected List<String> joinCommands;
     protected List<ItemStack> validKeys;
     protected boolean onlyLeaderNeedsKey;
     protected List<Material> placeWhitelist;
@@ -304,6 +305,7 @@ public abstract class DungeonDefinition {
         }
 
         this.bannedItems = new ArrayList<>(this.config.getStringList("rules.items.banned_materials"));
+        this.joinCommands = new ArrayList<>(this.config.getStringList("players.join_commands"));
         this.customBannedItems = (List<ItemStack>) this.config.get("rules.items.banned_items");
         if (this.customBannedItems == null) {
             this.customBannedItems = new ArrayList<>();
@@ -1180,6 +1182,10 @@ public abstract class DungeonDefinition {
 
         public List<String> getBannedItems() {
         return this.bannedItems;
+    }
+
+        public List<String> getJoinCommands() {
+        return List.copyOf(this.joinCommands);
     }
 
         public List<ItemStack> getValidKeys() {

@@ -40,7 +40,7 @@ The default dungeon template controls behavior for newly created or synced dunge
 
 - `dungeon`: type, display behavior, world environment, generator id.
 - `locations`: lobby/start/exit destinations.
-- `players`: gamemode, lives, spectating, entry-state preservation.
+- `players`: gamemode, lives, spectating, entry-state preservation, and per-player join commands.
 - `team`: team-size limits and disband shutdown delay.
 - `runs` / `open`: run concurrency, time limit, open-instance player limits.
 - `rewards`: finish delivery and cooldown policy.
@@ -57,6 +57,22 @@ Generation defaults are split by layout mode:
 - `branching`: trunk path shaping, end-room pools, branch rules.
 
 Use these defaults to standardize generated dungeons before per-dungeon overrides.
+
+## Player Join Commands
+
+Per-dungeon `players.join_commands` runs console commands once for every player accepted into a playable run, including team members and open-dungeon joins.
+
+Example:
+
+```yaml
+players:
+  join_commands:
+    - "god {player} disable"
+    - "fly {player} disable"
+    - "speed walk 1 {player}"
+```
+
+Supported player-name placeholders are `{player}`, `{player_name}`, `<player>`, `%player%`, and `%player_name%`. UUID placeholders are `{uuid}` and `%uuid%`.
 
 ## Recommended Rollout Workflow
 

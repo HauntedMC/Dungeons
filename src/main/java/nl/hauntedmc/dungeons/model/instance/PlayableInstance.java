@@ -298,9 +298,14 @@ public abstract class PlayableInstance extends DungeonInstance {
      */
     @Override
     public void addPlayer(DungeonPlayerSession playerSession) {
+        if (this.players.contains(playerSession)) {
+            return;
+        }
+
         super.addPlayer(playerSession);
         Player player = playerSession.getPlayer();
         this.livingPlayers.add(playerSession);
+        this.executeJoinCommands(player);
         if (!this.config.getBoolean("players.keep_on_entry.inventory", true)) {
             playerSession.saveInventory();
         }
@@ -357,6 +362,61 @@ public abstract class PlayableInstance extends DungeonInstance {
         if (this.livesEnabled) {
             this.playerLives.putIfAbsent(player.getUniqueId(), this.config.getInt("players.lives", 1));
         }
+    }
+
+    /**
+     * Runs configured console commands for a player entering the playable instance.
+     */
+    private void executeJoinCommands(Player player) {
+        for (String commandTemplate : this.dungeon.getJoinCommands()) {
+            String command = this.resolveJoinCommand(commandTemplate, player);
+            if (command.isEmpty()) {
+                continue;
+            }
+
+            try {
+                if (!Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command)) {
+                    this.logger()
+                            .warn(
+                                    "Join command failed for '{}' in dungeon '{}': {}",
+                                    player.getName(),
+                                    this.dungeon.getWorldName(),
+                                    command);
+                }
+            } catch (Exception exception) {
+                this.logger()
+                        .error(
+                                "Join command threw an exception for '{}' in dungeon '{}': {}",
+                                player.getName(),
+                                this.dungeon.getWorldName(),
+                                command,
+                                exception);
+            }
+        }
+    }
+
+    /**
+     * Resolves supported placeholders and normalizes optional leading command slashes.
+     */
+    private String resolveJoinCommand(String commandTemplate, Player player) {
+        if (commandTemplate == null) {
+            return "";
+        }
+
+        String command = commandTemplate.trim();
+        while (command.startsWith("/")) {
+            command = command.substring(1).trim();
+        }
+
+        String playerName = player.getName();
+        String playerId = player.getUniqueId().toString();
+        return command.replace("{player}", playerName)
+                .replace("{player_name}", playerName)
+                .replace("<player>", playerName)
+                .replace("%player%", playerName)
+                .replace("%player_name%", playerName)
+                .replace("{uuid}", playerId)
+                .replace("%uuid%", playerId);
     }
 
     /**

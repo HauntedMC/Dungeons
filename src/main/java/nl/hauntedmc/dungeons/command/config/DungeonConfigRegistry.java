@@ -108,6 +108,10 @@ public final class DungeonConfigRegistry {
                 "players.offline_kick.enabled", DungeonConfigValueType.BOOLEAN, suggestions(BOOLEAN_VALUES)));
         register(main("kick-offline-delay", "Seconds before an offline player is kicked.",
                 "players.offline_kick.delay_seconds", DungeonConfigValueType.INTEGER));
+        register(main("join-commands",
+                "Comma separated console commands run when each player enters. Use {player} or <player>.",
+                "players.join_commands", DungeonConfigValueType.STRING_LIST,
+                suggestions(List.of("god {player} disable", "fly {player} disable", "speed walk 1 {player}"))));
         register(main("team-disband-shutdown-delay",
                 "Seconds a started dungeon stays open after its team is dissolved or the leader leaves.",
                 "team.disband_shutdown_delay_seconds", DungeonConfigValueType.INTEGER));

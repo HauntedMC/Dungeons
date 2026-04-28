@@ -48,6 +48,9 @@ players:
     enabled: true
     # int seconds. Delay before the offline player is removed.
     delay_seconds: 300
+  # list[string]. Console commands run once for each player when they enter this dungeon.
+  # Placeholders: {player}, <player>, %player% = player name; {uuid}, %uuid% = player UUID.
+  join_commands: []
 
 team:
   # int. Maximum players allowed to start this dungeon together.
