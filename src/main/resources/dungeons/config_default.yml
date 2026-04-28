@@ -103,7 +103,7 @@ access:
     reset_day: 1
   keys:
     # bool. Consume a matching key when the run starts.
-    consume_on_entry: false
+    consume_on_entry: true
     # bool. True = only the team leader needs a key.
     leader_only: false
     # list of item stacks. Prefer editing this with /dungeon addkey.
