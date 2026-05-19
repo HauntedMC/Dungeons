@@ -18,8 +18,8 @@ Dungeons is a Paper plugin for creating, editing, and running configurable dunge
 
 ## Requirements
 
-- Java 21
-- Paper 1.21.x
+- Java 25
+- Paper 26.x
 
 ## Build From Source
 

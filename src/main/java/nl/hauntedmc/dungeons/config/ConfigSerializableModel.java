@@ -398,7 +398,12 @@ public interface ConfigSerializableModel {
     private static Object serializeFieldValue(Field field, Object fieldValue) {
         return switch (fieldValue) {
             case null -> null;
-            case Enum<?> enumValue when field.getType().isEnum() -> enumValue.name();
+            case Enum<?> enumValue -> {
+                if (field.getType().isEnum()) {
+                    yield enumValue.name();
+                }
+                yield fieldValue;
+            }
             case Map<?, ?> baseMap -> serializeMapField(field, baseMap);
             case Collection<?> collection -> serializeCollectionField(field, collection);
             case ConfigSerializableModel serializable ->
