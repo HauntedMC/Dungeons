@@ -17,7 +17,7 @@
         <reflections.version>0.10.2</reflections.version>
         <commons-io.version>2.21.0</commons-io.version>
         <commons-lang3.version>3.20.0</commons-lang3.version>
-        <item-nbt-api.version>2.15.6</item-nbt-api.version>
+        <item-nbt-api.version>2.15.7</item-nbt-api.version>
 
 
         <maven-enforcer-plugin.version>3.6.2</maven-enforcer-plugin.version>
