@@ -48,7 +48,7 @@ public class SolidBlockChunkGenerator extends ChunkGenerator {
             int chunkZ,
             @NotNull ChunkData chunkData) {
         chunkData.setRegion(
-                0, worldInfo.getMinHeight(), 0, 15, worldInfo.getMaxHeight(), 15, this.blockType);
+                0, worldInfo.getMinHeight(), 0, 16, worldInfo.getMaxHeight(), 16, this.blockType);
     }
 
     /**

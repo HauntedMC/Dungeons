@@ -49,14 +49,16 @@ public class DungeonMapRenderer extends MapRenderer {
             int center = size / 2 - 1;
             int minX = loc.getBlockX() - center;
             int minZ = loc.getBlockZ() - center;
+            int minWorldY = this.world.getMinHeight();
+            int maxWorldY = this.world.getMaxHeight() - 1;
 
             for (int mx = 0; mx <= size; mx++) {
                 for (int mz = 0; mz <= size; mz++) {
                     int x = minX + mx;
                     int z = minZ + mz;
                     int y = loc.getBlockY();
-                    int minY = y - 1;
-                    int maxY = y + this.floorDepth;
+                    int minY = Math.max(minWorldY, y - 1);
+                    int maxY = Math.min(maxWorldY, y + this.floorDepth);
                     int highestY = minY;
 
                     for (int scanY = minY; scanY <= maxY; scanY++) {
@@ -85,7 +87,8 @@ public class DungeonMapRenderer extends MapRenderer {
                             true);
             cursors.addCursor(cursor);
             canvas.setCursors(cursors);
-            int floor = (loc.getBlockY() - 128) / this.floorDepth;
+            int floorDepthValue = Math.max(1, this.floorDepth);
+            int floor = Math.floorDiv(loc.getBlockY() - 128, floorDepthValue);
             canvas.drawText(1, 1, MinecraftFont.Font, "F" + (floor + 1));
         }
     }

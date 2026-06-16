@@ -56,11 +56,9 @@ public final class LocationUtils {
         return BoundingBox.of(pos1, pos2);
     }
 
-    /** Returns a centered bounding box variant shifted by half a block in each axis. */
-    public static BoundingBox captureOffsetBoundingBox(Location pos1, Location pos2) {
-        BoundingBox box = BoundingBox.of(pos1, pos2);
-        box.shift(0.5, 0.5, 0.5);
-        return box;
+    /** Returns the visual bounds for a selected block region. */
+    public static BoundingBox captureBlockSelectionPreviewBox(Location pos1, Location pos2) {
+        return captureBoundingBox(pos1, pos2).expand(0.0, 0.0, 0.0, 1.0, 1.0, 1.0);
     }
 
     /** Finds a safe standing location in a box, marshalling to main thread when needed. */
@@ -155,7 +153,9 @@ public final class LocationUtils {
     /** Scans downward for a non-colliding standing box with solid ground below. */
     private static Location findSafeStandingLocation(
             World world, BoundingBox box, double x, double z) {
-        for (double y = box.getMaxY() - 1.0D; y >= box.getMinY(); y--) {
+        double scanTop = Math.min(box.getMaxY() - 1.0D, world.getMaxHeight() - 1.0D);
+        double scanBottom = Math.max(box.getMinY(), world.getMinHeight());
+        for (double y = scanTop; y >= scanBottom; y--) {
             BoundingBox standingBox =
                     new BoundingBox(x - 0.4D, y, z - 0.4D, x + 0.4D, y + 1.9D, z + 0.4D);
             if (world.hasCollisionsIn(standingBox)) {

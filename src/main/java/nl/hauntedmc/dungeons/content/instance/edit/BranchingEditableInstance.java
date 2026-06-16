@@ -117,7 +117,7 @@ public class BranchingEditableInstance extends EditableInstance {
                             if (playerSession.getPos1() != null && playerSession.getPos2() != null) {
                                 ParticleUtils.displayBoundingBox(
                                         player,
-                                        LocationUtils.captureOffsetBoundingBox(
+                                        LocationUtils.captureBlockSelectionPreviewBox(
                                                 playerSession.getPos1(), playerSession.getPos2()));
                             }
 

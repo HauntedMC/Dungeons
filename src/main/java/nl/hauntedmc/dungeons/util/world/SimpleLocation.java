@@ -113,7 +113,7 @@ public class SimpleLocation implements Cloneable, ConfigSerializableModel {
 
     /** Creates a simple location from vector coordinates. */
     public static SimpleLocation from(Vector vector) {
-        return new SimpleLocation(vector.getX(), vector.getBlockY(), vector.getBlockZ());
+        return new SimpleLocation(vector.getBlockX(), vector.getBlockY(), vector.getBlockZ());
     }
 
     /** Returns a shallow clone of this value object. */

@@ -89,13 +89,23 @@ public final class ParticleUtils {
             Player to, Location pos1, Location pos2, Particle particle, DustOptions opt) {
         if (pos1.getWorld().equals(pos2.getWorld())) {
             double distance = pos1.distance(pos2);
-            int points = (int) Math.floor(distance) * 3;
+            int points = Math.max(1, (int) Math.ceil(distance * 3.0));
             double gap = distance / points;
-            Vector add = pos1.toVector().subtract(pos2.toVector()).normalize().multiply(gap);
             Location start = pos1.clone();
             if (particle == Particle.DUST && opt == null) {
                 opt = new DustOptions(Color.RED, 0.5F);
             }
+
+            if (distance <= 0.0D) {
+                if (opt != null) {
+                    to.spawnParticle(particle, start, 1, opt);
+                } else {
+                    to.spawnParticle(particle, start, 1, 0.0, 0.0, 0.0, 0.0);
+                }
+                return;
+            }
+
+            Vector add = pos1.toVector().subtract(pos2.toVector()).normalize().multiply(gap);
 
             if (opt != null) {
                 for (int i = 0; i <= points; i++) {

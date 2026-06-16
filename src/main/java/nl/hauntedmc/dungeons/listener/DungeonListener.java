@@ -265,6 +265,11 @@ public class DungeonListener implements Listener {
             if (playerSession.getPos1() != null) {
                 playerSession.setAwaitingRoomName(true);
                 LangUtils.sendMessage(player, "editor.session.room-name-request");
+                ParticleUtils.displayBoundingBox(
+                        player,
+                        200,
+                        LocationUtils.captureBlockSelectionPreviewBox(
+                                playerSession.getPos1(), playerSession.getPos2()));
             }
         }
     }
@@ -328,7 +333,8 @@ public class DungeonListener implements Listener {
             ParticleUtils.displayBoundingBox(
                     player,
                     200,
-                    LocationUtils.captureOffsetBoundingBox(playerSession.getPos1(), playerSession.getPos2()));
+                    LocationUtils.captureBlockSelectionPreviewBox(
+                            playerSession.getPos1(), playerSession.getPos2()));
         }
     }
 
@@ -347,7 +353,7 @@ public class DungeonListener implements Listener {
                 ParticleUtils.displayBoundingBox(
                         player,
                         200,
-                        LocationUtils.captureOffsetBoundingBox(
+                        LocationUtils.captureBlockSelectionPreviewBox(
                                 playerSession.getPos1(), playerSession.getPos2()));
             }
         }
@@ -688,7 +694,7 @@ public class DungeonListener implements Listener {
 
             BranchingDungeon dungeon = branchingEdit.getDungeon();
             BoundingBox bounds =
-                    LocationUtils.captureOffsetBoundingBox(playerSession.getPos1(), playerSession.getPos2());
+                    LocationUtils.captureBoundingBox(playerSession.getPos1(), playerSession.getPos2());
             BranchingRoomDefinition room = dungeon.defineRoom(message, bounds);
             if (room == null) {
                 LangUtils.sendMessage(player, "editor.session.room-exists");
@@ -703,6 +709,8 @@ public class DungeonListener implements Listener {
             playerSession.setAwaitingRoomName(false);
             playerSession.setPos1(null);
             playerSession.setPos2(null);
+            branchingEdit.setRoomLabel(room);
+            branchingEdit.displayRoomParticles(player, room);
             playerSession.captureHotbar();
             playerSession.showHotbar(HotbarMenus.getRoomEditMenu());
             this.sendHotbarControls(player);
