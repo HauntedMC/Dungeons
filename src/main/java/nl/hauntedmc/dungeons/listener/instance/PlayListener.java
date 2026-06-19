@@ -372,6 +372,7 @@ public class PlayListener extends InstanceListener {
     public void onEntitySpawn(EntitySpawnEvent event) {
         if (event.getEntity().getWorld() == this.instance.getInstanceWorld()) {
             this.instance.getEntities().add(event.getEntity());
+            this.instance.trackCustomDragonBossBar(event.getEntity());
         }
     }
 

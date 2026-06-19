@@ -27,6 +27,7 @@ import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Particle.DustOptions;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.BoundingBox;
@@ -150,14 +151,14 @@ public class BranchingEditableInstance extends EditableInstance {
      * Performs before commit world save.
      */
     @Override
-    protected void beforeCommitWorldSave() {
-        for (String rule : this.instanceWorld.getGameRules()) {
+    protected void beforeCommitWorldSave(World world) {
+        for (String rule : world.getGameRules()) {
             this.dungeon
                     .getRuleConfig()
-                    .set("Gamerule." + rule, this.instanceWorld.getGameRuleValue(rule));
+                    .set("Gamerule." + rule, world.getGameRuleValue(rule));
         }
 
-        this.dungeon.getRuleConfig().set("Difficulty", this.instanceWorld.getDifficulty().name());
+        this.dungeon.getRuleConfig().set("Difficulty", world.getDifficulty().name());
     }
 
     /**
@@ -179,11 +180,11 @@ public class BranchingEditableInstance extends EditableInstance {
      * Performs on commit world async.
      */
     @Override
-    protected CompletableFuture<Boolean> onCommitWorldAsync() {
+    protected CompletableFuture<Boolean> onCommitWorldAsync(World world) {
         List<CompletableFuture<Boolean>> futures = new ArrayList<>();
 
         for (BranchingRoomDefinition room : this.dungeon.getUniqueRooms().values()) {
-            futures.add(room.captureSchematic(this.instanceWorld, true));
+            futures.add(room.captureSchematic(world, true));
         }
 
         return this.combineFutures(futures);

@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.WeakHashMap;
 import java.util.concurrent.CountDownLatch;
+import net.kyori.adventure.text.Component;
 import nl.hauntedmc.dungeons.content.function.HologramFunction;
 import nl.hauntedmc.dungeons.content.function.reward.RewardFunction;
 import nl.hauntedmc.dungeons.content.reward.PlayerLootData;
@@ -27,6 +28,7 @@ import nl.hauntedmc.dungeons.util.command.CommandUtils;
 import nl.hauntedmc.dungeons.util.entity.EntityUtils;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+import nl.hauntedmc.dungeons.util.text.ComponentUtils;
 import nl.hauntedmc.dungeons.util.text.MessageUtils;
 import nl.hauntedmc.dungeons.util.world.DungeonMapRenderer;
 import org.bukkit.Bukkit;
@@ -34,7 +36,9 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EnderDragon;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.MapMeta;
@@ -68,6 +72,8 @@ public abstract class PlayableInstance extends DungeonInstance {
     protected boolean started = false;
     protected boolean dungeonFinished = false;
     private Set<Entity> entities = Collections.newSetFromMap(new WeakHashMap<>());
+    private final Map<UUID, net.kyori.adventure.bossbar.BossBar> customDragonBossBars =
+            new HashMap<>();
 
     /**
      * Creates a playable instance and attaches the play listener.
@@ -174,10 +180,10 @@ public abstract class PlayableInstance extends DungeonInstance {
                                                             "dungeon", PlayableInstance.this.dungeon.getDisplayName())));
                                 }
 
-                                if (PlayableInstance.this.timeLeft <= 0) {
-                                    PlayableInstance.this.messagePlayers(
-                                            LangUtils.getMessage("instance.play.time-limit.times-up"));
-                                    this.cancel();
+                                                if (PlayableInstance.this.timeLeft <= 0) {
+                                                    PlayableInstance.this.messagePlayers(
+                                                            LangUtils.getMessage("instance.play.time-limit.times-up"));
+                                                    this.cancel();
 
                                     for (DungeonPlayerSession playerSession :
                                             new ArrayList<>(PlayableInstance.this.players)) {
@@ -185,6 +191,8 @@ public abstract class PlayableInstance extends DungeonInstance {
                                     }
                                 }
                             }
+
+                            PlayableInstance.this.updateCustomDragonBossBars();
                         }
                     };
             this.instanceTicker.runTaskTimer(this.plugin(), 0L, 20L);
@@ -218,6 +226,7 @@ public abstract class PlayableInstance extends DungeonInstance {
 
         this.playerLives.clear();
         this.rewardInventories.clear();
+        this.clearCustomDragonBossBars();
         this.disposeEntities();
     }
 
@@ -305,6 +314,7 @@ public abstract class PlayableInstance extends DungeonInstance {
         super.addPlayer(playerSession);
         Player player = playerSession.getPlayer();
         this.livingPlayers.add(playerSession);
+        this.showCustomDragonBossBars(player);
         this.executeJoinCommands(player);
         if (!this.config.getBoolean("players.keep_on_entry.inventory", true)) {
             playerSession.saveInventory();
@@ -428,6 +438,7 @@ public abstract class PlayableInstance extends DungeonInstance {
             super.removePlayer(playerSession, force);
             Player player = playerSession.getPlayer();
             this.livingPlayers.remove(playerSession);
+            this.hideCustomDragonBossBars(player);
             if (!CommandUtils.hasPermissionSilent(player, "dungeons.vanish")) {
                 this.messagePlayers(
                         LangUtils.getMessage(
@@ -674,4 +685,134 @@ public abstract class PlayableInstance extends DungeonInstance {
     public Set<Entity> getEntities() {
         return this.entities;
     }
+
+    /**
+     * Ensures manually spawned dragons in this instance still show a boss bar.
+     */
+    public void trackCustomDragonBossBar(Entity entity) {
+        if (!(entity instanceof EnderDragon dragon)) {
+            return;
+        }
+
+        if (this.customDragonBossBars.containsKey(dragon.getUniqueId())) {
+            return;
+        }
+
+        net.kyori.adventure.bossbar.BossBar bossBar = this.createCustomDragonBossBar();
+        this.customDragonBossBars.put(dragon.getUniqueId(), bossBar);
+        this.showCustomDragonBossBars();
+        this.updateCustomDragonBossBars();
+    }
+
+    /**
+     * Updates custom dragon boss bars and removes stale ones.
+     */
+    private void updateCustomDragonBossBars() {
+        this.discoverCustomDragonBossBars();
+        List<UUID> staleBars = new ArrayList<>();
+
+        for (Entry<UUID, net.kyori.adventure.bossbar.BossBar> entry : this.customDragonBossBars.entrySet()) {
+            Entity entity = Bukkit.getEntity(entry.getKey());
+            net.kyori.adventure.bossbar.BossBar bossBar = entry.getValue();
+            if (!(entity instanceof EnderDragon dragon)
+                    || !dragon.isValid()
+                    || dragon.isDead()
+                    || dragon.getWorld() != this.instanceWorld) {
+                this.hideCustomDragonBossBarFromAll(bossBar);
+                staleBars.add(entry.getKey());
+                continue;
+            }
+
+            double maxHealth = dragon.getAttribute(Attribute.MAX_HEALTH) == null
+                    ? 200.0
+                    : dragon.getAttribute(Attribute.MAX_HEALTH).getValue();
+            double progress = maxHealth <= 0.0 ? 0.0 : dragon.getHealth() / maxHealth;
+            bossBar.progress((float) Math.max(0.0, Math.min(1.0, progress)));
+            if (dragon.getCustomName() != null && !dragon.getCustomName().isBlank()) {
+                bossBar.name(ComponentUtils.component(dragon.getCustomName()));
+            } else {
+                bossBar.name(Component.text("Ender Dragon"));
+            }
+        }
+
+        for (UUID staleId : staleBars) {
+            this.customDragonBossBars.remove(staleId);
+        }
+    }
+
+    /**
+     * Discovers ender dragons already present in the instance world and tracks them.
+     */
+    private void discoverCustomDragonBossBars() {
+        if (this.instanceWorld == null) {
+            return;
+        }
+
+        for (EnderDragon dragon : this.instanceWorld.getEntitiesByClass(EnderDragon.class)) {
+            if (!this.customDragonBossBars.containsKey(dragon.getUniqueId())) {
+                net.kyori.adventure.bossbar.BossBar bossBar = this.createCustomDragonBossBar();
+                this.customDragonBossBars.put(dragon.getUniqueId(), bossBar);
+                this.showCustomDragonBossBars();
+            }
+        }
+    }
+
+    /**
+     * Adds all instance players to every tracked custom dragon boss bar.
+     */
+    private void showCustomDragonBossBars() {
+        for (DungeonPlayerSession playerSession : this.players) {
+            this.showCustomDragonBossBars(playerSession.getPlayer());
+        }
+    }
+
+    /**
+     * Adds one player to every tracked custom dragon boss bar.
+     */
+    private void showCustomDragonBossBars(Player player) {
+        for (net.kyori.adventure.bossbar.BossBar bossBar : this.customDragonBossBars.values()) {
+            player.showBossBar(bossBar);
+        }
+    }
+
+    /**
+     * Removes one player from every tracked custom dragon boss bar.
+     */
+    private void hideCustomDragonBossBars(Player player) {
+        for (net.kyori.adventure.bossbar.BossBar bossBar : this.customDragonBossBars.values()) {
+            player.hideBossBar(bossBar);
+        }
+    }
+
+    /**
+     * Clears all custom dragon boss bars owned by this instance.
+     */
+    private void clearCustomDragonBossBars() {
+        for (net.kyori.adventure.bossbar.BossBar bossBar : this.customDragonBossBars.values()) {
+            this.hideCustomDragonBossBarFromAll(bossBar);
+        }
+
+        this.customDragonBossBars.clear();
+    }
+
+    /**
+     * Creates the modern Paper boss bar used for dungeon-managed dragons.
+     */
+    private net.kyori.adventure.bossbar.BossBar createCustomDragonBossBar() {
+        return net.kyori.adventure.bossbar.BossBar.bossBar(
+                Component.text("Ender Dragon"),
+                1.0F,
+                net.kyori.adventure.bossbar.BossBar.Color.PURPLE,
+                net.kyori.adventure.bossbar.BossBar.Overlay.PROGRESS);
+    }
+
+    /**
+     * Hides one tracked dragon bar from all players currently in this instance.
+     */
+    private void hideCustomDragonBossBarFromAll(net.kyori.adventure.bossbar.BossBar bossBar) {
+        for (DungeonPlayerSession playerSession : this.players) {
+            playerSession.getPlayer().hideBossBar(bossBar);
+        }
+    }
+
 }

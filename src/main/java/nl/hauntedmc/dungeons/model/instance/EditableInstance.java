@@ -26,6 +26,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Particle.DustOptions;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Sign;
@@ -147,6 +148,10 @@ public class EditableInstance extends DungeonInstance {
      * Triggers an asynchronous save and sends action-bar status feedback to editors.
      */
     public void autosave() {
+        if (this.disposing || this.instanceWorld == null || this.players.isEmpty()) {
+            return;
+        }
+
         for (DungeonPlayerSession playerSession : this.players) {
             playerSession
                     .getPlayer()
@@ -213,6 +218,15 @@ public class EditableInstance extends DungeonInstance {
         CompletableFuture<Boolean> result = new CompletableFuture<>();
         Runnable saveTask =
                 () -> {
+                    World world = this.instanceWorld;
+                    if (this.disposing || world == null) {
+                        if (latch != null) {
+                            latch.countDown();
+                        }
+                        result.complete(false);
+                        return;
+                    }
+
                     if (this.dungeon.isSaving()) {
                         if (latch != null) {
                             latch.countDown();
@@ -233,8 +247,8 @@ public class EditableInstance extends DungeonInstance {
                                 () -> {
                                     // Paper writes chunk data asynchronously by default; wait for the writer so the
                                     // folder copy is consistent.
-                                    this.instanceWorld.save(true);
-                                    this.beforeCommitWorldSave();
+                                    world.save(true);
+                                    this.beforeCommitWorldSave(world);
                                 });
                     } catch (Throwable throwable) {
                         if (this.hologramManager != null) {
@@ -245,7 +259,7 @@ public class EditableInstance extends DungeonInstance {
                         this.logger()
                                 .error(
                                         "Failed to save edited world '{}' for dungeon '{}'.",
-                                        this.instanceWorld.getName(),
+                                        world.getName(),
                                         this.dungeon.getWorldName(),
                                         throwable);
                         return;
@@ -255,7 +269,7 @@ public class EditableInstance extends DungeonInstance {
                         this.hologramManager.restoreCapturedHolograms();
                     }
 
-                    this.commitWorldAsync()
+                    this.commitWorldAsync(world)
                             .whenComplete(
                                     (success, throwable) -> {
                                         if (throwable != null) {
@@ -284,22 +298,21 @@ public class EditableInstance extends DungeonInstance {
     /**
      * Hook called after the world save flush and before folder commit begins.
      */
-    protected void beforeCommitWorldSave() {}
+    protected void beforeCommitWorldSave(World world) {}
 
     /**
      * Commits the live world folder back into the source dungeon directory.
      */
-    protected CompletableFuture<Boolean> commitWorldAsync() {
+    protected CompletableFuture<Boolean> commitWorldAsync(World world) {
         try {
             FileFilter filter = file -> !file.getName().equals("rooms");
-            FileUtils.copyDirectory(
-                    this.instanceWorld.getWorldFolder(), this.dungeon.getFolder(), filter);
-                        new File(this.dungeon.getFolder(), "uid.dat").delete();
+            FileUtils.copyDirectory(world.getWorldFolder(), this.dungeon.getFolder(), filter);
+            new File(this.dungeon.getFolder(), "uid.dat").delete();
         } catch (IOException exception) {
             this.logger()
                     .error(
                             "Failed to commit edited world '{}' back to dungeon folder '{}'.",
-                            this.instanceWorld.getName(),
+                            world.getName(),
                             this.dungeon.getFolder().getAbsolutePath(),
                             exception);
             return CompletableFuture.completedFuture(false);
@@ -312,7 +325,7 @@ public class EditableInstance extends DungeonInstance {
                                 return CompletableFuture.completedFuture(false);
                             }
 
-                            return this.onCommitWorldAsync();
+                            return this.onCommitWorldAsync(world);
                         });
     }
 
@@ -354,7 +367,7 @@ public class EditableInstance extends DungeonInstance {
     /**
      * Extension hook for subclasses that need post-commit persistence.
      */
-    protected CompletableFuture<Boolean> onCommitWorldAsync() {
+    protected CompletableFuture<Boolean> onCommitWorldAsync(World world) {
         return CompletableFuture.completedFuture(true);
     }
 
