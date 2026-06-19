@@ -58,6 +58,7 @@ public abstract class PlayableInstance extends DungeonInstance {
     protected boolean livesEnabled;
     protected DungeonDifficulty difficulty;
     protected BukkitRunnable instanceTicker;
+    protected BukkitRunnable dragonBossBarTicker;
     protected int timeElapsed;
     protected int timeLeft;
     protected String status;
@@ -192,10 +193,16 @@ public abstract class PlayableInstance extends DungeonInstance {
                                 }
                             }
 
-                            PlayableInstance.this.updateCustomDragonBossBars();
                         }
                     };
             this.instanceTicker.runTaskTimer(this.plugin(), 0L, 20L);
+            this.dragonBossBarTicker =
+                                        new BukkitRunnable() {
+                                                public void run() {
+                            PlayableInstance.this.updateCustomDragonBossBars();
+                        }
+                    };
+            this.dragonBossBarTicker.runTaskTimer(this.plugin(), 0L, 1L);
             Bukkit.getPluginManager().callEvent(new DungeonStartEvent(this, this.players));
             this.onStart();
         }
@@ -222,6 +229,9 @@ public abstract class PlayableInstance extends DungeonInstance {
         this.offlineTrackers.clear();
         if (this.instanceTicker != null && !this.instanceTicker.isCancelled()) {
             this.instanceTicker.cancel();
+        }
+        if (this.dragonBossBarTicker != null && !this.dragonBossBarTicker.isCancelled()) {
+            this.dragonBossBarTicker.cancel();
         }
 
         this.playerLives.clear();
