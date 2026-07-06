@@ -289,7 +289,7 @@ public class BranchingDungeon extends DungeonDefinition {
                                                                     // is only admitted after the spawn has been
                                                                     // validated here.
                                                                     if (!player.isOnline()) {
-                                                                        playerSession.refundReservedAccessKey(this.getWorldName());
+                                                                        this.refundReservedAccessKey(playerSession);
                                                                         playerSession.setAwaitingDungeon(false);
                                                                         this.discardInstance(instance);
                                                                         this.logger()
@@ -306,7 +306,7 @@ public class BranchingDungeon extends DungeonDefinition {
                                                                     instance.prepareValidStartPoint();
 
                                                                     if (instance.getStartLoc() == null) {
-                                                                        playerSession.refundReservedAccessKey(this.getWorldName());
+                                                                        this.refundReservedAccessKey(playerSession);
                                                                         this.timeout(instance, playerSession);
                                                                         instance.dispose();
                                                                         return;
@@ -318,16 +318,16 @@ public class BranchingDungeon extends DungeonDefinition {
                                                                                     () -> {
                                                                                         instance.addPlayer(playerSession);
                                                                                         if (playerSession.getInstance() == instance) {
-                                                                                            playerSession.commitReservedAccessKey(
-                                                                                                    this.getWorldName());
+                                                                                            this.completeReservedAccessKey(
+                                                                                                    playerSession);
                                                                                             nl.hauntedmc.dungeons.util.lang.LangUtils.sendMessage(
                                                                                                     player,
                                                                                                     "instance.lifecycle.entered",
                                                                                                     LangUtils.placeholder(
                                                                                                             "dungeon", this.getDisplayName()));
                                                                                         } else {
-                                                                                            playerSession.refundReservedAccessKey(
-                                                                                                    this.getWorldName());
+                                                                                            this.refundReservedAccessKey(
+                                                                                                    playerSession);
                                                                                             this.discardInstance(instance);
                                                                                             nl.hauntedmc.dungeons.util.lang.LangUtils.sendMessage(
                                                                                                     player,
@@ -371,7 +371,7 @@ public class BranchingDungeon extends DungeonDefinition {
                             }
 
                             if (playerSession != null) {
-                                playerSession.refundReservedAccessKey(this.getWorldName());
+                                this.refundReservedAccessKey(playerSession);
                                 playerSession.setAwaitingDungeon(false);
                             }
 

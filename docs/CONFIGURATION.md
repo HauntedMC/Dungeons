@@ -49,6 +49,45 @@ The default dungeon template controls behavior for newly created or synced dunge
 - `rules`: spawning, building, movement, world, combat, commands, items, entities.
 - `map`: floor-depth controls for map rendering.
 
+### Access Keys
+
+Per-dungeon `access.keys.items` is managed as a serialized list of key definitions, not just raw item stacks.
+
+Each key entry stores:
+
+- the key item itself
+- a stable internal key id
+- when it was added
+- which player added it
+
+Issued physical keys are tracked separately in `access_keys.yml`. A usable key must have:
+
+- the configured key-definition id
+- a plugin-issued per-item instance id
+- a live issued-instance record that matches the configured key
+
+When a run is being prepared, that issued instance is temporarily reserved so a copied key cannot
+start a second run in parallel with the same token.
+
+On successful dungeon entry, the plugin:
+
+- invalidates the instance id for consumable keys
+- rotates the instance id for reusable keys
+
+That makes the system resilient to normal item-meta/NBT drift across Minecraft updates and limits exact-copy dupes to a single successful use before the old token is invalidated.
+
+Preferred management commands:
+
+- `/dungeon dungeon keys add <dungeon>`
+- `/dungeon dungeon keys remove <dungeon> [id]`
+- `/dungeon dungeon keys clear <dungeon>`
+- `/dungeon dungeon keys list <dungeon> [page]`
+- `/dungeon dungeon keys give <dungeon> <player> <id> [amount]`
+
+Only the new tagged key format is supported. Old raw item-stack key entries and old untagged player-held keys are not considered valid access keys and should be reissued through the current key commands.
+
+Players with `dungeons.admin` bypass access-cooldown checks and do not receive new access cooldown entries from dungeon start/finish/leave flows.
+
 ## Generator Defaults (`dungeons/generator_settings_default.yml`)
 
 Generation defaults are split by layout mode:

@@ -12,6 +12,7 @@ import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
 import nl.hauntedmc.dungeons.runtime.team.DungeonTeam;
 import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
 import nl.hauntedmc.dungeons.runtime.team.TeamRequirementPolicy;
+import nl.hauntedmc.dungeons.util.command.CommandUtils;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import nl.hauntedmc.dungeons.util.lang.LangPlaceholder;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
@@ -253,8 +254,7 @@ public final class DungeonQueueCoordinator {
 
         private boolean reserveRequiredAccessKeys(
             DungeonDefinition dungeon, List<DungeonPlayerSession> players, Player leader) {
-        if (!dungeon.getConfig().getBoolean("access.keys.consume_on_entry", true)
-                || dungeon.getValidKeys().isEmpty()) {
+        if (dungeon.getValidKeys().isEmpty()) {
             return true;
         }
 
@@ -275,7 +275,16 @@ public final class DungeonQueueCoordinator {
                                 player.getName(),
                                 dungeonPlayer.getReservedAccessKeyDungeon(),
                                 dungeon.getWorldName());
-                dungeonPlayer.refundReservedAccessKey();
+                String reservedDungeonName = dungeonPlayer.getReservedAccessKeyDungeon();
+                DungeonDefinition reservedDungeon =
+                        reservedDungeonName == null || this.dungeonManager == null
+                                ? null
+                                : this.dungeonManager.get(reservedDungeonName);
+                if (reservedDungeon != null) {
+                    reservedDungeon.refundReservedAccessKey(dungeonPlayer);
+                } else {
+                    dungeonPlayer.refundReservedAccessKey();
+                }
             }
 
             // Keys are reserved up front so a queue cannot hold a slot indefinitely and then fail later
@@ -294,6 +303,7 @@ public final class DungeonQueueCoordinator {
 
             ItemStack reservedKey = this.reserveAccessKey(dungeon, player);
             if (!dungeonPlayer.reserveAccessKey(dungeon.getWorldName(), reservedKey)) {
+                dungeon.releaseReservedAccessKey(reservedKey);
                 if (reservedKey != null && !reservedKey.getType().isAir()) {
                     ItemUtils.giveOrDrop(player, reservedKey);
                     player.updateInventory();
@@ -336,6 +346,9 @@ public final class DungeonQueueCoordinator {
 
             ItemStack reservedKey = heldKey.clone();
             reservedKey.setAmount(validKey.getAmount());
+            if (!dungeon.reserveIssuedAccessKey(reservedKey)) {
+                continue;
+            }
             if (newAmount == 0) {
                 inventory.setItem(slot, null);
             } else {
@@ -383,7 +396,7 @@ public final class DungeonQueueCoordinator {
 
         this.reconcileQueuedReservedAccessKeys(queue, queuedPlayers);
 
-        if (!this.hasReservedAccessKeys(queue)) {
+        if (!this.hasReservedAccessKeys(queue, true)) {
             this.discardQueue(queue);
             return false;
         }
@@ -432,7 +445,7 @@ public final class DungeonQueueCoordinator {
             return false;
         }
 
-        if (dungeon.hasAccessCooldown(player)) {
+        if (!this.hasAccessCooldownBypass(player) && dungeon.hasAccessCooldown(player)) {
             LangUtils.sendMessage(
                     player,
                     "commands.play.on-cooldown",
@@ -575,10 +588,9 @@ public final class DungeonQueueCoordinator {
         }
     }
 
-        private boolean hasReservedAccessKeys(DungeonQueueEntry queue) {
+        private boolean hasReservedAccessKeys(DungeonQueueEntry queue, boolean notify) {
         DungeonDefinition dungeon = queue.getDungeon();
-        if (!dungeon.getConfig().getBoolean("access.keys.consume_on_entry", true)
-                || dungeon.getValidKeys().isEmpty()) {
+        if (dungeon.getValidKeys().isEmpty()) {
             return true;
         }
 
@@ -594,8 +606,11 @@ public final class DungeonQueueCoordinator {
                 continue;
             }
 
-            if (!dungeonPlayer.hasReservedAccessKey(dungeon.getWorldName())) {
-                this.sendMissingKeyMessage(dungeon, leader, player);
+            ItemStack reservedKey = dungeonPlayer.getReservedAccessKey(dungeon.getWorldName());
+            if (reservedKey == null || !dungeon.isReservedAccessKey(reservedKey)) {
+                if (notify) {
+                    this.sendMissingKeyMessage(dungeon, leader, player);
+                }
                 return false;
             }
         }
@@ -607,7 +622,7 @@ public final class DungeonQueueCoordinator {
             List<DungeonPlayerSession> players, DungeonDefinition dungeon) {
         for (DungeonPlayerSession player : players) {
             if (player != null && player.getInstance() == null) {
-                player.refundReservedAccessKey(dungeon.getWorldName());
+                dungeon.refundReservedAccessKey(player);
             }
         }
     }
@@ -631,7 +646,7 @@ public final class DungeonQueueCoordinator {
                 continue;
             }
 
-            member.refundReservedAccessKey(dungeon.getWorldName());
+            dungeon.refundReservedAccessKey(member);
         }
     }
 
@@ -660,6 +675,10 @@ public final class DungeonQueueCoordinator {
 
             if (!TeamRequirementPolicy.requiresAccessCooldown(
                     dungeon.isOnlyLeaderNeedsCooldown(), leaderId, member.getUniqueId())) {
+                continue;
+            }
+
+            if (this.hasAccessCooldownBypass(member)) {
                 continue;
             }
 
@@ -719,6 +738,10 @@ public final class DungeonQueueCoordinator {
                     continue;
                 }
 
+                if (this.hasAccessCooldownBypass(member)) {
+                    continue;
+                }
+
                 if (!queue.getDungeon().hasAccessCooldown(member)) {
                     continue;
                 }
@@ -733,7 +756,9 @@ public final class DungeonQueueCoordinator {
         }
 
         Player player = queue.getQueuedPlayer().getPlayer();
-        if (player == null || !queue.getDungeon().hasAccessCooldown(player)) {
+        if (player == null
+                || this.hasAccessCooldownBypass(player)
+                || !queue.getDungeon().hasAccessCooldown(player)) {
             return true;
         }
 
@@ -749,8 +774,7 @@ public final class DungeonQueueCoordinator {
         private boolean validateQueuedAccessKeyRequirements(
             DungeonQueueEntry queue, List<DungeonPlayerSession> players, boolean notify) {
         DungeonDefinition dungeon = queue.getDungeon();
-        if (dungeon.getValidKeys().isEmpty()
-                || dungeon.getConfig().getBoolean("access.keys.consume_on_entry", true)) {
+        if (dungeon.getValidKeys().isEmpty() || this.hasReservedAccessKeys(queue, notify)) {
             return true;
         }
 
@@ -820,5 +844,9 @@ public final class DungeonQueueCoordinator {
         }
 
         return queue.getQueuedPlayer().getPlayer();
+    }
+
+    private boolean hasAccessCooldownBypass(@Nullable Player player) {
+        return player != null && CommandUtils.hasPermissionSilent(player, "dungeons.admin");
     }
 }

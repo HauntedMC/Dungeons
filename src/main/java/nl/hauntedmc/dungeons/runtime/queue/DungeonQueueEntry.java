@@ -222,7 +222,7 @@ public class DungeonQueueEntry {
         for (UUID playerId : new ArrayList<>(this.queuedPlayers)) {
             DungeonPlayerSession member = playerManager.get(playerId);
             if (member != null && member.getInstance() == null) {
-                member.refundReservedAccessKey(this.dungeon.getWorldName());
+                this.dungeon.refundReservedAccessKey(member);
             }
         }
     }
@@ -237,14 +237,14 @@ public class DungeonQueueEntry {
             }
 
             if (!this.requiresAccessKey(playerId)) {
-                member.refundReservedAccessKey(this.dungeon.getWorldName());
+                this.dungeon.refundReservedAccessKey(member);
                 continue;
             }
 
             if (member.getInstance() == instance) {
-                member.commitReservedAccessKey(this.dungeon.getWorldName());
+                this.dungeon.completeReservedAccessKey(member);
             } else if (member.getInstance() == null) {
-                member.refundReservedAccessKey(this.dungeon.getWorldName());
+                this.dungeon.refundReservedAccessKey(member);
             }
         }
     }

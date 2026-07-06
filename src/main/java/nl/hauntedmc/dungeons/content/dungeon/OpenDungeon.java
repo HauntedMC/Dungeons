@@ -318,7 +318,7 @@ public class OpenDungeon extends StaticDungeon {
                                                                     if (!loaded) {
                                                                         this.releaseReservation(
                                                                                 instance, reservationId, keepWarmIfEmpty);
-                                                                        playerSession.refundReservedAccessKey(this.getWorldName());
+                                                                        this.refundReservedAccessKey(playerSession);
                                                                         playerSession.setAwaitingDungeon(false);
                                                                         LangUtils.sendMessage(
                                                                                 player,
@@ -330,7 +330,7 @@ public class OpenDungeon extends StaticDungeon {
                                                                     if (instance.hasLoadFailed() || !instance.isReady()) {
                                                                         this.releaseReservation(
                                                                                 instance, reservationId, keepWarmIfEmpty);
-                                                                        playerSession.refundReservedAccessKey(this.getWorldName());
+                                                                        this.refundReservedAccessKey(playerSession);
                                                                         playerSession.setAwaitingDungeon(false);
                                                                         LangUtils.sendMessage(
                                                                                 player,
@@ -353,7 +353,7 @@ public class OpenDungeon extends StaticDungeon {
                                                                 this.plugin(),
                                                                 () -> {
                                                                     this.releaseReservation(instance, reservationId, keepWarmIfEmpty);
-                                                                    playerSession.refundReservedAccessKey(this.getWorldName());
+                                                                    this.refundReservedAccessKey(playerSession);
                                                                     playerSession.setAwaitingDungeon(false);
                                                                     LangUtils.sendMessage(
                                                                             player,
@@ -380,7 +380,7 @@ public class OpenDungeon extends StaticDungeon {
             boolean keepWarmIfEmpty) {
         if (!player.isOnline()) {
             playerSession.setAwaitingDungeon(false);
-            playerSession.refundReservedAccessKey(this.getWorldName());
+            this.refundReservedAccessKey(playerSession);
             this.releaseReservation(instance, reservationId, keepWarmIfEmpty);
             this.logger()
                     .warn(
@@ -392,7 +392,7 @@ public class OpenDungeon extends StaticDungeon {
 
         if (!instance.addReservedPlayer(playerSession, reservationId)) {
             playerSession.setAwaitingDungeon(false);
-            playerSession.refundReservedAccessKey(this.getWorldName());
+            this.refundReservedAccessKey(playerSession);
             this.releaseReservation(instance, reservationId, keepWarmIfEmpty);
             LangUtils.sendMessage(
                     player,
@@ -401,7 +401,7 @@ public class OpenDungeon extends StaticDungeon {
             return false;
         }
 
-        playerSession.commitReservedAccessKey(this.getWorldName());
+        this.completeReservedAccessKey(playerSession);
         playerSession.setAwaitingDungeon(false);
         LangUtils.sendMessage(
                 player,

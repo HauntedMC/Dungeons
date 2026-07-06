@@ -113,7 +113,7 @@ public final class DungeonQueueRegistry implements Listener {
             this.queueEntriesByPlayer.remove(playerId);
             DungeonPlayerSession dungeonPlayer = this.playerManager.get(playerId);
             if (resetAwaitingDungeon && dungeonPlayer != null && dungeonPlayer.getInstance() == null) {
-                dungeonPlayer.refundReservedAccessKey(queue.getDungeon().getWorldName());
+                queue.getDungeon().refundReservedAccessKey(dungeonPlayer);
             }
             if (resetAwaitingDungeon && dungeonPlayer != null && dungeonPlayer.getInstance() == null) {
                 dungeonPlayer.setAwaitingDungeon(false);
@@ -139,7 +139,7 @@ public final class DungeonQueueRegistry implements Listener {
         this.queueEntriesByPlayer.remove(playerId);
         DungeonPlayerSession dungeonPlayer = this.playerManager.get(playerId);
         if (dungeonPlayer != null && dungeonPlayer.getInstance() == null) {
-            dungeonPlayer.refundReservedAccessKey(queue.getDungeon().getWorldName());
+            queue.getDungeon().refundReservedAccessKey(dungeonPlayer);
             dungeonPlayer.setAwaitingDungeon(false);
         }
     }

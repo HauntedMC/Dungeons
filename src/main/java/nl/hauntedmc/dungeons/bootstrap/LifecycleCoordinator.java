@@ -189,7 +189,14 @@ public final class LifecycleCoordinator {
                 continue;
             }
 
-            playerSession.refundReservedAccessKey();
+            String reservedDungeonName = playerSession.getReservedAccessKeyDungeon();
+            DungeonDefinition reservedDungeon =
+                    reservedDungeonName == null ? null : this.runtime.dungeonCatalog().get(reservedDungeonName);
+            if (reservedDungeon != null) {
+                reservedDungeon.refundReservedAccessKey(playerSession);
+            } else {
+                playerSession.refundReservedAccessKey();
+            }
             playerSession.setAwaitingDungeon(false);
         }
     }

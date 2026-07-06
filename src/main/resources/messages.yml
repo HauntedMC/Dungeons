@@ -246,7 +246,7 @@ commands:
       - '&a/dungeon dungeon list &b[filter] [pagina] &f| &eBekijk opgeslagen dungeons.'
       - '&a/dungeon dungeon info &6<dungeon> &f| &eToon statische dungeon info.'
       - '&a/dungeon dungeon status &b[dungeon] &f| &eToon instance status.'
-      - '&a/dungeon dungeon keys <add|remove|clear> &6<dungeon> &f| &eBeheer access keys.'
+      - '&a/dungeon dungeon keys <add|remove|clear|list|give> &6<dungeon> &f| &eBeheer access keys.'
       - '&a/dungeon dungeon exit set &6<dungeon> &f| &eStel de exit locatie in.'
     create:
       usage: '&a/dungeon dungeon create &6<name> [type] [generator] &f| &eMaak een nieuwe lege dungeon.'
@@ -336,20 +336,40 @@ commands:
         dungeon-not-found: '&cDungeon ''&6{dungeon}&c'' bestaat niet.'
         no-permission: '&cJe hebt geen permissie om deze dungeon te bewerken.'
         no-held-item: '&cJe moet een item in je hand hebben.'
-        success: '&aHet item in je hand is toegevoegd als access key.'
+        issue-failed: '&cAccess key &6#{id}&c is toegevoegd, maar de fysieke key kon niet veilig worden uitgegeven.'
+        success: '&aHet item in je hand is toegevoegd als access key &6#{id}&a.'
       remove:
-        usage: '&a/dungeon dungeon keys remove &6<dungeon> &f| &eVerwijder het item in je hand als access key.'
+        usage: '&a/dungeon dungeon keys remove &6<dungeon> [id] &f| &eVerwijder een access key via item in hand of key id.'
         dungeon-not-found: '&cDungeon ''&6{dungeon}&c'' bestaat niet.'
         no-permission: '&cJe hebt geen permissie om deze dungeon te bewerken.'
         no-held-item: '&cJe moet een item in je hand hebben.'
-        success: '&aDe access key is verwijderd.'
+        success: '&a{count} access key(s) zijn verwijderd.'
+        invalid-key: '&cAccess key &6#{id}&c bestaat niet voor dungeon &6{dungeon}&c.'
         no-key-found: '&cEr is geen bijpassende access key gevonden.'
         no-key-found-detail: '&cEr is voor deze dungeon geen access key gevonden die overeenkomt met het item in je hand.'
       clear:
         usage: '&a/dungeon dungeon keys clear &6<dungeon> &f| &eVerwijder alle access keys.'
         dungeon-not-found: '&cDungeon ''&6{dungeon}&c'' bestaat niet.'
         no-permission: '&cJe hebt geen permissie om deze dungeon te bewerken.'
-        success: '&aAlle access keys zijn verwijderd.'
+        success: '&aAlle access keys zijn verwijderd. Totaal: &6{count}&a.'
+      list:
+        usage: '&a/dungeon dungeon keys list &6<dungeon> &b[pagina] &f| &eBekijk geconfigureerde access keys.'
+        dungeon-not-found: '&cDungeon ''&6{dungeon}&c'' bestaat niet.'
+        header: '<#5E55AD>---[ ACCESS KEYS: {dungeon} ]---'
+        line: ' &6#{id} &8• &f{item} &7x{amount} &8• &f{material} &8• &7toegevoegd {added_at} door {added_by}'
+        none: '&7Er zijn geen access keys voor deze dungeon.'
+        footer: <#5E55AD>-= Pagina {page} van {total_pages} =-
+        labels:
+          unknown: onbekend
+      give:
+        usage: '&a/dungeon dungeon keys give &6<dungeon> <player> <id> [aantal] &f| &eGeef een geconfigureerde access key.'
+        dungeon-not-found: '&cDungeon ''&6{dungeon}&c'' bestaat niet.'
+        player-not-found: '&cSpeler ''&6{player}&c'' is niet online of bestaat niet.'
+        invalid-key: '&cAccess key &6#{id}&c bestaat niet voor dungeon &6{dungeon}&c.'
+        invalid-amount: '&cAantal moet minimaal 1 zijn.'
+        issue-failed: '&cAccess key &6#{id}&c kon niet veilig worden uitgegeven voor dungeon &6{dungeon}&c.'
+        success: '&aAccess key &6#{id}&a (&f{item}&a) is &6{copies}x&a gegeven aan &d{player}&a voor dungeon &6{dungeon}&a.'
+        target: '&eJe hebt &6{copies}x &f{item}&e ontvangen als access key voor dungeon &6{dungeon}&e (key &6#{id}&e).'
     exit:
       set:
         usage: '&a/dungeon dungeon exit set &6<dungeon> &f| &eStel de exit locatie van de dungeon in.'

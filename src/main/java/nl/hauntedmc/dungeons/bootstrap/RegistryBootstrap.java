@@ -18,6 +18,7 @@ import nl.hauntedmc.dungeons.generation.layout.Layout;
 import nl.hauntedmc.dungeons.listener.instance.EditListener;
 import nl.hauntedmc.dungeons.listener.instance.InstanceListener;
 import nl.hauntedmc.dungeons.listener.instance.PlayListener;
+import nl.hauntedmc.dungeons.model.dungeon.AccessKeyDefinition;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
@@ -50,6 +51,7 @@ final class RegistryBootstrap {
      * Registers Bukkit configuration serializers that are safe to register before managers exist.
      */
     void registerConfigurationSerializers() {
+        TypeMetadataSupport.registerConfigurationSerializable(AccessKeyDefinition.class);
         TypeMetadataSupport.registerConfigurationSerializable(PlayerLootData.class);
         TypeMetadataSupport.registerConfigurationSerializable(LootCooldown.class);
         TypeMetadataSupport.registerConfigurationSerializable(FunctionTargetType.class);

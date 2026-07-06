@@ -146,7 +146,7 @@ public class StaticDungeon extends DungeonDefinition {
                                                                     // world is still being prepared, so the
                                                                     // reservation has to be revalidated here.
                                                                     if (!player.isOnline()) {
-                                                                        playerSession.refundReservedAccessKey(this.getWorldName());
+                                                                        this.refundReservedAccessKey(playerSession);
                                                                         playerSession.setAwaitingDungeon(false);
                                                                         this.discardInstance(instance);
                                                                         this.logger()
@@ -159,13 +159,13 @@ public class StaticDungeon extends DungeonDefinition {
 
                                                                     instance.addPlayer(playerSession);
                                                                     if (playerSession.getInstance() == instance) {
-                                                                        playerSession.commitReservedAccessKey(this.getWorldName());
+                                                                        this.completeReservedAccessKey(playerSession);
                                                                         nl.hauntedmc.dungeons.util.lang.LangUtils.sendMessage(
                                                                                 player,
                                                                                 "instance.lifecycle.entered",
                                                                                 LangUtils.placeholder("dungeon", this.getDisplayName()));
                                                                     } else {
-                                                                        playerSession.refundReservedAccessKey(this.getWorldName());
+                                                                        this.refundReservedAccessKey(playerSession);
                                                                         this.discardInstance(instance);
                                                                         nl.hauntedmc.dungeons.util.lang.LangUtils.sendMessage(
                                                                                 player,
@@ -219,7 +219,7 @@ public class StaticDungeon extends DungeonDefinition {
                             }
 
                             if (playerSession != null) {
-                                playerSession.refundReservedAccessKey(this.getWorldName());
+                                this.refundReservedAccessKey(playerSession);
                                 playerSession.setAwaitingDungeon(false);
                             }
 

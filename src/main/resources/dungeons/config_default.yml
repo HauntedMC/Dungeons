@@ -109,7 +109,8 @@ access:
     consume_on_entry: true
     # bool. True = only the team leader needs a key.
     leader_only: false
-    # list of item stacks. Prefer editing this with /dungeon addkey.
+    # list of access-key definitions. Issued physical keys are tracked separately in access_keys.yml.
+    # Prefer editing this with /dungeon dungeon keys add.
     items: []
 
 difficulty:

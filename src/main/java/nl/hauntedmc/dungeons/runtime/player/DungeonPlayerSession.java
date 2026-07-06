@@ -562,13 +562,24 @@ public final class DungeonPlayerSession {
         return true;
     }
 
-        public boolean commitReservedAccessKey(String dungeonName) {
+    public @Nullable ItemStack getReservedAccessKey(String dungeonName) {
+        if (!this.hasReservedAccessKey(dungeonName)) {
+            return null;
+        }
+
+        return this.reservedAccessKey == null ? null : this.reservedAccessKey.clone();
+    }
+
+        public boolean completeReservedAccessKey(String dungeonName, @Nullable ItemStack replacementKey) {
         if (!this.hasReservedAccessKey(dungeonName)) {
             return false;
         }
 
         this.reservedAccessKeyDungeon = null;
         this.reservedAccessKey = null;
+        if (replacementKey != null && !replacementKey.getType().isAir()) {
+            this.queueAccessKeyRefund(replacementKey.clone());
+        }
         return true;
     }
 

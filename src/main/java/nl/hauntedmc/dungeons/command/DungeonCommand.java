@@ -16,6 +16,7 @@ import nl.hauntedmc.dungeons.content.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.content.reward.LootTable;
 import nl.hauntedmc.dungeons.generation.room.InstanceRoom;
 import nl.hauntedmc.dungeons.gui.framework.GuiService;
+import nl.hauntedmc.dungeons.model.dungeon.AccessKeyDefinition;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
 import nl.hauntedmc.dungeons.model.instance.EditableInstance;
@@ -38,9 +39,11 @@ import nl.hauntedmc.dungeons.util.command.InputUtils;
 import nl.hauntedmc.dungeons.util.config.PluginConfigView;
 import nl.hauntedmc.dungeons.util.entity.EntityUtils;
 import nl.hauntedmc.dungeons.util.entity.PlayerUtils;
+import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.math.MathUtils;
 import nl.hauntedmc.dungeons.util.time.TimeUtils;
+import nl.hauntedmc.dungeons.util.text.TextUtils;
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -1343,8 +1346,9 @@ public final class DungeonCommand implements TabExecutor {
             return true;
         }
 
-        dungeon.removeAllAccessKeys();
-        LangUtils.sendMessage(player, "commands.dungeon.keys.clear.success");
+        int removedCount = dungeon.removeAllAccessKeys();
+        LangUtils.sendMessage(player, "commands.dungeon.keys.clear.success",
+                LangUtils.placeholder("count", String.valueOf(removedCount)));
         return true;
     }
 
@@ -1352,24 +1356,43 @@ public final class DungeonCommand implements TabExecutor {
      * Runs handle remove key command.
      */
     private boolean handleRemoveKeyCommand(CommandSender sender, String[] args) {
-        if (!(sender instanceof Player player)) {
-            return false;
-        }
-
-        if (args.length != 2) {
-            LangUtils.sendMessage(player, "commands.dungeon.keys.remove.usage");
+        if (args.length != 2 && args.length != 3) {
+            LangUtils.sendMessage(sender, "commands.dungeon.keys.remove.usage");
             return true;
         }
 
         DungeonDefinition dungeon = this.dungeonManager.get(args[1]);
         if (dungeon == null) {
-            LangUtils.sendMessage(player, "commands.dungeon.keys.remove.dungeon-not-found",
+            LangUtils.sendMessage(sender, "commands.dungeon.keys.remove.dungeon-not-found",
                     LangUtils.placeholder("dungeon", args[1]));
             return true;
         }
 
-        if (!CommandUtils.hasDungeonEditAccess(player, dungeon.getWorldName())) {
-            LangUtils.sendMessage(player, "commands.dungeon.keys.remove.no-permission");
+        if (!CommandUtils.hasDungeonEditAccess(sender, dungeon.getWorldName())) {
+            LangUtils.sendMessage(sender, "commands.dungeon.keys.remove.no-permission");
+            return true;
+        }
+
+        if (args.length == 3) {
+            Optional<Integer> parsedKeyId = InputUtils.readIntegerInput(sender, args[2]);
+            if (parsedKeyId.isEmpty()) {
+                return true;
+            }
+
+            if (!dungeon.removeAccessKey(parsedKeyId.get())) {
+                LangUtils.sendMessage(sender, "commands.dungeon.keys.remove.invalid-key",
+                        LangUtils.placeholder("id", args[2]),
+                        LangUtils.placeholder("dungeon", dungeon.getWorldName()));
+                return true;
+            }
+
+            LangUtils.sendMessage(sender, "commands.dungeon.keys.remove.success",
+                    LangUtils.placeholder("count", "1"));
+            return true;
+        }
+
+        if (!(sender instanceof Player player)) {
+            LangUtils.sendMessage(sender, "commands.dungeon.keys.remove.no-held-item");
             return true;
         }
 
@@ -1379,9 +1402,10 @@ public final class DungeonCommand implements TabExecutor {
             return true;
         }
 
-        boolean keyFound = dungeon.removeAccessKey(heldItem);
-        if (keyFound) {
-            LangUtils.sendMessage(player, "commands.dungeon.keys.remove.success");
+        int removedCount = dungeon.removeAccessKey(heldItem);
+        if (removedCount > 0) {
+            LangUtils.sendMessage(player, "commands.dungeon.keys.remove.success",
+                    LangUtils.placeholder("count", String.valueOf(removedCount)));
         } else {
             LangUtils.sendMessage(player, "commands.dungeon.keys.remove.no-key-found");
             LangUtils.sendMessage(player, "commands.dungeon.keys.remove.no-key-found-detail");
@@ -1421,8 +1445,161 @@ public final class DungeonCommand implements TabExecutor {
             return true;
         }
 
-        dungeon.addAccessKey(heldItem);
-        LangUtils.sendMessage(player, "commands.dungeon.keys.add.success");
+        AccessKeyDefinition addedKey = dungeon.addAccessKey(heldItem, player);
+        ItemStack taggedKeyItem = dungeon.issueAccessKey(addedKey);
+        int keyId = dungeon.getAccessKeys().indexOf(addedKey) + 1;
+        if (taggedKeyItem == null || taggedKeyItem.getType() == Material.AIR) {
+            LangUtils.sendMessage(player, "commands.dungeon.keys.add.issue-failed",
+                    LangUtils.placeholder("id", String.valueOf(keyId)));
+            return true;
+        }
+
+        player.getInventory().setItemInMainHand(taggedKeyItem);
+        player.updateInventory();
+        LangUtils.sendMessage(player, "commands.dungeon.keys.add.success",
+                LangUtils.placeholder("id", String.valueOf(keyId)));
+        return true;
+    }
+
+    /**
+     * Runs handle list keys command.
+     */
+    private boolean handleListKeysCommand(CommandSender sender, String[] args) {
+        if (!CommandUtils.hasPermission(sender, "dungeons.admin")) {
+            return false;
+        }
+
+        if (args.length < 4 || args.length > 5) {
+            LangUtils.sendMessage(sender, "commands.dungeon.keys.list.usage");
+            return true;
+        }
+
+        DungeonDefinition dungeon = this.dungeonManager.get(args[3]);
+        if (dungeon == null) {
+            LangUtils.sendMessage(sender, "commands.dungeon.keys.list.dungeon-not-found",
+                    LangUtils.placeholder("dungeon", args[3]));
+            return true;
+        }
+
+        int page = 1;
+        if (args.length == 5) {
+            Optional<Integer> parsedPage = InputUtils.readIntegerInput(sender, args[4]);
+            if (parsedPage.isEmpty()) {
+                return true;
+            }
+            page = Math.max(1, parsedPage.get());
+        }
+
+        List<AccessKeyDefinition> accessKeys = dungeon.getAccessKeys();
+        List<String> lines = new ArrayList<>();
+        for (int index = 0; index < accessKeys.size(); index++) {
+            lines.add(this.formatAccessKeyLine(index + 1, accessKeys.get(index)));
+        }
+
+        this.sendPaginatedLines(sender,
+                LangUtils.getMessage("commands.dungeon.keys.list.header", false,
+                        LangUtils.placeholder("dungeon", dungeon.getWorldName())),
+                lines, "commands.dungeon.keys.list.none", "commands.dungeon.keys.list.footer", page);
+        return true;
+    }
+
+    /**
+     * Runs handle give key command.
+     */
+    private boolean handleGiveKeyCommand(CommandSender sender, String[] args) {
+        if (!CommandUtils.hasPermission(sender, "dungeons.admin")) {
+            return false;
+        }
+
+        if (args.length != 6 && args.length != 7) {
+            LangUtils.sendMessage(sender, "commands.dungeon.keys.give.usage");
+            return true;
+        }
+
+        DungeonDefinition dungeon = this.dungeonManager.get(args[3]);
+        if (dungeon == null) {
+            LangUtils.sendMessage(sender, "commands.dungeon.keys.give.dungeon-not-found",
+                    LangUtils.placeholder("dungeon", args[3]));
+            return true;
+        }
+
+        Player targetPlayer = Bukkit.getPlayer(args[4]);
+        if (targetPlayer == null) {
+            LangUtils.sendMessage(sender, "commands.dungeon.keys.give.player-not-found",
+                    LangUtils.placeholder("player", args[4]));
+            return true;
+        }
+
+        Optional<Integer> parsedKeyId = InputUtils.readIntegerInput(sender, args[5]);
+        if (parsedKeyId.isEmpty()) {
+            return true;
+        }
+
+        AccessKeyDefinition accessKey = dungeon.getAccessKey(parsedKeyId.get());
+        if (accessKey == null) {
+            LangUtils.sendMessage(sender, "commands.dungeon.keys.give.invalid-key",
+                    LangUtils.placeholder("id", args[5]),
+                    LangUtils.placeholder("dungeon", dungeon.getWorldName()));
+            return true;
+        }
+
+        int copies = 1;
+        if (args.length == 7) {
+            Optional<Integer> parsedCopies = InputUtils.readIntegerInput(sender, args[6]);
+            if (parsedCopies.isEmpty()) {
+                return true;
+            }
+            copies = parsedCopies.get();
+        }
+
+        if (copies < 1) {
+            LangUtils.sendMessage(sender, "commands.dungeon.keys.give.invalid-amount");
+            return true;
+        }
+
+        ItemStack previewItem = accessKey.createItemCopy();
+        if (previewItem == null || previewItem.getType() == Material.AIR) {
+            LangUtils.sendMessage(sender, "commands.dungeon.keys.give.invalid-key",
+                    LangUtils.placeholder("id", args[5]),
+                    LangUtils.placeholder("dungeon", dungeon.getWorldName()));
+            return true;
+        }
+
+        int grantedCopies = 0;
+        for (int copy = 0; copy < copies; copy++) {
+            ItemStack issuedKeyItem = dungeon.issueAccessKey(accessKey);
+            if (issuedKeyItem != null && issuedKeyItem.getType() != Material.AIR) {
+                ItemUtils.giveOrDrop(targetPlayer, issuedKeyItem);
+                grantedCopies++;
+            }
+        }
+
+        if (grantedCopies < 1) {
+            LangUtils.sendMessage(sender, "commands.dungeon.keys.give.issue-failed",
+                    LangUtils.placeholder("id", args[5]),
+                    LangUtils.placeholder("dungeon", dungeon.getWorldName()));
+            return true;
+        }
+
+        LangUtils.sendMessage(sender, "commands.dungeon.keys.give.success",
+                LangUtils.placeholder("player", PlayerUtils.playerDisplayName(targetPlayer)),
+                LangUtils.placeholder("dungeon", dungeon.getWorldName()),
+                LangUtils.placeholder("id", args[5]),
+                LangUtils.placeholder("copies", String.valueOf(grantedCopies)),
+                LangUtils.placeholder("item", ItemUtils.getItemDisplayName(previewItem)));
+        if (!sender.equals(targetPlayer)) {
+            LangUtils.sendMessage(targetPlayer, "commands.dungeon.keys.give.target",
+                    LangUtils.placeholder("dungeon", dungeon.getWorldName()),
+                    LangUtils.placeholder("id", args[5]),
+                    LangUtils.placeholder("copies", String.valueOf(grantedCopies)),
+                    LangUtils.placeholder("item", ItemUtils.getItemDisplayName(previewItem)));
+        }
+
+        return true;
+    }
+
+    private boolean handleInvalidDungeonKeysUsage(CommandSender sender) {
+        this.sendUsageList(sender, "commands.dungeon.help.lines");
         return true;
     }
 
@@ -2562,7 +2739,14 @@ public final class DungeonCommand implements TabExecutor {
         }
 
         if (targetSession != null && targetSession.hasReservedAccessKey()) {
-            targetSession.refundReservedAccessKey();
+            String reservedDungeonName = targetSession.getReservedAccessKeyDungeon();
+            DungeonDefinition reservedDungeon =
+                    reservedDungeonName == null ? null : this.dungeonManager.get(reservedDungeonName);
+            if (reservedDungeon != null) {
+                reservedDungeon.refundReservedAccessKey(targetSession);
+            } else {
+                targetSession.refundReservedAccessKey();
+            }
             changed = true;
         }
 
@@ -2802,6 +2986,49 @@ public final class DungeonCommand implements TabExecutor {
         return difficulty == null || difficulty.isBlank()
                 ? LangUtils.getMessage("commands.player.status.labels.default-difficulty", false)
                 : difficulty;
+    }
+
+    /**
+     * Runs format access key line.
+     */
+    private String formatAccessKeyLine(int keyId, AccessKeyDefinition accessKey) {
+        ItemStack item = accessKey.createItemCopy();
+        String itemName = item == null ? LangUtils.getMessage("commands.dungeon.keys.list.labels.unknown", false)
+                : ItemUtils.getItemDisplayName(item);
+        String material = item == null ? LangUtils.getMessage("commands.dungeon.keys.list.labels.unknown", false)
+                : TextUtils.humanize(item.getType().name());
+        String amount = item == null ? "0" : String.valueOf(item.getAmount());
+        return LangUtils.getMessage("commands.dungeon.keys.list.line", false,
+                LangUtils.placeholder("id", String.valueOf(keyId)),
+                LangUtils.placeholder("item", itemName),
+                LangUtils.placeholder("material", material),
+                LangUtils.placeholder("amount", amount),
+                LangUtils.placeholder("added_at", this.formatAccessKeyAddedAt(accessKey)),
+                LangUtils.placeholder("added_by", this.formatAccessKeyAddedBy(accessKey)));
+    }
+
+    /**
+     * Runs format access key added at.
+     */
+    private String formatAccessKeyAddedAt(AccessKeyDefinition accessKey) {
+        Date addedAt = accessKey.getAddedAt();
+        if (addedAt == null) {
+            return LangUtils.getMessage("commands.dungeon.keys.list.labels.unknown", false);
+        }
+
+        return TimeUtils.formatDate(addedAt);
+    }
+
+    /**
+     * Runs format access key added by.
+     */
+    private String formatAccessKeyAddedBy(AccessKeyDefinition accessKey) {
+        String addedBy = accessKey.getAddedByName();
+        if (addedBy == null || addedBy.isBlank()) {
+            return LangUtils.getMessage("commands.dungeon.keys.list.labels.unknown", false);
+        }
+
+        return addedBy;
     }
 
     /**
@@ -3172,9 +3399,32 @@ public final class DungeonCommand implements TabExecutor {
                 }
                 case "keys" -> {
                     if (args.length == 3) {
-                        DungeonCommand.this.addMatchingLiteralOptions(options, args[2], "add", "remove", "clear");
+                        DungeonCommand.this.addMatchingLiteralOptions(options, args[2], "add", "remove", "clear",
+                                "list", "give");
                     } else if (args.length == 4) {
                         DungeonCommand.this.addMatchingDungeonNames(options, args[3]);
+                    } else if (args.length == 5 && args[2].equalsIgnoreCase("remove")) {
+                        DungeonDefinition dungeon = DungeonCommand.this.dungeonManager.get(args[3]);
+                        if (dungeon != null) {
+                            for (int keyId = 1; keyId <= dungeon.getAccessKeys().size(); keyId++) {
+                                DungeonCommand.this.addMatchingLiteralOptions(
+                                        options, args[4], String.valueOf(keyId));
+                            }
+                        }
+                    } else if (args.length == 5 && args[2].equalsIgnoreCase("give")) {
+                        DungeonCommand.this.addMatchingPlayers(options, args[4]);
+                    } else if (args.length == 6 && args[2].equalsIgnoreCase("give")) {
+                        DungeonDefinition dungeon = DungeonCommand.this.dungeonManager.get(args[3]);
+                        if (dungeon != null) {
+                            for (int keyId = 1; keyId <= dungeon.getAccessKeys().size(); keyId++) {
+                                DungeonCommand.this.addMatchingLiteralOptions(
+                                        options, args[5], String.valueOf(keyId));
+                            }
+                        }
+                    } else if (args.length == 7 && args[2].equalsIgnoreCase("give")) {
+                        DungeonCommand.this.addMatchingLiteralOptions(options, args[6], "1", "2", "4", "8");
+                    } else if (args.length == 5 && args[2].equalsIgnoreCase("list")) {
+                        DungeonCommand.this.addMatchingLiteralOptions(options, args[4], "1", "2", "3", "4", "5");
                     }
                 }
                 case "exit" -> {
@@ -3196,18 +3446,28 @@ public final class DungeonCommand implements TabExecutor {
          * Runs handle keys command.
          */
         private boolean handleKeysCommand(CommandSender sender, String[] args) {
-            if (args.length != 4) {
+            if (args.length < 4) {
                 DungeonCommand.this.sendUsageList(sender, "commands.dungeon.help.lines");
                 return true;
             }
 
-            String dungeonName = args[3];
             return switch (args[2].toLowerCase(Locale.ROOT)) {
-                case "add" -> DungeonCommand.this.handleAddKeyCommand(sender, new String[]{"addkey", dungeonName});
+                case "add" -> args.length == 4
+                        ? DungeonCommand.this.handleAddKeyCommand(sender, new String[]{"addkey", args[3]})
+                        : DungeonCommand.this.handleInvalidDungeonKeysUsage(sender);
                 case "remove" ->
-                    DungeonCommand.this.handleRemoveKeyCommand(sender, new String[]{"removekey", dungeonName});
+                    args.length == 4
+                            ? DungeonCommand.this.handleRemoveKeyCommand(sender, new String[]{"removekey", args[3]})
+                            : args.length == 5
+                                    ? DungeonCommand.this.handleRemoveKeyCommand(sender,
+                                            new String[]{"removekey", args[3], args[4]})
+                            : DungeonCommand.this.handleInvalidDungeonKeysUsage(sender);
                 case "clear" ->
-                    DungeonCommand.this.handleRemoveAllkeysCommand(sender, new String[]{"clearkeys", dungeonName});
+                    args.length == 4
+                            ? DungeonCommand.this.handleRemoveAllkeysCommand(sender, new String[]{"clearkeys", args[3]})
+                            : DungeonCommand.this.handleInvalidDungeonKeysUsage(sender);
+                case "list" -> DungeonCommand.this.handleListKeysCommand(sender, args);
+                case "give" -> DungeonCommand.this.handleGiveKeyCommand(sender, args);
                 default -> {
                     DungeonCommand.this.sendUsageList(sender, "commands.dungeon.help.lines");
                     yield true;
