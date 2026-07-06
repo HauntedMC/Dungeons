@@ -1002,7 +1002,7 @@ public final class DungeonCommand implements TabExecutor {
         }
 
         DungeonPlayerSession playerSession = this.playerManager.get(player);
-        if (!playerSession.isEditMode()) {
+        if (playerSession == null || !playerSession.isEditMode()) {
             LangUtils.sendMessage(player, "commands.edit.tools.function.not-in-dungeon");
             return true;
         }
@@ -1023,13 +1023,13 @@ public final class DungeonCommand implements TabExecutor {
             return false;
         }
 
-        if (!CommandUtils.hasPermission(sender, "dungeons.functioneditor")) {
+        if (!CommandUtils.hasPermission(sender, "dungeons.roomeditor")) {
             return false;
         }
 
         DungeonPlayerSession playerSession = this.playerManager.get(player);
-        if (!playerSession.isEditMode()) {
-            LangUtils.sendMessage(player, "commands.edit.tools.function.not-in-dungeon");
+        if (playerSession == null || !playerSession.isEditMode()) {
+            LangUtils.sendMessage(player, "commands.edit.tools.room.not-in-dungeon");
             return true;
         }
 

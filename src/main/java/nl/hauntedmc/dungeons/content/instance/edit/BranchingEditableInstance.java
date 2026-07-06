@@ -372,7 +372,7 @@ public class BranchingEditableInstance extends EditableInstance {
         }
 
         for (Connector connector : room.getConnectors()) {
-            Location loc = connector.getLocation().asLocation();
+            Location loc = connector.getLocation().asLocation(this.instanceWorld);
             BoundingBox blockBox =
                                         new BoundingBox(
                             loc.getX(),
@@ -417,9 +417,8 @@ public class BranchingEditableInstance extends EditableInstance {
     @Override
     public void addPlayer(DungeonPlayerSession playerSession) {
         super.addPlayer(playerSession);
-        Player player = playerSession.getPlayer();
         if (playerSession.getSavedEditInventory() == null) {
-            ItemUtils.giveOrDrop(player, ItemUtils.getRoomTool());
+            playerSession.ensureEditModeTools();
         }
     }
 

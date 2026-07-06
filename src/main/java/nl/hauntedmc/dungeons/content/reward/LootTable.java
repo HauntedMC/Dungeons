@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.TypeKey;
 import nl.hauntedmc.dungeons.gui.framework.buttons.Button;
+import nl.hauntedmc.dungeons.gui.framework.window.GuiInventory;
 import nl.hauntedmc.dungeons.gui.framework.window.GuiWindow;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
@@ -166,8 +167,13 @@ public class LootTable implements ConfigurationSerializable {
 
                     for (int slotIndex = 9; slotIndex < 54; slotIndex++) {
                         LootTableItem lootItem = this.lootItems.get(slotIndex);
+                        Button button = this.getLiveButton(player, slotIndex);
+                        if (button == null) {
+                            continue;
+                        }
+
+                        button.clearLore();
                         if (lootItem != null) {
-                            Button button = this.tableMenu.getButtons().get(slotIndex);
                             button.clearLore();
                             button.addLore(
                                     ColorUtils.colorize(
@@ -198,7 +204,7 @@ public class LootTable implements ConfigurationSerializable {
                         Player player = (Player) event.getWhoClicked();
                         player.playSound(player.getLocation(), "entity.experience_orb.pickup", 1.0F, 1.2F);
                         this.minItems = Math.min(this.maxItems, this.minItems + 1);
-                        this.updateMinButton(minButton);
+                        this.updateMinButton(this.getLiveButton(player, 3));
                         this.tableMenu.updateButtons(player);
                     }
                 });
@@ -210,7 +216,7 @@ public class LootTable implements ConfigurationSerializable {
                         Player player = (Player) event.getWhoClicked();
                         player.playSound(player.getLocation(), "entity.experience_orb.pickup", 1.0F, 0.8F);
                         this.minItems = Math.max(0, this.minItems - 1);
-                        this.updateMinButton(minButton);
+                        this.updateMinButton(this.getLiveButton(player, 3));
                         this.tableMenu.updateButtons(player);
                     }
                 });
@@ -225,7 +231,7 @@ public class LootTable implements ConfigurationSerializable {
                         Player player = (Player) event.getWhoClicked();
                         player.playSound(player.getLocation(), "entity.experience_orb.pickup", 1.0F, 1.2F);
                         this.maxItems++;
-                        this.updateMaxButton(maxButton);
+                        this.updateMaxButton(this.getLiveButton(player, 4));
                         this.tableMenu.updateButtons(player);
                     }
                 });
@@ -237,7 +243,7 @@ public class LootTable implements ConfigurationSerializable {
                         Player player = (Player) event.getWhoClicked();
                         player.playSound(player.getLocation(), "entity.experience_orb.pickup", 1.0F, 0.8F);
                         this.maxItems = Math.max(this.minItems, this.maxItems - 1);
-                        this.updateMaxButton(maxButton);
+                        this.updateMaxButton(this.getLiveButton(player, 4));
                         this.tableMenu.updateButtons(player);
                     }
                 });
@@ -256,7 +262,7 @@ public class LootTable implements ConfigurationSerializable {
                         player.playSound(player.getLocation(), "entity.experience_orb.pickup", 1.0F, 0.8F);
                     }
 
-                    this.updateAllowDuplicatesButton(allowDupesButton);
+                    this.updateAllowDuplicatesButton(this.getLiveButton(player, 5));
                     this.tableMenu.updateButtons(player);
                 });
         this.tableMenu.addButton(5, allowDupesButton);
@@ -281,10 +287,14 @@ public class LootTable implements ConfigurationSerializable {
                                 || clickType == ClickType.SHIFT_RIGHT) {
                             LootTableItem lootData = this.lootItems.get(finalSlot);
                             Player player = (Player) event.getWhoClicked();
+                            Button liveButton = this.getLiveButton(player, finalSlot);
                             ItemStack cursorItem = event.getCursor();
                             if (lootData != null) {
                                 if (clickType == ClickType.SHIFT_LEFT || clickType == ClickType.SHIFT_RIGHT) {
-                                    button.setItem(this.openSlotItem);
+                                    if (liveButton != null) {
+                                        liveButton.setItem(this.openSlotItem);
+                                        liveButton.clearLore();
+                                    }
                                     ItemUtils.giveOrDrop(player, lootData.getItem());
                                     this.lootItems.remove(finalSlot);
                                     this.tableMenu.updateButtons(player);
@@ -298,15 +308,25 @@ public class LootTable implements ConfigurationSerializable {
                                 LootTableItem lootItem = new LootTableItem(cursorItem.clone());
                                 this.lootItems.put(finalSlot, lootItem);
                                 ItemStack buttonItem = cursorItem.clone();
-                                button.setItem(buttonItem);
+                                if (liveButton != null) {
+                                    liveButton.setItem(buttonItem);
+                                    liveButton.clearLore();
+                                }
                                 cursorItem.setAmount(0);
-                                button.addLore(
-                                        ColorUtils.colorize(
-                                                "&6" + lootItem.getMinItems() + "-" + lootItem.getMaxItems() + " &eitems"));
-                                button.addLore(ColorUtils.colorize("&eWeight of &6" + lootItem.getWeight()));
-                                button.addLore(ColorUtils.colorize(""));
-                                button.addLore(ColorUtils.colorize("&8Click to edit."));
-                                button.addLore(ColorUtils.colorize("&8Shift-Click to remove."));
+                                if (liveButton != null) {
+                                    liveButton.addLore(
+                                            ColorUtils.colorize(
+                                                    "&6"
+                                                            + lootItem.getMinItems()
+                                                            + "-"
+                                                            + lootItem.getMaxItems()
+                                                            + " &eitems"));
+                                    liveButton.addLore(
+                                            ColorUtils.colorize("&eWeight of &6" + lootItem.getWeight()));
+                                    liveButton.addLore(ColorUtils.colorize(""));
+                                    liveButton.addLore(ColorUtils.colorize("&8Click to edit."));
+                                    liveButton.addLore(ColorUtils.colorize("&8Shift-Click to remove."));
+                                }
                                 this.tableMenu.updateButtons(player);
                             }
                         }
@@ -327,6 +347,10 @@ public class LootTable implements ConfigurationSerializable {
      * Updates min button.
      */
     private void updateMinButton(Button minButton) {
+        if (minButton == null) {
+            return;
+        }
+
         minButton.clearLore();
         minButton.setAmount(Math.max(1, this.minItems));
         minButton.addLore(ColorUtils.colorize("&eAt least &6" + this.minItems + " &eitems"));
@@ -343,6 +367,10 @@ public class LootTable implements ConfigurationSerializable {
      * Updates max button.
      */
     private void updateMaxButton(Button maxButton) {
+        if (maxButton == null) {
+            return;
+        }
+
         maxButton.clearLore();
         maxButton.setAmount(Math.max(1, this.maxItems));
         maxButton.addLore(ColorUtils.colorize("&eAt most &6" + this.maxItems + " &eitems"));
@@ -359,6 +387,10 @@ public class LootTable implements ConfigurationSerializable {
      * Updates allow duplicates button.
      */
     private void updateAllowDuplicatesButton(Button allowDuplicatesButton) {
+        if (allowDuplicatesButton == null) {
+            return;
+        }
+
         String dupeInfo =
                 this.allowDuplicates ? "&aAllow duplicate items" : "&cDo not allow duplicate items";
         String dupeLabel = this.allowDuplicates ? "&aDuplicate Items" : "&cDuplicate Items";
@@ -369,6 +401,15 @@ public class LootTable implements ConfigurationSerializable {
         allowDuplicatesButton.addLore(ColorUtils.colorize("&7Toggles whether or not multiple"));
         allowDuplicatesButton.addLore(ColorUtils.colorize("&7of the same item can generate in"));
         allowDuplicatesButton.addLore(ColorUtils.colorize("&7a loot table."));
+    }
+
+    private Button getLiveButton(Player player, int slot) {
+        if (player == null) {
+            return null;
+        }
+
+        GuiInventory gui = this.tableMenu.getInventoryFor(player);
+        return gui == null ? this.tableMenu.getButtons().get(slot) : gui.buttons().get(slot);
     }
 
     @NotNull public Map<String, Object> serialize() {

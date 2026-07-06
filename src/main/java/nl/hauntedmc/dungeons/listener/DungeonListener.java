@@ -1,6 +1,7 @@
 package nl.hauntedmc.dungeons.listener;
 
 import io.papermc.paper.event.player.AsyncChatEvent;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -12,6 +13,8 @@ import nl.hauntedmc.dungeons.content.instance.edit.BranchingEditableInstance;
 import nl.hauntedmc.dungeons.event.PlayerFinishDungeonEvent;
 import nl.hauntedmc.dungeons.event.PlayerLeaveDungeonEvent;
 import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
+import nl.hauntedmc.dungeons.generation.room.Connector;
+import nl.hauntedmc.dungeons.generation.room.WhitelistEntry;
 import nl.hauntedmc.dungeons.gui.framework.GuiService;
 import nl.hauntedmc.dungeons.gui.menu.HotbarMenus;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
@@ -71,6 +74,7 @@ public class DungeonListener implements Listener {
     private final DungeonRepository dungeonManager;
     private final GuiService guiService;
     private final Set<UUID> pendingRoomNameInputs = ConcurrentHashMap.newKeySet();
+    private final Set<String> pendingFunctionDisplaySelections = ConcurrentHashMap.newKeySet();
 
     /**
      * Creates the global dungeon listener with runtime service dependencies.
@@ -130,6 +134,10 @@ public class DungeonListener implements Listener {
     public void restoreEditPlayerHotbar(PlayerQuitEvent event) {
         Player player = event.getPlayer();
         DungeonPlayerSession playerSession = this.playerManager.get(player);
+        if (playerSession == null) {
+            return;
+        }
+
         playerSession.setAwaitingDungeon(false);
         if (playerSession.isEditMode()) {
             playerSession.restoreCapturedHotbar();
@@ -139,7 +147,7 @@ public class DungeonListener implements Listener {
     /**
      * Handles right-click function tool usage and opens or creates function selections.
      */
-    @EventHandler(priority = EventPriority.HIGH)
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onFunctionToolInteract(PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK) {
             return;
@@ -175,7 +183,7 @@ public class DungeonListener implements Listener {
     /**
      * Supports selecting a function by interacting with its floating text label.
      */
-    @EventHandler(priority = EventPriority.HIGH)
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onFunctionLabelInteract(PlayerInteractEntityEvent event) {
         if (event.getHand() == EquipmentSlot.OFF_HAND) {
             return;
@@ -191,7 +199,7 @@ public class DungeonListener implements Listener {
     /**
      * Supports selecting a function by interacting at its floating text label.
      */
-    @EventHandler(priority = EventPriority.HIGH)
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onFunctionLabelInteractAt(PlayerInteractAtEntityEvent event) {
         if (event.getHand() == EquipmentSlot.OFF_HAND) {
             return;
@@ -207,7 +215,7 @@ public class DungeonListener implements Listener {
     /**
      * Handles right-click room tool interactions for room selection and room edit entry.
      */
-    @EventHandler(priority = EventPriority.HIGH)
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onRoomToolInteract(PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK
                 && event.getAction() != Action.RIGHT_CLICK_AIR) {
@@ -225,6 +233,10 @@ public class DungeonListener implements Listener {
         }
 
         DungeonPlayerSession playerSession = this.playerManager.get(player);
+        if (playerSession == null) {
+            return;
+        }
+
         if (!playerSession.isEditMode()) {
             return;
         }
@@ -243,9 +255,7 @@ public class DungeonListener implements Listener {
         event.setCancelled(true);
 
         if (playerSession.isAwaitingRoomName()) {
-            playerSession.setAwaitingRoomName(false);
-            playerSession.setPos1(null);
-            playerSession.setPos2(null);
+            this.clearRoomNamePromptState(playerSession);
             LangUtils.sendMessage(player, "editor.session.room-create-cancelled");
             return;
         }
@@ -255,7 +265,14 @@ public class DungeonListener implements Listener {
                 targetBlock == null ? player.getLocation().toBlockLocation() : targetBlock.getLocation();
         BranchingRoomDefinition room = dungeon.getRoom(pos);
         if (room != null) {
+            this.clearRoomNamePromptState(playerSession);
+            playerSession.setAddingWhitelistEntry(false);
+            playerSession.setEditingWhitelistEntry(false);
+            playerSession.setRemovingWhitelistEntry(false);
             playerSession.setActiveRoom(room);
+            playerSession.setActiveConnector(null);
+            playerSession.setActiveDoor(null);
+            playerSession.setConfirmRoomAction(false);
             playerSession.captureHotbar();
             playerSession.showHotbar(HotbarMenus.getRoomEditMenu(), true);
             this.sendHotbarControls(player);
@@ -277,7 +294,7 @@ public class DungeonListener implements Listener {
     /**
      * Handles left-click room tool interactions for the first room-corner selection.
      */
-    @EventHandler(priority = EventPriority.HIGH)
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onRoomToolClick(PlayerInteractEvent event) {
         if (event.getAction() != Action.LEFT_CLICK_BLOCK
                 && event.getAction() != Action.LEFT_CLICK_AIR) {
@@ -299,6 +316,10 @@ public class DungeonListener implements Listener {
         }
 
         DungeonPlayerSession playerSession = this.playerManager.get(player);
+        if (playerSession == null) {
+            return;
+        }
+
         if (!playerSession.isEditMode()) {
             return;
         }
@@ -314,9 +335,7 @@ public class DungeonListener implements Listener {
         event.setCancelled(true);
 
         if (playerSession.isAwaitingRoomName()) {
-            playerSession.setAwaitingRoomName(false);
-            playerSession.setPos1(null);
-            playerSession.setPos2(null);
+            this.clearRoomNamePromptState(playerSession);
             LangUtils.sendMessage(player, "editor.session.room-create-cancelled");
             return;
         }
@@ -345,7 +364,8 @@ public class DungeonListener implements Listener {
     public void previewRoomSelection(PlayerToggleSneakEvent event) {
         Player player = event.getPlayer();
         DungeonPlayerSession playerSession = this.playerManager.get(player);
-        if (playerSession.isEditMode()
+        if (playerSession != null
+                && playerSession.isEditMode()
                 && playerSession.getInstance() instanceof BranchingEditableInstance) {
             if (playerSession.isAwaitingRoomName()
                     && playerSession.getPos1() != null
@@ -478,6 +498,7 @@ public class DungeonListener implements Listener {
 
         LangUtils.sendMessage(player, "editor.session.tip-edit-existing");
         LangUtils.sendMessage(player, "editor.session.function-select");
+        playerSession.setActiveTrigger(null);
         playerSession.setTargetLocation(blockLoc);
         this.guiService.openGui(player, "functionmenu");
     }
@@ -511,6 +532,15 @@ public class DungeonListener implements Listener {
             return;
         }
 
+        String selectionKey = player.getUniqueId() + ":" + display.getEntityId();
+        if (!this.pendingFunctionDisplaySelections.add(selectionKey)) {
+            return;
+        }
+
+        Bukkit.getScheduler()
+                .runTask(
+                        this.plugin,
+                        () -> this.pendingFunctionDisplaySelections.remove(selectionKey));
         event.setCancelled(true);
         this.openExistingFunctionEditor(player, playerSession, function);
     }
@@ -628,6 +658,8 @@ public class DungeonListener implements Listener {
                 "editor.session.function-selected",
                 LangUtils.placeholder(
                         "function", "<" + function.getColour() + ">" + function.getNamespace()));
+        playerSession.setActiveTrigger(null);
+        playerSession.setTargetLocation(null);
         playerSession.setActiveFunction(function);
         playerSession.captureAndShowHotbar(HotbarMenus.getFunctionEditMenu());
         this.sendHotbarControls(player);
@@ -687,15 +719,27 @@ public class DungeonListener implements Listener {
         }
 
         try {
-            if (message.isEmpty()) {
+            String normalizedMessage = message.trim();
+            if (normalizedMessage.isEmpty()) {
+                this.clearRoomNamePromptState(playerSession);
                 LangUtils.sendMessage(player, "editor.session.room-create-cancelled");
                 return true;
             }
 
+            if (playerSession.isAddingWhitelistEntry()) {
+                return this.handleWhitelistEntryInput(
+                        player, playerSession, branchingEdit, normalizedMessage);
+            }
+
             BranchingDungeon dungeon = branchingEdit.getDungeon();
+            if (playerSession.getPos1() == null || playerSession.getPos2() == null) {
+                this.clearRoomNamePromptState(playerSession);
+                LangUtils.sendMessage(player, "editor.session.room-click-required");
+                return true;
+            }
             BoundingBox bounds =
                     LocationUtils.captureBoundingBox(playerSession.getPos1(), playerSession.getPos2());
-            BranchingRoomDefinition room = dungeon.defineRoom(message, bounds);
+            BranchingRoomDefinition room = dungeon.defineRoom(normalizedMessage, bounds);
             if (room == null) {
                 LangUtils.sendMessage(player, "editor.session.room-exists");
                 return true;
@@ -718,5 +762,80 @@ public class DungeonListener implements Listener {
         } finally {
             this.pendingRoomNameInputs.remove(playerId);
         }
+    }
+
+    private boolean handleWhitelistEntryInput(
+            Player player,
+            DungeonPlayerSession playerSession,
+            BranchingEditableInstance branchingEdit,
+            String message) {
+        String roomName = message.trim();
+        BranchingDungeon dungeon = branchingEdit.getDungeon();
+        BranchingRoomDefinition whitelistRoom = dungeon.getRoom(roomName);
+        if (whitelistRoom == null) {
+            LangUtils.sendMessage(
+                    player,
+                    "editor.session.room-whitelist.add-not-found",
+                    LangUtils.placeholder("room", roomName));
+            return true;
+        }
+
+        List<WhitelistEntry> whitelist = this.resolveActiveWhitelist(playerSession);
+        if (whitelist == null) {
+            this.clearRoomNamePromptState(playerSession);
+            return true;
+        }
+
+        WhitelistEntry entry = new WhitelistEntry(whitelistRoom);
+        if (whitelist.contains(entry)) {
+            LangUtils.sendMessage(
+                    player,
+                    "editor.session.room-whitelist.add-already-present",
+                    LangUtils.placeholder("room", whitelistRoom.getNamespace()));
+            return true;
+        }
+
+        whitelist.add(entry);
+        this.clearRoomNamePromptState(playerSession);
+        LangUtils.sendMessage(
+                player,
+                "editor.session.room-whitelist.add-success",
+                LangUtils.placeholder("room", whitelistRoom.getNamespace()));
+        this.reopenActiveWhitelistEditor(player, playerSession, dungeon);
+        return true;
+    }
+
+    private List<WhitelistEntry> resolveActiveWhitelist(DungeonPlayerSession playerSession) {
+        Connector activeConnector = playerSession.getActiveConnector();
+        if (activeConnector != null) {
+            return activeConnector.getRoomWhitelist();
+        }
+
+        BranchingRoomDefinition activeRoom = playerSession.getActiveRoom();
+        return activeRoom == null ? null : activeRoom.getRoomWhitelist();
+    }
+
+    private void reopenActiveWhitelistEditor(
+            Player player, DungeonPlayerSession playerSession, BranchingDungeon dungeon) {
+        if (playerSession.getActiveConnector() != null) {
+            this.guiService.openGui(player, "connector_whitelist");
+            return;
+        }
+
+        BranchingRoomDefinition activeRoom = playerSession.getActiveRoom();
+        if (activeRoom != null) {
+            this.guiService.openGui(
+                    player,
+                    "whitelist_" + dungeon.getWorldName() + "_" + activeRoom.getNamespace());
+        }
+    }
+
+    private void clearRoomNamePromptState(DungeonPlayerSession playerSession) {
+        playerSession.setAwaitingRoomName(false);
+        playerSession.setPos1(null);
+        playerSession.setPos2(null);
+        playerSession.setAddingWhitelistEntry(false);
+        playerSession.setEditingWhitelistEntry(false);
+        playerSession.setRemovingWhitelistEntry(false);
     }
 }

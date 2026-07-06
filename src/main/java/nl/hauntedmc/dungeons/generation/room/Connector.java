@@ -137,10 +137,8 @@ public class Connector implements Cloneable, ConfigSerializableModel {
     public Connector copy(SimpleLocation rotatedLoc) {
         Connector newCon = new Connector(rotatedLoc);
         newCon.setDungeon(this.dungeon);
-        newCon.setRoomWhitelist(
-                this.roomWhitelist == null ? new ArrayList<>() : new ArrayList<>(this.roomWhitelist));
-        newCon.setRoomBlacklist(
-                this.roomBlacklist == null ? new ArrayList<>() : new ArrayList<>(this.roomBlacklist));
+        newCon.setRoomWhitelist(copyEntries(this.roomWhitelist));
+        newCon.setRoomBlacklist(copyEntries(this.roomBlacklist));
         newCon.setSuccessChance(this.successChance);
         newCon.setDoor(this.door == null ? new ConnectorDoor(newCon) : this.door.clone());
         return newCon;
@@ -151,10 +149,8 @@ public class Connector implements Cloneable, ConfigSerializableModel {
         try {
             Connector clone = (Connector) super.clone();
             clone.location = this.location.clone();
-            clone.roomBlacklist =
-                    this.roomBlacklist == null ? new ArrayList<>() : new ArrayList<>(this.roomBlacklist);
-            clone.roomWhitelist =
-                    this.roomWhitelist == null ? new ArrayList<>() : new ArrayList<>(this.roomWhitelist);
+            clone.roomBlacklist = copyEntries(this.roomBlacklist);
+            clone.roomWhitelist = copyEntries(this.roomWhitelist);
             clone.door = this.door == null ? new ConnectorDoor(clone) : this.door.clone();
             return clone;
         } catch (CloneNotSupportedException exception) {
@@ -176,10 +172,8 @@ public class Connector implements Cloneable, ConfigSerializableModel {
             clone.location =
                                         new SimpleLocation(
                             this.location.getX(), this.location.getY(), this.location.getZ(), direction);
-            clone.roomBlacklist =
-                    this.roomBlacklist == null ? new ArrayList<>() : new ArrayList<>(this.roomBlacklist);
-            clone.roomWhitelist =
-                    this.roomWhitelist == null ? new ArrayList<>() : new ArrayList<>(this.roomWhitelist);
+            clone.roomBlacklist = copyEntries(this.roomBlacklist);
+            clone.roomWhitelist = copyEntries(this.roomWhitelist);
             clone.door = this.door == null ? new ConnectorDoor(clone) : this.door.clone();
             return clone;
         } catch (CloneNotSupportedException exception) {
@@ -268,5 +262,20 @@ public class Connector implements Cloneable, ConfigSerializableModel {
      */
     public void setDoor(ConnectorDoor door) {
         this.door = door == null ? new ConnectorDoor(this) : door;
+    }
+
+    private static List<WhitelistEntry> copyEntries(List<WhitelistEntry> entries) {
+        List<WhitelistEntry> copies = new ArrayList<>();
+        if (entries == null) {
+            return copies;
+        }
+
+        for (WhitelistEntry entry : entries) {
+            if (entry != null) {
+                copies.add(new WhitelistEntry(entry));
+            }
+        }
+
+        return copies;
     }
 }

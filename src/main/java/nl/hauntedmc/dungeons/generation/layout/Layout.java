@@ -784,12 +784,15 @@ public abstract class Layout implements Cloneable {
                     }
 
                     @Override
-                                        public void onSelect(PlayerEvent event) {
+                    public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
                         DungeonPlayerSession playerSession = Layout.this.playerSession(player);
-                        playerSession.setCutting(false);
-                        playerSession.setCopying(true);
-                        playerSession.setCopiedConnector(playerSession.getActiveConnector());
+                        if (playerSession.getActiveConnector() == null) {
+                            LangUtils.sendMessage(player, "editor.layout.connector.no-selection");
+                            return;
+                        }
+
+                        playerSession.beginConnectorCopy(playerSession.getActiveConnector());
                         LangUtils.sendMessage(player, "editor.layout.connector.copied");
                     }
                 });
@@ -802,11 +805,15 @@ public abstract class Layout implements Cloneable {
                     }
 
                     @Override
-                                        public void onSelect(PlayerEvent event) {
+                    public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
                         DungeonPlayerSession playerSession = Layout.this.playerSession(player);
-                        playerSession.setCopying(false);
-                        playerSession.setCutting(true);
+                        if (playerSession.getActiveConnector() == null) {
+                            LangUtils.sendMessage(player, "editor.layout.connector.no-selection");
+                            return;
+                        }
+
+                        playerSession.beginConnectorCut(playerSession.getActiveConnector());
                         LangUtils.sendMessage(player, "editor.layout.connector.cut");
                     }
                 });
@@ -832,21 +839,31 @@ public abstract class Layout implements Cloneable {
                                     BranchingRoomDefinition room = playerSession.getActiveRoom();
                                     if (dungeon != null && room != null) {
                                         SimpleLocation simpleLoc = SimpleLocation.from(targetLocation);
-                                        if (playerSession.isCopying()) {
+                                        if (playerSession.isConnectorCopying()) {
                                             if (room.getConnector(simpleLoc) != null) {
                                                 LangUtils.sendMessage(player, "editor.layout.connector.already-here");
                                             } else {
                                                 Connector connector = playerSession.getCopiedConnector();
+                                                if (connector == null) {
+                                                    playerSession.clearConnectorClipboard();
+                                                    LangUtils.sendMessage(
+                                                            player,
+                                                            "editor.layout.connector.no-selection");
+                                                    return;
+                                                }
+
                                                 if (!room.applyDirectionAtEdge(simpleLoc)) {
                                                     LangUtils.sendMessage(player, "editor.layout.connector.must-be-on-edge");
                                                 } else {
                                                     Connector copiedConnector = connector.copy(simpleLoc);
+                                                    if (copiedConnector == null) {
+                                                        LangUtils.sendMessage(
+                                                                player,
+                                                                "editor.layout.connector.no-selection");
+                                                        return;
+                                                    }
+
                                                     room.addConnector(copiedConnector);
-                                                    copiedConnector.setSuccessChance(connector.getSuccessChance());
-                                                    copiedConnector.setRoomWhitelist(
-                                                            new ArrayList<>(connector.getRoomWhitelist()));
-                                                    copiedConnector.setRoomBlacklist(
-                                                            new ArrayList<>(connector.getRoomBlacklist()));
                                                     SimpleLocation.Direction oldDir = connector.getLocation().getDirection();
                                                     SimpleLocation.Direction newDir = simpleLoc.getDirection();
                                                     int rotation = newDir.getDegrees() - oldDir.getDegrees();
@@ -859,17 +876,40 @@ public abstract class Layout implements Cloneable {
                                                     LangUtils.sendMessage(player, "editor.layout.connector.pasted");
                                                 }
                                             }
-                                        } else if (playerSession.isCutting()) {
+                                        } else if (playerSession.isConnectorCutting()) {
                                             if (room.getConnector(simpleLoc) != null) {
                                                 LangUtils.sendMessage(player, "editor.layout.connector.already-here");
                                                 return;
                                             }
 
-                                            Connector connector = playerSession.getActiveConnector();
-                                            room.applyDirectionAtEdge(simpleLoc);
+                                            Connector connector = playerSession.getCopiedConnector();
+                                            if (connector == null) {
+                                                playerSession.clearConnectorClipboard();
+                                                LangUtils.sendMessage(
+                                                        player, "editor.layout.connector.no-selection");
+                                                return;
+                                            }
+
+                                            if (!room.applyDirectionAtEdge(simpleLoc)) {
+                                                LangUtils.sendMessage(
+                                                        player, "editor.layout.connector.must-be-on-edge");
+                                                return;
+                                            }
+
+                                            SimpleLocation.Direction oldDir = connector.getLocation().getDirection();
+                                            SimpleLocation.Direction newDir = simpleLoc.getDirection();
+                                            int rotation = newDir.getDegrees() - oldDir.getDegrees();
+                                            Vector origin = connector.getLocation().asVector();
+                                            Vector dest = simpleLoc.asVector();
+                                            Vector offset = dest.subtract(origin);
                                             connector.setLocation(simpleLoc);
+                                            connector.setDoor(
+                                                    connector.getDoor() == null
+                                                            ? new ConnectorDoor(connector)
+                                                            : connector.getDoor().copy(offset, origin, rotation));
+                                            playerSession.setActiveConnector(connector);
                                             LangUtils.sendMessage(player, "editor.layout.connector.cut-pasted");
-                                            playerSession.setCutting(false);
+                                            playerSession.clearConnectorClipboard();
                                         }
                                     }
                                 }
@@ -900,6 +940,12 @@ public abstract class Layout implements Cloneable {
                             } else {
                                 playerSession.setConfirmRoomAction(false);
                                 room.removeConnector(connector);
+                                if (playerSession.isConnectorCutting()
+                                        && playerSession.getCopiedConnector() == connector) {
+                                    playerSession.clearConnectorClipboard();
+                                }
+                                playerSession.setActiveConnector(null);
+                                playerSession.setActiveDoor(null);
                                 LangUtils.sendMessage(player, "editor.layout.connector.removed");
                                 playerSession.restorePreviousHotbar(true);
                             }

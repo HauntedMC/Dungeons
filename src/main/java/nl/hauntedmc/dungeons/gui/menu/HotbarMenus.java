@@ -81,12 +81,15 @@ public class HotbarMenus {
                     }
 
                     @Override
-                                        public void onSelect(PlayerEvent event) {
+                    public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
                         DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
-                        playerSession.setCutting(false);
-                        playerSession.setCopying(true);
-                        playerSession.setCopiedFunction(playerSession.getActiveFunction());
+                        if (playerSession.getActiveFunction() == null) {
+                            LangUtils.sendMessage(player, "editor.session.tip-edit-existing");
+                            return;
+                        }
+
+                        playerSession.beginFunctionCopy(playerSession.getActiveFunction());
                         LangUtils.sendMessage(player, "editor.session.hotbar.function-copied");
                     }
                 });
@@ -99,11 +102,15 @@ public class HotbarMenus {
                     }
 
                     @Override
-                                        public void onSelect(PlayerEvent event) {
+                    public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
                         DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
-                        playerSession.setCopying(false);
-                        playerSession.setCutting(true);
+                        if (playerSession.getActiveFunction() == null) {
+                            LangUtils.sendMessage(player, "editor.session.tip-edit-existing");
+                            return;
+                        }
+
+                        playerSession.beginFunctionCut(playerSession.getActiveFunction());
                         LangUtils.sendMessage(player, "editor.session.hotbar.function-cut");
                     }
                 });
@@ -126,36 +133,60 @@ public class HotbarMenus {
                                 if (instance != null) {
                                     Location targetLocation;
                                     if (interactEvent.getClickedBlock() != null) {
-                                        targetLocation = interactEvent.getClickedBlock().getLocation();
+                                        targetLocation =
+                                                normalizeFunctionLocation(
+                                                        interactEvent.getClickedBlock().getLocation());
                                     } else {
                                         LangUtils.sendMessage(player, "editor.session.hotbar.look-at-block-paste");
                                         return;
                                     }
                                     DungeonDefinition dungeon = instance.getDungeon();
-                                    if (playerSession.isCopying()) {
+                                    if (playerSession.isFunctionCopying()) {
+                                        DungeonFunction copiedFunction = playerSession.getCopiedFunction();
+                                        if (copiedFunction == null) {
+                                            LangUtils.sendMessage(player, "editor.session.tip-edit-existing");
+                                            playerSession.clearFunctionClipboard();
+                                            return;
+                                        }
                                         if (dungeon.getFunctions().containsKey(targetLocation)) {
                                             LangUtils.sendMessage(player, "editor.session.hotbar.function-already-here");
                                         } else {
-                                            DungeonFunction copiedFunction = playerSession.getCopiedFunction().clone();
-                                            dungeon.addFunction(targetLocation, copiedFunction);
-                                            playerSession.setActiveFunction(copiedFunction);
-                                            instance.addFunctionLabel(copiedFunction);
+                                            DungeonFunction pastedFunction = copiedFunction.clone();
+                                            if (pastedFunction == null) {
+                                                LangUtils.sendMessage(player, "editor.session.tip-edit-existing");
+                                                return;
+                                            }
+
+                                            dungeon.addFunction(targetLocation, pastedFunction);
+                                            playerSession.setActiveFunction(pastedFunction);
+                                            instance.trackEditorFunction(pastedFunction);
+                                            instance.addFunctionLabel(pastedFunction);
                                             LangUtils.sendMessage(player, "editor.session.hotbar.function-pasted");
                                         }
                                     } else {
-                                        if (playerSession.isCutting()) {
+                                        if (playerSession.isFunctionCutting()) {
                                             if (dungeon.getFunctions().containsKey(targetLocation)) {
                                                 LangUtils.sendMessage(
                                                         player, "editor.session.hotbar.function-already-here");
                                                 return;
                                             }
 
-                                            instance.removeFunctionLabelByFunction(playerSession.getActiveFunction());
-                                            dungeon.removeFunction(playerSession.getActiveFunction().getLocation());
-                                            dungeon.addFunction(targetLocation, playerSession.getActiveFunction());
-                                            instance.addFunctionLabel(dungeon.getFunctions().get(targetLocation));
+                                            DungeonFunction cutFunction = playerSession.getCopiedFunction();
+                                            if (cutFunction == null) {
+                                                playerSession.clearFunctionClipboard();
+                                                LangUtils.sendMessage(player, "editor.session.tip-edit-existing");
+                                                return;
+                                            }
+
+                                            instance.removeFunctionLabelByFunction(cutFunction);
+                                            instance.untrackEditorFunction(cutFunction);
+                                            dungeon.removeFunction(cutFunction.getLocation());
+                                            dungeon.addFunction(targetLocation, cutFunction);
+                                            instance.trackEditorFunction(cutFunction);
+                                            instance.addFunctionLabel(cutFunction);
+                                            playerSession.setActiveFunction(cutFunction);
                                             LangUtils.sendMessage(player, "editor.session.hotbar.function-cut-pasted");
-                                            playerSession.setCutting(false);
+                                            playerSession.clearFunctionClipboard();
                                         }
                                     }
                                 }
@@ -177,8 +208,21 @@ public class HotbarMenus {
                         DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
                         EditableInstance instance = playerSession.getInstance().asEditInstance();
                         if (instance != null) {
-                            instance.getDungeon().removeFunction(playerSession.getActiveFunction().getLocation());
-                            instance.removeFunctionLabelByFunction(playerSession.getActiveFunction());
+                            DungeonFunction activeFunction = playerSession.getActiveFunction();
+                            if (activeFunction == null) {
+                                playerSession.restoreCapturedHotbar();
+                                return;
+                            }
+                            instance.getDungeon().removeFunction(activeFunction.getLocation());
+                            instance.untrackEditorFunction(activeFunction);
+                            instance.removeFunctionLabelByFunction(activeFunction);
+                            if (playerSession.isFunctionCutting()
+                                    && playerSession.getCopiedFunction() == activeFunction) {
+                                playerSession.clearFunctionClipboard();
+                            }
+                            playerSession.setActiveFunction(null);
+                            playerSession.setActiveTrigger(null);
+                            playerSession.setTargetLocation(null);
                             LangUtils.sendMessage(player, "editor.session.hotbar.function-deleted");
                             playerSession.restoreCapturedHotbar();
                         }
@@ -547,16 +591,36 @@ public class HotbarMenus {
                                 BranchingRoomDefinition room = playerSession.getActiveRoom();
                                 if (room != null) {
                                     BranchingDungeon dungeon = instance.getDungeon();
+                                    boolean deletedCutFunction =
+                                            playerSession.isFunctionCutting()
+                                                    && room.getFunctionsMapRelative()
+                                                            .containsValue(playerSession.getCopiedFunction());
+                                    boolean deletedCutConnector =
+                                            playerSession.isConnectorCutting()
+                                                    && room.getConnectors().contains(playerSession.getCopiedConnector());
                                     dungeon.removeRoom(room);
                                     instance.removeRoomLabel(room);
 
                                     for (DungeonFunction function : room.getFunctionsMapRelative().values()) {
                                         instance.removeFunctionLabelByFunction(function);
-                                        instance.getFunctions().remove(function.getLocation());
+                                        instance.untrackEditorFunction(function);
                                     }
 
                                     instance.clearRoomDisplay(room);
+                                    if (deletedCutFunction) {
+                                        playerSession.clearFunctionClipboard();
+                                    }
+
+                                    if (deletedCutConnector) {
+                                        playerSession.clearConnectorClipboard();
+                                    }
+
+                                    playerSession.setActiveFunction(null);
+                                    playerSession.setActiveTrigger(null);
+                                    playerSession.setTargetLocation(null);
                                     playerSession.setActiveRoom(null);
+                                    playerSession.setActiveConnector(null);
+                                    playerSession.setActiveDoor(null);
                                     LangUtils.sendMessage(player, "editor.session.hotbar.room-deleted");
                                     playerSession.restorePreviousHotbar();
                                 }
@@ -688,5 +752,11 @@ public class HotbarMenus {
     /** Returns the initialized room-edit hotbar menu. */
     public static PlayerHotbarMenu getRoomEditMenu() {
         return roomEditMenu;
+    }
+
+    private static Location normalizeFunctionLocation(Location location) {
+        Location normalized = location.clone();
+        normalized.setWorld(null);
+        return normalized;
     }
 }

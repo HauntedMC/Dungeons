@@ -110,6 +110,7 @@ public class GuiWindow implements Listener {
         GuiInventory gui;
         if (this.inventories.containsKey(player)) {
             gui = this.inventories.get(player);
+            this.resetButtons(gui);
         } else {
             gui =
                     new GuiInventory(
@@ -134,12 +135,22 @@ public class GuiWindow implements Listener {
         HandlerList.unregisterAll(this);
     }
 
+    private void resetButtons(GuiInventory gui) {
+        gui.inventory().clear();
+        gui.buttons().clear();
+        for (Entry<Integer, Button> entry : this.buttons.entrySet()) {
+            Button button = entry.getValue();
+            gui.buttons().put(entry.getKey(), button == null ? null : button.clone());
+        }
+    }
+
     /** Routes button clicks to button command/action handlers. */
     @EventHandler
     protected void onButtonClick(InventoryClickEvent event) {
         Player player = (Player) event.getWhoClicked();
         GuiInventory gui = this.inventories.get(player);
         if (gui != null) {
+            boolean clickedManagedButton = gui.buttons().containsKey(event.getRawSlot());
             if ((event.getClick() == ClickType.SHIFT_LEFT || event.getClick() == ClickType.SHIFT_RIGHT)
                     && event.getInventory() == gui.inventory()
                     && this.cancelClick) {
@@ -148,7 +159,7 @@ public class GuiWindow implements Listener {
 
             if (event.getClickedInventory() == gui.inventory()
                     || event.getInventory() == gui.inventory()) {
-                if (this.cancelClick) {
+                if (this.cancelClick || clickedManagedButton) {
                     event.setCancelled(true);
                 }
 
@@ -168,6 +179,7 @@ public class GuiWindow implements Listener {
             Player player = (Player) event.getWhoClicked();
             GuiInventory gui = this.inventories.get(player);
             if (gui != null) {
+                boolean clickedManagedButton = gui.buttons().containsKey(event.getRawSlot());
                 if ((event.getClick() == ClickType.SHIFT_LEFT || event.getClick() == ClickType.SHIFT_RIGHT)
                         && event.getInventory() == gui.inventory()
                         && this.cancelClick) {
@@ -176,7 +188,7 @@ public class GuiWindow implements Listener {
 
                 if (event.getClickedInventory() == gui.inventory()
                         || event.getInventory() == gui.inventory()) {
-                    if (this.cancelClick) {
+                    if (this.cancelClick || clickedManagedButton) {
                         event.setCancelled(true);
                     }
                 }
@@ -191,7 +203,11 @@ public class GuiWindow implements Listener {
         GuiInventory gui = this.inventories.get(player);
         if (gui != null) {
             if (event.getInventory() == gui.inventory()) {
-                event.setCancelled(true);
+                boolean touchesManagedButton =
+                        event.getRawSlots().stream().anyMatch(gui.buttons()::containsKey);
+                if (this.cancelClick || touchesManagedButton) {
+                    event.setCancelled(true);
+                }
             }
         }
     }

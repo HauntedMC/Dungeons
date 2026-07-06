@@ -411,6 +411,7 @@ commands:
         not-in-dungeon: '&cJe zit niet in de dungeon editor.'
         restored: '&aDe function tool is hersteld naar slot &6{slot}&a.'
       room:
+        not-in-dungeon: '&cJe zit niet in de dungeon editor.'
         not-in-branching: '&cDe room tool werkt alleen in branching dungeons.'
         restored: '&aDe room tool is hersteld naar slot &6{slot}&a.'
     signs:
@@ -597,6 +598,9 @@ editor:
     room-select-2: '&aTweede hoek van de room ingesteld.'
     room-whitelist:
       add-prompt: '&eTyp de naam van de room die je aan de whitelist wilt toevoegen.'
+      add-success: '&aRoom &6{room}&a is aan de whitelist toegevoegd.'
+      add-not-found: '&cRoom &6{room}&c bestaat niet.'
+      add-already-present: '&eRoom &6{room}&e staat al in de whitelist.'
       remove-prompt: '&eKlik op een room in de whitelist om die te verwijderen.'
       remove-success: '&aRoom &6{room}&a is uit de whitelist verwijderd.'
     hotbar-controls:
@@ -930,6 +934,7 @@ editor:
       cut-pasted: '&eConnector geknipt en geplakt naar het aangeklikte blok!'
       delete-confirm: '&eWeet je zeker dat je deze connector wilt verwijderen? Klik nog een keer om te bevestigen.'
       must-be-on-edge: '&cRoom connectors moeten aan de rand van een room worden geplaatst!'
+      no-selection: '&cSelecteer eerst een connector om te kopieren of verplaatsen.'
       pasted: '&eConnector geplakt op het aangeklikte blok!'
       removed: '&cConnector verwijderd.'
     minecrafty:

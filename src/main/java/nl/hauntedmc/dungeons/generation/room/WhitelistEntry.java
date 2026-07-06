@@ -34,6 +34,16 @@ public class WhitelistEntry implements ConfigSerializableModel {
         this.weight = room.getWeight();
     }
 
+    /**
+     * Creates a detached copy of another whitelist entry.
+     */
+    public WhitelistEntry(WhitelistEntry entry) {
+        this.dungeon = entry == null ? null : entry.dungeon;
+        this.roomName = entry == null ? null : entry.roomName;
+        this.materialName = entry == null ? null : entry.materialName;
+        this.weight = entry == null ? 0.0 : entry.weight;
+    }
+
     @Override
         public void postDeserialize() {
         if (this.roomName != null) {

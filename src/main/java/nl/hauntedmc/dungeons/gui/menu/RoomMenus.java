@@ -192,6 +192,8 @@ public class RoomMenus {
                 event -> {
                     Player player = (Player) event.getWhoClicked();
                     DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                    playerSession.setPos1(null);
+                    playerSession.setPos2(null);
                     playerSession.setAwaitingRoomName(true);
                     playerSession.setAddingWhitelistEntry(true);
                     LangUtils.sendMessage(player, "editor.session.room-whitelist.add-prompt");
@@ -219,23 +221,22 @@ public class RoomMenus {
                         "whitelist_" + dungeon.getWorldName() + "_" + room.getNamespace() + "_REMOVE",
                         Material.STRUCTURE_VOID,
                         "&cRemove Room");
+        updateRemovalModeButton(remButton, false);
         remButton.addAction(
                 "click",
                 event -> {
                     Player player = (Player) event.getWhoClicked();
                     DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                    GuiInventory gui = tableMenu.getInventoryFor(player);
+                    Button liveButton = gui == null ? remButton : gui.buttons().get(5);
                     event.setCancelled(true);
                     if (playerSession.isRemovingWhitelistEntry()) {
                         playerSession.setRemovingWhitelistEntry(false);
-                        remButton.setEnchanted(false);
-                        remButton.clearLore();
-                        remButton.addLore(ColorUtils.colorize("&eClick to &aACTIVATE &eremoval mode."));
+                        updateRemovalModeButton(liveButton == null ? remButton : liveButton, false);
                         tableMenu.updateButtons(player);
                     } else {
                         playerSession.setRemovingWhitelistEntry(true);
-                        remButton.setEnchanted(true);
-                        remButton.clearLore();
-                        remButton.addLore(ColorUtils.colorize("&eClick to &cDEACTIVATE &eremoval mode."));
+                        updateRemovalModeButton(liveButton == null ? remButton : liveButton, true);
                         LangUtils.sendMessage(player, "editor.session.room-whitelist.remove-prompt");
                         tableMenu.updateButtons(player);
                     }
@@ -246,10 +247,10 @@ public class RoomMenus {
                 event -> {
                     Player player = (Player) event.getPlayer();
                     DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                    GuiInventory gui = tableMenu.getInventoryFor(player);
+                    Button liveButton = gui == null ? remButton : gui.buttons().get(5);
                     playerSession.setRemovingWhitelistEntry(false);
-                    remButton.setEnchanted(false);
-                    remButton.clearLore();
-                    remButton.addLore(ColorUtils.colorize("&eClick to &aACTIVATE &eremoval mode."));
+                    updateRemovalModeButton(liveButton == null ? remButton : liveButton, false);
                     tableMenu.updateButtons(player);
                 });
     }
@@ -411,6 +412,8 @@ public class RoomMenus {
                     Player player = (Player) event.getWhoClicked();
                     DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
                     event.setCancelled(true);
+                    playerSession.setPos1(null);
+                    playerSession.setPos2(null);
                     playerSession.setAwaitingRoomName(true);
                     playerSession.setAddingWhitelistEntry(true);
                     LangUtils.sendMessage(player, "editor.session.room-whitelist.add-prompt");
@@ -431,24 +434,22 @@ public class RoomMenus {
         tableMenu.addButton(4, editButton);
         Button remButton =
                                 new Button("connector_whitelist_REMOVE", Material.STRUCTURE_VOID, "&cRemove Room");
-        remButton.addLore(ColorUtils.colorize("&eClick to &aACTIVATE &eremoval mode."));
+        updateRemovalModeButton(remButton, false);
         remButton.addAction(
                 "click",
                 event -> {
                     Player player = (Player) event.getWhoClicked();
                     DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                    GuiInventory gui = tableMenu.getInventoryFor(player);
+                    Button liveButton = gui == null ? remButton : gui.buttons().get(5);
                     event.setCancelled(true);
                     if (playerSession.isRemovingWhitelistEntry()) {
                         playerSession.setRemovingWhitelistEntry(false);
-                        remButton.setEnchanted(false);
-                        remButton.clearLore();
-                        remButton.addLore(ColorUtils.colorize("&eClick to &aACTIVATE &eremoval mode."));
+                        updateRemovalModeButton(liveButton == null ? remButton : liveButton, false);
                         tableMenu.updateButtons(player);
                     } else {
                         playerSession.setRemovingWhitelistEntry(true);
-                        remButton.setEnchanted(true);
-                        remButton.clearLore();
-                        remButton.addLore(ColorUtils.colorize("&eClick to &cDEACTIVATE &eremoval mode."));
+                        updateRemovalModeButton(liveButton == null ? remButton : liveButton, true);
                         LangUtils.sendMessage(player, "editor.session.room-whitelist.remove-prompt");
                         tableMenu.updateButtons(player);
                     }
@@ -459,10 +460,10 @@ public class RoomMenus {
                 event -> {
                     Player player = (Player) event.getPlayer();
                     DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                    GuiInventory gui = tableMenu.getInventoryFor(player);
+                    Button liveButton = gui == null ? remButton : gui.buttons().get(5);
                     playerSession.setRemovingWhitelistEntry(false);
-                    remButton.setEnchanted(false);
-                    remButton.clearLore();
-                    remButton.addLore(ColorUtils.colorize("&eClick to &aACTIVATE &eremoval mode."));
+                    updateRemovalModeButton(liveButton == null ? remButton : liveButton, false);
                     tableMenu.updateButtons(player);
                 });
     }
@@ -475,6 +476,7 @@ public class RoomMenus {
         }
 
         weightButton.setDisplayName("&b&l" + room.getNamespace());
+        weightButton.clearLore();
         weightButton.addLore(ColorUtils.colorize("&eWeight of &6" + weight));
         weightButton.addLore(ColorUtils.colorize(""));
         weightButton.addLore(ColorUtils.colorize("&7Determines the chance of this room"));
@@ -485,5 +487,19 @@ public class RoomMenus {
         weightButton.addLore(ColorUtils.colorize("&8Left and Shift-Left click increases."));
         weightButton.addLore(ColorUtils.colorize("&8Right and Shift-Right click decreases."));
         weightButton.addLore(ColorUtils.colorize("&8Click with an item to set icon."));
+    }
+
+    private static void updateRemovalModeButton(Button button, boolean removing) {
+        if (button == null) {
+            return;
+        }
+
+        button.setEnchanted(removing);
+        button.clearLore();
+        if (removing) {
+            button.addLore(ColorUtils.colorize("&eClick to &cDEACTIVATE &eremoval mode."));
+        } else {
+            button.addLore(ColorUtils.colorize("&eClick to &aACTIVATE &eremoval mode."));
+        }
     }
 }

@@ -77,6 +77,7 @@ public class EditableInstance extends DungeonInstance {
         for (DungeonFunction function : functions) {
             function.setInstance(this);
             function.getLocation().setWorld(this.instanceWorld);
+            this.trackEditorFunction(function);
             this.addFunctionLabel(function);
             dungeon.addFunction(function.getLocation(), function);
             function.initializeMenu();
@@ -419,9 +420,11 @@ public class EditableInstance extends DungeonInstance {
             playerSession.setChatListening(false);
             playerSession.setActiveFunction(null);
             playerSession.setActiveTrigger(null);
+            playerSession.setTargetLocation(null);
             playerSession.setCopiedFunction(null);
             playerSession.setCutting(false);
             playerSession.setCopying(false);
+            playerSession.setClipboardType(DungeonPlayerSession.EditorClipboardType.NONE);
             playerSession.setPos1(null);
             playerSession.setPos2(null);
             playerSession.setAwaitingRoomName(false);
@@ -430,6 +433,9 @@ public class EditableInstance extends DungeonInstance {
             playerSession.setActiveDoor(null);
             playerSession.setConfirmRoomAction(false);
             playerSession.setCopiedConnector(null);
+            playerSession.setAddingWhitelistEntry(false);
+            playerSession.setEditingWhitelistEntry(false);
+            playerSession.setRemovingWhitelistEntry(false);
             super.removePlayer(playerSession, force);
         }
     }
@@ -459,6 +465,33 @@ public class EditableInstance extends DungeonInstance {
         if (this.hologramManager != null) {
             this.removeTextDisplayLabel(function);
         }
+    }
+
+    /**
+     * Tracks a function in the editor-instance lookup map used by previews and tool actions.
+     */
+    public void trackEditorFunction(DungeonFunction function) {
+        if (function == null || function.getLocation() == null || this.instanceWorld == null) {
+            return;
+        }
+
+        Location trackedLocation = function.getLocation().clone();
+        if (trackedLocation.getWorld() == null || trackedLocation.getWorld() != this.instanceWorld) {
+            trackedLocation.setWorld(this.instanceWorld);
+        }
+
+        this.functions.put(trackedLocation, function);
+    }
+
+    /**
+     * Removes a function from the editor-instance lookup map.
+     */
+    public void untrackEditorFunction(DungeonFunction function) {
+        if (function == null) {
+            return;
+        }
+
+        this.functions.entrySet().removeIf(entry -> entry.getValue() == function);
     }
 
     /**
@@ -509,7 +542,17 @@ public class EditableInstance extends DungeonInstance {
 
         for (DungeonFunction function : this.functions.values()) {
             if (!(function.getTrigger() instanceof InteractTrigger)) {
-                Block sign = this.instanceWorld.getBlockAt(function.getLocation());
+                Location functionLocation = function.getLocation();
+                if (functionLocation == null) {
+                    continue;
+                }
+
+                Location blockLocation = functionLocation.clone();
+                if (blockLocation.getWorld() == null || blockLocation.getWorld() != this.instanceWorld) {
+                    blockLocation.setWorld(this.instanceWorld);
+                }
+
+                Block sign = this.instanceWorld.getBlockAt(blockLocation);
                 BlockState state = sign.getState();
                 if (state instanceof Sign) {
                     sign.setType(Material.AIR);

@@ -148,7 +148,9 @@ public class EditorMenus {
                             EditableInstance instance = playerSession.getInstance().asEditInstance();
                             if (instance != null) {
                                 try {
-                                    if (playerSession.getActiveFunction() instanceof CompositeFunction function) {
+                                    if (playerSession.getTargetLocation() == null
+                                            && playerSession.getActiveFunction()
+                                                    instanceof CompositeFunction function) {
                                         DungeonFunction newFunction =
                                                 RuntimeContext.functionRegistry()
                                                         .getFunctionClass(functionName)
@@ -178,6 +180,7 @@ public class EditorMenus {
                                     playerSession.setActiveFunction(function);
                                     DungeonDefinition dungeon = instance.getDungeon();
                                     dungeon.addFunction(playerSession.getTargetLocation(), function);
+                                    instance.trackEditorFunction(function);
                                     instance.addFunctionLabel(function);
                                     function.setInstance(instance);
                                     RuntimeContext.guiService().openGui(player, "triggermenu");
@@ -213,6 +216,11 @@ public class EditorMenus {
                     Player player = (Player) clickEvent.getWhoClicked();
                     DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
                     DungeonFunction function = playerSession.getActiveFunction();
+                    if (function == null) {
+                        player.closeInventory();
+                        return;
+                    }
+
                     DungeonFunction parentFunction = function.getParentFunction();
                     if (parentFunction != null) {
                         function.setTrigger(null);
@@ -225,6 +233,11 @@ public class EditorMenus {
                     player.closeInventory();
                     playerSession.setTargetLocation(null);
                     function.initialize();
+                    EditableInstance instance = playerSession.getInstance().asEditInstance();
+                    if (instance != null) {
+                        instance.updateLabel(function);
+                    }
+
                     if (playerSession.getSavedHotbar() == null) {
                         playerSession.captureAndShowHotbar(function.getMenu());
                     } else {
@@ -309,12 +322,24 @@ public class EditorMenus {
                     Player player = (Player) event.getPlayer();
                     DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
                     DungeonFunction function = playerSession.getActiveFunction();
+                    if (function == null) {
+                        return;
+                    }
+
                     if (function.getTrigger() == null) {
                         DungeonFunction parentFunction = function.getParentFunction();
                         if (function.isRequiresTrigger() && parentFunction == null) {
                             function.setTrigger(new DungeonStartTrigger());
-                            function.initialize();
                         }
+                    }
+
+                    if (!function.isInitialized()) {
+                        function.initialize();
+                    }
+
+                    EditableInstance instance = playerSession.getInstance().asEditInstance();
+                    if (instance != null) {
+                        instance.updateLabel(function);
                     }
                 });
     }

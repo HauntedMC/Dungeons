@@ -1,6 +1,7 @@
 package nl.hauntedmc.dungeons.gui.framework.window;
 
 import java.util.HashMap;
+import java.util.Map;
 import nl.hauntedmc.dungeons.gui.framework.buttons.Button;
 import org.bukkit.inventory.Inventory;
 
@@ -12,7 +13,7 @@ import org.bukkit.inventory.Inventory;
 public record GuiInventory(HashMap<Integer, Button> buttons, Inventory inventory) {
     /** Creates a per-player inventory snapshot from a window template. */
     public GuiInventory(GuiWindow buttons, Inventory inventory) {
-        this(new HashMap<>(buttons.getButtons()), inventory);
+        this(cloneButtons(buttons.getButtons()), inventory);
     }
 
     /** Sets or replaces a button in this player-scoped inventory snapshot. */
@@ -25,5 +26,14 @@ public record GuiInventory(HashMap<Integer, Button> buttons, Inventory inventory
     public void removeButton(int slot) {
         this.buttons.remove(slot);
         this.inventory.setItem(slot, null);
+    }
+
+    private static HashMap<Integer, Button> cloneButtons(Map<Integer, Button> source) {
+        HashMap<Integer, Button> clones = new HashMap<>();
+        for (Map.Entry<Integer, Button> entry : source.entrySet()) {
+            Button button = entry.getValue();
+            clones.put(entry.getKey(), button == null ? null : button.clone());
+        }
+        return clones;
     }
 }

@@ -70,7 +70,7 @@ public class Button {
 
     /** Replaces the rendered item backing this button. */
     public final void setItem(ItemStack item) {
-        this.item = item;
+        this.item = item == null ? null : item.clone();
     }
 
     /** Sets displayed stack amount for this button item. */
@@ -192,7 +192,10 @@ public class Button {
     /** Creates a copy usable in player-specific GUI inventories. */
     public Button clone() {
         Button button = new Button(this.id, this.item);
-        button.addCommands(button.getCommands());
+        button.addCommands(new ArrayList<>(this.commands));
+        for (Entry<String, Action<InventoryClickEvent>> pair : this.actions.entrySet()) {
+            button.addAction(pair.getKey(), pair.getValue());
+        }
         return button;
     }
 }

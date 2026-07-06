@@ -36,6 +36,12 @@ import org.jetbrains.annotations.Nullable;
  * dungeon access, and the temporary hotbar menus used by the plugin UI.</p>
  */
 public final class DungeonPlayerSession {
+    public enum EditorClipboardType {
+        NONE,
+        FUNCTION,
+        CONNECTOR
+    }
+
     private final DungeonsPlugin plugin;
     private Player player;
     private DungeonInstance instance;
@@ -68,6 +74,7 @@ public final class DungeonPlayerSession {
     private DungeonFunction copiedFunction;
     private boolean isCopying;
     private boolean isCutting;
+    private EditorClipboardType clipboardType = EditorClipboardType.NONE;
     private Location pos1;
     private Location pos2;
     private boolean awaitingRoomName;
@@ -710,12 +717,48 @@ public final class DungeonPlayerSession {
         this.copiedFunction = copiedFunction;
     }
 
+        public void beginFunctionCopy(DungeonFunction function) {
+        this.copiedFunction = function;
+        this.copiedConnector = null;
+        this.clipboardType = EditorClipboardType.FUNCTION;
+        this.isCopying = true;
+        this.isCutting = false;
+    }
+
+        public void beginFunctionCut(DungeonFunction function) {
+        this.copiedFunction = function;
+        this.copiedConnector = null;
+        this.clipboardType = EditorClipboardType.FUNCTION;
+        this.isCopying = false;
+        this.isCutting = true;
+    }
+
+        public boolean isFunctionCopying() {
+        return this.clipboardType == EditorClipboardType.FUNCTION && this.isCopying;
+    }
+
+        public boolean isFunctionCutting() {
+        return this.clipboardType == EditorClipboardType.FUNCTION && this.isCutting;
+    }
+
+        public void clearFunctionClipboard() {
+        this.copiedFunction = null;
+        if (this.clipboardType == EditorClipboardType.FUNCTION) {
+            this.clipboardType = EditorClipboardType.NONE;
+            this.isCopying = false;
+            this.isCutting = false;
+        }
+    }
+
         public boolean isCopying() {
         return this.isCopying;
     }
 
         public void setCopying(boolean isCopying) {
         this.isCopying = isCopying;
+        if (!this.isCopying && !this.isCutting) {
+            this.clipboardType = EditorClipboardType.NONE;
+        }
     }
 
         public boolean isCutting() {
@@ -724,6 +767,17 @@ public final class DungeonPlayerSession {
 
         public void setCutting(boolean isCutting) {
         this.isCutting = isCutting;
+        if (!this.isCopying && !this.isCutting) {
+            this.clipboardType = EditorClipboardType.NONE;
+        }
+    }
+
+        public EditorClipboardType getClipboardType() {
+        return this.clipboardType;
+    }
+
+        public void setClipboardType(EditorClipboardType clipboardType) {
+        this.clipboardType = clipboardType == null ? EditorClipboardType.NONE : clipboardType;
     }
 
         public Location getPos1() {
@@ -788,6 +842,39 @@ public final class DungeonPlayerSession {
 
         public void setCopiedConnector(Connector copiedConnector) {
         this.copiedConnector = copiedConnector;
+    }
+
+        public void beginConnectorCopy(Connector connector) {
+        this.copiedConnector = connector;
+        this.copiedFunction = null;
+        this.clipboardType = EditorClipboardType.CONNECTOR;
+        this.isCopying = true;
+        this.isCutting = false;
+    }
+
+        public void beginConnectorCut(Connector connector) {
+        this.copiedConnector = connector;
+        this.copiedFunction = null;
+        this.clipboardType = EditorClipboardType.CONNECTOR;
+        this.isCopying = false;
+        this.isCutting = true;
+    }
+
+        public boolean isConnectorCopying() {
+        return this.clipboardType == EditorClipboardType.CONNECTOR && this.isCopying;
+    }
+
+        public boolean isConnectorCutting() {
+        return this.clipboardType == EditorClipboardType.CONNECTOR && this.isCutting;
+    }
+
+        public void clearConnectorClipboard() {
+        this.copiedConnector = null;
+        if (this.clipboardType == EditorClipboardType.CONNECTOR) {
+            this.clipboardType = EditorClipboardType.NONE;
+            this.isCopying = false;
+            this.isCutting = false;
+        }
     }
 
         public boolean isAddingWhitelistEntry() {
