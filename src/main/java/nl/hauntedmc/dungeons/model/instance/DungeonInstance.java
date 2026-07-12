@@ -376,7 +376,7 @@ public abstract class DungeonInstance {
                                 this.dungeon.removeInstance(this);
                                 Bukkit.getPluginManager().callEvent(new DungeonDisposeEvent(this));
                             };
-                    int delay = this.dungeon.getConfig().getInt("runs.cleanup_delay_ticks", 0);
+                    int delay = this.resolveCleanupDelayTicks();
                     if (this.plugin().isEnabled() && delay > 0 && !this.isEditInstance()) {
                         Bukkit.getScheduler().runTaskLater(this.plugin(), disposal, delay);
                     } else {
@@ -388,6 +388,10 @@ public abstract class DungeonInstance {
     }
 
         public abstract void onDispose();
+
+        protected int resolveCleanupDelayTicks() {
+        return Math.max(0, this.dungeon.getConfig().getInt("runs.cleanup_delay_ticks", 0));
+    }
 
         protected void cleanWorldFiles(CountDownLatch latch, File worldFolder, String worldName) {
         try {
@@ -560,11 +564,7 @@ public abstract class DungeonInstance {
                 }
 
                 if (this.players.isEmpty()) {
-                    if (this.plugin().isEnabled()) {
-                        Bukkit.getScheduler().runTaskLater(this.plugin(), this::dispose, 1L);
-                    } else {
-                        this.dispose();
-                    }
+                    this.scheduleEmptyCleanup();
                 }
             }
         }
@@ -640,6 +640,18 @@ public abstract class DungeonInstance {
 
     @Nullable public <T extends DungeonInstance> T as(Class<T> clazz) {
         return (T) (clazz.isInstance(this) ? this : null);
+    }
+
+        public void scheduleEmptyCleanup() {
+        if (!this.players.isEmpty()) {
+            return;
+        }
+
+        if (this.plugin().isEnabled()) {
+            Bukkit.getScheduler().runTaskLater(this.plugin(), this::dispose, 1L);
+        } else {
+            this.dispose();
+        }
     }
 
         public void saveWorld() {}

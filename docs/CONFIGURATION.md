@@ -42,7 +42,7 @@ The default dungeon template controls behavior for newly created or synced dunge
 - `locations`: lobby/start/exit destinations.
 - `players`: gamemode, lives, spectating, entry-state preservation, and per-player join commands.
 - `team`: team-size limits and disband shutdown delay.
-- `runs` / `open`: run concurrency, time limit, open-instance player limits.
+- `runs` / `open`: run concurrency, time limit, open-instance player limits, idle unload timing, and optional preloading.
 - `rewards`: finish delivery and cooldown policy.
 - `access`: key consumption and access cooldown policy.
 - `difficulty`: named difficulty presets and scaling.

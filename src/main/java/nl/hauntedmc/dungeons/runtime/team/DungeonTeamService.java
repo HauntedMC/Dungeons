@@ -650,7 +650,7 @@ public final class DungeonTeamService implements Listener {
         }
 
         if (instance.getPlayers().isEmpty()) {
-            instance.dispose();
+            instance.scheduleEmptyCleanup();
             return;
         }
 
@@ -676,7 +676,7 @@ public final class DungeonTeamService implements Listener {
                             DungeonTeamService.this.disbandShutdownTasksByInstanceWorld.remove(instanceWorldName);
                             this.cancel();
                             if (instance.getPlayers().isEmpty()) {
-                                instance.dispose();
+                                instance.scheduleEmptyCleanup();
                             }
                             return;
                         }
@@ -724,7 +724,7 @@ public final class DungeonTeamService implements Listener {
         }
 
         if (instance.getPlayers().isEmpty()) {
-            instance.dispose();
+            instance.scheduleEmptyCleanup();
             return;
         }
 

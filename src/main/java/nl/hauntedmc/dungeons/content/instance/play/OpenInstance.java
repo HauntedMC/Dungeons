@@ -8,6 +8,7 @@ import nl.hauntedmc.dungeons.content.dungeon.OpenDungeon;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import org.bukkit.Bukkit;
+import org.bukkit.scheduler.BukkitTask;
 
 /**
  * Playable instance for open dungeons.
@@ -20,6 +21,7 @@ public class OpenInstance extends StaticInstance {
     private int totalPlayersSinceStart;
     private final Map<UUID, Integer> reservedSlotsByOwner = new HashMap<>();
     private boolean readyRegistrationCancelled;
+    private BukkitTask pendingEmptyUnloadTask;
 
     /**
      * Creates a new OpenInstance instance.
@@ -61,6 +63,8 @@ public class OpenInstance extends StaticInstance {
             return;
         }
 
+        this.cancelPendingEmptyUnload();
+
         if (!this.getPlayers().contains(playerSession) && !this.hasCapacityFor(1)) {
             playerSession.setAwaitingDungeon(false);
             return;
@@ -77,6 +81,8 @@ public class OpenInstance extends StaticInstance {
         if (this.readyRegistrationCancelled || this.disposing) {
             return false;
         }
+
+        this.cancelPendingEmptyUnload();
 
         if (!this.consumeReservedSlot(reservationId)
                 && !this.getPlayers().contains(playerSession)
@@ -122,6 +128,7 @@ public class OpenInstance extends StaticInstance {
             return false;
         }
 
+        this.cancelPendingEmptyUnload();
         this.reservedSlotsByOwner.merge(reservationId, Math.max(1, requestedPlayers), Integer::sum);
         return true;
     }
@@ -131,6 +138,9 @@ public class OpenInstance extends StaticInstance {
      */
     public synchronized void releaseReservedSlots(UUID reservationId) {
         this.reservedSlotsByOwner.remove(reservationId);
+        if (this.getPlayers().isEmpty() && !this.hasOutstandingReservations()) {
+            this.scheduleEmptyCleanup();
+        }
     }
 
     /**
@@ -160,6 +170,7 @@ public class OpenInstance extends StaticInstance {
     @Override
     public synchronized void onDispose() {
         this.cancelReadyRegistration();
+        this.cancelPendingEmptyUnload();
         this.reservedSlotsByOwner.clear();
         super.onDispose();
         this.dungeon.onOpenInstanceDisposed(this);
@@ -191,6 +202,59 @@ public class OpenInstance extends StaticInstance {
             reservedSlots += count;
         }
         return reservedSlots;
+    }
+
+    @Override
+    public synchronized void scheduleEmptyCleanup() {
+        if (!this.getPlayers().isEmpty() || this.hasOutstandingReservations()) {
+            return;
+        }
+
+        if (this.pendingEmptyUnloadTask != null) {
+            return;
+        }
+
+        int delayTicks = Math.max(0, this.dungeon.getConfig().getInt("open.empty_unload_delay_ticks", 6000));
+        if (!this.plugin().isEnabled() || delayTicks <= 0) {
+            this.dispose();
+            return;
+        }
+
+        this.pendingEmptyUnloadTask =
+                Bukkit.getScheduler()
+                        .runTaskLater(
+                                this.plugin(),
+                                () -> {
+                                    synchronized (OpenInstance.this) {
+                                        OpenInstance.this.pendingEmptyUnloadTask = null;
+                                        if (!OpenInstance.this.getPlayers().isEmpty()
+                                                || OpenInstance.this.hasOutstandingReservations()
+                                                || OpenInstance.this.disposing) {
+                                            return;
+                                        }
+                                    }
+
+                                    OpenInstance.this.dispose();
+                                },
+                                delayTicks);
+    }
+
+    /**
+     * Open instances manage their idle timeout before disposal, so once disposal starts it should
+     * proceed without adding the generic play-instance cleanup delay a second time.
+     */
+    @Override
+    protected int resolveCleanupDelayTicks() {
+        return 0;
+    }
+
+    private synchronized void cancelPendingEmptyUnload() {
+        if (this.pendingEmptyUnloadTask == null) {
+            return;
+        }
+
+        this.pendingEmptyUnloadTask.cancel();
+        this.pendingEmptyUnloadTask = null;
     }
 
     /**

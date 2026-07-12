@@ -69,8 +69,10 @@ runs:
 open:
   # int. Only used for OPEN dungeons. 0 = unlimited.
   max_players: 0
+  # int ticks. Delay before an empty open run is unloaded.
+  empty_unload_delay_ticks: 6000
   # bool. Keep one world preloaded for faster joins.
-  preload_world: true
+  preload_world: false
 
 rewards:
   # bool. True = queue rewards and hand them out on completion.

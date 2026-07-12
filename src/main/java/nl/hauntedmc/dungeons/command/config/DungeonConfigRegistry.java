@@ -83,6 +83,9 @@ public final class DungeonConfigRegistry {
         register(main("open-max-players", "Maximum players allowed inside one open run, 0 means unlimited.",
                 "open.max_players", DungeonConfigValueType.INTEGER, OPEN_ONLY, dungeon -> List.of(),
                 List.of()));
+        register(main("open-empty-unload-delay", "Ticks to wait before unloading an empty open run.",
+                "open.empty_unload_delay_ticks", DungeonConfigValueType.INTEGER, OPEN_ONLY, dungeon -> List.of(),
+                List.of()));
         register(main("open-preload-world", "Keeps one open run preloaded for faster joins.",
                 "open.preload_world", DungeonConfigValueType.BOOLEAN, OPEN_ONLY,
                 suggestions(BOOLEAN_VALUES), List.of()));

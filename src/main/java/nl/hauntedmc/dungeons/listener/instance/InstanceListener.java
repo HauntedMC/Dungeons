@@ -61,7 +61,7 @@ public class InstanceListener {
             if (this.isTrackedInstancePresence(playerSession) && !playerSession.isDisconnecting()) {
                 this.instance.removePlayer(playerSession);
                 Bukkit.getScheduler()
-                        .runTaskLater(RuntimeContext.plugin(), this.instance::dispose, 1L);
+                        .runTaskLater(RuntimeContext.plugin(), this.instance::scheduleEmptyCleanup, 1L);
             }
         }
     }
@@ -110,7 +110,7 @@ public class InstanceListener {
             if (this.instance.isEditInstance()
                     || play != null && !play.getLivingPlayers().contains(playerSession)) {
                 this.instance.removePlayer(playerSession);
-                this.instance.dispose();
+                this.instance.scheduleEmptyCleanup();
                 if (player.isDead()) {
                     playerSession.setDead(false);
                 }
@@ -130,7 +130,7 @@ public class InstanceListener {
                                         }
 
                                         InstanceListener.this.instance.removePlayer(playerSession);
-                                        InstanceListener.this.instance.dispose();
+                                        InstanceListener.this.instance.scheduleEmptyCleanup();
                                     }
                                 }
                             };
