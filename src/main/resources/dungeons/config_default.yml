@@ -111,7 +111,8 @@ access:
     consume_on_entry: true
     # bool. True = only the team leader needs a key.
     leader_only: false
-    # list of access-key definitions. Issued physical keys are tracked separately in access_keys.yml.
+    # list of access-key definitions. When plugin config access.keys.unique_validation_enabled = true,
+    # issued physical keys are tracked separately in access_keys.yml.
     # Prefer editing this with /dungeon dungeon keys add.
     items: []
 

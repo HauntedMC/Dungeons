@@ -90,6 +90,8 @@ public abstract class DungeonDefinition {
     protected Map<String, String> issuedAccessKeyInstances;
     protected Set<String> reservedAccessKeyInstances;
     protected Set<String> invalidatedAccessKeyInstances;
+    protected boolean accessKeyStateLoaded;
+    protected @Nullable Boolean uniqueAccessKeyValidationEnabled;
     protected boolean onlyLeaderNeedsKey;
     protected List<Material> placeWhitelist;
     protected List<Material> breakWhitelist;
@@ -156,8 +158,12 @@ public abstract class DungeonDefinition {
         this.issuedAccessKeyInstances = new LinkedHashMap<>();
         this.reservedAccessKeyInstances = new LinkedHashSet<>();
         this.invalidatedAccessKeyInstances = new LinkedHashSet<>();
-        this.loadAccessKeyState();
-        this.pruneAccessKeyState();
+        this.accessKeyStateLoaded = false;
+        this.uniqueAccessKeyValidationEnabled = null;
+        if (this.usesUniqueAccessKeyValidation()) {
+            this.loadAccessKeyState();
+            this.pruneAccessKeyState();
+        }
         this.accessCooldownsByPlayer = new HashMap<>();
         this.lootConfig = new YamlConfiguration();
         this.lootCooldowns = new ArrayList<>();
@@ -400,12 +406,20 @@ public abstract class DungeonDefinition {
         this.issuedAccessKeyInstances.clear();
         this.reservedAccessKeyInstances.clear();
         this.invalidatedAccessKeyInstances.clear();
+        if (!this.usesUniqueAccessKeyValidation()) {
+            this.accessKeyStateLoaded = false;
+            return;
+        }
+
         if (!this.accessKeyStateFile.exists()) {
+            this.accessKeyStateLoaded = true;
             return;
         }
 
         try {
             this.accessKeyStateConfig.load(this.accessKeyStateFile);
+            boolean hadPersistedReservations = !this.accessKeyStateConfig.getStringList("reserved_instance_ids")
+                    .isEmpty();
             Object rawIssuedInstances = this.accessKeyStateConfig.get("issued_instances");
             if (rawIssuedInstances instanceof ConfigurationSection section) {
                 for (String instanceId : section.getKeys(false)) {
@@ -427,10 +441,12 @@ public abstract class DungeonDefinition {
                 }
             }
 
-            this.reservedAccessKeyInstances.addAll(
-                    this.accessKeyStateConfig.getStringList("reserved_instance_ids"));
             this.invalidatedAccessKeyInstances.addAll(
                     this.accessKeyStateConfig.getStringList("invalidated_instance_ids"));
+            this.accessKeyStateLoaded = true;
+            if (hadPersistedReservations) {
+                this.saveAccessKeyState();
+            }
         } catch (IOException exception) {
             throw new DungeonLoadException(
                     "Access of access_keys.yml file failed!",
@@ -442,6 +458,10 @@ public abstract class DungeonDefinition {
     }
 
     private void saveAccessKeyState() {
+        if (!this.usesUniqueAccessKeyValidation()) {
+            return;
+        }
+
         this.accessKeyStateConfig.set("issued_instances", new LinkedHashMap<>(this.issuedAccessKeyInstances));
         this.accessKeyStateConfig.set("reserved_instance_ids", new ArrayList<>(this.reservedAccessKeyInstances));
         this.accessKeyStateConfig.set(
@@ -457,6 +477,14 @@ public abstract class DungeonDefinition {
     }
 
     private void pruneAccessKeyState() {
+        if (!this.usesUniqueAccessKeyValidation()) {
+            this.issuedAccessKeyInstances.clear();
+            this.reservedAccessKeyInstances.clear();
+            this.invalidatedAccessKeyInstances.clear();
+            this.accessKeyStateLoaded = false;
+            return;
+        }
+
         Set<String> configuredKeyIds = new LinkedHashSet<>();
         for (AccessKeyDefinition accessKey : this.accessKeys) {
             configuredKeyIds.add(accessKey.getKeyId());
@@ -494,6 +522,20 @@ public abstract class DungeonDefinition {
         return null;
     }
 
+    private @Nullable AccessKeyDefinition findMatchingAccessKey(@Nullable ItemStack item) {
+        if (item == null || item.getType() == Material.AIR) {
+            return null;
+        }
+
+        for (AccessKeyDefinition accessKey : this.accessKeys) {
+            if (accessKey.matches(item)) {
+                return accessKey;
+            }
+        }
+
+        return null;
+    }
+
     private @Nullable String readAccessKeyId(@Nullable ItemStack item) {
         try {
             return ItemUtils.getDungeonAccessKeyId(item);
@@ -524,7 +566,38 @@ public abstract class DungeonDefinition {
         return keyId.equals(issuedKeyId) ? keyId : null;
     }
 
+    private boolean usesUniqueAccessKeyValidation() {
+        boolean enabled = PluginConfigView.isUniqueAccessKeyValidationEnabled(this.runtime.config());
+        if (this.uniqueAccessKeyValidationEnabled == null
+                || this.uniqueAccessKeyValidationEnabled.booleanValue() != enabled) {
+            this.uniqueAccessKeyValidationEnabled = enabled;
+            this.accessKeyStateLoaded = false;
+            this.issuedAccessKeyInstances.clear();
+            this.reservedAccessKeyInstances.clear();
+            this.invalidatedAccessKeyInstances.clear();
+        }
+        return enabled;
+    }
+
+    private void ensureUniqueAccessKeyStateLoaded() {
+        if (!this.usesUniqueAccessKeyValidation() || this.accessKeyStateLoaded) {
+            return;
+        }
+
+        try {
+            this.loadAccessKeyState();
+            this.pruneAccessKeyState();
+        } catch (DungeonLoadException exception) {
+            this.logger()
+                    .error(
+                            "Failed to load access key state for dungeon '{}' while unique validation was enabled.",
+                            this.worldName,
+                            exception);
+        }
+    }
+
     private boolean invalidateIssuedAccessKeyInstance(@Nullable String instanceId) {
+        this.ensureUniqueAccessKeyStateLoaded();
         if (instanceId == null || instanceId.isBlank()) {
             return false;
         }
@@ -541,6 +614,11 @@ public abstract class DungeonDefinition {
     }
 
     private void revokeIssuedAccessKeysByDefinition(@Nullable String keyId) {
+        if (!this.usesUniqueAccessKeyValidation()) {
+            return;
+        }
+
+        this.ensureUniqueAccessKeyStateLoaded();
         if (keyId == null || keyId.isBlank()) {
             return;
         }
@@ -1144,6 +1222,12 @@ public abstract class DungeonDefinition {
             return null;
         }
 
+        if (!this.usesUniqueAccessKeyValidation()) {
+            AccessKeyDefinition accessKey = this.findMatchingAccessKey(item);
+            return accessKey == null ? null : accessKey.getItem();
+        }
+
+        this.ensureUniqueAccessKeyStateLoaded();
         String keyId = this.getTrackedIssuedAccessKeyId(item, false);
         if (keyId == null) {
             return null;
@@ -1177,6 +1261,11 @@ public abstract class DungeonDefinition {
             return null;
         }
 
+        if (!this.usesUniqueAccessKeyValidation()) {
+            return issuedItem;
+        }
+
+        this.ensureUniqueAccessKeyStateLoaded();
         String instanceId = UUID.randomUUID().toString();
         try {
             ItemUtils.tagDungeonAccessKeyInstance(issuedItem, instanceId);
@@ -1191,6 +1280,11 @@ public abstract class DungeonDefinition {
     }
 
     public synchronized boolean reserveIssuedAccessKey(@Nullable ItemStack item) {
+        if (!this.usesUniqueAccessKeyValidation()) {
+            return this.findMatchingAccessKey(item) != null;
+        }
+
+        this.ensureUniqueAccessKeyStateLoaded();
         if (this.getTrackedIssuedAccessKeyId(item, false) == null) {
             return false;
         }
@@ -1205,6 +1299,11 @@ public abstract class DungeonDefinition {
     }
 
     public synchronized boolean releaseReservedAccessKey(@Nullable ItemStack item) {
+        if (!this.usesUniqueAccessKeyValidation()) {
+            return this.findMatchingAccessKey(item) != null;
+        }
+
+        this.ensureUniqueAccessKeyStateLoaded();
         String instanceId = this.readAccessKeyInstanceId(item);
         if (instanceId == null || instanceId.isBlank() || !this.reservedAccessKeyInstances.remove(instanceId)) {
             return false;
@@ -1215,6 +1314,11 @@ public abstract class DungeonDefinition {
     }
 
     public synchronized boolean isReservedAccessKey(@Nullable ItemStack item) {
+        if (!this.usesUniqueAccessKeyValidation()) {
+            return this.findMatchingAccessKey(item) != null;
+        }
+
+        this.ensureUniqueAccessKeyStateLoaded();
         String keyId = this.getTrackedIssuedAccessKeyId(item, true);
         String instanceId = this.readAccessKeyInstanceId(item);
         if (keyId == null
@@ -1228,6 +1332,11 @@ public abstract class DungeonDefinition {
     }
 
     public synchronized boolean consumeAccessKey(@Nullable ItemStack item) {
+        if (!this.usesUniqueAccessKeyValidation()) {
+            return this.findMatchingAccessKey(item) != null;
+        }
+
+        this.ensureUniqueAccessKeyStateLoaded();
         if (this.getTrackedIssuedAccessKeyId(item, true) == null) {
             return false;
         }
@@ -1237,6 +1346,12 @@ public abstract class DungeonDefinition {
     }
 
     public synchronized @Nullable ItemStack rotateAccessKey(@Nullable ItemStack item) {
+        if (!this.usesUniqueAccessKeyValidation()) {
+            AccessKeyDefinition accessKey = this.findMatchingAccessKey(item);
+            return accessKey == null ? null : accessKey.createItemCopy();
+        }
+
+        this.ensureUniqueAccessKeyStateLoaded();
         String keyId = this.getTrackedIssuedAccessKeyId(item, true);
         if (keyId == null) {
             return null;

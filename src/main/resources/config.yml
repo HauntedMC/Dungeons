@@ -6,6 +6,12 @@ commands:
   # int. Entries shown per page in paginated /dungeon list output. Use a positive integer.
   list_page_size: 10
 
+access:
+  keys:
+    # bool. Global plugin setting, not per dungeon. True = issue per-item key tokens and track them in each dungeon's access_keys.yml.
+    # False = use generic configured key items only, with no token rotation or key-state file.
+    unique_validation_enabled: false
+
 editor:
   # int. Seconds to wait for an editor world to finish loading. Use a positive integer.
   open_timeout_seconds: 10

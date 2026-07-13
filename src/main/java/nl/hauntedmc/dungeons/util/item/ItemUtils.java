@@ -273,6 +273,24 @@ public final class ItemUtils {
         return item;
     }
 
+    /** Removes all plugin-owned access-key tracking tags from an item. */
+    public static ItemStack clearDungeonAccessKeyTracking(ItemStack item) {
+        if (item == null || item.getType() == Material.AIR) {
+            return item;
+        }
+
+        ItemMeta meta = item.getItemMeta();
+        if (meta == null) {
+            return item;
+        }
+
+        PersistentDataContainer data = meta.getPersistentDataContainer();
+        data.remove(new NamespacedKey(RuntimeContext.plugin(), DUNGEON_ACCESS_KEY_ID_TAG));
+        data.remove(new NamespacedKey(RuntimeContext.plugin(), DUNGEON_ACCESS_KEY_INSTANCE_ID_TAG));
+        item.setItemMeta(meta);
+        return item;
+    }
+
     /** Returns the issued-instance id from a dungeon access key item, if present. */
     public static String getDungeonAccessKeyInstanceId(ItemStack item) {
         if (item == null || item.getType() == Material.AIR) {

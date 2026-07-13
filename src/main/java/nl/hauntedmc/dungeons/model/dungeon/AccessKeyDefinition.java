@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import nl.hauntedmc.dungeons.annotation.TypeKey;
+import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
@@ -31,7 +32,7 @@ public final class AccessKeyDefinition implements ConfigurationSerializable {
     public AccessKeyDefinition(Map<String, Object> config) {
         this.keyId = resolveKeyId(config.get("KeyId"), config.get("Item"));
         Object rawItem = config.get("Item");
-        this.item = rawItem instanceof ItemStack stack ? this.applyStableIdentity(stack.clone()) : null;
+        this.item = rawItem instanceof ItemStack stack ? this.prepareConfiguredItem(stack.clone()) : null;
         this.addedAt = parseDate(config.get("AddedAt"));
         this.addedByName = asNormalizedString(config.get("AddedByName"));
         this.addedByUniqueId = asNormalizedString(config.get("AddedByUniqueId"));
@@ -46,7 +47,7 @@ public final class AccessKeyDefinition implements ConfigurationSerializable {
             @Nullable String addedByName,
             @Nullable UUID addedByUniqueId) {
         this.keyId = UUID.randomUUID().toString();
-        this.item = this.applyStableIdentity(item.clone());
+        this.item = this.prepareConfiguredItem(item.clone());
         this.addedAt = addedAt == null ? null : new Date(addedAt.getTime());
         this.addedByName = normalize(addedByName);
         this.addedByUniqueId = addedByUniqueId == null ? null : addedByUniqueId.toString();
@@ -107,15 +108,31 @@ public final class AccessKeyDefinition implements ConfigurationSerializable {
      * Returns whether the given item matches this configured key.
      */
     public boolean matches(@Nullable ItemStack candidate) {
-        String taggedCandidateId = this.readTaggedKeyId(candidate);
-        return this.isValid() && taggedCandidateId != null && taggedCandidateId.equals(this.keyId);
+        if (!this.isValid()) {
+            return false;
+        }
+
+        if (this.usesUniqueValidation()) {
+            String taggedCandidateId = this.readTaggedKeyId(candidate);
+            return taggedCandidateId != null && taggedCandidateId.equals(this.keyId);
+        }
+
+        ItemStack configuredItem = this.createGenericItemCopy();
+        ItemStack genericCandidate = this.createGenericCandidateCopy(candidate);
+        return configuredItem != null && genericCandidate != null && configuredItem.isSimilar(genericCandidate);
     }
 
     /**
      * Returns a clone of the configured key item.
      */
     public @Nullable ItemStack createItemCopy() {
-        return this.item == null ? null : this.applyStableIdentity(this.item.clone());
+        if (this.item == null) {
+            return null;
+        }
+
+        return this.usesUniqueValidation()
+                ? this.applyStableIdentity(this.item.clone())
+                : this.createGenericCandidateCopy(this.item);
     }
 
     /**
@@ -188,6 +205,7 @@ public final class AccessKeyDefinition implements ConfigurationSerializable {
     }
 
     private ItemStack applyStableIdentity(ItemStack item) {
+        item = ItemUtils.clearDungeonAccessKeyTracking(item);
         try {
             ItemUtils.clearDungeonAccessKeyInstance(item);
             return ItemUtils.tagDungeonAccessKey(item, this.keyId);
@@ -196,8 +214,38 @@ public final class AccessKeyDefinition implements ConfigurationSerializable {
         }
     }
 
+    private @Nullable ItemStack prepareConfiguredItem(@Nullable ItemStack item) {
+        if (item == null) {
+            return null;
+        }
+
+        return this.usesUniqueValidation()
+                ? this.applyStableIdentity(item)
+                : ItemUtils.clearDungeonAccessKeyTracking(item);
+    }
+
+    private @Nullable ItemStack createGenericItemCopy() {
+        return this.item == null ? null : this.createGenericCandidateCopy(this.item);
+    }
+
+    private @Nullable ItemStack createGenericCandidateCopy(@Nullable ItemStack item) {
+        if (item == null) {
+            return null;
+        }
+
+        return ItemUtils.clearDungeonAccessKeyTracking(item.clone());
+    }
+
     private @Nullable String readTaggedKeyId(@Nullable ItemStack item) {
         return readTaggedKeyIdStatic(item);
+    }
+
+    private boolean usesUniqueValidation() {
+        try {
+            return RuntimeContext.isUniqueAccessKeyValidationEnabled();
+        } catch (IllegalStateException ignored) {
+            return false;
+        }
     }
 
     private static @Nullable String readTaggedKeyIdStatic(@Nullable ItemStack item) {

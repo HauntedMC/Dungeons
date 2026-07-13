@@ -13,6 +13,7 @@ import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueCoordinator;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry;
 import nl.hauntedmc.dungeons.runtime.rewards.LootTableRepository;
 import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
+import nl.hauntedmc.dungeons.util.config.PluginConfigView;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.slf4j.Logger;
@@ -75,6 +76,11 @@ public final class RuntimeContext {
     /** Returns the live plugin configuration. */
     public static FileConfiguration config() {
         return runtime().config();
+    }
+
+    /** Returns whether unique access-key validation is enabled globally. */
+    public static boolean isUniqueAccessKeyValidationEnabled() {
+        return PluginConfigView.isUniqueAccessKeyValidationEnabled(config());
     }
 
     /** Returns the shared GUI service. */

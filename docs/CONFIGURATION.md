@@ -51,6 +51,12 @@ The default dungeon template controls behavior for newly created or synced dunge
 
 ### Access Keys
 
+Global plugin config:
+
+- `access.keys.unique_validation_enabled: false` by default
+- `false`: keys are treated as generic configured items, with no per-item token rotation and no `access_keys.yml` tracking
+- `true`: issued keys get plugin-owned ids and per-item instance tokens, and each dungeon uses `access_keys.yml` to track issued, reserved, and invalidated tokens
+
 Per-dungeon `access.keys.items` is managed as a serialized list of key definitions, not just raw item stacks.
 
 Each key entry stores:
@@ -60,7 +66,7 @@ Each key entry stores:
 - when it was added
 - which player added it
 
-Issued physical keys are tracked separately in `access_keys.yml`. A usable key must have:
+When `access.keys.unique_validation_enabled` is enabled, issued physical keys are tracked separately in `access_keys.yml`. A usable key must have:
 
 - the configured key-definition id
 - a plugin-issued per-item instance id
@@ -84,7 +90,7 @@ Preferred management commands:
 - `/dungeon dungeon keys list <dungeon> [page]`
 - `/dungeon dungeon keys give <dungeon> <player> <id> [amount]`
 
-Only the new tagged key format is supported. Old raw item-stack key entries and old untagged player-held keys are not considered valid access keys and should be reissued through the current key commands.
+With unique validation disabled, matching falls back to the configured item itself. With unique validation enabled, only plugin-issued tagged keys are considered valid and old raw player-held copies should be reissued through the current key commands.
 
 Players with `dungeons.admin` bypass access-cooldown checks and do not receive new access cooldown entries from dungeon start/finish/leave flows.
 
