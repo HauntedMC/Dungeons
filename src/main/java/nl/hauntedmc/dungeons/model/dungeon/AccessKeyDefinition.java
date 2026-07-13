@@ -112,7 +112,7 @@ public final class AccessKeyDefinition implements ConfigurationSerializable {
             return false;
         }
 
-        if (this.usesUniqueValidation()) {
+        if (this.usesStableIdentityValidation()) {
             String taggedCandidateId = this.readTaggedKeyId(candidate);
             return taggedCandidateId != null && taggedCandidateId.equals(this.keyId);
         }
@@ -130,7 +130,7 @@ public final class AccessKeyDefinition implements ConfigurationSerializable {
             return null;
         }
 
-        return this.usesUniqueValidation()
+        return this.usesStableIdentityValidation()
                 ? this.applyStableIdentity(this.item.clone())
                 : this.createGenericCandidateCopy(this.item);
     }
@@ -219,7 +219,7 @@ public final class AccessKeyDefinition implements ConfigurationSerializable {
             return null;
         }
 
-        return this.usesUniqueValidation()
+        return this.usesStableIdentityValidation()
                 ? this.applyStableIdentity(item)
                 : ItemUtils.clearDungeonAccessKeyTracking(item);
     }
@@ -246,6 +246,18 @@ public final class AccessKeyDefinition implements ConfigurationSerializable {
         } catch (IllegalStateException ignored) {
             return false;
         }
+    }
+
+    private boolean usesMetadataValidation() {
+        try {
+            return RuntimeContext.isAccessKeyMetadataValidationEnabled();
+        } catch (IllegalStateException ignored) {
+            return false;
+        }
+    }
+
+    private boolean usesStableIdentityValidation() {
+        return this.usesUniqueValidation() || this.usesMetadataValidation();
     }
 
     private static @Nullable String readTaggedKeyIdStatic(@Nullable ItemStack item) {

@@ -83,6 +83,11 @@ public final class RuntimeContext {
         return PluginConfigView.isUniqueAccessKeyValidationEnabled(config());
     }
 
+    /** Returns whether stable access-key metadata validation is enabled without unique rotation. */
+    public static boolean isAccessKeyMetadataValidationEnabled() {
+        return PluginConfigView.isAccessKeyMetadataValidationEnabled(config());
+    }
+
     /** Returns the shared GUI service. */
     public static GuiService guiService() {
         return runtime().guiService();

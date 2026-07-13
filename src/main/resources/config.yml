@@ -15,8 +15,13 @@ commands:
 access:
   keys:
     # bool. Global plugin setting, not per dungeon. True = issue per-item key tokens and track them in each dungeon's access_keys.yml.
-    # False = use generic configured key items only, with no token rotation or key-state file.
+    # False = skip per-copy token rotation and access_keys.yml state.
     unique_validation_enabled: false
+    # bool. Applies when unique_validation_enabled = false.
+    # True = /dungeon dungeon keys add|give still stamp issued keys with stable plugin-owned metadata,
+    # so ordinary copies of the same item no longer validate or stack with the dungeon key.
+    # Existing legacy keys must be re-issued after enabling this.
+    metadata_validation_enabled: true
 
 editor:
   # int. Seconds to wait for an editor world to finish loading. Use a positive integer.

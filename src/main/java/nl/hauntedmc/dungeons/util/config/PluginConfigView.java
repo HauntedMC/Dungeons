@@ -42,6 +42,11 @@ public final class PluginConfigView {
         return getBoolean(config, "access.keys.unique_validation_enabled", false);
     }
 
+    /** Returns whether stable metadata validation is enabled when unique key rotation is disabled. */
+    public static boolean isAccessKeyMetadataValidationEnabled(FileConfiguration config) {
+        return getBoolean(config, "access.keys.metadata_validation_enabled", false);
+    }
+
     /** Returns editor open timeout in seconds. */
     public static int getEditOpenTimeoutSeconds(FileConfiguration config) {
         return Math.max(1, getInt(config, "editor.open_timeout_seconds", 10));
