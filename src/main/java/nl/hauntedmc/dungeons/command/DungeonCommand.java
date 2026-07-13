@@ -1630,9 +1630,18 @@ public final class DungeonCommand implements TabExecutor {
 
         if (!dungeon.isMarkedForDelete()) {
             dungeon.setMarkedForDelete(true);
-            Bukkit.getScheduler().runTaskLater(this.plugin, () -> dungeon.setMarkedForDelete(false), 200L);
+            int confirmationSeconds =
+                    PluginConfigView.getCommandDeleteConfirmationSeconds(this.plugin.getConfig());
+            Bukkit.getScheduler()
+                    .runTaskLater(
+                            this.plugin,
+                            () -> dungeon.setMarkedForDelete(false),
+                            confirmationSeconds * 20L);
             LangUtils.sendMessage(sender, "commands.dungeon.delete.delete-warning");
-            LangUtils.sendMessage(sender, "commands.dungeon.delete.delete-confirm");
+            LangUtils.sendMessage(
+                    sender,
+                    "commands.dungeon.delete.delete-confirm",
+                    LangUtils.placeholder("seconds", String.valueOf(confirmationSeconds)));
             return true;
         }
 

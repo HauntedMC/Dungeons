@@ -1,10 +1,16 @@
 instances:
   # int. Maximum dungeon instances allowed across the whole server. Set 0 for no global limit.
   max_active: 10
+  # int ticks. Delay before the dungeon-start trigger fires for direct starts.
+  start_trigger_delay_ticks: 10
+  # int ticks. Delay before the dungeon-start trigger fires when a lobby phase is enabled.
+  lobby_start_trigger_delay_ticks: 1
 
 commands:
-  # int. Entries shown per page in paginated /dungeon list output. Use a positive integer.
+  # int. Entries shown per page in paginated command output such as /dungeon list and /dungeon help.
   list_page_size: 10
+  # int. Seconds allowed between the first and second /dungeon dungeon delete command.
+  delete_confirmation_seconds: 10
 
 access:
   keys:
@@ -17,6 +23,8 @@ editor:
   open_timeout_seconds: 10
   # int. Seconds between automatic editor saves. Set 0 to disable autosave.
   autosave_interval_seconds: 300
+  # int. Max block reach used by editor tools when selecting room corners, connectors and spawns.
+  target_block_range_blocks: 10
 
   tools:
     # material. Bukkit material for the function tool. Must be a non-AIR material name.

@@ -5,6 +5,7 @@ import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.command.CommandUtils;
+import nl.hauntedmc.dungeons.util.config.DungeonConfigView;
 import nl.hauntedmc.dungeons.util.entity.EntityUtils;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
@@ -139,7 +140,7 @@ public class InstanceListener {
                     }
                     runnable.runTaskLater(
                             RuntimeContext.plugin(),
-                            this.instance.getConfig().getInt("players.offline_kick.delay_seconds", 300) * 20L);
+                            DungeonConfigView.getOfflineKickDelaySeconds(this.instance.getConfig()) * 20L);
                 }
 
                 playerSession.setDisconnecting(false);
@@ -153,9 +154,7 @@ public class InstanceListener {
     @EventHandler
     public void onExplodeBlocks(EntityExplodeEvent event) {
         if (event.getLocation().getWorld() == this.instance.getInstanceWorld()) {
-            if (this.instance
-                    .getConfig()
-                    .getBoolean("rules.world.prevent_explosion_block_damage", true)) {
+            if (DungeonConfigView.isExplosionBlockDamagePrevented(this.instance.getConfig())) {
                 event.blockList().clear();
             }
         }
@@ -169,7 +168,7 @@ public class InstanceListener {
         if (event.getPlayer().getWorld() == this.instance.getInstanceWorld()) {
             ItemStack item = event.getItem();
             Material mat = item.getType();
-            if (this.instance.getConfig().getBoolean("rules.combat.prevent_durability_loss.armor", true)
+            if (DungeonConfigView.isArmorDurabilityLossPrevented(this.instance.getConfig())
                     && (mat.name().contains("HELMET")
                             || mat.name().contains("CHESTPLATE")
                             || mat.name().contains("LEGGINGS")
@@ -177,7 +176,7 @@ public class InstanceListener {
                 event.setCancelled(true);
             }
 
-            if (this.instance.getConfig().getBoolean("rules.combat.prevent_durability_loss.weapons", true)
+            if (DungeonConfigView.isWeaponDurabilityLossPrevented(this.instance.getConfig())
                     && (mat.name().contains("SWORD")
                             || mat.name().contains("AXE")
                             || mat.name().contains("BOW")
@@ -187,7 +186,7 @@ public class InstanceListener {
                 event.setCancelled(true);
             }
 
-            if (this.instance.getConfig().getBoolean("rules.combat.prevent_durability_loss.tools", true)
+            if (DungeonConfigView.isToolDurabilityLossPrevented(this.instance.getConfig())
                     && (mat.name().contains("PICKAXE")
                             || mat.name().contains("AXE")
                             || mat.name().contains("SHOVEL")

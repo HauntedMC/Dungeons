@@ -267,7 +267,7 @@ commands:
       dungeon-not-found: '&cDungeon ''&6{dungeon}&c'' bestaat niet.'
       edit-in-progress: '&cDeze dungeon wordt momenteel bewerkt en kan nu niet verwijderd worden.'
       delete-warning: '&eJe staat op het punt deze dungeon te verwijderen.'
-      delete-confirm: '&eGebruik hetzelfde command opnieuw binnen 10 seconden om te bevestigen.'
+      delete-confirm: '&eGebruik hetzelfde command opnieuw binnen {seconds} seconden om te bevestigen.'
       notification: '&cDe dungeon waarin je zat is verwijderd.'
       success: '&aDungeon &6{dungeon}&a is verwijderd.'
     reload:
@@ -536,6 +536,7 @@ instance:
     open-timeout: '&cHet openen van de editorsessie voor dungeon &6{dungeon}&c duurde te lang.'
   play:
     time-limit:
+      warning: '&eNog {time} over in &6{dungeon}&e.'
       ten-minute-warning: '&eNog 10 minuten over in &6{dungeon}&e.'
       five-minute-warning: '&eNog 5 minuten over in &6{dungeon}&e.'
       one-minute-warning: '&eNog 1 minuut over in &6{dungeon}&e.'

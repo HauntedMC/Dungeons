@@ -7,6 +7,7 @@ import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
 import nl.hauntedmc.dungeons.model.element.TriggerCategory;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
+import nl.hauntedmc.dungeons.util.config.PluginConfigView;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
@@ -54,9 +55,9 @@ public class DungeonStartTrigger extends DungeonTrigger {
     @EventHandler
     public void onDungeonStart(DungeonStartEvent event) {
         if (event.getInstance() == this.instance) {
-            int delay = 10;
+            int delay = PluginConfigView.getDungeonStartTriggerDelayTicks(RuntimeContext.config());
             if (this.instance.getDungeon().isLobbyEnabled()) {
-                delay = 1;
+                delay = PluginConfigView.getDungeonStartTriggerLobbyDelayTicks(RuntimeContext.config());
             }
 
             Bukkit.getScheduler()

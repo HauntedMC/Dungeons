@@ -7,6 +7,7 @@ import java.util.concurrent.CountDownLatch;
 import nl.hauntedmc.dungeons.content.dungeon.OpenDungeon;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
+import nl.hauntedmc.dungeons.util.config.DungeonConfigView;
 import org.bukkit.Bukkit;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -214,7 +215,7 @@ public class OpenInstance extends StaticInstance {
             return;
         }
 
-        int delayTicks = Math.max(0, this.dungeon.getConfig().getInt("open.empty_unload_delay_ticks", 6000));
+        int delayTicks = DungeonConfigView.getOpenEmptyUnloadDelayTicks(this.dungeon.getConfig());
         if (!this.plugin().isEnabled() || delayTicks <= 0) {
             this.dispose();
             return;

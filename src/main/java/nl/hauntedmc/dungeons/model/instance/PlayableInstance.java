@@ -25,9 +25,11 @@ import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.command.CommandUtils;
+import nl.hauntedmc.dungeons.util.config.DungeonConfigView;
 import nl.hauntedmc.dungeons.util.entity.EntityUtils;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+import nl.hauntedmc.dungeons.util.time.TimeUtils;
 import nl.hauntedmc.dungeons.util.text.ComponentUtils;
 import nl.hauntedmc.dungeons.util.text.MessageUtils;
 import nl.hauntedmc.dungeons.util.world.DungeonMapRenderer;
@@ -132,9 +134,9 @@ public abstract class PlayableInstance extends DungeonInstance {
                             playerSession.getPlayer(),
                             this.config.getString("dungeon.display_name", "&cA Dungeon"),
                             "",
-                            10,
-                            70,
-                            10);
+                            DungeonConfigView.getStartTitleFadeInTicks(this.config),
+                            DungeonConfigView.getStartTitleStayTicks(this.config),
+                            DungeonConfigView.getStartTitleFadeOutTicks(this.config));
                 }
 
                 EntityUtils.forceTeleport(playerSession.getPlayer(), this.startLocation);
@@ -148,6 +150,7 @@ public abstract class PlayableInstance extends DungeonInstance {
 
             this.participants = this.players.size();
             final int timeLimit = this.config.getInt("runs.time_limit_minutes", 0);
+            final Set<Integer> warningSeconds = DungeonConfigView.getTimeLimitWarningSeconds(this.config);
             this.timeLeft = timeLimit * 60;
             this.instanceTicker =
                                         new BukkitRunnable() {
@@ -155,30 +158,10 @@ public abstract class PlayableInstance extends DungeonInstance {
                             PlayableInstance.this.timeElapsed++;
                             if (timeLimit != 0) {
                                 PlayableInstance.this.timeLeft--;
-                                // Warnings are emitted at fixed thresholds so teams can react
-                                // before forced close when the limit expires.
-                                if (PlayableInstance.this.timeLeft == 600) {
+                                if (warningSeconds.contains(PlayableInstance.this.timeLeft)) {
                                     PlayableInstance.this.messagePlayers(
-                                            LangUtils.getMessage(
-                                                    "instance.play.time-limit.ten-minute-warning",
-                                                    LangUtils.placeholder(
-                                                            "dungeon", PlayableInstance.this.dungeon.getDisplayName())));
-                                }
-
-                                if (PlayableInstance.this.timeLeft == 300) {
-                                    PlayableInstance.this.messagePlayers(
-                                            LangUtils.getMessage(
-                                                    "instance.play.time-limit.five-minute-warning",
-                                                    LangUtils.placeholder(
-                                                            "dungeon", PlayableInstance.this.dungeon.getDisplayName())));
-                                }
-
-                                if (PlayableInstance.this.timeLeft == 60) {
-                                    PlayableInstance.this.messagePlayers(
-                                            LangUtils.getMessage(
-                                                    "instance.play.time-limit.one-minute-warning",
-                                                    LangUtils.placeholder(
-                                                            "dungeon", PlayableInstance.this.dungeon.getDisplayName())));
+                                            PlayableInstance.this.getTimeLimitWarningMessage(
+                                                    PlayableInstance.this.timeLeft));
                                 }
 
                                                 if (PlayableInstance.this.timeLeft <= 0) {
@@ -212,6 +195,21 @@ public abstract class PlayableInstance extends DungeonInstance {
      * Hook invoked when a playable run starts.
      */
     public void onStart() {}
+
+    private String getTimeLimitWarningMessage(int remainingSeconds) {
+        String warningKey =
+                switch (remainingSeconds) {
+                    case 600 -> "instance.play.time-limit.ten-minute-warning";
+                    case 300 -> "instance.play.time-limit.five-minute-warning";
+                    case 60 -> "instance.play.time-limit.one-minute-warning";
+                    default -> "instance.play.time-limit.warning";
+                };
+
+        return LangUtils.getMessage(
+                warningKey,
+                LangUtils.placeholder("dungeon", this.dungeon.getDisplayName()),
+                LangUtils.placeholder("time", TimeUtils.formatDuration(remainingSeconds * 1000L)));
+    }
 
     /**
      * Disables function listeners and clears runtime run-state caches.

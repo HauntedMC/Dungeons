@@ -84,6 +84,10 @@ public abstract class Layout implements Cloneable {
     protected final ConcurrentMap<GenerationFailureReason, Integer> failureReasons =
             new ConcurrentHashMap<>();
 
+    protected int getEditorTargetBlockRange() {
+        return PluginConfigView.getEditorTargetBlockRangeBlocks(this.runtime().config());
+    }
+
     /**
      * Creates a layout instance backed by one branching dungeon and generator configuration.
      */
@@ -1030,7 +1034,7 @@ public abstract class Layout implements Cloneable {
                     @Override
                                         public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
-                        Block block = player.getTargetBlockExact(10);
+                        Block block = player.getTargetBlockExact(Layout.this.getEditorTargetBlockRange());
                         if (block != null && !block.isEmpty()) {
                             DungeonPlayerSession playerSession = Layout.this.playerSession(player);
                             BranchingRoomDefinition room = playerSession.getActiveRoom();

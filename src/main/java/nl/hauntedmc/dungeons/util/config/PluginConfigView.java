@@ -17,9 +17,24 @@ public final class PluginConfigView {
         return Math.max(0, getInt(config, "instances.max_active",  10));
     }
 
+    /** Returns delay in ticks before the dungeon-start trigger fires for direct starts. */
+    public static int getDungeonStartTriggerDelayTicks(FileConfiguration config) {
+        return Math.max(0, getInt(config, "instances.start_trigger_delay_ticks", 10));
+    }
+
+    /** Returns delay in ticks before the dungeon-start trigger fires when a lobby phase is enabled. */
+    public static int getDungeonStartTriggerLobbyDelayTicks(FileConfiguration config) {
+        return Math.max(0, getInt(config, "instances.lobby_start_trigger_delay_ticks", 1));
+    }
+
     /** Returns configured page size for `/dungeons list` output. */
     public static int getCommandListPageSize(FileConfiguration config) {
         return Math.max(1, getInt(config, "commands.list_page_size", 10));
+    }
+
+    /** Returns confirmation window in seconds for destructive dungeon commands. */
+    public static int getCommandDeleteConfirmationSeconds(FileConfiguration config) {
+        return Math.max(1, getInt(config, "commands.delete_confirmation_seconds", 10));
     }
 
     /** Returns whether unique issued-key validation and rotation are enabled globally. */
@@ -35,6 +50,11 @@ public final class PluginConfigView {
     /** Returns editor autosave interval in seconds. */
     public static int getEditAutosaveIntervalSeconds(FileConfiguration config) {
         return Math.max(0, getInt(config, "editor.autosave_interval_seconds", 300));
+    }
+
+    /** Returns the reach distance used by editor tools when targeting blocks. */
+    public static int getEditorTargetBlockRangeBlocks(FileConfiguration config) {
+        return Math.max(1, getInt(config, "editor.target_block_range_blocks", 10));
     }
 
     /** Returns material name for the function editor tool item. */

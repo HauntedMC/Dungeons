@@ -24,6 +24,7 @@ import nl.hauntedmc.dungeons.runtime.PluginEnvironment;
 import nl.hauntedmc.dungeons.runtime.instance.ActiveInstanceRegistry;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
+import nl.hauntedmc.dungeons.util.config.DungeonConfigView;
 import nl.hauntedmc.dungeons.util.entity.EntityUtils;
 import nl.hauntedmc.dungeons.util.entity.HologramManager;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
@@ -260,20 +261,20 @@ public abstract class DungeonInstance {
     protected void applyWorldRules() {
         WorldUtils.releaseSpawnChunk(this.instanceWorld);
         this.instanceWorld.setAutoSave(false);
-        if (!this.config.getBoolean("rules.spawning.natural_mobs", false)) {
+        if (!DungeonConfigView.isNaturalMobSpawningEnabled(this.config)) {
             for (SpawnCategory cat : SpawnCategory.values()) {
                 if (cat != SpawnCategory.MISC) {
                     this.instanceWorld.setTicksPerSpawns(cat, 0);
                 }
             }
-        } else if (!this.config.getBoolean("rules.spawning.animals", false)) {
+        } else if (!DungeonConfigView.isAnimalSpawningEnabled(this.config)) {
             this.instanceWorld.setTicksPerSpawns(SpawnCategory.ANIMAL, 0);
             this.instanceWorld.setTicksPerSpawns(SpawnCategory.AMBIENT, 0);
             this.instanceWorld.setTicksPerSpawns(SpawnCategory.AXOLOTL, 0);
             this.instanceWorld.setTicksPerSpawns(SpawnCategory.WATER_AMBIENT, 0);
             this.instanceWorld.setTicksPerSpawns(SpawnCategory.WATER_ANIMAL, 0);
             this.instanceWorld.setTicksPerSpawns(SpawnCategory.WATER_UNDERGROUND_CREATURE, 0);
-        } else if (!this.config.getBoolean("rules.spawning.monsters", false)) {
+        } else if (!DungeonConfigView.isMonsterSpawningEnabled(this.config)) {
             this.instanceWorld.setTicksPerSpawns(SpawnCategory.MONSTER, 0);
         }
 
@@ -444,7 +445,7 @@ public abstract class DungeonInstance {
                                     player.setFoodLevel(30);
                                 }
 
-                                if (!this.config.getBoolean("players.keep_on_entry.potion_effects", false)) {
+                                if (!DungeonConfigView.shouldKeepPotionEffectsOnEntry(this.config)) {
                                     for (PotionEffect effect : player.getActivePotionEffects()) {
                                         player.removePotionEffect(effect.getType());
                                     }

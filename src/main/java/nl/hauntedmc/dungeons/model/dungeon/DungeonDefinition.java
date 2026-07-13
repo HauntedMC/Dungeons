@@ -34,6 +34,7 @@ import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
 import nl.hauntedmc.dungeons.runtime.team.TeamRequirementPolicy;
 import nl.hauntedmc.dungeons.util.command.CommandUtils;
 import nl.hauntedmc.dungeons.util.config.ConfigSyncUtils;
+import nl.hauntedmc.dungeons.util.config.DungeonConfigView;
 import nl.hauntedmc.dungeons.util.config.PluginConfigView;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
@@ -282,7 +283,7 @@ public abstract class DungeonDefinition {
         }
 
         this.maxTeamSize = configuredMaxTeamSize;
-        this.lobbyEnabled = this.config.getBoolean("locations.lobby.enabled", true);
+        this.lobbyEnabled = DungeonConfigView.isLobbyEnabled(this.config);
 
         Object genericLoc = this.config.get("locations.lobby.spawn");
         if (genericLoc instanceof Location) {
@@ -349,7 +350,7 @@ public abstract class DungeonDefinition {
         this.accessCooldownEnabled = this.config.getBoolean("access.cooldown.enabled", false);
         this.onlyLeaderNeedsCooldown = this.config.getBoolean("access.cooldown.leader_only", false);
         this.cooldownOnFinish = this.config.getBoolean("access.cooldown.on_finish", true);
-        this.cooldownOnLeave = this.config.getBoolean("access.cooldown.on_leave", false);
+        this.cooldownOnLeave = DungeonConfigView.isAccessCooldownAppliedOnLeave(this.config);
         this.cooldownOnLoseLives = this.config.getBoolean("access.cooldown.on_lives_depleted", false);
         this.cooldownOnStart = this.config.getBoolean("access.cooldown.on_start", false);
         this.cooldownsPerReward =
@@ -1516,8 +1517,8 @@ public abstract class DungeonDefinition {
                         return new Date();
         } else {
             CooldownPeriod period =
-                    CooldownPeriod.valueOf(this.config.getString("access.cooldown.period", "DAILY"));
-            int cooldownTime = this.config.getInt("access.cooldown.value", 1);
+                    CooldownPeriod.valueOf(DungeonConfigView.getAccessCooldownPeriodName(this.config));
+            int cooldownTime = DungeonConfigView.getAccessCooldownValue(this.config);
             if (period == CooldownPeriod.TIMER) {
                 return period.fromNow(cooldownTime);
             } else {
@@ -1531,7 +1532,7 @@ public abstract class DungeonDefinition {
                 cal.set(Calendar.SECOND, 0);
                 cal.set(Calendar.MILLISECOND, 0);
                 if (period == CooldownPeriod.WEEKLY) {
-                    int dayOfWeek = this.config.getInt("access.cooldown.reset_day", 1);
+                    int dayOfWeek = DungeonConfigView.getAccessCooldownResetDay(this.config);
                     if (dayOfWeek > cal.get(Calendar.DAY_OF_WEEK)) {
                         cal.set(Calendar.WEEK_OF_MONTH, cal.get(Calendar.WEEK_OF_MONTH) - 1);
                     }
@@ -1540,7 +1541,7 @@ public abstract class DungeonDefinition {
                 }
 
                 if (period == CooldownPeriod.MONTHLY) {
-                    int dayOfMonth = this.config.getInt("access.cooldown.reset_day", 1);
+                    int dayOfMonth = DungeonConfigView.getAccessCooldownResetDay(this.config);
                     if (dayOfMonth > cal.get(Calendar.DAY_OF_WEEK)) {
                         cal.set(Calendar.MONTH, cal.get(Calendar.MONTH) - 1);
                     }

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
+import nl.hauntedmc.dungeons.util.config.PluginConfigView;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import org.bukkit.command.CommandSender;
 
@@ -117,7 +118,8 @@ public final class CommandUtils {
             }
         }
 
-        int totalPages = (int) Math.ceil(helpInfo.size() / 10.0);
+        int pageSize = PluginConfigView.getCommandListPageSize(RuntimeContext.config());
+        int totalPages = Math.max(1, (int) Math.ceil(helpInfo.size() / (double) pageSize));
         if (page >= totalPages) {
             page = totalPages - 1;
         }
@@ -126,7 +128,7 @@ public final class CommandUtils {
             page = 0;
         }
 
-        for (int i = page * 10; i < (page + 1) * 10 && i < helpInfo.size(); i++) {
+        for (int i = page * pageSize; i < (page + 1) * pageSize && i < helpInfo.size(); i++) {
             sender.sendMessage(helpInfo.get(i));
         }
 

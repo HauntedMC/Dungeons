@@ -11,6 +11,7 @@ import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.command.CommandUtils;
+import nl.hauntedmc.dungeons.util.config.DungeonConfigView;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import org.bukkit.Bukkit;
@@ -347,18 +348,18 @@ public class PlayListener extends InstanceListener {
         if (event.getEntity().getWorld() == this.instance.getInstanceWorld()) {
             if (event.getSpawnReason() == SpawnReason.NATURAL
                     || event.getSpawnReason() == SpawnReason.REINFORCEMENTS) {
-                if (!this.instance.getConfig().getBoolean("rules.spawning.natural_mobs")) {
+                if (!DungeonConfigView.isNaturalMobSpawningEnabled(this.instance.getConfig())) {
                     event.setCancelled(true);
                 }
 
                 LivingEntity ent = event.getEntity();
                 if (ent instanceof Animals
-                        && !this.instance.getConfig().getBoolean("rules.spawning.animals")) {
+                        && !DungeonConfigView.isAnimalSpawningEnabled(this.instance.getConfig())) {
                     event.setCancelled(true);
                 }
 
                 if ((ent instanceof Monster || ent instanceof Boss)
-                        && !this.instance.getConfig().getBoolean("rules.spawning.monsters")) {
+                        && !DungeonConfigView.isMonsterSpawningEnabled(this.instance.getConfig())) {
                     event.setCancelled(true);
                 }
             }
@@ -382,7 +383,7 @@ public class PlayListener extends InstanceListener {
     @EventHandler
     public void onBreakBlock(BlockBreakEvent event) {
         if (event.getBlock().getWorld() == this.instance.getInstanceWorld()) {
-            if (!this.instance.getConfig().getBoolean("rules.building.break_blocks", false)) {
+            if (!DungeonConfigView.canBreakBlocks(this.instance.getConfig())) {
                 event.setCancelled(true);
             }
 
@@ -415,7 +416,7 @@ public class PlayListener extends InstanceListener {
     @EventHandler
     public void onPlaceBlock(BlockPlaceEvent event) {
         if (event.getBlock().getWorld() == this.instance.getInstanceWorld()) {
-            if (!this.instance.getConfig().getBoolean("rules.building.place_blocks", false)) {
+            if (!DungeonConfigView.canPlaceBlocks(this.instance.getConfig())) {
                 event.setCancelled(true);
             }
 
@@ -500,7 +501,7 @@ public class PlayListener extends InstanceListener {
         if (event.getPlayer().getWorld() == this.instance.getInstanceWorld()) {
             Player player = event.getPlayer();
             if (event.getCause() == TeleportCause.ENDER_PEARL
-                    && !this.instance.getConfig().getBoolean("rules.movement.ender_pearls", false)) {
+                    && !DungeonConfigView.canUseEnderPearls(this.instance.getConfig())) {
                 event.setCancelled(true);
                 LangUtils.sendMessage(player, "instance.play.events.enderpearl-deny");
             }
@@ -520,7 +521,7 @@ public class PlayListener extends InstanceListener {
     public void onBucketEmpty(PlayerBucketEmptyEvent event) {
         if (event.getPlayer().getWorld() == this.instance.getInstanceWorld()) {
             Player player = event.getPlayer();
-            if (!this.instance.getConfig().getBoolean("rules.movement.buckets", false)) {
+            if (!DungeonConfigView.canUseBuckets(this.instance.getConfig())) {
                 event.setCancelled(true);
             }
 
@@ -543,7 +544,7 @@ public class PlayListener extends InstanceListener {
     public void onBucketEmpty(PlayerBucketFillEvent event) {
         if (event.getPlayer().getWorld() == this.instance.getInstanceWorld()) {
             Player player = event.getPlayer();
-            if (!this.instance.getConfig().getBoolean("rules.movement.buckets", false)) {
+            if (!DungeonConfigView.canUseBuckets(this.instance.getConfig())) {
                 event.setCancelled(true);
             }
 

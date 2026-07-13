@@ -7,6 +7,13 @@ dungeon:
   display_name: "&bNieuwe Dungeon"
   # bool. Show the display name in a title when the run begins.
   show_title_on_start: false
+  start_title:
+    # int ticks. Title fade-in duration used when show_title_on_start is true.
+    fade_in_ticks: 10
+    # int ticks. Title stay duration used when show_title_on_start is true.
+    stay_ticks: 70
+    # int ticks. Title fade-out duration used when show_title_on_start is true.
+    fade_out_ticks: 10
   # string: NORMAL | NETHER | THE_END
   environment: NORMAL
   # string. Generator id, for example NATURAL, dungeons:void or dungeons:block.STONE.
@@ -63,6 +70,8 @@ runs:
   max_active: 10
   # int minutes. 0 = no time limit.
   time_limit_minutes: 0
+  # list[int seconds]. Countdown moments that warn players before a timed run ends.
+  time_limit_warning_seconds: [600, 300, 60]
   # int ticks. Delay before an empty run is cleaned up.
   cleanup_delay_ticks: 0
 

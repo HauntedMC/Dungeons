@@ -27,6 +27,7 @@ import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueEntry;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry;
 import nl.hauntedmc.dungeons.util.command.CommandUtils;
+import nl.hauntedmc.dungeons.util.config.PluginConfigView;
 import nl.hauntedmc.dungeons.util.entity.EntityUtils;
 import nl.hauntedmc.dungeons.util.entity.ParticleUtils;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
@@ -260,7 +261,9 @@ public class DungeonListener implements Listener {
             return;
         }
 
-        Block targetBlock = player.getTargetBlockExact(10);
+        Block targetBlock =
+                player.getTargetBlockExact(
+                        PluginConfigView.getEditorTargetBlockRangeBlocks(this.plugin.getConfig()));
         Location pos =
                 targetBlock == null ? player.getLocation().toBlockLocation() : targetBlock.getLocation();
         BranchingRoomDefinition room = dungeon.getRoom(pos);
@@ -340,7 +343,9 @@ public class DungeonListener implements Listener {
             return;
         }
 
-        Block targetBlock = player.getTargetBlockExact(10);
+        Block targetBlock =
+                player.getTargetBlockExact(
+                        PluginConfigView.getEditorTargetBlockRangeBlocks(this.plugin.getConfig()));
         Location pos =
                 targetBlock == null ? player.getLocation().toBlockLocation() : targetBlock.getLocation();
         playerSession.setPos1(pos);

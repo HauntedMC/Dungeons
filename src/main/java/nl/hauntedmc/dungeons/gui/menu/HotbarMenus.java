@@ -15,6 +15,7 @@ import nl.hauntedmc.dungeons.model.instance.EditableInstance;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
+import nl.hauntedmc.dungeons.util.config.PluginConfigView;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.math.MathUtils;
 import nl.hauntedmc.dungeons.util.math.RangedNumber;
@@ -39,6 +40,10 @@ public class HotbarMenus {
     private static PlayerHotbarMenu functionEditMenu;
     private static PlayerHotbarMenu roomEditMenu;
     private static PlayerHotbarMenu roomRulesMenu;
+
+    private static int getEditorTargetBlockRange() {
+        return PluginConfigView.getEditorTargetBlockRangeBlocks(RuntimeContext.config());
+    }
 
     /** Builds the editor hotbar menu used for function editing actions. */
     public static void initializeFunctionEditMenu() {
@@ -245,7 +250,7 @@ public class HotbarMenus {
                                         public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
                         DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
-                        Block block = player.getTargetBlockExact(10);
+                        Block block = player.getTargetBlockExact(getEditorTargetBlockRange());
                         if (block == null) {
                             LangUtils.sendMessage(player, "editor.session.hotbar.look-at-block-connector");
                         } else {
@@ -361,7 +366,7 @@ public class HotbarMenus {
                             BranchingEditableInstance instance =
                                     playerSession.getInstance().as(BranchingEditableInstance.class);
                             if (instance != null) {
-                                Block block = player.getTargetBlockExact(10);
+                                Block block = player.getTargetBlockExact(getEditorTargetBlockRange());
                                 if (block == null) {
                                     LangUtils.sendMessage(player, "editor.session.hotbar.look-at-block-spawn");
                                 } else {
@@ -489,7 +494,7 @@ public class HotbarMenus {
                                 BranchingEditableInstance instance =
                                         playerSession.getInstance().as(BranchingEditableInstance.class);
                                 if (instance != null) {
-                                    Block block = player.getTargetBlockExact(10);
+                                    Block block = player.getTargetBlockExact(getEditorTargetBlockRange());
                                     if (block == null) {
                                         LangUtils.sendMessage(player, "editor.session.room-click-required");
                                     } else {
@@ -528,7 +533,7 @@ public class HotbarMenus {
                                 BranchingEditableInstance instance =
                                         playerSession.getInstance().as(BranchingEditableInstance.class);
                                 if (instance != null) {
-                                    Block block = player.getTargetBlockExact(10);
+                                    Block block = player.getTargetBlockExact(getEditorTargetBlockRange());
                                     if (block == null) {
                                         LangUtils.sendMessage(player, "editor.session.room-click-required");
                                     } else {

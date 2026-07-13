@@ -28,9 +28,9 @@ This keeps operator files aligned with code changes while preserving local custo
 
 Key sections:
 
-- `instances`: global active-run caps.
-- `commands`: command output pagination.
-- `editor`: editor timeout/autosave/tool materials and preview behavior.
+- `instances`: global active-run caps and startup trigger timing.
+- `commands`: command output pagination and destructive-action confirmation windows.
+- `editor`: editor timeout/autosave/tool materials, targeting reach, and preview behavior.
 - `generation`: layout timeout and safe-spawn search timeout.
 - `team`: invite expiry and team-disband cleanup warnings.
 
@@ -39,10 +39,11 @@ Key sections:
 The default dungeon template controls behavior for newly created or synced dungeons:
 
 - `dungeon`: type, display behavior, world environment, generator id.
+- `dungeon.start_title`: per-dungeon title timing shown at run start when enabled.
 - `locations`: lobby/start/exit destinations.
 - `players`: gamemode, lives, spectating, entry-state preservation, and per-player join commands.
 - `team`: team-size limits and disband shutdown delay.
-- `runs` / `open`: run concurrency, time limit, open-instance player limits, idle unload timing, and optional preloading.
+- `runs` / `open`: run concurrency, time limit, time-limit warning thresholds, open-instance player limits, idle unload timing, and optional preloading.
 - `rewards`: finish delivery and cooldown policy.
 - `access`: key consumption and access cooldown policy.
 - `difficulty`: named difficulty presets and scaling.

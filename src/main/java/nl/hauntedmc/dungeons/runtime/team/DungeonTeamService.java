@@ -17,6 +17,7 @@ import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueEntry;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry;
+import nl.hauntedmc.dungeons.util.config.DungeonConfigView;
 import nl.hauntedmc.dungeons.util.config.PluginConfigView;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import org.bukkit.Bukkit;
@@ -655,8 +656,7 @@ public final class DungeonTeamService implements Listener {
         }
 
         int delaySeconds =
-                Math.max(
-                        0, instance.getDungeon().getConfig().getInt("team.disband_shutdown_delay_seconds", 60));
+                DungeonConfigView.getTeamDisbandShutdownDelaySeconds(instance.getDungeon().getConfig());
         this.sendDisbandShutdownWarning(instance, delaySeconds);
 
         if (delaySeconds == 0) {
