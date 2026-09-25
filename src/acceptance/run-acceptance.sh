@@ -22,6 +22,8 @@ wait_for_log() {
   done
   fail "Timed out waiting for $expected"
 }
+# ShellCheck cannot see that EXIT invokes this function.
+# shellcheck disable=SC2317
 cleanup() {
   local result=$?
   if [[ -n "$paper_input_fd" ]]; then printf 'stop\n' >&"$paper_input_fd" || true; fi
