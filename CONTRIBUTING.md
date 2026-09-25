@@ -4,7 +4,7 @@ Thanks for taking the time to contribute.
 
 ## Before You Start
 
-- Use Java 21 and Maven.
+- Use Java 25 and Maven.
 - Make sure you can run a local compile and test pass.
 - If your change affects runtime behavior, test it in a Paper environment.
 
@@ -13,7 +13,7 @@ Thanks for taking the time to contribute.
 ```bash
 git clone <repo-url>
 cd Dungeons
-mvn -q -DskipTests compile
+./mvnw -B -ntp -DskipTests compile
 ```
 
 ## Contribution Workflow
@@ -29,15 +29,15 @@ mvn -q -DskipTests compile
 Minimum checks:
 
 ```bash
-mvn -q -DskipTests compile
-mvn -q test
+./mvnw -B -ntp -DskipTests compile
+./mvnw -B -ntp test
 ```
 
 Recommended before merge:
 
 ```bash
-mvn -B verify
-mvn -B -DskipTests checkstyle:check
+./mvnw -B -ntp verify
+./mvnw -B -ntp -DskipTests verify
 ```
 
 ## Pull Request Expectations

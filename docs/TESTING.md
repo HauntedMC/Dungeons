@@ -15,26 +15,34 @@ Tests are organized under `src/test/java` and should mirror production package b
 Run tests:
 
 ```bash
-mvn -q test
+./mvnw -B -ntp test
 ```
 
 Run full quality checks:
 
 ```bash
-mvn -B verify
+./mvnw -B -ntp verify
 ```
 
 Run lint checks:
 
 ```bash
-mvn -B -DskipTests checkstyle:check
+./mvnw -B -ntp -DskipTests verify
 ```
 
 Generate local coverage report:
 
 ```bash
-mvn -q test jacoco:report
+./mvnw -B -ntp verify
 ```
+
+Run the real Paper boot and command smoke test for packaging or runtime changes:
+
+```bash
+./mvnw -B -ntp -Pplatform-acceptance verify
+```
+
+The test downloads the HauntedPlatform-pinned Paper runtime and checks that the plugin starts and responds to `/dungeon help`.
 
 ## What to Test
 
@@ -49,7 +57,7 @@ Focus on behavior that operators and players observe directly.
 
 ## Coverage Reports
 
-After `jacoco:report`:
+After `./mvnw -B -ntp verify`:
 
 - HTML report: `target/site/jacoco/index.html`
 - XML report: `target/site/jacoco/jacoco.xml`
