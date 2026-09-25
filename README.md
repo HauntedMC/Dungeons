@@ -1,16 +1,15 @@
 # Dungeons
 
-[![CI Lint](https://github.com/HauntedMC/Dungeons/actions/workflows/ci-lint.yml/badge.svg?branch=main)](https://github.com/HauntedMC/Dungeons/actions/workflows/ci-lint.yml)
-[![CI Tests and Coverage](https://github.com/HauntedMC/Dungeons/actions/workflows/ci-tests-and-coverage.yml/badge.svg?branch=main)](https://github.com/HauntedMC/Dungeons/actions/workflows/ci-tests-and-coverage.yml)
+[![CI](https://github.com/HauntedMC/Dungeons/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/HauntedMC/Dungeons/actions/workflows/ci.yml)
 [![Latest Release](https://img.shields.io/github/v/release/HauntedMC/Dungeons?sort=semver)](https://github.com/HauntedMC/Dungeons/releases/latest)
-[![Java 21](https://img.shields.io/badge/Java-21-007396?logo=openjdk&logoColor=white)](https://adoptium.net/)
+[![Java 25](https://img.shields.io/badge/Java-25-007396?logo=openjdk&logoColor=white)](https://adoptium.net/)
 [![License](https://img.shields.io/github/license/HauntedMC/Dungeons)](LICENSE)
 
 Dungeons is a Paper plugin for creating, editing, and running configurable dungeon content with queueing, teams, triggers, functions, difficulty scaling, and loot table rewards.
 
 ## Quick Start
 
-1. Place `Dungeons.jar` in your server `plugins/` directory.
+1. Place `Dungeons-<version>.jar` in your server `plugins/` directory.
 2. Start the server once to generate runtime files under `plugins/Dungeons/`.
 3. Configure global settings in `plugins/Dungeons/config.yml`.
 4. Create or edit dungeon content with `/dungeon` editor commands.
@@ -23,26 +22,17 @@ Dungeons is a Paper plugin for creating, editing, and running configurable dunge
 
 ## Build From Source
 
-```bash
-mvn -B package
-```
-
-Output jar: `target/Dungeons.jar`
-
-## Version Bump Workflow
-
-Use the helper script to bump semver, commit, and tag:
+Use Java 25. HauntedPlatform is resolved from GitHub Packages; set `PACKAGES_USER` and `PACKAGES_TOKEN` (with `read:packages`) for a fresh local Maven cache. The committed `.mvn/settings.xml` reads these variables.
 
 ```bash
-scripts/bump-version.sh patch
-scripts/bump-version.sh minor --push
+./mvnw -B -ntp verify
 ```
 
-Options:
+Output jar: `target/Dungeons-<version>.jar`
 
-- `major|minor|patch`: required bump type
-- `--push`: push branch + tag after creating them
-- `--remote <name>`: push/check against a remote (default: `origin`)
+## Release workflow
+
+From clean `main`, run `./tools/release/update-version patch --pr` to open a reviewed version PR. CI tests the PR; after merge, GitHub Actions publishes the Maven package, verifies that it resolves, and creates the tag and downloadable release jar with a SHA-256 checksum. See [release tooling](tools/release/README.md).
 
 ## Learn More
 

@@ -5,16 +5,15 @@ This page is for contributors who want a fast, reliable local workflow for Dunge
 ## Local Setup
 
 ```bash
-mvn -q -DskipTests compile
+./mvnw -B -ntp -DskipTests compile
 ```
 
 Useful commands during development:
 
 ```bash
-mvn -q test
-mvn -B -DskipTests checkstyle:check
-mvn -q test jacoco:report
-mvn -B verify
+./mvnw -B -ntp test
+./mvnw -B -ntp verify
+./mvnw -B -ntp -Pplatform-acceptance verify
 mvn -B package
 ```
 
