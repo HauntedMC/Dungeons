@@ -2,7 +2,7 @@ name: Dungeons
 prefix: Dungeons
 version: ${project.version}
 main: nl.hauntedmc.dungeons.plugin.DungeonsPlugin
-api-version: 1.21
+api-version: '26.3'
 author: HauntedMC
 commands:
   dungeon:
