@@ -146,4 +146,29 @@ class PlayerRunContractTest {
         }
     }
 
+    @Test
+    void deathRespawnAndLastLifeSpectatingAreIdempotentAndCloseTheRunOnTheNextTick() throws Exception {
+        var settings=settings(); settings.set("players.lives",2);
+        try(var fixture=new RunFixture(directory,settings)) {
+            var state=new PlayerState(); var session=fixture.session(state); fixture.run.addPlayer(session);
+            var listener=(nl.hauntedmc.dungeons.listener.instance.PlayListener)fixture.run.getListener();
+            var death=mock(org.bukkit.event.entity.PlayerDeathEvent.class);
+            when(death.getEntity()).thenReturn(state.player); when(death.getDrops()).thenReturn(new java.util.ArrayList<>());
+            when(death.isCancelled()).thenReturn(true); listener.onPlayerDeath(death);
+            assertEquals(2,fixture.run.getPlayerLives().get(state.player.getUniqueId()));
+            when(death.isCancelled()).thenReturn(false); listener.onPlayerDeath(death); listener.onPlayerDeath(death);
+            assertEquals(1,fixture.run.getPlayerLives().get(state.player.getUniqueId()));
+            assertTrue(fixture.run.getLivingPlayers().contains(session));
+            var respawn=mock(org.bukkit.event.player.PlayerRespawnEvent.class); when(respawn.getPlayer()).thenReturn(state.player);
+            listener.onPlayerRespawn(respawn); assertFalse(session.isDead());
+            listener.onPlayerDeath(death);
+            assertEquals(0,fixture.run.getPlayerLives().get(state.player.getUniqueId()));
+            assertTrue(fixture.run.getLivingPlayers().isEmpty());
+            listener.onPlayerRespawn(respawn); assertEquals(GameMode.SPECTATOR,state.gameMode);
+            assertSame(fixture.run,session.getInstance());
+            fixture.scheduler.jobs.getLast().run();
+            assertNull(session.getInstance()); assertTrue(fixture.run.getPlayers().isEmpty());
+        }
+    }
+
 }
