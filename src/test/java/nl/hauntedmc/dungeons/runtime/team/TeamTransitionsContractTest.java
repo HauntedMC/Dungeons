@@ -137,4 +137,38 @@ class TeamTransitionsContractTest {
             assertTrue(countdown.cancelled);
         }
     }
+
+    @Test
+    void startedTeamsSurviveDisconnectsAndCancelledLeavesButRemoveDepartedMembersAndDisposeIndexes()
+            throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var service = service(f);
+            var leader = player(f);
+            var member = player(f);
+            service.handleCreateTeam(leader.player);
+            service.handleInvite(leader.player, member.player);
+            service.handleAcceptInvite(member.player);
+            var team = service.getTeam(leader.player.getUniqueId());
+            service.markStarted(team.getTeamId(), f.run);
+            var quit = org.mockito.Mockito.mock(org.bukkit.event.player.PlayerQuitEvent.class);
+            org.mockito.Mockito.when(quit.getPlayer()).thenReturn(member.player);
+            service.onPlayerQuit(quit);
+            assertSame(team, service.getTeam(member.player.getUniqueId()));
+            var leave =
+                    new nl.hauntedmc.dungeons.event.PlayerLeaveDungeonEvent(
+                            f.run, f.paper.runtime.playerSessions().get(member.player));
+            leave.setCancelled(true);
+            service.onPlayerLeaveDungeon(leave);
+            assertEquals(2, team.size());
+            leave.setCancelled(false);
+            service.onPlayerLeaveDungeon(leave);
+            assertNull(service.getTeam(member.player.getUniqueId()));
+            assertEquals(1, team.size());
+            service.onDungeonDispose(new nl.hauntedmc.dungeons.event.DungeonDisposeEvent(f.run));
+            assertNull(service.getTeamById(team.getTeamId()));
+            assertNull(service.getTeam(leader.player.getUniqueId()));
+            service.onDungeonDispose(new nl.hauntedmc.dungeons.event.DungeonDisposeEvent(f.run));
+            assertTrue(f.scheduler.immediate.isEmpty());
+        }
+    }
 }
