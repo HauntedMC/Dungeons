@@ -190,6 +190,8 @@ public class BranchingDungeon extends DungeonDefinition {
                                         "Loading Dungeon " + this.getWorldName(),
                                         () -> {
                                             CountDownLatch latch = new CountDownLatch(1);
+                                            // Initialization may finish before creation returns.
+                                            CountDownLatch creationComplete = new CountDownLatch(1);
                                             AtomicReference<BranchingInstance> instanceRef =
                                                     new AtomicReference<>();
 
@@ -214,6 +216,7 @@ public class BranchingDungeon extends DungeonDefinition {
                                                                                         BranchingInstance
                                                                                                 .class);
                                                                 instanceRef.set(instance);
+                                                                creationComplete.countDown();
 
                                                                 if (instance == null) {
                                                                     latch.countDown();
@@ -221,7 +224,21 @@ public class BranchingDungeon extends DungeonDefinition {
                                                             });
 
                                             try {
-                                                boolean loaded = latch.await(5L, TimeUnit.SECONDS);
+                                                long deadline =
+                                                        System.nanoTime()
+                                                                + TimeUnit.SECONDS.toNanos(5L);
+                                                boolean published =
+                                                        creationComplete.await(
+                                                                5L, TimeUnit.SECONDS);
+                                                boolean loaded =
+                                                        published
+                                                                && latch.await(
+                                                                        Math.max(
+                                                                                0L,
+                                                                                deadline
+                                                                                        - System
+                                                                                                .nanoTime()),
+                                                                        TimeUnit.NANOSECONDS);
                                                 BranchingInstance instance = instanceRef.get();
 
                                                 if (!loaded || instance == null) {

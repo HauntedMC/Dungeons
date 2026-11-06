@@ -1,15 +1,5 @@
 package nl.hauntedmc.dungeons.content.dungeon;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import nl.hauntedmc.dungeons.content.instance.play.StaticInstance;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDifficulty;
@@ -21,6 +11,7 @@ import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.text.TextUtils;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.configuration.InvalidConfigurationException;
@@ -29,6 +20,17 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.yaml.snakeyaml.error.YAMLException;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Standard dungeon implementation backed by a copied world and a flat function map.
@@ -99,6 +101,8 @@ public class StaticDungeon extends DungeonDefinition {
                                         "Loading Dungeon " + this.getWorldName(),
                                         () -> {
                                             CountDownLatch latch = new CountDownLatch(1);
+                                            // Initialization may finish before creation returns.
+                                            CountDownLatch creationComplete = new CountDownLatch(1);
                                             AtomicReference<PlayableInstance> instanceRef =
                                                     new AtomicReference<>();
 
@@ -119,6 +123,7 @@ public class StaticDungeon extends DungeonDefinition {
                                                                 instanceRef.set(created);
 
                                                                 if (created == null) {
+                                                                    creationComplete.countDown();
                                                                     latch.countDown();
                                                                     return;
                                                                 }
@@ -128,10 +133,25 @@ public class StaticDungeon extends DungeonDefinition {
                                                                 this.activeInstances()
                                                                         .registerActiveInstance(
                                                                                 created);
+                                                                creationComplete.countDown();
                                                             });
 
                                             try {
-                                                boolean loaded = latch.await(5L, TimeUnit.SECONDS);
+                                                long deadline =
+                                                        System.nanoTime()
+                                                                + TimeUnit.SECONDS.toNanos(5L);
+                                                boolean published =
+                                                        creationComplete.await(
+                                                                5L, TimeUnit.SECONDS);
+                                                boolean loaded =
+                                                        published
+                                                                && latch.await(
+                                                                        Math.max(
+                                                                                0L,
+                                                                                deadline
+                                                                                        - System
+                                                                                                .nanoTime()),
+                                                                        TimeUnit.NANOSECONDS);
                                                 PlayableInstance instance = instanceRef.get();
 
                                                 if (!loaded || instance == null) {

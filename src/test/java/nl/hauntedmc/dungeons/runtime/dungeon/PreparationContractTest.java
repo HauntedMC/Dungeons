@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
@@ -15,6 +16,7 @@ import nl.hauntedmc.dungeons.generation.layout.BranchingLayout;
 import nl.hauntedmc.dungeons.generation.layout.Layout;
 import nl.hauntedmc.dungeons.generation.room.InstanceRoom;
 import nl.hauntedmc.dungeons.gui.menu.RoomMenus;
+import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.registry.LayoutRegistry;
 import nl.hauntedmc.dungeons.support.*;
@@ -146,6 +148,7 @@ class PreparationContractTest {
     static final class PreparedBranch extends BranchingDungeon {
         final RunFixture fixture;
         BranchRun created;
+        Runnable beforeReturn = () -> {};
 
         PreparedBranch(RunFixture f, Path folder, YamlConfiguration settings) throws Exception {
             super(f.paper.runtime, Files.createDirectories(folder).toFile(), settings);
@@ -156,6 +159,7 @@ class PreparationContractTest {
         public PlayableInstance createPlaySession(CountDownLatch latch, UUID leader) {
             try {
                 created = new BranchRun(this, fixture.world, latch);
+                beforeReturn.run();
                 return created;
             } catch (ReflectiveOperationException exception) {
                 throw new AssertionError(exception);
@@ -203,6 +207,7 @@ class PreparationContractTest {
         RunFixture.Run created;
         boolean fail;
         boolean absent;
+        Runnable beforeReturn = () -> {};
 
         PreparedDungeon(RunFixture f, Path folder) throws Exception {
             super(
@@ -221,7 +226,84 @@ class PreparationContractTest {
             when(world.getEntitiesByClass(EnderDragon.class)).thenReturn(List.of());
             created = new RunFixture.Run(this, world, latch);
             created.completeInitialization(fail);
+            beforeReturn.run();
             return created;
+        }
+    }
+
+    @Test
+    @Timeout(15)
+    void initializedInstancesCannotBeAdmittedOrRejectedUntilTheirCreationHasPublished()
+            throws Exception {
+        for (boolean branching : List.of(false, true)) {
+            try (var layouts = new StaticMapSnapshot(LayoutRegistry.class, "layouts");
+                    var f =
+                            new RunFixture(
+                                    directory.resolve(Boolean.toString(branching)),
+                                    new YamlConfiguration());
+                    var menus = new HeadlessMenus();
+                    var rooms = mockStatic(RoomMenus.class);
+                    var executor = Executors.newFixedThreadPool(2)) {
+                var initialized = new CountDownLatch(1);
+                var allowPublication = new CountDownLatch(1);
+                Runnable pausePublication =
+                        () -> {
+                            initialized.countDown();
+                            try {
+                                assertTrue(allowPublication.await(2, TimeUnit.SECONDS));
+                            } catch (InterruptedException exception) {
+                                Thread.currentThread().interrupt();
+                                throw new AssertionError(exception);
+                            }
+                        };
+                DungeonDefinition dungeon;
+                if (branching) {
+                    LayoutRegistry.register(BranchingLayout.class, "branching");
+                    var settings = new YamlConfiguration();
+                    settings.set("generator.seal_open_connectors_with", "AIR");
+                    var branch =
+                            new PreparedBranch(
+                                    f, directory.resolve("publication-branch"), settings);
+                    branch.beforeReturn = pausePublication;
+                    dungeon = branch;
+                    var block = mock(Block.class);
+                    when(f.world.getBlockAt(any(Location.class))).thenReturn(block);
+                } else {
+                    var flat = new PreparedDungeon(f, directory.resolve("publication-static"));
+                    flat.beforeReturn = pausePublication;
+                    dungeon = flat;
+                }
+                var session = f.session(new PlayerState());
+                session.setAwaitingDungeon(true);
+                assertTrue(dungeon.prepareInstance(session.getPlayer(), "DEFAULT", 1, null));
+                var loading =
+                        executor.submit(
+                                () -> {
+                                    try (var bukkit = mockStatic(Bukkit.class)) {
+                                        bukkit.when(Bukkit::getScheduler)
+                                                .thenReturn(f.scheduler.scheduler);
+                                        f.scheduler.asynchronous.getFirst().run();
+                                    }
+                                });
+                var creation = f.scheduler.readyImmediate.poll(2, TimeUnit.SECONDS);
+                assertNotNull(creation);
+                var publishing = executor.submit(creation::run);
+                try {
+                    assertTrue(initialized.await(2, TimeUnit.SECONDS));
+                    assertThrows(
+                            TimeoutException.class,
+                            () -> loading.get(200, TimeUnit.MILLISECONDS),
+                            "Readiness alone must not finish preparation before publication");
+                } finally {
+                    allowPublication.countDown();
+                }
+                publishing.get(2, TimeUnit.SECONDS);
+                loading.get(2, TimeUnit.SECONDS);
+                f.scheduler.readyImmediate.remove().run();
+                if (branching) f.scheduler.jobs.getLast().run();
+                assertSame(dungeon.getInstances().getFirst(), session.getInstance());
+                assertFalse(session.isAwaitingDungeon());
+            }
         }
     }
 }
