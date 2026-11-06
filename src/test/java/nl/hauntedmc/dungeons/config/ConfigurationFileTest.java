@@ -66,6 +66,26 @@ class ConfigurationFileTest {
         assertEquals(10, restored.getInt("progress.completed"));
     }
 
+    @Test
+    void ordinaryWriteFailuresCompleteAsFailedAndARepairedDestinationCanBeSavedAgain()
+            throws Exception {
+        var config = new ConfigurationFile(disabledPlugin());
+        config.set("value", 23);
+        var blocker = directory.resolve("blocked");
+        Files.writeString(blocker, "existing file");
+        var destination = blocker.resolve("config.yml");
+        assertFalse(config.saveAsync(destination.toFile()).get(1, TimeUnit.SECONDS));
+        assertEquals("existing file", Files.readString(blocker));
+        Files.delete(blocker);
+        Files.createDirectory(blocker);
+        assertTrue(config.saveAsync(destination.toFile()).get(1, TimeUnit.SECONDS));
+        var loaded = new ConfigurationFile(disabledPlugin());
+        loaded.load(destination.toFile());
+        assertEquals(23, loaded.getInt("value"));
+        assertFalse(config.saveAsync(blocker.toFile()).get(1, TimeUnit.SECONDS));
+        assertTrue(Files.isRegularFile(destination));
+    }
+
     private static Plugin disabledPlugin() {
         return (Plugin)
                 Proxy.newProxyInstance(
