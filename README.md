@@ -40,7 +40,6 @@ From clean `main`, run `./tools/release/update-version patch --pr` to open a rev
 - [Documentation Index](docs/README.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Development Notes](docs/DEVELOPMENT.md)
-- [Testing and Quality](docs/TESTING.md)
 - [Contributing](CONTRIBUTING.md)
 
 ## Community
