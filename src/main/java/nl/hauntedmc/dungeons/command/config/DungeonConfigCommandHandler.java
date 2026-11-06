@@ -31,7 +31,7 @@ import org.bukkit.entity.Player;
  *
  * <p>The handler resolves a target dungeon, looks up the referenced setting in
  * {@link DungeonConfigRegistry}, validates user input based on the setting's declared
- * {@link DungeonConfigValueType}, and persists the result back into the correct config file.</p>
+ * {@link DungeonConfigValueType}, and persists the result back into the dungeon config.</p>
  */
 public final class DungeonConfigCommandHandler {
     private final DungeonRepository dungeonManager;
@@ -183,7 +183,7 @@ public final class DungeonConfigCommandHandler {
 
         // Branch creation and deletion mutate a structured subsection rather than a single scalar
         // config value, so they bypass the generic value-type parser below.
-        if (entry.getConfigFile() == DungeonConfigFile.GENERATION) {
+        if (entry.getPath().startsWith("generator.")) {
             if (entry.getKey().equals("branch.add")) {
                 return this.addBranch(sender, dungeon, entry, rawValue);
             }
@@ -345,12 +345,12 @@ public final class DungeonConfigCommandHandler {
             return this.sendInvalidValue(sender, entry, "Use a branch id with letters, numbers, '-' or '_'.");
         }
 
-        String path = "branching.branches." + branchId;
-        if (branching.getGenConfig().isConfigurationSection(path)) {
+        String path = "generator.branching.branches." + branchId;
+        if (branching.getConfig().isConfigurationSection(path)) {
             return this.sendInvalidValue(sender, entry, "That branch already exists.");
         }
 
-        ConfigurationSection branchSection = branching.getGenConfig().createSection(path);
+        ConfigurationSection branchSection = branching.getConfig().createSection(path);
         branchSection.set("room_pool", new ArrayList<String>());
         branchSection.set("end_room_pool", new ArrayList<String>());
         branchSection.set("straightness", 0.5D);
@@ -360,7 +360,7 @@ public final class DungeonConfigCommandHandler {
         branchSection.set("eligible_depth", "0+");
         branchSection.set("occurrences", "0-1");
         branchSection.set("enforce_occurrences", true);
-        branching.saveGenerationConfig();
+        branching.saveConfig();
         branching.reloadGenerationSettings();
         this.sendUpdated(sender, dungeon, entry, branchId, false);
         return true;
@@ -381,13 +381,13 @@ public final class DungeonConfigCommandHandler {
             return this.sendInvalidValue(sender, entry, "Use an existing branch id.");
         }
 
-        String path = "branching.branches." + branchId;
-        if (!branching.getGenConfig().isConfigurationSection(path)) {
+        String path = "generator.branching.branches." + branchId;
+        if (!branching.getConfig().isConfigurationSection(path)) {
             return this.sendInvalidValue(sender, entry, "That branch does not exist.");
         }
 
-        branching.getGenConfig().set(path, null);
-        branching.saveGenerationConfig();
+        branching.getConfig().set(path, null);
+        branching.saveConfig();
         branching.reloadGenerationSettings();
         this.sendUpdated(sender, dungeon, entry, branchId, false);
         return true;
@@ -398,30 +398,20 @@ public final class DungeonConfigCommandHandler {
      */
     private boolean persistValue(CommandSender sender, DungeonDefinition dungeon, DungeonConfigEntry entry,
             Object value) {
-        if (entry.getConfigFile() == DungeonConfigFile.MAIN) {
-            // Main config changes update the live dungeon definition immediately because those values
-            // are read directly by the runtime model.
-            dungeon.getConfig().set(entry.getPath(), value);
-            dungeon.saveConfig();
+        dungeon.getConfig().set(entry.getPath(), value);
+        dungeon.saveConfig();
+        if (entry.getPath().startsWith("generator.")) {
+            BranchingDungeon branching = dungeon.asBranching();
+            if (branching != null) {
+                branching.reloadGenerationSettings();
+            }
+        } else {
             dungeon.refreshRuntimeSettings();
             if (entry.getPath().startsWith("difficulty.")) {
                 PlayMenus.initializeDifficultySelector(dungeon);
             }
-            this.sendUpdated(sender, dungeon, entry, this.getCurrentValue(dungeon, entry), false);
-            return true;
         }
-
-        BranchingDungeon branching = dungeon.asBranching();
-        if (branching == null) {
-            return this.sendInvalidValue(sender, entry, "This setting only exists on branching dungeons.");
-        }
-
-        branching.getGenConfig().set(entry.getPath(), value);
-        branching.saveGenerationConfig();
-        // Generation settings are reloaded on the branching model rather than the main dungeon
-        // runtime settings because they affect future room/layout generation behavior.
-        branching.reloadGenerationSettings();
-        this.sendUpdated(sender, dungeon, entry, this.stringifyValue(value), false);
+        this.sendUpdated(sender, dungeon, entry, this.getCurrentValue(dungeon, entry), false);
         return true;
     }
 
@@ -461,7 +451,6 @@ public final class DungeonConfigCommandHandler {
             LangUtils.sendMessage(sender, "commands.config.list-shortcut");
         }
 
-        DungeonConfigFile previousFile = null;
         boolean found = false;
         for (DungeonConfigEntry entry : DungeonConfigRegistry.getEntries(dungeon)) {
             if (!loweredFilter.isBlank()) {
@@ -470,13 +459,6 @@ public final class DungeonConfigCommandHandler {
                 if (!searchable.contains(loweredFilter)) {
                     continue;
                 }
-            }
-
-            if (entry.getConfigFile() != previousFile) {
-                previousFile = entry.getConfigFile();
-                sender.sendMessage(LangUtils.getMessage(previousFile == DungeonConfigFile.MAIN
-                        ? "commands.config.files.main"
-                        : "commands.config.files.generation", false));
             }
 
             sender.sendMessage(LangUtils.getMessage("commands.config.setting-line", false,
@@ -531,8 +513,8 @@ public final class DungeonConfigCommandHandler {
                 return "<unsupported>";
             }
 
-            ConfigurationSection branchSection = branching.getGenConfig()
-                    .getConfigurationSection("branching.branches");
+            ConfigurationSection branchSection = branching.getConfig()
+                    .getConfigurationSection("generator.branching.branches");
             if (branchSection == null || branchSection.getKeys(false).isEmpty()) {
                 return "<none>";
             }
@@ -542,11 +524,7 @@ public final class DungeonConfigCommandHandler {
             return String.join(", ", branchNames);
         }
 
-        FileConfiguration config = this.getTargetConfig(dungeon, entry);
-        if (config == null) {
-            return "<unsupported>";
-        }
-
+        FileConfiguration config = dungeon.getConfig();
         String value = this.stringifyValue(config.get(entry.getPath()));
         if (this.isRuleSetting(entry) && !config.getKeys(true).contains(entry.getPath())) {
             return LangUtils.getMessage("commands.config.inherited-value", false,
@@ -557,19 +535,7 @@ public final class DungeonConfigCommandHandler {
 
     /** Returns whether this entry supports restoring its global rule value. */
     private boolean isRuleSetting(DungeonConfigEntry entry) {
-        return entry.getConfigFile() == DungeonConfigFile.MAIN && entry.getPath().startsWith("rules.");
-    }
-
-    /**
-     * Returns the target config.
-     */
-    private FileConfiguration getTargetConfig(DungeonDefinition dungeon, DungeonConfigEntry entry) {
-        if (entry.getConfigFile() == DungeonConfigFile.MAIN) {
-            return dungeon.getConfig();
-        }
-
-        BranchingDungeon branching = dungeon.asBranching();
-        return branching == null ? null : branching.getGenConfig();
+        return entry.getPath().startsWith("rules.");
     }
 
     /**

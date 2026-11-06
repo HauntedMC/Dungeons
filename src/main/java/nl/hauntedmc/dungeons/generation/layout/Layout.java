@@ -40,7 +40,7 @@ import nl.hauntedmc.dungeons.util.world.SimpleLocation;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
-import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerEvent;
@@ -57,7 +57,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public abstract class Layout implements Cloneable {
     protected final BranchingDungeon dungeon;
-    protected final YamlConfiguration config;
+    protected final FileConfiguration config;
     protected PlayerHotbarMenu connectorEditMenu;
     protected PlayerHotbarMenu connectorDoorMenu;
     protected Material closedConnectorBlock;
@@ -91,7 +91,7 @@ public abstract class Layout implements Cloneable {
     /**
      * Creates a layout instance backed by one branching dungeon and generator configuration.
      */
-    public Layout(BranchingDungeon dungeon, YamlConfiguration config) {
+    public Layout(BranchingDungeon dungeon, FileConfiguration config) {
         this.dungeon = dungeon;
         this.config = config;
         this.initializeConnectorEditMenu();

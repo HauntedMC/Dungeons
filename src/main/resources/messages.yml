@@ -220,9 +220,6 @@ commands:
       - '&7             &d/dungeon config current spawn-mobs false'
       - '&7             &d/dungeon config current layout branching'
       - '&7             &d/dungeon config current exit-location here'
-    files:
-      main: <#5E55AD>[config.yml]
-      generation: <#5E55AD>[generation.yml]
     unknown-setting: '&cOnbekende bewerkbare instelling ''&6{setting}&c''. Gebruik &6/dungeon config {dungeon} list&c.'
     location-player-only: '&cLocatie instellingen kunnen alleen door een speler met &6here&c worden gezet.'
     updated: '&a{setting}&a voor &6{dungeon}&a is bijgewerkt naar &e{value}&a.'

@@ -10,7 +10,6 @@ Dungeons uses these primary runtime files:
 - `plugins/Dungeons/messages.yml` (chat/UI text)
 - `plugins/Dungeons/loottables.yml` (loot table persistence)
 - `plugins/Dungeons/dungeons/config_default.yml` (default template for dungeon config keys)
-- `plugins/Dungeons/dungeons/generator_settings_default.yml` (default generator settings template)
 
 Each dungeon is loaded from its own folder under `plugins/Dungeons/dungeons/<dungeon-name>/`.
 
@@ -19,7 +18,7 @@ Each dungeon is loaded from its own folder under `plugins/Dungeons/dungeons/<dun
 On startup, Dungeons synchronizes key files with bundled defaults:
 
 - `config.yml`: missing keys are added, obsolete keys are removed, existing known values are preserved.
-- `dungeons/config_default.yml` and `dungeons/generator_settings_default.yml`: missing keys are added and obsolete keys are removed.
+- `dungeons/config_default.yml`: missing keys are added and obsolete keys are removed.
 - `messages.yml`: bundled missing keys are written so new messages appear after upgrades.
 
 This keeps operator files aligned with code changes while preserving local custom values where possible.
@@ -49,6 +48,7 @@ The default dungeon template controls behavior for newly created or synced dunge
 - `access`: key consumption and access cooldown policy.
 - `difficulty`: named difficulty presets and scaling.
 - `rules`: optional overrides for global spawning, building, movement, world, combat, commands, items, and entity rules.
+- `generator`: layout, connector sealing, room targets, and nested `generator.branching` settings.
 - `map`: floor-depth controls for map rendering.
 
 ### Global Rules and Dungeon Overrides
@@ -134,14 +134,44 @@ With unique validation disabled, matching falls back to the configured item itse
 
 Players with `dungeons.admin` bypass access-cooldown checks and do not receive new access cooldown entries from dungeon start/finish/leave flows.
 
-## Generator Defaults (`dungeons/generator_settings_default.yml`)
+## Generator Settings (`config.yml`)
 
-Generation defaults are split by layout mode:
+Generation settings live in each dungeon's normal `config.yml` under `generator`.
+The shared `dungeons/config_default.yml` provides defaults when maps are created or synced.
+These settings apply to branching dungeon maps; static and open maps ignore them.
 
-- `generator`: layout selection, room target ranges, connector sealing material.
-- `branching`: trunk path shaping, end-room pools, branch rules.
+```yaml
+generator:
+  layout: branching
+  seal_open_connectors_with: STONE
+  room_target: # Used by the minecrafty layout.
+    min: 8
+    max: 16
+    enforce_minimum: true
+  branching:
+    trunk:
+      room_pool: []
+      end_room_pool: []
+      straightness: 0.5
+      room_target:
+        min: 12
+        max: 24
+        enforce_minimum: true
+    branches: {}
+```
 
-Use these defaults to standardize generated dungeons before per-dungeon overrides.
+Existing `generation.yml` files are automatically imported before missing defaults are filled.
+Legacy top-level `branching` settings move to `generator.branching`, including named branches.
+Explicit values already present in `config.yml` take priority. The old
+`generator_settings_default.yml` is also imported into `dungeons/config_default.yml`.
+After each successful import and save, its old file is renamed with a `.migrated` suffix
+as a backup; it is no longer read or recreated. Invalid YAML or a failed save leaves
+the legacy file in place. A failed first migration does not create a replacement template
+that could mask legacy values on the next attempt. Generator and branching sections must be
+YAML mappings; malformed sections are reported instead of silently discarded.
+
+The existing `/dungeon config` layout, trunk, and branch commands now read and write
+`config.yml`. Changes apply to future generation runs.
 
 ## Player Join Commands
 

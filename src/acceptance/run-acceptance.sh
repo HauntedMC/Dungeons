@@ -50,6 +50,32 @@ paper_url="https://fill-data.papermc.io/v1/objects/$paper_sha256/paper-$paper_ve
 curl --fail --silent --show-error --location --output "$work_directory/paper/paper.jar" "$paper_url"
 [[ "$(sha256sum "$work_directory/paper/paper.jar" | cut -d ' ' -f1)" == "$paper_sha256" ]] || fail 'Paper runtime checksum mismatch'
 cp "$artifact" "$work_directory/paper/plugins/Dungeons.jar"
+# Exercise upgrades from the legacy generator files on a real Paper server.
+dungeon_data="$work_directory/paper/plugins/Dungeons/dungeons"
+migration_map="$dungeon_data/config-migration"
+mkdir -p "$migration_map"
+cat >"$dungeon_data/generator_settings_default.yml" <<'YAML'
+generator:
+  seal_open_connectors_with: AIR
+branching:
+  trunk:
+    straightness: 0.65
+YAML
+cat >"$migration_map/config.yml" <<'YAML'
+dungeon:
+  type: branching
+YAML
+cat >"$migration_map/generation.yml" <<'YAML'
+generator:
+  layout: branching
+branching:
+  trunk:
+    straightness: 0.8
+  branches:
+    legacy_side:
+      eligible_depth: '2+'
+      occurrences: '0-1'
+YAML
 printf 'eula=true\n' >"$work_directory/paper/eula.txt"
 printf 'server-port=0\nlevel-type=minecraft:flat\n' >"$work_directory/paper/server.properties"
 mkfifo "$work_directory/paper/console.in"
@@ -59,12 +85,38 @@ exec {paper_input_fd}>"$work_directory/paper/console.in"
 wait_for_log 'Done \('
 wait_for_log 'Enabling Dungeons'
 [[ -d "$work_directory/paper/plugins/Dungeons" ]] || fail 'Plugin did not initialize its data directory'
+wait_for_log "Loaded dungeon 'config-migration' successfully"
+[[ -f "$migration_map/generation.yml.migrated" && ! -f "$migration_map/generation.yml" ]] \
+  || fail 'Legacy dungeon generation file was not archived'
+[[ -f "$dungeon_data/generator_settings_default.yml.migrated" && ! -f "$dungeon_data/generator_settings_default.yml" ]] \
+  || fail 'Legacy generator template was not archived'
+grep -Fq 'straightness: 0.8' "$migration_map/config.yml" || fail 'Dungeon generator setting was not migrated'
+grep -Fq 'legacy_side:' "$migration_map/config.yml" || fail 'Named branch was not migrated'
+grep -Fq 'straightness: 0.65' "$dungeon_data/config_default.yml" || fail 'Generator template setting was not migrated'
+grep -Fq 'seal_open_connectors_with: AIR' "$dungeon_data/config_default.yml" || fail 'Connector setting was not migrated'
+
+printf 'dungeon config config-migration branch.add command_side\n' >&"$paper_input_fd"
+wait_for_log 'branch.add.*command_side'
+grep -Fq 'command_side:' "$migration_map/config.yml" || fail 'Branch command did not save to config.yml'
+printf 'dungeon config config-migration branch.command_side.straightness 0.75\n' >&"$paper_input_fd"
+wait_for_log 'branch.command_side.straightness.*0.75'
+grep -Fq 'straightness: 0.75' "$migration_map/config.yml" || fail 'Named branch edit was not saved'
+printf 'dungeon config config-migration branch.remove command_side\n' >&"$paper_input_fd"
+wait_for_log 'branch.remove.*command_side'
+if grep -Fq 'command_side:' "$migration_map/config.yml"; then fail 'Branch removal was not saved'; fi
+printf 'dungeon config config-migration layout minecrafty\n' >&"$paper_input_fd"
+wait_for_log 'layout.*minecrafty'
+grep -Fq 'layout: minecrafty' "$migration_map/config.yml" || fail 'Layout command did not save to config.yml'
+printf 'dungeon config config-migration layout branching\n' >&"$paper_input_fd"
+wait_for_log 'layout.*branching'
+grep -Fq 'layout: branching' "$migration_map/config.yml" || fail 'Layout switch back was not saved'
+[[ ! -f "$migration_map/generation.yml" ]] || fail 'Commands recreated the legacy generation file'
 before_lines=$(wc -l <"$work_directory/paper/paper.log")
 printf 'dungeon help\n' >&"$paper_input_fd"
 local_deadline=$((SECONDS + 45))
 while ((SECONDS < local_deadline)); do
   if tail -n "+$((before_lines + 1))" "$work_directory/paper/paper.log" | grep -Eqi '/dungeon|dungeon help|dungeons'; then
-    echo 'Dungeons Paper boot and command smoke passed.'
+    echo 'Dungeons Paper boot, generator migration, and config command smoke passed.'
     exit 0
   fi
   sleep 1

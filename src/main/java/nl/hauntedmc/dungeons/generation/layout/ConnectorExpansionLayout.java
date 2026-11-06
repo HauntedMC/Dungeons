@@ -15,7 +15,7 @@ import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.math.MathUtils;
 import nl.hauntedmc.dungeons.util.math.RandomCollection;
 import org.bukkit.Material;
-import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 
 /**
@@ -25,7 +25,7 @@ public class ConnectorExpansionLayout extends Layout {
     /**
      * Creates a connector-expansion layout driven by generator configuration values.
      */
-    public ConnectorExpansionLayout(BranchingDungeon dungeon, YamlConfiguration config) {
+    public ConnectorExpansionLayout(BranchingDungeon dungeon, FileConfiguration config) {
         super(dungeon, config);
     }
 

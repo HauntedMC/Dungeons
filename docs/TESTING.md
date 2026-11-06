@@ -42,7 +42,7 @@ Run the real Paper boot and command smoke test for packaging or runtime changes:
 ./mvnw -B -ntp -Pplatform-acceptance verify
 ```
 
-The test downloads the HauntedPlatform-pinned Paper runtime and checks that the plugin starts and responds to `/dungeon help`.
+The test downloads the HauntedPlatform-pinned Paper runtime and checks plugin startup and `/dungeon help`. It also migrates legacy generator files, loads a branching dungeon, and verifies that branch edits and layout switches persist to the normal `config.yml`.
 
 ## What to Test
 

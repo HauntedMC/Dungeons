@@ -59,6 +59,7 @@ editor:
       # number. Extra block range around the player to render room outlines.
       visible_radius_blocks: 20
 
+# Server-wide generation timeouts. Per-dungeon layout settings live under generator in each dungeon config.yml.
 generation:
   # int. Seconds allowed for branching layout generation before it aborts.
   layout_timeout_seconds: 5

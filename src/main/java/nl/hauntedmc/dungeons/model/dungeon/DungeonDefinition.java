@@ -36,6 +36,7 @@ import nl.hauntedmc.dungeons.util.command.CommandUtils;
 import nl.hauntedmc.dungeons.util.config.ConfigSyncUtils;
 import nl.hauntedmc.dungeons.util.config.DungeonConfigView;
 import nl.hauntedmc.dungeons.util.config.DungeonRuleConfiguration;
+import nl.hauntedmc.dungeons.util.config.GeneratorConfigMigration;
 import nl.hauntedmc.dungeons.util.config.PluginConfigView;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
@@ -140,18 +141,29 @@ public abstract class DungeonDefinition {
                     this.config.load(new File(this.runtime.dungeonFiles(), "config_default.yml"));
                     // Older on-disk templates may still contain active rules. New maps inherit globally.
                     this.config.set("rules", null);
-                    this.config.save(configFile);
+                    if (new File(folder, "generation.yml").exists()) {
+                        this.config.set("generator", null);
+                    }
+                    // Delay the first write until legacy YAML has been validated and imported.
                 } else {
                     this.config.load(configFile);
                 }
             }
+            File configFile = new File(folder, "config.yml");
+            GeneratorConfigMigration.migrate(new File(folder, "generation.yml"), configFile, this.config);
+            if (!configFile.exists()) {
+                this.config.save(configFile);
+            }
         } catch (IOException exception) {
             throw new DungeonLoadException(
-                    "Access of config.yml file failed!",
+                    "Access of config.yml or legacy generation.yml failed!",
                     false,
-                    "There may be another process accessing the file, or we may not have permission.");
+                    exception.getMessage());
         } catch (InvalidConfigurationException | IllegalArgumentException | YAMLException exception) {
-            throw new DungeonLoadException("Dungeon config has invalid YAML! See error below...", true);
+            DungeonLoadException failure = new DungeonLoadException(
+                    "Dungeon config or legacy generator config is invalid!", true, exception.getMessage());
+            failure.initCause(exception);
+            throw failure;
         }
 
         this.syncConfigWithDefaults();
