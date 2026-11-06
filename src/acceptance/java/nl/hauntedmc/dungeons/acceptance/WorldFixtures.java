@@ -84,6 +84,13 @@ final class WorldFixtures {
         config.set("rules.building.break_blocks", false);
         config.set("open.preload_world", false);
         config.set("open.max_players", 2);
+        if (type.equals("branching")) {
+            config.set("generator.layout", "branching");
+            config.set("generator.seal_open_connectors_with", "AIR");
+            config.set("generator.branching.trunk.room_target.min", 2);
+            config.set("generator.branching.trunk.room_target.max", 2);
+            config.set("generator.branching.trunk.room_target.enforce_minimum", true);
+        }
         config.save(folder.resolve("config.yml").toFile());
         var dungeon = test.runtime().dungeonCatalog().loadDungeon(folder.toFile());
         require(dungeon != null, "Actual catalog rejected " + name);
