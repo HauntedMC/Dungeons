@@ -38,6 +38,21 @@ class RunDisposalContractTest {
             paper.bukkit.verify(() -> Bukkit.unloadWorld(world, false), times(1));
         }
     }
+    @Test
+    void refusedWorldUnloadMustNeverDeleteTheStillLoadedWorldFilesOrForgetTheWorldReference() throws Exception {
+        try (var paper = new PaperBoundary()) {
+            var scheduler = new CapturedScheduler(paper);
+            var run = run(paper);
+            World world = run.getInstanceWorld();
+            Path data = world.getWorldFolder().toPath().resolve("level.dat");
+            paper.bukkit.when(() -> Bukkit.unloadWorld(world, false)).thenReturn(false);
+            run.dispose();
+            scheduler.jobs.getFirst().run();
+            assertEquals("world state", Files.readString(data));
+            assertSame(world, run.getInstanceWorld());
+        }
+    }
+
     TestRun run(PaperBoundary paper) throws Exception {
         paper.runtime.setActiveInstances(new ActiveInstanceRegistry(paper.plugin));
         var dungeon = paper.dungeon(directory.resolve("maps/crypt"), new YamlConfiguration());

@@ -28,8 +28,8 @@ import nl.hauntedmc.dungeons.util.config.DungeonConfigView;
 import nl.hauntedmc.dungeons.util.entity.EntityUtils;
 import nl.hauntedmc.dungeons.util.entity.HologramManager;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.text.TextUtils;
+import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.world.WorldUtils;
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
@@ -351,13 +351,10 @@ public abstract class DungeonInstance {
                                                         String worldName =
                                                                 this.instanceWorld.getName();
                                                         this.saveWorld(latch);
-                                                        TextUtils.runTimed(
-                                                                "Unloading dungeon world "
-                                                                        + worldName,
-                                                                () ->
-                                                                        Bukkit.unloadWorld(
-                                                                                this.instanceWorld,
-                                                                                false));
+                                                        if (!Bukkit.unloadWorld(this.instanceWorld, false)) {
+                                                            this.logger().error("Refused to delete files for instance world '{}' because Bukkit did not unload it.", worldName);
+                                                            return;
+                                                        }
                                                         if (this.plugin().isEnabled()) {
                                                             Bukkit.getScheduler()
                                                                     .runTaskLaterAsynchronously(
