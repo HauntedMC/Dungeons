@@ -80,6 +80,37 @@ class IssuedKeyLedgerContractTest {
         }
     }
 
+    @Test
+    void reusableKeysRotateIdentityAndRemovingTheDefinitionRevokesEveryIssuedCopyDurably() throws Exception {
+        try (var fixture = new Fixture(directory)) {
+            var original = fixture.dungeon.issueAccessKey(1);
+            var other = fixture.dungeon.issueAccessKey(1);
+            assertTrue(fixture.dungeon.reserveIssuedAccessKey(original));
+            var replacement = fixture.dungeon.rotateAccessKey(original);
+            assertNotNull(replacement);
+            assertNotEquals(ItemUtils.getDungeonAccessKeyInstanceId(original), ItemUtils.getDungeonAccessKeyInstanceId(replacement));
+            assertNull(fixture.dungeon.isValidKey(original.clone()));
+            assertFalse(fixture.dungeon.isReservedAccessKey(original));
+            assertNotNull(fixture.dungeon.isValidKey(replacement));
+            var restored = fixture.reload();
+            assertNotNull(restored.isValidKey(replacement));
+            assertNull(restored.isValidKey(original));
+            assertTrue(restored.reserveIssuedAccessKey(other));
+            assertEquals(1, restored.removeAllAccessKeys());
+            assertFalse(restored.isReservedAccessKey(other));
+            assertNull(restored.isValidKey(other));
+            assertNull(restored.isValidKey(replacement));
+            var reinstalledDefinition = fixture.reload();
+            assertNull(reinstalledDefinition.isValidKey(original));
+            assertNull(reinstalledDefinition.isValidKey(replacement));
+            assertNull(reinstalledDefinition.isValidKey(other));
+            var saved = YamlConfiguration.loadConfiguration(fixture.stateFile.toFile());
+            assertTrue(saved.getConfigurationSection("issued_instances").getKeys(false).isEmpty());
+            assertTrue(saved.getStringList("reserved_instance_ids").isEmpty());
+            assertEquals(3, saved.getStringList("invalidated_instance_ids").size());
+        }
+    }
+
     static final class Fixture implements AutoCloseable {
         final PaperBoundary paper = new PaperBoundary();
         final Path folder;
