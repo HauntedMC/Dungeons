@@ -148,4 +148,63 @@ class RoomMechanicContractTest {
                             .isEmpty());
         }
     }
+
+    @Test
+    void wholePartyRoomDetectorsWaitForEveryLivingMemberAndEmitAnIndividualSourceForEach()
+            throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration());
+                var menus = mockStatic(RoomMenus.class)) {
+            var b = new BranchingRunFixture(f);
+            room(b, "hall", 0);
+            room(b, "other", 20);
+            var first = new PlayerState();
+            var second = new PlayerState();
+            var left = f.session(first);
+            var right = f.session(second);
+            b.run.addPlayer(left);
+            b.run.addPlayer(right);
+            first.location = new Location(f.world, 2, 71, 2);
+            second.location = new Location(f.world, 22, 71, 2);
+            f.paper
+                    .bukkit
+                    .when(Bukkit::getOnlinePlayers)
+                    .thenReturn(List.of(first.player, second.player));
+            when(f.world.getNearbyEntities(
+                            any(Location.class), anyDouble(), anyDouble(), anyDouble(), any()))
+                    .thenReturn(List.of(first.player, second.player));
+            var trigger =
+                    new nl.hauntedmc.dungeons.content.trigger.DistanceTrigger(
+                            Map.of(
+                                    "radius",
+                                    100.0,
+                                    "count",
+                                    -1,
+                                    "forEachPlayer",
+                                    true,
+                                    "limitToRoom",
+                                    true));
+            trigger.initializeFields();
+            trigger.setLocation(new Location(f.world, 2, 71, 2));
+            trigger.setAllowRetrigger(true);
+            trigger.enable(null, b.run);
+            var scan = f.scheduler.jobs.getLast();
+            assertEquals(10, scan.period);
+            scan.run();
+            assertTrue(f.scheduler.immediate.isEmpty());
+            second.location = new Location(f.world, 3, 71, 2);
+            scan.run();
+            assertEquals(2, f.scheduler.immediate.size());
+            f.scheduler.immediate.forEach(CapturedScheduler.Job::run);
+            var events =
+                    ArgumentCaptor.forClass(nl.hauntedmc.dungeons.event.TriggerFireEvent.class);
+            verify(Bukkit.getPluginManager(), times(2)).callEvent(events.capture());
+            assertEquals(
+                    Set.of(left, right),
+                    events.getAllValues().stream()
+                            .map(nl.hauntedmc.dungeons.event.TriggerFireEvent::getPlayerSession)
+                            .collect(java.util.stream.Collectors.toSet()));
+            trigger.disable();
+            assertTrue(scan.cancelled);
+        }
+    }
 }
