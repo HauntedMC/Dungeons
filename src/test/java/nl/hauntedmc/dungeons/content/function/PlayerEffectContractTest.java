@@ -67,4 +67,41 @@ class PlayerEffectContractTest {
             f.paper.bukkit.verify(() -> Bukkit.dispatchCommand(first.player, ""), never());
         }
     }
+
+    @Test
+    void revivalRestoresOnlyDeadMembersAndConsumesAUseOnlyAfterSuccessfulRevival()
+            throws Exception {
+        var settings = new YamlConfiguration();
+        settings.set("players.lives", 1);
+        settings.set("players.gamemode", "invalid");
+        try (var f = new RunFixture(directory, settings)) {
+            var living = new PlayerState();
+            var reviver = f.session(living);
+            var dead = new PlayerState();
+            var target = f.session(dead);
+            f.run.addPlayer(reviver);
+            f.run.addPlayer(target);
+            var revive =
+                    GameplayFunctionContractTest.bind(
+                            new RevivePlayerFunction(
+                                    Map.of("maxRevives", 1, "livesAfterRevival", 3)),
+                            f);
+            revive.revivePlayer(target, reviver);
+            assertEquals(2, f.run.getLivingPlayers().size());
+            f.run.getLivingPlayers().remove(target);
+            dead.gameMode = GameMode.SPECTATOR;
+            f.run.getPlayerLives().put(dead.player.getUniqueId(), 0);
+            revive.revivePlayer(f.session(new PlayerState()), reviver);
+            revive.revivePlayer(target, reviver);
+            assertEquals(GameMode.ADVENTURE, dead.gameMode);
+            assertEquals(3, f.run.getPlayerLives().get(dead.player.getUniqueId()));
+            assertTrue(f.run.getLivingPlayers().contains(target));
+            assertEquals(living.location, dead.location);
+            f.run.getLivingPlayers().remove(target);
+            dead.gameMode = GameMode.SPECTATOR;
+            revive.revivePlayer(target, reviver);
+            assertFalse(f.run.getLivingPlayers().contains(target));
+            assertEquals(GameMode.SPECTATOR, dead.gameMode);
+        }
+    }
 }
