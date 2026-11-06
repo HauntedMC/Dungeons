@@ -274,12 +274,12 @@ public final class HotbarMenuListener implements Listener {
         DungeonPlayerSession playerSession = this.playerManager.get(player);
         PlayerHotbarMenu menu = this.getActiveMenu(playerSession);
         if (menu != null) {
-            if (!(event.getInventory() instanceof PlayerInventory)) {
-                return;
-            }
-
-            for (int slot : event.getInventorySlots()) {
-                if (slot <= 8) {
+            for (int rawSlot : event.getRawSlots()) {
+                if (!(event.getView().getInventory(rawSlot) instanceof PlayerInventory)) {
+                    continue;
+                }
+                int slot = event.getView().convertSlot(rawSlot);
+                if (slot >= 0 && slot <= 8) {
                     ItemStack newItem = menu.getItem(slot);
                     if (newItem != null && newItem.getType() != Material.AIR) {
                         event.setCancelled(true);
@@ -295,8 +295,9 @@ public final class HotbarMenuListener implements Listener {
             return;
         }
 
-        for (int slot : event.getInventorySlots()) {
-            if (this.isProtectedEditToolSlot(slot)) {
+        for (int rawSlot : event.getRawSlots()) {
+            if (event.getView().getInventory(rawSlot) instanceof PlayerInventory
+                    && this.isProtectedEditToolSlot(event.getView().convertSlot(rawSlot))) {
                 event.setCancelled(true);
                 Bukkit.getScheduler().runTask(this.plugin, playerSession::ensureEditModeTools);
                 return;
@@ -491,6 +492,6 @@ public final class HotbarMenuListener implements Listener {
      * Plays the shared feedback sound used for hotbar-menu interactions.
      */
     private void playMenuSound(Player player) {
-        player.playSound(player.getLocation(), Sound.ITEM_LODESTONE_COMPASS_LOCK, 1.0F, 1.2F);
+        player.playSound(player.getLocation(), "minecraft:item.lodestone_compass.lock", 1.0F, 1.2F);
     }
 }
