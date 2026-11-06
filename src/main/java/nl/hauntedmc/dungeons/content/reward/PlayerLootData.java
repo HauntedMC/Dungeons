@@ -72,7 +72,7 @@ public class PlayerLootData implements ConfigurationSerializable {
      * Removes loot cooldown.
      */
     public void removeLootCooldown(LootCooldown cooldown) {
-        this.lootByLocation.remove(cooldown.getLocation());
+        this.lootByLocation.remove(cooldown.getLocation(), cooldown);
         this.loot.remove(cooldown);
     }
 
