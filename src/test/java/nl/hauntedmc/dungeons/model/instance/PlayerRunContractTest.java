@@ -91,4 +91,22 @@ class PlayerRunContractTest {
         }
     }
 
+    @Test
+    void startingIsIdempotentAndDisposalCancelsEveryRunTicker() throws Exception {
+        try(var fixture=new RunFixture(directory,settings())) {
+            fixture.run.startGame(); fixture.run.startGame();
+            assertTrue(fixture.run.isStarted());
+            assertEquals(2,fixture.scheduler.jobs.size());
+            var timer=fixture.scheduler.jobs.stream().filter(j -> j.period==20).findFirst().orElseThrow();
+            for(int i=0;i<65;i++) timer.run();
+            assertEquals(65,fixture.run.getTimeElapsed());
+            assertFalse(timer.cancelled);
+            fixture.run.onDispose();
+            assertTrue(fixture.scheduler.jobs.stream().allMatch(j -> j.cancelled));
+            timer.run(); assertEquals(65,fixture.run.getTimeElapsed());
+            org.bukkit.Bukkit.getPluginManager();
+            verify(org.bukkit.Bukkit.getPluginManager(),times(1)).callEvent(any(nl.hauntedmc.dungeons.event.DungeonStartEvent.class));
+        }
+    }
+
 }
