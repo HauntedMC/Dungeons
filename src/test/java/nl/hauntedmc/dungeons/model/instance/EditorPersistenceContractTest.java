@@ -32,6 +32,21 @@ class EditorPersistenceContractTest {
             verify(f.world).save(true);
         }
     }
+
+    @Test
+    void overlappingSavesAreRejectedWhileTheOriginalSaveKeepsItsOwnCompletionAndLatch() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            var editor=new Editor(f); editor.pending=new CompletableFuture<>();
+            var originalLatch=new CountDownLatch(1); var rejectedLatch=new CountDownLatch(1);
+            var original=editor.saveWorldAsync(originalLatch);
+            assertFalse(original.isDone()); assertTrue(f.dungeon.isSaving());
+            assertFalse(editor.saveWorldAsync(rejectedLatch).get(1,TimeUnit.SECONDS));
+            assertEquals(0,rejectedLatch.getCount()); assertEquals(1,originalLatch.getCount());
+            assertTrue(f.dungeon.isSaving()); editor.pending.complete(true);
+            assertTrue(original.get(1,TimeUnit.SECONDS)); assertEquals(0,originalLatch.getCount());
+            assertFalse(f.dungeon.isSaving()); verify(f.world,times(1)).save(true);
+        }
+    }
     static class Editor extends EditableInstance {
         CompletableFuture<Boolean> pending;
         boolean throwCommit;
