@@ -103,6 +103,22 @@ class FunctionCompositionContractTest {
         }
     }
 
+    @Test
+    void compositeCleanupContinuesAfterOneChildThrows() {
+        try (var paper = new PaperBoundary()) {
+            var bad = mock(DungeonFunction.class);
+            var healthy = mock(DungeonFunction.class);
+            org.mockito.Mockito.doThrow(new IllegalStateException("child cleanup failed"))
+                    .when(bad)
+                    .disable();
+            var composite = new CompositeFunction();
+            composite.addFunction(bad);
+            composite.addFunction(healthy);
+            org.junit.jupiter.api.Assertions.assertDoesNotThrow(composite::onDisable);
+            org.mockito.Mockito.verify(healthy).disable();
+        }
+    }
+
     static class Effect extends DungeonFunction {
         final String name;
         final List<String> effects;

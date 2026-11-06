@@ -97,8 +97,17 @@ public class CompositeFunction extends DungeonFunction {
      */
     @Override
     public void onDisable() {
-        for (DungeonFunction functions : this.functions) {
-            functions.disable();
+        for (DungeonFunction function : this.functions) {
+            try {
+                function.disable();
+            } catch (RuntimeException exception) {
+                this.logger()
+                        .error(
+                                "Failed to disable child function '{}' in dungeon '{}'.",
+                                function.getClass().getSimpleName(),
+                                this.dungeonNameForLogs(),
+                                exception);
+            }
         }
     }
 
