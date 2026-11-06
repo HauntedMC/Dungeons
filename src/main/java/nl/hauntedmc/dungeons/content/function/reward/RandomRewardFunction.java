@@ -125,7 +125,7 @@ public class RandomRewardFunction extends RewardFunction {
 
                                 for (ItemStack item : this.rewards) {
                                     if (item != null && item.getType() != Material.AIR) {
-                                        validRewards.add(item);
+                                        validRewards.add(item.clone());
                                     }
                                 }
 
