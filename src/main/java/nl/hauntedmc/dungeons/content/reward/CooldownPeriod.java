@@ -10,11 +10,11 @@ import java.util.Date;
  * no explicit override is supplied.
  */
 public enum CooldownPeriod {
-    TIMER(12),
-    HOURLY(10),
-    DAILY(5),
-    WEEKLY(5, 7),
-    MONTHLY(2);
+    TIMER(Calendar.MINUTE),
+    HOURLY(Calendar.HOUR),
+    DAILY(Calendar.DATE),
+    WEEKLY(Calendar.DATE, 7),
+    MONTHLY(Calendar.MONTH);
 
     public final int period;
     public final int amount;

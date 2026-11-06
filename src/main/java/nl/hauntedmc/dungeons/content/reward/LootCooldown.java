@@ -1,6 +1,5 @@
 package nl.hauntedmc.dungeons.content.reward;
 
-import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -39,7 +38,7 @@ public class LootCooldown implements ConfigurationSerializable {
     public LootCooldown(@NotNull RewardFunction rewardFunction, Date resetTime) {
         this.location = rewardFunction.getLocation().clone();
         this.location.setWorld(null);
-        this.lootedAt = Calendar.getInstance().getTime();
+        this.lootedAt = new Date();
         this.resetTime = resetTime;
     }
 
