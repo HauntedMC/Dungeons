@@ -249,7 +249,7 @@ public class BranchingEditableInstance extends EditableInstance {
             return CompletableFuture.completedFuture(true);
         }
 
-        CompletableFuture<?>[] all = futures.toArray(new CompletableFuture[0]);
+        CompletableFuture<?>[] all = futures.toArray(CompletableFuture<?>[]::new);
         return CompletableFuture.allOf(all)
                 .thenApply(
                         ignored -> {

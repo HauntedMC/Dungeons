@@ -138,7 +138,7 @@ public class BranchingLayout extends Layout {
                             continue labelRequired;
                         }
 
-                        depth = MathUtils.getRandomNumber(available.toArray(new Integer[0]));
+                        depth = MathUtils.getRandomNumber(available.toArray(Integer[]::new));
                         if (depth == -1) {
                             this.recordFailure(GenerationFailureReason.BRANCH_TARGET_TOO_SMALL);
                             continue labelRequired;
