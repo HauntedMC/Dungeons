@@ -1,7 +1,6 @@
 package nl.hauntedmc.dungeons.command.config;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -596,7 +595,7 @@ public final class DungeonConfigCommandHandler {
             }
 
             List<String> branchNames = new ArrayList<>(branchSection.getKeys(false));
-            Collections.sort(branchNames, String.CASE_INSENSITIVE_ORDER);
+            branchNames.sort(String.CASE_INSENSITIVE_ORDER);
             return String.join(", ", branchNames);
         }
 
