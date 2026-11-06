@@ -84,6 +84,10 @@ final class WorldFixtures {
         config.set("rules.building.break_blocks", false);
         config.set("open.preload_world", false);
         config.set("open.max_players", 2);
+        if (type.equals("open")) {
+            config.set("runs.max_active", 1);
+            config.set("open.empty_unload_delay_ticks", 2);
+        }
         if (type.equals("branching")) {
             config.set("generator.layout", "branching");
             config.set("generator.seal_open_connectors_with", "AIR");
