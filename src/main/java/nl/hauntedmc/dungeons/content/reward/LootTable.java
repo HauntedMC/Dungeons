@@ -1,9 +1,5 @@
 package nl.hauntedmc.dungeons.content.reward;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.TypeKey;
 import nl.hauntedmc.dungeons.gui.framework.buttons.Button;
 import nl.hauntedmc.dungeons.gui.framework.window.GuiInventory;
@@ -15,6 +11,7 @@ import nl.hauntedmc.dungeons.util.math.MathUtils;
 import nl.hauntedmc.dungeons.util.math.RandomCollection;
 import nl.hauntedmc.dungeons.util.text.ColorUtils;
 import nl.hauntedmc.dungeons.util.text.ComponentUtils;
+
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.SerializableAs;
@@ -23,6 +20,11 @@ import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Weighted loot table with an in-game editor UI.
@@ -482,8 +484,8 @@ public class LootTable implements ConfigurationSerializable {
     public void setEditor(Player editor) {
         this.editor = editor;
     }
+
     RandomCollection<LootTableItem> createRandomizer() {
         return new RandomCollection<>();
     }
-
 }

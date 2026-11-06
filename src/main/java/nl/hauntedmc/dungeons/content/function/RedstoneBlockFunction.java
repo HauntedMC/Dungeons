@@ -1,8 +1,5 @@
 package nl.hauntedmc.dungeons.content.function;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
@@ -14,6 +11,7 @@ import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -21,6 +19,10 @@ import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * Function that toggles a redstone block state at its location.
@@ -92,15 +94,19 @@ public class RedstoneBlockFunction extends DungeonFunction {
                         if (RedstoneBlockFunction.this.status >= effectiveCount) {
                             this.cancel();
                         } else {
-                            RedstoneBlockFunction.this.pendingReset = Bukkit.getScheduler()
-                                    .runTaskLater(
-                                            RuntimeContext.plugin(),
-                                            () -> {
-                                                world.getBlockAt(RedstoneBlockFunction.this.location)
-                                                        .setType(Material.AIR);
-                                                RedstoneBlockFunction.this.pendingReset = null;
-                                            },
-                                            effectiveRate - 1L);
+                            RedstoneBlockFunction.this.pendingReset =
+                                    Bukkit.getScheduler()
+                                            .runTaskLater(
+                                                    RuntimeContext.plugin(),
+                                                    () -> {
+                                                        world.getBlockAt(
+                                                                        RedstoneBlockFunction.this
+                                                                                .location)
+                                                                .setType(Material.AIR);
+                                                        RedstoneBlockFunction.this.pendingReset =
+                                                                null;
+                                                    },
+                                                    effectiveRate - 1L);
                         }
                     }
                 };
@@ -239,6 +245,7 @@ public class RedstoneBlockFunction extends DungeonFunction {
                     }
                 });
     }
+
     @Override
     public RedstoneBlockFunction clone() {
         RedstoneBlockFunction clone = (RedstoneBlockFunction) super.clone();
@@ -249,5 +256,4 @@ public class RedstoneBlockFunction extends DungeonFunction {
         }
         return clone;
     }
-
 }

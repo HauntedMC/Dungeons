@@ -843,6 +843,7 @@ public class RewardFunction extends DungeonFunction {
     public boolean isCooldownDisabled() {
         return this.cooldownDisabled;
     }
+
     @Override
     public RewardFunction clone() {
         RewardFunction clone = (RewardFunction) super.clone();
@@ -857,5 +858,4 @@ public class RewardFunction extends DungeonFunction {
         }
         return clone;
     }
-
 }

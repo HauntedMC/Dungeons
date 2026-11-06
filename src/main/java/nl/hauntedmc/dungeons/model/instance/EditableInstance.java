@@ -1,12 +1,5 @@
 package nl.hauntedmc.dungeons.model.instance;
 
-import java.io.File;
-import java.io.FileFilter;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
 import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
 import nl.hauntedmc.dungeons.content.trigger.InteractTrigger;
 import nl.hauntedmc.dungeons.listener.instance.EditListener;
@@ -20,6 +13,7 @@ import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.text.ColorUtils;
 import nl.hauntedmc.dungeons.util.text.ComponentUtils;
 import nl.hauntedmc.dungeons.util.text.TextUtils;
+
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -34,6 +28,14 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.File;
+import java.io.FileFilter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * Editable dungeon instance used by map editors.
@@ -288,26 +290,28 @@ public class EditableInstance extends DungeonInstance {
                     try {
                         commit = this.commitWorldAsync(world);
                     } catch (RuntimeException exception) {
-                        this.logger().error("Failed to start save commit for dungeon '{}'.",
-                                this.dungeon.getWorldName(), exception);
+                        this.logger()
+                                .error(
+                                        "Failed to start save commit for dungeon '{}'.",
+                                        this.dungeon.getWorldName(),
+                                        exception);
                         this.finishSave(latch, result, false);
                         return;
                     }
                     commit.whenComplete(
-                                    (success, throwable) -> {
-                                        if (throwable != null) {
-                                            this.logger()
-                                                    .error(
-                                                            "Failed to finish save for dungeon '{}'.",
-                                                            this.dungeon.getWorldName(),
-                                                            throwable);
-                                            this.finishSave(latch, result, false);
-                                            return;
-                                        }
+                            (success, throwable) -> {
+                                if (throwable != null) {
+                                    this.logger()
+                                            .error(
+                                                    "Failed to finish save for dungeon '{}'.",
+                                                    this.dungeon.getWorldName(),
+                                                    throwable);
+                                    this.finishSave(latch, result, false);
+                                    return;
+                                }
 
-                                        this.finishSave(
-                                                latch, result, Boolean.TRUE.equals(success));
-                                    });
+                                this.finishSave(latch, result, Boolean.TRUE.equals(success));
+                            });
                 };
 
         if (this.plugin().isEnabled() && !Bukkit.isPrimaryThread()) {

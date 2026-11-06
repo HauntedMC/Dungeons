@@ -1,7 +1,5 @@
 package nl.hauntedmc.dungeons.model.element;
 
-import java.util.HashMap;
-import java.util.Map;
 import nl.hauntedmc.dungeons.gui.framework.GuiService;
 import nl.hauntedmc.dungeons.gui.hotbar.PlayerHotbarMenu;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
@@ -10,6 +8,7 @@ import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import nl.hauntedmc.dungeons.util.metadata.PersistedFieldSupport;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
@@ -19,6 +18,9 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Base type for trigger, function, and condition-style dungeon elements that can be serialized

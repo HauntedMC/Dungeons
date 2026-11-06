@@ -229,6 +229,7 @@ public class PlayerDeathTrigger extends DungeonTrigger {
                 });
         this.addRoomLimitToggleButton();
     }
+
     @Override
     public PlayerDeathTrigger clone() {
         PlayerDeathTrigger clone = (PlayerDeathTrigger) super.clone();
@@ -237,5 +238,4 @@ public class PlayerDeathTrigger extends DungeonTrigger {
         }
         return clone;
     }
-
 }

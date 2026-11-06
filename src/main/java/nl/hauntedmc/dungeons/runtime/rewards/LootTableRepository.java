@@ -1,16 +1,18 @@
 package nl.hauntedmc.dungeons.runtime.rewards;
 
+import nl.hauntedmc.dungeons.content.reward.LootTable;
+import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
+
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.InvalidConfigurationException;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import nl.hauntedmc.dungeons.content.reward.LootTable;
-import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.InvalidConfigurationException;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
 
 /**
  * Persistence-backed repository of configured loot tables.
@@ -47,7 +49,9 @@ public final class LootTableRepository {
                 if (tablesSection.get(path) instanceof LootTable table) {
                     this.tables.put(path, table);
                 } else {
-                    this.plugin.getSLF4JLogger().warn("Skipping invalid loot table entry '{}'.", path);
+                    this.plugin
+                            .getSLF4JLogger()
+                            .warn("Skipping invalid loot table entry '{}'.", path);
                 }
             }
         } catch (IOException | InvalidConfigurationException exception) {

@@ -14,6 +14,8 @@ import org.bukkit.scheduler.BukkitTask;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /** Captures Paper scheduling and cancellation; each run is driven explicitly without sleeping. */
 public final class CapturedScheduler {
@@ -21,7 +23,7 @@ public final class CapturedScheduler {
     public final List<Job> jobs = new ArrayList<>();
     public final List<Job> immediate = new ArrayList<>();
     public final List<Job> asynchronous = new ArrayList<>();
-    public final java.util.concurrent.BlockingQueue<Job> readyImmediate = new java.util.concurrent.LinkedBlockingQueue<>();
+    public final BlockingQueue<Job> readyImmediate = new LinkedBlockingQueue<>();
     private final List<Job> all = new ArrayList<>();
 
     public CapturedScheduler(PaperBoundary paper) {
@@ -57,7 +59,8 @@ public final class CapturedScheduler {
         return captureIn(jobs, work, delay, period);
     }
 
-    private synchronized BukkitTask captureIn(List<Job> queue, Runnable work, long delay, long period) {
+    private synchronized BukkitTask captureIn(
+            List<Job> queue, Runnable work, long delay, long period) {
         Job job = new Job(all.size() + 1, work, delay, period);
         all.add(job);
         queue.add(job);
@@ -65,7 +68,13 @@ public final class CapturedScheduler {
         BukkitTask task = mock(BukkitTask.class);
         when(task.getTaskId()).thenReturn(job.id);
         when(task.isCancelled()).thenAnswer(call -> job.cancelled);
-        doAnswer(call -> { job.cancelled = true; return null; }).when(task).cancel();
+        doAnswer(
+                        call -> {
+                            job.cancelled = true;
+                            return null;
+                        })
+                .when(task)
+                .cancel();
         return task;
     }
 

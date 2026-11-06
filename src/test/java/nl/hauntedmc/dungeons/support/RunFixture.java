@@ -14,6 +14,8 @@ import org.bukkit.entity.EnderDragon;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 
 /** Real run/session graph with server state at the Paper boundary. Does not bypass run hooks. */
 public final class RunFixture implements AutoCloseable {
@@ -31,7 +33,7 @@ public final class RunFixture implements AutoCloseable {
         paper.runtime.setPlayerSessions(new PlayerSessionRegistry(paper.plugin));
         paper.runtime.setActiveInstances(new ActiveInstanceRegistry(paper.plugin));
         when(world.getName()).thenReturn("crypt_0");
-        var worldId = java.util.UUID.randomUUID();
+        var worldId = UUID.randomUUID();
         when(world.getUID()).thenReturn(worldId);
         paper.bukkit.when(() -> Bukkit.getWorld(worldId)).thenReturn(world);
         when(world.key()).thenReturn(new NamespacedKey("dungeons", "crypt_0"));
@@ -53,7 +55,8 @@ public final class RunFixture implements AutoCloseable {
         public Run(StaticDungeon dungeon, World world) {
             this(dungeon, world, null);
         }
-        public Run(StaticDungeon dungeon, World world, java.util.concurrent.CountDownLatch latch) {
+
+        public Run(StaticDungeon dungeon, World world, CountDownLatch latch) {
             super(dungeon, latch);
             this.instanceWorld = world;
             this.startLocation = new Location(world, 0, 70, 0);

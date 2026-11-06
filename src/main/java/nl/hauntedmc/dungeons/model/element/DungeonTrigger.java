@@ -1,10 +1,5 @@
 package nl.hauntedmc.dungeons.model.element;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import javax.annotation.Nullable;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.content.instance.edit.BranchingEditableInstance;
 import nl.hauntedmc.dungeons.content.instance.play.OpenInstance;
@@ -18,6 +13,7 @@ import nl.hauntedmc.dungeons.model.instance.EditableInstance;
 import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
@@ -25,6 +21,13 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import javax.annotation.Nullable;
 
 /**
  * Base class for elements that observe gameplay state and dispatch functions when their

@@ -20,6 +20,7 @@ import io.papermc.paper.event.player.AsyncChatEvent;
 
 import net.kyori.adventure.text.Component;
 
+import nl.hauntedmc.dungeons.content.condition.ChanceCondition;
 import nl.hauntedmc.dungeons.content.instance.play.StaticInstance;
 import nl.hauntedmc.dungeons.event.*;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
@@ -30,6 +31,9 @@ import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.block.*;
 import org.bukkit.event.entity.*;
@@ -42,6 +46,8 @@ import org.mockito.ArgumentCaptor;
 
 import java.nio.file.Path;
 import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
@@ -326,71 +332,141 @@ class TriggerExecutionContractTest {
             verify(event).setCancelled(true);
         }
     }
+
     @Test
     void clonedDeathCountersDoNotShareProgressWithEachOtherOrTheirTemplate() throws Exception {
-        try(var f=new RunFixture(directory,new YamlConfiguration());var menus=new HeadlessMenus()) {
-            var first=new PlayerState(); source(f,first); var second=new PlayerState(); source(f,second);
-            var template=bind(new PlayerDeathTrigger(Map.of("deathsRequired",2,"oneDeathPerPlayer",true)),f);
-            var left=(PlayerDeathTrigger)template.clone(); var right=(PlayerDeathTrigger)template.clone();
-            assertNotNull(left); assertNotNull(right);
-            var event=mock(PlayerDeathEvent.class); when(event.getEntity()).thenReturn(first.player); left.onPlayerDeath(event);
-            when(event.getEntity()).thenReturn(second.player); right.onPlayerDeath(event);
+        try (var f = new RunFixture(directory, new YamlConfiguration());
+                var menus = new HeadlessMenus()) {
+            var first = new PlayerState();
+            source(f, first);
+            var second = new PlayerState();
+            source(f, second);
+            var template =
+                    bind(
+                            new PlayerDeathTrigger(
+                                    Map.of("deathsRequired", 2, "oneDeathPerPlayer", true)),
+                            f);
+            var left = (PlayerDeathTrigger) template.clone();
+            var right = (PlayerDeathTrigger) template.clone();
+            assertNotNull(left);
+            assertNotNull(right);
+            var event = mock(PlayerDeathEvent.class);
+            when(event.getEntity()).thenReturn(first.player);
+            left.onPlayerDeath(event);
+            when(event.getEntity()).thenReturn(second.player);
+            right.onPlayerDeath(event);
             assertTrue(f.scheduler.immediate.isEmpty());
-            left.onPlayerDeath(event); assertEquals(1,f.scheduler.immediate.size());
-            when(event.getEntity()).thenReturn(first.player); right.onPlayerDeath(event);
-            assertEquals(2,f.scheduler.immediate.size());
-            template.onPlayerDeath(event); assertEquals(2,f.scheduler.immediate.size());
+            left.onPlayerDeath(event);
+            assertEquals(1, f.scheduler.immediate.size());
+            when(event.getEntity()).thenReturn(first.player);
+            right.onPlayerDeath(event);
+            assertEquals(2, f.scheduler.immediate.size());
+            template.onPlayerDeath(event);
+            assertEquals(2, f.scheduler.immediate.size());
         }
     }
 
     @Test
     void disablingAClonedTriggerCannotCancelItsSourcesConditionWaitTask() throws Exception {
-        try(var f=new RunFixture(directory,new YamlConfiguration());var menus=new HeadlessMenus()) {
-            var trigger=bind(new RemoteTrigger(Map.of("waitForConditions",true)),f); trigger.setAllowRetrigger(false);
-            var condition=new nl.hauntedmc.dungeons.content.condition.ChanceCondition(Map.of("chance",0.0));
-            condition.initializeFields(); condition.setInstance(f.run); trigger.getConditions().add(condition);
-            trigger.trigger(); var waiting=f.scheduler.jobs.getFirst();
-            var clone=trigger.clone(); assertNotNull(clone); assertFalse(clone.isTriggered()); clone.disable();
+        try (var f = new RunFixture(directory, new YamlConfiguration());
+                var menus = new HeadlessMenus()) {
+            var trigger = bind(new RemoteTrigger(Map.of("waitForConditions", true)), f);
+            trigger.setAllowRetrigger(false);
+            var condition = new ChanceCondition(Map.of("chance", 0.0));
+            condition.initializeFields();
+            condition.setInstance(f.run);
+            trigger.getConditions().add(condition);
+            trigger.trigger();
+            var waiting = f.scheduler.jobs.getFirst();
+            var clone = trigger.clone();
+            assertNotNull(clone);
+            assertFalse(clone.isTriggered());
+            clone.disable();
             assertFalse(waiting.cancelled);
-            trigger.getConditions().clear(); waiting.run();
+            trigger.getConditions().clear();
+            waiting.run();
             assertTrue(waiting.cancelled);
             verify(Bukkit.getPluginManager()).callEvent(any(TriggerFireEvent.class));
         }
     }
 
     @Test
-    void proximityDetectionRequiresCurrentMembersAndRetriggersOnlyAfterTheyLeaveAndReturn() throws Exception {
-        try(var f=new RunFixture(directory,new YamlConfiguration())) {
-            var first=new PlayerState(); source(f,first); var outsider=new PlayerState(); outsider.location=new Location(f.world,0,70,0);
-            java.util.List<org.bukkit.entity.Player> nearby=new java.util.ArrayList<>(List.of(first.player,outsider.player));
+    void proximityDetectionRequiresCurrentMembersAndRetriggersOnlyAfterTheyLeaveAndReturn()
+            throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var first = new PlayerState();
+            source(f, first);
+            var outsider = new PlayerState();
+            outsider.location = new Location(f.world, 0, 70, 0);
+            List<Player> nearby = new ArrayList<>(List.of(first.player, outsider.player));
             f.paper.bukkit.when(Bukkit::getOnlinePlayers).thenAnswer(c -> List.copyOf(nearby));
-            f.paper.bukkit.when(() -> Bukkit.getPlayer(first.player.getUniqueId())).thenReturn(first.player);
-            when(f.world.getNearbyEntities(any(Location.class),anyDouble(),anyDouble(),anyDouble(),any())).thenAnswer(c -> List.copyOf(nearby));
-            var trigger=bind(new DistanceTrigger(Map.of("radius",3.0,"count",2)),f); trigger.onEnable(); var scan=f.scheduler.jobs.getFirst();
-            scan.run(); assertTrue(f.scheduler.immediate.isEmpty());
-            var second=new PlayerState(); source(f,second); f.paper.bukkit.when(() -> Bukkit.getPlayer(second.player.getUniqueId())).thenReturn(second.player);
-            nearby.clear(); nearby.addAll(List.of(first.player,second.player));
-            scan.run(); assertEquals(1,f.scheduler.immediate.size()); scan.run(); assertEquals(1,f.scheduler.immediate.size());
-            nearby.clear(); scan.run(); nearby.addAll(List.of(first.player,second.player)); scan.run();
-            assertEquals(2,f.scheduler.immediate.size()); trigger.onDisable(); assertTrue(scan.cancelled);
+            f.paper
+                    .bukkit
+                    .when(() -> Bukkit.getPlayer(first.player.getUniqueId()))
+                    .thenReturn(first.player);
+            when(f.world.getNearbyEntities(
+                            any(Location.class), anyDouble(), anyDouble(), anyDouble(), any()))
+                    .thenAnswer(c -> List.copyOf(nearby));
+            var trigger = bind(new DistanceTrigger(Map.of("radius", 3.0, "count", 2)), f);
+            trigger.onEnable();
+            var scan = f.scheduler.jobs.getFirst();
+            scan.run();
+            assertTrue(f.scheduler.immediate.isEmpty());
+            var second = new PlayerState();
+            source(f, second);
+            f.paper
+                    .bukkit
+                    .when(() -> Bukkit.getPlayer(second.player.getUniqueId()))
+                    .thenReturn(second.player);
+            nearby.clear();
+            nearby.addAll(List.of(first.player, second.player));
+            scan.run();
+            assertEquals(1, f.scheduler.immediate.size());
+            scan.run();
+            assertEquals(1, f.scheduler.immediate.size());
+            nearby.clear();
+            scan.run();
+            nearby.addAll(List.of(first.player, second.player));
+            scan.run();
+            assertEquals(2, f.scheduler.immediate.size());
+            trigger.onDisable();
+            assertTrue(scan.cancelled);
         }
     }
 
     @Test
-    void mobDeathTriggersIgnoreCancelledWrongTypeAndOutOfRangeDeathsBeforeCountingAndResetting() throws Exception {
-        try(var f=new RunFixture(directory,new YamlConfiguration())) {
-            var mob=mock(org.bukkit.entity.LivingEntity.class); when(mob.getWorld()).thenReturn(f.world);
-            when(mob.getType()).thenReturn(org.bukkit.entity.EntityType.ZOMBIE); when(mob.getLocation()).thenReturn(new Location(f.world,0,70,0));
-            var event=mock(EntityDeathEvent.class); when(event.getEntity()).thenReturn(mob);
-            var trigger=bind(new MobDeathTrigger(Map.of("mob","zombie","count",2,"radius",3.0)),f);
-            when(event.isCancelled()).thenReturn(true); trigger.onMobDeath(event);
-            when(event.isCancelled()).thenReturn(false); trigger.onMobDeath(event); assertTrue(f.scheduler.immediate.isEmpty());
-            when(mob.getType()).thenReturn(org.bukkit.entity.EntityType.SKELETON); trigger.onMobDeath(event); assertTrue(f.scheduler.immediate.isEmpty());
-            when(mob.getType()).thenReturn(org.bukkit.entity.EntityType.ZOMBIE); when(mob.getLocation()).thenReturn(new Location(f.world,4,70,0));
-            trigger.onMobDeath(event); assertTrue(f.scheduler.immediate.isEmpty());
-            when(mob.getLocation()).thenReturn(new Location(f.world,3,70,0)); trigger.onMobDeath(event); assertEquals(1,f.scheduler.immediate.size());
-            trigger.onMobDeath(event); assertEquals(1,f.scheduler.immediate.size()); trigger.onMobDeath(event); assertEquals(2,f.scheduler.immediate.size());
+    void mobDeathTriggersIgnoreCancelledWrongTypeAndOutOfRangeDeathsBeforeCountingAndResetting()
+            throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var mob = mock(LivingEntity.class);
+            when(mob.getWorld()).thenReturn(f.world);
+            when(mob.getType()).thenReturn(EntityType.ZOMBIE);
+            when(mob.getLocation()).thenReturn(new Location(f.world, 0, 70, 0));
+            var event = mock(EntityDeathEvent.class);
+            when(event.getEntity()).thenReturn(mob);
+            var trigger =
+                    bind(
+                            new MobDeathTrigger(Map.of("mob", "zombie", "count", 2, "radius", 3.0)),
+                            f);
+            when(event.isCancelled()).thenReturn(true);
+            trigger.onMobDeath(event);
+            when(event.isCancelled()).thenReturn(false);
+            trigger.onMobDeath(event);
+            assertTrue(f.scheduler.immediate.isEmpty());
+            when(mob.getType()).thenReturn(EntityType.SKELETON);
+            trigger.onMobDeath(event);
+            assertTrue(f.scheduler.immediate.isEmpty());
+            when(mob.getType()).thenReturn(EntityType.ZOMBIE);
+            when(mob.getLocation()).thenReturn(new Location(f.world, 4, 70, 0));
+            trigger.onMobDeath(event);
+            assertTrue(f.scheduler.immediate.isEmpty());
+            when(mob.getLocation()).thenReturn(new Location(f.world, 3, 70, 0));
+            trigger.onMobDeath(event);
+            assertEquals(1, f.scheduler.immediate.size());
+            trigger.onMobDeath(event);
+            assertEquals(1, f.scheduler.immediate.size());
+            trigger.onMobDeath(event);
+            assertEquals(2, f.scheduler.immediate.size());
         }
     }
-
 }
