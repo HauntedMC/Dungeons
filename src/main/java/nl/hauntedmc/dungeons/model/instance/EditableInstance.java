@@ -368,7 +368,7 @@ public class EditableInstance extends DungeonInstance {
                     try {
                         functionsYaml.save(saveFile);
                         result.complete(true);
-                    } catch (IOException exception) {
+                    } catch (IOException | RuntimeException exception) {
                         this.logger()
                                 .error(
                                         "Failed to save functions for dungeon '{}' to '{}'.",

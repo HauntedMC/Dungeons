@@ -72,6 +72,22 @@ class EditorPersistenceContractTest {
             assertFalse(f.dungeon.isSaving());
         }
     }
+
+    @Test
+    void asynchronousSerializationFailureCompletesTheEditorSaveWithoutLeavingAnUnresolvedFuture() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            Path source=Files.createDirectories(directory.resolve("live")); when(f.world.getWorldFolder()).thenReturn(source.toFile());
+            var broken=mock(nl.hauntedmc.dungeons.model.element.DungeonFunction.class);
+            when(broken.serialize()).thenThrow(new IllegalStateException("broken serializer"));
+            f.dungeon.getFunctions().put(new Location(f.world,0,70,0),broken);
+            var editor=new Editor(f); when(f.paper.plugin.isEnabled()).thenReturn(true);
+            var latch=new CountDownLatch(1); var result=editor.saveWorldAsync(latch);
+            assertFalse(result.isDone()); assertTrue(f.dungeon.isSaving());
+            assertDoesNotThrow(() -> f.scheduler.asynchronous.getFirst().run());
+            assertFalse(result.get(1,TimeUnit.SECONDS)); assertEquals(0,latch.getCount()); assertFalse(f.dungeon.isSaving());
+        }
+    }
+
     static class Editor extends EditableInstance {
         CompletableFuture<Boolean> pending;
         boolean throwCommit;
