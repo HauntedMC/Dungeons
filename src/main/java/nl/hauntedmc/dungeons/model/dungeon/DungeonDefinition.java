@@ -35,6 +35,7 @@ import nl.hauntedmc.dungeons.runtime.team.TeamRequirementPolicy;
 import nl.hauntedmc.dungeons.util.command.CommandUtils;
 import nl.hauntedmc.dungeons.util.config.ConfigSyncUtils;
 import nl.hauntedmc.dungeons.util.config.DungeonConfigView;
+import nl.hauntedmc.dungeons.util.config.DungeonRuleConfiguration;
 import nl.hauntedmc.dungeons.util.config.PluginConfigView;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
@@ -128,28 +129,29 @@ public abstract class DungeonDefinition {
         this.runtime = runtime;
         this.worldName = folder.getName();
         this.folder = folder;
-        if (loadedConfig != null) {
-            this.config = loadedConfig;
-        } else {
-            this.config = new YamlConfiguration();
-
-            try {
+        this.config = new DungeonRuleConfiguration(this.runtime::config);
+        try {
+            if (loadedConfig != null) {
+                this.config.loadFromString(loadedConfig.saveToString());
+            } else {
                 File configFile = new File(folder, "config.yml");
                 if (!configFile.exists()) {
                     this.logger().info("Creating fresh config file for '{}'.", folder.getName());
-                    FileUtils.copyFile(
-                                                        new File(this.runtime.dungeonFiles(), "config_default.yml"), configFile);
+                    this.config.load(new File(this.runtime.dungeonFiles(), "config_default.yml"));
+                    // Older on-disk templates may still contain active rules. New maps inherit globally.
+                    this.config.set("rules", null);
+                    this.config.save(configFile);
+                } else {
+                    this.config.load(configFile);
                 }
-
-                this.config.load(configFile);
-            } catch (IOException exception) {
-                                throw new DungeonLoadException(
-                        "Access of config.yml file failed!",
-                        false,
-                        "There may be another process accessing the file, or we may not have permission.");
-            } catch (InvalidConfigurationException | IllegalArgumentException | YAMLException exception) {
-                                throw new DungeonLoadException("Dungeon config has invalid YAML! See error below...", true);
             }
+        } catch (IOException exception) {
+            throw new DungeonLoadException(
+                    "Access of config.yml file failed!",
+                    false,
+                    "There may be another process accessing the file, or we may not have permission.");
+        } catch (InvalidConfigurationException | IllegalArgumentException | YAMLException exception) {
+            throw new DungeonLoadException("Dungeon config has invalid YAML! See error below...", true);
         }
 
         this.syncConfigWithDefaults();
@@ -217,7 +219,7 @@ public abstract class DungeonDefinition {
             return;
         }
 
-        if (!ConfigSyncUtils.syncMissingAndObsolete(defaultConfig, this.config)) {
+        if (!ConfigSyncUtils.syncMissingAndObsolete(defaultConfig, this.config, Set.of("rules"))) {
             return;
         }
 
@@ -329,24 +331,11 @@ public abstract class DungeonDefinition {
             }
         }
 
-        this.bannedItems = new ArrayList<>(this.config.getStringList("rules.items.banned_materials"));
+        this.refreshRuleSettings();
         this.joinCommands = new ArrayList<>(this.config.getStringList("players.join_commands"));
-        this.customBannedItems = (List<ItemStack>) this.config.get("rules.items.banned_items");
-        if (this.customBannedItems == null) {
-            this.customBannedItems = new ArrayList<>();
-        }
-
         this.accessKeys = this.loadAccessKeys();
         this.rebuildValidKeys();
         this.onlyLeaderNeedsKey = this.config.getBoolean("access.keys.leader_only", false);
-
-        this.placeWhitelist = this.loadMaterialList("rules.building.place_whitelist");
-        this.breakWhitelist = this.loadMaterialList("rules.building.break_whitelist");
-        this.placeBlacklist = this.loadMaterialList("rules.building.place_blacklist");
-        this.breakBlacklist = this.loadMaterialList("rules.building.break_blacklist");
-        this.breakPlacedBlocks = this.config.getBoolean("rules.building.break_placed_blocks", false);
-        this.damageProtectedEntities = this.loadEntityTypeList("rules.entities.damage_protected");
-        this.interactProtectedEntities = this.loadEntityTypeList("rules.entities.interact_protected");
         this.accessCooldownEnabled = this.config.getBoolean("access.cooldown.enabled", false);
         this.onlyLeaderNeedsCooldown = this.config.getBoolean("access.cooldown.leader_only", false);
         this.cooldownOnFinish = this.config.getBoolean("access.cooldown.on_finish", true);
@@ -661,6 +650,27 @@ public abstract class DungeonDefinition {
             }
         }
         return types;
+    }
+
+    /** Refreshes cached gameplay rules after global configuration changes. */
+    @SuppressWarnings("unchecked")
+    public void refreshRuleSettings() {
+        this.bannedItems = new ArrayList<>(this.config.getStringList("rules.items.banned_materials"));
+        this.customBannedItems = (List<ItemStack>) this.config.get("rules.items.banned_items");
+        if (this.customBannedItems != null) {
+            this.customBannedItems = new ArrayList<>(this.customBannedItems);
+        }
+        if (this.customBannedItems == null) {
+            this.customBannedItems = new ArrayList<>();
+        }
+
+        this.placeWhitelist = this.loadMaterialList("rules.building.place_whitelist");
+        this.breakWhitelist = this.loadMaterialList("rules.building.break_whitelist");
+        this.placeBlacklist = this.loadMaterialList("rules.building.place_blacklist");
+        this.breakBlacklist = this.loadMaterialList("rules.building.break_blacklist");
+        this.breakPlacedBlocks = this.config.getBoolean("rules.building.break_placed_blocks", false);
+        this.damageProtectedEntities = this.loadEntityTypeList("rules.entities.damage_protected");
+        this.interactProtectedEntities = this.loadEntityTypeList("rules.entities.interact_protected");
     }
 
         public void refreshRuntimeSettings() {
@@ -1115,12 +1125,11 @@ public abstract class DungeonDefinition {
         ItemStack vanillaItem = new ItemStack(item.getType());
         if (item.isSimilar(vanillaItem)) {
             this.bannedItems.add(item.getType().toString());
+            this.config.set("rules.items.banned_materials", this.bannedItems);
         } else {
             this.customBannedItems.add(item);
+            this.config.set("rules.items.banned_items", this.customBannedItems);
         }
-
-        this.config.set("rules.items.banned_materials", this.bannedItems);
-        this.config.set("rules.items.banned_items", this.customBannedItems);
 
         try {
             this.config.save(new File(this.folder, "config.yml"));
@@ -1141,12 +1150,11 @@ public abstract class DungeonDefinition {
         } else {
             if (item.isSimilar(vanillaItem)) {
                 this.bannedItems.remove(item.getType().toString());
+                this.config.set("rules.items.banned_materials", this.bannedItems);
             } else {
                 this.customBannedItems.remove(item);
+                this.config.set("rules.items.banned_items", this.customBannedItems);
             }
-
-            this.config.set("rules.items.banned_materials", this.bannedItems);
-            this.config.set("rules.items.banned_items", this.customBannedItems);
 
             try {
                 this.config.save(new File(this.folder, "config.yml"));

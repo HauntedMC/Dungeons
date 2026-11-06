@@ -148,6 +148,9 @@ public final class LifecycleCoordinator {
     public void reloadConfigs() {
         this.runtime.environment().plugin().reloadConfig();
         this.coreBootstrap.reloadRuntimeConfiguration();
+        for (DungeonDefinition dungeon : this.runtime.dungeonCatalog().getLoadedDungeons()) {
+            dungeon.refreshRuleSettings();
+        }
         LangUtils.initialize();
         this.runtime.lootTableRepository().reload();
     }

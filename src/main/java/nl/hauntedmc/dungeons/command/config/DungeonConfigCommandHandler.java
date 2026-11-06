@@ -139,7 +139,11 @@ public final class DungeonConfigCommandHandler {
             return options;
         }
 
-        return this.completeValue(entry, dungeon, this.joinArgs(args, 3));
+        List<String> values = new ArrayList<>(this.completeValue(entry, dungeon, this.joinArgs(args, 3)));
+        if (this.isRuleSetting(entry)) {
+            values.addAll(this.completeSimple(this.joinArgs(args, 3), List.of("inherit")));
+        }
+        return values;
     }
 
     /**
@@ -172,6 +176,10 @@ public final class DungeonConfigCommandHandler {
     private boolean applySetting(CommandSender sender, DungeonDefinition dungeon, DungeonConfigEntry entry,
             String rawValue) {
         rawValue = rawValue == null ? "" : rawValue.trim();
+
+        if (this.isRuleSetting(entry) && rawValue.equalsIgnoreCase("inherit")) {
+            return this.persistValue(sender, dungeon, entry, null);
+        }
 
         // Branch creation and deletion mutate a structured subsection rather than a single scalar
         // config value, so they bypass the generic value-type parser below.
@@ -399,7 +407,7 @@ public final class DungeonConfigCommandHandler {
             if (entry.getPath().startsWith("difficulty.")) {
                 PlayMenus.initializeDifficultySelector(dungeon);
             }
-            this.sendUpdated(sender, dungeon, entry, this.stringifyValue(value), false);
+            this.sendUpdated(sender, dungeon, entry, this.getCurrentValue(dungeon, entry), false);
             return true;
         }
 
@@ -539,7 +547,17 @@ public final class DungeonConfigCommandHandler {
             return "<unsupported>";
         }
 
-        return this.stringifyValue(config.get(entry.getPath()));
+        String value = this.stringifyValue(config.get(entry.getPath()));
+        if (this.isRuleSetting(entry) && !config.getKeys(true).contains(entry.getPath())) {
+            return LangUtils.getMessage("commands.config.inherited-value", false,
+                    LangUtils.placeholder("value", value));
+        }
+        return value;
+    }
+
+    /** Returns whether this entry supports restoring its global rule value. */
+    private boolean isRuleSetting(DungeonConfigEntry entry) {
+        return entry.getConfigFile() == DungeonConfigFile.MAIN && entry.getPath().startsWith("rules.");
     }
 
     /**

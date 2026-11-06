@@ -153,69 +153,72 @@ difficulty:
         # ranged number string. Example: 1-3, 0, 2+.
         bonus_loot: "1-3"
 
-rules:
-  spawning:
-    # bool flags for natural spawning inside the run.
-    natural_mobs: true
-    animals: true
-    monsters: true
-  building:
-    # bool flags for player building permissions.
-    break_blocks: true
-    place_blocks: true
-    place_entities: false
-    break_placed_blocks: false
-    # lists of Bukkit material names.
-    break_whitelist: []
-    break_blacklist: []
-    place_whitelist: []
-    place_blacklist: []
-  movement:
-    # bool flags for movement and utility items.
-    buckets: true
-    ender_pearls: true
-    chorus_fruit: false
-  world:
-    # bool flags for world behavior inside the run.
-    freeze_random_ticks: true
-    prevent_plant_growth: true
-    prevent_explosion_block_damage: false
-  combat:
-    # bool flags for combat rules.
-    pvp: false
-    hide_death_messages: false
-    prevent_durability_loss:
-      # bool. True = prevent durability loss for matching items.
-      armor: false
-      weapons: false
-      tools: false
-  commands:
-    # bool. Allow every command unless it is denied below.
-    allow_all: false
-    # list of command labels allowed when allow_all is false.
-    allow_list:
-      - dungeon leave
-      - dungeon stuck
-      - dungeon lives
-      - dungeon team info
-      - dungeon team leave
-      - dungeon help
-      - chatreport
-    # list of command labels blocked even when allow_all is true.
-    deny_list: []
-  items:
-    # list of Bukkit material names banned inside the run.
-    banned_materials: []
-    # list of item stacks banned inside the run. Prefer /dungeon banitem.
-    banned_items: []
-    # bool flags for interacting with banned items.
-    allow_pickup_banned: false
-    allow_craft_banned: false
-    allow_storage_banned: false
-  entities:
-    # lists of Bukkit entity type names.
-    damage_protected: []
-    interact_protected: []
+# Optional overrides for global_rules in the main config.yml.
+# Uncomment the parent headings and only the settings this dungeon should override.
+# Omitted rules inherit the global value; explicit false and [] override it.
+# rules:
+#   spawning:
+#     # bool flags for natural spawning inside the run.
+#     natural_mobs: true
+#     animals: true
+#     monsters: true
+#   building:
+#     # bool flags for player building permissions.
+#     break_blocks: true
+#     place_blocks: true
+#     place_entities: false
+#     break_placed_blocks: false
+#     # lists of Bukkit material names.
+#     break_whitelist: []
+#     break_blacklist: []
+#     place_whitelist: []
+#     place_blacklist: []
+#   movement:
+#     # bool flags for movement and utility items.
+#     buckets: true
+#     ender_pearls: true
+#     chorus_fruit: false
+#   world:
+#     # bool flags for world behavior inside the run.
+#     freeze_random_ticks: true
+#     prevent_plant_growth: true
+#     prevent_explosion_block_damage: false
+#   combat:
+#     # bool flags for combat rules.
+#     pvp: false
+#     hide_death_messages: false
+#     prevent_durability_loss:
+#       # bool. True = prevent durability loss for matching items.
+#       armor: false
+#       weapons: false
+#       tools: false
+#   commands:
+#     # bool. Allow every command unless it is denied below.
+#     allow_all: false
+#     # list of command labels allowed when allow_all is false.
+#     allow_list:
+#       - dungeon leave
+#       - dungeon stuck
+#       - dungeon lives
+#       - dungeon team info
+#       - dungeon team leave
+#       - dungeon help
+#       - chatreport
+#     # list of command labels blocked even when allow_all is true.
+#     deny_list: []
+#   items:
+#     # list of Bukkit material names banned inside the run.
+#     banned_materials: []
+#     # list of item stacks banned inside the run. Prefer /dungeon banitem.
+#     banned_items: []
+#     # bool flags for interacting with banned items.
+#     allow_pickup_banned: false
+#     allow_craft_banned: false
+#     allow_storage_banned: false
+#   entities:
+#     # lists of Bukkit entity type names.
+#     damage_protected: []
+#     interact_protected: []
 
 map:
   # int blocks. Floor depth used by dungeon maps.
