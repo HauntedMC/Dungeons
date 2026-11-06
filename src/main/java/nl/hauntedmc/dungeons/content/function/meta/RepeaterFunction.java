@@ -1,6 +1,7 @@
 package nl.hauntedmc.dungeons.content.function.meta;
 
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Optional;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
@@ -147,7 +148,7 @@ public class RepeaterFunction extends CompositeFunction {
                     public void run() {
                         if (RepeaterFunction.this.maxRepeats <= 0) {
                             RepeaterFunction.this.executeNestedFunction(
-                                    RepeaterFunction.this.function, triggerEvent, functionTargets);
+                                    RepeaterFunction.this.function, triggerEvent, new ArrayList<>(functionTargets));
                         } else {
                             if (RepeaterFunction.this.repeatCount
                                     >= RepeaterFunction.this.maxRepeats) {
@@ -161,7 +162,7 @@ public class RepeaterFunction extends CompositeFunction {
                             }
 
                             RepeaterFunction.this.executeNestedFunction(
-                                    RepeaterFunction.this.function, triggerEvent, functionTargets);
+                                    RepeaterFunction.this.function, triggerEvent, new ArrayList<>(functionTargets));
                             RepeaterFunction.this.repeatCount++;
                         }
                     }

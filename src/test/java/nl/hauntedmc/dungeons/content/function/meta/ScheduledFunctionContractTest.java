@@ -50,4 +50,33 @@ class ScheduledFunctionContractTest {
             verify(child).disable();
         }
     }
+    @Test
+    void repeatersUseAFiniteCountAndPreserveTargetsEvenWhenAChildMutatesItsArguments() {
+        try (var paper = new PaperBoundary()) {
+            var scheduler = new CapturedScheduler(paper);
+            var child = mock(DungeonFunction.class);
+            List<List<DungeonPlayerSession>> effects = new ArrayList<>();
+            doAnswer(call -> {
+                List<DungeonPlayerSession> targets = call.getArgument(1);
+                effects.add(new ArrayList<>(targets));
+                targets.clear();
+                return null;
+            }).when(child).runFunction(any(), anyList());
+            var repeat = new RepeaterFunction(Map.of("maxRepeats", 2, "interval", 0));
+            repeat.initializeFields();
+            repeat.addFunction(child);
+            var run = mock(nl.hauntedmc.dungeons.model.instance.PlayableInstance.class);
+            var dungeon = mock(nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition.class);
+            when(run.getDungeon()).thenReturn(dungeon);
+            repeat.setInstance(run);
+            repeat.setLocation(new org.bukkit.Location(null, 0, 64, 0));
+            var player = mock(DungeonPlayerSession.class);
+            repeat.runFunction(mock(TriggerFireEvent.class), List.of(player));
+            var work = scheduler.jobs.getFirst();
+            assertEquals(1, work.period);
+            work.run(); work.run(); work.run(); work.run();
+            assertEquals(List.of(List.of(player), List.of(player)), effects);
+            assertTrue(work.cancelled);
+        }
+    }
 }
