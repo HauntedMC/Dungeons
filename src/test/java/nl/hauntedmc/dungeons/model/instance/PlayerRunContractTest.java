@@ -375,4 +375,45 @@ class PlayerRunContractTest {
             }
         }
     }
+
+    @Test
+    void losingTheFinalLifeWithoutSpectatingReturnsThePlayerAfterVanillaRespawn() throws Exception {
+        var rules = settings();
+        rules.set("players.lives", 1);
+        rules.set("players.spectate_on_death", false);
+        try (var f = new RunFixture(directory, rules)) {
+            var state = new PlayerState();
+            var session = f.session(state);
+            var origin = state.location.clone();
+            var survivor = f.session(new PlayerState());
+            f.run.addPlayer(session);
+            f.run.addPlayer(survivor);
+            var listener = (PlayListener) f.run.getListener();
+            var death = mock(PlayerDeathEvent.class);
+            var key =
+                    TaggedItems.stack(
+                            org.bukkit.Material.TRIPWIRE_HOOK,
+                            1,
+                            java.util.Map.of(
+                                    new org.bukkit.NamespacedKey("dungeons", "dungeonkey"), 1));
+            state.contents[0] = key;
+            var drops = new ArrayList<>(List.of(key));
+            when(death.getEntity()).thenReturn(state.player);
+            when(death.getDrops()).thenReturn(drops);
+            state.vanillaDead = true;
+            listener.onPlayerDeath(death);
+            verify(survivor.getPlayer().getInventory()).addItem(key);
+            assertTrue(drops.isEmpty());
+            state.vanillaDead = false;
+            var respawn = mock(PlayerRespawnEvent.class);
+            when(respawn.getPlayer()).thenReturn(state.player);
+            listener.onPlayerRespawn(respawn);
+            f.scheduler.jobs.getLast().run();
+            assertNull(session.getInstance());
+            assertFalse(session.isDead());
+            assertEquals(origin, state.location);
+            assertEquals(GameMode.SURVIVAL, state.gameMode);
+            assertSame(f.run, survivor.getInstance());
+        }
+    }
 }

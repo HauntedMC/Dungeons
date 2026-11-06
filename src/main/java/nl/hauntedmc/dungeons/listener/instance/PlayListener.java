@@ -152,61 +152,53 @@ public class PlayListener extends InstanceListener {
                                             "instance.play.events.all-lives-lost",
                                             LangUtils.placeholder("player", player.getName())));
                             this.instance.getLivingPlayers().remove(playerSession);
-                            if (!this.instance
-                                    .getDungeon()
-                                    .getConfig()
-                                    .getBoolean("players.spectate_on_death", true)) {
-                                this.instance.removePlayer(playerSession);
-                            } else {
-                                PlayerInventory inv = player.getInventory();
-                                Player target = null;
-                                boolean foundKeys = false;
-                                boolean foundDungeonItems = false;
+                            // Transfer progression items now; departure waits until respawn allows
+                            // teleporting.
+                            PlayerInventory inv = player.getInventory();
+                            Player target = null;
+                            boolean foundKeys = false;
+                            boolean foundDungeonItems = false;
 
-                                // Keys and dungeon items are moved to a surviving player instead of
-                                // dropping on the
-                                // ground so progression-critical items cannot be lost to despawn or
-                                // griefing.
-                                ItemStack[] contents = inv.getContents();
-                                for (int slot = 0; slot < contents.length; slot++) {
-                                    ItemStack item = contents[slot];
-                                    boolean keyItem = ItemUtils.verifyKeyItem(item);
-                                    boolean dungeonItem = ItemUtils.verifyDungeonItem(item);
-                                    if (!keyItem && !dungeonItem) {
-                                        continue;
-                                    }
-                                    // Clear one slot, including offhand, without removing equal
-                                    // stacks elsewhere.
-                                    inv.setItem(slot, null);
-                                    event.getDrops().remove(item);
-                                    if (!this.instance.getLivingPlayers().isEmpty()) {
-                                        foundKeys |= keyItem;
-                                        foundDungeonItems |= dungeonItem;
-                                        target =
-                                                this.instance
-                                                        .getLivingPlayers()
-                                                        .getFirst()
-                                                        .getPlayer();
-                                        ItemUtils.giveOrDrop(target, item);
-                                    }
+                            // Keys and dungeon items are moved to a surviving player instead of
+                            // dropping on the
+                            // ground so progression-critical items cannot be lost to despawn or
+                            // griefing.
+                            ItemStack[] contents = inv.getContents();
+                            for (int slot = 0; slot < contents.length; slot++) {
+                                ItemStack item = contents[slot];
+                                boolean keyItem = ItemUtils.verifyKeyItem(item);
+                                boolean dungeonItem = ItemUtils.verifyDungeonItem(item);
+                                if (!keyItem && !dungeonItem) {
+                                    continue;
+                                }
+                                // Clear one slot, including offhand, without removing equal
+                                // stacks elsewhere.
+                                inv.setItem(slot, null);
+                                event.getDrops().remove(item);
+                                if (!this.instance.getLivingPlayers().isEmpty()) {
+                                    foundKeys |= keyItem;
+                                    foundDungeonItems |= dungeonItem;
+                                    target =
+                                            this.instance.getLivingPlayers().getFirst().getPlayer();
+                                    ItemUtils.giveOrDrop(target, item);
+                                }
+                            }
+
+                            if (target != null) {
+                                if (foundKeys) {
+                                    this.instance.messagePlayers(
+                                            LangUtils.getMessage(
+                                                    "instance.play.events.key-inheritance",
+                                                    LangUtils.placeholder(
+                                                            "player", target.getName())));
                                 }
 
-                                if (target != null) {
-                                    if (foundKeys) {
-                                        this.instance.messagePlayers(
-                                                LangUtils.getMessage(
-                                                        "instance.play.events.key-inheritance",
-                                                        LangUtils.placeholder(
-                                                                "player", target.getName())));
-                                    }
-
-                                    if (foundDungeonItems) {
-                                        this.instance.messagePlayers(
-                                                LangUtils.getMessage(
-                                                        "instance.play.events.dungeon-item-inheritance",
-                                                        LangUtils.placeholder(
-                                                                "player", target.getName())));
-                                    }
+                                if (foundDungeonItems) {
+                                    this.instance.messagePlayers(
+                                            LangUtils.getMessage(
+                                                    "instance.play.events.dungeon-item-inheritance",
+                                                    LangUtils.placeholder(
+                                                            "player", target.getName())));
                                 }
                             }
 

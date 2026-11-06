@@ -28,6 +28,7 @@ public final class PlayerState {
     public final World originWorld = mock(World.class);
     public Location location = new Location(originWorld, 10, 65, 20);
     public boolean online = true;
+    public boolean vanillaDead;
 
     public PlayerState() {
         when(location.getWorld().key()).thenReturn(new NamespacedKey("minecraft", "overworld"));
@@ -36,6 +37,7 @@ public final class PlayerState {
         when(player.getUniqueId()).thenReturn(UUID.randomUUID());
         when(player.getName()).thenReturn("Explorer");
         when(player.isOnline()).thenAnswer(c -> online);
+        when(player.isDead()).thenAnswer(c -> vanillaDead);
         when(player.getInventory()).thenReturn(inventory);
         when(player.getHealth()).thenAnswer(c -> health);
         when(player.getFoodLevel()).thenAnswer(c -> food);
@@ -47,6 +49,7 @@ public final class PlayerState {
         when(player.teleport(any(Location.class), any(PlayerTeleportEvent.TeleportCause.class)))
                 .thenAnswer(
                         c -> {
+                            if (vanillaDead) return false;
                             location = ((Location) c.getArgument(0)).clone();
                             return true;
                         });
