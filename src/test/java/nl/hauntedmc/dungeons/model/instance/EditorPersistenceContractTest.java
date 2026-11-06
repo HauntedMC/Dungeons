@@ -88,6 +88,18 @@ class EditorPersistenceContractTest {
         }
     }
 
+
+    @Test
+    void rejectedEditorAdmissionCannotClearTheInventoryOrChangeAnotherRunsPlayerMode() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            var state=new PlayerState(); state.contents[0]=PlayerState.stack(7); var session=f.session(state); f.run.addPlayer(session);
+            var editor=new Editor(f); assertDoesNotThrow(() -> editor.addPlayer(session));
+            assertSame(f.run,session.getInstance()); assertFalse(session.isEditMode());
+            assertEquals(GameMode.ADVENTURE,state.gameMode); assertEquals(7,state.contents[0].getAmount());
+            assertTrue(editor.getPlayers().isEmpty()); assertTrue(f.run.getPlayers().contains(session));
+        }
+    }
+
     static class Editor extends EditableInstance {
         CompletableFuture<Boolean> pending;
         boolean throwCommit;

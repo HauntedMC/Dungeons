@@ -412,6 +412,10 @@ public class EditableInstance extends DungeonInstance {
      */
     @Override
     public void addPlayer(DungeonPlayerSession playerSession) {
+        if (this.players.contains(playerSession)
+                || playerSession.getInstance() != null && playerSession.getInstance() != this) {
+            return;
+        }
         Player player = playerSession.getPlayer();
         playerSession.saveInventory();
         super.addPlayer(playerSession);
