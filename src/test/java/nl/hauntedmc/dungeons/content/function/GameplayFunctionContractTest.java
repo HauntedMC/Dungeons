@@ -125,4 +125,21 @@ class GameplayFunctionContractTest {
         }
     }
 
+    @Test
+    void cloningAnEnabledMechanicAllowsIndependentRegistrationAndExecutionInAnotherRun() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration());var menus=new HeadlessMenus()) {
+            var original=bind(new SetStatusFunction(Map.of("status","activated")),f);
+            original.enable(f.run,original.getLocation());
+            var copy=original.clone(); assertNotNull(copy);
+            var second=new RunFixture.Run(f.dungeon,f.world);
+            copy.enable(second,new Location(f.world,2,70,0));
+            assertSame(second,copy.getInstance());
+            copy.runFunction(null,List.of()); assertEquals("activated",second.getStatus()); assertNull(f.run.getStatus());
+            original.runFunction(null,List.of()); assertEquals("activated",f.run.getStatus());
+            original.disable();
+            assertTrue(second.getFunctionListeners(SetStatusFunction.class).contains(copy));
+            copy.disable(); assertTrue(second.getFunctionListeners(SetStatusFunction.class).isEmpty());
+        }
+    }
+
 }

@@ -191,6 +191,7 @@ public abstract class DungeonElement implements ConfigurationSerializable {
      */
     public DungeonElement clone() throws CloneNotSupportedException {
         DungeonElement clone = (DungeonElement) super.clone();
+        clone.enabled = false;
         clone.editListener = new ElementHotbarListener(clone);
         Bukkit.getPluginManager().registerEvents(clone.editListener, clone.plugin());
         return clone;
