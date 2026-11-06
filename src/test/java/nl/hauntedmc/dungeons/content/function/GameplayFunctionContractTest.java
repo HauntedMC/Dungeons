@@ -104,4 +104,25 @@ class GameplayFunctionContractTest {
         }
     }
 
+    @Test
+    void outputMechanicsResolveVariablesAndRouteMessagesTitlesAndSoundToOnlyTheRequestedPlayer() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            var state=new PlayerState(); var target=f.session(state); var outsider=new PlayerState(); f.session(outsider);
+            f.run.getInstanceVariables().set("score",8);
+            bind(new MessageFunction(Map.of("message","score=<score>")),f).runFunction(null,List.of(target));
+            var text=org.mockito.ArgumentCaptor.forClass(net.kyori.adventure.text.Component.class);
+            verify(state.player).sendMessage(text.capture());
+            assertEquals("score=8",net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(text.getValue()));
+            bind(new TitleFunction(Map.of("title","score=<score>","subtitle","done","fadeIn",2,"stay",10,"fadeOut",3)),f).runFunction(null,List.of(target));
+            var title=org.mockito.ArgumentCaptor.forClass(net.kyori.adventure.title.Title.class);
+            verify(state.player).showTitle(title.capture());
+            assertEquals("score=8",net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(title.getValue().title()));
+            assertEquals(java.time.Duration.ofMillis(100),title.getValue().times().fadeIn());
+            bind(new PlaySoundFunction(Map.of("sound","minecraft:block.note_block.bell","soundCategory","invalid")),f).runFunction(null,List.of(target));
+            verify(state.player).playSound(any(Location.class),eq("minecraft:block.note_block.bell"),eq(SoundCategory.MASTER),eq(1f),eq(1f));
+            verifyNoInteractions(outsider.player.getInventory());
+            verify(outsider.player,never()).showTitle(any(net.kyori.adventure.title.Title.class)); verify(outsider.player,never()).sendMessage(any(net.kyori.adventure.text.Component.class));
+        }
+    }
+
 }
