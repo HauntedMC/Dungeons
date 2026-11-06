@@ -21,6 +21,7 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.Event;
@@ -32,6 +33,7 @@ import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.ArgumentCaptor;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -456,6 +458,47 @@ class PlayerRunContractTest {
                 listener.onSpectatorTeleport(teleport);
                 assertEquals(destination != f.world, teleport.isCancelled());
             }
+        }
+    }
+
+    @Test
+    void admissionNormalizesJoinCommandsPreservesPlayerContextAndContinuesAfterACommandFails()
+            throws Exception {
+        var rules = settings();
+        rules.set(
+                "players.join_commands",
+                List.of(
+                        " /say {player}",
+                        "///give %player% minecraft:stone",
+                        " / ",
+                        "fail",
+                        "say {uuid}"));
+        try (var f = new RunFixture(directory, rules)) {
+            var console = mock(ConsoleCommandSender.class);
+            f.paper.bukkit.when(Bukkit::getConsoleSender).thenReturn(console);
+            f.paper
+                    .bukkit
+                    .when(() -> Bukkit.dispatchCommand(console, "fail"))
+                    .thenThrow(new IllegalStateException("external command failed"));
+            var state = new PlayerState();
+            var session = f.session(state);
+            f.run.addPlayer(session);
+            f.run.addPlayer(session);
+            var commands = ArgumentCaptor.forClass(String.class);
+            f.paper.bukkit.verify(
+                    () ->
+                            Bukkit.dispatchCommand(
+                                    org.mockito.Mockito.eq(console), commands.capture()),
+                    times(4));
+            assertEquals(
+                    List.of(
+                            "say Explorer",
+                            "give Explorer minecraft:stone",
+                            "fail",
+                            "say " + state.player.getUniqueId()),
+                    commands.getAllValues());
+            assertSame(f.run, session.getInstance());
+            assertEquals(1, f.run.getPlayers().size());
         }
     }
 }
