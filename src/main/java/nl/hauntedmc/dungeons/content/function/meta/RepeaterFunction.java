@@ -1,6 +1,8 @@
 package nl.hauntedmc.dungeons.content.function.meta;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;

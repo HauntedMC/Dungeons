@@ -1,7 +1,11 @@
 package nl.hauntedmc.dungeons.generation.layout;
 
-import static org.junit.jupiter.api.Assertions.*;
-import nl.hauntedmc.dungeons.generation.room.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
+import nl.hauntedmc.dungeons.generation.room.Connector;
+import nl.hauntedmc.dungeons.generation.room.InstanceRoom;
 import nl.hauntedmc.dungeons.util.math.RandomCollection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
