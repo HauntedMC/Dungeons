@@ -5,8 +5,8 @@ Testing in this project is designed to catch regressions in dungeon lifecycle be
 ## Core contract suite
 
 The [core-system contracts and coverage map](CORE_TEST_CONTRACTS.md) describe the behavior
-protected by the suite and the bugs exposed while implementing it. The suite contains **264
-tests across 82 classes**. The final implementation adds 151 scenarios to the previous 113;
+protected by the suite and the bugs exposed while implementing it. The suite contains **268
+tests across 82 classes**. The final implementation adds 155 scenarios to the previous 113;
 every new `@Test` method has its own commit, alongside any fix it demonstrates. The
 [mechanic coverage map](MECHANIC_TEST_COVERAGE.md) identifies execution contracts for all 54
 registered concrete mechanics and states the server boundaries explicitly.
@@ -77,7 +77,8 @@ The final unit-suite implementation was verified with `clean verify` and the art
 bash scripts/verify-artifact.sh
 ```
 
-The Paper profile is separate and was not rerun for this unit-suite pass.
+The separate Paper profile also passes in the final release-readiness verification, including
+startup, generator migration, configuration commands, and help output.
 
 ## What to Test
 
@@ -99,8 +100,8 @@ After `./mvnw -B -ntp verify`:
 - CSV summary: `target/site/jacoco/jacoco.csv`
 
 Use a clean verification run when comparing coverage; repeated targeted test runs can append
-to the existing execution data. The final clean suite measures **45.95% line (10,906/23,732)** and
-**36.81% branch (3,714/10,091)** coverage across the whole codebase, compared with the previous
+to the existing execution data. The final clean suite measures **46.06% line (10,945/23,763)** and
+**36.88% branch (3,726/10,103)** coverage across the whole codebase, compared with the previous
 113-test baseline of 17.86% lines and 15.56% branches. This is a gap-finding measure, not a claim of complete
 gameplay coverage. The separate Paper acceptance process does not contribute to these unit
 coverage numbers.
