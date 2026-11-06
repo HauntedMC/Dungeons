@@ -2,6 +2,30 @@
 
 Testing in this project is designed to catch regressions in dungeon lifecycle behavior while keeping contributor workflow practical.
 
+## Core contract suite
+
+The [core-system contracts and coverage map](CORE_TEST_CONTRACTS.md) describe the behavior
+protected by the suite and the bugs exposed while implementing it. The suite contains 83
+tests: 44 existing tests plus 39 new behavioral scenarios, each added in a separate commit.
+Several scenarios cover tables of inputs or an entire state transition rather than one
+assertion or helper method.
+
+Tests run without downloading or starting Paper. Mockito is managed by HauntedPlatform and
+loaded as a test-only Java agent alongside JaCoCo, supporting Java 25 without dynamic agent
+attachment. Real configuration graphs, files, registries, dungeon/run objects, and mechanics
+are exercised; server interfaces and collaborators are substituted at explicit boundaries.
+Scheduler tests capture tasks and run them deterministically rather than sleeping.
+
+Tests touching Bukkit or RuntimeContext use a scoped fixture and run sequentially because
+these APIs hold process-wide state. A shuffled-order check helps catch leaked state:
+
+```bash
+./mvnw -B -ntp clean verify \
+  '-Djunit.jupiter.testclass.order.default=org.junit.jupiter.api.ClassOrderer$Random' \
+  '-Djunit.jupiter.testmethod.order.default=org.junit.jupiter.api.MethodOrderer$Random' \
+  -Djunit.jupiter.execution.order.random.seed=20261106
+```
+
 ## Test Structure
 
 Tests are organized under `src/test/java` and should mirror production package boundaries:
