@@ -1,9 +1,10 @@
 package nl.hauntedmc.dungeons.runtime.player;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import nl.hauntedmc.dungeons.support.*;
+import nl.hauntedmc.dungeons.util.entity.EntityUtils;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -113,9 +114,7 @@ class PlayerStateContractTest {
     @Test
     void restoringVitalStatsPreservesFoodAndClampsSavedHealthToTheCurrentMaximum() {
         try (var paper = new PaperBoundary();
-                var health =
-                        org.mockito.Mockito.mockStatic(
-                                nl.hauntedmc.dungeons.util.entity.EntityUtils.class)) {
+                var health = mockStatic(EntityUtils.class)) {
             when(paper.plugin.getDataFolder()).thenReturn(directory.toFile());
             when(paper.plugin.isEnabled()).thenReturn(true);
             var state = new PlayerState();
@@ -123,19 +122,11 @@ class PlayerStateContractTest {
             session.saveInventory();
             state.health = 1;
             state.food = 0;
-            health.when(
-                            () ->
-                                    nl.hauntedmc.dungeons.util.entity.EntityUtils.getMaxHealth(
-                                            state.player))
-                    .thenReturn(10.0);
+            health.when(() -> EntityUtils.getMaxHealth(state.player)).thenReturn(10.0);
             session.restoreInventory();
             assertEquals(10, state.health);
             assertEquals(9, state.food);
-            health.when(
-                            () ->
-                                    nl.hauntedmc.dungeons.util.entity.EntityUtils.getMaxHealth(
-                                            state.player))
-                    .thenReturn(20.0);
+            health.when(() -> EntityUtils.getMaxHealth(state.player)).thenReturn(20.0);
             session.restoreInventory();
             assertEquals(13, state.health);
         }

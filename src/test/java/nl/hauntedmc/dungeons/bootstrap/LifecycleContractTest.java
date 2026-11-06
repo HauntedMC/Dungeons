@@ -1,9 +1,7 @@
 package nl.hauntedmc.dungeons.bootstrap;
 
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
@@ -15,15 +13,20 @@ import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueEntry;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry;
 import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
 import nl.hauntedmc.dungeons.support.PaperBoundary;
+import nl.hauntedmc.dungeons.support.PlayerState;
+import nl.hauntedmc.dungeons.support.RunFixture;
 
 import org.bukkit.Bukkit;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.file.Path;
 import java.util.List;
 
 class LifecycleContractTest {
-    @org.junit.jupiter.api.io.TempDir java.nio.file.Path directory;
+    @TempDir Path directory;
 
     @Test
     void shutdownClearsPendingStartsBeforeDisposalAndOneBrokenRunCannotAbandonOthers() {
@@ -118,26 +121,19 @@ class LifecycleContractTest {
 
     @Test
     void reloadingOneDungeonRestoresItsPlayersAndRefundsOnlyItsPendingStarts() throws Exception {
-        try (var f =
-                new nl.hauntedmc.dungeons.support.RunFixture(
-                        directory, new org.bukkit.configuration.file.YamlConfiguration())) {
-            var other =
-                    f.paper.dungeon(
-                            directory.resolve("other"),
-                            new org.bukkit.configuration.file.YamlConfiguration());
-            var selected = new nl.hauntedmc.dungeons.support.PlayerState();
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var other = f.paper.dungeon(directory.resolve("other"), new YamlConfiguration());
+            var selected = new PlayerState();
             var selectedSession = f.session(selected);
-            var unrelated = new nl.hauntedmc.dungeons.support.PlayerState();
+            var unrelated = new PlayerState();
             var unrelatedSession = f.session(unrelated);
-            var active = new nl.hauntedmc.dungeons.support.PlayerState();
+            var active = new PlayerState();
             var activeSession = f.session(active);
             var origin = active.location.clone();
             f.run.addPlayer(activeSession);
             f.dungeon.getInstances().add(f.run);
-            selectedSession.reserveAccessKey(
-                    "crypt", nl.hauntedmc.dungeons.support.PlayerState.stack(1));
-            unrelatedSession.reserveAccessKey(
-                    "other", nl.hauntedmc.dungeons.support.PlayerState.stack(1));
+            selectedSession.reserveAccessKey("crypt", PlayerState.stack(1));
+            unrelatedSession.reserveAccessKey("other", PlayerState.stack(1));
             selectedSession.setAwaitingDungeon(true);
             unrelatedSession.setAwaitingDungeon(true);
             var queues =
@@ -162,18 +158,17 @@ class LifecycleContractTest {
                     .thenReturn(List.of(selected.player, unrelated.player, active.player));
             new LifecycleCoordinator(f.paper.runtime, mock(CoreBootstrap.class))
                     .reloadDungeon(f.dungeon);
-            org.junit.jupiter.api.Assertions.assertNull(activeSession.getInstance());
-            org.junit.jupiter.api.Assertions.assertEquals(origin, active.location);
-            org.junit.jupiter.api.Assertions.assertFalse(selectedSession.hasReservedAccessKey());
-            org.junit.jupiter.api.Assertions.assertFalse(selectedSession.isAwaitingDungeon());
-            org.junit.jupiter.api.Assertions.assertTrue(unrelatedSession.hasReservedAccessKey());
-            org.junit.jupiter.api.Assertions.assertTrue(unrelatedSession.isAwaitingDungeon());
-            org.mockito.Mockito.verify(coordinator).discardQueue(own);
-            org.mockito.Mockito.verify(coordinator, org.mockito.Mockito.never())
-                    .discardQueue(neighbor);
-            org.mockito.Mockito.verify(teams).clearQueuedStarts("crypt");
-            org.mockito.Mockito.verify(catalog).remove(f.dungeon);
-            org.mockito.Mockito.verify(catalog).loadDungeon(f.dungeon.getFolder());
+            assertNull(activeSession.getInstance());
+            assertEquals(origin, active.location);
+            assertFalse(selectedSession.hasReservedAccessKey());
+            assertFalse(selectedSession.isAwaitingDungeon());
+            assertTrue(unrelatedSession.hasReservedAccessKey());
+            assertTrue(unrelatedSession.isAwaitingDungeon());
+            verify(coordinator).discardQueue(own);
+            verify(coordinator, never()).discardQueue(neighbor);
+            verify(teams).clearQueuedStarts("crypt");
+            verify(catalog).remove(f.dungeon);
+            verify(catalog).loadDungeon(f.dungeon.getFolder());
         }
     }
 }

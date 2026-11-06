@@ -3,15 +3,21 @@ package nl.hauntedmc.dungeons.content.function;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import nl.hauntedmc.dungeons.event.RemoteTriggerEvent;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.model.element.FunctionTargetType;
 import nl.hauntedmc.dungeons.support.*;
+import nl.hauntedmc.dungeons.util.item.ItemUtils;
 
 import org.bukkit.*;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.event.HandlerList;
+import org.bukkit.event.Listener;
+import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.ArgumentCaptor;
 
 import java.nio.file.Path;
 import java.util.*;
@@ -123,16 +129,15 @@ class PlayerEffectContractTest {
                     List.of(new GiveItemFunction(config), new GiveKeyFunction(config))) {
                 GameplayFunctionContractTest.bind(function, f)
                         .runFunction(null, List.of(left, right));
-                org.mockito.ArgumentCaptor<org.bukkit.inventory.ItemStack> delivered =
-                        org.mockito.ArgumentCaptor.captor();
+                ArgumentCaptor<ItemStack> delivered = ArgumentCaptor.captor();
                 verify(first.inventory).addItem(delivered.capture());
                 var firstItem = delivered.getValue();
                 verify(second.inventory).addItem(delivered.capture());
                 var secondItem = delivered.getValue();
                 assertNotSame(template, firstItem);
                 assertNotSame(firstItem, secondItem);
-                assertTrue(nl.hauntedmc.dungeons.util.item.ItemUtils.verifyKeyItem(firstItem));
-                assertTrue(nl.hauntedmc.dungeons.util.item.ItemUtils.verifyDungeonItem(secondItem));
+                assertTrue(ItemUtils.verifyKeyItem(firstItem));
+                assertTrue(ItemUtils.verifyDungeonItem(secondItem));
                 firstItem.setAmount(1);
                 assertEquals(3, secondItem.getAmount());
                 assertEquals(3, template.getAmount());
@@ -141,11 +146,8 @@ class PlayerEffectContractTest {
             GameplayFunctionContractTest.bind(
                             new GiveItemFunction(Map.of("item", template, "drop", true)), f)
                     .runFunction(null, List.of(left));
-            verify(f.world)
-                    .dropItem(
-                            eq(new Location(f.world, 0, 70, 0)),
-                            any(org.bukkit.inventory.ItemStack.class));
-            verify(first.inventory, never()).addItem(any(org.bukkit.inventory.ItemStack.class));
+            verify(f.world).dropItem(eq(new Location(f.world, 0, 70, 0)), any(ItemStack.class));
+            verify(first.inventory, never()).addItem(any(ItemStack.class));
         }
     }
 
@@ -176,7 +178,7 @@ class PlayerEffectContractTest {
     void remoteSignalsPreserveTheirSourceAndReleaseTemporaryListenersEvenWhenDispatchFails()
             throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration());
-                var handlers = mockStatic(org.bukkit.event.HandlerList.class)) {
+                var handlers = mockStatic(HandlerList.class)) {
             var session = f.session(new PlayerState());
             var source = mock(TriggerFireEvent.class);
             when(source.getPlayerSession()).thenReturn(session);
@@ -189,8 +191,7 @@ class PlayerEffectContractTest {
             clearInvocations(manager);
             signal.runFunction(source, List.of());
             signal.runFunction(source, List.of());
-            org.mockito.ArgumentCaptor<nl.hauntedmc.dungeons.event.RemoteTriggerEvent> events =
-                    org.mockito.ArgumentCaptor.captor();
+            ArgumentCaptor<RemoteTriggerEvent> events = ArgumentCaptor.captor();
             verify(manager, times(2)).callEvent(events.capture());
             for (var event : events.getAllValues()) {
                 assertEquals("puzzle", event.getTriggerName());
@@ -201,13 +202,12 @@ class PlayerEffectContractTest {
             }
             doThrow(new IllegalStateException("external listener failed"))
                     .when(manager)
-                    .callEvent(any(nl.hauntedmc.dungeons.event.RemoteTriggerEvent.class));
+                    .callEvent(any(RemoteTriggerEvent.class));
             assertThrows(IllegalStateException.class, () -> signal.runFunction(source, List.of()));
-            org.mockito.ArgumentCaptor<org.bukkit.event.Listener> listeners =
-                    org.mockito.ArgumentCaptor.captor();
+            ArgumentCaptor<Listener> listeners = ArgumentCaptor.captor();
             verify(manager, times(3)).registerEvents(listeners.capture(), eq(f.paper.plugin));
             for (var listener : listeners.getAllValues()) {
-                handlers.verify(() -> org.bukkit.event.HandlerList.unregisterAll(listener));
+                handlers.verify(() -> HandlerList.unregisterAll(listener));
             }
         }
     }

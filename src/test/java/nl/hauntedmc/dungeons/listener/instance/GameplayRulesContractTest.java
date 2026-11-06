@@ -3,20 +3,24 @@ package nl.hauntedmc.dungeons.listener.instance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import nl.hauntedmc.dungeons.content.function.AllowBlockFunction;
 import nl.hauntedmc.dungeons.support.*;
 
 import org.bukkit.*;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.*;
 import org.bukkit.event.block.*;
 import org.bukkit.event.entity.*;
+import org.bukkit.event.inventory.CraftItemEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.*;
+import org.bukkit.inventory.CraftingInventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.Recipe;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -330,12 +334,12 @@ class GameplayRulesContractTest {
                 f.run.getConfig().set("rules.items.allow_storage_banned", allowed);
                 var item = PlayerState.stack(2);
                 when(item.getType()).thenReturn(Material.DIAMOND);
-                var recipe = mock(org.bukkit.inventory.Recipe.class);
+                var recipe = mock(Recipe.class);
                 when(recipe.getResult()).thenReturn(item);
-                var inventory = mock(org.bukkit.inventory.CraftingInventory.class);
+                var inventory = mock(CraftingInventory.class);
                 when(inventory.getLocation()).thenReturn(new Location(f.world, 0, 70, 0));
                 when(inventory.getViewers()).thenReturn(List.of(state.player));
-                var craft = TestEvents.cancellable(org.bukkit.event.inventory.CraftItemEvent.class);
+                var craft = TestEvents.cancellable(CraftItemEvent.class);
                 when(craft.getInventory()).thenReturn(inventory);
                 when(craft.getRecipe()).thenReturn(recipe);
                 listener.onCraftBannedItem(craft);
@@ -347,15 +351,8 @@ class GameplayRulesContractTest {
                 when(pickup.getItem()).thenReturn(entity);
                 listener.onPickupBannedItem(pickup);
                 assertEquals(!allowed, pickup.isCancelled());
-                org.mockito.Mockito.verify(
-                                entity,
-                                allowed
-                                        ? org.mockito.Mockito.never()
-                                        : org.mockito.Mockito.times(1))
-                        .remove();
-                var click =
-                        TestEvents.cancellable(
-                                org.bukkit.event.inventory.InventoryClickEvent.class);
+                verify(entity, allowed ? never() : times(1)).remove();
+                var click = TestEvents.cancellable(InventoryClickEvent.class);
                 when(click.getWhoClicked()).thenReturn(state.player);
                 when(click.getCurrentItem()).thenReturn(item);
                 listener.onClickBannedItem(click);
@@ -390,7 +387,7 @@ class GameplayRulesContractTest {
                 for (boolean prevent : List.of(false, true)) {
                     f.run.getConfig().set("rules.world.prevent_plant_growth", prevent);
                     f.run.getConfig().set("rules.world.prevent_explosion_block_damage", prevent);
-                    var state = mock(org.bukkit.block.BlockState.class);
+                    var state = mock(BlockState.class);
                     when(state.getWorld()).thenReturn(world);
                     var growth = TestEvents.cancellable(BlockGrowEvent.class);
                     when(growth.getNewState()).thenReturn(state);

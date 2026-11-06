@@ -1,13 +1,14 @@
 package nl.hauntedmc.dungeons.config;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.*;
 
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.annotation.TypeKey;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -44,11 +45,11 @@ class ConfigSerializableModelTest {
 
     @Test
     void malformedTypeDiscriminatorsAreRejectedWithoutThrowingOrConstructingFallbackObjects() {
-        var malformed = new java.util.HashMap<String, Object>();
-        for (Object type : java.util.Arrays.asList(42, java.util.List.of("test.child"), null)) {
+        var malformed = new HashMap<String, Object>();
+        for (Object type : Arrays.asList(42, List.of("test.child"), null)) {
             malformed.put("TYPE--", type);
-            org.junit.jupiter.api.Assertions.assertNull(
-                    org.junit.jupiter.api.Assertions.assertDoesNotThrow(
+            assertNull(
+                    assertDoesNotThrow(
                             () -> ConfigSerializableModel.deserialize(Child.class, malformed)));
         }
     }

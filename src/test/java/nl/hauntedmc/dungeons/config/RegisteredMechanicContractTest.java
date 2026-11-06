@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.stream.Collectors;
 
 class RegisteredMechanicContractTest {
     static Map<String, String> manifest() throws IOException {
@@ -56,8 +57,7 @@ class RegisteredMechanicContractTest {
                 TypeMetadataSupport.discoverAutoRegisteredTypes(
                         "nl.hauntedmc.dungeons.content.condition", TriggerCondition.class));
         assertEquals(
-                expected.keySet(),
-                types.stream().map(Class::getName).collect(java.util.stream.Collectors.toSet()));
+                expected.keySet(), types.stream().map(Class::getName).collect(Collectors.toSet()));
         Set<String> ids = new HashSet<>();
         for (var type : types) {
             assertEquals(expected.get(type.getName()), TypeMetadataSupport.requiredId(type));

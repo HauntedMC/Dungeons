@@ -3,14 +3,22 @@ package nl.hauntedmc.dungeons.generation.room;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import nl.hauntedmc.dungeons.content.function.CheckpointFunction;
+import nl.hauntedmc.dungeons.content.function.SetStatusFunction;
+import nl.hauntedmc.dungeons.content.function.SpawnMobFunction;
+import nl.hauntedmc.dungeons.content.function.TeleportFunction;
 import nl.hauntedmc.dungeons.content.function.room.RoomDoorFunction;
+import nl.hauntedmc.dungeons.content.trigger.DistanceTrigger;
+import nl.hauntedmc.dungeons.content.trigger.room.RoomDoorChangeTrigger;
 import nl.hauntedmc.dungeons.event.RoomDoorChangeEvent;
+import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.gui.menu.RoomMenus;
 import nl.hauntedmc.dungeons.support.*;
 import nl.hauntedmc.dungeons.util.world.SimpleLocation;
 
 import org.bukkit.*;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.event.Event;
 import org.bukkit.util.BoundingBox;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -18,6 +26,7 @@ import org.mockito.ArgumentCaptor;
 
 import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Collectors;
 
 class RoomMechanicContractTest {
     @TempDir Path directory;
@@ -98,12 +107,8 @@ class RoomMechanicContractTest {
             var b = new BranchingRunFixture(f);
             var room = room(b, "hall", 0);
             var other = room(b, "other", 20);
-            var trigger =
-                    new nl.hauntedmc.dungeons.content.trigger.room.RoomDoorChangeTrigger(
-                            Map.of("doorName", "exit", "action", 1));
-            var effect =
-                    new nl.hauntedmc.dungeons.content.function.SetStatusFunction(
-                            Map.of("status", "door-opened"));
+            var trigger = new RoomDoorChangeTrigger(Map.of("doorName", "exit", "action", 1));
+            var effect = new SetStatusFunction(Map.of("status", "door-opened"));
             effect.initializeFields();
             effect.setTrigger(trigger);
             effect.enable(b.run, new Location(f.world, 2, 71, 2));
@@ -115,7 +120,7 @@ class RoomMechanicContractTest {
                                 return null;
                             })
                     .when(manager)
-                    .callEvent(any(org.bukkit.event.Event.class));
+                    .callEvent(any(Event.class));
             trigger.onDoorChange(
                     new RoomDoorChangeEvent(
                             b.run,
@@ -141,11 +146,7 @@ class RoomMechanicContractTest {
             assertNull(b.run.getStatus());
             f.scheduler.immediate.getFirst().run();
             assertEquals("door-opened", b.run.getStatus());
-            assertTrue(
-                    b.run.getTriggerListeners(
-                                    nl.hauntedmc.dungeons.content.trigger.room.RoomDoorChangeTrigger
-                                            .class)
-                            .isEmpty());
+            assertTrue(b.run.getTriggerListeners(RoomDoorChangeTrigger.class).isEmpty());
         }
     }
 
@@ -173,7 +174,7 @@ class RoomMechanicContractTest {
                             any(Location.class), anyDouble(), anyDouble(), anyDouble(), any()))
                     .thenReturn(List.of(first.player, second.player));
             var trigger =
-                    new nl.hauntedmc.dungeons.content.trigger.DistanceTrigger(
+                    new DistanceTrigger(
                             Map.of(
                                     "radius",
                                     100.0,
@@ -195,14 +196,13 @@ class RoomMechanicContractTest {
             scan.run();
             assertEquals(2, f.scheduler.immediate.size());
             f.scheduler.immediate.forEach(CapturedScheduler.Job::run);
-            var events =
-                    ArgumentCaptor.forClass(nl.hauntedmc.dungeons.event.TriggerFireEvent.class);
+            var events = ArgumentCaptor.forClass(TriggerFireEvent.class);
             verify(Bukkit.getPluginManager(), times(2)).callEvent(events.capture());
             assertEquals(
                     Set.of(left, right),
                     events.getAllValues().stream()
-                            .map(nl.hauntedmc.dungeons.event.TriggerFireEvent::getPlayerSession)
-                            .collect(java.util.stream.Collectors.toSet()));
+                            .map(TriggerFireEvent::getPlayerSession)
+                            .collect(Collectors.toSet()));
             trigger.disable();
             assertTrue(scan.cancelled);
         }
@@ -219,14 +219,10 @@ class RoomMechanicContractTest {
                     new BranchingRoomDefinition(
                             b.dungeon, "rotated", new BoundingBox(0, 0, 0, 8, 4, 6));
             var teleport =
-                    new nl.hauntedmc.dungeons.content.function.TeleportFunction(
+                    new TeleportFunction(
                             Map.of("teleportTarget", new Location(null, 4, 1, 5, 90, 15)));
-            var checkpoint =
-                    new nl.hauntedmc.dungeons.content.function.CheckpointFunction(
-                            Map.of("yaw", 100.0));
-            var spawner =
-                    new nl.hauntedmc.dungeons.content.function.SpawnMobFunction(
-                            Map.of("yaw", 45.0));
+            var checkpoint = new CheckpointFunction(Map.of("yaw", 100.0));
+            var spawner = new SpawnMobFunction(Map.of("yaw", 45.0));
             var functions = List.of(teleport, checkpoint, spawner);
             var locations =
                     List.of(
@@ -250,21 +246,21 @@ class RoomMechanicContractTest {
             b.add(second);
             var left =
                     assertInstanceOf(
-                            nl.hauntedmc.dungeons.content.function.TeleportFunction.class,
+                            TeleportFunction.class,
                             b.run.getFunctions().get(new Location(f.world, 103, 71, 206)));
             var right =
                     assertInstanceOf(
-                            nl.hauntedmc.dungeons.content.function.TeleportFunction.class,
+                            TeleportFunction.class,
                             b.run.getFunctions().get(new Location(f.world, 203, 71, 206)));
             assertEquals(new Location(f.world, 105, 71, 204, 0, 15), left.getInstanceLoc());
             assertEquals(new Location(f.world, 205, 71, 204, 0, 15), right.getInstanceLoc());
             var placedCheckpoint =
                     assertInstanceOf(
-                            nl.hauntedmc.dungeons.content.function.CheckpointFunction.class,
+                            CheckpointFunction.class,
                             b.run.getFunctions().get(new Location(f.world, 102, 71, 207)));
             var placedSpawner =
                     assertInstanceOf(
-                            nl.hauntedmc.dungeons.content.function.SpawnMobFunction.class,
+                            SpawnMobFunction.class,
                             b.run.getFunctions().get(new Location(f.world, 101, 71, 205)));
             assertEquals(10, placedCheckpoint.getYaw());
             assertEquals(-45, placedSpawner.getYaw());
@@ -290,9 +286,7 @@ class RoomMechanicContractTest {
             var broken = new FailedEnable();
             broken.setLocation(new Location(null, 1, 1, 1));
             definition.addFunction(broken.getLocation(), broken);
-            var healthy =
-                    new nl.hauntedmc.dungeons.content.function.SetStatusFunction(
-                            Map.of("status", "healthy"));
+            var healthy = new SetStatusFunction(Map.of("status", "healthy"));
             healthy.initializeFields();
             healthy.setLocation(new Location(null, 2, 1, 2));
             definition.addFunction(healthy.getLocation(), healthy);
@@ -309,7 +303,7 @@ class RoomMechanicContractTest {
         }
     }
 
-    static class FailedEnable extends nl.hauntedmc.dungeons.content.function.SetStatusFunction {
+    static class FailedEnable extends SetStatusFunction {
         @Override
         public void onEnable() {
             throw new IllegalStateException("cannot enable room mechanic");

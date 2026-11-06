@@ -1,18 +1,22 @@
 package nl.hauntedmc.dungeons.content.function.reward;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.Mockito.anyInt;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
+import nl.hauntedmc.dungeons.gui.framework.actions.Action;
+import nl.hauntedmc.dungeons.gui.framework.window.GuiInventory;
 import nl.hauntedmc.dungeons.support.*;
 
 import org.bukkit.Location;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.InventoryOpenEvent;
+import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 
 import java.nio.file.Path;
 import java.util.*;
@@ -103,51 +107,35 @@ class RewardExecutionContractTest {
             reward.setLocation(new Location(f.world, 0, 70, 0));
             reward.onEnable();
             var window = gui.windows().getLast();
-            org.mockito.Mockito.when(window.getInventoryFor(first.player))
-                    .thenReturn(
-                            new nl.hauntedmc.dungeons.gui.framework.window.GuiInventory(
-                                    new HashMap<>(), firstMenu.inventory));
-            org.mockito.Mockito.when(window.getInventoryFor(second.player))
-                    .thenReturn(
-                            new nl.hauntedmc.dungeons.gui.framework.window.GuiInventory(
-                                    new HashMap<>(), secondMenu.inventory));
-            org.mockito.ArgumentCaptor<
-                            nl.hauntedmc.dungeons.gui.framework.actions.Action<
-                                    org.bukkit.event.inventory.InventoryOpenEvent>>
-                    open = org.mockito.ArgumentCaptor.captor();
-            org.mockito.ArgumentCaptor<
-                            nl.hauntedmc.dungeons.gui.framework.actions.Action<
-                                    org.bukkit.event.inventory.InventoryCloseEvent>>
-                    close = org.mockito.ArgumentCaptor.captor();
-            verify(window).addOpenAction(org.mockito.Mockito.eq("loaditems"), open.capture());
-            verify(window).addCloseAction(org.mockito.Mockito.eq("dropitems"), close.capture());
+            when(window.getInventoryFor(first.player))
+                    .thenReturn(new GuiInventory(new HashMap<>(), firstMenu.inventory));
+            when(window.getInventoryFor(second.player))
+                    .thenReturn(new GuiInventory(new HashMap<>(), secondMenu.inventory));
+            ArgumentCaptor<Action<InventoryOpenEvent>> open = ArgumentCaptor.captor();
+            ArgumentCaptor<Action<InventoryCloseEvent>> close = ArgumentCaptor.captor();
+            verify(window).addOpenAction(eq("loaditems"), open.capture());
+            verify(window).addCloseAction(eq("dropitems"), close.capture());
             for (var player : List.of(first, second)) {
-                var event =
-                        org.mockito.Mockito.mock(
-                                org.bukkit.event.inventory.InventoryOpenEvent.class);
-                org.mockito.Mockito.when(event.getPlayer()).thenReturn(player.player);
+                var event = mock(InventoryOpenEvent.class);
+                when(event.getPlayer()).thenReturn(player.player);
                 open.getValue().run(event);
             }
-            org.junit.jupiter.api.Assertions.assertNotSame(template, firstMenu.contents[0]);
+            assertNotSame(template, firstMenu.contents[0]);
             firstMenu.contents[0].setAmount(2);
             assertEquals(5, secondMenu.contents[0].getAmount());
             assertEquals(5, template.getAmount());
-            var event =
-                    org.mockito.Mockito.mock(org.bukkit.event.inventory.InventoryCloseEvent.class);
-            org.mockito.Mockito.when(event.getPlayer()).thenReturn(first.player);
+            var event = mock(InventoryCloseEvent.class);
+            when(event.getPlayer()).thenReturn(first.player);
             close.getValue().run(event);
             close.getValue().run(event);
-            org.mockito.ArgumentCaptor<org.bukkit.inventory.ItemStack> delivered =
-                    org.mockito.ArgumentCaptor.captor();
+            ArgumentCaptor<ItemStack> delivered = ArgumentCaptor.captor();
             verify(first.inventory).addItem(delivered.capture());
             assertEquals(2, delivered.getValue().getAmount());
-            org.junit.jupiter.api.Assertions.assertTrue(
-                    Arrays.stream(firstMenu.contents).allMatch(Objects::isNull));
-            var reopen =
-                    org.mockito.Mockito.mock(org.bukkit.event.inventory.InventoryOpenEvent.class);
-            org.mockito.Mockito.when(reopen.getPlayer()).thenReturn(first.player);
+            assertTrue(Arrays.stream(firstMenu.contents).allMatch(Objects::isNull));
+            var reopen = mock(InventoryOpenEvent.class);
+            when(reopen.getPlayer()).thenReturn(first.player);
             open.getValue().run(reopen);
-            org.junit.jupiter.api.Assertions.assertNull(firstMenu.contents[0]);
+            assertNull(firstMenu.contents[0]);
         }
     }
 
@@ -175,53 +163,35 @@ class RewardExecutionContractTest {
             reward.setLocation(new Location(f.world, 0, 70, 0));
             reward.onEnable();
             var window = gui.windows().getLast();
-            var inventory =
-                    new nl.hauntedmc.dungeons.gui.framework.window.GuiInventory(
-                            new HashMap<>(), menuState.inventory);
-            org.mockito.Mockito.when(window.getInventoryFor(state.player)).thenReturn(inventory);
-            org.mockito.ArgumentCaptor<
-                            nl.hauntedmc.dungeons.gui.framework.actions.Action<
-                                    org.bukkit.event.inventory.InventoryOpenEvent>>
-                    open = org.mockito.ArgumentCaptor.captor();
-            org.mockito.ArgumentCaptor<
-                            nl.hauntedmc.dungeons.gui.framework.actions.Action<
-                                    org.bukkit.event.inventory.InventoryCloseEvent>>
-                    close = org.mockito.ArgumentCaptor.captor();
-            verify(window).addOpenAction(org.mockito.Mockito.eq("loaditems"), open.capture());
-            verify(window).addCloseAction(org.mockito.Mockito.eq("dropitems"), close.capture());
-            var opening =
-                    org.mockito.Mockito.mock(org.bukkit.event.inventory.InventoryOpenEvent.class);
-            org.mockito.Mockito.when(opening.getPlayer()).thenReturn(state.player);
+            var inventory = new GuiInventory(new HashMap<>(), menuState.inventory);
+            when(window.getInventoryFor(state.player)).thenReturn(inventory);
+            ArgumentCaptor<Action<InventoryOpenEvent>> open = ArgumentCaptor.captor();
+            ArgumentCaptor<Action<InventoryCloseEvent>> close = ArgumentCaptor.captor();
+            verify(window).addOpenAction(eq("loaditems"), open.capture());
+            verify(window).addCloseAction(eq("dropitems"), close.capture());
+            var opening = mock(InventoryOpenEvent.class);
+            when(opening.getPlayer()).thenReturn(state.player);
             open.getValue().run(opening);
             assertEquals(2, inventory.buttons().size());
-            org.mockito.ArgumentCaptor<
-                            nl.hauntedmc.dungeons.gui.framework.actions.Action<
-                                    org.bukkit.event.inventory.InventoryClickEvent>>
-                    click = org.mockito.ArgumentCaptor.captor();
-            verify(inventory.buttons().get(0))
-                    .addAction(org.mockito.Mockito.eq("click"), click.capture());
-            var clicking =
-                    TestEvents.cancellable(org.bukkit.event.inventory.InventoryClickEvent.class);
-            org.mockito.Mockito.when(clicking.getWhoClicked()).thenReturn(state.player);
+            ArgumentCaptor<Action<InventoryClickEvent>> click = ArgumentCaptor.captor();
+            verify(inventory.buttons().get(0)).addAction(eq("click"), click.capture());
+            var clicking = TestEvents.cancellable(InventoryClickEvent.class);
+            when(clicking.getWhoClicked()).thenReturn(state.player);
             click.getValue().run(clicking);
-            org.junit.jupiter.api.Assertions.assertTrue(clicking.isCancelled());
-            org.junit.jupiter.api.Assertions.assertNull(menuState.contents[0]);
+            assertTrue(clicking.isCancelled());
+            assertNull(menuState.contents[0]);
             assertEquals(1, f.run.getRewardInventories().get(state.player.getUniqueId()).size());
-            var closing =
-                    org.mockito.Mockito.mock(org.bukkit.event.inventory.InventoryCloseEvent.class);
-            org.mockito.Mockito.when(closing.getPlayer()).thenReturn(state.player);
+            var closing = mock(InventoryCloseEvent.class);
+            when(closing.getPlayer()).thenReturn(state.player);
             close.getValue().run(closing);
             close.getValue().run(closing);
             f.run.pushPlayerRewards(state.player);
             assertEquals(
                     List.of(2, 3),
-                    session.getRewardItems().stream()
-                            .map(org.bukkit.inventory.ItemStack::getAmount)
-                            .toList());
-            verify(state.inventory, never())
-                    .addItem(org.mockito.Mockito.<org.bukkit.inventory.ItemStack>any());
+                    session.getRewardItems().stream().map(ItemStack::getAmount).toList());
+            verify(state.inventory, never()).addItem(Mockito.<ItemStack>any());
             open.getValue().run(opening);
-            org.junit.jupiter.api.Assertions.assertNull(menuState.contents[1]);
+            assertNull(menuState.contents[1]);
         }
     }
 }

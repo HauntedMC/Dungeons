@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 
 import nl.hauntedmc.dungeons.content.function.SetStatusFunction;
 import nl.hauntedmc.dungeons.content.function.variable.InstanceVariableFunction;
+import nl.hauntedmc.dungeons.content.trigger.RemoteTrigger;
 import nl.hauntedmc.dungeons.content.variable.VariableEditMode;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDifficulty;
@@ -203,7 +204,7 @@ class ConditionExecutionContractTest {
             throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration());
                 var menus = new HeadlessMenus()) {
-            var trigger = new nl.hauntedmc.dungeons.content.trigger.RemoteTrigger();
+            var trigger = new RemoteTrigger();
             var inverted = new ChanceCondition(Map.of("chance", 0.0, "inverted", true));
             var elapsed = new TimeElapsedCondition(Map.of("time", 10));
             trigger.addCondition(inverted);
@@ -218,7 +219,7 @@ class ConditionExecutionContractTest {
             assertFalse(trigger.checkConditions(event));
             f.run.elapsed(10);
             assertTrue(trigger.checkConditions(event));
-            var broken = mock(nl.hauntedmc.dungeons.model.element.TriggerCondition.class);
+            var broken = mock(TriggerCondition.class);
             when(broken.check(event)).thenThrow(new IllegalStateException("condition failed"));
             trigger.addCondition(broken);
             assertFalse(trigger.checkConditions(event));

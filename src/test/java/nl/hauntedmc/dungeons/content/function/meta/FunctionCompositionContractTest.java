@@ -1,7 +1,7 @@
 package nl.hauntedmc.dungeons.content.function.meta;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
@@ -9,6 +9,7 @@ import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.support.PaperBoundary;
+import nl.hauntedmc.dungeons.util.math.MathUtils;
 
 import org.junit.jupiter.api.Test;
 
@@ -69,9 +70,7 @@ class FunctionCompositionContractTest {
     @Test
     void randomCompositionExecutesOnlyTheChosenChildAndPreservesTheCallersTargets() {
         try (var paper = new PaperBoundary();
-                var random =
-                        org.mockito.Mockito.mockStatic(
-                                nl.hauntedmc.dungeons.util.math.MathUtils.class)) {
+                var random = mockStatic(MathUtils.class)) {
             var function = new RandomFunction();
             var source = mock(DungeonPlayerSession.class);
             var targets = new ArrayList<>(List.of(source));
@@ -83,20 +82,12 @@ class FunctionCompositionContractTest {
             second.clearTargets = true;
             function.addFunction(first);
             function.addFunction(second);
-            random.when(
-                            () ->
-                                    nl.hauntedmc.dungeons.util.math.MathUtils
-                                            .getRandomNumberInRange(0, 1))
-                    .thenReturn(1);
+            random.when(() -> MathUtils.getRandomNumberInRange(0, 1)).thenReturn(1);
             function.runFunction(event, targets);
             assertEquals(List.of("second"), effects);
             assertEquals(List.of(source), second.received);
             assertEquals(List.of(source), targets);
-            random.when(
-                            () ->
-                                    nl.hauntedmc.dungeons.util.math.MathUtils
-                                            .getRandomNumberInRange(0, 1))
-                    .thenReturn(0);
+            random.when(() -> MathUtils.getRandomNumberInRange(0, 1)).thenReturn(0);
             function.runFunction(event, targets);
             assertEquals(List.of("second", "first"), effects);
             assertEquals(List.of(source), first.received);
@@ -108,14 +99,12 @@ class FunctionCompositionContractTest {
         try (var paper = new PaperBoundary()) {
             var bad = mock(DungeonFunction.class);
             var healthy = mock(DungeonFunction.class);
-            org.mockito.Mockito.doThrow(new IllegalStateException("child cleanup failed"))
-                    .when(bad)
-                    .disable();
+            doThrow(new IllegalStateException("child cleanup failed")).when(bad).disable();
             var composite = new CompositeFunction();
             composite.addFunction(bad);
             composite.addFunction(healthy);
-            org.junit.jupiter.api.Assertions.assertDoesNotThrow(composite::onDisable);
-            org.mockito.Mockito.verify(healthy).disable();
+            assertDoesNotThrow(composite::onDisable);
+            verify(healthy).disable();
         }
     }
 

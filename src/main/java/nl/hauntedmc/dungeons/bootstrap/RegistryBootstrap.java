@@ -1,12 +1,9 @@
 package nl.hauntedmc.dungeons.bootstrap;
 
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
 import nl.hauntedmc.dungeons.config.ConfigSerializableModel;
-import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
-import nl.hauntedmc.dungeons.content.dungeon.OpenDungeon;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
+import nl.hauntedmc.dungeons.content.dungeon.OpenDungeon;
+import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
 import nl.hauntedmc.dungeons.content.reward.LootCooldown;
 import nl.hauntedmc.dungeons.content.reward.LootTable;
 import nl.hauntedmc.dungeons.content.reward.LootTableItem;
@@ -28,10 +25,15 @@ import nl.hauntedmc.dungeons.registry.DungeonTypeRegistry;
 import nl.hauntedmc.dungeons.registry.LayoutRegistry;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import nl.hauntedmc.dungeons.util.metadata.TypeMetadataSupport;
+
 import org.apache.commons.lang3.reflect.MethodUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
+
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Registers runtime types and serialization metadata that must exist before dungeon content is

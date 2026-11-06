@@ -1,7 +1,6 @@
 package nl.hauntedmc.dungeons.command.config;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -13,6 +12,8 @@ import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
 import nl.hauntedmc.dungeons.runtime.instance.ActiveInstanceRegistry;
 import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
 import nl.hauntedmc.dungeons.support.PaperBoundary;
+import nl.hauntedmc.dungeons.support.PlayerState;
+import nl.hauntedmc.dungeons.support.RunFixture;
 
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -89,13 +90,12 @@ class ConfigAuthorizationContractTest {
     @Test
     void typedConfigurationCommandsPersistBooleansNumbersEnumsListsAndWorldIndependentLocations()
             throws Exception {
-        try (var f =
-                new nl.hauntedmc.dungeons.support.RunFixture(directory, new YamlConfiguration())) {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
             var catalog = mock(DungeonRepository.class);
             when(catalog.get("crypt")).thenReturn(f.dungeon);
             when(catalog.getLoadedDungeons()).thenReturn(List.of(f.dungeon));
             f.paper.runtime.setDungeonCatalog(catalog);
-            var state = new nl.hauntedmc.dungeons.support.PlayerState();
+            var state = new PlayerState();
             when(state.player.hasPermission("dungeons.edit.crypt")).thenReturn(true);
             var commands =
                     new DungeonConfigCommandHandler(
@@ -141,12 +141,11 @@ class ConfigAuthorizationContractTest {
                     state.player, new String[] {"config", "crypt", "start-location", "here"});
             file.load(directory.resolve("crypt/config.yml").toFile());
             var reloaded = f.paper.dungeon(directory.resolve("crypt"), file);
-            org.junit.jupiter.api.Assertions.assertNull(reloaded.getStartSpawn().getWorld());
-            org.junit.jupiter.api.Assertions.assertFalse(file.contains("locations.start.world"));
+            assertNull(reloaded.getStartSpawn().getWorld());
+            assertFalse(file.contains("locations.start.world"));
             assertEquals(state.location.getX(), f.dungeon.getStartSpawn().getX());
             assertEquals(state.location.getYaw(), f.dungeon.getStartSpawn().getYaw());
-            org.junit.jupiter.api.Assertions.assertSame(
-                    state.originWorld, state.location.getWorld());
+            assertSame(state.originWorld, state.location.getWorld());
         }
     }
 }

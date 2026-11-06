@@ -1,22 +1,14 @@
 package nl.hauntedmc.dungeons.model.element;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
+import nl.hauntedmc.dungeons.support.CapturedScheduler;
+import nl.hauntedmc.dungeons.support.CapturedScheduler.Job;
 import nl.hauntedmc.dungeons.support.PaperBoundary;
 
 import org.bukkit.Bukkit;
@@ -114,7 +106,7 @@ class TriggerLifecycleContractTest {
     @Test
     void disablingATriggerCancelsEveryOverlappingConditionWaiter() {
         try (var paper = new PaperBoundary()) {
-            var scheduler = new nl.hauntedmc.dungeons.support.CapturedScheduler(paper);
+            var scheduler = new CapturedScheduler(paper);
             var run = mock(PlayableInstance.class);
             when(run.asPlayInstance()).thenReturn(run);
             when(run.getEnvironment()).thenReturn(paper.runtime.environment());
@@ -129,7 +121,7 @@ class TriggerLifecycleContractTest {
             trigger.disable();
             assertTrue(scheduler.jobs.stream().allMatch(job -> job.cancelled));
             when(condition.check(any())).thenReturn(true);
-            scheduler.jobs.forEach(nl.hauntedmc.dungeons.support.CapturedScheduler.Job::run);
+            scheduler.jobs.forEach(Job::run);
             verify(function, never()).execute(any());
             assertEquals(0, trigger.effects);
         }
@@ -138,21 +130,19 @@ class TriggerLifecycleContractTest {
     @Test
     void failingConditionCleanupCannotLeaveOtherConditionsOrPendingPollsActive() {
         try (var paper = new PaperBoundary()) {
-            var scheduler = new nl.hauntedmc.dungeons.support.CapturedScheduler(paper);
+            var scheduler = new CapturedScheduler(paper);
             var run = mock(PlayableInstance.class);
             when(run.asPlayInstance()).thenReturn(run);
             when(run.getEnvironment()).thenReturn(paper.runtime.environment());
             var bad = mock(TriggerCondition.class);
             var healthy = mock(TriggerCondition.class);
-            org.mockito.Mockito.doThrow(new IllegalStateException("condition cleanup failed"))
-                    .when(bad)
-                    .disable();
+            doThrow(new IllegalStateException("condition cleanup failed")).when(bad).disable();
             var trigger = new WaitingTrigger();
             trigger.addCondition(bad);
             trigger.addCondition(healthy);
             trigger.enable(null, run);
             trigger.trigger();
-            org.junit.jupiter.api.Assertions.assertDoesNotThrow(trigger::disable);
+            assertDoesNotThrow(trigger::disable);
             assertTrue(scheduler.jobs.getFirst().cancelled);
             verify(healthy).disable();
             verify(run).unregisterTriggerListener(trigger);

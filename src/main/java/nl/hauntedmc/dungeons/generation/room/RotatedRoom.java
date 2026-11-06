@@ -1,17 +1,12 @@
 package nl.hauntedmc.dungeons.generation.room;
 
-import java.lang.ref.WeakReference;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import nl.hauntedmc.dungeons.content.function.TeleportFunction;
 import nl.hauntedmc.dungeons.generation.structure.StructurePiece;
 import nl.hauntedmc.dungeons.generation.structure.StructurePieceBlock;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.util.world.DirectionUtils;
 import nl.hauntedmc.dungeons.util.world.SimpleLocation;
+
 import org.bukkit.Axis;
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
@@ -26,6 +21,13 @@ import org.bukkit.block.data.type.Wall;
 import org.bukkit.block.data.type.Wall.Height;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
+
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * Cached rotated view of a branching room definition.

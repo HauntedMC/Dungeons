@@ -1,13 +1,14 @@
 package nl.hauntedmc.dungeons.registry;
 
-import java.lang.reflect.InvocationTargetException;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.model.element.TriggerCondition;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.util.metadata.TypeMetadataSupport;
+
+import java.lang.reflect.InvocationTargetException;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Registry for discoverable {@link TriggerCondition} implementations.

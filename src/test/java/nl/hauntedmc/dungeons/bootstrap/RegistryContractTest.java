@@ -6,16 +6,31 @@ import nl.hauntedmc.dungeons.config.ConfigSerializableModel;
 import nl.hauntedmc.dungeons.generation.room.Connector;
 import nl.hauntedmc.dungeons.generation.room.ConnectorDoor;
 import nl.hauntedmc.dungeons.generation.room.WhitelistEntry;
+import nl.hauntedmc.dungeons.registry.ConditionRegistry;
+import nl.hauntedmc.dungeons.registry.DungeonTypeRegistry;
+import nl.hauntedmc.dungeons.registry.FunctionRegistry;
+import nl.hauntedmc.dungeons.registry.LayoutRegistry;
+import nl.hauntedmc.dungeons.registry.TriggerRegistry;
+import nl.hauntedmc.dungeons.support.HeadlessInventoryMenus;
+import nl.hauntedmc.dungeons.support.HeadlessMenus;
 import nl.hauntedmc.dungeons.support.PaperBoundary;
+import nl.hauntedmc.dungeons.support.RunFixture;
+import nl.hauntedmc.dungeons.support.StaticMapSnapshot;
 import nl.hauntedmc.dungeons.util.world.SimpleLocation;
 
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
 class RegistryContractTest {
-    @org.junit.jupiter.api.io.TempDir java.nio.file.Path directory;
+    @TempDir Path directory;
 
     @Test
     void startupDiscoversRoomGraphModelsOutsideThePluginEntryPointPackage() {
@@ -45,48 +60,37 @@ class RegistryContractTest {
     @Test
     void bootstrapRegistersEveryManifestTypeWithItsSerializerEditorMetadataAndRuntimeRegistry()
             throws Exception {
-        try (var aliases =
-                        new nl.hauntedmc.dungeons.support.StaticMapSnapshot(
-                                org.bukkit.configuration.serialization.ConfigurationSerialization
-                                        .class,
-                                "aliases");
-                var layouts =
-                        new nl.hauntedmc.dungeons.support.StaticMapSnapshot(
-                                nl.hauntedmc.dungeons.registry.LayoutRegistry.class, "layouts");
-                var dungeons =
-                        new nl.hauntedmc.dungeons.support.StaticMapSnapshot(
-                                nl.hauntedmc.dungeons.registry.DungeonTypeRegistry.class, "types");
-                var f =
-                        new nl.hauntedmc.dungeons.support.RunFixture(
-                                directory, new org.bukkit.configuration.file.YamlConfiguration());
-                var menus = new nl.hauntedmc.dungeons.support.HeadlessMenus();
-                var gui = new nl.hauntedmc.dungeons.support.HeadlessInventoryMenus()) {
-            nl.hauntedmc.dungeons.registry.LayoutRegistry.clear();
-            nl.hauntedmc.dungeons.registry.DungeonTypeRegistry.clear();
+        try (var aliases = new StaticMapSnapshot(ConfigurationSerialization.class, "aliases");
+                var layouts = new StaticMapSnapshot(LayoutRegistry.class, "layouts");
+                var dungeons = new StaticMapSnapshot(DungeonTypeRegistry.class, "types");
+                var f = new RunFixture(directory, new YamlConfiguration());
+                var menus = new HeadlessMenus();
+                var gui = new HeadlessInventoryMenus()) {
+            LayoutRegistry.clear();
+            DungeonTypeRegistry.clear();
             var runtime = f.paper.runtime;
             runtime.setFunctionRegistry(
-                    new nl.hauntedmc.dungeons.registry.FunctionRegistry(
+                    new FunctionRegistry(
                             f.paper.plugin,
                             runtime.activeInstances(),
                             runtime.elementEventHandler()));
             runtime.setTriggerRegistry(
-                    new nl.hauntedmc.dungeons.registry.TriggerRegistry(
+                    new TriggerRegistry(
                             f.paper.plugin,
                             runtime.activeInstances(),
                             runtime.elementEventHandler()));
-            runtime.setConditionRegistry(
-                    new nl.hauntedmc.dungeons.registry.ConditionRegistry(f.paper.plugin));
+            runtime.setConditionRegistry(new ConditionRegistry(f.paper.plugin));
             var bootstrap = new RegistryBootstrap(runtime);
             bootstrap.registerConfigurationSerializers();
             bootstrap.registerRuntimeTypes();
-            Set<Class<?>> registered = new java.util.HashSet<>();
+            Set<Class<?>> registered = new HashSet<>();
             registered.addAll(runtime.functionRegistry().getRegisteredFunctions());
             registered.addAll(runtime.triggerRegistry().getRegisteredTriggers());
             registered.addAll(runtime.conditionRegistry().getRegisteredConditions());
             try (var input = getClass().getResourceAsStream("/contracts/mechanics.csv")) {
                 assertNotNull(input);
                 var entries =
-                        new String(input.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8)
+                        new String(input.readAllBytes(), StandardCharsets.UTF_8)
                                 .lines()
                                 .skip(1)
                                 .toList();
@@ -95,10 +99,7 @@ class RegistryContractTest {
                     var columns = row.split(",", 2);
                     var type = Class.forName(columns[1]);
                     assertTrue(registered.contains(type), columns[1]);
-                    assertEquals(
-                            type,
-                            org.bukkit.configuration.serialization.ConfigurationSerialization
-                                    .getClassByAlias(columns[0]));
+                    assertEquals(type, ConfigurationSerialization.getClassByAlias(columns[0]));
                     assertTrue(
                             runtime.functionRegistry().getFunctionButtons().containsKey(columns[0])
                                     || runtime.triggerRegistry()
@@ -112,10 +113,9 @@ class RegistryContractTest {
             }
             assertEquals(
                     Set.of("static", "open", "branching"),
-                    nl.hauntedmc.dungeons.registry.DungeonTypeRegistry.getDungeonTypes().keySet());
+                    DungeonTypeRegistry.getDungeonTypes().keySet());
             assertNotNull(
-                    org.bukkit.configuration.serialization.ConfigurationSerialization
-                            .getClassByAlias("dungeons.function_target_type"));
+                    ConfigurationSerialization.getClassByAlias("dungeons.function_target_type"));
         }
     }
 }

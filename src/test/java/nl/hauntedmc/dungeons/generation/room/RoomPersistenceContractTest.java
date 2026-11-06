@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 import nl.hauntedmc.dungeons.config.ConfigSerializableModel;
 import nl.hauntedmc.dungeons.content.function.SetStatusFunction;
 import nl.hauntedmc.dungeons.gui.menu.RoomMenus;
+import nl.hauntedmc.dungeons.model.element.FunctionTargetType;
 import nl.hauntedmc.dungeons.support.*;
 import nl.hauntedmc.dungeons.util.world.SimpleLocation;
 
@@ -36,8 +37,7 @@ class RoomPersistenceContractTest {
                 var hotbars = new HeadlessMenus()) {
             ConfigSerializableModel.register("nl.hauntedmc.dungeons");
             ConfigurationSerialization.registerClass(SetStatusFunction.class, alias);
-            ConfigurationSerialization.registerClass(
-                    nl.hauntedmc.dungeons.model.element.FunctionTargetType.class, targetAlias);
+            ConfigurationSerialization.registerClass(FunctionTargetType.class, targetAlias);
             var b = new BranchingRunFixture(f);
             var bounds = new BoundingBox(-2, 0, -3, 6, 4, 7);
             var room = new BranchingRoomDefinition(b.dungeon, "hall", bounds);

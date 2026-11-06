@@ -2,9 +2,11 @@ package nl.hauntedmc.dungeons.registry;
 
 import static org.mockito.Mockito.*;
 
+import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.content.condition.ChanceCondition;
 import nl.hauntedmc.dungeons.content.function.SetStatusFunction;
 import nl.hauntedmc.dungeons.content.trigger.RemoteTrigger;
+import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.support.*;
 
 import org.bukkit.Bukkit;
@@ -51,12 +53,12 @@ public class RegistryResourceContractTest {
         }
     }
 
-    @nl.hauntedmc.dungeons.annotation.AutoRegister(id = "test.broken-menu")
+    @AutoRegister(id = "test.broken-menu")
     public static class BrokenButton extends SetStatusFunction {
         public BrokenButton() {}
 
         @Override
-        public nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton buildMenuButton() {
+        public MenuButton buildMenuButton() {
             throw new IllegalStateException("editor metadata failed");
         }
     }

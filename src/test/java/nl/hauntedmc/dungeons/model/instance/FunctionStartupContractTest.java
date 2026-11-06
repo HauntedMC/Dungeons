@@ -16,6 +16,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 class FunctionStartupContractTest {
     @TempDir Path directory;
@@ -27,7 +28,7 @@ class FunctionStartupContractTest {
                 var menus = new HeadlessMenus()) {
             var bad = new FailingFunction();
             bad.setLocation(new Location(null, 1, 70, 0));
-            var good = new SetStatusFunction(java.util.Map.of("status", "ready"));
+            var good = new SetStatusFunction(Map.of("status", "ready"));
             good.initializeFields();
             good.setLocation(new Location(null, 2, 70, 0));
             f.dungeon.getFunctions().put(bad.getLocation(), bad);

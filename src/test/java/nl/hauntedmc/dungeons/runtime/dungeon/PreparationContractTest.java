@@ -6,15 +6,21 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
+import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
 import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
+import nl.hauntedmc.dungeons.content.instance.play.BranchingInstance;
+import nl.hauntedmc.dungeons.generation.layout.BranchingLayout;
+import nl.hauntedmc.dungeons.generation.layout.Layout;
+import nl.hauntedmc.dungeons.generation.room.InstanceRoom;
+import nl.hauntedmc.dungeons.gui.menu.RoomMenus;
 import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
+import nl.hauntedmc.dungeons.registry.LayoutRegistry;
 import nl.hauntedmc.dungeons.support.*;
 
 import org.bukkit.*;
+import org.bukkit.block.Block;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.EnderDragon;
 import org.junit.jupiter.api.Test;
@@ -100,22 +106,18 @@ class PreparationContractTest {
     void branchingPreparationRevalidatesMembershipAndConnectivityAtTheFinalAdmissionTick()
             throws Exception {
         for (String outcome : List.of("ready", "disconnect", "moved")) {
-            try (var layouts =
-                            new StaticMapSnapshot(
-                                    nl.hauntedmc.dungeons.registry.LayoutRegistry.class,
-                                    "layouts");
+            try (var layouts = new StaticMapSnapshot(LayoutRegistry.class, "layouts");
                     var f = new RunFixture(directory.resolve(outcome), new YamlConfiguration());
                     var menus = new HeadlessMenus();
-                    var rooms = mockStatic(nl.hauntedmc.dungeons.gui.menu.RoomMenus.class)) {
-                nl.hauntedmc.dungeons.registry.LayoutRegistry.register(
-                        nl.hauntedmc.dungeons.generation.layout.BranchingLayout.class, "branching");
+                    var rooms = mockStatic(RoomMenus.class)) {
+                LayoutRegistry.register(BranchingLayout.class, "branching");
                 var settings = new YamlConfiguration();
                 settings.set("generator.seal_open_connectors_with", "AIR");
                 var dungeon =
                         new PreparedBranch(
                                 f, directory.resolve(outcome).resolve("branch"), settings);
-                var block = mock(org.bukkit.block.Block.class);
-                when(f.world.getBlockAt(org.mockito.Mockito.any(Location.class))).thenReturn(block);
+                var block = mock(Block.class);
+                when(f.world.getBlockAt(any(Location.class))).thenReturn(block);
                 var state = new PlayerState();
                 var session = f.session(state);
                 session.setAwaitingDungeon(true);
@@ -141,8 +143,7 @@ class PreparationContractTest {
         }
     }
 
-    static final class PreparedBranch
-            extends nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon {
+    static final class PreparedBranch extends BranchingDungeon {
         final RunFixture fixture;
         BranchRun created;
 
@@ -162,20 +163,17 @@ class PreparationContractTest {
         }
     }
 
-    static final class BranchRun
-            extends nl.hauntedmc.dungeons.content.instance.play.BranchingInstance {
+    static final class BranchRun extends BranchingInstance {
         BranchRun(PreparedBranch dungeon, World world, CountDownLatch latch)
                 throws ReflectiveOperationException {
             super(dungeon, latch);
             instanceWorld = world;
             ready = true;
-            var layout = mock(nl.hauntedmc.dungeons.generation.layout.Layout.class);
-            var first = mock(nl.hauntedmc.dungeons.generation.room.InstanceRoom.class);
+            var layout = mock(Layout.class);
+            var first = mock(InstanceRoom.class);
             when(first.getSpawn()).thenReturn(new Location(null, 2, 70, 3));
             when(layout.getFirst()).thenReturn(first);
-            var field =
-                    nl.hauntedmc.dungeons.content.instance.play.BranchingInstance.class
-                            .getDeclaredField("builder");
+            var field = BranchingInstance.class.getDeclaredField("builder");
             field.setAccessible(true);
             field.set(this, layout);
             signalInitializationComplete();

@@ -19,6 +19,7 @@ import nl.hauntedmc.dungeons.util.world.SimpleLocation;
 
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.mockito.ArgumentMatchers;
 
 import java.util.*;
@@ -102,7 +103,7 @@ class GenerationRecoveryContractTest {
     }
 
     @Test
-    @org.junit.jupiter.api.Timeout(10)
+    @Timeout(10)
     void cancellationTerminatesGenerationAndDoesNotPoisonTheNextFullGeneration() {
         try (var paper = new PaperBoundary()) {
             var graph = new LayoutExecutionContractTest.Graph(paper);
@@ -130,7 +131,7 @@ class GenerationRecoveryContractTest {
     }
 
     @Test
-    @org.junit.jupiter.api.Timeout(20)
+    @Timeout(20)
     void failedPartialBranchesRollbackRoomsAndUsedConnectorsWithoutDamagingTheTrunk() {
         try (var paper = new PaperBoundary()) {
             var graph = new BranchingExecutionContractTest.Graph(paper);

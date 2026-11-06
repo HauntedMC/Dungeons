@@ -4,12 +4,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.*;
 
+import nl.hauntedmc.dungeons.event.DungeonDisposeEvent;
+import nl.hauntedmc.dungeons.event.PlayerLeaveDungeonEvent;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry;
 import nl.hauntedmc.dungeons.support.*;
 
 import org.bukkit.*;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -150,12 +154,12 @@ class TeamTransitionsContractTest {
             service.handleAcceptInvite(member.player);
             var team = service.getTeam(leader.player.getUniqueId());
             service.markStarted(team.getTeamId(), f.run);
-            var quit = org.mockito.Mockito.mock(org.bukkit.event.player.PlayerQuitEvent.class);
-            org.mockito.Mockito.when(quit.getPlayer()).thenReturn(member.player);
+            var quit = mock(PlayerQuitEvent.class);
+            when(quit.getPlayer()).thenReturn(member.player);
             service.onPlayerQuit(quit);
             assertSame(team, service.getTeam(member.player.getUniqueId()));
             var leave =
-                    new nl.hauntedmc.dungeons.event.PlayerLeaveDungeonEvent(
+                    new PlayerLeaveDungeonEvent(
                             f.run, f.paper.runtime.playerSessions().get(member.player));
             leave.setCancelled(true);
             service.onPlayerLeaveDungeon(leave);
@@ -164,10 +168,10 @@ class TeamTransitionsContractTest {
             service.onPlayerLeaveDungeon(leave);
             assertNull(service.getTeam(member.player.getUniqueId()));
             assertEquals(1, team.size());
-            service.onDungeonDispose(new nl.hauntedmc.dungeons.event.DungeonDisposeEvent(f.run));
+            service.onDungeonDispose(new DungeonDisposeEvent(f.run));
             assertNull(service.getTeamById(team.getTeamId()));
             assertNull(service.getTeam(leader.player.getUniqueId()));
-            service.onDungeonDispose(new nl.hauntedmc.dungeons.event.DungeonDisposeEvent(f.run));
+            service.onDungeonDispose(new DungeonDisposeEvent(f.run));
             assertTrue(f.scheduler.immediate.isEmpty());
         }
     }

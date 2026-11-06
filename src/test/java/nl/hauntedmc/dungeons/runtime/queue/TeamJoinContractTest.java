@@ -8,6 +8,7 @@ import nl.hauntedmc.dungeons.support.*;
 
 import org.bukkit.*;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -89,11 +90,11 @@ class TeamJoinContractTest {
                     team.getMemberIds().stream()
                             .noneMatch(id -> sessions.get(id).isAwaitingDungeon()));
             assertFalse(sessions.get(offline.player).hasReservedAccessKey());
-            verify(offline.inventory, never()).addItem(any(org.bukkit.inventory.ItemStack.class));
+            verify(offline.inventory, never()).addItem(any(ItemStack.class));
             offline.online = true;
             sessions.get(offline.player).flushPendingAccessKeyRefund();
             sessions.get(offline.player).flushPendingAccessKeyRefund();
-            verify(offline.inventory).addItem(any(org.bukkit.inventory.ItemStack.class));
+            verify(offline.inventory).addItem(any(ItemStack.class));
         }
     }
 
@@ -138,8 +139,8 @@ class TeamJoinContractTest {
                     assertFalse(session.hasReservedAccessKey());
                     assertNull(session.getInstance());
                 }
-                verify(leader.inventory).addItem(any(org.bukkit.inventory.ItemStack.class));
-                verify(member.inventory).addItem(any(org.bukkit.inventory.ItemStack.class));
+                verify(leader.inventory).addItem(any(ItemStack.class));
+                verify(member.inventory).addItem(any(ItemStack.class));
                 if (!teamRemoved) assertFalse(team.isQueued());
             }
         }

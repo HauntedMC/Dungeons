@@ -21,9 +21,18 @@ import static org.mockito.Mockito.when;
 import nl.hauntedmc.dungeons.support.*;
 
 import org.bukkit.*;
+import org.bukkit.Axis;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.BlockState;
+import org.bukkit.block.data.BlockData;
+import org.bukkit.block.data.Directional;
 import org.bukkit.block.data.Openable;
+import org.bukkit.block.data.Orientable;
+import org.bukkit.block.data.Rotatable;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.TextDisplay;
 import org.bukkit.event.Event;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -221,12 +230,12 @@ class WorldFunctionContractTest {
     void clonedMobSpawnersKeepActivationCountsAndPendingTasksIndependent() throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration());
                 var menus = new HeadlessMenus()) {
-            var block = mock(org.bukkit.block.Block.class);
+            var block = mock(Block.class);
             when(f.world.getBlockAt(any(Location.class))).thenReturn(block);
             // Count and placement contracts stop at Paper's spawn boundary; entity attributes need
             // its registry.
-            when(f.world.spawnEntity(any(Location.class), any(org.bukkit.entity.EntityType.class)))
-                    .thenReturn(mock(org.bukkit.entity.Entity.class));
+            when(f.world.spawnEntity(any(Location.class), any(EntityType.class)))
+                    .thenReturn(mock(Entity.class));
             var source =
                     new SpawnMobFunction(
                             Map.of("mob", "not-a-mob", "maxCount", 2, "delay", 3, "interval", 4));
@@ -249,9 +258,7 @@ class WorldFunctionContractTest {
                 f.scheduler.jobs.get(1).run();
             }
             verify(f.world, times(4))
-                    .spawnEntity(
-                            eq(new Location(f.world, 0.5, 70.1, 0.5)),
-                            eq(org.bukkit.entity.EntityType.ZOMBIE));
+                    .spawnEntity(eq(new Location(f.world, 0.5, 70.1, 0.5)), eq(EntityType.ZOMBIE));
             assertTrue(f.scheduler.jobs.getFirst().cancelled);
             assertTrue(f.scheduler.jobs.get(1).cancelled);
             assertEquals(new Location(f.world, 0, 70, 0), source.getLocation());
@@ -268,14 +275,14 @@ class WorldFunctionContractTest {
             materials
                     .when(() -> Material.valueOf("MISSING"))
                     .thenThrow(new IllegalArgumentException("unknown material"));
-            var block = mock(org.bukkit.block.Block.class);
-            var state = mock(org.bukkit.block.BlockState.class);
+            var block = mock(Block.class);
+            var state = mock(BlockState.class);
             when(f.world.getBlockAt(any(Location.class))).thenReturn(block);
             when(block.getState()).thenReturn(state);
-            var directional = mock(org.bukkit.block.data.Directional.class);
-            var rotatable = mock(org.bukkit.block.data.Rotatable.class);
-            var orientable = mock(org.bukkit.block.data.Orientable.class);
-            var data = List.<org.bukkit.block.data.BlockData>of(directional, rotatable, orientable);
+            var directional = mock(Directional.class);
+            var rotatable = mock(Rotatable.class);
+            var orientable = mock(Orientable.class);
+            var data = List.<BlockData>of(directional, rotatable, orientable);
             for (int index = 0; index < data.size(); index++) {
                 clearInvocations(block, state);
                 when(block.getBlockData()).thenReturn(data.get(index));
@@ -294,9 +301,9 @@ class WorldFunctionContractTest {
                 verify(state).setBlockData(data.get(index));
                 verify(state).update(true);
             }
-            verify(directional).setFacing(org.bukkit.block.BlockFace.SOUTH);
-            verify(rotatable).setRotation(org.bukkit.block.BlockFace.WEST);
-            verify(orientable).setAxis(org.bukkit.Axis.X);
+            verify(directional).setFacing(BlockFace.SOUTH);
+            verify(rotatable).setRotation(BlockFace.WEST);
+            verify(orientable).setAxis(Axis.X);
             clearInvocations(block, state);
             var invalid = new BlockEditorFunction(Map.of("blockType", "missing"));
             invalid.initializeFields();

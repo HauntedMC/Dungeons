@@ -6,13 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import nl.hauntedmc.dungeons.event.DungeonEndEvent;
 import nl.hauntedmc.dungeons.event.DungeonStartEvent;
@@ -20,21 +14,30 @@ import nl.hauntedmc.dungeons.event.PlayerLeaveDungeonEvent;
 import nl.hauntedmc.dungeons.listener.instance.PlayListener;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.support.*;
+import nl.hauntedmc.dungeons.util.entity.EntityUtils;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.Event;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 class PlayerRunContractTest {
     @TempDir Path directory;
@@ -291,10 +294,10 @@ class PlayerRunContractTest {
             var target = f.session(survivor);
             f.run.addPlayer(source);
             f.run.addPlayer(target);
-            var tags = new java.util.HashMap<org.bukkit.NamespacedKey, Object>();
-            tags.put(new org.bukkit.NamespacedKey("dungeons", "dungeonkey"), 1);
-            tags.put(new org.bukkit.NamespacedKey("dungeons", "dungeonitem"), 1);
-            var item = TaggedItems.stack(org.bukkit.Material.TRIPWIRE_HOOK, 1, tags);
+            var tags = new HashMap<NamespacedKey, Object>();
+            tags.put(new NamespacedKey("dungeons", "dungeonkey"), 1);
+            tags.put(new NamespacedKey("dungeons", "dungeonitem"), 1);
+            var item = TaggedItems.stack(Material.TRIPWIRE_HOOK, 1, tags);
             dead.contents[0] = item;
             var offhand = item.clone();
             dead.contents[40] = offhand;
@@ -319,16 +322,10 @@ class PlayerRunContractTest {
         rules.set("players.keep_on_entry.health", false);
         rules.set("players.keep_on_entry.food", false);
         try (var f = new RunFixture(directory, rules);
-                var entities =
-                        org.mockito.Mockito.mockStatic(
-                                nl.hauntedmc.dungeons.util.entity.EntityUtils.class)) {
+                var entities = mockStatic(EntityUtils.class)) {
             var state = new PlayerState();
             var session = f.session(state);
-            entities.when(
-                            () ->
-                                    nl.hauntedmc.dungeons.util.entity.EntityUtils.getMaxHealth(
-                                            state.player))
-                    .thenReturn(20.0);
+            entities.when(() -> EntityUtils.getMaxHealth(state.player)).thenReturn(20.0);
             f.run.addPlayer(session);
             f.scheduler.jobs.getFirst().run();
             assertEquals(20, state.health);
@@ -351,18 +348,16 @@ class PlayerRunContractTest {
                 var target = f.session(survivor);
                 f.run.addPlayer(source);
                 f.run.addPlayer(target);
-                var tags = new java.util.HashMap<org.bukkit.NamespacedKey, Object>();
-                tags.put(new org.bukkit.NamespacedKey("dungeons", "dungeonkey"), 1);
-                tags.put(new org.bukkit.NamespacedKey("dungeons", "dungeonitem"), 1);
-                var first = TaggedItems.stack(org.bukkit.Material.TRIPWIRE_HOOK, 1, tags);
+                var tags = new HashMap<NamespacedKey, Object>();
+                tags.put(new NamespacedKey("dungeons", "dungeonkey"), 1);
+                tags.put(new NamespacedKey("dungeons", "dungeonitem"), 1);
+                var first = TaggedItems.stack(Material.TRIPWIRE_HOOK, 1, tags);
                 var second = first.clone();
                 var runtimeItem =
                         TaggedItems.stack(
-                                org.bukkit.Material.PAPER,
+                                Material.PAPER,
                                 2,
-                                java.util.Map.of(
-                                        new org.bukkit.NamespacedKey("dungeons", "dungeonitem"),
-                                        1));
+                                Map.of(new NamespacedKey("dungeons", "dungeonitem"), 1));
                 departing.contents[0] = first;
                 departing.contents[40] = second;
                 departing.contents[1] = runtimeItem;
@@ -392,10 +387,9 @@ class PlayerRunContractTest {
             var death = mock(PlayerDeathEvent.class);
             var key =
                     TaggedItems.stack(
-                            org.bukkit.Material.TRIPWIRE_HOOK,
+                            Material.TRIPWIRE_HOOK,
                             1,
-                            java.util.Map.of(
-                                    new org.bukkit.NamespacedKey("dungeons", "dungeonkey"), 1));
+                            Map.of(new NamespacedKey("dungeons", "dungeonkey"), 1));
             state.contents[0] = key;
             var drops = new ArrayList<>(List.of(key));
             when(death.getEntity()).thenReturn(state.player);
@@ -444,23 +438,21 @@ class PlayerRunContractTest {
             assertSame(f.run, session.getInstance());
             verify(respawn, times(2)).setRespawnLocation(f.run.getStartLoc());
             state.gameMode = GameMode.SPECTATOR;
-            var interaction =
-                    TestEvents.cancellable(org.bukkit.event.player.PlayerInteractEvent.class);
+            var interaction = TestEvents.cancellable(PlayerInteractEvent.class);
             when(interaction.getPlayer()).thenReturn(state.player);
             listener.onSpectator(interaction);
             assertTrue(interaction.isCancelled());
-            var entityInteraction =
-                    TestEvents.cancellable(org.bukkit.event.player.PlayerInteractEntityEvent.class);
+            var entityInteraction = TestEvents.cancellable(PlayerInteractEntityEvent.class);
             when(entityInteraction.getPlayer()).thenReturn(state.player);
             listener.onSpectator(entityInteraction);
             assertTrue(entityInteraction.isCancelled());
             for (var destination : List.of(f.world, state.originWorld)) {
                 var teleport =
-                        new org.bukkit.event.player.PlayerTeleportEvent(
+                        new PlayerTeleportEvent(
                                 state.player,
                                 state.location,
                                 new Location(destination, 5, 70, 5),
-                                org.bukkit.event.player.PlayerTeleportEvent.TeleportCause.SPECTATE);
+                                TeleportCause.SPECTATE);
                 listener.onSpectatorTeleport(teleport);
                 assertEquals(destination != f.world, teleport.isCancelled());
             }

@@ -5,7 +5,9 @@ import static org.mockito.Mockito.*;
 
 import nl.hauntedmc.dungeons.gui.hotbar.PlayerHotbarMenu;
 import nl.hauntedmc.dungeons.support.*;
+import nl.hauntedmc.dungeons.util.item.ItemUtils;
 
+import org.bukkit.Location;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.inventory.*;
 import org.bukkit.event.player.*;
@@ -75,11 +77,11 @@ class EditorHotbarContractTest {
             assertEquals(7, state.contents[0].getAmount());
             verify(state.player, times(2))
                     .playSound(
-                            any(org.bukkit.Location.class),
+                            any(Location.class),
                             eq("minecraft:item.lodestone_compass.lock"),
                             eq(1.0F),
                             eq(1.2F));
-            try (var tools = mockStatic(nl.hauntedmc.dungeons.util.item.ItemUtils.class)) {
+            try (var tools = mockStatic(ItemUtils.class)) {
                 session.setEditMode(true);
                 for (int rawSlot : List.of(0, 54)) {
                     var drag = TestEvents.cancellable(InventoryDragEvent.class);

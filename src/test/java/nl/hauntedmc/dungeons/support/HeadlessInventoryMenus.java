@@ -9,7 +9,10 @@ import nl.hauntedmc.dungeons.gui.framework.window.GuiWindow;
 
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataContainer;
 import org.mockito.MockedConstruction;
+
+import java.util.List;
 
 /** Substitutes rendered GUI items/windows; supplied gameplay stacks retain their stateful fixture. */
 public final class HeadlessInventoryMenus implements AutoCloseable {
@@ -19,8 +22,7 @@ public final class HeadlessInventoryMenus implements AutoCloseable {
                     (item, context) -> {
                         var meta = mock(ItemMeta.class);
                         when(meta.getPersistentDataContainer())
-                                .thenReturn(
-                                        mock(org.bukkit.persistence.PersistentDataContainer.class));
+                                .thenReturn(mock(PersistentDataContainer.class));
                         when(item.getItemMeta()).thenReturn(meta);
                         when(item.clone()).thenReturn(item);
                     });
@@ -35,7 +37,7 @@ public final class HeadlessInventoryMenus implements AutoCloseable {
                     });
     private final MockedConstruction<GuiWindow> windows = mockConstruction(GuiWindow.class);
 
-    public java.util.List<GuiWindow> windows() {
+    public List<GuiWindow> windows() {
         return windows.constructed();
     }
 

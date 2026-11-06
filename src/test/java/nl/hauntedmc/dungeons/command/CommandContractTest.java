@@ -13,7 +13,9 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import nl.hauntedmc.dungeons.bootstrap.LifecycleCoordinator;
+import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
 import nl.hauntedmc.dungeons.gui.framework.GuiService;
+import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.registry.FunctionRegistry;
 import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
 import nl.hauntedmc.dungeons.runtime.queue.*;
@@ -23,12 +25,15 @@ import nl.hauntedmc.dungeons.support.*;
 
 import org.bukkit.*;
 import org.bukkit.command.Command;
+import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.File;
 import java.nio.file.*;
 import java.util.*;
+import java.util.ArrayList;
 
 class CommandContractTest {
     @TempDir Path directory;
@@ -117,8 +122,7 @@ class CommandContractTest {
             Files.createSymbolicLink(worlds.resolve("link"), outside);
             for (String name : List.of("../outside", "/absolute", "a/b", "a\\b", ".", "..", "link"))
                 command.execute("import", name);
-            verify(command.catalog, never())
-                    .loadDungeon(any(java.io.File.class), anyString(), anyString());
+            verify(command.catalog, never()).loadDungeon(any(File.class), anyString(), anyString());
             assertEquals("protected world", Files.readString(outside.resolve("level.dat")));
             assertTrue(Files.isDirectory(f.dungeon.getFolder().toPath()));
             assertTrue(f.scheduler.asynchronous.isEmpty());
@@ -141,7 +145,7 @@ class CommandContractTest {
             assertFalse(f.dungeon.isEnabled());
             assertFalse(
                     YamlConfiguration.loadConfiguration(
-                                    new java.io.File(f.dungeon.getFolder(), "config.yml"))
+                                    new File(f.dungeon.getFolder(), "config.yml"))
                             .getBoolean("dungeon.enabled"));
             verify(command.coordinator).discardQueue(own);
             verify(command.coordinator, never()).discardQueue(other);
@@ -153,7 +157,7 @@ class CommandContractTest {
             throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
             var command = new CommandFixture(f);
-            var console = mock(org.bukkit.command.ConsoleCommandSender.class);
+            var console = mock(ConsoleCommandSender.class);
             when(console.hasPermission(anyString())).thenReturn(true);
             for (var args :
                     List.of(
@@ -203,14 +207,12 @@ class CommandContractTest {
                     .when(() -> Bukkit.createWorld(any(WorldCreator.class)))
                     .thenReturn(world);
             f.paper.bukkit.when(() -> Bukkit.unloadWorld(world, false)).thenReturn(true);
-            var imported =
-                    new java.util.ArrayList<
-                            nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition>();
-            when(command.catalog.loadDungeon(any(java.io.File.class)))
+            var imported = new ArrayList<DungeonDefinition>();
+            when(command.catalog.loadDungeon(any(File.class)))
                     .thenAnswer(
                             c -> {
                                 var dungeon =
-                                        new nl.hauntedmc.dungeons.content.dungeon.StaticDungeon(
+                                        new StaticDungeon(
                                                 f.paper.runtime,
                                                 c.getArgument(0),
                                                 new YamlConfiguration());
