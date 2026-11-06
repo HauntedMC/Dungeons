@@ -43,4 +43,23 @@ class GameplayRulesContractTest {
             listener.onBreakBlock(event); assertFalse(event.isCancelled());
         }
     }
+    @Test
+    void pvpRulesApplyToDirectAndPlayerShotProjectileDamageOnlyInsideTheRun() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            var state=new PlayerState(); state.location=new Location(f.world,0,70,0);
+            var attacker=new PlayerState(); var projectile=mock(Projectile.class); when(projectile.getShooter()).thenReturn(attacker.player);
+            var listener=(PlayListener)f.run.getListener();
+            for(boolean allowed:List.of(false,true)) for(Entity damager:List.of(attacker.player,projectile)) {
+                f.run.getConfig().set("rules.combat.pvp",allowed);
+                var event=TestEvents.cancellable(EntityDamageByEntityEvent.class);
+                when(event.getEntity()).thenReturn(state.player); when(event.getDamager()).thenReturn(damager);
+                listener.onPvP(event); listener.onProjectilePvP(event); assertEquals(!allowed,event.isCancelled());
+            }
+            state.location=new Location(state.originWorld,0,70,0); f.run.getConfig().set("rules.combat.pvp",false);
+            var event=TestEvents.cancellable(EntityDamageByEntityEvent.class);
+            when(event.getEntity()).thenReturn(state.player); when(event.getDamager()).thenReturn(attacker.player);
+            listener.onPvP(event); assertFalse(event.isCancelled());
+        }
+    }
+
 }
