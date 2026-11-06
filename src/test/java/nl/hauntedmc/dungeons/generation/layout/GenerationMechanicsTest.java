@@ -23,6 +23,44 @@ class GenerationMechanicsTest {
         assertTrue(layout.canRoomGenerate(room(new BoundingBox(-5, 0, 0, -2, 3, 3))));
     }
 
+    @Test
+    void candidateRoomsMustPassConnectorFiltersDepthAndOccurrenceLimitsTogether() {
+        var dungeon = mock(BranchingDungeon.class);
+        var parent = mock(nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition.class);
+        var allowed = definition(dungeon, parent, "allowed", "2-4", "0-3");
+        var tooDeep = definition(dungeon, parent, "deep", "3-5", "0+");
+        var maxed = definition(dungeon, parent, "maxed", "0+", "0-1");
+        var blocked = definition(dungeon, parent, "blocked", "0+", "0+");
+        var connector = new nl.hauntedmc.dungeons.generation.room.Connector(new nl.hauntedmc.dungeons.util.world.SimpleLocation(0, 0, 0));
+        connector.setRoomWhitelist(java.util.List.of(new nl.hauntedmc.dungeons.generation.room.WhitelistEntry(allowed),
+                new nl.hauntedmc.dungeons.generation.room.WhitelistEntry(tooDeep), new nl.hauntedmc.dungeons.generation.room.WhitelistEntry(maxed),
+                new nl.hauntedmc.dungeons.generation.room.WhitelistEntry(blocked)));
+        connector.setRoomBlacklist(java.util.List.of(new nl.hauntedmc.dungeons.generation.room.WhitelistEntry(blocked)));
+        var rotated = mock(nl.hauntedmc.dungeons.generation.room.RotatedRoom.class);
+        when(rotated.getOrigin()).thenReturn(parent);
+        var from = mock(InstanceRoom.class);
+        when(from.getSource()).thenReturn(rotated);
+        when(from.getDepth()).thenReturn(1);
+        var layout = new TestLayout(dungeon);
+        layout.queuedCountsByRoom.put(maxed, 1);
+        assertEquals(java.util.List.of(allowed), layout.filterRooms(connector, from).values().stream().toList());
+        layout.queuedCountsByRoom.put(allowed, 3);
+        assertTrue(layout.filterRooms(connector, from).isEmpty());
+    }
+
+    nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition definition(BranchingDungeon dungeon,
+            nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition parent, String name, String depth, String occurrences) {
+        var definition = mock(nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition.class);
+        when(definition.getNamespace()).thenReturn(name);
+        when(definition.getWeight()).thenReturn(1.0);
+        when(definition.getDepth()).thenReturn(new nl.hauntedmc.dungeons.util.math.RangedNumber(depth));
+        when(definition.getOccurrences()).thenReturn(new nl.hauntedmc.dungeons.util.math.RangedNumber(occurrences));
+        when(definition.canGenerate(parent)).thenReturn(true);
+        when(definition.getConnectors()).thenReturn(java.util.List.of(new nl.hauntedmc.dungeons.generation.room.Connector(new nl.hauntedmc.dungeons.util.world.SimpleLocation(0,0,0))));
+        when(dungeon.getRoom(name)).thenReturn(definition);
+        return definition;
+    }
+
     InstanceRoom room(BoundingBox bounds) {
         var room = mock(InstanceRoom.class);
         when(room.getBounds()).thenReturn(bounds);
