@@ -1,19 +1,25 @@
 package nl.hauntedmc.dungeons.util.world;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.when;
 
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 import nl.hauntedmc.dungeons.generation.structure.StructurePiece;
 import nl.hauntedmc.dungeons.generation.structure.StructurePieceBlock;
 import nl.hauntedmc.dungeons.support.PaperBoundary;
+
 import org.bukkit.Bukkit;
 import org.bukkit.block.data.BlockData;
 import org.joml.Vector3i;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 class StructureFileContractTest {
     @TempDir Path directory;
@@ -47,18 +53,23 @@ class StructureFileContractTest {
         try (var paper = new PaperBoundary()) {
             data(paper, "minecraft:stone");
             var file = directory.resolve("legacy.schem");
-            java.nio.file.Files.write(file, SchematicUtils.compress("minecraft:stone\n-3,5,8|0|null"));
-            assertEquals(List.of("-3,5,8|minecraft:stone|null"), snapshots(SchematicUtils.loadStructurePiece(file.toFile())));
+            Files.write(file, SchematicUtils.compress("minecraft:stone\n-3,5,8|0|null"));
+            assertEquals(
+                    List.of("-3,5,8|minecraft:stone|null"),
+                    snapshots(SchematicUtils.loadStructurePiece(file.toFile())));
         }
     }
 
     @Test
     void tilePayloadDelimitersCannotCorruptTheStructureOrLoseNeighboringBlocks() {
-        try (var paper = new PaperBoundary(); var nbt = mockStatic(BlockNbtUtils.class)) {
-            nbt.when(() -> BlockNbtUtils.normalizeSnbt(anyString())).thenAnswer(call -> call.getArgument(0));
+        try (var paper = new PaperBoundary();
+                var nbt = mockStatic(BlockNbtUtils.class)) {
+            nbt.when(() -> BlockNbtUtils.normalizeSnbt(anyString()))
+                    .thenAnswer(call -> call.getArgument(0));
             BlockData stone = data(paper, "minecraft:stone");
             StructurePiece source = new StructurePiece();
-            source.add(new StructurePieceBlock(new Vector3i(1, 2, 3), stone, "{Text:'hello|world!'}"));
+            source.add(
+                    new StructurePieceBlock(new Vector3i(1, 2, 3), stone, "{Text:'hello|world!'}"));
             source.add(new StructurePieceBlock(new Vector3i(4, 5, 6), stone, null));
             var file = directory.resolve("tile.schem").toFile();
             SchematicUtils.saveStructurePiece(file, source);
@@ -76,7 +87,16 @@ class StructureFileContractTest {
     List<String> snapshots(StructurePiece piece) {
         List<String> values = new ArrayList<>();
         for (StructurePieceBlock block : piece) {
-            values.add(block.getX() + "," + block.getY() + "," + block.getZ() + "|" + block.getBlockData().getAsString(true) + "|" + block.getBlockNbt());
+            values.add(
+                    block.getX()
+                            + ","
+                            + block.getY()
+                            + ","
+                            + block.getZ()
+                            + "|"
+                            + block.getBlockData().getAsString(true)
+                            + "|"
+                            + block.getBlockNbt());
         }
         return values;
     }

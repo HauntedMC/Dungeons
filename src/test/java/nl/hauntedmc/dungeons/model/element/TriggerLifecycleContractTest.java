@@ -1,19 +1,32 @@
 package nl.hauntedmc.dungeons.model.element;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import java.util.concurrent.atomic.AtomicBoolean;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
+import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.support.PaperBoundary;
+
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scheduler.BukkitTask;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 class TriggerLifecycleContractTest {
     @Test
@@ -25,8 +38,15 @@ class TriggerLifecycleContractTest {
             when(task.getTaskId()).thenReturn(7);
             var cancelled = new AtomicBoolean();
             when(task.isCancelled()).thenAnswer(call -> cancelled.get());
-            doAnswer(call -> { cancelled.set(true); return null; }).when(scheduler).cancelTask(7);
-            when(scheduler.runTaskTimer(any(Plugin.class), any(Runnable.class), eq(0L), eq(20L))).thenReturn(task);
+            doAnswer(
+                            call -> {
+                                cancelled.set(true);
+                                return null;
+                            })
+                    .when(scheduler)
+                    .cancelTask(7);
+            when(scheduler.runTaskTimer(any(Plugin.class), any(Runnable.class), eq(0L), eq(20L)))
+                    .thenReturn(task);
             var run = mock(PlayableInstance.class);
             when(run.asPlayInstance()).thenReturn(run);
             when(run.getEnvironment()).thenReturn(paper.runtime.environment());
@@ -59,19 +79,25 @@ class TriggerLifecycleContractTest {
         try (var paper = new PaperBoundary()) {
             var scheduler = mock(BukkitScheduler.class);
             paper.bukkit.when(Bukkit::getScheduler).thenReturn(scheduler);
-            when(scheduler.runTask(any(Plugin.class), any(Runnable.class))).thenReturn(mock(BukkitTask.class));
+            when(scheduler.runTask(any(Plugin.class), any(Runnable.class)))
+                    .thenReturn(mock(BukkitTask.class));
             var run = mock(PlayableInstance.class);
             when(run.asPlayInstance()).thenReturn(run);
             when(run.getEnvironment()).thenReturn(paper.runtime.environment());
-            var source = mock(nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession.class);
+            var source = mock(DungeonPlayerSession.class);
             when(source.getInstance()).thenReturn(run);
             var function = mock(DungeonFunction.class);
             var trigger = new WaitingTrigger();
             trigger.setAllowRetrigger(true);
             trigger.enable(function, run);
             var manager = Bukkit.getPluginManager();
-            doAnswer(call -> { ((TriggerFireEvent) call.getArgument(0)).setCancelled(true); return null; })
-                    .when(manager).callEvent(any(TriggerFireEvent.class));
+            doAnswer(
+                            call -> {
+                                ((TriggerFireEvent) call.getArgument(0)).setCancelled(true);
+                                return null;
+                            })
+                    .when(manager)
+                    .callEvent(any(TriggerFireEvent.class));
             trigger.trigger(source);
             var work = ArgumentCaptor.forClass(Runnable.class);
             verify(scheduler).runTask(eq(paper.plugin), work.capture());
@@ -87,9 +113,23 @@ class TriggerLifecycleContractTest {
 
     static class WaitingTrigger extends DungeonTrigger {
         int effects;
-        WaitingTrigger() { super("waiting"); waitForConditions = true; }
-        @Override public void onTrigger(TriggerFireEvent event) { effects++; }
-        @Override public MenuButton buildMenuButton() { return null; }
-        @Override public void buildHotbarMenu() {}
+
+        WaitingTrigger() {
+            super("waiting");
+            waitForConditions = true;
+        }
+
+        @Override
+        public void onTrigger(TriggerFireEvent event) {
+            effects++;
+        }
+
+        @Override
+        public MenuButton buildMenuButton() {
+            return null;
+        }
+
+        @Override
+        public void buildHotbarMenu() {}
     }
 }

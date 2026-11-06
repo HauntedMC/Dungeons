@@ -1,17 +1,24 @@
 package nl.hauntedmc.dungeons.support;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.when;
 
-import java.util.List;
+import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
+
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.mockito.MockedStatic;
 import org.slf4j.LoggerFactory;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
 
 /** Only the server/plugin boundary is mocked; tests construct the real system under test. */
 public final class PaperBoundary implements AutoCloseable {
@@ -32,14 +39,15 @@ public final class PaperBoundary implements AutoCloseable {
         javaPlugin.when(() -> JavaPlugin.getPlugin(DungeonsPlugin.class)).thenReturn(plugin);
     }
 
-    public nl.hauntedmc.dungeons.content.dungeon.StaticDungeon dungeon(java.nio.file.Path folder, YamlConfiguration settings) throws Exception {
-        java.nio.file.Files.createDirectories(folder);
+    public StaticDungeon dungeon(Path folder, YamlConfiguration settings) throws Exception {
+        Files.createDirectories(folder);
         runtime.setDefaultDungeonConfig(new YamlConfiguration());
         bukkit.when(Bukkit::getWorldContainer).thenReturn(folder.getParent().toFile());
-        return new nl.hauntedmc.dungeons.content.dungeon.StaticDungeon(runtime, folder.toFile(), settings);
+        return new StaticDungeon(runtime, folder.toFile(), settings);
     }
 
-    @Override public void close() {
+    @Override
+    public void close() {
         RuntimeContext.clear();
         javaPlugin.close();
         bukkit.close();

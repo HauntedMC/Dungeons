@@ -1,8 +1,11 @@
 package nl.hauntedmc.dungeons.util.item;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import java.util.Map;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -10,6 +13,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.junit.jupiter.api.Test;
+
+import java.util.HashMap;
+import java.util.Map;
 
 class ItemTransferContractTest {
     @Test
@@ -24,7 +30,7 @@ class ItemTransferContractTest {
         when(player.getInventory()).thenReturn(inventory);
         when(player.getWorld()).thenReturn(world);
         when(player.getLocation()).thenReturn(location);
-        when(inventory.addItem(supplied)).thenReturn(new java.util.HashMap<>(Map.of(0, remainder)));
+        when(inventory.addItem(supplied)).thenReturn(new HashMap<>(Map.of(0, remainder)));
 
         ItemUtils.giveOrDrop(player, supplied);
         verify(world).dropItemNaturally(location, remainder);

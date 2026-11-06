@@ -1,15 +1,20 @@
 package nl.hauntedmc.dungeons.content.reward;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import java.util.Date;
-import java.util.UUID;
 import nl.hauntedmc.dungeons.content.function.reward.RewardFunction;
+
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.junit.jupiter.api.Test;
+
+import java.util.Date;
+import java.util.UUID;
 
 class RewardClaimContractTest {
     @Test

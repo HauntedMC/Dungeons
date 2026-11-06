@@ -1,14 +1,17 @@
 package nl.hauntedmc.dungeons.runtime.instance;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.nio.file.Path;
 import nl.hauntedmc.dungeons.content.instance.play.StaticInstance;
 import nl.hauntedmc.dungeons.support.PaperBoundary;
+
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+
+import java.nio.file.Path;
 
 class AdmissionContractTest {
     @TempDir Path directory;
@@ -33,6 +36,7 @@ class AdmissionContractTest {
             assertFalse(dungeon.canAcceptStartNow(1, "", 0, 0));
         }
     }
+
     @Test
     void activeRunRegistrationIsIdempotentAndSnapshotsCannotChangeCapacity() throws Exception {
         try (var paper = new PaperBoundary()) {

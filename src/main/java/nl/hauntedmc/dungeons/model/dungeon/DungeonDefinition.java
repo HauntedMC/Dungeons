@@ -1,21 +1,7 @@
 package nl.hauntedmc.dungeons.model.dungeon;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
+import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
 import nl.hauntedmc.dungeons.content.function.reward.RewardFunction;
 import nl.hauntedmc.dungeons.content.reward.CooldownPeriod;
 import nl.hauntedmc.dungeons.content.reward.CooldownSchedule;
@@ -42,6 +28,7 @@ import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.text.ColorUtils;
 import nl.hauntedmc.dungeons.util.world.LocationUtils;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.bukkit.Bukkit;
@@ -58,6 +45,21 @@ import org.bukkit.inventory.PlayerInventory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.yaml.snakeyaml.error.YAMLException;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Base model for a dungeon definition loaded from disk.
@@ -1600,15 +1602,21 @@ public abstract class DungeonDefinition {
         if (period == CooldownPeriod.TIMER) {
             return period.fromNow(cooldownTime);
         }
-        return CooldownSchedule.nextReset(period, cooldownTime, DungeonConfigView.getAccessCooldownResetDay(this.config));
+        return CooldownSchedule.nextReset(
+                period, cooldownTime, DungeonConfigView.getAccessCooldownResetDay(this.config));
     }
 
     public Date getNextLootTime() {
         if (!this.config.getBoolean("rewards.loot_cooldown.enabled", false)) {
             return new Date();
         }
-        CooldownPeriod period = CooldownPeriod.valueOf(this.config.getString("rewards.loot_cooldown.period", "DAILY"));
-        return CooldownSchedule.nextReset(period, this.config.getInt("rewards.loot_cooldown.value", 1), this.config.getInt("rewards.loot_cooldown.reset_day", 1));
+        CooldownPeriod period =
+                CooldownPeriod.valueOf(
+                        this.config.getString("rewards.loot_cooldown.period", "DAILY"));
+        return CooldownSchedule.nextReset(
+                period,
+                this.config.getInt("rewards.loot_cooldown.value", 1),
+                this.config.getInt("rewards.loot_cooldown.reset_day", 1));
     }
 
     public void setSaveConfig(String path, Object value) {

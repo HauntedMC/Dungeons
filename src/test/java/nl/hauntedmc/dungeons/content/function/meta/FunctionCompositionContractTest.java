@@ -1,17 +1,19 @@
 package nl.hauntedmc.dungeons.content.function.meta;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
 
-import java.util.ArrayList;
-import java.util.List;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.support.PaperBoundary;
+
 import org.junit.jupiter.api.Test;
+
+import java.util.ArrayList;
+import java.util.List;
 
 class FunctionCompositionContractTest {
     @Test
@@ -70,14 +72,27 @@ class FunctionCompositionContractTest {
         boolean clearTargets;
         boolean fail;
         List<DungeonPlayerSession> received;
-        Effect(String name, List<String> effects) { super(name); this.name = name; this.effects = effects; }
-        @Override public void runFunction(TriggerFireEvent event, List<DungeonPlayerSession> targets) {
+
+        Effect(String name, List<String> effects) {
+            super(name);
+            this.name = name;
+            this.effects = effects;
+        }
+
+        @Override
+        public void runFunction(TriggerFireEvent event, List<DungeonPlayerSession> targets) {
             effects.add(name);
             received = new ArrayList<>(targets);
             if (clearTargets) targets.clear();
             if (fail) throw new IllegalStateException("broken effect");
         }
-        @Override public MenuButton buildMenuButton() { return null; }
-        @Override public void buildHotbarMenu() {}
+
+        @Override
+        public MenuButton buildMenuButton() {
+            return null;
+        }
+
+        @Override
+        public void buildHotbarMenu() {}
     }
 }

@@ -1,7 +1,7 @@
 package nl.hauntedmc.dungeons.content.variable;
 
-import java.util.HashMap;
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -24,7 +24,9 @@ public class VariableStore {
         try {
             BigDecimal normalized = new BigDecimal(value).stripTrailingZeros();
             // Keep extreme exponents compact rather than allocating enormous display strings.
-            return Math.abs((long) normalized.scale()) > 1000 ? normalized.toString() : normalized.toPlainString();
+            return Math.abs((long) normalized.scale()) > 1000
+                    ? normalized.toString()
+                    : normalized.toPlainString();
         } catch (NumberFormatException exception) {
             return value;
         }
@@ -92,5 +94,4 @@ public class VariableStore {
         double current = this.getDouble(key);
         this.values.put(key, String.valueOf(current - value));
     }
-
 }

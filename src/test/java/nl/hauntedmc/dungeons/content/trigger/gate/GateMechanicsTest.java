@@ -1,13 +1,16 @@
 package nl.hauntedmc.dungeons.content.trigger.gate;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
 import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.support.PaperBoundary;
+
 import org.bukkit.World;
 import org.junit.jupiter.api.Test;
 
@@ -68,12 +71,21 @@ class GateMechanicsTest {
 
     static final class CountingOrGate extends GateOrTrigger {
         int fires;
-        @Override public void trigger(DungeonPlayerSession source) { this.fires++; }
+
+        @Override
+        public void trigger(DungeonPlayerSession source) {
+            this.fires++;
+        }
     }
 
     static final class CountingAndGate extends GateAndTrigger {
         int fires;
         DungeonPlayerSession source;
-        @Override public void trigger(DungeonPlayerSession source) { this.fires++; this.source = source; }
+
+        @Override
+        public void trigger(DungeonPlayerSession source) {
+            this.fires++;
+            this.source = source;
+        }
     }
 }

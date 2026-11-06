@@ -1,15 +1,19 @@
 package nl.hauntedmc.dungeons.model.element;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import nl.hauntedmc.dungeons.event.TriggerFireEvent;
+import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
+import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
+import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
+import nl.hauntedmc.dungeons.support.PaperBoundary;
+
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-import nl.hauntedmc.dungeons.event.TriggerFireEvent;
-import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
-import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.support.PaperBoundary;
-import org.junit.jupiter.api.Test;
 
 class FunctionDispatchContractTest {
     @Test
@@ -19,7 +23,7 @@ class FunctionDispatchContractTest {
             var bound = mock(DungeonTrigger.class);
             var unrelated = mock(DungeonTrigger.class);
             var source = mock(DungeonPlayerSession.class);
-            when(source.getInstance()).thenReturn(mock(nl.hauntedmc.dungeons.model.instance.PlayableInstance.class));
+            when(source.getInstance()).thenReturn(mock(PlayableInstance.class));
             function.setTrigger(bound);
             function.setTargetType(FunctionTargetType.PLAYER);
             var cancelled = new TriggerFireEvent(source, bound);
@@ -36,9 +40,23 @@ class FunctionDispatchContractTest {
     static class RecordingFunction extends DungeonFunction {
         int calls;
         List<DungeonPlayerSession> targets = new ArrayList<>();
-        RecordingFunction() { super("recording"); }
-        @Override public void runFunction(TriggerFireEvent event, List<DungeonPlayerSession> targets) { calls++; this.targets = new ArrayList<>(targets); }
-        @Override public MenuButton buildMenuButton() { return null; }
-        @Override public void buildHotbarMenu() {}
+
+        RecordingFunction() {
+            super("recording");
+        }
+
+        @Override
+        public void runFunction(TriggerFireEvent event, List<DungeonPlayerSession> targets) {
+            calls++;
+            this.targets = new ArrayList<>(targets);
+        }
+
+        @Override
+        public MenuButton buildMenuButton() {
+            return null;
+        }
+
+        @Override
+        public void buildHotbarMenu() {}
     }
 }

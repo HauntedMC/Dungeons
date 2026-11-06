@@ -1,16 +1,24 @@
 package nl.hauntedmc.dungeons.runtime.queue;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import java.util.List;
-import java.util.UUID;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.runtime.instance.ActiveInstanceRegistry;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
+
 import org.bukkit.entity.Player;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
+import java.util.UUID;
 
 class QueueContractTest {
     final PlayerSessionRegistry sessions = mock(PlayerSessionRegistry.class);
@@ -96,6 +104,7 @@ class QueueContractTest {
     }
 
     DungeonQueueEntry team(DungeonPlayerSession leader, DungeonPlayerSession member) {
-        return new DungeonQueueEntry(leader, dungeon, "", List.of(member.getPlayer().getUniqueId()), UUID.randomUUID());
+        return new DungeonQueueEntry(
+                leader, dungeon, "", List.of(member.getPlayer().getUniqueId()), UUID.randomUUID());
     }
 }

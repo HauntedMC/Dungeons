@@ -28,8 +28,11 @@ public class RandomCollection<E> {
     /** Adds an item with weight contribution. */
     public RandomCollection<E> add(double weight, E result) {
         double nextTotal = this.total + weight;
-        if (weight > 0.0 && Double.isFinite(weight) && Double.isFinite(nextTotal)
-                && nextTotal > this.total && result != null) {
+        if (weight > 0.0
+                && Double.isFinite(weight)
+                && Double.isFinite(nextTotal)
+                && nextTotal > this.total
+                && result != null) {
             this.total = nextTotal;
             this.map.put(this.total, result);
         }

@@ -1,18 +1,26 @@
 package nl.hauntedmc.dungeons.bootstrap;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import java.util.List;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
 import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
+import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueCoordinator;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueEntry;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry;
 import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
 import nl.hauntedmc.dungeons.support.PaperBoundary;
+
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 class LifecycleContractTest {
     @Test
@@ -47,6 +55,7 @@ class LifecycleContractTest {
             order.verify(healthy).dispose();
         }
     }
+
     @Test
     void reloadRefundsOrphanedReservationsAndClearsWaitingStateBeforeReloadingTheCatalog() {
         try (var paper = new PaperBoundary()) {
@@ -58,9 +67,9 @@ class LifecycleContractTest {
             paper.runtime.setTeamService(teams);
             paper.runtime.setDungeonCatalog(catalog);
             paper.runtime.setPlayerSessions(sessions);
-            var player = mock(org.bukkit.entity.Player.class);
-            var session = mock(nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession.class);
-            paper.bukkit.when(org.bukkit.Bukkit::getOnlinePlayers).thenReturn(List.of(player));
+            var player = mock(Player.class);
+            var session = mock(DungeonPlayerSession.class);
+            paper.bukkit.when(Bukkit::getOnlinePlayers).thenReturn(List.of(player));
             when(sessions.get(player)).thenReturn(session);
             when(session.hasReservedAccessKey()).thenReturn(true);
             when(session.getReservedAccessKeyDungeon()).thenReturn("deleted-dungeon");

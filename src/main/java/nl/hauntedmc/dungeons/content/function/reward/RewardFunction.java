@@ -1,14 +1,5 @@
 package nl.hauntedmc.dungeons.content.function.reward;
 
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.EditorHidden;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
@@ -34,6 +25,7 @@ import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
@@ -41,6 +33,16 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Base reward function that manages reward GUIs, cooldowns, and delivery rules.
@@ -638,7 +640,8 @@ public class RewardFunction extends DungeonFunction {
         if (this.cooldownTime < 0
                 || (period != CooldownPeriod.TIMER && this.cooldownTime > 23)
                 || (period == CooldownPeriod.WEEKLY && (this.resetDay < 1 || this.resetDay > 7))
-                || (period == CooldownPeriod.MONTHLY && (this.resetDay < 1 || this.resetDay > 31))) {
+                || (period == CooldownPeriod.MONTHLY
+                        && (this.resetDay < 1 || this.resetDay > 31))) {
             this.logInvalidCooldownConfiguration();
         }
         return CooldownSchedule.nextReset(period, this.cooldownTime, this.resetDay);

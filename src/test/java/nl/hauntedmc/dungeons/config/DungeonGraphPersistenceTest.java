@@ -1,18 +1,23 @@
 package nl.hauntedmc.dungeons.config;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.nio.file.Path;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
 import nl.hauntedmc.dungeons.generation.room.Connector;
 import nl.hauntedmc.dungeons.generation.room.ConnectorDoor;
 import nl.hauntedmc.dungeons.generation.room.WhitelistEntry;
 import nl.hauntedmc.dungeons.support.PaperBoundary;
 import nl.hauntedmc.dungeons.util.world.SimpleLocation;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 class DungeonGraphPersistenceTest {
     @TempDir Path directory;
@@ -55,9 +60,9 @@ class DungeonGraphPersistenceTest {
         try (var paper = new PaperBoundary()) {
             registerModels();
             var valid = ConfigSerializableModel.serializeWithTypeId(connector());
-            var invalidType = new java.util.HashMap<String, Object>(valid);
+            var invalidType = new HashMap<String, Object>(valid);
             invalidType.put("TYPE--", 42);
-            var unknownType = new java.util.HashMap<String, Object>(valid);
+            var unknownType = new HashMap<String, Object>(valid);
             unknownType.put("TYPE--", "not.installed.type");
             var stored = new ConfigurationFile(paper.plugin);
             stored.set("Connectors", List.of(valid, invalidType, unknownType, "bad record", valid));
@@ -73,11 +78,17 @@ class DungeonGraphPersistenceTest {
     }
 
     static void registerModels() {
-        ConfigSerializableModel.pluginSerializables.addAll(Set.of(Connector.class, ConnectorDoor.class, SimpleLocation.class, WhitelistEntry.class));
+        ConfigSerializableModel.pluginSerializables.addAll(
+                Set.of(
+                        Connector.class,
+                        ConnectorDoor.class,
+                        SimpleLocation.class,
+                        WhitelistEntry.class));
     }
 
     static Connector connector() {
-        Connector connector = new Connector(new SimpleLocation(-4, 70, 9, SimpleLocation.Direction.WEST));
+        Connector connector =
+                new Connector(new SimpleLocation(-4, 70, 9, SimpleLocation.Direction.WEST));
         connector.setSuccessChance(0.75);
         connector.getDoor().setNamespace("exit");
         connector.getDoor().setStartOpen(false);

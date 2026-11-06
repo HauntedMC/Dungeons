@@ -1,12 +1,15 @@
 package nl.hauntedmc.dungeons.generation.room;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import java.util.List;
 import nl.hauntedmc.dungeons.util.world.SimpleLocation;
+
 import org.bukkit.util.BoundingBox;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 class RoomTransformContractTest {
     @Test
@@ -32,7 +35,8 @@ class RoomTransformContractTest {
         assertEquals(6, rotated.getBounds().getWidthX());
         assertEquals(8, rotated.getBounds().getWidthZ());
         var target = rotated.getConnectors().getFirst();
-        assertEquals(new SimpleLocation(3, 1, 6, SimpleLocation.Direction.WEST), target.getLocation());
+        assertEquals(
+                new SimpleLocation(3, 1, 6, SimpleLocation.Direction.WEST), target.getLocation());
         target.getDoor().getLocations().getFirst().setX(100);
         assertEquals(2, source.getDoor().getLocations().getFirst().getX());
         assertEquals(SimpleLocation.Direction.NORTH, source.getLocation().getDirection());

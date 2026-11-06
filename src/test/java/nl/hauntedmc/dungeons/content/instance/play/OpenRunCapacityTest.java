@@ -1,12 +1,17 @@
 package nl.hauntedmc.dungeons.content.instance.play;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import java.util.UUID;
 import nl.hauntedmc.dungeons.content.dungeon.OpenDungeon;
+
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
+
+import java.util.UUID;
 
 class OpenRunCapacityTest {
     @Test
@@ -36,7 +41,14 @@ class OpenRunCapacityTest {
 
     static class CapacityRun extends OpenInstance {
         int cleanups;
-        CapacityRun(OpenDungeon dungeon) { super(dungeon, null); }
-        @Override public synchronized void scheduleEmptyCleanup() { cleanups++; }
+
+        CapacityRun(OpenDungeon dungeon) {
+            super(dungeon, null);
+        }
+
+        @Override
+        public synchronized void scheduleEmptyCleanup() {
+            cleanups++;
+        }
     }
 }

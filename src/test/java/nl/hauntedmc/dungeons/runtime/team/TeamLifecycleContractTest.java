@@ -1,18 +1,25 @@
 package nl.hauntedmc.dungeons.runtime.team;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import java.util.List;
-import java.util.UUID;
 import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry;
 import nl.hauntedmc.dungeons.support.PaperBoundary;
+
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
+import java.util.UUID;
 
 class TeamLifecycleContractTest {
     @Test
@@ -20,7 +27,9 @@ class TeamLifecycleContractTest {
         try (var paper = new PaperBoundary()) {
             paper.config.set("team.unstarted_expiry_seconds", 0);
             var sessions = mock(PlayerSessionRegistry.class);
-            var service = new DungeonTeamService(paper.plugin, sessions, mock(DungeonQueueRegistry.class));
+            var service =
+                    new DungeonTeamService(
+                            paper.plugin, sessions, mock(DungeonQueueRegistry.class));
             var leader = player(sessions);
             var member = player(sessions);
             service.handleCreateTeam(leader.getPlayer());
@@ -60,7 +69,9 @@ class TeamLifecycleContractTest {
         try (var paper = new PaperBoundary()) {
             paper.config.set("team.unstarted_expiry_seconds", 0);
             var sessions = mock(PlayerSessionRegistry.class);
-            var service = new DungeonTeamService(paper.plugin, sessions, mock(DungeonQueueRegistry.class));
+            var service =
+                    new DungeonTeamService(
+                            paper.plugin, sessions, mock(DungeonQueueRegistry.class));
             var leader = player(sessions);
             service.handleCreateTeam(leader.getPlayer());
             when(leader.getInstance()).thenReturn(mock(DungeonInstance.class));

@@ -17,7 +17,8 @@ public final class CooldownSchedule {
     }
 
     /** Calendar resets are strictly after now; a zero-minute timer expires immediately. */
-    public static ZonedDateTime nextReset(CooldownPeriod period, int value, int resetDay, ZonedDateTime now) {
+    public static ZonedDateTime nextReset(
+            CooldownPeriod period, int value, int resetDay, ZonedDateTime now) {
         if (period == CooldownPeriod.TIMER) {
             return now.plusMinutes(Math.max(0, value));
         }
@@ -29,20 +30,29 @@ public final class CooldownSchedule {
         if (period == CooldownPeriod.MONTHLY) {
             int day = Math.clamp(resetDay, 1, 31);
             ZonedDateTime candidate = monthlyReset(today, day, resetTime, now);
-            return candidate.isAfter(now) ? candidate : monthlyReset(today.withDayOfMonth(1).plusMonths(1), day, resetTime, now);
+            return candidate.isAfter(now)
+                    ? candidate
+                    : monthlyReset(today.withDayOfMonth(1).plusMonths(1), day, resetTime, now);
         }
         if (period == CooldownPeriod.WEEKLY) {
             int calendarDay = Math.clamp(resetDay, 1, 7);
             DayOfWeek day = DayOfWeek.of(calendarDay == 1 ? 7 : calendarDay - 1);
             LocalDate date = today.with(TemporalAdjusters.nextOrSame(day));
             ZonedDateTime candidate = date.atTime(resetTime).atZone(now.getZone());
-            return candidate.isAfter(now) ? candidate : date.plusWeeks(1).atTime(resetTime).atZone(now.getZone());
+            return candidate.isAfter(now)
+                    ? candidate
+                    : date.plusWeeks(1).atTime(resetTime).atZone(now.getZone());
         }
         ZonedDateTime candidate = today.atTime(resetTime).atZone(now.getZone());
-        return candidate.isAfter(now) ? candidate : today.plusDays(1).atTime(resetTime).atZone(now.getZone());
+        return candidate.isAfter(now)
+                ? candidate
+                : today.plusDays(1).atTime(resetTime).atZone(now.getZone());
     }
 
-    private static ZonedDateTime monthlyReset(LocalDate month, int day, LocalTime time, ZonedDateTime now) {
-        return month.withDayOfMonth(Math.min(day, month.lengthOfMonth())).atTime(time).atZone(now.getZone());
+    private static ZonedDateTime monthlyReset(
+            LocalDate month, int day, LocalTime time, ZonedDateTime now) {
+        return month.withDayOfMonth(Math.min(day, month.lengthOfMonth()))
+                .atTime(time)
+                .atZone(now.getZone());
     }
 }
