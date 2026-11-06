@@ -315,4 +315,53 @@ class GameplayRulesContractTest {
             assertFalse(fill.isCancelled());
         }
     }
+
+    @Test
+    void bannedItemsCannotEnterThroughCraftingPickupOrStorageUnlessThatRuleIsEnabled()
+            throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            f.dungeon.getBannedItems().add("DIAMOND");
+            var listener = (PlayListener) f.run.getListener();
+            var state = new PlayerState();
+            state.location = new Location(f.world, 0, 70, 0);
+            for (boolean allowed : List.of(false, true)) {
+                f.run.getConfig().set("rules.items.allow_craft_banned", allowed);
+                f.run.getConfig().set("rules.items.allow_pickup_banned", allowed);
+                f.run.getConfig().set("rules.items.allow_storage_banned", allowed);
+                var item = PlayerState.stack(2);
+                when(item.getType()).thenReturn(Material.DIAMOND);
+                var recipe = mock(org.bukkit.inventory.Recipe.class);
+                when(recipe.getResult()).thenReturn(item);
+                var inventory = mock(org.bukkit.inventory.CraftingInventory.class);
+                when(inventory.getLocation()).thenReturn(new Location(f.world, 0, 70, 0));
+                when(inventory.getViewers()).thenReturn(List.of(state.player));
+                var craft = TestEvents.cancellable(org.bukkit.event.inventory.CraftItemEvent.class);
+                when(craft.getInventory()).thenReturn(inventory);
+                when(craft.getRecipe()).thenReturn(recipe);
+                listener.onCraftBannedItem(craft);
+                assertEquals(!allowed, craft.isCancelled());
+                var entity = mock(Item.class);
+                when(entity.getItemStack()).thenReturn(item);
+                var pickup = TestEvents.cancellable(EntityPickupItemEvent.class);
+                when(pickup.getEntity()).thenReturn(state.player);
+                when(pickup.getItem()).thenReturn(entity);
+                listener.onPickupBannedItem(pickup);
+                assertEquals(!allowed, pickup.isCancelled());
+                org.mockito.Mockito.verify(
+                                entity,
+                                allowed
+                                        ? org.mockito.Mockito.never()
+                                        : org.mockito.Mockito.times(1))
+                        .remove();
+                var click =
+                        TestEvents.cancellable(
+                                org.bukkit.event.inventory.InventoryClickEvent.class);
+                when(click.getWhoClicked()).thenReturn(state.player);
+                when(click.getCurrentItem()).thenReturn(item);
+                listener.onClickBannedItem(click);
+                assertEquals(!allowed, click.isCancelled());
+                assertEquals(allowed ? 2 : 0, item.getAmount());
+            }
+        }
+    }
 }
