@@ -469,4 +469,42 @@ class TriggerExecutionContractTest {
             assertEquals(2, f.scheduler.immediate.size());
         }
     }
+
+    @Test
+    void blockDetectorsActivateOnlyForTheirLocationWorldAndConfiguredBreakOrPlaceAction()
+            throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var state = new PlayerState();
+            var session = source(f, state);
+            var block = mock(Block.class);
+            when(block.getLocation()).thenReturn(new Location(f.world, 0, 70, 0));
+            var place = TestEvents.cancellable(BlockPlaceEvent.class);
+            when(place.getPlayer()).thenReturn(state.player);
+            when(place.getBlock()).thenReturn(block);
+            var breaking = new BlockBreakEvent(block, state.player);
+            var trigger =
+                    bind(new BlockDetectorTrigger(Map.of("onBreak", true, "material", "ANY")), f);
+            place.setCancelled(true);
+            trigger.onBlockPlace(place);
+            assertFalse(place.isCancelled());
+            assertTrue(f.scheduler.immediate.isEmpty());
+            when(block.getLocation()).thenReturn(new Location(f.world, 1, 70, 0));
+            trigger.onBlockBreak(breaking);
+            assertTrue(f.scheduler.immediate.isEmpty());
+            when(block.getLocation()).thenReturn(new Location(f.world, 0, 70, 0));
+            state.location = new Location(state.originWorld, 0, 70, 0);
+            trigger.onBlockBreak(breaking);
+            assertTrue(f.scheduler.immediate.isEmpty());
+            state.location = new Location(f.world, 0, 70, 0);
+            breaking.setCancelled(true);
+            trigger.onBlockBreak(breaking);
+            assertFalse(breaking.isCancelled());
+            assertEquals(1, f.scheduler.immediate.size());
+            f.scheduler.immediate.getFirst().run();
+            var event = ArgumentCaptor.forClass(TriggerFireEvent.class);
+            verify(Bukkit.getPluginManager()).callEvent(event.capture());
+            assertSame(session, event.getValue().getPlayerSession());
+            assertSame(trigger, event.getValue().getTrigger());
+        }
+    }
 }
