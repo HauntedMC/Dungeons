@@ -25,4 +25,16 @@ class WeightedSelectionContractTest {
         pool.add(10, "new room");
         assertEquals(java.util.List.of("new room"), pool.values().stream().toList());
     }
+    @Test
+    void invalidOrUnrepresentableWeightsCannotPoisonValidRoomAndLootCandidates() {
+        var pool = new RandomCollection<String>(new Random(1));
+        pool.add(1, "safe").add(Double.NaN, "nan").add(Double.POSITIVE_INFINITY, "infinity")
+                .add(-1, "negative").add(0, "zero").add(1, null);
+        assertEquals(1, pool.size());
+        assertEquals("safe", pool.next());
+        var huge = new RandomCollection<String>(new Random(1));
+        huge.add(Double.MAX_VALUE, "large valid").add(Double.MAX_VALUE, "overflow").add(1, "rounded away");
+        assertEquals(1, huge.size());
+        assertEquals("large valid", huge.next());
+    }
 }
