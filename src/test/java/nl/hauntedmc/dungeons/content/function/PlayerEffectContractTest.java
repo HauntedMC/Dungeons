@@ -148,4 +148,27 @@ class PlayerEffectContractTest {
             verify(first.inventory, never()).addItem(any(org.bukkit.inventory.ItemStack.class));
         }
     }
+
+    @Test
+    void leaveMechanicsRemoveOnlyTheirRequestedMembersAndRestoreThePlayersOriginalWorld()
+            throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var state = new PlayerState();
+            var departing = f.session(state);
+            var staying = f.session(new PlayerState());
+            var outsider = new PlayerState();
+            var untracked = f.session(outsider);
+            var original = state.location.clone();
+            var outsideOriginal = outsider.location.clone();
+            f.run.addPlayer(departing);
+            f.run.addPlayer(staying);
+            GameplayFunctionContractTest.bind(new LeaveDungeonFunction(), f)
+                    .runFunction(null, List.of(departing, untracked));
+            assertNull(departing.getInstance());
+            assertEquals(original, state.location);
+            assertSame(f.run, staying.getInstance());
+            assertEquals(List.of(staying), f.run.getPlayers());
+            assertEquals(outsideOriginal, outsider.location);
+        }
+    }
 }
