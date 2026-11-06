@@ -41,6 +41,20 @@ class LayoutExecutionContractTest {
         }
     }
 
+    @Test @Timeout(10)
+    void incompatibleRequiredRoomsFailInsteadOfReportingAPartialGraphAsSuccessful() {
+        try (var paper = new PaperBoundary()) {
+            var graph = new Graph(paper);
+            when(graph.end.getConnectors()).thenReturn(List.of(new Connector(new SimpleLocation(0, 1, 1, SimpleLocation.Direction.EAST))));
+            var incompatible = new RotatedRoom(graph.end, 0);
+            when(graph.end.getOrientations()).thenReturn(List.of(incompatible));
+            assertEquals(Layout.GenerationResult.BAD_LAYOUT, graph.layout.attempt());
+            assertEquals(1, graph.layout.getAllRooms().size());
+            assertTrue(graph.layout.failureReasons.containsKey(GenerationFailureReason.NO_COMPATIBLE_CONNECTOR));
+            assertTrue(graph.layout.failureReasons.containsKey(GenerationFailureReason.MISSING_REQUIRED_ROOM));
+        }
+    }
+
     static class Graph {
         final BranchingDungeon dungeon = mock(BranchingDungeon.class);
         final BranchingRoomDefinition start = mock(BranchingRoomDefinition.class);
