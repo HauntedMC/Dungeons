@@ -21,6 +21,9 @@ public final class PlayerState {
     public boolean online = true;
 
     public PlayerState() {
+        when(location.getWorld().key()).thenReturn(new NamespacedKey("minecraft","overworld"));
+        when(location.getWorld().getName()).thenReturn("overworld");
+        when(location.getWorld().getUID()).thenReturn(UUID.randomUUID());
         when(player.getUniqueId()).thenReturn(UUID.randomUUID());
         when(player.getName()).thenReturn("Explorer");
         when(player.isOnline()).thenAnswer(c -> online);
