@@ -50,8 +50,12 @@ public class VariableStore {
      * Returns the double.
      */
     public double getDouble(String key) {
+        String value = this.values.get(key);
+        if (value == null) {
+            return 0.0;
+        }
         try {
-            return Double.parseDouble(this.values.get(key));
+            return Double.parseDouble(value);
         } catch (NumberFormatException exception) {
             return 0.0;
         }
