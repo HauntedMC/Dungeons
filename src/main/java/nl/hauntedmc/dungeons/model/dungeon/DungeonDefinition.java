@@ -1353,6 +1353,9 @@ public abstract class DungeonDefinition {
         }
 
         this.ensureUniqueAccessKeyStateLoaded();
+        if (!this.accessKeyStateLoaded) {
+            return null;
+        }
         String instanceId = UUID.randomUUID().toString();
         try {
             ItemUtils.tagDungeonAccessKeyInstance(issuedItem, instanceId);

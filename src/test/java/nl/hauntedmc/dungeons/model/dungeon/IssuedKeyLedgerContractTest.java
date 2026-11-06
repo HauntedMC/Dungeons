@@ -111,6 +111,21 @@ class IssuedKeyLedgerContractTest {
         }
     }
 
+    @Test
+    void malformedLedgerCannotBeOverwrittenByIssuingAKeyAndCanRecoverAfterOperatorRepair() throws Exception {
+        try (var fixture = new Fixture(directory)) {
+            String broken = "issued_instances: [unfinished";
+            Files.writeString(fixture.stateFile, broken);
+            assertNull(fixture.dungeon.issueAccessKey(1));
+            assertEquals(broken, Files.readString(fixture.stateFile));
+            Files.writeString(fixture.stateFile, "issued_instances: {}\nreserved_instance_ids: []\ninvalidated_instance_ids: []\n");
+            var issued = fixture.dungeon.issueAccessKey(1);
+            assertNotNull(issued);
+            assertNotNull(fixture.dungeon.isValidKey(issued));
+            assertNotNull(fixture.reload().isValidKey(issued));
+        }
+    }
+
     static final class Fixture implements AutoCloseable {
         final PaperBoundary paper = new PaperBoundary();
         final Path folder;
