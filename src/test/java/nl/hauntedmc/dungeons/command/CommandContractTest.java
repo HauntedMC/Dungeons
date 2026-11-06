@@ -182,6 +182,60 @@ class CommandContractTest {
         }
     }
 
+    @Test
+    void successfulImportCopiesAnUnloadedWorldBeforeLoadingAndPersistsItsDimensionAndSpawn()
+            throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var command = new CommandFixture(f);
+            command.permissions.add("dungeons.admin");
+            var unsafe = mock(UnsafeValues.class);
+            when(unsafe.getMainLevelName()).thenReturn("world");
+            f.paper.bukkit.when(Bukkit::getUnsafe).thenReturn(unsafe);
+            var source = Files.createDirectories(directory.resolve("imported"));
+            Files.writeString(source.resolve("level.dat"), "world contents");
+            var world = mock(World.class);
+            when(world.getName()).thenReturn("imported");
+            when(world.getEnvironment()).thenReturn(World.Environment.NETHER);
+            var spawn = new Location(world, 4, 70, 6, 30, 10);
+            when(world.getSpawnLocation()).thenReturn(spawn);
+            f.paper
+                    .bukkit
+                    .when(() -> Bukkit.createWorld(any(WorldCreator.class)))
+                    .thenReturn(world);
+            f.paper.bukkit.when(() -> Bukkit.unloadWorld(world, false)).thenReturn(true);
+            var imported =
+                    new java.util.ArrayList<
+                            nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition>();
+            when(command.catalog.loadDungeon(any(java.io.File.class)))
+                    .thenAnswer(
+                            c -> {
+                                var dungeon =
+                                        new nl.hauntedmc.dungeons.content.dungeon.StaticDungeon(
+                                                f.paper.runtime,
+                                                c.getArgument(0),
+                                                new YamlConfiguration());
+                                imported.add(dungeon);
+                                return dungeon;
+                            });
+            command.execute("import", "imported", "nether");
+            assertEquals(1, f.scheduler.asynchronous.size());
+            assertTrue(imported.isEmpty());
+            f.scheduler.asynchronous.getFirst().run();
+            var target = directory.resolve("dungeons/imported");
+            assertEquals("world contents", Files.readString(target.resolve("level.dat")));
+            assertTrue(imported.isEmpty());
+            f.scheduler.readyImmediate.remove().run();
+            assertEquals(1, imported.size());
+            var loaded = imported.getFirst();
+            assertEquals("NETHER", loaded.getConfig().getString("dungeon.environment"));
+            assertEquals(4, loaded.getLobbySpawn().getX());
+            assertEquals(70, loaded.getLobbySpawn().getY());
+            assertEquals(30, loaded.getLobbySpawn().getYaw());
+            assertEquals("world contents", Files.readString(source.resolve("level.dat")));
+            assertTrue(Files.isRegularFile(target.resolve("config.yml")));
+        }
+    }
+
     static final class CommandFixture {
         final PlayerState caller = new PlayerState();
         final Set<String> permissions = new HashSet<>(Set.of("dungeons.core"));
