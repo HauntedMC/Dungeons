@@ -62,6 +62,23 @@ class QueueLaunchContractTest {
         }
     }
 
+    @Test
+    void aTransientStartFailureRetainsTheSameQueueUntilASuccessfulRetry() {
+        try (var f = new Fixture(directory)) {
+            var session = f.player();
+            f.coordinator.sendToDungeon(session.getPlayer(), "crypt", "hard");
+            var queue = f.queues.getQueue(session);
+            assertFalse(f.coordinator.tryStartQueuedDungeon(queue));
+            assertSame(queue, f.queues.getQueue(session));
+            assertTrue(session.isAwaitingDungeon());
+            verify(f.dungeon, never()).refundReservedAccessKey(any());
+            when(f.catalog.createInstance("crypt", session.getPlayer(), "hard", 1, null)).thenReturn(true);
+            assertTrue(f.coordinator.tryStartQueuedDungeon(queue));
+            assertNull(f.queues.getQueue(session));
+            verify(f.catalog, times(2)).createInstance("crypt", session.getPlayer(), "hard", 1, null);
+        }
+    }
+
     static class Fixture implements AutoCloseable {
         final PaperBoundary paper = new PaperBoundary();
         final PlayerSessionRegistry sessions = new PlayerSessionRegistry(paper.plugin);
