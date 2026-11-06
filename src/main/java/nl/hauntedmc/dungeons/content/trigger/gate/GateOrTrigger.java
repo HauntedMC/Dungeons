@@ -36,7 +36,7 @@ public class GateOrTrigger extends GateTrigger {
      */
     @EventHandler
     public void onChildTriggered(TriggerFireEvent event) {
-        if (event.getInstance().getInstanceWorld() == this.instance.getInstanceWorld()) {
+        if (!event.isCancelled() && event.getInstance() == this.instance) {
             DungeonTrigger trigger = event.getTrigger();
             if (this.triggerTracker.containsKey(trigger)) {
                 this.trigger(event.getPlayerSession());

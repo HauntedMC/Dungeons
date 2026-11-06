@@ -45,6 +45,32 @@ class GateMechanicsTest {
         }
     }
 
+    @Test
+    void orGateFiresForEachChildButNeverForCancelledOrUnrelatedEvents() {
+        try (var paper = new PaperBoundary()) {
+            var run = mock(PlayableInstance.class);
+            when(run.getInstanceWorld()).thenReturn(mock(World.class));
+            var child = mock(DungeonTrigger.class);
+            var gate = new CountingOrGate();
+            gate.setInstance(run);
+            gate.addTrigger(child);
+            gate.onEnable();
+            var cancelled = new TriggerFireEvent(run, child);
+            cancelled.setCancelled(true);
+            gate.onChildTriggered(cancelled);
+            gate.onChildTriggered(new TriggerFireEvent(run, mock(DungeonTrigger.class)));
+            assertEquals(0, gate.fires);
+            gate.onChildTriggered(new TriggerFireEvent(run, child));
+            gate.onChildTriggered(new TriggerFireEvent(run, child));
+            assertEquals(2, gate.fires);
+        }
+    }
+
+    static final class CountingOrGate extends GateOrTrigger {
+        int fires;
+        @Override public void trigger(DungeonPlayerSession source) { this.fires++; }
+    }
+
     static final class CountingAndGate extends GateAndTrigger {
         int fires;
         DungeonPlayerSession source;
