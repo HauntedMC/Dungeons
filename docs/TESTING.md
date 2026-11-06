@@ -5,8 +5,10 @@ Testing in this project is designed to catch regressions in dungeon lifecycle be
 ## Core contract suite
 
 The [core-system contracts and coverage map](CORE_TEST_CONTRACTS.md) describe the behavior
-protected by the suite and the bugs exposed while implementing it. The suite contains 83
-tests: 44 existing tests plus 39 new behavioral scenarios, each added in a separate commit.
+protected by the suite and the bugs exposed while implementing it. The suite contains 113
+tests: 44 baseline tests, 39 initial behavioral scenarios, and 30 coverage-audit scenarios.
+Each new scenario was added in a separate commit. The coverage map records measured before/after
+coverage and prioritizes the remaining untested gameplay paths.
 Several scenarios cover tables of inputs or an entire state transition rather than one
 assertion or helper method.
 
@@ -86,6 +88,12 @@ After `./mvnw -B -ntp verify`:
 - HTML report: `target/site/jacoco/index.html`
 - XML report: `target/site/jacoco/jacoco.xml`
 - CSV summary: `target/site/jacoco/jacoco.csv`
+
+Use a clean verification run when comparing coverage; repeated targeted test runs can append
+to the existing execution data. The current clean baseline is 17.9% line and 15.6% branch
+coverage across the whole codebase. This is a gap-finding measure, not a claim of complete
+gameplay coverage. The separate Paper acceptance process does not contribute to these unit
+coverage numbers.
 
 ## CI
 

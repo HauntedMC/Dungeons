@@ -23,8 +23,8 @@ real-Paper acceptance suite remains the check for server startup, migration, and
 
 ## Executable coverage map
 
-The suite contains **83 tests** across 37 test classes: 44 baseline tests and 39 new
-system scenarios. Each new `@Test` method was added in its own commit. No test is disabled,
+The suite contains **113 tests** across 46 test classes: 44 baseline tests, 39 scenarios
+from the initial contract pass, and 30 scenarios from the coverage audit. Each new `@Test` method was added in its own commit. No test is disabled,
 skipped, or marked as an expected failure to accommodate a production defect.
 
 | Contract area | Tests |
@@ -33,21 +33,30 @@ skipped, or marked as an expected failure to accommodate a production defect.
 | Save failure completion and preservation of the last good file | `ConfigurationFileTest` |
 | Inheritance and repeatable generator migration | Existing `DungeonRuleConfigurationTest`, `GeneratorConfigMigrationTest` |
 | Queue replacement, stale cleanup, ordering, offline removal, leader/member departure | `QueueContractTest` |
+| Coordinator launch/retry, invalidated queue entries, partial team key rollback, revoked keys, leader-only policy changes | `QueueLaunchContractTest` |
 | Admission limits and active-run registration | `AdmissionContractTest` |
 | Open-run team slot reservations and release | `OpenRunCapacityTest` |
 | Key ownership, consumption, replay protection, offline refund delivery | `AccessKeyReservationContractTest` |
+| Real issued-key ledger save/load, reservation recovery, consumption/replay, rotation/revocation, malformed-ledger repair, mismatched tags | `IssuedKeyLedgerContractTest` |
 | Team invitation/start/shutdown and target isolation | `TeamLifecycleContractTest` |
 | Reload refunds, pending starts, player restoration/detachment, disposal failure isolation | `LifecycleContractTest` |
+| Real base-instance disposal, hook failure isolation, unload refusal/exception, initialization waiter completion | `RunDisposalContractTest` |
 | AND/OR gate state and cancelled/unrelated events | `GateMechanicsTest` |
 | Condition polling, scheduled dispatch, task cancellation, preserved event/player source | `TriggerLifecycleContractTest` |
 | Bound-trigger dispatch and cancellation | `FunctionDispatchContractTest` |
 | Composite execution order, child failures, isolated targets, looping sequence steps | `FunctionCompositionContractTest` |
+| Delayed/repeating execution, overlapping activations, target isolation, cancellation of every pending task | `ScheduledFunctionContractTest` |
 | Large numeric variables through real run state and placeholder comparisons | `VariableMechanicsContractTest` |
 | Placed/queued overlap, adjacency, combined filters, occurrence/depth limits | `GenerationMechanicsTest` |
+| Complete connector graph generation, fresh subsequent runs, incompatible required rooms | `LayoutExecutionContractTest` |
+| Complete trunk/side-branch placement, connectivity/overlap, required versus optional missing anchors | `BranchingExecutionContractTest` |
 | Clone/rotation coordinate and filter isolation | `RoomTransformContractTest` |
 | Disk structure round trips, empty files, old files, tile-text delimiters | `StructureFileContractTest` |
 | Deterministic weighted intervals, invalid weights, safe reuse | `WeightedSelectionContractTest` |
 | Claim isolation across players and world copies, old-versus-new cooldown records | `RewardClaimContractTest` |
+| Actual folder discovery, malformed/unknown dungeon configs, bad player files and reward records, save-time launch/editor guard | `RepositoryContractTest` |
+| Dungeon-specific edit permission, persisted changes, rejection of non-finite generator values | `ConfigAuthorizationContractTest` |
+| Missing, malformed, non-finite, overflow, and valid numeric editor inputs | `InputSafetyContractTest` |
 | Calendar reset wiring and boundary tables, DST, leap months | `CooldownContractTest`, `RewardCooldownContractTest` |
 
 The table-driven date cases and deterministic random-source tests assert known outcomes;
@@ -57,7 +66,7 @@ substitutes the SNBT normalizer; it does not claim to test the external NBT libr
 
 ## Defects exposed and fixed
 
-Fifteen production fixes were driven by failing contracts, without relaxing their assertions:
+The initial pass exposed fifteen defects, fixed without relaxing their assertions:
 
 1. Stale queue cleanup could erase a replacement queue and refund the wrong player state.
 2. Cancelled child events could activate gates; gate isolation used world references rather than instances.
@@ -79,9 +88,68 @@ Structure writes now use a versioned payload while retaining the legacy reader. 
 reset logic is shared by access, loot, and reward functions. Operator-visible semantics
 and file rollback limitations are documented in [Configuration](CONFIGURATION.md).
 
+## Coverage audit continuation
+
+The second pass added 30 scenarios, one new `@Test` per commit. Ten additional production
+fixes were driven by failing tests:
+
+1. Disabling a delayed function cancelled only its most recent activation.
+2. Repeated child execution could mutate the target list used by later ticks.
+3. Overlapping repeater activations shared their repeat count and only one could be cancelled.
+4. Decimal editor input accepted non-finite numbers and threw on missing input.
+5. Generator configuration commands persisted NaN/infinity.
+6. Disposal deleted world files even when Paper refused to unload the world.
+7. Initialization failure could delete a still-loaded world or leave initialization waiters blocked when unloading failed.
+8. An unrelated player YAML filename could prevent dungeon loading; invalid YAML was registered as empty player data.
+9. A wrong-type reward record prevented dungeon loading and made valid neighboring player state unavailable.
+10. Issuing a key after a failed ledger read overwrote the unreadable ledger. Issuance now waits for a successful read and recovers after repair.
+
+The audit compared a clean 83-test baseline at `eb0e067` with a clean 113-test run, with
+class and method order shuffled using seed `20261106`. These are **unit-test** JaCoCo
+measurements; the separate Paper acceptance process is not included. No production
+classes were excluded to improve the percentages.
+
+| Scope | Line coverage before | Line coverage after | Branch coverage before | Branch coverage after |
+| --- | ---: | ---: | ---: | ---: |
+| Whole codebase | 9.0% (2,109/23,544) | 17.9% (4,212/23,587) | 7.7% (772/9,981) | 15.6% (1,555/9,993) |
+| Queue coordinator | 0% | 66.8% | 0% | 57.5% |
+| Dungeon repository | 0% | 64.2% | 0% | 62.5% |
+| Branching layout | 0% | 69.5% | 0% | 53.3% |
+| Shared layout | 17.6% | 67.3% | 8.2% | 61.8% |
+| Dungeon definition, including key ledger | 17.6% | 45.0% | 10.0% | 37.9% |
+| Base dungeon instance | 3.6% | 26.0% | 0.7% | 10.1% |
+| Numeric editor input | 0% | 100% | No branches | 100% |
+
+Class rows refer to the named class, without anonymous/inner classes. Whole-codebase
+coverage includes those classes. Source totals changed because the fixes added guards and
+cleanup paths. These measurements identify exercised paths; they do not establish that the
+whole system is covered.
+
+The most important remaining gaps, in priority order, are:
+
+1. **Full player entry/exit and rollback.** `PlayableInstance.addPlayer/removePlayer`,
+   `DungeonInstance.removePlayer`, player-state restoration, death/lives handling, and
+   disconnect/reconnect ordering still need direct execution contracts. Existing lifecycle
+   tests verify service coordination but substitute parts of the run/player implementation.
+2. **Asynchronous run preparation.** Test player disconnects and team changes between world
+   creation and final admission, failed-world cleanup, and release of every reserved slot.
+3. **Active-team teardown.** Disband, kick, leave, invite expiration, and delayed shutdown
+   need more coverage while players are already in a run.
+4. **Generation recovery.** Checkpoint rollback, cancellation, timeout handling, and repeated
+   impossible minimum targets remain only partly exercised. The new execution scenarios use
+   deterministic room metadata and real layout workers, connectors, rotations, and placements.
+5. **Filesystem write faults and item persistence.** Serialization failure and malformed-read
+   recovery are covered, but disk-full/permission/interrupted-write durability is not. Ledger
+   tests supply a real key definition directly and substitute Paper item/PDC storage; they
+   exercise the real ledger and tagging helpers, not Paper's ItemStack YAML serialization.
+
+A refused/failed world unload now retains the files and world reference. Disposal still
+unregisters the run before the unload attempt; automatic retry/re-registration is not covered
+or implemented by this change.
+
 ## Verification and boundaries
 
-A clean, shuffled-order Maven verification passes, including all 83 tests and Checkstyle.
+A clean, shuffled-order Maven verification passes, including all 113 tests and Checkstyle.
 The real-Paper profile also passes startup, configuration migration, and command smoke
 checks. The packaged artifact audit passes. JaCoCo remains available for inspecting which
 code paths a scenario exercises; a high overall percentage is not the acceptance criterion.

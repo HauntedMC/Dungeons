@@ -223,3 +223,21 @@ deflate. Tile SNBT is encoded inside the file so names or text containing `|` an
 split block records. Existing unversioned structure files remain readable and are converted
 when saved. Older plugin versions cannot read the new format; retain backups if rollback
 to an earlier plugin version is needed.
+
+
+## Invalid saved data and failed world unloads
+
+Player files must use `<player-uuid>.yml` filenames. Unrelated filenames and files with
+invalid YAML are logged and skipped without rewriting them or preventing valid player
+records from loading. An invalid `RewardsInfo` value is ignored while other readable
+fields, such as completion and access cooldowns, remain available.
+
+When unique key validation is enabled and reading `access_keys.yml` fails, new key issuance
+is refused until reading succeeds. Issuance does not replace the unreadable file with an
+empty ledger. A loaded dungeon can retry issuance after repair; a dungeon that failed its
+initial load must be reloaded.
+
+If Paper refuses or fails to unload an instance world, cleanup retains the world files
+and reference instead of deleting files that the server may still be using. Initialization
+failure still releases waiting initialization tasks. This does not add an automatic unload
+retry.
