@@ -730,7 +730,8 @@ public final class DungeonConfigCommandHandler {
      */
     private Double parseDouble(String rawValue) {
         try {
-            return Double.parseDouble(rawValue);
+            double value = Double.parseDouble(rawValue);
+            return Double.isFinite(value) ? value : null;
         } catch (NumberFormatException exception) {
             return null;
         }
