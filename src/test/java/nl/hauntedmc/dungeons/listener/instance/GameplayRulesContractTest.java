@@ -364,4 +364,50 @@ class GameplayRulesContractTest {
             }
         }
     }
+
+    @Test
+    void protectedEntitiesGrowthAndExplosionRulesApplyOnlyInsideTheirOwningWorld()
+            throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var listener = (PlayListener) f.run.getListener();
+            var outsider = new PlayerState();
+            f.dungeon.getDamageProtectedEntities().add(EntityType.ARMOR_STAND);
+            f.dungeon.getInteractProtectedEntities().add(EntityType.ARMOR_STAND);
+            for (var world : List.of(f.world, outsider.originWorld)) {
+                boolean inside = world == f.world;
+                var entity = mock(Entity.class);
+                when(entity.getWorld()).thenReturn(world);
+                when(entity.getType()).thenReturn(EntityType.ARMOR_STAND);
+                var damage = TestEvents.cancellable(EntityDamageEvent.class);
+                when(damage.getEntity()).thenReturn(entity);
+                when(damage.getEntityType()).thenReturn(EntityType.ARMOR_STAND);
+                listener.onDamageProtected(damage);
+                assertEquals(inside, damage.isCancelled());
+                var interact = TestEvents.cancellable(PlayerInteractEntityEvent.class);
+                when(interact.getRightClicked()).thenReturn(entity);
+                listener.onInteractProtected(interact);
+                assertEquals(inside, interact.isCancelled());
+                for (boolean prevent : List.of(false, true)) {
+                    f.run.getConfig().set("rules.world.prevent_plant_growth", prevent);
+                    f.run.getConfig().set("rules.world.prevent_explosion_block_damage", prevent);
+                    var state = mock(org.bukkit.block.BlockState.class);
+                    when(state.getWorld()).thenReturn(world);
+                    var growth = TestEvents.cancellable(BlockGrowEvent.class);
+                    when(growth.getNewState()).thenReturn(state);
+                    var spread = TestEvents.cancellable(BlockSpreadEvent.class);
+                    when(spread.getNewState()).thenReturn(state);
+                    listener.onGrowth(growth);
+                    listener.onSpread(spread);
+                    assertEquals(inside && prevent, growth.isCancelled());
+                    assertEquals(inside && prevent, spread.isCancelled());
+                    var blocks = new ArrayList<>(List.of(block(f)));
+                    var explosion = mock(EntityExplodeEvent.class);
+                    when(explosion.getLocation()).thenReturn(new Location(world, 0, 70, 0));
+                    when(explosion.blockList()).thenReturn(blocks);
+                    listener.onExplodeBlocks(explosion);
+                    assertEquals(inside && prevent ? 0 : 1, blocks.size());
+                }
+            }
+        }
+    }
 }
