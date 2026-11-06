@@ -13,6 +13,7 @@ import java.util.UUID;
 import java.util.WeakHashMap;
 import java.util.concurrent.CountDownLatch;
 import net.kyori.adventure.text.Component;
+import nl.hauntedmc.dungeons.util.text.ComponentUtils;
 import nl.hauntedmc.dungeons.content.function.HologramFunction;
 import nl.hauntedmc.dungeons.content.function.reward.RewardFunction;
 import nl.hauntedmc.dungeons.content.reward.PlayerLootData;
@@ -30,7 +31,6 @@ import nl.hauntedmc.dungeons.util.entity.EntityUtils;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.time.TimeUtils;
-import nl.hauntedmc.dungeons.util.text.ComponentUtils;
 import nl.hauntedmc.dungeons.util.text.MessageUtils;
 import nl.hauntedmc.dungeons.util.world.DungeonMapRenderer;
 import org.bukkit.Bukkit;
@@ -748,8 +748,9 @@ public abstract class PlayableInstance extends DungeonInstance {
                             : dragon.getAttribute(Attribute.MAX_HEALTH).getValue();
             double progress = maxHealth <= 0.0 ? 0.0 : dragon.getHealth() / maxHealth;
             bossBar.progress((float) Math.max(0.0, Math.min(1.0, progress)));
-            if (dragon.getCustomName() != null && !dragon.getCustomName().isBlank()) {
-                bossBar.name(ComponentUtils.component(dragon.getCustomName()));
+            Component customName = dragon.customName();
+            if (customName != null && !ComponentUtils.plainText(customName).isBlank()) {
+                bossBar.name(customName);
             } else {
                 bossBar.name(Component.text("Ender Dragon"));
             }
