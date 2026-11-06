@@ -9,6 +9,10 @@ added **156 test methods** to the previous 113-test suite. Every new `@Test` met
 commit, including any production fix demonstrated by that scenario. All 113 existing test
 methods remain. No production classes were excluded from JaCoCo to raise the percentages.
 
+The patch release adds a spawning-rule regression covering all four combinations of animal
+and monster settings, bringing the current suite to **270 tests**. These settings now apply
+independently when natural spawning is enabled.
+
 ## Completed contract map
 
 The following sixteen areas map the final work to executable scenarios. Class names refer to

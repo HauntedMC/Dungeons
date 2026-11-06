@@ -35,6 +35,8 @@ is insufficient: the script also validates each JUnit report and checks both pro
 Use JDK 25 with `JAVA_HOME` set. The runner also requires Bash, curl, sha256sum, jar, javac,
 and Python 3. It downloads and verifies the exact Paper runtime checksum from HauntedPlatform.
 No Minecraft account, database, Docker daemon, or running development server is needed.
+Set `DUNGEONS_PAPER_JAR` to an existing Paper jar to avoid downloading it; the runner still
+requires that its checksum matches the exact pinned runtime.
 
 ```bash
 ./mvnw -B -ntp clean -Pplatform-acceptance verify
@@ -62,7 +64,7 @@ Reports and diagnostics inside the retained work directory:
 
 Unit reports and JaCoCo remain in the normal Maven locations. The forked Paper process is
 not instrumented by the unit-test JaCoCo agent; acceptance results do not increase those
-coverage percentages. The clean combined verification currently passes 269 unit tests and
+coverage percentages. The clean combined verification currently passes 270 unit tests and
 all nine acceptance cases.
 
 ## CI, release, and packaging

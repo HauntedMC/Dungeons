@@ -19,6 +19,30 @@ class WorldStartupContractTest {
     @TempDir Path directory;
 
     @Test
+    void animalAndMonsterSpawningRulesApplyIndependently() throws Exception {
+        for (boolean animals : new boolean[] {false, true}) {
+            for (boolean monsters : new boolean[] {false, true}) {
+                var rules = new YamlConfiguration();
+                rules.set("rules.world.freeze_random_ticks", false);
+                rules.set("rules.spawning.natural_mobs", true);
+                rules.set("rules.spawning.animals", animals);
+                rules.set("rules.spawning.monsters", monsters);
+                try (var f = new RunFixture(directory, rules)) {
+                    when(f.world.getSpawnLocation()).thenReturn(new Location(f.world, 0, 64, 0));
+                    f.run.applyWorldRules();
+                    for (var category : SpawnCategory.values()) {
+                        boolean disabled =
+                                category == SpawnCategory.MONSTER
+                                        ? !monsters
+                                        : category != SpawnCategory.MISC && !animals;
+                        verify(f.world, times(disabled ? 1 : 0)).setTicksPerSpawns(category, 0);
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
     void copiedWorldStartupStripsIdentityAppliesRulesPublishesReadinessAndStartsExactlyOnce()
             throws Exception {
         var rules = new YamlConfiguration();

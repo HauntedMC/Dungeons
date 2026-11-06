@@ -21,6 +21,7 @@ wait_for_log() {
       fail "Paper reported a plugin failure while waiting for $expected"
     fi
     grep -Eq -- "$expected" "$paper_log" 2>/dev/null && return
+    kill -0 "$paper_pid" 2>/dev/null || fail "Paper exited while waiting for $expected"
     sleep 1
   done
   fail "Timed out waiting for $expected"
@@ -90,8 +91,12 @@ mkdir -p "$work_directory/paper/plugins" "$work_directory/consumer/classes"
 "$JAVA_HOME/bin/jar" --create --file "$work_directory/paper/plugins/DungeonsAcceptance.jar" \
   -C "$work_directory/consumer/classes" . -C "$root_directory/src/acceptance/resources" .
 paper_url="https://fill-data.papermc.io/v1/objects/$paper_sha256/paper-$paper_version-$paper_build.jar"
-curl --fail --silent --show-error --location --connect-timeout 15 --max-time 180 \
-  --output "$work_directory/paper/paper.jar" "$paper_url"
+if [[ -n "${DUNGEONS_PAPER_JAR:-}" ]]; then
+  cp "$DUNGEONS_PAPER_JAR" "$work_directory/paper/paper.jar"
+else
+  curl --fail --silent --show-error --location --connect-timeout 15 --max-time 600 \
+    --retry 2 --output "$work_directory/paper/paper.jar" "$paper_url"
+fi
 [[ "$(sha256sum "$work_directory/paper/paper.jar" | cut -d ' ' -f1)" == "$paper_sha256" ]] || fail 'Paper runtime checksum mismatch'
 cp "$artifact" "$work_directory/paper/plugins/Dungeons.jar"
 # Exercise upgrades from the legacy generator files on a real Paper server.

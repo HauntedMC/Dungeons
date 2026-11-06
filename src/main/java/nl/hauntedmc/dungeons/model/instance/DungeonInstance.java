@@ -305,15 +305,18 @@ public abstract class DungeonInstance {
                     this.instanceWorld.setTicksPerSpawns(cat, 0);
                 }
             }
-        } else if (!DungeonConfigView.isAnimalSpawningEnabled(this.config)) {
-            this.instanceWorld.setTicksPerSpawns(SpawnCategory.ANIMAL, 0);
-            this.instanceWorld.setTicksPerSpawns(SpawnCategory.AMBIENT, 0);
-            this.instanceWorld.setTicksPerSpawns(SpawnCategory.AXOLOTL, 0);
-            this.instanceWorld.setTicksPerSpawns(SpawnCategory.WATER_AMBIENT, 0);
-            this.instanceWorld.setTicksPerSpawns(SpawnCategory.WATER_ANIMAL, 0);
-            this.instanceWorld.setTicksPerSpawns(SpawnCategory.WATER_UNDERGROUND_CREATURE, 0);
-        } else if (!DungeonConfigView.isMonsterSpawningEnabled(this.config)) {
-            this.instanceWorld.setTicksPerSpawns(SpawnCategory.MONSTER, 0);
+        } else {
+            if (!DungeonConfigView.isAnimalSpawningEnabled(this.config)) {
+                this.instanceWorld.setTicksPerSpawns(SpawnCategory.ANIMAL, 0);
+                this.instanceWorld.setTicksPerSpawns(SpawnCategory.AMBIENT, 0);
+                this.instanceWorld.setTicksPerSpawns(SpawnCategory.AXOLOTL, 0);
+                this.instanceWorld.setTicksPerSpawns(SpawnCategory.WATER_AMBIENT, 0);
+                this.instanceWorld.setTicksPerSpawns(SpawnCategory.WATER_ANIMAL, 0);
+                this.instanceWorld.setTicksPerSpawns(SpawnCategory.WATER_UNDERGROUND_CREATURE, 0);
+            }
+            if (!DungeonConfigView.isMonsterSpawningEnabled(this.config)) {
+                this.instanceWorld.setTicksPerSpawns(SpawnCategory.MONSTER, 0);
+            }
         }
 
         if (this.config.getBoolean("rules.world.freeze_random_ticks", true)) {

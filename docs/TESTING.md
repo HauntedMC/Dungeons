@@ -5,8 +5,8 @@ Testing in this project is designed to catch regressions in dungeon lifecycle be
 ## Core contract suite
 
 The [core-system contracts and coverage map](CORE_TEST_CONTRACTS.md) describe the behavior
-protected by the suite and the bugs exposed while implementing it. The suite contains **269
-tests across 82 classes**. The final implementation adds 156 scenarios to the previous 113;
+protected by the suite and the bugs exposed while implementing it. The suite contains **270
+tests across 82 classes**. The final implementation adds 157 scenarios to the previous 113;
 every new `@Test` method has its own commit, alongside any fix it demonstrates. The
 [mechanic coverage map](MECHANIC_TEST_COVERAGE.md) identifies execution contracts for all 54
 registered concrete mechanics and states the server boundaries explicitly.
@@ -100,8 +100,8 @@ After `./mvnw -B -ntp verify`:
 - CSV summary: `target/site/jacoco/jacoco.csv`
 
 Use a clean verification run when comparing coverage; repeated targeted test runs can append
-to the existing execution data. The final clean suite measures **46.15% line (10,974/23,781)** and
-**36.98% branch (3,743/10,121)** coverage across the whole codebase, compared with the previous
+to the existing execution data. The final clean suite measures **46.19% line (10,984/23,781)** and
+**37.03% branch (3,748/10,121)** coverage across the whole codebase, compared with the previous
 113-test baseline of 17.86% lines and 15.56% branches. This is a gap-finding measure, not a claim of complete
 gameplay coverage. The separate Paper acceptance process does not contribute to these unit
 coverage numbers.
