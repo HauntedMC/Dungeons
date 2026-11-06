@@ -38,6 +38,30 @@ class QueueLaunchContractTest {
         }
     }
 
+    @Test
+    void permanentInvalidationWhileWaitingDiscardsTheQueueAndClearsWaitingState() {
+        for (String reason : new String[] {"disabled", "cooldown", "team-limit", "offline"}) {
+            try (var f = new Fixture(directory)) {
+                var session = f.player();
+                f.coordinator.sendToDungeon(session.getPlayer(), "crypt", "hard");
+                var queue = f.queues.getQueue(session);
+                assertNotNull(queue);
+                switch (reason) {
+                    case "disabled" -> when(f.dungeon.isEnabled()).thenReturn(false);
+                    case "cooldown" -> when(f.dungeon.hasAccessCooldown(session.getPlayer())).thenReturn(true);
+                    case "team-limit" -> when(f.dungeon.canEverFitTeamSize(1)).thenReturn(false);
+                    case "offline" -> when(session.getPlayer().isOnline()).thenReturn(false);
+                    default -> throw new AssertionError(reason);
+                }
+                assertFalse(f.coordinator.tryStartQueuedDungeon(queue), reason);
+                assertNull(f.queues.getQueue(session), reason);
+                assertFalse(session.isAwaitingDungeon(), reason);
+                verify(f.dungeon).refundReservedAccessKey(session);
+                verify(f.catalog, never()).createInstance(anyString(), any(), anyString(), anyInt(), any());
+            }
+        }
+    }
+
     static class Fixture implements AutoCloseable {
         final PaperBoundary paper = new PaperBoundary();
         final PlayerSessionRegistry sessions = new PlayerSessionRegistry(paper.plugin);
