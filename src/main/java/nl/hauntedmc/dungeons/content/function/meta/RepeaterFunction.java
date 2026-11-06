@@ -1,6 +1,8 @@
 package nl.hauntedmc.dungeons.content.function.meta;
 
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Optional;
@@ -31,8 +33,7 @@ public class RepeaterFunction extends CompositeFunction {
     @PersistedField private int interval = 20;
     @PersistedField private int delay = 0;
     @PersistedField private int maxRepeats = 0;
-    private int repeatCount = 0;
-    private BukkitRunnable repeater;
+    private Set<BukkitRunnable> repeaters = new HashSet<>();
 
     /**
      * Creates a new RepeaterFunction instance.
@@ -88,10 +89,10 @@ public class RepeaterFunction extends CompositeFunction {
      */
     @Override
     public void onDisable() {
-        if (this.repeater != null && !this.repeater.isCancelled()) {
-            this.repeater.cancel();
-            this.repeater = null;
+        for (BukkitRunnable repeater : this.repeaters) {
+            if (!repeater.isCancelled()) repeater.cancel();
         }
+        this.repeaters.clear();
 
         if (this.function != null) {
             this.function.disable();
@@ -140,35 +141,30 @@ public class RepeaterFunction extends CompositeFunction {
         final List<DungeonPlayerSession> functionTargets =
                 this.resolveNestedFunctionTargets(this.function, triggerEvent, targets);
 
-        this.repeater =
-                new BukkitRunnable() {
-                    /**
-                     * Performs run.
-                     */
-                    public void run() {
-                        if (RepeaterFunction.this.maxRepeats <= 0) {
-                            RepeaterFunction.this.executeNestedFunction(
-                                    RepeaterFunction.this.function, triggerEvent, new ArrayList<>(functionTargets));
-                        } else {
-                            if (RepeaterFunction.this.repeatCount
-                                    >= RepeaterFunction.this.maxRepeats) {
-                                this.cancel();
-                                if (RepeaterFunction.this.trigger != null
-                                        && RepeaterFunction.this.trigger.isAllowRetrigger()) {
-                                    RepeaterFunction.this.repeatCount = 0;
-                                }
+        BukkitRunnable repeater = new BukkitRunnable() {
+            private int repeatCount;
 
-                                return;
-                            }
-
-                            RepeaterFunction.this.executeNestedFunction(
-                                    RepeaterFunction.this.function, triggerEvent, new ArrayList<>(functionTargets));
-                            RepeaterFunction.this.repeatCount++;
-                        }
-                    }
-                };
-        this.repeater.runTaskTimer(RuntimeContext.plugin(), this.delay, effectiveInterval);
+            @Override
+            public void run() {
+                if (RepeaterFunction.this.maxRepeats > 0 && this.repeatCount >= RepeaterFunction.this.maxRepeats) {
+                    this.cancel();
+                    RepeaterFunction.this.repeaters.remove(this);
+                    return;
+                }
+                RepeaterFunction.this.executeNestedFunction(
+                        RepeaterFunction.this.function, triggerEvent, new ArrayList<>(functionTargets));
+                this.repeatCount++;
+            }
+        };
+        this.repeaters.add(repeater);
+        try {
+            repeater.runTaskTimer(RuntimeContext.plugin(), this.delay, effectiveInterval);
+        } catch (RuntimeException exception) {
+            this.repeaters.remove(repeater);
+            throw exception;
+        }
     }
+
 
     /**
      * Builds menu button.
@@ -352,6 +348,7 @@ public class RepeaterFunction extends CompositeFunction {
      */
     public RepeaterFunction clone() {
         RepeaterFunction clone = (RepeaterFunction) super.clone();
+        clone.repeaters = new HashSet<>();
         if (this.function != null) {
             clone.function = this.function.clone();
             if (clone.function != null) {

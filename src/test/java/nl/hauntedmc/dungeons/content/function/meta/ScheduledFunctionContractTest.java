@@ -79,4 +79,29 @@ class ScheduledFunctionContractTest {
             assertTrue(work.cancelled);
         }
     }
+    @Test
+    void overlappingRepeatsHaveIndependentCountsAndDisableCancelsAllRemainingWork() {
+        try (var paper = new PaperBoundary()) {
+            var scheduler = new CapturedScheduler(paper);
+            var child = mock(DungeonFunction.class);
+            var repeat = new RepeaterFunction(Map.of("maxRepeats", 2));
+            repeat.initializeFields();
+            repeat.addFunction(child);
+            var event = mock(TriggerFireEvent.class);
+            repeat.runFunction(event, List.of());
+            repeat.runFunction(event, List.of());
+            for (int i = 0; i < 3; i++) {
+                scheduler.jobs.get(0).run();
+                scheduler.jobs.get(1).run();
+            }
+            verify(child, times(4)).runFunction(eq(event), anyList());
+            assertTrue(scheduler.jobs.stream().allMatch(job -> job.cancelled));
+            repeat.runFunction(event, List.of());
+            repeat.runFunction(event, List.of());
+            repeat.onDisable();
+            assertTrue(scheduler.jobs.stream().allMatch(job -> job.cancelled));
+            scheduler.jobs.forEach(CapturedScheduler.Job::run);
+            verify(child, times(4)).runFunction(eq(event), anyList());
+        }
+    }
 }
