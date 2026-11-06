@@ -12,7 +12,6 @@ If you run the plugin:
 If you contribute code:
 
 - [Development](DEVELOPMENT.md): local setup and day-to-day workflow.
-- [Testing](TESTING.md): test strategy and local validation commands.
 - [Paper acceptance](ACCEPTANCE_TESTS.md): real-server contracts, restart checks, reports, and limits.
 - [Core contracts](CORE_TEST_CONTRACTS.md): executable guarantees, coverage measurements, and boundaries.
 - [Mechanic coverage](MECHANIC_TEST_COVERAGE.md): execution contracts for every registered mechanic.
