@@ -45,6 +45,20 @@ class CommandContractTest {
             command.execute("play","crypt","Other"); verifyNoInteractions(command.coordinator);
         }
     }
+
+    @Test
+    void deletionRequiresAFreshConfirmationAndDeletesOnlyTheSelectedDungeonFolder() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            var command=new CommandFixture(f); command.permissions.add("dungeons.admin");
+            Path neighbor=directory.resolve("unrelated.txt"); Files.writeString(neighbor,"keep me");
+            command.execute("delete","crypt"); assertTrue(f.dungeon.isMarkedForDelete());
+            assertTrue(Files.isDirectory(f.dungeon.getFolder().toPath())); verify(command.catalog,never()).remove(any());
+            f.scheduler.jobs.getLast().run(); assertFalse(f.dungeon.isMarkedForDelete());
+            command.execute("delete","crypt"); assertTrue(Files.isDirectory(f.dungeon.getFolder().toPath()));
+            command.execute("delete","crypt"); assertFalse(Files.exists(f.dungeon.getFolder().toPath()));
+            verify(command.catalog).remove(f.dungeon); assertEquals("keep me",Files.readString(neighbor));
+        }
+    }
     static final class CommandFixture {
         final PlayerState caller=new PlayerState();
         final Set<String> permissions=new HashSet<>(Set.of("dungeons.core"));
