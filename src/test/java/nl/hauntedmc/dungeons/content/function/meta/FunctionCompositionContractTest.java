@@ -66,6 +66,43 @@ class FunctionCompositionContractTest {
         }
     }
 
+    @Test
+    void randomCompositionExecutesOnlyTheChosenChildAndPreservesTheCallersTargets() {
+        try (var paper = new PaperBoundary();
+                var random =
+                        org.mockito.Mockito.mockStatic(
+                                nl.hauntedmc.dungeons.util.math.MathUtils.class)) {
+            var function = new RandomFunction();
+            var source = mock(DungeonPlayerSession.class);
+            var targets = new ArrayList<>(List.of(source));
+            var event = mock(TriggerFireEvent.class);
+            function.runFunction(event, targets);
+            List<String> effects = new ArrayList<>();
+            var first = new Effect("first", effects);
+            var second = new Effect("second", effects);
+            second.clearTargets = true;
+            function.addFunction(first);
+            function.addFunction(second);
+            random.when(
+                            () ->
+                                    nl.hauntedmc.dungeons.util.math.MathUtils
+                                            .getRandomNumberInRange(0, 1))
+                    .thenReturn(1);
+            function.runFunction(event, targets);
+            assertEquals(List.of("second"), effects);
+            assertEquals(List.of(source), second.received);
+            assertEquals(List.of(source), targets);
+            random.when(
+                            () ->
+                                    nl.hauntedmc.dungeons.util.math.MathUtils
+                                            .getRandomNumberInRange(0, 1))
+                    .thenReturn(0);
+            function.runFunction(event, targets);
+            assertEquals(List.of("second", "first"), effects);
+            assertEquals(List.of(source), first.received);
+        }
+    }
+
     static class Effect extends DungeonFunction {
         final String name;
         final List<String> effects;
