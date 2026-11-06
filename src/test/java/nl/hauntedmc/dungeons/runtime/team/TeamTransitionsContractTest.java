@@ -171,4 +171,45 @@ class TeamTransitionsContractTest {
             assertTrue(f.scheduler.immediate.isEmpty());
         }
     }
+
+    @Test
+    void shutdownCancelsCountdownsAndPreventsPendingDisbandCallbacksFromSchedulingNewWork()
+            throws Exception {
+        for (boolean countdownStarted : List.of(false, true)) {
+            var settings = new YamlConfiguration();
+            settings.set("team.disband_shutdown_delay_seconds", 2);
+            try (var f =
+                    new RunFixture(
+                            directory.resolve(Boolean.toString(countdownStarted)), settings)) {
+                var service = service(f);
+                var leader = player(f);
+                var member = player(f);
+                service.handleCreateTeam(leader.player);
+                service.handleInvite(leader.player, member.player);
+                service.handleAcceptInvite(member.player);
+                var team = service.getTeam(leader.player.getUniqueId());
+                var leaderSession = f.paper.runtime.playerSessions().get(leader.player);
+                var memberSession = f.paper.runtime.playerSessions().get(member.player);
+                f.run.addPlayer(leaderSession);
+                f.run.addPlayer(memberSession);
+                service.markStarted(team.getTeamId(), f.run);
+                service.handleDeleteTeam(leader.player);
+                var disband = f.scheduler.immediate.getLast();
+                if (countdownStarted) disband.run();
+                int jobs = f.scheduler.jobs.size();
+                service.shutdown();
+                disband.run();
+                assertEquals(jobs, f.scheduler.jobs.size());
+                f.scheduler.jobs.stream()
+                        .filter(job -> job.period == 20)
+                        .forEach(
+                                job -> {
+                                    assertTrue(job.cancelled);
+                                    job.run();
+                                });
+                assertSame(f.run, memberSession.getInstance());
+                assertNull(service.getTeamById(team.getTeamId()));
+            }
+        }
+    }
 }

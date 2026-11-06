@@ -639,6 +639,10 @@ public final class DungeonTeamService implements Listener {
                 .runTask(
                         this.plugin,
                         () -> {
+                            if (this.teamsById.get(team.getTeamId()) != team
+                                    || !this.dissolvingTeams.contains(team.getTeamId())) {
+                                return;
+                            }
                             try {
                                 this.dissolveTeam(team, teamMessageKey, true);
                                 this.scheduleDisbandShutdown(instance);
