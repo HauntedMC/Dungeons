@@ -3,9 +3,9 @@
 The suite protects observable dungeon behavior through state transitions, real persisted graphs,
 and mechanic execution. It is not a requirement to test every line or helper independently.
 
-The completed unit suite contains **268 tests across 82 classes**, with no failures, errors, or
+The completed unit suite contains **269 tests across 82 classes**, with no failures, errors, or
 skips in the clean shuffled verification on 6 November 2026. This final implementation pass
-added **155 test methods** to the previous 113-test suite. Every new `@Test` method has its own
+added **156 test methods** to the previous 113-test suite. Every new `@Test` method has its own
 commit, including any production fix demonstrated by that scenario. All 113 existing test
 methods remain. No production classes were excluded from JaCoCo to raise the percentages.
 
@@ -46,15 +46,15 @@ separate Paper acceptance process does not contribute to these unit measurements
 
 | Scope | Previous coverage | Final coverage |
 | --- | ---: | ---: |
-| Lines | 17.86% (4,212/23,587) | **46.06% (10,945/23,763)** |
-| Branches | 15.56% (1,555/9,993) | **36.88% (3,726/10,103)** |
+| Lines | 17.86% (4,212/23,587) | **46.15% (10,974/23,781)** |
+| Branches | 15.56% (1,555/9,993) | **36.98% (3,743/10,121)** |
 
 Selected production classes, excluding their inner/anonymous classes:
 
 | Class | Lines | Branches |
 | --- | ---: | ---: |
 | `RegistryBootstrap` | 97.8% | 86.4% |
-| `DungeonInstance` | 74.1% | 57.9% |
+| `DungeonInstance` | 74.1% | 56.6% |
 | `PlayableInstance` | 66.3% | 51.6% |
 | `EditableInstance` | 59.4% | 35.2% |
 | `DungeonPlayerSession` | 71.1% | 56.9% |
@@ -67,9 +67,11 @@ Selected production classes, excluding their inner/anonymous classes:
 | `ConfigurationFile` | 77.1% | 68.2% |
 
 The final clean verification uses shuffled class and method order with seed `20261106`.
-All 268 tests pass; Checkstyle reports zero violations, and `scripts/verify-artifact.sh`
-passes for `target/Dungeons-1.2.11.jar`. The final release-readiness pass also verifies
+All 269 tests pass; Checkstyle reports zero violations, and `scripts/verify-artifact.sh`
+passes for `target/Dungeons-1.2.12.jar`. The final release-readiness pass also verifies
 real Paper startup, legacy generator migration, configuration commands, and help output.
+The [Paper acceptance suite](ACCEPTANCE_TESTS.md) now adds nine assertions across native
+worlds, mechanics, persistence, generation, open-run pools, and two JVM boots.
 Commands and report locations are in [Testing](TESTING.md).
 
 ## Defects exposed during the final implementation
@@ -104,7 +106,10 @@ examples include:
 Each relevant commit contains the executable contract and its corresponding fix. Assertions
 were not weakened to accept the defective behavior.
 
-## Remaining boundaries
+## Unit-test boundaries
+
+The separate [Paper acceptance contracts](ACCEPTANCE_TESTS.md) exercise selected native
+operations listed below. These boundaries describe the unit suite itself.
 
 This is broad core-system coverage, not a claim that every gameplay branch or user interaction
 has been exercised. The remaining coverage is concentrated in GUI construction, administration,

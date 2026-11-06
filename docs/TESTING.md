@@ -5,15 +5,15 @@ Testing in this project is designed to catch regressions in dungeon lifecycle be
 ## Core contract suite
 
 The [core-system contracts and coverage map](CORE_TEST_CONTRACTS.md) describe the behavior
-protected by the suite and the bugs exposed while implementing it. The suite contains **268
-tests across 82 classes**. The final implementation adds 155 scenarios to the previous 113;
+protected by the suite and the bugs exposed while implementing it. The suite contains **269
+tests across 82 classes**. The final implementation adds 156 scenarios to the previous 113;
 every new `@Test` method has its own commit, alongside any fix it demonstrates. The
 [mechanic coverage map](MECHANIC_TEST_COVERAGE.md) identifies execution contracts for all 54
 registered concrete mechanics and states the server boundaries explicitly.
 Several scenarios cover tables of inputs or an entire state transition rather than one
 assertion or helper method.
 
-Tests run without downloading or starting Paper. Mockito is managed by HauntedPlatform and
+Unit tests run without downloading or starting Paper. Mockito is managed by HauntedPlatform and
 loaded as a test-only Java agent alongside JaCoCo, supporting Java 25 without dynamic agent
 attachment. Real configuration graphs, files, registries, dungeon/run objects, and mechanics
 are exercised; server interfaces and collaborators are substituted at explicit boundaries.
@@ -63,22 +63,22 @@ Generate local coverage report:
 ./mvnw -B -ntp verify
 ```
 
-Run the separate real Paper boot and command smoke test for packaging or runtime changes:
+Run the real Paper integration and acceptance suite:
 
 ```bash
-./mvnw -B -ntp -Pplatform-acceptance verify
-```
-
-The test downloads the HauntedPlatform-pinned Paper runtime and checks plugin startup and `/dungeon help`. It also migrates legacy generator files, loads a branching dungeon, and verifies that branch edits and layout switches persist to the normal `config.yml`.
-
-The final unit-suite implementation was verified with `clean verify` and the artifact audit:
-
-```bash
+./mvnw -B -ntp clean -Pplatform-acceptance verify
 bash scripts/verify-artifact.sh
 ```
 
-The separate Paper profile also passes in the final release-readiness verification, including
-startup, generator migration, configuration commands, and help output.
+This runs the unit suite and nine acceptance cases against the actual distributable on the
+HauntedPlatform-pinned Paper runtime, including a second JVM boot. The cases exercise native
+item/key/graph persistence, world copies and cleanup, registered mechanics, tile-entity
+structures, branching generation, open-run warm pools, and cold-restart persistence. Existing
+legacy configuration migration and console command checks remain.
+
+See [Paper acceptance contracts](ACCEPTANCE_TESTS.md) for scenario details, retained logs and
+JUnit reports, the CI/release gates, and the client/network boundaries. Acceptance consumer
+classes are built separately and never included in the distributed plugin.
 
 ## What to Test
 
@@ -100,8 +100,8 @@ After `./mvnw -B -ntp verify`:
 - CSV summary: `target/site/jacoco/jacoco.csv`
 
 Use a clean verification run when comparing coverage; repeated targeted test runs can append
-to the existing execution data. The final clean suite measures **46.06% line (10,945/23,763)** and
-**36.88% branch (3,726/10,103)** coverage across the whole codebase, compared with the previous
+to the existing execution data. The final clean suite measures **46.15% line (10,974/23,781)** and
+**36.98% branch (3,743/10,121)** coverage across the whole codebase, compared with the previous
 113-test baseline of 17.86% lines and 15.56% branches. This is a gap-finding measure, not a claim of complete
 gameplay coverage. The separate Paper acceptance process does not contribute to these unit
 coverage numbers.
