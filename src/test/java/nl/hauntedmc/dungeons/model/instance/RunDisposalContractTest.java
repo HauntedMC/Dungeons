@@ -6,8 +6,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
@@ -25,6 +29,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 class RunDisposalContractTest {
@@ -43,8 +48,7 @@ class RunDisposalContractTest {
             run.dispose();
             run.dispose();
             assertEquals(1, run.hooks);
-            assertEquals(1, scheduler.jobs.size());
-            scheduler.jobs.getFirst().run();
+            assertTrue(scheduler.jobs.isEmpty());
             assertFalse(Files.exists(folder));
             assertNull(run.getInstanceWorld());
             assertTrue(paper.runtime.activeInstances().getActiveInstances().isEmpty());
@@ -62,7 +66,7 @@ class RunDisposalContractTest {
             Path data = world.getWorldFolder().toPath().resolve("level.dat");
             paper.bukkit.when(() -> Bukkit.unloadWorld(world, false)).thenReturn(false);
             run.dispose();
-            scheduler.jobs.getFirst().run();
+            assertTrue(scheduler.jobs.isEmpty());
             assertEquals("world state", Files.readString(data));
             assertSame(world, run.getInstanceWorld());
         }
@@ -102,6 +106,31 @@ class RunDisposalContractTest {
             assertTrue(run.awaitInitialization(0, TimeUnit.MILLISECONDS));
             assertEquals("world state", Files.readString(data));
             assertSame(world, run.getInstanceWorld());
+        }
+    }
+
+    @Test
+    void shutdownDisposalNeverSchedulesWithTheDisabledPluginAndKeepsRefusedWorldsIntact()
+            throws Exception {
+        for (boolean unload : List.of(false, true)) {
+            try (var paper = new PaperBoundary()) {
+                var scheduler = new CapturedScheduler(paper);
+                var run = run(paper);
+                var world = run.getInstanceWorld();
+                var folder = world.getWorldFolder().toPath();
+                doThrow(new IllegalStateException("Plugin is disabled"))
+                        .when(scheduler.scheduler)
+                        .runTaskLater(
+                                any(org.bukkit.plugin.Plugin.class),
+                                any(Runnable.class),
+                                anyLong());
+                paper.bukkit.when(() -> Bukkit.unloadWorld(world, false)).thenReturn(unload);
+                assertDoesNotThrow(run::dispose);
+                assertEquals(!unload, Files.exists(folder));
+                if (unload) assertNull(run.getInstanceWorld());
+                else assertSame(world, run.getInstanceWorld());
+                verifyNoInteractions(scheduler.scheduler);
+            }
         }
     }
 

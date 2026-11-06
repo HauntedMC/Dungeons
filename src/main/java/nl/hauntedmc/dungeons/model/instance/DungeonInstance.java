@@ -377,54 +377,50 @@ public abstract class DungeonInstance {
                                 this.listener = null;
                                 this.clearHolograms();
                                 this.hologramManager = null;
-                                Bukkit.getScheduler()
-                                        .runTaskLater(
-                                                this.plugin(),
-                                                () -> {
-                                                    try {
-                                                        CountDownLatch latch =
-                                                                new CountDownLatch(1);
-                                                        File worldFolder =
-                                                                this.instanceWorld.getWorldFolder();
-                                                        String worldName =
-                                                                this.instanceWorld.getName();
-                                                        this.saveWorld(latch);
-                                                        if (!this.unloadInstanceWorld()) {
-                                                            return;
-                                                        }
-                                                        if (this.plugin().isEnabled()) {
-                                                            Bukkit.getScheduler()
-                                                                    .runTaskLaterAsynchronously(
-                                                                            this.plugin(),
-                                                                            () ->
-                                                                                    this
-                                                                                            .cleanWorldFiles(
-                                                                                                    latch,
-                                                                                                    worldFolder,
-                                                                                                    worldName),
-                                                                            100L);
-                                                        } else {
-                                                            this.cleanWorldFiles(
-                                                                    latch, worldFolder, worldName);
-                                                        }
-                                                    } catch (Exception exception) {
-                                                        if (Bukkit.getWorld(
-                                                                        this.instanceWorld
-                                                                                .getName())
-                                                                == null) {
-                                                            return;
-                                                        }
+                                Runnable unload =
+                                        () -> {
+                                            try {
+                                                CountDownLatch latch = new CountDownLatch(1);
+                                                File worldFolder =
+                                                        this.instanceWorld.getWorldFolder();
+                                                String worldName = this.instanceWorld.getName();
+                                                this.saveWorld(latch);
+                                                if (!this.unloadInstanceWorld()) {
+                                                    return;
+                                                }
+                                                if (this.plugin().isEnabled()) {
+                                                    Bukkit.getScheduler()
+                                                            .runTaskLaterAsynchronously(
+                                                                    this.plugin(),
+                                                                    () ->
+                                                                            this.cleanWorldFiles(
+                                                                                    latch,
+                                                                                    worldFolder,
+                                                                                    worldName),
+                                                                    100L);
+                                                } else {
+                                                    this.cleanWorldFiles(
+                                                            latch, worldFolder, worldName);
+                                                }
+                                            } catch (Exception exception) {
+                                                if (Bukkit.getWorld(this.instanceWorld.getName())
+                                                        == null) {
+                                                    return;
+                                                }
 
-                                                        this.logger()
-                                                                .error(
-                                                                        "Failed to unload instance world '{}' for dungeon '{}'. The world is still loaded after disposal.",
-                                                                        this.instanceWorld
-                                                                                .getName(),
-                                                                        this.dungeon.getWorldName(),
-                                                                        exception);
-                                                    }
-                                                },
-                                                1L);
+                                                this.logger()
+                                                        .error(
+                                                                "Failed to unload instance world '{}' for dungeon '{}'. The world is still loaded after disposal.",
+                                                                this.instanceWorld.getName(),
+                                                                this.dungeon.getWorldName(),
+                                                                exception);
+                                            }
+                                        };
+                                if (this.plugin().isEnabled()) {
+                                    Bukkit.getScheduler().runTaskLater(this.plugin(), unload, 1L);
+                                } else {
+                                    unload.run();
+                                }
                                 this.dungeon.removeInstance(this);
                                 Bukkit.getPluginManager().callEvent(new DungeonDisposeEvent(this));
                             };
