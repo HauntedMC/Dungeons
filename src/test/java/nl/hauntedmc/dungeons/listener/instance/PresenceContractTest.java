@@ -30,4 +30,22 @@ class PresenceContractTest {
             assertTrue(f.run.getOfflineTrackers().isEmpty());
         }
     }
+    @Test
+    void worldEntryRequiresMembershipOrExplicitBypassAndUnauthorizedArrivalIsEjected() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            var state=new PlayerState(); var session=f.session(state); var listener=f.run.getListener();
+            var from=state.location.clone(); var to=new org.bukkit.Location(f.world,0,70,0);
+            var event=TestEvents.cancellable(PlayerTeleportEvent.class);
+            when(event.getPlayer()).thenReturn(state.player); when(event.getFrom()).thenReturn(from); when(event.getTo()).thenReturn(to);
+            listener.onTeleportToDungeon(event); assertTrue(event.isCancelled());
+            event.setCancelled(false); when(state.player.hasPermission("dungeons.bypassjoin")).thenReturn(true);
+            listener.onTeleportToDungeon(event); assertFalse(event.isCancelled()); assertTrue(f.run.getPlayers().isEmpty()); assertNull(session.getInstance());
+            when(state.player.hasPermission("dungeons.bypassjoin")).thenReturn(false);
+            state.location=to; when(state.player.getRespawnLocation()).thenReturn(from);
+            var arrival=mock(PlayerChangedWorldEvent.class); when(arrival.getPlayer()).thenReturn(state.player); when(arrival.getFrom()).thenReturn(state.originWorld);
+            listener.onPlayerEnterDungeonWorld(arrival);
+            assertEquals(from,state.location); assertTrue(f.run.getPlayers().isEmpty());
+        }
+    }
+
 }
