@@ -30,4 +30,18 @@ class GameplayFunctionContractTest {
             verify(Bukkit.getPluginManager(),times(1)).callEvent(any(nl.hauntedmc.dungeons.event.DungeonStartEvent.class));
         }
     }
+    @Test
+    void finishingRecordsCompletionAndTransfersQueuedRewardsOnceWithoutForcingDeparture() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            var state=new PlayerState(); var session=f.session(state); f.run.addPlayer(session);
+            var outsider=new PlayerState(); f.session(outsider);
+            var reward=PlayerState.stack(2); f.run.addPlayerReward(state.player,reward);
+            var finish=bind(new FinishDungeonFunction(Map.of("leave",false)),f);
+            finish.runFunction(null,List.of(session)); finish.runFunction(null,List.of(session));
+            assertTrue(f.dungeon.hasPlayerCompletedDungeon(state.player));
+            assertFalse(f.dungeon.hasPlayerCompletedDungeon(outsider.player));
+            assertEquals(List.of(reward),session.getRewardItems()); assertSame(f.run,session.getInstance());
+        }
+    }
+
 }
