@@ -49,4 +49,22 @@ class GenerationRecoveryContractTest {
         }
     }
 
+    @Test @org.junit.jupiter.api.Timeout(10)
+    void cancellationTerminatesGenerationAndDoesNotPoisonTheNextFullGeneration() {
+        try(var paper=new PaperBoundary()) {
+            var graph=new LayoutExecutionContractTest.Graph(paper);
+            var settings=new org.bukkit.configuration.file.YamlConfiguration();
+            settings.set("generator.seal_open_connectors_with","AIR"); settings.set("generator.room_target.min",2); settings.set("generator.room_target.max",2);
+            var layout=new LayoutExecutionContractTest.TestLayout(graph.dungeon,settings) {
+                int attempts;
+                @Override protected GenerationResult tryLayout() {
+                    if(attempts++==0) { this.cancelled=true; return GenerationResult.BAD_LAYOUT; }
+                    return super.tryLayout();
+                }
+            };
+            assertEquals(Layout.GenerationResult.CANCELLED,layout.generate());
+            assertEquals(Layout.GenerationResult.SUCCESS,layout.generate()); assertEquals(2,layout.getAllRooms().size());
+        }
+    }
+
 }
