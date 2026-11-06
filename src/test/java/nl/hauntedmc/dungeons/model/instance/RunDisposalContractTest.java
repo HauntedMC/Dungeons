@@ -71,6 +71,23 @@ class RunDisposalContractTest {
         }
     }
 
+    @Test
+    void unloadExceptionsCannotStrandInitializationWaitersOrDeleteWorldData() throws Exception {
+        try (var paper = new PaperBoundary()) {
+            var run = run(paper);
+            World world = run.getInstanceWorld();
+            Path data = world.getWorldFolder().toPath().resolve("level.dat");
+            var creator = mock(org.bukkit.WorldCreator.class);
+            when(creator.createWorld()).thenReturn(world);
+            paper.bukkit.when(() -> Bukkit.unloadWorld(world, false)).thenThrow(new IllegalStateException("unload failed"));
+            assertDoesNotThrow(() -> run.initializeWith(creator));
+            assertTrue(run.hasLoadFailed());
+            assertTrue(run.awaitInitialization(0, java.util.concurrent.TimeUnit.MILLISECONDS));
+            assertEquals("world state", Files.readString(data));
+            assertSame(world, run.getInstanceWorld());
+        }
+    }
+
     TestRun run(PaperBoundary paper) throws Exception {
         paper.runtime.setActiveInstances(new ActiveInstanceRegistry(paper.plugin));
         var dungeon = paper.dungeon(directory.resolve("maps/crypt"), new YamlConfiguration());
