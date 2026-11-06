@@ -53,4 +53,25 @@ class PlayerStateContractTest {
             assertEquals(1,scheduler.jobs.size());
         }
     }
+    @Test
+    void hotbarSnapshotsPreserveAllSlotsAndHeldSelectionWithoutSharingMutableItems() {
+        var state=new PlayerState();
+        for(int i=0;i<9;i++) state.contents[i]=PlayerState.stack(i+1);
+        var snapshot=new PlayerHotbarSnapshot(state.player);
+        state.contents[0].setAmount(50);
+        state.heldSlot=8;
+        snapshot.applyTo(state.inventory,true);
+        assertEquals(1,state.contents[0].getAmount());
+        assertEquals(9,state.contents[8].getAmount());
+        assertEquals(2,state.heldSlot);
+        state.contents[0].setAmount(30);
+        snapshot.applyTo(state.inventory);
+        assertEquals(1,state.contents[0].getAmount());
+        var replacement=PlayerState.stack(5);
+        snapshot.setItem(3,replacement);
+        replacement.setAmount(60);
+        snapshot.applyTo(state.inventory);
+        assertEquals(5,state.contents[3].getAmount());
+    }
+
 }
