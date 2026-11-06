@@ -25,8 +25,26 @@ class OpenAdmissionContractTest {
             assertTrue(run.hasOutstandingReservations()); assertFalse(run.hasCapacityFor(1));
         }
     }
+
+    @Test
+    void readyOpenRunsAcceptReservedPlayersButRejectOverbookingAtTheDungeonLimit() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            var dungeon=dungeon(f); var run=new ReadyRun(dungeon,f.world);
+            dungeon.getInstances().add(run); f.paper.runtime.activeInstances().registerActiveInstance(run);
+            assertTrue(dungeon.publishReadyInstance(run));
+            var first=new PlayerState(); var firstSession=f.session(first); firstSession.setAwaitingDungeon(true);
+            assertTrue(dungeon.prepareInstance(first.player,"DEFAULT",1,null));
+            assertSame(run,firstSession.getInstance()); assertFalse(firstSession.isAwaitingDungeon());
+            assertFalse(run.hasOutstandingReservations()); assertFalse(run.hasCapacityFor(1));
+            var second=new PlayerState(); var secondSession=f.session(second); secondSession.setAwaitingDungeon(true);
+            assertFalse(dungeon.prepareInstance(second.player,"DEFAULT",1,null));
+            assertNull(secondSession.getInstance()); assertFalse(secondSession.isAwaitingDungeon());
+            assertEquals(1,run.getPlayers().size()); assertEquals(1,dungeon.getInstances().size());
+        }
+    }
+
     OpenDungeon dungeon(RunFixture f) throws Exception {
-        var settings=new YamlConfiguration(); settings.set("open.max_players",1);
+        var settings=new YamlConfiguration(); settings.set("open.max_players",1); settings.set("runs.max_active",1);
         var dungeon=new OpenDungeon(f.paper.runtime,Files.createDirectories(directory.resolve("open")).toFile(),settings);
         var catalog=mock(DungeonRepository.class); when(catalog.get("open")).thenReturn(dungeon);
         f.paper.runtime.setDungeonCatalog(catalog); return dungeon;
