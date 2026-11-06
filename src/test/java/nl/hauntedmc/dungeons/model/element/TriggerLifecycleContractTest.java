@@ -54,6 +54,37 @@ class TriggerLifecycleContractTest {
         }
     }
 
+    @Test
+    void serverEventCancellationPreventsFunctionEffectsAndKeepsTheOriginalPlayerSource() {
+        try (var paper = new PaperBoundary()) {
+            var scheduler = mock(BukkitScheduler.class);
+            paper.bukkit.when(Bukkit::getScheduler).thenReturn(scheduler);
+            when(scheduler.runTask(any(Plugin.class), any(Runnable.class))).thenReturn(mock(BukkitTask.class));
+            var run = mock(PlayableInstance.class);
+            when(run.asPlayInstance()).thenReturn(run);
+            when(run.getEnvironment()).thenReturn(paper.runtime.environment());
+            var source = mock(nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession.class);
+            when(source.getInstance()).thenReturn(run);
+            var function = mock(DungeonFunction.class);
+            var trigger = new WaitingTrigger();
+            trigger.setAllowRetrigger(true);
+            trigger.enable(function, run);
+            var manager = Bukkit.getPluginManager();
+            doAnswer(call -> { ((TriggerFireEvent) call.getArgument(0)).setCancelled(true); return null; })
+                    .when(manager).callEvent(any(TriggerFireEvent.class));
+            trigger.trigger(source);
+            var work = ArgumentCaptor.forClass(Runnable.class);
+            verify(scheduler).runTask(eq(paper.plugin), work.capture());
+            work.getValue().run();
+            var emitted = ArgumentCaptor.forClass(TriggerFireEvent.class);
+            verify(manager).callEvent(emitted.capture());
+            assertSame(source, emitted.getValue().getPlayerSession());
+            assertSame(trigger, emitted.getValue().getTrigger());
+            assertEquals(0, trigger.effects);
+            verify(function, never()).execute(any());
+        }
+    }
+
     static class WaitingTrigger extends DungeonTrigger {
         int effects;
         WaitingTrigger() { super("waiting"); waitForConditions = true; }
