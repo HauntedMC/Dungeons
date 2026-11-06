@@ -24,7 +24,15 @@ public final class HeadlessInventoryMenus implements AutoCloseable {
                         when(item.getItemMeta()).thenReturn(meta);
                         when(item.clone()).thenReturn(item);
                     });
-    private final MockedConstruction<Button> buttons = mockConstruction(Button.class);
+    private final MockedConstruction<Button> buttons =
+            mockConstruction(
+                    Button.class,
+                    (button, context) -> {
+                        if (context.arguments().size() > 1
+                                && context.arguments().get(1) instanceof ItemStack item) {
+                            when(button.getItem()).thenReturn(item);
+                        }
+                    });
     private final MockedConstruction<GuiWindow> windows = mockConstruction(GuiWindow.class);
 
     public java.util.List<GuiWindow> windows() {

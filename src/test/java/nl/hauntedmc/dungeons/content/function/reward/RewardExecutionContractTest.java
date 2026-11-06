@@ -150,4 +150,78 @@ class RewardExecutionContractTest {
             org.junit.jupiter.api.Assertions.assertNull(firstMenu.contents[0]);
         }
     }
+
+    @Test
+    void finishDeliveryQueuesClickedAndUnclaimedItemsWithoutGivingThemBeforeCompletion()
+            throws Exception {
+        var settings = new YamlConfiguration();
+        settings.set("rewards.deliver_on_finish", true);
+        try (var f = new RunFixture(directory, settings);
+                var menus = new HeadlessMenus();
+                var gui = new HeadlessInventoryMenus()) {
+            var state = new PlayerState();
+            var session = f.session(state);
+            f.run.addPlayer(session);
+            var menuState = new PlayerState();
+            var reward =
+                    new RewardFunction(
+                            Map.of(
+                                    "rewards",
+                                    List.of(PlayerState.stack(2), PlayerState.stack(3)),
+                                    "cooldownDisabled",
+                                    true));
+            reward.initializeFields();
+            reward.setInstance(f.run);
+            reward.setLocation(new Location(f.world, 0, 70, 0));
+            reward.onEnable();
+            var window = gui.windows().getLast();
+            var inventory =
+                    new nl.hauntedmc.dungeons.gui.framework.window.GuiInventory(
+                            new HashMap<>(), menuState.inventory);
+            org.mockito.Mockito.when(window.getInventoryFor(state.player)).thenReturn(inventory);
+            org.mockito.ArgumentCaptor<
+                            nl.hauntedmc.dungeons.gui.framework.actions.Action<
+                                    org.bukkit.event.inventory.InventoryOpenEvent>>
+                    open = org.mockito.ArgumentCaptor.captor();
+            org.mockito.ArgumentCaptor<
+                            nl.hauntedmc.dungeons.gui.framework.actions.Action<
+                                    org.bukkit.event.inventory.InventoryCloseEvent>>
+                    close = org.mockito.ArgumentCaptor.captor();
+            verify(window).addOpenAction(org.mockito.Mockito.eq("loaditems"), open.capture());
+            verify(window).addCloseAction(org.mockito.Mockito.eq("dropitems"), close.capture());
+            var opening =
+                    org.mockito.Mockito.mock(org.bukkit.event.inventory.InventoryOpenEvent.class);
+            org.mockito.Mockito.when(opening.getPlayer()).thenReturn(state.player);
+            open.getValue().run(opening);
+            assertEquals(2, inventory.buttons().size());
+            org.mockito.ArgumentCaptor<
+                            nl.hauntedmc.dungeons.gui.framework.actions.Action<
+                                    org.bukkit.event.inventory.InventoryClickEvent>>
+                    click = org.mockito.ArgumentCaptor.captor();
+            verify(inventory.buttons().get(0))
+                    .addAction(org.mockito.Mockito.eq("click"), click.capture());
+            var clicking =
+                    TestEvents.cancellable(org.bukkit.event.inventory.InventoryClickEvent.class);
+            org.mockito.Mockito.when(clicking.getWhoClicked()).thenReturn(state.player);
+            click.getValue().run(clicking);
+            org.junit.jupiter.api.Assertions.assertTrue(clicking.isCancelled());
+            org.junit.jupiter.api.Assertions.assertNull(menuState.contents[0]);
+            assertEquals(1, f.run.getRewardInventories().get(state.player.getUniqueId()).size());
+            var closing =
+                    org.mockito.Mockito.mock(org.bukkit.event.inventory.InventoryCloseEvent.class);
+            org.mockito.Mockito.when(closing.getPlayer()).thenReturn(state.player);
+            close.getValue().run(closing);
+            close.getValue().run(closing);
+            f.run.pushPlayerRewards(state.player);
+            assertEquals(
+                    List.of(2, 3),
+                    session.getRewardItems().stream()
+                            .map(org.bukkit.inventory.ItemStack::getAmount)
+                            .toList());
+            verify(state.inventory, never())
+                    .addItem(org.mockito.Mockito.<org.bukkit.inventory.ItemStack>any());
+            open.getValue().run(opening);
+            org.junit.jupiter.api.Assertions.assertNull(menuState.contents[1]);
+        }
+    }
 }
