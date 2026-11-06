@@ -1,11 +1,12 @@
 package nl.hauntedmc.dungeons.runtime.player;
 
-import java.util.ArrayList;
-import java.util.List;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Captured copy of the first nine hotbar slots and held-slot index.

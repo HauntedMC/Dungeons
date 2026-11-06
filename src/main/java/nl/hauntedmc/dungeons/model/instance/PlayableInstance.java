@@ -1,19 +1,7 @@
 package nl.hauntedmc.dungeons.model.instance;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.UUID;
-import java.util.WeakHashMap;
-import java.util.concurrent.CountDownLatch;
 import net.kyori.adventure.text.Component;
-import nl.hauntedmc.dungeons.util.text.ComponentUtils;
+
 import nl.hauntedmc.dungeons.content.function.HologramFunction;
 import nl.hauntedmc.dungeons.content.function.reward.RewardFunction;
 import nl.hauntedmc.dungeons.content.reward.PlayerLootData;
@@ -30,17 +18,19 @@ import nl.hauntedmc.dungeons.util.config.DungeonConfigView;
 import nl.hauntedmc.dungeons.util.entity.EntityUtils;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
-import nl.hauntedmc.dungeons.util.time.TimeUtils;
+import nl.hauntedmc.dungeons.util.text.ComponentUtils;
 import nl.hauntedmc.dungeons.util.text.MessageUtils;
+import nl.hauntedmc.dungeons.util.time.TimeUtils;
 import nl.hauntedmc.dungeons.util.world.DungeonMapRenderer;
+
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.EnderDragon;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.MapMeta;
@@ -49,6 +39,19 @@ import org.bukkit.map.MapView.Scale;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.UUID;
+import java.util.WeakHashMap;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * Base runtime instance for playable dungeon runs.
@@ -221,8 +224,11 @@ public abstract class PlayableInstance extends DungeonInstance {
             try {
                 function.disable();
             } catch (Exception exception) {
-                this.logger().error("Failed to disable function while disposing dungeon '{}'.",
-                        this.dungeon.getWorldName(), exception);
+                this.logger()
+                        .error(
+                                "Failed to disable function while disposing dungeon '{}'.",
+                                this.dungeon.getWorldName(),
+                                exception);
             }
         }
 

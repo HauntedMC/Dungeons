@@ -1,6 +1,5 @@
 package nl.hauntedmc.dungeons.content.trigger;
 
-import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.content.instance.play.BranchingInstance;
@@ -12,11 +11,14 @@ import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
 import nl.hauntedmc.dungeons.model.element.TriggerCategory;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+
+import java.util.Map;
 
 /**
  * Trigger that listens for named remote signals emitted by other dungeon content.

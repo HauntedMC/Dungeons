@@ -1,174 +1,245 @@
 package nl.hauntedmc.dungeons.model.instance;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import java.nio.file.Path;
+import nl.hauntedmc.dungeons.event.DungeonEndEvent;
+import nl.hauntedmc.dungeons.event.DungeonStartEvent;
+import nl.hauntedmc.dungeons.event.PlayerLeaveDungeonEvent;
+import nl.hauntedmc.dungeons.listener.instance.PlayListener;
+import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.support.*;
+
+import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
+import org.bukkit.Location;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Entity;
+import org.bukkit.event.Event;
+import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+
 class PlayerRunContractTest {
     @TempDir Path directory;
+
     static YamlConfiguration settings() {
-        var settings=new YamlConfiguration();
-        settings.set("players.keep_on_entry.inventory",false);
-        settings.set("players.keep_on_entry.experience",false);
-        settings.set("players.keep_on_entry.health",true);
-        settings.set("players.keep_on_entry.food",true);
+        var settings = new YamlConfiguration();
+        settings.set("players.keep_on_entry.inventory", false);
+        settings.set("players.keep_on_entry.experience", false);
+        settings.set("players.keep_on_entry.health", true);
+        settings.set("players.keep_on_entry.food", true);
         return settings;
     }
+
     @Test
-    void entryAndExitRestoreInventoryExperienceAndMembershipAndIgnoreDuplicateOperations() throws Exception {
-        try(var fixture=new RunFixture(directory,settings())) {
-            var state=new PlayerState();
-            state.contents[0]=PlayerState.stack(7);
-            state.contents[40]=PlayerState.stack(2);
-            state.armor[0]=PlayerState.stack(1);
-            var session=fixture.session(state);
-            var origin=state.location.clone();
+    void entryAndExitRestoreInventoryExperienceAndMembershipAndIgnoreDuplicateOperations()
+            throws Exception {
+        try (var fixture = new RunFixture(directory, settings())) {
+            var state = new PlayerState();
+            state.contents[0] = PlayerState.stack(7);
+            state.contents[40] = PlayerState.stack(2);
+            state.armor[0] = PlayerState.stack(1);
+            var session = fixture.session(state);
+            var origin = state.location.clone();
             fixture.run.addPlayer(session);
             fixture.run.addPlayer(session);
-            assertSame(fixture.run,session.getInstance());
-            assertEquals(1,fixture.run.getPlayers().size());
-            assertEquals(GameMode.ADVENTURE,state.gameMode);
+            assertSame(fixture.run, session.getInstance());
+            assertEquals(1, fixture.run.getPlayers().size());
+            assertEquals(GameMode.ADVENTURE, state.gameMode);
             fixture.scheduler.jobs.getFirst().run();
-            assertNull(state.contents[0]); assertNull(state.contents[40]);
-            assertEquals(0,state.level);
+            assertNull(state.contents[0]);
+            assertNull(state.contents[40]);
+            assertEquals(0, state.level);
             fixture.run.removePlayer(session);
             fixture.run.removePlayer(session);
             assertNull(session.getInstance());
             assertTrue(fixture.run.getPlayers().isEmpty());
             assertTrue(fixture.run.getLivingPlayers().isEmpty());
-            assertEquals(origin,state.location);
-            assertEquals(GameMode.SURVIVAL,state.gameMode);
-            assertEquals(17,state.level); assertEquals(.4f,state.exp);
-            assertEquals(7,state.contents[0].getAmount());
-            assertEquals(2,state.contents[40].getAmount());
-            assertEquals(1,state.armor[0].getAmount());
+            assertEquals(origin, state.location);
+            assertEquals(GameMode.SURVIVAL, state.gameMode);
+            assertEquals(17, state.level);
+            assertEquals(.4f, state.exp);
+            assertEquals(7, state.contents[0].getAmount());
+            assertEquals(2, state.contents[40].getAmount());
+            assertEquals(1, state.armor[0].getAmount());
         }
     }
+
     @Test
-    void deferredEntryCannotClearRestoredItemsOrExperienceAfterThePlayerHasAlreadyLeft() throws Exception {
-        try(var fixture=new RunFixture(directory,settings())) {
-            var state=new PlayerState(); state.contents[0]=PlayerState.stack(7);
-            var session=fixture.session(state);
+    void deferredEntryCannotClearRestoredItemsOrExperienceAfterThePlayerHasAlreadyLeft()
+            throws Exception {
+        try (var fixture = new RunFixture(directory, settings())) {
+            var state = new PlayerState();
+            state.contents[0] = PlayerState.stack(7);
+            var session = fixture.session(state);
             fixture.run.addPlayer(session);
             fixture.run.removePlayer(session);
             fixture.scheduler.jobs.getFirst().run();
-            assertEquals(7,state.contents[0].getAmount());
-            assertEquals(17,state.level); assertEquals(.4f,state.exp);
+            assertEquals(7, state.contents[0].getAmount());
+            assertEquals(17, state.level);
+            assertEquals(.4f, state.exp);
             assertNull(session.getInstance());
         }
     }
 
     @Test
-    void cancelledDeparturePreservesEveryMembershipAndEmitsNoEndUntilAForcedDepartureSucceeds() throws Exception {
-        try(var fixture=new RunFixture(directory,settings())) {
-            var state=new PlayerState(); var session=fixture.session(state);
+    void cancelledDeparturePreservesEveryMembershipAndEmitsNoEndUntilAForcedDepartureSucceeds()
+            throws Exception {
+        try (var fixture = new RunFixture(directory, settings())) {
+            var state = new PlayerState();
+            var session = fixture.session(state);
             fixture.run.addPlayer(session);
             fixture.scheduler.jobs.getFirst().run();
-            java.util.List<org.bukkit.event.Event> events=new java.util.ArrayList<>();
-            var manager=org.bukkit.Bukkit.getPluginManager();
-            doAnswer(c -> {
-                org.bukkit.event.Event event=c.getArgument(0); events.add(event);
-                if(event instanceof nl.hauntedmc.dungeons.event.PlayerLeaveDungeonEvent leave) leave.setCancelled(true);
-                return null;
-            }).when(manager).callEvent(any());
-            fixture.run.removePlayer(session,false);
-            assertSame(fixture.run,session.getInstance());
+            List<Event> events = new ArrayList<>();
+            var manager = Bukkit.getPluginManager();
+            doAnswer(
+                            c -> {
+                                Event event = c.getArgument(0);
+                                events.add(event);
+                                if (event instanceof PlayerLeaveDungeonEvent leave)
+                                    leave.setCancelled(true);
+                                return null;
+                            })
+                    .when(manager)
+                    .callEvent(any());
+            fixture.run.removePlayer(session, false);
+            assertSame(fixture.run, session.getInstance());
             assertTrue(fixture.run.getPlayers().contains(session));
             assertTrue(fixture.run.getLivingPlayers().contains(session));
-            assertEquals(GameMode.ADVENTURE,state.gameMode);
-            assertEquals(0,state.level);
-            assertTrue(events.stream().noneMatch(e -> e instanceof nl.hauntedmc.dungeons.event.DungeonEndEvent));
-            fixture.run.removePlayer(session,true);
+            assertEquals(GameMode.ADVENTURE, state.gameMode);
+            assertEquals(0, state.level);
+            assertTrue(events.stream().noneMatch(e -> e instanceof DungeonEndEvent));
+            fixture.run.removePlayer(session, true);
             assertNull(session.getInstance());
             assertTrue(fixture.run.getPlayers().isEmpty());
-            assertEquals(1,events.stream().filter(e -> e instanceof nl.hauntedmc.dungeons.event.DungeonEndEvent).count());
+            assertEquals(1, events.stream().filter(e -> e instanceof DungeonEndEvent).count());
         }
     }
 
     @Test
     void startingIsIdempotentAndDisposalCancelsEveryRunTicker() throws Exception {
-        try(var fixture=new RunFixture(directory,settings())) {
-            fixture.run.startGame(); fixture.run.startGame();
+        try (var fixture = new RunFixture(directory, settings())) {
+            fixture.run.startGame();
+            fixture.run.startGame();
             assertTrue(fixture.run.isStarted());
-            assertEquals(2,fixture.scheduler.jobs.size());
-            var timer=fixture.scheduler.jobs.stream().filter(j -> j.period==20).findFirst().orElseThrow();
-            for(int i=0;i<65;i++) timer.run();
-            assertEquals(65,fixture.run.getTimeElapsed());
+            assertEquals(2, fixture.scheduler.jobs.size());
+            var timer =
+                    fixture.scheduler.jobs.stream()
+                            .filter(j -> j.period == 20)
+                            .findFirst()
+                            .orElseThrow();
+            for (int i = 0; i < 65; i++) timer.run();
+            assertEquals(65, fixture.run.getTimeElapsed());
             assertFalse(timer.cancelled);
             fixture.run.onDispose();
             assertTrue(fixture.scheduler.jobs.stream().allMatch(j -> j.cancelled));
-            timer.run(); assertEquals(65,fixture.run.getTimeElapsed());
-            org.bukkit.Bukkit.getPluginManager();
-            verify(org.bukkit.Bukkit.getPluginManager(),times(1)).callEvent(any(nl.hauntedmc.dungeons.event.DungeonStartEvent.class));
+            timer.run();
+            assertEquals(65, fixture.run.getTimeElapsed());
+            Bukkit.getPluginManager();
+            verify(Bukkit.getPluginManager(), times(1)).callEvent(any(DungeonStartEvent.class));
         }
     }
 
     @Test
     void timeLimitExpiresAtTheBoundaryAndRemovesEveryParticipantExactlyOnce() throws Exception {
-        var settings=settings(); settings.set("runs.time_limit_minutes",1);
-        try(var fixture=new RunFixture(directory,settings)) {
-            var first=fixture.session(new PlayerState()); var second=fixture.session(new PlayerState());
-            fixture.run.addPlayer(first); fixture.run.addPlayer(second);
+        var settings = settings();
+        settings.set("runs.time_limit_minutes", 1);
+        try (var fixture = new RunFixture(directory, settings)) {
+            var first = fixture.session(new PlayerState());
+            var second = fixture.session(new PlayerState());
+            fixture.run.addPlayer(first);
+            fixture.run.addPlayer(second);
             fixture.run.startGame();
-            var timer=fixture.scheduler.jobs.stream().filter(j -> j.period==20).findFirst().orElseThrow();
-            for(int i=0;i<59;i++) timer.run();
-            assertEquals(2,fixture.run.getPlayers().size());
-            assertEquals(1,fixture.run.getTimeLeft());
+            var timer =
+                    fixture.scheduler.jobs.stream()
+                            .filter(j -> j.period == 20)
+                            .findFirst()
+                            .orElseThrow();
+            for (int i = 0; i < 59; i++) timer.run();
+            assertEquals(2, fixture.run.getPlayers().size());
+            assertEquals(1, fixture.run.getTimeLeft());
             timer.run();
-            assertEquals(0,fixture.run.getTimeLeft());
+            assertEquals(0, fixture.run.getTimeLeft());
             assertTrue(timer.cancelled);
             assertTrue(fixture.run.getPlayers().isEmpty());
-            assertNull(first.getInstance()); assertNull(second.getInstance());
-            timer.run(); assertEquals(60,fixture.run.getTimeElapsed());
-            verify(org.bukkit.Bukkit.getPluginManager(),times(1)).callEvent(any(nl.hauntedmc.dungeons.event.DungeonEndEvent.class));
+            assertNull(first.getInstance());
+            assertNull(second.getInstance());
+            timer.run();
+            assertEquals(60, fixture.run.getTimeElapsed());
+            verify(Bukkit.getPluginManager(), times(1)).callEvent(any(DungeonEndEvent.class));
         }
     }
 
     @Test
-    void oneBrokenFunctionCannotAbandonOtherFunctionsTickersOrTrackedEntityCleanup() throws Exception {
-        try(var fixture=new RunFixture(directory,settings())) {
+    void oneBrokenFunctionCannotAbandonOtherFunctionsTickersOrTrackedEntityCleanup()
+            throws Exception {
+        try (var fixture = new RunFixture(directory, settings())) {
             fixture.run.startGame();
-            var broken=mock(nl.hauntedmc.dungeons.model.element.DungeonFunction.class);
-            var healthy=mock(nl.hauntedmc.dungeons.model.element.DungeonFunction.class);
+            var broken = mock(DungeonFunction.class);
+            var healthy = mock(DungeonFunction.class);
             doThrow(new IllegalStateException("broken disable")).when(broken).disable();
-            fixture.run.getFunctions().put(new org.bukkit.Location(fixture.world,0,0,0),broken);
-            fixture.run.getFunctions().put(new org.bukkit.Location(fixture.world,1,0,0),healthy);
-            var entity=mock(org.bukkit.entity.Entity.class); fixture.run.getEntities().add(entity);
+            fixture.run.getFunctions().put(new Location(fixture.world, 0, 0, 0), broken);
+            fixture.run.getFunctions().put(new Location(fixture.world, 1, 0, 0), healthy);
+            var entity = mock(Entity.class);
+            fixture.run.getEntities().add(entity);
             assertDoesNotThrow(fixture.run::onDispose);
-            verify(healthy).disable(); verify(entity).remove();
+            verify(healthy).disable();
+            verify(entity).remove();
             assertTrue(fixture.scheduler.jobs.stream().allMatch(j -> j.cancelled));
         }
     }
 
     @Test
-    void deathRespawnAndLastLifeSpectatingAreIdempotentAndCloseTheRunOnTheNextTick() throws Exception {
-        var settings=settings(); settings.set("players.lives",2);
-        try(var fixture=new RunFixture(directory,settings)) {
-            var state=new PlayerState(); var session=fixture.session(state); fixture.run.addPlayer(session);
-            var listener=(nl.hauntedmc.dungeons.listener.instance.PlayListener)fixture.run.getListener();
-            var death=mock(org.bukkit.event.entity.PlayerDeathEvent.class);
-            when(death.getEntity()).thenReturn(state.player); when(death.getDrops()).thenReturn(new java.util.ArrayList<>());
-            when(death.isCancelled()).thenReturn(true); listener.onPlayerDeath(death);
-            assertEquals(2,fixture.run.getPlayerLives().get(state.player.getUniqueId()));
-            when(death.isCancelled()).thenReturn(false); listener.onPlayerDeath(death); listener.onPlayerDeath(death);
-            assertEquals(1,fixture.run.getPlayerLives().get(state.player.getUniqueId()));
-            assertTrue(fixture.run.getLivingPlayers().contains(session));
-            var respawn=mock(org.bukkit.event.player.PlayerRespawnEvent.class); when(respawn.getPlayer()).thenReturn(state.player);
-            listener.onPlayerRespawn(respawn); assertFalse(session.isDead());
+    void deathRespawnAndLastLifeSpectatingAreIdempotentAndCloseTheRunOnTheNextTick()
+            throws Exception {
+        var settings = settings();
+        settings.set("players.lives", 2);
+        try (var fixture = new RunFixture(directory, settings)) {
+            var state = new PlayerState();
+            var session = fixture.session(state);
+            fixture.run.addPlayer(session);
+            var listener = (PlayListener) fixture.run.getListener();
+            var death = mock(PlayerDeathEvent.class);
+            when(death.getEntity()).thenReturn(state.player);
+            when(death.getDrops()).thenReturn(new ArrayList<>());
+            when(death.isCancelled()).thenReturn(true);
             listener.onPlayerDeath(death);
-            assertEquals(0,fixture.run.getPlayerLives().get(state.player.getUniqueId()));
+            assertEquals(2, fixture.run.getPlayerLives().get(state.player.getUniqueId()));
+            when(death.isCancelled()).thenReturn(false);
+            listener.onPlayerDeath(death);
+            listener.onPlayerDeath(death);
+            assertEquals(1, fixture.run.getPlayerLives().get(state.player.getUniqueId()));
+            assertTrue(fixture.run.getLivingPlayers().contains(session));
+            var respawn = mock(PlayerRespawnEvent.class);
+            when(respawn.getPlayer()).thenReturn(state.player);
+            listener.onPlayerRespawn(respawn);
+            assertFalse(session.isDead());
+            listener.onPlayerDeath(death);
+            assertEquals(0, fixture.run.getPlayerLives().get(state.player.getUniqueId()));
             assertTrue(fixture.run.getLivingPlayers().isEmpty());
-            listener.onPlayerRespawn(respawn); assertEquals(GameMode.SPECTATOR,state.gameMode);
-            assertSame(fixture.run,session.getInstance());
+            listener.onPlayerRespawn(respawn);
+            assertEquals(GameMode.SPECTATOR, state.gameMode);
+            assertSame(fixture.run, session.getInstance());
             fixture.scheduler.jobs.getLast().run();
-            assertNull(session.getInstance()); assertTrue(fixture.run.getPlayers().isEmpty());
+            assertNull(session.getInstance());
+            assertTrue(fixture.run.getPlayers().isEmpty());
         }
     }
-
 }

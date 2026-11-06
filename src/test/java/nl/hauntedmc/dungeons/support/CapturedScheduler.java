@@ -38,7 +38,8 @@ public final class CapturedScheduler {
                 .thenAnswer(c -> captureIn(immediate, c.getArgument(1), 0, 0));
         when(scheduler.runTaskAsynchronously(any(Plugin.class), any(Runnable.class)))
                 .thenAnswer(c -> captureIn(asynchronous, c.getArgument(1), 0, 0));
-        when(scheduler.runTaskLaterAsynchronously(any(Plugin.class), any(Runnable.class), anyLong()))
+        when(scheduler.runTaskLaterAsynchronously(
+                        any(Plugin.class), any(Runnable.class), anyLong()))
                 .thenAnswer(c -> captureIn(asynchronous, c.getArgument(1), c.getArgument(2), 0));
         doAnswer(
                         call -> {

@@ -1,16 +1,11 @@
 package nl.hauntedmc.dungeons.runtime.player;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import nl.hauntedmc.dungeons.config.ConfigurationFile;
 import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
 import nl.hauntedmc.dungeons.event.HotbarSetEvent;
+import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
 import nl.hauntedmc.dungeons.generation.room.Connector;
 import nl.hauntedmc.dungeons.generation.room.ConnectorDoor;
-import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
 import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
@@ -20,6 +15,7 @@ import nl.hauntedmc.dungeons.util.config.PluginConfigView;
 import nl.hauntedmc.dungeons.util.entity.EntityUtils;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -27,6 +23,12 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Mutable runtime state attached to a single player.
@@ -164,15 +166,17 @@ public final class DungeonPlayerSession {
         this.savedFood = this.player.getFoodLevel();
     }
 
+    private static ItemStack[] copyItems(ItemStack[] items) {
+        return items == null
+                ? null
+                : Arrays.stream(items)
+                        .map(item -> item == null ? null : item.clone())
+                        .toArray(ItemStack[]::new);
+    }
+
     /**
      * Restores the previously captured inventory snapshot.
      */
-    private static ItemStack[] copyItems(ItemStack[] items) {
-        return items == null ? null : Arrays.stream(items)
-                .map(item -> item == null ? null : item.clone())
-                .toArray(ItemStack[]::new);
-    }
-
     public void restoreInventory() {
         if (this.plugin.isEnabled()) {
             this.player.getInventory().setContents(copyItems(this.savedInventory));

@@ -9,6 +9,7 @@ import nl.hauntedmc.dungeons.util.config.DungeonConfigView;
 import nl.hauntedmc.dungeons.util.entity.EntityUtils;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
