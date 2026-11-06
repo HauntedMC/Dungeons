@@ -1,13 +1,16 @@
 package nl.hauntedmc.dungeons.model.dungeon;
 
 import java.io.File;
+import java.io.Serial;
 import java.util.ArrayList;
 import java.util.List;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 
 /** Signals that a dungeon could not be loaded from disk into the runtime catalogue. */
 public class DungeonLoadException extends Exception {
-    private final List<String> info;
+    @Serial private static final long serialVersionUID = 1L;
+
+    private final ArrayList<String> info;
     private final boolean trace;
 
     /**
