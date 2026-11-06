@@ -81,7 +81,7 @@ public abstract class Layout implements Cloneable {
     protected List<BoundingBox> queuedRoomAreas;
     protected Map<SimpleLocation, InstanceRoom> queuedRoomAnchors;
     protected InstanceRoom generationCheckpoint;
-    protected final ConcurrentMap<GenerationFailureReason, Integer> failureReasons =
+    protected ConcurrentMap<GenerationFailureReason, Integer> failureReasons =
             new ConcurrentHashMap<>();
 
     protected int getEditorTargetBlockRange() {
@@ -1194,10 +1194,13 @@ public abstract class Layout implements Cloneable {
             clone.first = null;
             clone.generationCheckpoint = null;
             clone.cancelled = false;
-            clone.failureReasons.clear();
+            clone.failureReasons = new ConcurrentHashMap<>();
+            clone.roomCount = 0;
+            clone.totalRooms = 0;
+            clone.queuedRoomCount = 0;
             return clone;
         } catch (CloneNotSupportedException exception) {
-            throw new AssertionError();
+            throw new AssertionError(exception);
         }
     }
 
