@@ -33,4 +33,15 @@ class ConditionExecutionContractTest {
             assertFalse(bind(new StatusCondition(Map.of("status","")),f).check(null));
         }
     }
+    @Test
+    void elapsedTimeConditionsPassAtTheBoundaryAndClampNegativeThresholds() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            var condition=bind(new TimeElapsedCondition(Map.of("time",10)),f);
+            f.run.elapsed(9); assertFalse(condition.check(null));
+            f.run.elapsed(10); assertTrue(condition.check(null));
+            f.run.elapsed(11); assertTrue(condition.check(null));
+            f.run.elapsed(0); assertTrue(bind(new TimeElapsedCondition(Map.of("time",-1)),f).check(null));
+        }
+    }
+
 }
