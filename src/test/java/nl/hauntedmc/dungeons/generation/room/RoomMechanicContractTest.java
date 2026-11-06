@@ -89,4 +89,63 @@ class RoomMechanicContractTest {
             assertTrue(exit.isOpen());
         }
     }
+
+    @Test
+    void doorChangeSignalsExecuteOnlyTheMatchingRoomDoorAndActionGraph() throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration());
+                var menus = mockStatic(RoomMenus.class);
+                var hotbars = new HeadlessMenus()) {
+            var b = new BranchingRunFixture(f);
+            var room = room(b, "hall", 0);
+            var other = room(b, "other", 20);
+            var trigger =
+                    new nl.hauntedmc.dungeons.content.trigger.room.RoomDoorChangeTrigger(
+                            Map.of("doorName", "exit", "action", 1));
+            var effect =
+                    new nl.hauntedmc.dungeons.content.function.SetStatusFunction(
+                            Map.of("status", "door-opened"));
+            effect.initializeFields();
+            effect.setTrigger(trigger);
+            effect.enable(b.run, new Location(f.world, 2, 71, 2));
+            var manager = Bukkit.getPluginManager();
+            doAnswer(
+                            c -> {
+                                if (c.getArgument(0) instanceof RoomDoorChangeEvent event)
+                                    trigger.onDoorChange(event);
+                                return null;
+                            })
+                    .when(manager)
+                    .callEvent(any(org.bukkit.event.Event.class));
+            trigger.onDoorChange(
+                    new RoomDoorChangeEvent(
+                            b.run,
+                            other,
+                            other.getConnectors().getLast().getDoor(),
+                            DoorAction.OPEN));
+            trigger.onDoorChange(
+                    new RoomDoorChangeEvent(
+                            b.run,
+                            room,
+                            room.getConnectors().getFirst().getDoor(),
+                            DoorAction.OPEN));
+            trigger.onDoorChange(
+                    new RoomDoorChangeEvent(
+                            b.run,
+                            room,
+                            room.getConnectors().getLast().getDoor(),
+                            DoorAction.CLOSE));
+            assertTrue(f.scheduler.immediate.isEmpty());
+            function(b, f.world, Map.of("doorName", "exit", "action", 1))
+                    .runFunction(null, List.of());
+            assertEquals(1, f.scheduler.immediate.size());
+            assertNull(b.run.getStatus());
+            f.scheduler.immediate.getFirst().run();
+            assertEquals("door-opened", b.run.getStatus());
+            assertTrue(
+                    b.run.getTriggerListeners(
+                                    nl.hauntedmc.dungeons.content.trigger.room.RoomDoorChangeTrigger
+                                            .class)
+                            .isEmpty());
+        }
+    }
 }
