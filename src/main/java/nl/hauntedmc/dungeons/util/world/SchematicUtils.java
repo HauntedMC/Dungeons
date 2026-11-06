@@ -123,10 +123,9 @@ public final class SchematicUtils {
     public static byte[] compress(String text) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
-        try {
-            OutputStream out = new DeflaterOutputStream(baos);
+        try (OutputStream out = new DeflaterOutputStream(baos)) {
             out.write(text.getBytes(StandardCharsets.UTF_8));
-            out.close();
+
         } catch (IOException exception) {
             throw new AssertionError(exception);
         }
@@ -138,13 +137,12 @@ public final class SchematicUtils {
     public static String decompress(byte[] bytes) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
-        try {
-            OutputStream out = new InflaterOutputStream(baos);
+        try (OutputStream out = new InflaterOutputStream(baos)) {
             out.write(bytes);
-            out.close();
-            return baos.toString(StandardCharsets.UTF_8);
+
         } catch (IOException exception) {
             throw new AssertionError(exception);
         }
+        return baos.toString(StandardCharsets.UTF_8);
     }
 }
