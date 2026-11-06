@@ -978,7 +978,7 @@ public class EditorMenus {
                 PersistedFieldSupport.editorVisibleFields(target.getClass())) {
             try {
                 Object value = metadata.field().get(target);
-                if (value == null || value instanceof Collection) {
+                if (value == null || value instanceof Collection<?>) {
                     continue;
                 }
 

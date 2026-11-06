@@ -351,8 +351,8 @@ public final class DungeonConfigCommandHandler {
         }
 
         ConfigurationSection branchSection = branching.getConfig().createSection(path);
-        branchSection.set("room_pool", new ArrayList<String>());
-        branchSection.set("end_room_pool", new ArrayList<String>());
+        branchSection.set("room_pool", new ArrayList<>());
+        branchSection.set("end_room_pool", new ArrayList<>());
         branchSection.set("straightness", 0.5D);
         branchSection.set("room_target.min", 6);
         branchSection.set("room_target.max", 12);

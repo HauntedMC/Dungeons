@@ -1639,7 +1639,7 @@ public abstract class DungeonDefinition {
     }
 
     @Nullable public <T extends DungeonDefinition> T as(Class<T> clazz) {
-        return (T) (clazz.isInstance(this) ? this : null);
+        return clazz.isInstance(this) ? clazz.cast(this) : null;
     }
 
         public String getWorldName() {

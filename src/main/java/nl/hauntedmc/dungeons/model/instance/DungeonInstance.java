@@ -640,7 +640,7 @@ public abstract class DungeonInstance {
     }
 
     @Nullable public <T extends DungeonInstance> T as(Class<T> clazz) {
-        return (T) (clazz.isInstance(this) ? this : null);
+        return clazz.isInstance(this) ? clazz.cast(this) : null;
     }
 
         public void scheduleEmptyCleanup() {

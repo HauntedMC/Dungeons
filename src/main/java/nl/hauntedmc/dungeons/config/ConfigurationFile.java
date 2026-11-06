@@ -214,8 +214,7 @@ public class ConfigurationFile extends YamlConfiguration {
         Map<String, Class<? extends T>> subclasses = new HashMap<>();
         for (Class<? extends ConfigSerializableModel> clazz : ConfigSerializableModel.pluginSerializables) {
             if (type.isAssignableFrom(clazz)) {
-                @SuppressWarnings("unchecked")
-                Class<? extends T> typedClazz = (Class<? extends T>) clazz;
+                Class<? extends T> typedClazz = clazz.asSubclass(type);
                 subclasses.put(TypeMetadataSupport.requiredId(clazz), typedClazz);
             }
         }
