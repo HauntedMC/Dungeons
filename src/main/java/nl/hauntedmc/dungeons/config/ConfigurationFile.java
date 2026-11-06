@@ -77,7 +77,7 @@ public class ConfigurationFile extends YamlConfiguration {
                         try {
                             super.save(normalized);
                             result.complete(true);
-                        } catch (IOException exception) {
+                        } catch (IOException | RuntimeException exception) {
                             this.plugin
                                     .getSLF4JLogger()
                                     .error(
