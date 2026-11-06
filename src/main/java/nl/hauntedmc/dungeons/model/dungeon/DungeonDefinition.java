@@ -3,7 +3,6 @@ package nl.hauntedmc.dungeons.model.dungeon;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -19,6 +18,7 @@ import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
 import nl.hauntedmc.dungeons.content.function.reward.RewardFunction;
 import nl.hauntedmc.dungeons.content.reward.CooldownPeriod;
+import nl.hauntedmc.dungeons.content.reward.CooldownSchedule;
 import nl.hauntedmc.dungeons.content.reward.LootCooldown;
 import nl.hauntedmc.dungeons.content.reward.PlayerLootData;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
@@ -1600,75 +1600,15 @@ public abstract class DungeonDefinition {
         if (period == CooldownPeriod.TIMER) {
             return period.fromNow(cooldownTime);
         }
-        Calendar cal = Calendar.getInstance();
-        if (cooldownTime > cal.get(Calendar.HOUR_OF_DAY)) {
-            cal.set(Calendar.DATE, cal.get(Calendar.DATE) - 1);
-        }
-
-        cal.set(Calendar.HOUR_OF_DAY, cooldownTime);
-        cal.set(Calendar.MINUTE, 0);
-        cal.set(Calendar.SECOND, 0);
-        cal.set(Calendar.MILLISECOND, 0);
-        if (period == CooldownPeriod.WEEKLY) {
-            int dayOfWeek = DungeonConfigView.getAccessCooldownResetDay(this.config);
-            if (dayOfWeek > cal.get(Calendar.DAY_OF_WEEK)) {
-                cal.set(Calendar.WEEK_OF_MONTH, cal.get(Calendar.WEEK_OF_MONTH) - 1);
-            }
-
-            cal.set(Calendar.DAY_OF_WEEK, dayOfWeek);
-        }
-
-        if (period == CooldownPeriod.MONTHLY) {
-            int dayOfMonth = DungeonConfigView.getAccessCooldownResetDay(this.config);
-            if (dayOfMonth > cal.get(Calendar.DAY_OF_WEEK)) {
-                cal.set(Calendar.MONTH, cal.get(Calendar.MONTH) - 1);
-            }
-
-            cal.set(Calendar.DATE, dayOfMonth);
-        }
-
-        return period.fromDate(cal.getTime());
+        return CooldownSchedule.nextReset(period, cooldownTime, DungeonConfigView.getAccessCooldownResetDay(this.config));
     }
 
     public Date getNextLootTime() {
         if (!this.config.getBoolean("rewards.loot_cooldown.enabled", false)) {
             return new Date();
         }
-        CooldownPeriod period =
-                CooldownPeriod.valueOf(
-                        this.config.getString("rewards.loot_cooldown.period", "DAILY"));
-        int cooldownTime = this.config.getInt("rewards.loot_cooldown.value", 1);
-        if (period == CooldownPeriod.TIMER) {
-            return period.fromNow(cooldownTime);
-        }
-        Calendar cal = Calendar.getInstance();
-        if (cooldownTime > cal.get(Calendar.HOUR_OF_DAY)) {
-            cal.set(Calendar.DATE, cal.get(Calendar.DATE) - 1);
-        }
-
-        cal.set(Calendar.HOUR_OF_DAY, cooldownTime);
-        cal.set(Calendar.MINUTE, 0);
-        cal.set(Calendar.SECOND, 0);
-        cal.set(Calendar.MILLISECOND, 0);
-        if (period == CooldownPeriod.WEEKLY) {
-            int dayOfWeek = this.config.getInt("rewards.loot_cooldown.reset_day", 1);
-            if (dayOfWeek > cal.get(Calendar.DAY_OF_WEEK)) {
-                cal.set(Calendar.WEEK_OF_MONTH, cal.get(Calendar.WEEK_OF_MONTH) - 1);
-            }
-
-            cal.set(Calendar.DAY_OF_WEEK, dayOfWeek);
-        }
-
-        if (period == CooldownPeriod.MONTHLY) {
-            int dayOfMonth = this.config.getInt("rewards.loot_cooldown.reset_day", 1);
-            if (dayOfMonth > cal.get(Calendar.DAY_OF_WEEK)) {
-                cal.set(Calendar.MONTH, cal.get(Calendar.MONTH) - 1);
-            }
-
-            cal.set(Calendar.DATE, dayOfMonth);
-        }
-
-        return period.fromDate(cal.getTime());
+        CooldownPeriod period = CooldownPeriod.valueOf(this.config.getString("rewards.loot_cooldown.period", "DAILY"));
+        return CooldownSchedule.nextReset(period, this.config.getInt("rewards.loot_cooldown.value", 1), this.config.getInt("rewards.loot_cooldown.reset_day", 1));
     }
 
     public void setSaveConfig(String path, Object value) {
