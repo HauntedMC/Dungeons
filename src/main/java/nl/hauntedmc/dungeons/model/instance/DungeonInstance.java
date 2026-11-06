@@ -158,14 +158,26 @@ public abstract class DungeonInstance {
         File instFolder = this.getUniqueWorldName();
         FileUtils.copyDirectory(this.getDungeon().getFolder(), instFolder);
         new File(instFolder, "config.yml").delete();
-        new File(instFolder, "uid.dat").delete();
+        for (String identity :
+                List.of("uid.dat", "data/paper/metadata.dat", "data/paper/metadata.dat_old")) {
+            java.nio.file.Files.deleteIfExists(new File(instFolder, identity).toPath());
+        }
     }
 
     protected File getUniqueWorldName() {
         this.instanceWorldName = this.getDungeon().getWorldName() + "_" + this.id;
-        File instFolder = new File(Bukkit.getWorldContainer(), this.instanceWorldName);
-        if (!instFolder.exists()) {
-            return instFolder;
+        File legacyFolder = new File(Bukkit.getWorldContainer(), this.instanceWorldName);
+        File dimensionFolder = WorldUtils.dimensionFolder(this.instanceWorldName);
+        if (!legacyFolder.exists()
+                && !dimensionFolder.exists()
+                && Bukkit.getWorld(this.instanceWorldName) == null) {
+            File source = this.dungeon.getFolder();
+            // Paper imports old level.dat worlds from the server root, while modern dimension
+            // templates must be copied directly into the main level's dimension directory.
+            boolean legacyTemplate =
+                    new File(source, "level.dat").isFile()
+                            && !new File(source, "data/minecraft/world_gen_settings.dat").isFile();
+            return legacyTemplate ? legacyFolder : dimensionFolder;
         }
         this.id++;
         return this.getUniqueWorldName();
@@ -812,19 +824,24 @@ public abstract class DungeonInstance {
             return;
         }
 
-        File worldFolder = new File(Bukkit.getWorldContainer(), this.instanceWorldName);
-        if (!worldFolder.isDirectory()) {
+        if (Bukkit.getWorld(this.instanceWorldName) != null) {
             return;
         }
 
-        try {
-            FileUtils.deleteDirectory(worldFolder);
-        } catch (IOException exception) {
-            this.logger()
-                    .warn(
-                            "Failed to delete pending world folder '{}'.",
-                            worldFolder.getAbsolutePath(),
-                            exception);
+        for (File worldFolder :
+                List.of(
+                        new File(Bukkit.getWorldContainer(), this.instanceWorldName),
+                        WorldUtils.dimensionFolder(this.instanceWorldName))) {
+            if (!worldFolder.isDirectory()) continue;
+            try {
+                FileUtils.deleteDirectory(worldFolder);
+            } catch (IOException exception) {
+                this.logger()
+                        .warn(
+                                "Failed to delete pending world folder '{}'.",
+                                worldFolder.getAbsolutePath(),
+                                exception);
+            }
         }
     }
 }
