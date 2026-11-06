@@ -142,4 +142,32 @@ class TriggerExecutionContractTest {
         }
     }
 
+    @Test
+    void chatTriggersApplyTextRulesAndRequireThePlayersCurrentRunBeforeCancellingChat() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            var state=new PlayerState(); var session=source(f,state);
+            for(boolean exact:List.of(true,false)) for(boolean sensitive:List.of(true,false)) {
+                var trigger=bind(new ChatTrigger(Map.of("text","Open","exact",exact,"caseSensitive",sensitive)),f);
+                for(String text:List.of("Open","open","Please Open","unrelated")) {
+                    var event=mock(io.papermc.paper.event.player.AsyncChatEvent.class);
+                    when(event.originalMessage()).thenReturn(net.kyori.adventure.text.Component.text(text));
+                    when(event.getPlayer()).thenReturn(state.player);
+                    int before=f.scheduler.immediate.size(); trigger.onChat(event);
+                    String actual=sensitive?text:text.toLowerCase(java.util.Locale.ROOT);
+                    String expected=sensitive?"Open":"open";
+                    boolean matches=exact?actual.equals(expected):actual.contains(expected);
+                    assertEquals(before+(matches?1:0),f.scheduler.immediate.size());
+                    verify(event,matches?times(1):never()).setCancelled(true);
+                }
+            }
+            session.setInstance(null);
+            var trigger=bind(new ChatTrigger(Map.of("text","Open")),f);
+            var event=mock(io.papermc.paper.event.player.AsyncChatEvent.class);
+            when(event.originalMessage()).thenReturn(net.kyori.adventure.text.Component.text("Open"));
+            when(event.getPlayer()).thenReturn(state.player);
+            int before=f.scheduler.immediate.size(); trigger.onChat(event);
+            assertEquals(before,f.scheduler.immediate.size()); verify(event,never()).setCancelled(true);
+        }
+    }
+
 }
