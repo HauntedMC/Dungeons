@@ -83,4 +83,16 @@ class ConditionExecutionContractTest {
         }
     }
 
+    @Test
+    void difficultyConditionsDistinguishDefaultNamedAndMissingConfiguration() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            assertTrue(bind(new DifficultyCondition(Map.of("difficulty","DEFAULT")),f).check(null));
+            var difficulty=mock(nl.hauntedmc.dungeons.model.dungeon.DungeonDifficulty.class);
+            when(difficulty.getNamespace()).thenReturn("hard"); f.run.setDifficulty(difficulty);
+            assertTrue(bind(new DifficultyCondition(Map.of("difficulty","hard")),f).check(null));
+            assertFalse(bind(new DifficultyCondition(Map.of("difficulty","DEFAULT")),f).check(null));
+            assertFalse(bind(new DifficultyCondition(Map.of("difficulty","")),f).check(null));
+        }
+    }
+
 }
