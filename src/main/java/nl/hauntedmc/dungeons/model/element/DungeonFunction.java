@@ -184,7 +184,7 @@ public abstract class DungeonFunction extends DungeonElement
         }
 
         DungeonTrigger eventTrigger = event.getTrigger();
-        if (eventTrigger == null || !eventTrigger.getClass().equals(this.trigger.getClass())) {
+        if (eventTrigger != this.trigger) {
             return;
         }
 
