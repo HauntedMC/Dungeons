@@ -45,6 +45,22 @@ class BranchingExecutionContractTest {
         }
     }
 
+    @Test @Timeout(10)
+    void missingEligibleBranchAnchorsFailRequiredBranchesButAllowOptionalBranches() {
+        for (boolean required : List.of(true, false)) {
+            try (var paper = new PaperBoundary()) {
+                var graph = new Graph(paper);
+                graph.settings.set("generator.branching.branches.side.eligible_depth", "20+");
+                graph.settings.set("generator.branching.branches.side.enforce_occurrences", required);
+                assertEquals(required ? Layout.GenerationResult.BAD_LAYOUT : Layout.GenerationResult.SUCCESS,
+                        graph.layout.attempt());
+                assertEquals(3, graph.layout.getAllRooms().size());
+                assertTrue(graph.layout.getAllRooms().stream().noneMatch(r -> r.getSource().getOrigin() == graph.definitions.get("side")));
+                if (required) assertTrue(graph.layout.failureReasons.containsKey(GenerationFailureReason.MISSING_REQUIRED_ROOM));
+            }
+        }
+    }
+
     static final class Graph {
         final BranchingDungeon dungeon = mock(BranchingDungeon.class);
         final Map<String, BranchingRoomDefinition> definitions = Map.of(
