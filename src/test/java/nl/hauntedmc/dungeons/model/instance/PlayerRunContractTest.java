@@ -320,4 +320,28 @@ class PlayerRunContractTest {
             assertTrue(f.run.getLivingPlayers().contains(target));
         }
     }
+
+    @Test
+    void entryResetRestoresHealthAndFoodToPlayableMaximumsWithoutOverfillingHunger()
+            throws Exception {
+        var rules = settings();
+        rules.set("players.keep_on_entry.health", false);
+        rules.set("players.keep_on_entry.food", false);
+        try (var f = new RunFixture(directory, rules);
+                var entities =
+                        org.mockito.Mockito.mockStatic(
+                                nl.hauntedmc.dungeons.util.entity.EntityUtils.class)) {
+            var state = new PlayerState();
+            var session = f.session(state);
+            entities.when(
+                            () ->
+                                    nl.hauntedmc.dungeons.util.entity.EntityUtils.getMaxHealth(
+                                            state.player))
+                    .thenReturn(20.0);
+            f.run.addPlayer(session);
+            f.scheduler.jobs.getFirst().run();
+            assertEquals(20, state.health);
+            assertEquals(20, state.food);
+        }
+    }
 }

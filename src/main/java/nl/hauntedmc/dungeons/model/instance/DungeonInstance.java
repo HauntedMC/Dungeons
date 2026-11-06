@@ -490,7 +490,7 @@ public abstract class DungeonInstance {
                                 }
 
                                 if (!this.config.getBoolean("players.keep_on_entry.food", false)) {
-                                    player.setFoodLevel(30);
+                                    player.setFoodLevel(20);
                                 }
 
                                 if (!DungeonConfigView.shouldKeepPotionEffectsOnEntry(
