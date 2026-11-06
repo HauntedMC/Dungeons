@@ -271,4 +271,48 @@ class GameplayRulesContractTest {
             assertTrue(listener.placedBlocks.isEmpty());
         }
     }
+
+    @Test
+    void bucketOverridesUsePlacePermissionForEmptyingAndBreakPermissionForFilling()
+            throws Exception {
+        var settings = new YamlConfiguration();
+        settings.set("rules.movement.buckets", false);
+        try (var f = new RunFixture(directory, settings)) {
+            var state = new PlayerState();
+            state.location = new Location(f.world, 0, 70, 0);
+            var listener = (PlayListener) f.run.getListener();
+            var block = block(f);
+            var empty = TestEvents.cancellable(PlayerBucketEmptyEvent.class);
+            var fill = TestEvents.cancellable(PlayerBucketFillEvent.class);
+            when(empty.getPlayer()).thenReturn(state.player);
+            when(empty.getBlock()).thenReturn(block);
+            when(fill.getPlayer()).thenReturn(state.player);
+            when(fill.getBlock()).thenReturn(block);
+            listener.onBucketEmpty(empty);
+            listener.onBucketEmpty(fill);
+            assertTrue(empty.isCancelled());
+            assertTrue(fill.isCancelled());
+            var override =
+                    new AllowBlockFunction(
+                            Map.of("allowBucket", true, "allowPlace", false, "allowBreak", true));
+            override.initializeFields();
+            override.runFunction(null, List.of());
+            f.run.getFunctions().put(block.getLocation(), override);
+            listener.onBucketEmpty(empty);
+            listener.onBucketEmpty(fill);
+            assertTrue(empty.isCancelled());
+            assertFalse(fill.isCancelled());
+            override.onDisable();
+            fill.setCancelled(false);
+            listener.onBucketEmpty(fill);
+            assertTrue(fill.isCancelled());
+            state.location = new Location(state.originWorld, 0, 70, 0);
+            empty.setCancelled(false);
+            fill.setCancelled(false);
+            listener.onBucketEmpty(empty);
+            listener.onBucketEmpty(fill);
+            assertFalse(empty.isCancelled());
+            assertFalse(fill.isCancelled());
+        }
+    }
 }
