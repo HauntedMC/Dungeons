@@ -47,4 +47,31 @@ class LifecycleContractTest {
             order.verify(healthy).dispose();
         }
     }
+    @Test
+    void reloadRefundsOrphanedReservationsAndClearsWaitingStateBeforeReloadingTheCatalog() {
+        try (var paper = new PaperBoundary()) {
+            var queues = mock(DungeonQueueRegistry.class);
+            var teams = mock(DungeonTeamService.class);
+            var catalog = mock(DungeonRepository.class);
+            var sessions = mock(PlayerSessionRegistry.class);
+            paper.runtime.setQueueRegistry(queues);
+            paper.runtime.setTeamService(teams);
+            paper.runtime.setDungeonCatalog(catalog);
+            paper.runtime.setPlayerSessions(sessions);
+            var player = mock(org.bukkit.entity.Player.class);
+            var session = mock(nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession.class);
+            paper.bukkit.when(org.bukkit.Bukkit::getOnlinePlayers).thenReturn(List.of(player));
+            when(sessions.get(player)).thenReturn(session);
+            when(session.hasReservedAccessKey()).thenReturn(true);
+            when(session.getReservedAccessKeyDungeon()).thenReturn("deleted-dungeon");
+
+            new LifecycleCoordinator(paper.runtime, mock(CoreBootstrap.class)).reloadAllDungeons();
+
+            var order = inOrder(session, catalog);
+            order.verify(session).refundReservedAccessKey();
+            order.verify(session).setAwaitingDungeon(false);
+            order.verify(session).restoreCapturedHotbar();
+            order.verify(catalog).reloadAll();
+        }
+    }
 }
