@@ -19,6 +19,9 @@ import java.util.List;
 public final class CapturedScheduler {
     public final BukkitScheduler scheduler = mock(BukkitScheduler.class);
     public final List<Job> jobs = new ArrayList<>();
+    public final List<Job> immediate = new ArrayList<>();
+    public final List<Job> asynchronous = new ArrayList<>();
+    private final List<Job> all = new ArrayList<>();
 
     public CapturedScheduler(PaperBoundary paper) {
         paper.bukkit.when(Bukkit::getScheduler).thenReturn(scheduler);
@@ -31,9 +34,15 @@ public final class CapturedScheduler {
                                         call.getArgument(1),
                                         call.getArgument(2),
                                         call.getArgument(3)));
+        when(scheduler.runTask(any(Plugin.class), any(Runnable.class)))
+                .thenAnswer(c -> captureIn(immediate, c.getArgument(1), 0, 0));
+        when(scheduler.runTaskAsynchronously(any(Plugin.class), any(Runnable.class)))
+                .thenAnswer(c -> captureIn(asynchronous, c.getArgument(1), 0, 0));
+        when(scheduler.runTaskLaterAsynchronously(any(Plugin.class), any(Runnable.class), anyLong()))
+                .thenAnswer(c -> captureIn(asynchronous, c.getArgument(1), c.getArgument(2), 0));
         doAnswer(
                         call -> {
-                            jobs.stream()
+                            all.stream()
                                     .filter(j -> j.id == (int) call.getArgument(0))
                                     .forEach(j -> j.cancelled = true);
                             return null;
@@ -43,8 +52,13 @@ public final class CapturedScheduler {
     }
 
     private BukkitTask capture(Runnable work, long delay, long period) {
-        Job job = new Job(jobs.size() + 1, work, delay, period);
-        jobs.add(job);
+        return captureIn(jobs, work, delay, period);
+    }
+
+    private BukkitTask captureIn(List<Job> queue, Runnable work, long delay, long period) {
+        Job job = new Job(all.size() + 1, work, delay, period);
+        all.add(job);
+        queue.add(job);
         BukkitTask task = mock(BukkitTask.class);
         when(task.getTaskId()).thenReturn(job.id);
         when(task.isCancelled()).thenAnswer(call -> job.cancelled);

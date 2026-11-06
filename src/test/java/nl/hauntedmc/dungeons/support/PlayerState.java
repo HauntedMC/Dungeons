@@ -32,6 +32,8 @@ public final class PlayerState {
         when(player.getGameMode()).thenAnswer(c -> gameMode);
         when(player.getLocation()).thenAnswer(c -> location.clone());
         when(player.getWorld()).thenAnswer(c -> location.getWorld());
+        when(player.teleport(any(Location.class), any(org.bukkit.event.player.PlayerTeleportEvent.TeleportCause.class)))
+                .thenAnswer(c -> { location=((Location)c.getArgument(0)).clone(); return true; });
         when(player.getActivePotionEffects()).thenReturn(List.of());
         doAnswer(c -> { health=c.getArgument(0); return null; }).when(player).setHealth(anyDouble());
         doAnswer(c -> { food=c.getArgument(0); return null; }).when(player).setFoodLevel(anyInt());
