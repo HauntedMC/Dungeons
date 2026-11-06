@@ -237,7 +237,12 @@ public class ConfigurationFile extends YamlConfiguration {
 
                 // Older payloads may omit the discriminator when the list stored only one concrete
                 // type, so fall back to the declared element type in that case.
-                String entryTypeName = (String) map.getOrDefault("TYPE--", "");
+                Object rawTypeName = map.get("TYPE--");
+                if (rawTypeName != null && !(rawTypeName instanceof String)) {
+                    this.plugin.getSLF4JLogger().warn("Skipping invalid type id '{}' in configuration list '{}'.", rawTypeName, path);
+                    continue;
+                }
+                String entryTypeName = rawTypeName instanceof String name ? name : "";
                 if (entryTypeName == null || entryTypeName.isEmpty()) {
                     entryTypeName = TypeMetadataSupport.requiredId(type);
                 }

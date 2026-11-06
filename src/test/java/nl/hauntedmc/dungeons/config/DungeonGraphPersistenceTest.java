@@ -49,6 +49,29 @@ class DungeonGraphPersistenceTest {
         }
     }
 
+    @Test
+    void malformedAndUnknownTypeRecordsCannotDiscardValidNeighbors() {
+        var previous = new LinkedHashSet<>(ConfigSerializableModel.pluginSerializables);
+        try (var paper = new PaperBoundary()) {
+            registerModels();
+            var valid = ConfigSerializableModel.serializeWithTypeId(connector());
+            var invalidType = new java.util.HashMap<String, Object>(valid);
+            invalidType.put("TYPE--", 42);
+            var unknownType = new java.util.HashMap<String, Object>(valid);
+            unknownType.put("TYPE--", "not.installed.type");
+            var stored = new ConfigurationFile(paper.plugin);
+            stored.set("Connectors", List.of(valid, invalidType, unknownType, "bad record", valid));
+            var file = directory.resolve("mixed.yml").toFile();
+            assertTrue(stored.saveAsync(file).join());
+            var loaded = new ConfigurationFile(paper.plugin);
+            loaded.load(file);
+            assertEquals(2, loaded.getListOf(Connector.class, "Connectors").size());
+        } finally {
+            ConfigSerializableModel.pluginSerializables.clear();
+            ConfigSerializableModel.pluginSerializables.addAll(previous);
+        }
+    }
+
     static void registerModels() {
         ConfigSerializableModel.pluginSerializables.addAll(Set.of(Connector.class, ConnectorDoor.class, SimpleLocation.class, WhitelistEntry.class));
     }
