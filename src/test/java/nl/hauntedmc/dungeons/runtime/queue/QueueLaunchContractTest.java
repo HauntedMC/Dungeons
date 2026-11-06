@@ -125,6 +125,33 @@ class QueueLaunchContractTest {
         }
     }
 
+    @Test
+    void changingToLeaderOnlyKeysWhileQueuedRefundsUnneededMemberReservations() {
+        try (var f = new Fixture(directory)) {
+            var leader = f.player();
+            var member = f.player();
+            var team = new nl.hauntedmc.dungeons.runtime.team.DungeonTeam(leader.getPlayer().getUniqueId());
+            team.addMember(member.getPlayer().getUniqueId());
+            when(f.teams.getTeam(team.getLeaderId())).thenReturn(team);
+            var leaderInventory = f.giveKey(leader);
+            var memberInventory = f.giveKey(member);
+            when(f.dungeon.reserveIssuedAccessKey(any())).thenReturn(true);
+            when(f.dungeon.isReservedAccessKey(any())).thenReturn(true);
+            f.coordinator.sendToDungeon(leader.getPlayer(), "crypt", "hard");
+            var queue = f.queues.getQueue(leader);
+            assertTrue(leader.hasReservedAccessKey());
+            assertTrue(member.hasReservedAccessKey());
+            when(f.dungeon.isOnlyLeaderNeedsKey()).thenReturn(true);
+            assertFalse(f.coordinator.tryStartQueuedDungeon(queue));
+            assertSame(queue, f.queues.getQueue(leader));
+            assertTrue(leader.hasReservedAccessKey());
+            assertFalse(member.hasReservedAccessKey());
+            verify(memberInventory, times(1)).addItem(any(org.bukkit.inventory.ItemStack.class));
+            verify(leaderInventory, never()).addItem(any(org.bukkit.inventory.ItemStack.class));
+            verify(f.catalog).createInstance("crypt", leader.getPlayer(), "hard", 2, team.getLeaderId());
+        }
+    }
+
     static class Fixture implements AutoCloseable {
         final PaperBoundary paper = new PaperBoundary();
         final PlayerSessionRegistry sessions = new PlayerSessionRegistry(paper.plugin);
