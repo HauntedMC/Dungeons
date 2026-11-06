@@ -54,6 +54,40 @@ class PlayerRunContractTest {
     }
 
     @Test
+    void acceptedDepartureUsesTheConfiguredExitWhileCancelledDepartureKeepsTheReturnPosition()
+            throws Exception {
+        for (boolean useExit : List.of(false, true)) {
+            var rules = settings();
+            rules.set("locations.exit_on_leave", useExit);
+            try (var f = new RunFixture(directory.resolve(Boolean.toString(useExit)), rules)) {
+                var state = new PlayerState();
+                var origin = state.location.clone();
+                var exit = new Location(state.originWorld, -30, 75, 40, 90, 15);
+                f.dungeon.setExit(exit);
+                var session = f.session(state);
+                f.run.addPlayer(session);
+                var manager = Bukkit.getPluginManager();
+                doAnswer(
+                                c -> {
+                                    if (c.getArgument(0) instanceof PlayerLeaveDungeonEvent event)
+                                        event.setCancelled(true);
+                                    return null;
+                                })
+                        .when(manager)
+                        .callEvent(any(Event.class));
+                f.run.removePlayer(session, false);
+                assertSame(f.run, session.getInstance());
+                assertEquals(origin, session.getSavedPosition());
+                f.run.removePlayer(session, true);
+                assertNull(session.getInstance());
+                assertEquals(useExit ? exit : origin, state.location);
+                assertNull(session.getSavedPosition());
+                assertEquals(exit, f.dungeon.getExitLoc());
+            }
+        }
+    }
+
+    @Test
     void entryAndExitRestoreInventoryExperienceAndMembershipAndIgnoreDuplicateOperations()
             throws Exception {
         try (var fixture = new RunFixture(directory, settings())) {

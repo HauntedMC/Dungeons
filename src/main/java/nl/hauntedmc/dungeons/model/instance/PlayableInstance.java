@@ -490,6 +490,14 @@ public abstract class PlayableInstance extends DungeonInstance {
                 .replace("%uuid%", playerId);
     }
 
+    /** Selects the configured departure destination before the base class teleports the player. */
+    @Override
+    protected void onPlayerRemovalAccepted(DungeonPlayerSession playerSession) {
+        if (this.dungeon.getExitLoc() != null && this.dungeon.isAlwaysUseExit()) {
+            playerSession.setSavedPosition(this.dungeon.getExitLoc().clone());
+        }
+    }
+
     /**
      * Removes a player from the run and applies reward/cooldown persistence.
      */
@@ -512,10 +520,6 @@ public abstract class PlayableInstance extends DungeonInstance {
                         LangUtils.getMessage(
                                 "instance.play.events.player-leave",
                                 LangUtils.placeholder("player", player.getName())));
-            }
-
-            if (this.dungeon.getExitLoc() != null && this.dungeon.isAlwaysUseExit()) {
-                playerSession.setSavedPosition(this.dungeon.getExitLoc());
             }
 
             if (!this.config.getBoolean("players.keep_on_entry.inventory", true)) {
