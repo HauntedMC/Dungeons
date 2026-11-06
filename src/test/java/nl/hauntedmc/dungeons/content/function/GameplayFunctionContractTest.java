@@ -44,4 +44,19 @@ class GameplayFunctionContractTest {
         }
     }
 
+    @Test
+    void teleportResolvesTheRuntimeWorldWithoutMutatingItsTemplateAndIgnoresOtherRunTargets() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            var state=new PlayerState(); var session=f.session(state); f.run.addPlayer(session);
+            var outsider=new PlayerState(); var other=f.session(outsider); var otherLocation=outsider.location.clone();
+            var destination=new Location(state.originWorld,30,80,40,45,10);
+            var teleport=bind(new TeleportFunction(Map.of("teleportTarget",destination)),f); teleport.onEnable();
+            var vehicle=mock(org.bukkit.entity.Entity.class); when(state.player.getVehicle()).thenReturn(vehicle);
+            teleport.runFunction(null,List.of(session,other));
+            assertEquals(new Location(f.world,30,80,40,45,10),state.location);
+            assertEquals(otherLocation,outsider.location); assertSame(state.originWorld,destination.getWorld());
+            verify(vehicle).removePassenger(state.player);
+        }
+    }
+
 }
