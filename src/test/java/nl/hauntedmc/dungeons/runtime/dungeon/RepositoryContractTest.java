@@ -38,6 +38,33 @@ class RepositoryContractTest {
         }
     }
 
+    @Test
+    void savesBlockLaunchesAndEditsUntilCompleteAndLaunchArgumentsReachTheDungeonUnchanged() {
+        try (var fixture = new Fixture(directory)) {
+            var dungeon = mock(DungeonDefinition.class);
+            var player = mock(org.bukkit.entity.Player.class);
+            var playerId = java.util.UUID.randomUUID();
+            var leaderId = java.util.UUID.randomUUID();
+            when(player.isOnline()).thenReturn(true);
+            fixture.paper.bukkit.when(() -> Bukkit.getPlayer(playerId)).thenReturn(player);
+            when(dungeon.getWorldName()).thenReturn("crypt");
+            fixture.repository.put(dungeon);
+            when(dungeon.isSaving()).thenReturn(true);
+            assertFalse(fixture.repository.createInstance("missing", player, "hard", 3, leaderId));
+            assertFalse(fixture.repository.editDungeon("missing", playerId));
+            assertFalse(fixture.repository.createInstance("crypt", player, "hard", 3, leaderId));
+            assertFalse(fixture.repository.editDungeon("crypt", playerId));
+            verify(dungeon, never()).instantiate(any(), anyString(), anyInt(), any());
+            verify(dungeon, never()).edit(any());
+            when(dungeon.isSaving()).thenReturn(false);
+            when(dungeon.instantiate(player, "hard", 3, leaderId)).thenReturn(true);
+            assertTrue(fixture.repository.createInstance("crypt", player, "hard", 3, leaderId));
+            assertTrue(fixture.repository.editDungeon("crypt", playerId));
+            verify(dungeon).instantiate(player, "hard", 3, leaderId);
+            verify(dungeon).edit(playerId);
+        }
+    }
+
     static final class Fixture implements AutoCloseable {
         final PaperBoundary paper = new PaperBoundary();
         final CapturedScheduler scheduler = new CapturedScheduler(paper);
