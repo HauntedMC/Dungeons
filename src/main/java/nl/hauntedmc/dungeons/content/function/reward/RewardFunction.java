@@ -843,4 +843,19 @@ public class RewardFunction extends DungeonFunction {
     public boolean isCooldownDisabled() {
         return this.cooldownDisabled;
     }
+    @Override
+    public RewardFunction clone() {
+        RewardFunction clone = (RewardFunction) super.clone();
+        if (clone != null) {
+            clone.playerRewards = new ArrayList<>();
+            clone.rewards = new ArrayList<>();
+            if (this.rewards != null) {
+                for (ItemStack item : this.rewards) {
+                    clone.rewards.add(item == null ? null : item.clone());
+                }
+            }
+        }
+        return clone;
+    }
+
 }

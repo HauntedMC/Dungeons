@@ -25,4 +25,21 @@ class RewardExecutionContractTest {
             other.runFunction(null,List.of(firstSession)); verify(first.player,times(2)).giveExp(20);
         }
     }
+    @Test
+    void clonedRewardFunctionsKeepClaimHistoryAndMutableRewardStacksIndependent() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration());var menus=new HeadlessMenus();var inventories=new HeadlessInventoryMenus()) {
+            var state=new PlayerState(); var session=f.session(state);
+            var template=new RewardFunction(Map.of("xp",20,"rewards",List.of(PlayerState.stack(3)),"cooldownDisabled",true));
+            template.initializeFields(); template.setInstance(f.run); template.setLocation(new org.bukkit.Location(f.world,0,70,0));
+            var left=(RewardFunction)template.clone(); var right=(RewardFunction)template.clone();
+            assertNotNull(left); assertNotNull(right);
+            left.runFunction(null,List.of(session)); right.runFunction(null,List.of(session));
+            verify(state.player,times(2)).giveExp(20);
+            left.getRewards().getFirst().setAmount(1);
+            assertEquals(3,right.getRewards().getFirst().getAmount());
+            assertEquals(3,template.getRewards().getFirst().getAmount());
+            template.runFunction(null,List.of(session)); verify(state.player,times(3)).giveExp(20);
+        }
+    }
+
 }
