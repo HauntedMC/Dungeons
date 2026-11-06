@@ -244,7 +244,7 @@ class WorldFunctionContractTest {
             source.setLocation(new Location(f.world, 0, 70, 0));
             source.runFunction(null, List.of());
             source.runFunction(null, List.of());
-            var copy = (SpawnMobFunction) source.clone();
+            var copy = source.clone();
             copy.runFunction(null, List.of());
             assertEquals(3, f.scheduler.jobs.size());
             assertEquals(3, f.scheduler.jobs.getFirst().delay);

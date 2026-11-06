@@ -73,8 +73,8 @@ class RewardExecutionContractTest {
             template.initializeFields();
             template.setInstance(f.run);
             template.setLocation(new Location(f.world, 0, 70, 0));
-            var left = (RewardFunction) template.clone();
-            var right = (RewardFunction) template.clone();
+            var left = template.clone();
+            var right = template.clone();
             assertNotNull(left);
             assertNotNull(right);
             left.runFunction(null, List.of(session));

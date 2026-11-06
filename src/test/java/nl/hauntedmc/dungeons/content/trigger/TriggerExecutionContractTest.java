@@ -346,8 +346,8 @@ class TriggerExecutionContractTest {
                             new PlayerDeathTrigger(
                                     Map.of("deathsRequired", 2, "oneDeathPerPlayer", true)),
                             f);
-            var left = (PlayerDeathTrigger) template.clone();
-            var right = (PlayerDeathTrigger) template.clone();
+            var left = template.clone();
+            var right = template.clone();
             assertNotNull(left);
             assertNotNull(right);
             var event = mock(PlayerDeathEvent.class);
