@@ -54,4 +54,19 @@ class ConditionExecutionContractTest {
         }
     }
 
+    @Test
+    void nearbyPlayerConditionsExcludeSpectatorsAndDistinguishExactAndMinimumCounts() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            var first=new PlayerState(); var second=new PlayerState(); var spectator=new PlayerState();
+            spectator.gameMode=GameMode.SPECTATOR;
+            when(f.world.getNearbyEntities(any(Location.class),anyDouble(),anyDouble(),anyDouble()))
+                .thenReturn(List.of(first.player,second.player,spectator.player,mock(Entity.class)));
+            assertTrue(bind(new PlayersWithinCondition(Map.of("count",2,"playersExact",true,"radius",2.5)),f).check(null));
+            assertFalse(bind(new PlayersWithinCondition(Map.of("count",1,"playersExact",true)),f).check(null));
+            assertTrue(bind(new PlayersWithinCondition(Map.of("count",1)),f).check(null));
+            assertFalse(bind(new PlayersWithinCondition(Map.of("count",3)),f).check(null));
+            var missing=bind(new PlayersWithinCondition(),f); missing.setLocation(null); assertFalse(missing.check(null));
+        }
+    }
+
 }
