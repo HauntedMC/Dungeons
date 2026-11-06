@@ -57,6 +57,7 @@ public class DelayedFunction extends CompositeFunction {
         if (this.function != null) {
             this.function.setLocation(this.location);
             this.function.initialize();
+            this.function.setParentFunction(this);
         }
     }
 
@@ -104,6 +105,7 @@ public class DelayedFunction extends CompositeFunction {
     @Override
     public void addFunction(DungeonFunction function) {
         this.function = function;
+        if (function != null) function.setParentFunction(this);
     }
 
     /**
@@ -262,6 +264,7 @@ public class DelayedFunction extends CompositeFunction {
             clone.function = this.function.clone();
             if (clone.function != null) {
                 clone.function.setLocation(clone.location);
+                clone.function.setParentFunction(clone);
             }
         }
         return clone;
