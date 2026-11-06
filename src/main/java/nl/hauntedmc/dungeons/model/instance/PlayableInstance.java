@@ -349,8 +349,8 @@ public abstract class PlayableInstance extends DungeonInstance {
             playerSession.saveInventory();
         }
 
-        Location savePoint;
-        savePoint = playerSession.getDungeonSavePoint(this.dungeon.getWorldName());
+        Location storedSavePoint = playerSession.getDungeonSavePoint(this.dungeon.getWorldName());
+        Location savePoint = storedSavePoint == null ? null : storedSavePoint.clone();
 
         if (savePoint == null) {
             Location destination = this.startLocation;
@@ -363,13 +363,26 @@ public abstract class PlayableInstance extends DungeonInstance {
         } else {
             savePoint.setWorld(this.instanceWorld);
             if (!this.started) {
-                Bukkit.getScheduler().runTaskLater(this.plugin(), this::startGame, 1L);
+                Bukkit.getScheduler()
+                        .runTaskLater(
+                                this.plugin(),
+                                () -> {
+                                    if (playerSession.getInstance() == this
+                                            && this.players.contains(playerSession)) {
+                                        this.startGame();
+                                    }
+                                },
+                                1L);
             }
 
             Bukkit.getScheduler()
                     .runTaskLater(
                             this.plugin(),
                             () -> {
+                                if (playerSession.getInstance() != this
+                                        || !this.players.contains(playerSession)) {
+                                    return;
+                                }
                                 EntityUtils.forceTeleport(player, savePoint);
                                 playerSession.setDungeonRespawn(savePoint);
                                 LangUtils.sendMessage(player, "instance.play.functions.savepoint");

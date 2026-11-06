@@ -242,4 +242,24 @@ class PlayerRunContractTest {
             assertTrue(fixture.run.getPlayers().isEmpty());
         }
     }
+
+    @Test
+    void
+            savedCheckpointAdmissionKeepsPersistedWorldIndependentAndCannotTeleportAPlayerAfterDeparture()
+                    throws Exception {
+        try (var f = new RunFixture(directory, settings())) {
+            var state = new PlayerState();
+            var session = f.session(state);
+            session.setDungeonSavePoint(new Location(null, 12, 81, -9), f.dungeon.getWorldName());
+            f.run.addPlayer(session);
+            assertNull(session.getDungeonSavePoint(f.dungeon.getWorldName()).getWorld());
+            f.run.removePlayer(session);
+            var restored = state.location.clone();
+            var pending = List.copyOf(f.scheduler.jobs);
+            pending.forEach(CapturedScheduler.Job::run);
+            assertEquals(restored, state.location);
+            assertNull(session.getInstance());
+            assertFalse(f.run.isStarted());
+        }
+    }
 }
