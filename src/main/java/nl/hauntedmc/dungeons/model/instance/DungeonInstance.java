@@ -246,13 +246,30 @@ public abstract class DungeonInstance {
                             this.instanceWorldName,
                             this.dungeon.getWorldName(),
                             throwable);
-            if (this.instanceWorld != null) {
-                Bukkit.unloadWorld(this.instanceWorld, false);
-                this.instanceWorld = null;
+            try {
+                if (this.instanceWorld != null) {
+                    if (!this.unloadInstanceWorld()) {
+                        return;
+                    }
+                    this.instanceWorld = null;
+                }
+                this.cleanupPendingWorldFolder();
+            } finally {
+                this.signalInitializationComplete();
             }
-            this.cleanupPendingWorldFolder();
-            this.signalInitializationComplete();
         }
+    }
+
+    private boolean unloadInstanceWorld() {
+        try {
+            if (Bukkit.unloadWorld(this.instanceWorld, false)) {
+                return true;
+            }
+            this.logger().error("Retaining files for instance world '{}' because Bukkit refused to unload it.", this.instanceWorld.getName());
+        } catch (Exception exception) {
+            this.logger().error("Retaining files for instance world '{}' because world unload failed.", this.instanceWorld.getName(), exception);
+        }
+        return false;
     }
 
     /**
@@ -351,8 +368,7 @@ public abstract class DungeonInstance {
                                                         String worldName =
                                                                 this.instanceWorld.getName();
                                                         this.saveWorld(latch);
-                                                        if (!Bukkit.unloadWorld(this.instanceWorld, false)) {
-                                                            this.logger().error("Refused to delete files for instance world '{}' because Bukkit did not unload it.", worldName);
+                                                        if (!this.unloadInstanceWorld()) {
                                                             return;
                                                         }
                                                         if (this.plugin().isEnabled()) {
