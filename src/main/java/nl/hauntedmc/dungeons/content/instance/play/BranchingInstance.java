@@ -50,7 +50,20 @@ public class BranchingInstance extends PlayableInstance {
         }
         this.initialized = true;
         this.id = this.dungeon.getInstances().size();
-        File instFolder = this.getUniqueWorldName();
+        File instFolder;
+        try {
+            // Generated runs have no legacy level data to import, regardless of template history.
+            instFolder = this.reserveWorldFolder(false);
+        } catch (java.io.IOException exception) {
+            this.loadFailed = true;
+            this.logger()
+                    .error(
+                            "Failed to reserve world folder for dungeon '{}'.",
+                            this.dungeon.getWorldName(),
+                            exception);
+            this.signalInitializationComplete();
+            return null;
+        }
         new File(instFolder, "config.yml").delete();
         new File(instFolder, "uid.dat").delete();
         this.builder = this.dungeon.getLayout().clone();
@@ -61,6 +74,9 @@ public class BranchingInstance extends PlayableInstance {
                             "Failed to initialize branching instance for dungeon '{}': {}",
                             this.dungeon.getWorldName(),
                             result.getMsg());
+            this.loadFailed = true;
+            this.cleanupPendingWorldFolder();
+            this.signalInitializationComplete();
             return null;
         }
         this.initializeWorldGeneration();

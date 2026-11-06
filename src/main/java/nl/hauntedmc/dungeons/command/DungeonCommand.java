@@ -803,6 +803,9 @@ public final class DungeonCommand implements TabExecutor {
         }
 
         if (!importFolder.isDirectory()) {
+            importFolder = nl.hauntedmc.dungeons.util.world.WorldUtils.dimensionFolder(worldName);
+        }
+        if (!importFolder.isDirectory()) {
             LangUtils.sendMessage(
                     sender,
                     "commands.dungeon.import.world-not-found",
@@ -855,12 +858,23 @@ public final class DungeonCommand implements TabExecutor {
         }
 
         importer.type(WorldType.FLAT);
-        World importWorld = importer.createWorld();
+        World importWorld;
+        try {
+            importWorld = importer.createWorld();
+        } catch (RuntimeException exception) {
+            this.plugin
+                    .getSLF4JLogger()
+                    .error("Failed to load source world '{}' for import.", worldName, exception);
+            this.runImportFailure(sender);
+            return true;
+        }
         if (importWorld == null) {
             this.runImportFailure(sender);
             return true;
         }
 
+        // Creating a legacy world can move its data into the main level's dimension folder.
+        File importedWorldFolder = importWorld.getWorldFolder();
         Location importSpawn = importWorld.getSpawnLocation();
         String dimension = importWorld.getEnvironment().toString();
         if (!Bukkit.unloadWorld(importWorld, false)) {
@@ -899,7 +913,7 @@ public final class DungeonCommand implements TabExecutor {
                             }
 
                             try {
-                                FileUtils.copyDirectory(importFolder, saveFolder);
+                                FileUtils.copyDirectory(importedWorldFolder, saveFolder);
                             } catch (IOException exception) {
                                 this.cleanupDirectory(saveFolder, "failed import target");
                                 this.plugin
@@ -965,7 +979,9 @@ public final class DungeonCommand implements TabExecutor {
         }
 
         try {
-            return this.resolveSafeChildDirectory(Bukkit.getWorldContainer(), worldName).exists();
+            return this.resolveSafeChildDirectory(Bukkit.getWorldContainer(), worldName).exists()
+                    || nl.hauntedmc.dungeons.util.world.WorldUtils.dimensionFolder(worldName)
+                            .exists();
         } catch (IOException exception) {
             this.plugin
                     .getSLF4JLogger()
@@ -990,7 +1006,10 @@ public final class DungeonCommand implements TabExecutor {
             String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
             String candidate = "dungeons_tmp_" + compactBase + "_" + suffix;
             File worldFolder = new File(Bukkit.getWorldContainer(), candidate);
-            if (Bukkit.getWorld(candidate) == null && !worldFolder.exists()) {
+            if (Bukkit.getWorld(candidate) == null
+                    && !worldFolder.exists()
+                    && !nl.hauntedmc.dungeons.util.world.WorldUtils.dimensionFolder(candidate)
+                            .exists()) {
                 return candidate;
             }
         }
@@ -1983,7 +2002,28 @@ public final class DungeonCommand implements TabExecutor {
         }
 
         loader.generateStructures(false);
-        World world = loader.createWorld();
+        World world;
+        try {
+            world = loader.createWorld();
+        } catch (RuntimeException exception) {
+            this.plugin
+                    .getSLF4JLogger()
+                    .error(
+                            "Failed to create temporary world '{}' for dungeon '{}'.",
+                            tempWorldName,
+                            worldName,
+                            exception);
+            if (Bukkit.getWorld(tempWorldName) == null) {
+                this.cleanupDirectoryAsync(
+                        nl.hauntedmc.dungeons.util.world.WorldUtils.dimensionFolder(tempWorldName),
+                        "failed temporary dimension");
+                this.cleanupDirectoryAsync(
+                        new File(Bukkit.getWorldContainer(), tempWorldName),
+                        "failed temporary legacy world");
+            }
+            LangUtils.sendMessage(player, "commands.dungeon.create.failed-to-create");
+            return true;
+        }
         if (world == null) {
             LangUtils.sendMessage(player, "commands.dungeon.create.failed-to-create");
             return true;
@@ -2014,6 +2054,9 @@ public final class DungeonCommand implements TabExecutor {
                                                 worldName,
                                                 saveFolder.getAbsolutePath());
                                 this.cleanupDirectory(worldFolder, "temporary world folder");
+                                this.cleanupDirectory(
+                                        new File(Bukkit.getWorldContainer(), tempWorldName),
+                                        "temporary legacy world folder");
                                 Bukkit.getScheduler()
                                         .runTask(
                                                 this.plugin,
@@ -2031,6 +2074,9 @@ public final class DungeonCommand implements TabExecutor {
                                                 "Failed to create dungeon folder '{}'.",
                                                 saveFolder.getAbsolutePath());
                                 this.cleanupDirectory(worldFolder, "temporary world folder");
+                                this.cleanupDirectory(
+                                        new File(Bukkit.getWorldContainer(), tempWorldName),
+                                        "temporary legacy world folder");
                                 Bukkit.getScheduler()
                                         .runTask(
                                                 this.plugin,
@@ -2046,6 +2092,9 @@ public final class DungeonCommand implements TabExecutor {
                             } catch (IOException exception) {
                                 this.cleanupDirectory(saveFolder, "failed creation target");
                                 this.cleanupDirectory(worldFolder, "temporary world folder");
+                                this.cleanupDirectory(
+                                        new File(Bukkit.getWorldContainer(), tempWorldName),
+                                        "temporary legacy world folder");
                                 this.plugin
                                         .getSLF4JLogger()
                                         .error(
@@ -2064,6 +2113,9 @@ public final class DungeonCommand implements TabExecutor {
                             }
 
                             this.cleanupDirectory(worldFolder, "temporary world folder");
+                            this.cleanupDirectory(
+                                    new File(Bukkit.getWorldContainer(), tempWorldName),
+                                    "temporary legacy world folder");
 
                             Bukkit.getScheduler()
                                     .runTask(

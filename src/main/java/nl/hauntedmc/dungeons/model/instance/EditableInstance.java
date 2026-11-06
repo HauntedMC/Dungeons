@@ -14,7 +14,6 @@ import nl.hauntedmc.dungeons.util.text.ColorUtils;
 import nl.hauntedmc.dungeons.util.text.ComponentUtils;
 import nl.hauntedmc.dungeons.util.text.TextUtils;
 
-import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -30,7 +29,6 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -348,9 +346,8 @@ public class EditableInstance extends DungeonInstance {
      */
     protected CompletableFuture<Boolean> commitWorldAsync(World world) {
         try {
-            FileFilter filter = file -> !file.getName().equals("rooms");
-            FileUtils.copyDirectory(world.getWorldFolder(), this.dungeon.getFolder(), filter);
-            new File(this.dungeon.getFolder(), "uid.dat").delete();
+            nl.hauntedmc.dungeons.util.world.WorldUtils.saveTemplate(
+                    world.getWorldFolder(), this.dungeon.getFolder());
         } catch (IOException exception) {
             this.logger()
                     .error(

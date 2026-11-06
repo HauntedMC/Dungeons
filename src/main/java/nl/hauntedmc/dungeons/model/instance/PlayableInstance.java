@@ -441,6 +441,13 @@ public abstract class PlayableInstance extends DungeonInstance {
     private void executeJoinCommands(Player player) {
         for (String commandTemplate : this.dungeon.getJoinCommands()) {
             String command = this.resolveJoinCommand(commandTemplate, player);
+            // Old suggested commands collided with WorldGuard /god and used an obsolete toggle.
+            if (command.matches("(?i)(god|fly) \\S+ disable")) {
+                command =
+                        "essentials:"
+                                + command.substring(0, command.length() - "disable".length())
+                                + "off";
+            }
             if (command.isEmpty()) {
                 continue;
             }

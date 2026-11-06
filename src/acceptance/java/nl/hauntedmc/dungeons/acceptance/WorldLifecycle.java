@@ -59,8 +59,48 @@ final class WorldLifecycle {
                                                                             .getType()
                                                                     == Material.GOLD_BLOCK,
                                                             "Changing one run mutated another world copy");
-                                                    return WorldFixtures.dispose(
-                                                            test, first, second);
+                                                    return verifyConsoleSummons(test, first)
+                                                            .thenCompose(
+                                                                    ignored ->
+                                                                            WorldFixtures.dispose(
+                                                                                    test, first,
+                                                                                    second));
                                                 }));
+    }
+
+    private static CompletionStage<Void> verifyConsoleSummons(
+            AcceptancePlugin test, nl.hauntedmc.dungeons.model.instance.PlayableInstance run) {
+        var world = run.getInstanceWorld();
+        var command = new nl.hauntedmc.dungeons.content.function.CommandFunction();
+        command.setInstance(run);
+        command.setLocation(new org.bukkit.Location(world, -15, 82, -4));
+        command.setCommandType(2);
+        command.setCommand("summon minecraft:ender_dragon ~ ~ ~ {DragonPhase:4}");
+        var event = new nl.hauntedmc.dungeons.event.TriggerFireEvent(run, null);
+        command.runFunction(event, java.util.List.of());
+        command.setCommand(
+                "summon minecraft:minecart 35.5 69.0 -38.5"
+                        + " {Passengers:[{id:\"minecraft:endermite\"}]}");
+        command.runFunction(event, java.util.List.of());
+        // Simulate players keeping these chunks active after the startup commands.
+        world.setChunkForceLoaded(-1, -1, true);
+        world.setChunkForceLoaded(2, -3, true);
+        return test.await(
+                "dragon and minecart passenger console summons",
+                () ->
+                        !world.getEntitiesByClass(org.bukkit.entity.EnderDragon.class).isEmpty()
+                                && world
+                                        .getEntitiesByClass(org.bukkit.entity.Minecart.class)
+                                        .stream()
+                                        .anyMatch(
+                                                cart ->
+                                                        cart.getPassengers().stream()
+                                                                .anyMatch(
+                                                                        passenger ->
+                                                                                passenger
+                                                                                        instanceof
+                                                                                        org.bukkit
+                                                                                                .entity
+                                                                                                .Endermite)));
     }
 }

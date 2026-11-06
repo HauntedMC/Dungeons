@@ -189,6 +189,7 @@ class CommandContractTest {
     @Test
     void successfulImportCopiesAnUnloadedWorldBeforeLoadingAndPersistsItsDimensionAndSpawn()
             throws Exception {
+        for (boolean modernOnly : new boolean[] {false, true}) {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
             var command = new CommandFixture(f);
             command.permissions.add("dungeons.admin");
@@ -197,8 +198,14 @@ class CommandContractTest {
             f.paper.bukkit.when(Bukkit::getUnsafe).thenReturn(unsafe);
             var source = Files.createDirectories(directory.resolve("imported"));
             Files.writeString(source.resolve("level.dat"), "world contents");
+                if (modernOnly) org.apache.commons.io.FileUtils.deleteDirectory(source.toFile());
             var world = mock(World.class);
             when(world.getName()).thenReturn("imported");
+                var migrated =
+                        Files.createDirectories(
+                                directory.resolve("world/dimensions/minecraft/imported"));
+                Files.writeString(migrated.resolve("level.dat"), "world contents");
+                when(world.getWorldFolder()).thenReturn(migrated.toFile());
             when(world.getEnvironment()).thenReturn(World.Environment.NETHER);
             var spawn = new Location(world, 4, 70, 6, 30, 10);
             when(world.getSpawnLocation()).thenReturn(spawn);
@@ -233,8 +240,26 @@ class CommandContractTest {
             assertEquals(4, loaded.getLobbySpawn().getX());
             assertEquals(70, loaded.getLobbySpawn().getY());
             assertEquals(30, loaded.getLobbySpawn().getYaw());
-            assertEquals("world contents", Files.readString(source.resolve("level.dat")));
+                if (!modernOnly)
+                    assertEquals("world contents", Files.readString(source.resolve("level.dat")));
             assertTrue(Files.isRegularFile(target.resolve("config.yml")));
+                org.apache.commons.io.FileUtils.deleteDirectory(target.toFile());
+            }
+        }
+    }
+
+    @Test
+    void creationRejectsAnExistingUnloadedModernWorld() throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var command = new CommandFixture(f);
+            command.permissions.add("dungeons.admin");
+            var unsafe = mock(UnsafeValues.class);
+            when(unsafe.getMainLevelName()).thenReturn("world");
+            f.paper.bukkit.when(Bukkit::getUnsafe).thenReturn(unsafe);
+            Files.createDirectories(directory.resolve("world/dimensions/minecraft/existing"));
+            command.execute("create", "existing");
+            f.paper.bukkit.verify(() -> Bukkit.createWorld(any(WorldCreator.class)), never());
+            assertTrue(f.scheduler.asynchronous.isEmpty());
         }
     }
 

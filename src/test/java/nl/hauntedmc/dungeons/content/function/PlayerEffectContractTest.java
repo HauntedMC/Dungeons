@@ -67,7 +67,8 @@ class PlayerEffectContractTest {
                     () ->
                             Bukkit.dispatchCommand(
                                     console,
-                                    "execute in dungeons:crypt_0 positioned 0.0 70.0 0.0 run say ready"));
+                                    "minecraft:execute in dungeons:crypt_0 positioned 0.0 70.0 0.0"
+                                            + " run say ready"));
             GameplayFunctionContractTest.bind(new CommandFunction(Map.of("command", " / ")), f)
                     .runFunction(event, List.of(source));
             f.paper.bukkit.verify(() -> Bukkit.dispatchCommand(first.player, ""), never());

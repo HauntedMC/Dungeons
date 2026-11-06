@@ -15,7 +15,7 @@ paper_log="$work_directory/paper/paper.log"
 
 fail() { echo "Dungeons acceptance failure: $*" >&2; exit 1; }
 wait_for_log() {
-  local expected=$1 deadline=$((SECONDS + 180))
+  local expected=$1 deadline=$((SECONDS + 300))
   while ((SECONDS < deadline)); do
     if grep -Eq 'DUNGEONS_ACCEPTANCE_FAIL|Exception in thread|Error occurred while enabling|Could not load plugin' "$paper_log" 2>/dev/null; then
       fail "Paper reported a plugin failure while waiting for $expected"

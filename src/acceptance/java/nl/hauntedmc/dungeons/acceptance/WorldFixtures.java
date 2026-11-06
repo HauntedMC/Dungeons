@@ -27,9 +27,18 @@ final class WorldFixtures {
 
     static DungeonDefinition definition(AcceptancePlugin test, String name, String type)
             throws Exception {
+        return definition(test, name, type, World.Environment.NORMAL);
+    }
+
+    static DungeonDefinition definition(
+            AcceptancePlugin test, String name, String type, World.Environment environment)
+            throws Exception {
         var existing = test.runtime().dungeonCatalog().get(name);
         if (existing != null) return existing;
-        var templateRecord = test.getDataFolder().toPath().resolve("template-path.txt");
+        var templateRecord =
+                test.getDataFolder()
+                        .toPath()
+                        .resolve("template-path-" + environment.name() + ".txt");
         java.nio.file.Path template;
         if (!Files.exists(templateRecord)) {
             var generator =
@@ -40,7 +49,12 @@ final class WorldFixtures {
             require(generator != null, "Packaged void generator was not resolved");
             World world =
                     Bukkit.createWorld(
-                            new WorldCreator("acceptance_template")
+                            new WorldCreator(
+                                            "acceptance_template_"
+                                                    + environment
+                                                            .name()
+                                                            .toLowerCase(java.util.Locale.ROOT))
+                                    .environment(environment)
                                     .generator(generator)
                                     .generateStructures(false)
                                     .seed(1234));
@@ -77,6 +91,7 @@ final class WorldFixtures {
         }
         var config = new YamlConfiguration();
         config.set("dungeon.type", type);
+        config.set("dungeon.environment", environment.name());
         config.set("dungeon.chunk_generator", "Dungeons:void");
         config.set("locations.start", Map.of("x", 1.5, "y", 65.0, "z", 1.5));
         config.set("rules.spawning.natural_mobs", false);
@@ -118,7 +133,8 @@ final class WorldFixtures {
                 .thenApply(ignored -> run);
     }
 
-    static CompletableFuture<Void> dispose(AcceptancePlugin test, PlayableInstance... runs) {
+    static CompletableFuture<Void> dispose(
+            AcceptancePlugin test, nl.hauntedmc.dungeons.model.instance.DungeonInstance... runs) {
         var names = Arrays.stream(runs).map(run -> run.getInstanceWorld().getName()).toList();
         var folders =
                 Arrays.stream(runs)
