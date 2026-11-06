@@ -44,7 +44,11 @@ public final class LootTableRepository {
             }
 
             for (String path : tablesSection.getKeys(false)) {
-                this.tables.put(path, (LootTable) tablesSection.get(path));
+                if (tablesSection.get(path) instanceof LootTable table) {
+                    this.tables.put(path, table);
+                } else {
+                    this.plugin.getSLF4JLogger().warn("Skipping invalid loot table entry '{}'.", path);
+                }
             }
         } catch (IOException | InvalidConfigurationException exception) {
             this.plugin

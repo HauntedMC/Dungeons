@@ -1,0 +1,34 @@
+package nl.hauntedmc.dungeons.runtime.rewards;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+import java.nio.file.*;
+import nl.hauntedmc.dungeons.content.reward.LootTable;
+import nl.hauntedmc.dungeons.support.*;
+import org.bukkit.configuration.serialization.ConfigurationSerialization;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+class LootRepositoryContractTest {
+    @TempDir Path directory;
+    @Test
+    void realLootRepositorySaveAndReloadKeepValidTablesWhenANeighborHasTheWrongType() throws Exception {
+        String alias="dungeons.reward.loot_table";
+        var previous=ConfigurationSerialization.getClassByAlias(alias);
+        ConfigurationSerialization.registerClass(LootTable.class,alias);
+        try(var paper=new PaperBoundary();var menus=new HeadlessInventoryMenus()) {
+            when(paper.plugin.getDataFolder()).thenReturn(directory.toFile());
+            var repository=new LootTableRepository(paper.plugin);
+            repository.put(new LootTable("valid"));
+            Path file=directory.resolve("loottables.yml");
+            Files.writeString(file,Files.readString(file)+"  broken: not-a-loot-table\n");
+            assertDoesNotThrow(repository::reload);
+            assertNotNull(repository.get("valid")); assertEquals("valid",repository.get("valid").getNamespace());
+            assertFalse(repository.contains("broken"));
+            repository.remove("valid"); repository.reload(); assertTrue(repository.getTables().isEmpty());
+        } finally {
+            ConfigurationSerialization.unregisterClass(LootTable.class);
+            if(previous!=null) ConfigurationSerialization.registerClass(previous,alias);
+        }
+    }
+}
