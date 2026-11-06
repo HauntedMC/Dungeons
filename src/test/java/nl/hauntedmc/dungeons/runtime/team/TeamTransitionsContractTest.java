@@ -216,4 +216,48 @@ class TeamTransitionsContractTest {
             }
         }
     }
+
+    @Test
+    void explicitTeamLeaveRemovesIdleMembershipAndRoutesStartedMembersThroughDungeonDeparture()
+            throws Exception {
+        for (boolean started : List.of(false, true)) {
+            try (var f =
+                    new RunFixture(
+                            directory.resolve(Boolean.toString(started)),
+                            new YamlConfiguration())) {
+                var service = service(f);
+                var leader = player(f);
+                var member = player(f);
+                service.handleCreateTeam(leader.player);
+                service.handleInvite(leader.player, member.player);
+                service.handleAcceptInvite(member.player);
+                var team = service.getTeam(leader.player.getUniqueId());
+                var session = f.paper.runtime.playerSessions().get(member.player);
+                if (started) {
+                    f.run.addPlayer(f.paper.runtime.playerSessions().get(leader.player));
+                    f.run.addPlayer(session);
+                    service.markStarted(team.getTeamId(), f.run);
+                    var manager = Bukkit.getPluginManager();
+                    org.mockito.Mockito.doAnswer(
+                                    c -> {
+                                        if (c.getArgument(0)
+                                                instanceof
+                                                nl.hauntedmc.dungeons.event.PlayerLeaveDungeonEvent
+                                                        event) service.onPlayerLeaveDungeon(event);
+                                        return null;
+                                    })
+                            .when(manager)
+                            .callEvent(org.mockito.Mockito.any(org.bukkit.event.Event.class));
+                }
+                assertTrue(service.handleLeaveTeam(member.player));
+                assertNull(service.getTeam(member.player.getUniqueId()));
+                assertEquals(1, team.size());
+                assertNull(session.getInstance());
+                if (!started) {
+                    service.handleLeaveTeam(leader.player);
+                    assertNull(service.getTeamById(team.getTeamId()));
+                } else assertSame(team, service.getTeam(leader.player.getUniqueId()));
+            }
+        }
+    }
 }
