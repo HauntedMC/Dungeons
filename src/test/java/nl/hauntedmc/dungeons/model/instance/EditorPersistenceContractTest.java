@@ -3,16 +3,23 @@ package nl.hauntedmc.dungeons.model.instance;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import nl.hauntedmc.dungeons.content.function.SetStatusFunction;
+import nl.hauntedmc.dungeons.event.PlayerLeaveDungeonEvent;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.support.*;
+import nl.hauntedmc.dungeons.util.item.ItemUtils;
 
 import org.bukkit.*;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -150,6 +157,57 @@ class EditorPersistenceContractTest {
             assertEquals(7, state.contents[0].getAmount());
             assertTrue(editor.getPlayers().isEmpty());
             assertTrue(f.run.getPlayers().contains(session));
+        }
+    }
+
+    @Test
+    void cancelledEditorDeparturePreservesInventoryAndClipboardUntilAForcedExitIsAccepted()
+            throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration());
+                var tools = mockStatic(ItemUtils.class)) {
+            var functionTool = PlayerState.stack(1);
+            var roomTool = PlayerState.stack(1);
+            tools.when(ItemUtils::getFunctionTool).thenReturn(functionTool);
+            tools.when(ItemUtils::getRoomTool).thenReturn(roomTool);
+            var state = new PlayerState();
+            state.contents[0] = PlayerState.stack(7);
+            var session = f.session(state);
+            var editor = new Editor(f);
+            editor.addPlayer(session);
+            assertTrue(session.isEditMode());
+            assertEquals(GameMode.CREATIVE, state.gameMode);
+            state.contents[5] = PlayerState.stack(20);
+            var copied = new SetStatusFunction();
+            session.beginFunctionCopy(copied);
+            session.setActiveFunction(copied);
+            session.setChatListening(true);
+            session.setAwaitingRoomName(true);
+            var manager = Bukkit.getPluginManager();
+            doAnswer(
+                            c -> {
+                                if (c.getArgument(0) instanceof PlayerLeaveDungeonEvent event)
+                                    event.setCancelled(true);
+                                return null;
+                            })
+                    .when(manager)
+                    .callEvent(any(org.bukkit.event.Event.class));
+            editor.removePlayer(session, false);
+            assertSame(editor, session.getInstance());
+            assertTrue(session.isEditMode());
+            assertEquals(20, state.contents[5].getAmount());
+            assertSame(copied, session.getCopiedFunction());
+            assertTrue(session.isCopying());
+            assertTrue(session.isChatListening());
+            assertTrue(session.isAwaitingRoomName());
+            editor.removePlayer(session, true);
+            assertNull(session.getInstance());
+            assertFalse(session.isEditMode());
+            assertEquals(7, state.contents[0].getAmount());
+            assertNull(session.getCopiedFunction());
+            assertFalse(session.isChatListening());
+            assertFalse(session.isAwaitingRoomName());
+            assertEquals(GameMode.SURVIVAL, state.gameMode);
+            verify(manager, times(2)).callEvent(any(PlayerLeaveDungeonEvent.class));
         }
     }
 

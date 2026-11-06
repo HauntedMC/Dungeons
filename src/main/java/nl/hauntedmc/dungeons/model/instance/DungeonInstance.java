@@ -510,6 +510,9 @@ public abstract class DungeonInstance {
         }
     }
 
+    /** Applies subclass state changes after a departure has been accepted. */
+    protected void onPlayerRemovalAccepted(DungeonPlayerSession playerSession) {}
+
     public void removePlayer(DungeonPlayerSession playerSession) {
         this.removePlayer(playerSession, true);
     }
@@ -528,6 +531,7 @@ public abstract class DungeonInstance {
             PlayerLeaveDungeonEvent leaveEvent = new PlayerLeaveDungeonEvent(this, playerSession);
             Bukkit.getPluginManager().callEvent(leaveEvent);
             if (force || !leaveEvent.isCancelled()) {
+                this.onPlayerRemovalAccepted(playerSession);
                 if (this.dungeon.isCooldownOnLeave()
                         && this.dungeon.shouldApplyAccessCooldown(this, player.getUniqueId())) {
                     this.dungeon.addAccessCooldown(player);

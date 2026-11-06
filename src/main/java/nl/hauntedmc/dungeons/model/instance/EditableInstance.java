@@ -427,48 +427,34 @@ public class EditableInstance extends DungeonInstance {
         EntityUtils.forceTeleport(player, this.startLocation);
     }
 
-    /**
-     * Removes a player from edit mode and clears editor-only session state.
-     */
+    /** Restores editor state only after the departure has been accepted. */
     @Override
-    public void removePlayer(DungeonPlayerSession playerSession, boolean force) {
-        Player player = playerSession.getPlayer();
-        if (!this.players.contains(playerSession)) {
-            if (playerSession.getInstance() == this
-                    && player.isOnline()
-                    && playerSession.getSavedPosition() != null) {
-                playerSession.setInstance(null);
-                EntityUtils.forceTeleport(player, playerSession.getSavedPosition());
-                playerSession.setSavedPosition(null);
-            }
-        } else {
-            if (this.plugin().isEnabled()) {
-                playerSession.restoreCapturedHotbar();
-            }
-
-            playerSession.saveEditInventory();
-            playerSession.setEditMode(false);
-            playerSession.setChatListening(false);
-            playerSession.setActiveFunction(null);
-            playerSession.setActiveTrigger(null);
-            playerSession.setTargetLocation(null);
-            playerSession.setCopiedFunction(null);
-            playerSession.setCutting(false);
-            playerSession.setCopying(false);
-            playerSession.setClipboardType(DungeonPlayerSession.EditorClipboardType.NONE);
-            playerSession.setPos1(null);
-            playerSession.setPos2(null);
-            playerSession.setAwaitingRoomName(false);
-            playerSession.setActiveRoom(null);
-            playerSession.setActiveConnector(null);
-            playerSession.setActiveDoor(null);
-            playerSession.setConfirmRoomAction(false);
-            playerSession.setCopiedConnector(null);
-            playerSession.setAddingWhitelistEntry(false);
-            playerSession.setEditingWhitelistEntry(false);
-            playerSession.setRemovingWhitelistEntry(false);
-            super.removePlayer(playerSession, force);
+    protected void onPlayerRemovalAccepted(DungeonPlayerSession playerSession) {
+        if (this.plugin().isEnabled()) {
+            playerSession.restoreCapturedHotbar();
         }
+
+        playerSession.saveEditInventory();
+        playerSession.setEditMode(false);
+        playerSession.setChatListening(false);
+        playerSession.setActiveFunction(null);
+        playerSession.setActiveTrigger(null);
+        playerSession.setTargetLocation(null);
+        playerSession.setCopiedFunction(null);
+        playerSession.setCutting(false);
+        playerSession.setCopying(false);
+        playerSession.setClipboardType(DungeonPlayerSession.EditorClipboardType.NONE);
+        playerSession.setPos1(null);
+        playerSession.setPos2(null);
+        playerSession.setAwaitingRoomName(false);
+        playerSession.setActiveRoom(null);
+        playerSession.setActiveConnector(null);
+        playerSession.setActiveDoor(null);
+        playerSession.setConfirmRoomAction(false);
+        playerSession.setCopiedConnector(null);
+        playerSession.setAddingWhitelistEntry(false);
+        playerSession.setEditingWhitelistEntry(false);
+        playerSession.setRemovingWhitelistEntry(false);
     }
 
     /**
