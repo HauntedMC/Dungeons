@@ -67,4 +67,25 @@ class GenerationRecoveryContractTest {
         }
     }
 
+    @Test @org.junit.jupiter.api.Timeout(20)
+    void failedPartialBranchesRollbackRoomsAndUsedConnectorsWithoutDamagingTheTrunk() {
+        try(var paper=new PaperBoundary()) {
+            var graph=new BranchingExecutionContractTest.Graph(paper);
+            graph.settings.set("generator.branching.branches.side.room_target.min",2);
+            graph.settings.set("generator.branching.branches.side.room_target.max",2);
+            var side=graph.definitions.get("side");
+            var connectors=List.of(graph.entrance(1,0,nl.hauntedmc.dungeons.util.world.SimpleLocation.Direction.NORTH),
+                graph.exit(1,2,nl.hauntedmc.dungeons.util.world.SimpleLocation.Direction.SOUTH,"side"));
+            when(side.getConnectors()).thenReturn(connectors);
+            var rotation=new nl.hauntedmc.dungeons.generation.room.RotatedRoom(side,0);
+            when(side.getOrientations()).thenReturn(List.of(rotation));
+            assertEquals(Layout.GenerationResult.BAD_LAYOUT,graph.layout.attempt());
+            assertEquals(3,graph.layout.getAllRooms().size());
+            assertTrue(graph.layout.getAllRooms().stream().noneMatch(room -> room.getSource().getOrigin()==side));
+            var middle=graph.layout.getAllRooms().stream().filter(room -> room.getSource().getOrigin()==graph.definitions.get("middle")).findFirst().orElseThrow();
+            assertEquals(2,middle.getUsedConnectors().size());
+            assertTrue(graph.layout.failureReasons.containsKey(GenerationFailureReason.BRANCH_TARGET_TOO_SMALL));
+        }
+    }
+
 }
