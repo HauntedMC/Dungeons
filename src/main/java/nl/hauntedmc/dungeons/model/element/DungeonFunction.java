@@ -1,10 +1,5 @@
 package nl.hauntedmc.dungeons.model.element;
 
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import javax.annotation.Nullable;
 import nl.hauntedmc.dungeons.annotation.EditorHidden;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.content.instance.edit.BranchingEditableInstance;
@@ -18,11 +13,19 @@ import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
 import nl.hauntedmc.dungeons.model.instance.EditableInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerEvent;
+
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Nullable;
 
 /**
  * Base class for executable dungeon elements.
@@ -184,7 +187,7 @@ public abstract class DungeonFunction extends DungeonElement
         }
 
         DungeonTrigger eventTrigger = event.getTrigger();
-        if (eventTrigger == null || !eventTrigger.getClass().equals(this.trigger.getClass())) {
+        if (eventTrigger != this.trigger) {
             return;
         }
 

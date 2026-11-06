@@ -1,11 +1,5 @@
 package nl.hauntedmc.dungeons.generation.room;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.UUID;
 import nl.hauntedmc.dungeons.content.function.CheckpointFunction;
 import nl.hauntedmc.dungeons.content.function.SpawnMobFunction;
 import nl.hauntedmc.dungeons.content.function.TeleportFunction;
@@ -14,10 +8,18 @@ import nl.hauntedmc.dungeons.content.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.generation.structure.StructurePieceBlock;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.util.world.SimpleLocation;
+
 import org.bukkit.Location;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 import org.joml.Vector3i;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.UUID;
 
 /**
  * One generated room placed into a branching instance.
@@ -222,53 +224,71 @@ public class InstanceRoom {
      */
     public void initializeFunctions(BranchingInstance instance) {
         for (Entry<Location, DungeonFunction> pair : this.source.getFunctions().entrySet()) {
-            Location loc = pair.getKey().clone();
-            DungeonFunction oldFunction = pair.getValue();
-            DungeonFunction newFunction = oldFunction.clone();
-            if (newFunction != null) {
-                loc.setWorld(instance.getInstanceWorld());
-                loc.add(this.offset);
-                newFunction.enable(instance, loc);
-                instance.getFunctions().put(loc, newFunction);
-                if (newFunction instanceof RewardFunction) {
-                    instance.getRewardFunctions()
-                            .put(newFunction.getLocation(), (RewardFunction) newFunction);
-                }
-
-                if (newFunction instanceof SpawnMobFunction spawner) {
-                    double newYaw = spawner.getYaw() - this.source.getRotation();
-                    if (newYaw > 180.0) {
-                        newYaw -= 360.0;
-                    } else if (newYaw <= -180.0) {
-                        newYaw += 360.0;
+            DungeonFunction newFunction = null;
+            try {
+                Location loc = pair.getKey().clone();
+                DungeonFunction oldFunction = pair.getValue();
+                newFunction = oldFunction.clone();
+                if (newFunction != null) {
+                    loc.setWorld(instance.getInstanceWorld());
+                    loc.add(this.offset);
+                    newFunction.enable(instance, loc);
+                    instance.getFunctions().put(loc, newFunction);
+                    if (newFunction instanceof RewardFunction) {
+                        instance.getRewardFunctions()
+                                .put(newFunction.getLocation(), (RewardFunction) newFunction);
                     }
 
-                    spawner.setYaw(newYaw);
-                }
+                    if (newFunction instanceof SpawnMobFunction spawner) {
+                        double newYaw = spawner.getYaw() - this.source.getRotation();
+                        if (newYaw > 180.0) {
+                            newYaw -= 360.0;
+                        } else if (newYaw <= -180.0) {
+                            newYaw += 360.0;
+                        }
 
-                if (newFunction instanceof TeleportFunction tp) {
-                    Location target = tp.getInstanceLoc();
-                    target.add(this.offset);
-                    double newYaw = target.getYaw() - this.source.getRotation();
-                    if (newYaw > 180.0) {
-                        newYaw -= 360.0;
-                    } else if (newYaw <= -180.0) {
-                        newYaw += 360.0;
+                        spawner.setYaw(newYaw);
                     }
 
-                    target.setYaw((float) newYaw);
-                }
+                    if (newFunction instanceof TeleportFunction tp) {
+                        Location target = tp.getInstanceLoc();
+                        target.add(this.offset);
+                        double newYaw = target.getYaw() - this.source.getRotation();
+                        if (newYaw > 180.0) {
+                            newYaw -= 360.0;
+                        } else if (newYaw <= -180.0) {
+                            newYaw += 360.0;
+                        }
 
-                if (newFunction instanceof CheckpointFunction check) {
-                    double newYaw = check.getYaw() - this.source.getRotation();
-                    if (newYaw > 180.0) {
-                        newYaw -= 360.0;
-                    } else if (newYaw <= -180.0) {
-                        newYaw += 360.0;
+                        target.setYaw((float) newYaw);
                     }
 
-                    check.setYaw((float) newYaw);
+                    if (newFunction instanceof CheckpointFunction check) {
+                        double newYaw = check.getYaw() - this.source.getRotation();
+                        if (newYaw > 180.0) {
+                            newYaw -= 360.0;
+                        } else if (newYaw <= -180.0) {
+                            newYaw += 360.0;
+                        }
+
+                        check.setYaw((float) newYaw);
+                    }
                 }
+            } catch (RuntimeException exception) {
+                if (newFunction != null && newFunction.getInstance() == instance) {
+                    try {
+                        newFunction.disable();
+                    } catch (RuntimeException cleanupFailure) {
+                        exception.addSuppressed(cleanupFailure);
+                    }
+                }
+                instance.getEnvironment()
+                        .logger()
+                        .error(
+                                "Failed to initialize mechanic in room '{}' at {}.",
+                                this.source.getOrigin().getNamespace(),
+                                pair.getKey(),
+                                exception);
             }
         }
     }

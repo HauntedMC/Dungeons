@@ -1,11 +1,5 @@
 package nl.hauntedmc.dungeons.content.function.reward;
 
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.gui.framework.buttons.Button;
@@ -19,11 +13,19 @@ import nl.hauntedmc.dungeons.util.command.InputUtils;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.math.MathUtils;
+
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * Reward function that chooses a random subset from its configured reward list.
@@ -125,7 +127,7 @@ public class RandomRewardFunction extends RewardFunction {
 
                                 for (ItemStack item : this.rewards) {
                                     if (item != null && item.getType() != Material.AIR) {
-                                        validRewards.add(item);
+                                        validRewards.add(item.clone());
                                     }
                                 }
 

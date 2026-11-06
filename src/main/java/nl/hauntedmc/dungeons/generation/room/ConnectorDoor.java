@@ -1,11 +1,5 @@
 package nl.hauntedmc.dungeons.generation.room;
 
-import java.lang.ref.WeakReference;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.annotation.TypeKey;
 import nl.hauntedmc.dungeons.config.ConfigSerializableModel;
@@ -14,6 +8,7 @@ import nl.hauntedmc.dungeons.generation.structure.StructurePieceBlock;
 import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
 import nl.hauntedmc.dungeons.util.entity.ParticleUtils;
 import nl.hauntedmc.dungeons.util.world.SimpleLocation;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
@@ -25,6 +20,13 @@ import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
+
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * Door metadata attached to a room connector.
@@ -320,7 +322,10 @@ public class ConnectorDoor implements ConfigSerializableModel {
         ConnectorDoor clone = new ConnectorDoor(this.namespace);
         clone.startOpen = this.startOpen;
         clone.disableSound = this.disableSound;
-        clone.locations = new ArrayList<>(this.locations);
+        clone.locations = new ArrayList<>();
+        for (SimpleLocation location : this.locations) {
+            clone.locations.add(location.clone());
+        }
         clone.blocks = new HashMap<>();
         return clone;
     }

@@ -1,19 +1,7 @@
 package nl.hauntedmc.dungeons.model.instance;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.UUID;
-import java.util.WeakHashMap;
-import java.util.concurrent.CountDownLatch;
 import net.kyori.adventure.text.Component;
-import nl.hauntedmc.dungeons.util.text.ComponentUtils;
+
 import nl.hauntedmc.dungeons.content.function.HologramFunction;
 import nl.hauntedmc.dungeons.content.function.reward.RewardFunction;
 import nl.hauntedmc.dungeons.content.reward.PlayerLootData;
@@ -30,17 +18,19 @@ import nl.hauntedmc.dungeons.util.config.DungeonConfigView;
 import nl.hauntedmc.dungeons.util.entity.EntityUtils;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
-import nl.hauntedmc.dungeons.util.time.TimeUtils;
+import nl.hauntedmc.dungeons.util.text.ComponentUtils;
 import nl.hauntedmc.dungeons.util.text.MessageUtils;
+import nl.hauntedmc.dungeons.util.time.TimeUtils;
 import nl.hauntedmc.dungeons.util.world.DungeonMapRenderer;
+
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.EnderDragon;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.MapMeta;
@@ -49,6 +39,19 @@ import org.bukkit.map.MapView.Scale;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.UUID;
+import java.util.WeakHashMap;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * Base runtime instance for playable dungeon runs.
@@ -218,7 +221,15 @@ public abstract class PlayableInstance extends DungeonInstance {
     @Override
     public void onDispose() {
         for (DungeonFunction function : this.functions.values()) {
-            function.disable();
+            try {
+                function.disable();
+            } catch (Exception exception) {
+                this.logger()
+                        .error(
+                                "Failed to disable function while disposing dungeon '{}'.",
+                                this.dungeon.getWorldName(),
+                                exception);
+            }
         }
 
         for (BukkitRunnable tracker : this.offlineTrackers.values()) {
@@ -245,7 +256,15 @@ public abstract class PlayableInstance extends DungeonInstance {
     private void disposeEntities() {
         for (Entity ent : this.entities) {
             if (ent != null) {
-                ent.remove();
+                try {
+                    ent.remove();
+                } catch (RuntimeException exception) {
+                    this.logger()
+                            .error(
+                                    "Failed to remove an owned entity while disposing dungeon '{}'.",
+                                    this.dungeon.getWorldName(),
+                                    exception);
+                }
             }
         }
 
@@ -266,8 +285,9 @@ public abstract class PlayableInstance extends DungeonInstance {
                 continue;
             }
 
+            DungeonFunction newFunction = null;
             try {
-                DungeonFunction newFunction = oldFunction.clone();
+                newFunction = oldFunction.clone();
                 if (newFunction == null) {
                     this.logger()
                             .warn(
@@ -295,6 +315,13 @@ public abstract class PlayableInstance extends DungeonInstance {
                     this.rewardFunctions.put(newFunction.getLocation(), rewardFunction);
                 }
             } catch (Throwable throwable) {
+                if (newFunction != null && newFunction.getInstance() == this) {
+                    try {
+                        newFunction.disable();
+                    } catch (Exception cleanupFailure) {
+                        throwable.addSuppressed(cleanupFailure);
+                    }
+                }
                 Throwable root = throwable.getCause() == null ? throwable : throwable.getCause();
                 Location loc = oldFunction.getLocation();
                 this.logger()
@@ -327,6 +354,9 @@ public abstract class PlayableInstance extends DungeonInstance {
         }
 
         super.addPlayer(playerSession);
+        if (playerSession.getInstance() != this) {
+            return;
+        }
         Player player = playerSession.getPlayer();
         this.livingPlayers.add(playerSession);
         this.showCustomDragonBossBars(player);
@@ -335,8 +365,8 @@ public abstract class PlayableInstance extends DungeonInstance {
             playerSession.saveInventory();
         }
 
-        Location savePoint;
-        savePoint = playerSession.getDungeonSavePoint(this.dungeon.getWorldName());
+        Location storedSavePoint = playerSession.getDungeonSavePoint(this.dungeon.getWorldName());
+        Location savePoint = storedSavePoint == null ? null : storedSavePoint.clone();
 
         if (savePoint == null) {
             Location destination = this.startLocation;
@@ -349,13 +379,26 @@ public abstract class PlayableInstance extends DungeonInstance {
         } else {
             savePoint.setWorld(this.instanceWorld);
             if (!this.started) {
-                Bukkit.getScheduler().runTaskLater(this.plugin(), this::startGame, 1L);
+                Bukkit.getScheduler()
+                        .runTaskLater(
+                                this.plugin(),
+                                () -> {
+                                    if (playerSession.getInstance() == this
+                                            && this.players.contains(playerSession)) {
+                                        this.startGame();
+                                    }
+                                },
+                                1L);
             }
 
             Bukkit.getScheduler()
                     .runTaskLater(
                             this.plugin(),
                             () -> {
+                                if (playerSession.getInstance() != this
+                                        || !this.players.contains(playerSession)) {
+                                    return;
+                                }
                                 EntityUtils.forceTeleport(player, savePoint);
                                 playerSession.setDungeonRespawn(savePoint);
                                 LangUtils.sendMessage(player, "instance.play.functions.savepoint");
@@ -447,6 +490,14 @@ public abstract class PlayableInstance extends DungeonInstance {
                 .replace("%uuid%", playerId);
     }
 
+    /** Selects the configured departure destination before the base class teleports the player. */
+    @Override
+    protected void onPlayerRemovalAccepted(DungeonPlayerSession playerSession) {
+        if (this.dungeon.getExitLoc() != null && this.dungeon.isAlwaysUseExit()) {
+            playerSession.setSavedPosition(this.dungeon.getExitLoc().clone());
+        }
+    }
+
     /**
      * Removes a player from the run and applies reward/cooldown persistence.
      */
@@ -454,7 +505,14 @@ public abstract class PlayableInstance extends DungeonInstance {
     public void removePlayer(DungeonPlayerSession playerSession, boolean force) {
         if (this.players.contains(playerSession)) {
             super.removePlayer(playerSession, force);
+            if (this.players.contains(playerSession)) {
+                return;
+            }
             Player player = playerSession.getPlayer();
+            BukkitRunnable offlineTracker = this.offlineTrackers.remove(player.getUniqueId());
+            if (offlineTracker != null && !offlineTracker.isCancelled()) {
+                offlineTracker.cancel();
+            }
             this.livingPlayers.remove(playerSession);
             this.hideCustomDragonBossBars(player);
             if (!CommandUtils.hasPermissionSilent(player, "dungeons.vanish")) {
@@ -462,10 +520,6 @@ public abstract class PlayableInstance extends DungeonInstance {
                         LangUtils.getMessage(
                                 "instance.play.events.player-leave",
                                 LangUtils.placeholder("player", player.getName())));
-            }
-
-            if (this.dungeon.getExitLoc() != null && this.dungeon.isAlwaysUseExit()) {
-                playerSession.setSavedPosition(this.dungeon.getExitLoc());
             }
 
             if (!this.config.getBoolean("players.keep_on_entry.inventory", true)) {

@@ -1,5 +1,6 @@
 package nl.hauntedmc.dungeons.content.variable;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -20,18 +21,15 @@ public class VariableStore {
         if (value == null) {
             return null;
         }
-        // Numeric values are normalized before display so editor-facing strings do not show
-        // unnecessary decimal suffixes such as "5.0".
-        Double numeric = parseDoubleOrNull(value);
-        if (numeric != null) {
-            if (numeric % 1.0 == 0.0) {
-                value = String.valueOf(numeric.intValue());
-            } else {
-                value = String.valueOf(numeric);
-            }
+        try {
+            BigDecimal normalized = new BigDecimal(value).stripTrailingZeros();
+            // Keep extreme exponents compact rather than allocating enormous display strings.
+            return Math.abs((long) normalized.scale()) > 1000
+                    ? normalized.toString()
+                    : normalized.toPlainString();
+        } catch (NumberFormatException exception) {
+            return value;
         }
-
-        return value;
     }
 
     /**
@@ -95,16 +93,5 @@ public class VariableStore {
     public void subtract(String key, double value) {
         double current = this.getDouble(key);
         this.values.put(key, String.valueOf(current - value));
-    }
-
-    /**
-     * Performs parse double or null.
-     */
-    private static Double parseDoubleOrNull(String value) {
-        try {
-            return Double.parseDouble(value);
-        } catch (NumberFormatException exception) {
-            return null;
-        }
     }
 }

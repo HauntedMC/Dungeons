@@ -1,5 +1,13 @@
 package nl.hauntedmc.dungeons.config;
 
+import nl.hauntedmc.dungeons.util.metadata.TypeMetadataSupport;
+
+import org.bukkit.Bukkit;
+import org.bukkit.configuration.InvalidConfigurationException;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.plugin.Plugin;
+import org.jetbrains.annotations.NotNull;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -8,12 +16,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import nl.hauntedmc.dungeons.util.metadata.TypeMetadataSupport;
-import org.bukkit.Bukkit;
-import org.bukkit.configuration.InvalidConfigurationException;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.plugin.Plugin;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Project-specific YAML configuration wrapper.
@@ -92,7 +94,17 @@ public class ConfigurationFile extends YamlConfiguration {
         if (!this.plugin.isEnabled()) {
             task.run();
         } else {
-            Bukkit.getScheduler().runTaskAsynchronously(this.plugin, task);
+            try {
+                Bukkit.getScheduler().runTaskAsynchronously(this.plugin, task);
+            } catch (RuntimeException exception) {
+                this.plugin
+                        .getSLF4JLogger()
+                        .error(
+                                "Failed to schedule configuration save '{}'.",
+                                normalized.getAbsolutePath(),
+                                exception);
+                result.complete(false);
+            }
         }
 
         return result;
@@ -237,7 +249,17 @@ public class ConfigurationFile extends YamlConfiguration {
 
                 // Older payloads may omit the discriminator when the list stored only one concrete
                 // type, so fall back to the declared element type in that case.
-                String entryTypeName = (String) map.getOrDefault("TYPE--", "");
+                Object rawTypeName = map.get("TYPE--");
+                if (rawTypeName != null && !(rawTypeName instanceof String)) {
+                    this.plugin
+                            .getSLF4JLogger()
+                            .warn(
+                                    "Skipping invalid type id '{}' in configuration list '{}'.",
+                                    rawTypeName,
+                                    path);
+                    continue;
+                }
+                String entryTypeName = rawTypeName instanceof String name ? name : "";
                 if (entryTypeName == null || entryTypeName.isEmpty()) {
                     entryTypeName = TypeMetadataSupport.requiredId(type);
                 }

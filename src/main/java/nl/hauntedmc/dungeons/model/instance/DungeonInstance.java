@@ -1,15 +1,5 @@
 package nl.hauntedmc.dungeons.model.instance;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
 import nl.hauntedmc.dungeons.content.function.reward.RewardFunction;
 import nl.hauntedmc.dungeons.event.DungeonDisposeEvent;
 import nl.hauntedmc.dungeons.event.DungeonEndEvent;
@@ -31,6 +21,7 @@ import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.text.TextUtils;
 import nl.hauntedmc.dungeons.util.world.WorldUtils;
+
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.GameRules;
@@ -51,6 +42,17 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * Base runtime representation of a concrete dungeon world copy.
@@ -246,13 +248,37 @@ public abstract class DungeonInstance {
                             this.instanceWorldName,
                             this.dungeon.getWorldName(),
                             throwable);
-            if (this.instanceWorld != null) {
-                Bukkit.unloadWorld(this.instanceWorld, false);
-                this.instanceWorld = null;
+            try {
+                if (this.instanceWorld != null) {
+                    if (!this.unloadInstanceWorld()) {
+                        return;
+                    }
+                    this.instanceWorld = null;
+                }
+                this.cleanupPendingWorldFolder();
+            } finally {
+                this.signalInitializationComplete();
             }
-            this.cleanupPendingWorldFolder();
-            this.signalInitializationComplete();
         }
+    }
+
+    private boolean unloadInstanceWorld() {
+        try {
+            if (Bukkit.unloadWorld(this.instanceWorld, false)) {
+                return true;
+            }
+            this.logger()
+                    .error(
+                            "Retaining files for instance world '{}' because Bukkit refused to unload it.",
+                            this.instanceWorld.getName());
+        } catch (Exception exception) {
+            this.logger()
+                    .error(
+                            "Retaining files for instance world '{}' because world unload failed.",
+                            this.instanceWorld.getName(),
+                            exception);
+        }
+        return false;
     }
 
     /**
@@ -351,13 +377,9 @@ public abstract class DungeonInstance {
                                                         String worldName =
                                                                 this.instanceWorld.getName();
                                                         this.saveWorld(latch);
-                                                        TextUtils.runTimed(
-                                                                "Unloading dungeon world "
-                                                                        + worldName,
-                                                                () ->
-                                                                        Bukkit.unloadWorld(
-                                                                                this.instanceWorld,
-                                                                                false));
+                                                        if (!this.unloadInstanceWorld()) {
+                                                            return;
+                                                        }
                                                         if (this.plugin().isEnabled()) {
                                                             Bukkit.getScheduler()
                                                                     .runTaskLaterAsynchronously(
@@ -437,6 +459,9 @@ public abstract class DungeonInstance {
     }
 
     public void addPlayer(DungeonPlayerSession playerSession) {
+        if (playerSession.getInstance() != null && playerSession.getInstance() != this) {
+            return;
+        }
         if (!this.players.contains(playerSession)) {
             Player player = playerSession.getPlayer();
             this.players.add(playerSession);
@@ -450,6 +475,10 @@ public abstract class DungeonInstance {
                     .runTaskLater(
                             this.plugin(),
                             () -> {
+                                if (playerSession.getInstance() != this
+                                        || !this.players.contains(playerSession)) {
+                                    return;
+                                }
                                 if (!this.config.getBoolean(
                                         "players.keep_on_entry.inventory", true)) {
                                     player.getInventory().clear();
@@ -461,7 +490,7 @@ public abstract class DungeonInstance {
                                 }
 
                                 if (!this.config.getBoolean("players.keep_on_entry.food", false)) {
-                                    player.setFoodLevel(30);
+                                    player.setFoodLevel(20);
                                 }
 
                                 if (!DungeonConfigView.shouldKeepPotionEffectsOnEntry(
@@ -481,6 +510,9 @@ public abstract class DungeonInstance {
         }
     }
 
+    /** Applies subclass state changes after a departure has been accepted. */
+    protected void onPlayerRemovalAccepted(DungeonPlayerSession playerSession) {}
+
     public void removePlayer(DungeonPlayerSession playerSession) {
         this.removePlayer(playerSession, true);
     }
@@ -496,19 +528,19 @@ public abstract class DungeonInstance {
                 playerSession.setSavedPosition(null);
             }
         } else {
-            if (this.players.size() == 1) {
-                Bukkit.getPluginManager().callEvent(new DungeonEndEvent(this));
-            }
-
             PlayerLeaveDungeonEvent leaveEvent = new PlayerLeaveDungeonEvent(this, playerSession);
             Bukkit.getPluginManager().callEvent(leaveEvent);
             if (force || !leaveEvent.isCancelled()) {
+                this.onPlayerRemovalAccepted(playerSession);
                 if (this.dungeon.isCooldownOnLeave()
                         && this.dungeon.shouldApplyAccessCooldown(this, player.getUniqueId())) {
                     this.dungeon.addAccessCooldown(player);
                 }
 
                 this.players.remove(playerSession);
+                if (this.players.isEmpty()) {
+                    Bukkit.getPluginManager().callEvent(new DungeonEndEvent(this));
+                }
                 player.setGameMode(playerSession.getSavedGameMode());
                 playerSession.setInstance(null);
                 playerSession.setDungeonRespawn(null);
@@ -516,70 +548,8 @@ public abstract class DungeonInstance {
                     playerSession.clearExitLocation();
                 }
 
-                PlayerInventory inv = player.getInventory();
-                Player target = null;
-                boolean foundKeys = false;
-                boolean foundDungeonItems = false;
-
-                for (ItemStack item : inv) {
-                    if (ItemUtils.verifyKeyItem(item)) {
-                        inv.remove(item);
-                        if (!this.players.isEmpty()) {
-                            foundKeys = true;
-                            target = this.players.getFirst().getPlayer();
-                            ItemUtils.giveOrDrop(target, item);
-                        }
-                    }
-
-                    if (ItemUtils.verifyDungeonItem(item)) {
-                        inv.remove(item);
-                        if (!this.players.isEmpty()
-                                && this.dungeon
-                                        .getConfig()
-                                        .getBoolean("players.transfer_dungeon_items", true)) {
-                            foundDungeonItems = true;
-                            target = this.players.getFirst().getPlayer();
-                            ItemUtils.giveOrDrop(target, item);
-                        }
-                    }
-                }
-
-                ItemStack offhand = inv.getItemInOffHand();
-                if (ItemUtils.verifyKeyItem(offhand)) {
-                    inv.setItemInOffHand(null);
-                    if (!this.players.isEmpty()) {
-                        foundKeys = true;
-                        target = this.players.getFirst().getPlayer();
-                        ItemUtils.giveOrDrop(target, offhand);
-                    }
-                }
-
-                if (ItemUtils.verifyDungeonItem(offhand)) {
-                    inv.setItemInOffHand(null);
-                    if (!this.players.isEmpty()
-                            && this.dungeon
-                                    .getConfig()
-                                    .getBoolean("players.transfer_dungeon_items", true)) {
-                        foundDungeonItems = true;
-                        target = this.players.getFirst().getPlayer();
-                        ItemUtils.giveOrDrop(target, offhand);
-                    }
-                }
-
-                if (target != null) {
-                    if (foundKeys) {
-                        this.messagePlayers(
-                                LangUtils.getMessage(
-                                        "instance.play.events.key-inheritance",
-                                        LangUtils.placeholder("player", target.getName())));
-                    }
-
-                    if (foundDungeonItems) {
-                        this.messagePlayers(
-                                LangUtils.getMessage(
-                                        "instance.play.events.dungeon-item-inheritance",
-                                        LangUtils.placeholder("player", target.getName())));
-                    }
+                if (this.isPlayInstance()) {
+                    this.transferProgressionItems(player);
                 }
 
                 player.updateInventory();
@@ -592,6 +562,50 @@ public abstract class DungeonInstance {
                 if (this.players.isEmpty()) {
                     this.scheduleEmptyCleanup();
                 }
+            }
+        }
+    }
+
+    /** Hands a departing participant's progression items to another player in the run. */
+    private void transferProgressionItems(Player player) {
+        PlayerInventory inv = player.getInventory();
+        Player target = null;
+        boolean foundKeys = false;
+        boolean foundDungeonItems = false;
+
+        boolean transferDungeonItems =
+                this.dungeon.getConfig().getBoolean("players.transfer_dungeon_items", true);
+        ItemStack[] contents = inv.getContents();
+        for (int slot = 0; slot < contents.length; slot++) {
+            ItemStack item = contents[slot];
+            boolean keyItem = ItemUtils.verifyKeyItem(item);
+            boolean dungeonItem = ItemUtils.verifyDungeonItem(item);
+            if (!keyItem && !dungeonItem) {
+                continue;
+            }
+            // Slot removal preserves identical keys in other inventory or offhand slots.
+            inv.setItem(slot, null);
+            if (!this.players.isEmpty() && (keyItem || dungeonItem && transferDungeonItems)) {
+                foundKeys |= keyItem;
+                foundDungeonItems |= dungeonItem && transferDungeonItems;
+                target = this.players.getFirst().getPlayer();
+                ItemUtils.giveOrDrop(target, item);
+            }
+        }
+
+        if (target != null) {
+            if (foundKeys) {
+                this.messagePlayers(
+                        LangUtils.getMessage(
+                                "instance.play.events.key-inheritance",
+                                LangUtils.placeholder("player", target.getName())));
+            }
+
+            if (foundDungeonItems) {
+                this.messagePlayers(
+                        LangUtils.getMessage(
+                                "instance.play.events.dungeon-item-inheritance",
+                                LangUtils.placeholder("player", target.getName())));
             }
         }
     }

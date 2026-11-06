@@ -1,24 +1,10 @@
 package nl.hauntedmc.dungeons.model.dungeon;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
+import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
 import nl.hauntedmc.dungeons.content.function.reward.RewardFunction;
 import nl.hauntedmc.dungeons.content.reward.CooldownPeriod;
+import nl.hauntedmc.dungeons.content.reward.CooldownSchedule;
 import nl.hauntedmc.dungeons.content.reward.LootCooldown;
 import nl.hauntedmc.dungeons.content.reward.PlayerLootData;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
@@ -42,6 +28,7 @@ import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.text.ColorUtils;
 import nl.hauntedmc.dungeons.util.world.LocationUtils;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.bukkit.Bukkit;
@@ -58,6 +45,21 @@ import org.bukkit.inventory.PlayerInventory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.yaml.snakeyaml.error.YAMLException;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Base model for a dungeon definition loaded from disk.
@@ -199,24 +201,37 @@ public abstract class DungeonDefinition {
         File[] playerFiles = playersFolder.listFiles();
         if (playerFiles != null) {
             for (File playerFile : playerFiles) {
-                if (FilenameUtils.getExtension(playerFile.getName()).equals("yml")) {
-                    FileConfiguration data = new YamlConfiguration();
-
-                    try {
-                        data.load(playerFile);
-                    } catch (InvalidConfigurationException | IOException exception) {
-                        this.logger()
-                                .error(
-                                        "Failed to load player data '{}' for dungeon '{}'.",
-                                        playerFile.getAbsolutePath(),
-                                        this.worldName,
-                                        exception);
-                    }
-
-                    UUID playerUUID = UUID.fromString(playerFile.getName().replace(".yml", ""));
-                    this.playerData.put(playerUUID, data);
-                    this.loadCooldowns(playerUUID);
+                if (!playerFile.isFile()
+                        || !FilenameUtils.getExtension(playerFile.getName()).equals("yml")) {
+                    continue;
                 }
+
+                UUID playerUUID;
+                try {
+                    playerUUID = UUID.fromString(FilenameUtils.getBaseName(playerFile.getName()));
+                } catch (IllegalArgumentException exception) {
+                    this.logger()
+                            .warn(
+                                    "Ignoring player data with an invalid UUID filename '{}'.",
+                                    playerFile);
+                    continue;
+                }
+
+                FileConfiguration data = new YamlConfiguration();
+                try {
+                    data.load(playerFile);
+                } catch (InvalidConfigurationException | IOException exception) {
+                    this.logger()
+                            .error(
+                                    "Failed to load player data '{}' for dungeon '{}'.",
+                                    playerFile.getAbsolutePath(),
+                                    this.worldName,
+                                    exception);
+                    continue;
+                }
+
+                this.playerData.put(playerUUID, data);
+                this.loadCooldowns(playerUUID);
             }
         }
 
@@ -1107,12 +1122,16 @@ public abstract class DungeonDefinition {
 
     public void loadCooldowns(UUID playerID) {
         FileConfiguration data = this.playerData.get(playerID);
-        if (data.get("RewardsInfo") != null) {
-            PlayerLootData playerData = (PlayerLootData) data.get("RewardsInfo");
-            if (playerData != null) {
-                this.lootCooldowns.add(playerData);
-                this.lootCooldownsByPlayer.put(playerData.getPlayerId(), playerData);
-            }
+        Object rewardRecord = data.get("RewardsInfo");
+        if (rewardRecord instanceof PlayerLootData rewards) {
+            this.lootCooldowns.add(rewards);
+            this.lootCooldownsByPlayer.put(rewards.getPlayerId(), rewards);
+        } else if (rewardRecord != null) {
+            this.logger()
+                    .warn(
+                            "Ignoring invalid reward cooldown data for player '{}' in dungeon '{}'.",
+                            playerID,
+                            this.worldName);
         }
 
         if (data.get("AccessCooldown", null) != null) {
@@ -1334,6 +1353,9 @@ public abstract class DungeonDefinition {
         }
 
         this.ensureUniqueAccessKeyStateLoaded();
+        if (!this.accessKeyStateLoaded) {
+            return null;
+        }
         String instanceId = UUID.randomUUID().toString();
         try {
             ItemUtils.tagDungeonAccessKeyInstance(issuedItem, instanceId);
@@ -1600,34 +1622,8 @@ public abstract class DungeonDefinition {
         if (period == CooldownPeriod.TIMER) {
             return period.fromNow(cooldownTime);
         }
-        Calendar cal = Calendar.getInstance();
-        if (cooldownTime > cal.get(Calendar.HOUR_OF_DAY)) {
-            cal.set(Calendar.DATE, cal.get(Calendar.DATE) - 1);
-        }
-
-        cal.set(Calendar.HOUR_OF_DAY, cooldownTime);
-        cal.set(Calendar.MINUTE, 0);
-        cal.set(Calendar.SECOND, 0);
-        cal.set(Calendar.MILLISECOND, 0);
-        if (period == CooldownPeriod.WEEKLY) {
-            int dayOfWeek = DungeonConfigView.getAccessCooldownResetDay(this.config);
-            if (dayOfWeek > cal.get(Calendar.DAY_OF_WEEK)) {
-                cal.set(Calendar.WEEK_OF_MONTH, cal.get(Calendar.WEEK_OF_MONTH) - 1);
-            }
-
-            cal.set(Calendar.DAY_OF_WEEK, dayOfWeek);
-        }
-
-        if (period == CooldownPeriod.MONTHLY) {
-            int dayOfMonth = DungeonConfigView.getAccessCooldownResetDay(this.config);
-            if (dayOfMonth > cal.get(Calendar.DAY_OF_WEEK)) {
-                cal.set(Calendar.MONTH, cal.get(Calendar.MONTH) - 1);
-            }
-
-            cal.set(Calendar.DATE, dayOfMonth);
-        }
-
-        return period.fromDate(cal.getTime());
+        return CooldownSchedule.nextReset(
+                period, cooldownTime, DungeonConfigView.getAccessCooldownResetDay(this.config));
     }
 
     public Date getNextLootTime() {
@@ -1637,38 +1633,10 @@ public abstract class DungeonDefinition {
         CooldownPeriod period =
                 CooldownPeriod.valueOf(
                         this.config.getString("rewards.loot_cooldown.period", "DAILY"));
-        int cooldownTime = this.config.getInt("rewards.loot_cooldown.value", 1);
-        if (period == CooldownPeriod.TIMER) {
-            return period.fromNow(cooldownTime);
-        }
-        Calendar cal = Calendar.getInstance();
-        if (cooldownTime > cal.get(Calendar.HOUR_OF_DAY)) {
-            cal.set(Calendar.DATE, cal.get(Calendar.DATE) - 1);
-        }
-
-        cal.set(Calendar.HOUR_OF_DAY, cooldownTime);
-        cal.set(Calendar.MINUTE, 0);
-        cal.set(Calendar.SECOND, 0);
-        cal.set(Calendar.MILLISECOND, 0);
-        if (period == CooldownPeriod.WEEKLY) {
-            int dayOfWeek = this.config.getInt("rewards.loot_cooldown.reset_day", 1);
-            if (dayOfWeek > cal.get(Calendar.DAY_OF_WEEK)) {
-                cal.set(Calendar.WEEK_OF_MONTH, cal.get(Calendar.WEEK_OF_MONTH) - 1);
-            }
-
-            cal.set(Calendar.DAY_OF_WEEK, dayOfWeek);
-        }
-
-        if (period == CooldownPeriod.MONTHLY) {
-            int dayOfMonth = this.config.getInt("rewards.loot_cooldown.reset_day", 1);
-            if (dayOfMonth > cal.get(Calendar.DAY_OF_WEEK)) {
-                cal.set(Calendar.MONTH, cal.get(Calendar.MONTH) - 1);
-            }
-
-            cal.set(Calendar.DATE, dayOfMonth);
-        }
-
-        return period.fromDate(cal.getTime());
+        return CooldownSchedule.nextReset(
+                period,
+                this.config.getInt("rewards.loot_cooldown.value", 1),
+                this.config.getInt("rewards.loot_cooldown.reset_day", 1));
     }
 
     public void setSaveConfig(String path, Object value) {

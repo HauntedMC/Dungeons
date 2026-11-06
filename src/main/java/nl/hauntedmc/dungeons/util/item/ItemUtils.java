@@ -1,12 +1,11 @@
 package nl.hauntedmc.dungeons.util.item;
 
-import java.util.ArrayList;
-import java.util.List;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.text.ComponentUtils;
 import nl.hauntedmc.dungeons.util.text.TextUtils;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -19,6 +18,9 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Item utility helpers for editor tools, key items, and reward transfers.
@@ -35,8 +37,8 @@ public final class ItemUtils {
     /** Gives an item to a player inventory or drops it naturally if full. */
     public static void giveOrDrop(Player player, ItemStack item) {
         if (item != null && item.getType() != Material.AIR) {
-            if (!player.getInventory().addItem(item).isEmpty()) {
-                player.getWorld().dropItemNaturally(player.getLocation(), item);
+            for (ItemStack remainder : player.getInventory().addItem(item).values()) {
+                player.getWorld().dropItemNaturally(player.getLocation(), remainder);
             }
         }
     }
@@ -51,8 +53,8 @@ public final class ItemUtils {
     /** Gives an item or drops overflow without additional messaging. */
     public static void giveOrDropSilently(Player player, ItemStack item) {
         if (item != null && item.getType() != Material.AIR) {
-            if (!player.getInventory().addItem(item).isEmpty()) {
-                player.getWorld().dropItemNaturally(player.getLocation(), item);
+            for (ItemStack remainder : player.getInventory().addItem(item).values()) {
+                player.getWorld().dropItemNaturally(player.getLocation(), remainder);
             }
         }
     }

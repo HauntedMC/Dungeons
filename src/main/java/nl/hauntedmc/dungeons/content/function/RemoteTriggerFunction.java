@@ -1,8 +1,5 @@
 package nl.hauntedmc.dungeons.content.function;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.content.trigger.RemoteTrigger;
@@ -17,10 +14,15 @@ import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.math.MathUtils;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * Function that emits a named remote trigger signal within the current instance.
@@ -67,6 +69,7 @@ public class RemoteTriggerFunction extends DungeonFunction {
         if (instance != null) {
             RemoteTrigger remoteTrig = new RemoteTrigger();
             remoteTrig.setTriggerName(this.triggerName);
+            remoteTrig.setInstance(instance);
             RemoteTriggerEvent event =
                     new RemoteTriggerEvent(
                             remoteTrig.getTriggerName(),
@@ -75,7 +78,11 @@ public class RemoteTriggerFunction extends DungeonFunction {
                             this.range,
                             this.location,
                             triggerEvent.getPlayerSession());
-            Bukkit.getPluginManager().callEvent(event);
+            try {
+                Bukkit.getPluginManager().callEvent(event);
+            } finally {
+                remoteTrig.disable();
+            }
         }
     }
 

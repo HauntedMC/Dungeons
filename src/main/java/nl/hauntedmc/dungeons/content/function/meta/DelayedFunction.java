@@ -1,8 +1,5 @@
 package nl.hauntedmc.dungeons.content.function.meta;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
@@ -14,11 +11,18 @@ import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerEvent;
 import org.bukkit.scheduler.BukkitRunnable;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * Composite function that runs its child functions after a configured delay.
@@ -28,7 +32,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 public class DelayedFunction extends CompositeFunction {
     @PersistedField private DungeonFunction function;
     @PersistedField private int delay = 0;
-    private BukkitRunnable task;
+    private Set<BukkitRunnable> tasks = new HashSet<>();
 
     /**
      * Creates a new DelayedFunction instance.
@@ -53,6 +57,7 @@ public class DelayedFunction extends CompositeFunction {
         if (this.function != null) {
             this.function.setLocation(this.location);
             this.function.initialize();
+            this.function.setParentFunction(this);
         }
     }
 
@@ -82,10 +87,12 @@ public class DelayedFunction extends CompositeFunction {
      */
     @Override
     public void onDisable() {
-        if (this.task != null && !this.task.isCancelled()) {
-            this.task.cancel();
-            this.task = null;
+        for (BukkitRunnable task : this.tasks) {
+            if (!task.isCancelled()) {
+                task.cancel();
+            }
         }
+        this.tasks.clear();
 
         if (this.function != null) {
             this.function.disable();
@@ -98,6 +105,7 @@ public class DelayedFunction extends CompositeFunction {
     @Override
     public void addFunction(DungeonFunction function) {
         this.function = function;
+        if (function != null) function.setParentFunction(this);
     }
 
     /**
@@ -110,17 +118,29 @@ public class DelayedFunction extends CompositeFunction {
             final List<DungeonPlayerSession> functionTargets =
                     this.resolveNestedFunctionTargets(this.function, triggerEvent, targets);
 
-            this.task =
+            BukkitRunnable task =
                     new BukkitRunnable() {
                         /**
                          * Performs run.
                          */
                         public void run() {
-                            DelayedFunction.this.executeNestedFunction(
-                                    DelayedFunction.this.function, triggerEvent, functionTargets);
+                            try {
+                                DelayedFunction.this.executeNestedFunction(
+                                        DelayedFunction.this.function,
+                                        triggerEvent,
+                                        functionTargets);
+                            } finally {
+                                DelayedFunction.this.tasks.remove(this);
+                            }
                         }
                     };
-            this.task.runTaskLater(RuntimeContext.plugin(), this.delay);
+            this.tasks.add(task);
+            try {
+                task.runTaskLater(RuntimeContext.plugin(), this.delay);
+            } catch (RuntimeException exception) {
+                this.tasks.remove(task);
+                throw exception;
+            }
         } else {
             RuntimeContext.plugin()
                     .getSLF4JLogger()
@@ -239,10 +259,12 @@ public class DelayedFunction extends CompositeFunction {
      */
     public DelayedFunction clone() {
         DelayedFunction clone = (DelayedFunction) super.clone();
+        clone.tasks = new HashSet<>();
         if (this.function != null) {
             clone.function = this.function.clone();
             if (clone.function != null) {
                 clone.function.setLocation(clone.location);
+                clone.function.setParentFunction(clone);
             }
         }
         return clone;

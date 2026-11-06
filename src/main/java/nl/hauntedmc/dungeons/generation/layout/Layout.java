@@ -1,27 +1,11 @@
 package nl.hauntedmc.dungeons.generation.layout;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
 import nl.hauntedmc.dungeons.content.instance.edit.BranchingEditableInstance;
+import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
 import nl.hauntedmc.dungeons.generation.room.Connector;
 import nl.hauntedmc.dungeons.generation.room.ConnectorDoor;
 import nl.hauntedmc.dungeons.generation.room.InstanceRoom;
-import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
 import nl.hauntedmc.dungeons.generation.room.RotatedRoom;
 import nl.hauntedmc.dungeons.gui.hotbar.PlayerHotbarMenu;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ChatMenuItem;
@@ -37,6 +21,7 @@ import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.math.MathUtils;
 import nl.hauntedmc.dungeons.util.math.RandomCollection;
 import nl.hauntedmc.dungeons.util.world.SimpleLocation;
+
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -48,6 +33,24 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Base class for branching layout algorithms.
@@ -252,50 +255,63 @@ public abstract class Layout implements Cloneable {
         long startTime = System.nanoTime();
 
         ExecutorService executor = Executors.newSingleThreadExecutor();
-        Future<GenerationResult> future =
-                executor.submit(
-                        () -> {
-                            int tries = 0;
+        Future<GenerationResult> future;
+        try {
+            future =
+                    executor.submit(
+                            () -> {
+                                int tries = 0;
 
-                            do {
-                                // Generation retries from scratch until a valid graph is found or
-                                // the configured timeout expires.
-                                GenerationResult generationResult = this.tryLayout();
-                                if (generationResult == GenerationResult.NO_START_ROOM) {
-                                    return generationResult;
+                                do {
+                                    // Generation retries from scratch until a valid graph is found
+                                    // or
+                                    // the configured timeout expires.
+                                    GenerationResult generationResult = this.tryLayout();
+                                    if (generationResult == GenerationResult.NO_START_ROOM) {
+                                        return generationResult;
+                                    }
+
+                                    if (generationResult.isPassed()) {
+                                        long runTime =
+                                                TimeUnit.NANOSECONDS.toMillis(
+                                                        System.nanoTime() - startTime);
+                                        this.logger()
+                                                .info(
+                                                        "Generated layout for dungeon '{}' in {}ms after {} attempts.",
+                                                        this.dungeon.getWorldName(),
+                                                        runTime,
+                                                        tries + 1);
+                                        return GenerationResult.SUCCESS;
+                                    }
+
+                                    tries++;
+                                } while (System.nanoTime() - startTime
+                                                <= TimeUnit.SECONDS.toNanos(timeout)
+                                        && !this.cancelled);
+
+                                if (this.cancelled) {
+                                    return GenerationResult.CANCELLED;
                                 }
 
-                                if (generationResult.isPassed()) {
-                                    long runTime =
-                                            TimeUnit.NANOSECONDS.toMillis(
-                                                    System.nanoTime() - startTime);
-                                    this.logger()
-                                            .info(
-                                                    "Generated layout for dungeon '{}' in {}ms after {} attempts.",
-                                                    this.dungeon.getWorldName(),
-                                                    runTime,
-                                                    tries + 1);
-                                    return GenerationResult.SUCCESS;
-                                }
+                                this.logFailureSummary();
+                                this.logger()
+                                        .error(
+                                                "Failed to find a valid layout for dungeon '{}' after {} attempts within {}s timeout.",
+                                                this.dungeon.getWorldName(),
+                                                tries,
+                                                timeout);
+                                return GenerationResult.TIMED_OUT;
+                            });
 
-                                tries++;
-                            } while (System.nanoTime() - startTime
-                                            <= TimeUnit.SECONDS.toNanos(timeout)
-                                    && !this.cancelled);
-
-                            if (this.cancelled) {
-                                return GenerationResult.CANCELLED;
-                            }
-
-                            this.logFailureSummary();
-                            this.logger()
-                                    .error(
-                                            "Failed to find a valid layout for dungeon '{}' after {} attempts within {}s timeout.",
-                                            this.dungeon.getWorldName(),
-                                            tries,
-                                            timeout);
-                            return GenerationResult.TIMED_OUT;
-                        });
+        } catch (RejectedExecutionException exception) {
+            executor.shutdownNow();
+            this.logger()
+                    .error(
+                            "Cannot schedule layout generation for dungeon '{}'.",
+                            this.dungeon.getWorldName(),
+                            exception);
+            return GenerationResult.GENERIC_FAILURE;
+        }
 
         GenerationResult result;
         try {
@@ -444,6 +460,13 @@ public abstract class Layout implements Cloneable {
                                 }
                             });
             future.get(timeout, TimeUnit.SECONDS);
+        } catch (RejectedExecutionException exception) {
+            this.logger()
+                    .error(
+                            "Cannot schedule room queue generation for dungeon '{}'.",
+                            this.dungeon.getWorldName(),
+                            exception);
+            return GenerationResult.GENERIC_FAILURE;
         } catch (InterruptedException exception) {
             future.cancel(true);
 

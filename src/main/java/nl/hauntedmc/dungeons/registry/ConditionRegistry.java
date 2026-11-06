@@ -1,13 +1,14 @@
 package nl.hauntedmc.dungeons.registry;
 
-import java.lang.reflect.InvocationTargetException;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.model.element.TriggerCondition;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.util.metadata.TypeMetadataSupport;
+
+import java.lang.reflect.InvocationTargetException;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Registry for discoverable {@link TriggerCondition} implementations.
@@ -29,11 +30,12 @@ public final class ConditionRegistry {
      */
     public <T extends TriggerCondition> void register(Class<T> conditionClass) {
         String conditionId = TypeMetadataSupport.requiredId(conditionClass);
+        TriggerCondition condition = null;
         try {
             this.conditions.put(conditionId, conditionClass);
             this.conditionIds.put(conditionClass, conditionId);
 
-            TriggerCondition condition = conditionClass.getDeclaredConstructor().newInstance();
+            condition = conditionClass.getDeclaredConstructor().newInstance();
             MenuButton button = condition.buildMenuButton();
             if (button == null) {
                 this.plugin
@@ -56,6 +58,10 @@ public final class ConditionRegistry {
                             "Failed to register condition '{}'.",
                             conditionClass.getSimpleName(),
                             exception);
+        } finally {
+            if (condition != null) {
+                condition.releaseEditorListener();
+            }
         }
     }
 

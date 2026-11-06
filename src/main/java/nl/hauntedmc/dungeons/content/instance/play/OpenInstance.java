@@ -1,15 +1,17 @@
 package nl.hauntedmc.dungeons.content.instance.play;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
 import nl.hauntedmc.dungeons.content.dungeon.OpenDungeon;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.config.DungeonConfigView;
+
 import org.bukkit.Bukkit;
 import org.bukkit.scheduler.BukkitTask;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * Playable instance for open dungeons.
@@ -59,7 +61,9 @@ public class OpenInstance extends StaticInstance {
      */
     @Override
     public synchronized void addPlayer(DungeonPlayerSession playerSession) {
-        if (this.readyRegistrationCancelled || this.disposing) {
+        if (this.readyRegistrationCancelled
+                || this.disposing
+                || playerSession.getInstance() != null && playerSession.getInstance() != this) {
             playerSession.setAwaitingDungeon(false);
             return;
         }
@@ -79,7 +83,9 @@ public class OpenInstance extends StaticInstance {
      */
     public synchronized boolean addReservedPlayer(
             DungeonPlayerSession playerSession, UUID reservationId) {
-        if (this.readyRegistrationCancelled || this.disposing) {
+        if (this.readyRegistrationCancelled
+                || this.disposing
+                || playerSession.getInstance() != null && playerSession.getInstance() != this) {
             return false;
         }
 
@@ -116,7 +122,7 @@ public class OpenInstance extends StaticInstance {
             return true;
         }
 
-        return this.getPlayers().size() + this.getReservedSlotCount() + normalizedPlayers
+        return (long) this.getPlayers().size() + this.getReservedSlotCount() + normalizedPlayers
                 <= maxPlayers;
     }
 

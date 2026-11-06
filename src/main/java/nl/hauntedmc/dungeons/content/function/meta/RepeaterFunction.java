@@ -1,8 +1,5 @@
 package nl.hauntedmc.dungeons.content.function.meta;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
@@ -14,11 +11,19 @@ import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerEvent;
 import org.bukkit.scheduler.BukkitRunnable;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * Composite function that re-runs its child functions a configured number of times.
@@ -30,8 +35,7 @@ public class RepeaterFunction extends CompositeFunction {
     @PersistedField private int interval = 20;
     @PersistedField private int delay = 0;
     @PersistedField private int maxRepeats = 0;
-    private int repeatCount = 0;
-    private BukkitRunnable repeater;
+    private Set<BukkitRunnable> repeaters = new HashSet<>();
 
     /**
      * Creates a new RepeaterFunction instance.
@@ -58,6 +62,7 @@ public class RepeaterFunction extends CompositeFunction {
         if (this.function != null) {
             this.function.setLocation(this.location);
             this.function.initialize();
+            this.function.setParentFunction(this);
         }
     }
 
@@ -87,10 +92,10 @@ public class RepeaterFunction extends CompositeFunction {
      */
     @Override
     public void onDisable() {
-        if (this.repeater != null && !this.repeater.isCancelled()) {
-            this.repeater.cancel();
-            this.repeater = null;
+        for (BukkitRunnable repeater : this.repeaters) {
+            if (!repeater.isCancelled()) repeater.cancel();
         }
+        this.repeaters.clear();
 
         if (this.function != null) {
             this.function.disable();
@@ -103,6 +108,7 @@ public class RepeaterFunction extends CompositeFunction {
     @Override
     public void addFunction(DungeonFunction function) {
         this.function = function;
+        if (function != null) function.setParentFunction(this);
     }
 
     /**
@@ -139,34 +145,32 @@ public class RepeaterFunction extends CompositeFunction {
         final List<DungeonPlayerSession> functionTargets =
                 this.resolveNestedFunctionTargets(this.function, triggerEvent, targets);
 
-        this.repeater =
+        BukkitRunnable repeater =
                 new BukkitRunnable() {
-                    /**
-                     * Performs run.
-                     */
+                    private int repeatCount;
+
+                    @Override
                     public void run() {
-                        if (RepeaterFunction.this.maxRepeats <= 0) {
-                            RepeaterFunction.this.executeNestedFunction(
-                                    RepeaterFunction.this.function, triggerEvent, functionTargets);
-                        } else {
-                            if (RepeaterFunction.this.repeatCount
-                                    >= RepeaterFunction.this.maxRepeats) {
-                                this.cancel();
-                                if (RepeaterFunction.this.trigger != null
-                                        && RepeaterFunction.this.trigger.isAllowRetrigger()) {
-                                    RepeaterFunction.this.repeatCount = 0;
-                                }
-
-                                return;
-                            }
-
-                            RepeaterFunction.this.executeNestedFunction(
-                                    RepeaterFunction.this.function, triggerEvent, functionTargets);
-                            RepeaterFunction.this.repeatCount++;
+                        if (RepeaterFunction.this.maxRepeats > 0
+                                && this.repeatCount >= RepeaterFunction.this.maxRepeats) {
+                            this.cancel();
+                            RepeaterFunction.this.repeaters.remove(this);
+                            return;
                         }
+                        RepeaterFunction.this.executeNestedFunction(
+                                RepeaterFunction.this.function,
+                                triggerEvent,
+                                new ArrayList<>(functionTargets));
+                        this.repeatCount++;
                     }
                 };
-        this.repeater.runTaskTimer(RuntimeContext.plugin(), this.delay, effectiveInterval);
+        this.repeaters.add(repeater);
+        try {
+            repeater.runTaskTimer(RuntimeContext.plugin(), this.delay, effectiveInterval);
+        } catch (RuntimeException exception) {
+            this.repeaters.remove(repeater);
+            throw exception;
+        }
     }
 
     /**
@@ -351,10 +355,12 @@ public class RepeaterFunction extends CompositeFunction {
      */
     public RepeaterFunction clone() {
         RepeaterFunction clone = (RepeaterFunction) super.clone();
+        clone.repeaters = new HashSet<>();
         if (this.function != null) {
             clone.function = this.function.clone();
             if (clone.function != null) {
                 clone.function.setLocation(clone.location);
+                clone.function.setParentFunction(clone);
             }
         }
         return clone;

@@ -1,19 +1,21 @@
 package nl.hauntedmc.dungeons.runtime.queue;
 
+import nl.hauntedmc.dungeons.event.DungeonDisposeEvent;
+import nl.hauntedmc.dungeons.runtime.instance.ActiveInstanceRegistry;
+import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
+import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
+
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.jetbrains.annotations.Nullable;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import nl.hauntedmc.dungeons.event.DungeonDisposeEvent;
-import nl.hauntedmc.dungeons.runtime.instance.ActiveInstanceRegistry;
-import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerQuitEvent;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * In-memory queue registry for pending dungeon starts.
@@ -110,7 +112,11 @@ public final class DungeonQueueRegistry implements Listener {
 
         this.queueEntries.remove(queue);
         for (UUID playerId : new ArrayList<>(queue.getPlayers())) {
-            this.queueEntriesByPlayer.remove(playerId);
+            DungeonQueueEntry currentQueue = this.queueEntriesByPlayer.get(playerId);
+            if (currentQueue != null && currentQueue != queue) {
+                continue;
+            }
+            this.queueEntriesByPlayer.remove(playerId, queue);
             DungeonPlayerSession dungeonPlayer = this.playerManager.get(playerId);
             if (resetAwaitingDungeon
                     && dungeonPlayer != null

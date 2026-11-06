@@ -1,14 +1,9 @@
 package nl.hauntedmc.dungeons.content.trigger;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
-import nl.hauntedmc.dungeons.content.instance.play.OpenInstance;
 import nl.hauntedmc.dungeons.content.instance.play.BranchingInstance;
+import nl.hauntedmc.dungeons.content.instance.play.OpenInstance;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.generation.room.InstanceRoom;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ChatMenuItem;
@@ -23,6 +18,7 @@ import nl.hauntedmc.dungeons.util.command.InputUtils;
 import nl.hauntedmc.dungeons.util.entity.PlayerUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.math.MathUtils;
+
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -30,6 +26,12 @@ import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Trigger that periodically scans for players near its location.
@@ -125,9 +127,15 @@ public class DistanceTrigger extends DungeonTrigger {
                                                 GameMode.SURVIVAL,
                                                 GameMode.ADVENTURE);
                                 players.removeIf(
-                                        candidatePlayer ->
-                                                !DistanceTrigger.this.matchesRoom(
-                                                        candidatePlayer.getLocation()));
+                                        candidatePlayer -> {
+                                            DungeonPlayerSession session =
+                                                    RuntimeContext.playerSessions()
+                                                            .get(candidatePlayer);
+                                            return session == null
+                                                    || session.getInstance() != instance
+                                                    || !DistanceTrigger.this.matchesRoom(
+                                                            candidatePlayer.getLocation());
+                                        });
 
                                 // Already-triggered players are filtered out so non-retriggerable
                                 // detectors do not fire repeatedly for the same presence.

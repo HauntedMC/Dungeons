@@ -1,11 +1,12 @@
 package nl.hauntedmc.dungeons.runtime.player;
 
-import java.util.ArrayList;
-import java.util.List;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Captured copy of the first nine hotbar slots and held-slot index.
@@ -25,7 +26,7 @@ public class PlayerHotbarSnapshot {
         for (int i = 0; i < 9; i++) {
             ItemStack item = inventory.getItem(i);
             if (item != null && item.getType() != Material.AIR) {
-                this.items.add(inventory.getItem(i));
+                this.items.add(item.clone());
             } else {
                 this.items.add(new ItemStack(Material.AIR));
             }
@@ -45,7 +46,7 @@ public class PlayerHotbarSnapshot {
 
     /** Replaces the item at one hotbar index in this snapshot. */
     public void setItem(int index, ItemStack item) {
-        this.items.set(index, item);
+        this.items.set(index, item == null ? null : item.clone());
     }
 
     /** Applies the snapshot to an inventory without changing held slot. */
@@ -56,7 +57,8 @@ public class PlayerHotbarSnapshot {
     /** Applies the snapshot to an inventory and optionally restores held slot. */
     public void applyTo(PlayerInventory inventory, boolean restoreHeldSlot) {
         for (int i = 0; i < 9; i++) {
-            inventory.setItem(i, this.items.get(i));
+            ItemStack item = this.items.get(i);
+            inventory.setItem(i, item == null ? null : item.clone());
         }
 
         if (restoreHeldSlot) {

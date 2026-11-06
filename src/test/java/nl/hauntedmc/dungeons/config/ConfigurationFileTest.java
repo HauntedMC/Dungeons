@@ -1,16 +1,22 @@
 package nl.hauntedmc.dungeons.config;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
-import java.lang.reflect.Proxy;
-import java.nio.file.Path;
-import java.util.concurrent.TimeUnit;
+import nl.hauntedmc.dungeons.support.CapturedScheduler;
+import nl.hauntedmc.dungeons.support.PaperBoundary;
+
+import org.bukkit.plugin.IllegalPluginAccessException;
 import org.bukkit.plugin.Plugin;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.slf4j.LoggerFactory;
+
+import java.lang.reflect.Proxy;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 class ConfigurationFileTest {
     @TempDir Path directory;
@@ -21,7 +27,7 @@ class ConfigurationFileTest {
         config.set("value", "saved");
         Path file = directory.resolve("config.yml");
         assertTrue(config.saveAsync(file.toFile()).get(1, TimeUnit.SECONDS));
-        assertEquals("value: saved\n", java.nio.file.Files.readString(file));
+        assertEquals("value: saved\n", Files.readString(file));
     }
 
     @Test
@@ -36,6 +42,69 @@ class ConfigurationFileTest {
         assertFalse(
                 config.saveAsync(directory.resolve("broken.yml").toFile())
                         .get(1, TimeUnit.SECONDS));
+    }
+
+    @Test
+    void failedSavePreservesTheLastGoodFileAndItsLoadableValues() throws Exception {
+        var fail = new AtomicBoolean();
+        var config =
+                new ConfigurationFile(disabledPlugin()) {
+                    @Override
+                    public String saveToString() {
+                        if (fail.get()) throw new IllegalArgumentException("unserializable graph");
+                        return super.saveToString();
+                    }
+                };
+        var file = directory.resolve("durable.yml");
+        config.set("progress.completed", 10);
+        assertTrue(config.saveAsync(file.toFile()).join());
+        byte[] previous = Files.readAllBytes(file);
+        config.set("progress.completed", 20);
+        fail.set(true);
+        assertFalse(config.saveAsync(file.toFile()).join());
+        assertArrayEquals(previous, Files.readAllBytes(file));
+        var restored = new ConfigurationFile(disabledPlugin());
+        restored.load(file.toFile());
+        assertEquals(10, restored.getInt("progress.completed"));
+    }
+
+    @Test
+    void ordinaryWriteFailuresCompleteAsFailedAndARepairedDestinationCanBeSavedAgain()
+            throws Exception {
+        var config = new ConfigurationFile(disabledPlugin());
+        config.set("value", 23);
+        var blocker = directory.resolve("blocked");
+        Files.writeString(blocker, "existing file");
+        var destination = blocker.resolve("config.yml");
+        assertFalse(config.saveAsync(destination.toFile()).get(1, TimeUnit.SECONDS));
+        assertEquals("existing file", Files.readString(blocker));
+        Files.delete(blocker);
+        Files.createDirectory(blocker);
+        assertTrue(config.saveAsync(destination.toFile()).get(1, TimeUnit.SECONDS));
+        var loaded = new ConfigurationFile(disabledPlugin());
+        loaded.load(destination.toFile());
+        assertEquals(23, loaded.getInt("value"));
+        assertFalse(config.saveAsync(blocker.toFile()).get(1, TimeUnit.SECONDS));
+        assertTrue(Files.isRegularFile(destination));
+    }
+
+    @Test
+    void rejectedAsyncSaveSchedulingReturnsAFailedFutureWithoutTouchingTheLastGoodFile()
+            throws Exception {
+        try (var paper = new PaperBoundary()) {
+            var scheduler = new CapturedScheduler(paper);
+            when(paper.plugin.isEnabled()).thenReturn(true);
+            doThrow(new IllegalPluginAccessException("plugin disabled during scheduling"))
+                    .when(scheduler.scheduler)
+                    .runTaskAsynchronously(eq(paper.plugin), any(Runnable.class));
+            var file = directory.resolve("last-good.yml");
+            Files.writeString(file, "value: 7\n");
+            var config = new ConfigurationFile(paper.plugin);
+            config.set("value", 9);
+            var completion = assertDoesNotThrow(() -> config.saveAsync(file.toFile()));
+            assertFalse(completion.get(1, TimeUnit.SECONDS));
+            assertEquals("value: 7\n", Files.readString(file));
+        }
     }
 
     private static Plugin disabledPlugin() {

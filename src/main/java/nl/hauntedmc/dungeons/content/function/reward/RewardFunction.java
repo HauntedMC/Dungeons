@@ -1,19 +1,10 @@
 package nl.hauntedmc.dungeons.content.function.reward;
 
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.EditorHidden;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.content.reward.CooldownPeriod;
+import nl.hauntedmc.dungeons.content.reward.CooldownSchedule;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.gui.framework.buttons.Button;
 import nl.hauntedmc.dungeons.gui.framework.window.GuiInventory;
@@ -34,6 +25,7 @@ import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
@@ -41,6 +33,16 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Base reward function that manages reward GUIs, cooldowns, and delivery rules.
@@ -273,7 +275,8 @@ public class RewardFunction extends DungeonFunction {
                                 Inventory inv = guiInv.inventory();
                                 int i = 0;
 
-                                for (ItemStack item : this.rewards) {
+                                for (ItemStack template : this.rewards) {
+                                    ItemStack item = template == null ? null : template.clone();
 
                                     if (instance.getConfig()
                                             .getBoolean("rewards.deliver_on_finish", false)) {
@@ -635,53 +638,14 @@ public class RewardFunction extends DungeonFunction {
      */
     public Date getCooldownTime() {
         CooldownPeriod period = CooldownPeriod.fromIndex(this.period);
-        int cooldownTime = Math.max(0, this.cooldownTime);
-        if (period == CooldownPeriod.TIMER) {
-            return period.fromNow(cooldownTime);
-        }
-        int normalizedResetDay = this.resetDay;
-        Calendar cal = Calendar.getInstance();
-        if (cooldownTime > 23) {
-            cooldownTime = 23;
+        if (this.cooldownTime < 0
+                || (period != CooldownPeriod.TIMER && this.cooldownTime > 23)
+                || (period == CooldownPeriod.WEEKLY && (this.resetDay < 1 || this.resetDay > 7))
+                || (period == CooldownPeriod.MONTHLY
+                        && (this.resetDay < 1 || this.resetDay > 31))) {
             this.logInvalidCooldownConfiguration();
         }
-
-        if (cooldownTime > cal.get(Calendar.HOUR_OF_DAY)) {
-            cal.set(Calendar.DATE, cal.get(Calendar.DATE) - 1);
-        }
-
-        cal.set(Calendar.HOUR_OF_DAY, cooldownTime);
-        cal.set(Calendar.MINUTE, 0);
-        cal.set(Calendar.SECOND, 0);
-        cal.set(Calendar.MILLISECOND, 0);
-        if (period == CooldownPeriod.WEEKLY) {
-            int dayOfWeek = Math.clamp(normalizedResetDay, Calendar.SUNDAY, Calendar.SATURDAY);
-            if (dayOfWeek != normalizedResetDay) {
-                this.logInvalidCooldownConfiguration();
-            }
-            if (dayOfWeek > cal.get(Calendar.DAY_OF_WEEK)) {
-                cal.set(Calendar.WEEK_OF_MONTH, cal.get(Calendar.WEEK_OF_MONTH) - 1);
-            }
-
-            cal.set(Calendar.DAY_OF_WEEK, dayOfWeek);
-        }
-
-        if (period == CooldownPeriod.MONTHLY) {
-            int dayOfMonth = Math.max(1, normalizedResetDay);
-            dayOfMonth = Math.min(dayOfMonth, cal.getActualMaximum(Calendar.DAY_OF_MONTH));
-            if (dayOfMonth != normalizedResetDay) {
-                this.logInvalidCooldownConfiguration();
-            }
-            if (dayOfMonth > cal.get(Calendar.DAY_OF_MONTH)) {
-                cal.set(Calendar.MONTH, cal.get(Calendar.MONTH) - 1);
-            }
-
-            cal.set(
-                    Calendar.DAY_OF_MONTH,
-                    Math.min(dayOfMonth, cal.getActualMaximum(Calendar.DAY_OF_MONTH)));
-        }
-
-        return period.fromDate(cal.getTime());
+        return CooldownSchedule.nextReset(period, this.cooldownTime, this.resetDay);
     }
 
     /**
@@ -879,5 +843,20 @@ public class RewardFunction extends DungeonFunction {
      */
     public boolean isCooldownDisabled() {
         return this.cooldownDisabled;
+    }
+
+    @Override
+    public RewardFunction clone() {
+        RewardFunction clone = (RewardFunction) super.clone();
+        if (clone != null) {
+            clone.playerRewards = new ArrayList<>();
+            clone.rewards = new ArrayList<>();
+            if (this.rewards != null) {
+                for (ItemStack item : this.rewards) {
+                    clone.rewards.add(item == null ? null : item.clone());
+                }
+            }
+        }
+        return clone;
     }
 }

@@ -1,8 +1,5 @@
 package nl.hauntedmc.dungeons.content.trigger;
 
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.content.instance.play.BranchingInstance;
@@ -16,6 +13,7 @@ import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.serialization.SerializableAs;
@@ -25,6 +23,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.persistence.PersistentDataType;
+
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Trigger that listens for matching mob deaths inside the instance.
@@ -84,6 +86,9 @@ public class MobDeathTrigger extends DungeonTrigger {
      */
     @EventHandler
     public void onMobDeath(EntityDeathEvent event) {
+        if (event.isCancelled()) {
+            return;
+        }
         if (event.getEntity().getWorld() == this.instance.getInstanceWorld()) {
             LivingEntity ent = event.getEntity();
             int requiredKills = Math.max(1, this.count);

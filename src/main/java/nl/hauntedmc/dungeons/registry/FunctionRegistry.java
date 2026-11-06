@@ -1,12 +1,5 @@
 package nl.hauntedmc.dungeons.registry;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.listener.EventRelayListener;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
@@ -15,10 +8,19 @@ import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.runtime.instance.ActiveInstanceRegistry;
 import nl.hauntedmc.dungeons.util.metadata.TypeMetadataSupport;
+
 import org.apache.commons.lang3.reflect.MethodUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Registry for discoverable {@link DungeonFunction} implementations.
@@ -55,11 +57,12 @@ public final class FunctionRegistry {
      */
     public <T extends DungeonFunction> void register(Class<T> functionClass) {
         String functionId = TypeMetadataSupport.requiredId(functionClass);
+        DungeonFunction function = null;
         try {
             this.functions.put(functionId, functionClass);
             this.functionIds.put(functionClass, functionId);
 
-            DungeonFunction function = functionClass.getDeclaredConstructor().newInstance();
+            function = functionClass.getDeclaredConstructor().newInstance();
             MenuButton button = function.buildMenuButton();
             if (button == null) {
                 this.plugin
@@ -142,6 +145,10 @@ public final class FunctionRegistry {
                             "Failed to register function '{}'.",
                             functionClass.getSimpleName(),
                             exception);
+        } finally {
+            if (function != null) {
+                function.releaseEditorListener();
+            }
         }
     }
 

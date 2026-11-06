@@ -1,10 +1,5 @@
 package nl.hauntedmc.dungeons.content.trigger;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.content.instance.play.BranchingInstance;
@@ -17,6 +12,7 @@ import nl.hauntedmc.dungeons.model.element.TriggerCategory;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -24,6 +20,12 @@ import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.PlayerDeathEvent;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Trigger that fires after a configured number of player deaths.
@@ -33,7 +35,7 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 public class PlayerDeathTrigger extends DungeonTrigger {
     @PersistedField private int deathsRequired = 1;
     @PersistedField private boolean oneDeathPerPlayer = false;
-    private final List<UUID> playerDeaths;
+    private List<UUID> playerDeaths;
     private transient boolean invalidDeathRequirementLogged;
 
     /**
@@ -63,6 +65,9 @@ public class PlayerDeathTrigger extends DungeonTrigger {
      */
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
+        if (event.isCancelled()) {
+            return;
+        }
         Player player = event.getEntity();
         World world = player.getWorld();
         if (world == this.instance.getInstanceWorld()) {
@@ -223,5 +228,14 @@ public class PlayerDeathTrigger extends DungeonTrigger {
                     }
                 });
         this.addRoomLimitToggleButton();
+    }
+
+    @Override
+    public PlayerDeathTrigger clone() {
+        PlayerDeathTrigger clone = (PlayerDeathTrigger) super.clone();
+        if (clone != null) {
+            clone.playerDeaths = new ArrayList<>();
+        }
+        return clone;
     }
 }

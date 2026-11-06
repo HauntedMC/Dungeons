@@ -1,10 +1,5 @@
 package nl.hauntedmc.dungeons.content.function;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.content.instance.play.BranchingInstance;
@@ -23,6 +18,7 @@ import nl.hauntedmc.dungeons.util.command.InputUtils;
 import nl.hauntedmc.dungeons.util.entity.EntityUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.math.MathUtils;
+
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -38,6 +34,12 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerEvent;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * Function that spawns one or more mobs at the configured location.
@@ -56,7 +58,7 @@ public class SpawnMobFunction extends DungeonFunction {
     @PersistedField private int interval = 0;
     @PersistedField private double yaw = 0.0;
     private int count;
-    private final List<BukkitRunnable> spawners;
+    private List<BukkitRunnable> spawners;
 
     /**
      * Creates the function from persisted configuration.
@@ -76,6 +78,17 @@ public class SpawnMobFunction extends DungeonFunction {
         this.setAllowChangingTargetType(false);
         this.setCategory(FunctionCategory.LOCATION);
         this.spawners = new ArrayList<>();
+    }
+
+    /** Returns a template clone with independent runtime spawn scheduling. */
+    @Override
+    public SpawnMobFunction clone() {
+        SpawnMobFunction clone = (SpawnMobFunction) super.clone();
+        if (clone != null) {
+            clone.spawners = new ArrayList<>();
+            clone.count = 0;
+        }
+        return clone;
     }
 
     /**

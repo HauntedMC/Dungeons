@@ -1,0 +1,140 @@
+package nl.hauntedmc.dungeons.content.function.meta;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import nl.hauntedmc.dungeons.event.TriggerFireEvent;
+import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
+import nl.hauntedmc.dungeons.model.element.DungeonFunction;
+import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
+import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
+import nl.hauntedmc.dungeons.support.PaperBoundary;
+import nl.hauntedmc.dungeons.util.math.MathUtils;
+
+import org.junit.jupiter.api.Test;
+
+import java.util.ArrayList;
+import java.util.List;
+
+class FunctionCompositionContractTest {
+    @Test
+    void compositesPreserveOrderIsolateTargetsSkipTriggeredChildrenAndContinueAfterAChildFails() {
+        try (var paper = new PaperBoundary()) {
+            List<String> effects = new ArrayList<>();
+            var first = new Effect("first", effects);
+            first.clearTargets = true;
+            var broken = new Effect("broken", effects);
+            broken.fail = true;
+            var last = new Effect("last", effects);
+            var independent = new Effect("independent", effects);
+            independent.setTrigger(mock(DungeonTrigger.class));
+            var composite = new CompositeFunction();
+            composite.addFunction(first);
+            composite.addFunction(broken);
+            composite.addFunction(independent);
+            composite.addFunction(last);
+            var source = mock(DungeonPlayerSession.class);
+            var targets = new ArrayList<>(List.of(source));
+
+            composite.runFunction(mock(TriggerFireEvent.class), targets);
+
+            assertEquals(List.of("first", "broken", "last"), effects);
+            assertEquals(List.of(source), targets);
+            assertEquals(List.of(source), last.received);
+        }
+    }
+
+    @Test
+    void sequencesExecuteExactlyOneStepPerActivationAndLoopInConfiguredOrder() {
+        try (var paper = new PaperBoundary()) {
+            var sequence = new SequenceFunction();
+            var event = mock(TriggerFireEvent.class);
+            var source = mock(DungeonPlayerSession.class);
+            sequence.runFunction(event, List.of(source));
+            List<String> effects = new ArrayList<>();
+            var first = new Effect("first", effects);
+            var second = new Effect("second", effects);
+            sequence.addFunction(first);
+            sequence.addFunction(second);
+            sequence.runFunction(event, List.of(source));
+            assertEquals(List.of("first"), effects);
+            sequence.runFunction(event, List.of(source));
+            assertEquals(List.of("first", "second"), effects);
+            sequence.runFunction(event, List.of(source));
+            assertEquals(List.of("first", "second", "first"), effects);
+            assertEquals(List.of(source), first.received);
+            assertEquals(List.of(source), second.received);
+        }
+    }
+
+    @Test
+    void randomCompositionExecutesOnlyTheChosenChildAndPreservesTheCallersTargets() {
+        try (var paper = new PaperBoundary();
+                var random = mockStatic(MathUtils.class)) {
+            var function = new RandomFunction();
+            var source = mock(DungeonPlayerSession.class);
+            var targets = new ArrayList<>(List.of(source));
+            var event = mock(TriggerFireEvent.class);
+            function.runFunction(event, targets);
+            List<String> effects = new ArrayList<>();
+            var first = new Effect("first", effects);
+            var second = new Effect("second", effects);
+            second.clearTargets = true;
+            function.addFunction(first);
+            function.addFunction(second);
+            random.when(() -> MathUtils.getRandomNumberInRange(0, 1)).thenReturn(1);
+            function.runFunction(event, targets);
+            assertEquals(List.of("second"), effects);
+            assertEquals(List.of(source), second.received);
+            assertEquals(List.of(source), targets);
+            random.when(() -> MathUtils.getRandomNumberInRange(0, 1)).thenReturn(0);
+            function.runFunction(event, targets);
+            assertEquals(List.of("second", "first"), effects);
+            assertEquals(List.of(source), first.received);
+        }
+    }
+
+    @Test
+    void compositeCleanupContinuesAfterOneChildThrows() {
+        try (var paper = new PaperBoundary()) {
+            var bad = mock(DungeonFunction.class);
+            var healthy = mock(DungeonFunction.class);
+            doThrow(new IllegalStateException("child cleanup failed")).when(bad).disable();
+            var composite = new CompositeFunction();
+            composite.addFunction(bad);
+            composite.addFunction(healthy);
+            assertDoesNotThrow(composite::onDisable);
+            verify(healthy).disable();
+        }
+    }
+
+    static class Effect extends DungeonFunction {
+        final String name;
+        final List<String> effects;
+        boolean clearTargets;
+        boolean fail;
+        List<DungeonPlayerSession> received;
+
+        Effect(String name, List<String> effects) {
+            super(name);
+            this.name = name;
+            this.effects = effects;
+        }
+
+        @Override
+        public void runFunction(TriggerFireEvent event, List<DungeonPlayerSession> targets) {
+            effects.add(name);
+            received = new ArrayList<>(targets);
+            if (clearTargets) targets.clear();
+            if (fail) throw new IllegalStateException("broken effect");
+        }
+
+        @Override
+        public MenuButton buildMenuButton() {
+            return null;
+        }
+
+        @Override
+        public void buildHotbarMenu() {}
+    }
+}

@@ -93,7 +93,8 @@ rewards:
     track_per_reward: true
     # string: TIMER | HOURLY | DAILY | WEEKLY | MONTHLY
     period: DAILY
-    # int. TIMER = minutes. Other periods = reset hour from 0 to 23.
+    # int. TIMER = minutes. DAILY/WEEKLY/MONTHLY = reset hour from 0 to 23.
+    # HOURLY resets at the next full hour and ignores this value.
     value: 0
     # int. WEEKLY = 1-7. MONTHLY = 1-31.
     reset_day: 1
@@ -111,7 +112,8 @@ access:
     on_lives_depleted: false
     # string: TIMER | HOURLY | DAILY | WEEKLY | MONTHLY
     period: TIMER
-    # int. TIMER = minutes. Other periods = reset hour from 0 to 23.
+    # int. TIMER = minutes. DAILY/WEEKLY/MONTHLY = reset hour from 0 to 23.
+    # HOURLY resets at the next full hour and ignores this value.
     value: 60
     # int. WEEKLY = 1-7. MONTHLY = 1-31.
     reset_day: 1

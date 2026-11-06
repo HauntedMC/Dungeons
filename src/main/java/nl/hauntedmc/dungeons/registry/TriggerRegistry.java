@@ -1,12 +1,5 @@
 package nl.hauntedmc.dungeons.registry;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.listener.EventRelayListener;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
@@ -15,10 +8,19 @@ import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.runtime.instance.ActiveInstanceRegistry;
 import nl.hauntedmc.dungeons.util.metadata.TypeMetadataSupport;
+
 import org.apache.commons.lang3.reflect.MethodUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Registry for discoverable {@link DungeonTrigger} implementations.
@@ -54,11 +56,12 @@ public final class TriggerRegistry {
      */
     public <T extends DungeonTrigger> void register(Class<T> triggerClass) {
         String triggerId = TypeMetadataSupport.requiredId(triggerClass);
+        DungeonTrigger trigger = null;
         try {
             this.triggers.put(triggerId, triggerClass);
             this.triggerIds.put(triggerClass, triggerId);
 
-            DungeonTrigger trigger = triggerClass.getDeclaredConstructor().newInstance();
+            trigger = triggerClass.getDeclaredConstructor().newInstance();
             MenuButton button = trigger.buildMenuButton();
             if (button == null) {
                 this.plugin
@@ -141,6 +144,10 @@ public final class TriggerRegistry {
                             "Failed to register trigger '{}'.",
                             triggerClass.getSimpleName(),
                             exception);
+        } finally {
+            if (trigger != null) {
+                trigger.releaseEditorListener();
+            }
         }
     }
 

@@ -9,6 +9,7 @@ import nl.hauntedmc.dungeons.util.config.DungeonConfigView;
 import nl.hauntedmc.dungeons.util.entity.EntityUtils;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -182,7 +183,7 @@ public class InstanceListener {
 
             if (DungeonConfigView.isWeaponDurabilityLossPrevented(this.instance.getConfig())
                     && (mat.name().contains("SWORD")
-                            || mat.name().contains("AXE")
+                            || mat.name().endsWith("_AXE")
                             || mat.name().contains("BOW")
                             || mat.name().contains("CROSSBOW")
                             || mat.name().contains("TRIDENT")

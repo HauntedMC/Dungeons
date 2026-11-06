@@ -203,3 +203,41 @@ Supported player-name placeholders are `{player}`, `{player_name}`, `<player>`, 
 - If generation fails, validate room pools, connector compatibility, and target ranges.
 - If teams cannot start, validate team size, key/cooldown constraints, and queue state.
 - If command text is missing after an upgrade, restart once and re-check synchronized message keys.
+
+## Cooldown reset boundaries
+
+Access cooldowns, dungeon loot cooldowns, and reward-function cooldowns use the server's
+configured time zone. TIMER is a relative delay in minutes. HOURLY resets at the next full
+hour and ignores the configured reset-hour value. DAILY, WEEKLY, and MONTHLY use the reset
+hour (0–23). Weekly days follow Calendar numbering: 1 is Sunday and 7 is Saturday.
+
+Calendar resets always choose a time strictly after the current instant. A monthly day
+that does not exist in a month uses that month's last day, retaining the configured day
+for later months. For example, day 31 uses February 28 or 29 and then March 31. Local reset
+times skipped by daylight saving advance to the next valid local time.
+
+## Structure file compatibility
+
+Newly saved room structures use the `DUNGEONS-STRUCTURE-2` format, still compressed with
+deflate. Tile SNBT is encoded inside the file so names or text containing `|` and `!` cannot
+split block records. Existing unversioned structure files remain readable and are converted
+when saved. Older plugin versions cannot read the new format; retain backups if rollback
+to an earlier plugin version is needed.
+
+
+## Invalid saved data and failed world unloads
+
+Player files must use `<player-uuid>.yml` filenames. Unrelated filenames and files with
+invalid YAML are logged and skipped without rewriting them or preventing valid player
+records from loading. An invalid `RewardsInfo` value is ignored while other readable
+fields, such as completion and access cooldowns, remain available.
+
+When unique key validation is enabled and reading `access_keys.yml` fails, new key issuance
+is refused until reading succeeds. Issuance does not replace the unreadable file with an
+empty ledger. A loaded dungeon can retry issuance after repair; a dungeon that failed its
+initial load must be reloaded.
+
+If Paper refuses or fails to unload an instance world, cleanup retains the world files
+and reference instead of deleting files that the server may still be using. Initialization
+failure still releases waiting initialization tasks. This does not add an automatic unload
+retry.

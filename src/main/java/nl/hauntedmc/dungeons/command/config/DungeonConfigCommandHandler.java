@@ -1,10 +1,5 @@
 package nl.hauntedmc.dungeons.command.config;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
 import nl.hauntedmc.dungeons.content.reward.CooldownPeriod;
 import nl.hauntedmc.dungeons.gui.menu.PlayMenus;
@@ -15,6 +10,7 @@ import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
 import nl.hauntedmc.dungeons.util.command.CommandUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -24,6 +20,12 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 /**
  * Command handler for {@code /dungeon config}.
@@ -730,7 +732,8 @@ public final class DungeonConfigCommandHandler {
      */
     private Double parseDouble(String rawValue) {
         try {
-            return Double.parseDouble(rawValue);
+            double value = Double.parseDouble(rawValue);
+            return Double.isFinite(value) ? value : null;
         } catch (NumberFormatException exception) {
             return null;
         }

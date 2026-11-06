@@ -1,8 +1,5 @@
 package nl.hauntedmc.dungeons.content.function.meta;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
@@ -14,11 +11,16 @@ import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerEvent;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Base function for content that owns and runs child functions.
@@ -95,8 +97,17 @@ public class CompositeFunction extends DungeonFunction {
      */
     @Override
     public void onDisable() {
-        for (DungeonFunction functions : this.functions) {
-            functions.disable();
+        for (DungeonFunction function : this.functions) {
+            try {
+                function.disable();
+            } catch (RuntimeException exception) {
+                this.logger()
+                        .error(
+                                "Failed to disable child function '{}' in dungeon '{}'.",
+                                function.getClass().getSimpleName(),
+                                this.dungeonNameForLogs(),
+                                exception);
+            }
         }
     }
 
@@ -105,6 +116,7 @@ public class CompositeFunction extends DungeonFunction {
      */
     public void addFunction(DungeonFunction function) {
         this.functions.add(function);
+        function.setParentFunction(this);
     }
 
     /**
@@ -268,6 +280,7 @@ public class CompositeFunction extends DungeonFunction {
             DungeonFunction clonedFunction = oldFunction.clone();
             if (clonedFunction != null) {
                 clonedFunction.setLocation(clone.location);
+                clonedFunction.setParentFunction(clone);
                 newFunctions.add(clonedFunction);
             }
         }

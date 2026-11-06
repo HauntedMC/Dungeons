@@ -1,12 +1,5 @@
 package nl.hauntedmc.dungeons.model.instance;
 
-import java.io.File;
-import java.io.FileFilter;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
 import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
 import nl.hauntedmc.dungeons.content.trigger.InteractTrigger;
 import nl.hauntedmc.dungeons.listener.instance.EditListener;
@@ -20,6 +13,7 @@ import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.text.ColorUtils;
 import nl.hauntedmc.dungeons.util.text.ComponentUtils;
 import nl.hauntedmc.dungeons.util.text.TextUtils;
+
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -34,6 +28,14 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.File;
+import java.io.FileFilter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * Editable dungeon instance used by map editors.
@@ -156,7 +158,10 @@ public class EditableInstance extends DungeonInstance {
      * Triggers an asynchronous save and sends action-bar status feedback to editors.
      */
     public void autosave() {
-        if (this.disposing || this.instanceWorld == null || this.players.isEmpty()) {
+        if (this.disposing
+                || this.instanceWorld == null
+                || this.players.isEmpty()
+                || this.dungeon.isSaving()) {
             return;
         }
 
@@ -284,26 +289,48 @@ public class EditableInstance extends DungeonInstance {
                         this.hologramManager.restoreCapturedHolograms();
                     }
 
-                    this.commitWorldAsync(world)
-                            .whenComplete(
-                                    (success, throwable) -> {
-                                        if (throwable != null) {
-                                            this.logger()
-                                                    .error(
-                                                            "Failed to finish save for dungeon '{}'.",
-                                                            this.dungeon.getWorldName(),
-                                                            throwable);
-                                            this.finishSave(latch, result, false);
-                                            return;
-                                        }
+                    CompletableFuture<Boolean> commit;
+                    try {
+                        commit = this.commitWorldAsync(world);
+                    } catch (RuntimeException exception) {
+                        this.logger()
+                                .error(
+                                        "Failed to start save commit for dungeon '{}'.",
+                                        this.dungeon.getWorldName(),
+                                        exception);
+                        this.finishSave(latch, result, false);
+                        return;
+                    }
+                    commit.whenComplete(
+                            (success, throwable) -> {
+                                if (throwable != null) {
+                                    this.logger()
+                                            .error(
+                                                    "Failed to finish save for dungeon '{}'.",
+                                                    this.dungeon.getWorldName(),
+                                                    throwable);
+                                    this.finishSave(latch, result, false);
+                                    return;
+                                }
 
-                                        this.finishSave(
-                                                latch, result, Boolean.TRUE.equals(success));
-                                    });
+                                this.finishSave(latch, result, Boolean.TRUE.equals(success));
+                            });
                 };
 
         if (this.plugin().isEnabled() && !Bukkit.isPrimaryThread()) {
-            Bukkit.getScheduler().runTask(this.plugin(), saveTask);
+            try {
+                Bukkit.getScheduler().runTask(this.plugin(), saveTask);
+            } catch (RuntimeException exception) {
+                if (latch != null) {
+                    latch.countDown();
+                }
+                result.complete(false);
+                this.logger()
+                        .error(
+                                "Failed to schedule editor save for dungeon '{}'.",
+                                this.dungeon.getWorldName(),
+                                exception);
+            }
         } else {
             saveTask.run();
         }
@@ -360,7 +387,7 @@ public class EditableInstance extends DungeonInstance {
                     try {
                         functionsYaml.save(saveFile);
                         result.complete(true);
-                    } catch (IOException exception) {
+                    } catch (IOException | RuntimeException exception) {
                         this.logger()
                                 .error(
                                         "Failed to save functions for dungeon '{}' to '{}'.",
@@ -404,6 +431,10 @@ public class EditableInstance extends DungeonInstance {
      */
     @Override
     public void addPlayer(DungeonPlayerSession playerSession) {
+        if (this.players.contains(playerSession)
+                || playerSession.getInstance() != null && playerSession.getInstance() != this) {
+            return;
+        }
         Player player = playerSession.getPlayer();
         playerSession.saveInventory();
         super.addPlayer(playerSession);
@@ -411,48 +442,34 @@ public class EditableInstance extends DungeonInstance {
         EntityUtils.forceTeleport(player, this.startLocation);
     }
 
-    /**
-     * Removes a player from edit mode and clears editor-only session state.
-     */
+    /** Restores editor state only after the departure has been accepted. */
     @Override
-    public void removePlayer(DungeonPlayerSession playerSession, boolean force) {
-        Player player = playerSession.getPlayer();
-        if (!this.players.contains(playerSession)) {
-            if (playerSession.getInstance() == this
-                    && player.isOnline()
-                    && playerSession.getSavedPosition() != null) {
-                playerSession.setInstance(null);
-                EntityUtils.forceTeleport(player, playerSession.getSavedPosition());
-                playerSession.setSavedPosition(null);
-            }
-        } else {
-            if (this.plugin().isEnabled()) {
-                playerSession.restoreCapturedHotbar();
-            }
-
-            playerSession.saveEditInventory();
-            playerSession.setEditMode(false);
-            playerSession.setChatListening(false);
-            playerSession.setActiveFunction(null);
-            playerSession.setActiveTrigger(null);
-            playerSession.setTargetLocation(null);
-            playerSession.setCopiedFunction(null);
-            playerSession.setCutting(false);
-            playerSession.setCopying(false);
-            playerSession.setClipboardType(DungeonPlayerSession.EditorClipboardType.NONE);
-            playerSession.setPos1(null);
-            playerSession.setPos2(null);
-            playerSession.setAwaitingRoomName(false);
-            playerSession.setActiveRoom(null);
-            playerSession.setActiveConnector(null);
-            playerSession.setActiveDoor(null);
-            playerSession.setConfirmRoomAction(false);
-            playerSession.setCopiedConnector(null);
-            playerSession.setAddingWhitelistEntry(false);
-            playerSession.setEditingWhitelistEntry(false);
-            playerSession.setRemovingWhitelistEntry(false);
-            super.removePlayer(playerSession, force);
+    protected void onPlayerRemovalAccepted(DungeonPlayerSession playerSession) {
+        if (this.plugin().isEnabled()) {
+            playerSession.restoreCapturedHotbar();
         }
+
+        playerSession.saveEditInventory();
+        playerSession.setEditMode(false);
+        playerSession.setChatListening(false);
+        playerSession.setActiveFunction(null);
+        playerSession.setActiveTrigger(null);
+        playerSession.setTargetLocation(null);
+        playerSession.setCopiedFunction(null);
+        playerSession.setCutting(false);
+        playerSession.setCopying(false);
+        playerSession.setClipboardType(DungeonPlayerSession.EditorClipboardType.NONE);
+        playerSession.setPos1(null);
+        playerSession.setPos2(null);
+        playerSession.setAwaitingRoomName(false);
+        playerSession.setActiveRoom(null);
+        playerSession.setActiveConnector(null);
+        playerSession.setActiveDoor(null);
+        playerSession.setConfirmRoomAction(false);
+        playerSession.setCopiedConnector(null);
+        playerSession.setAddingWhitelistEntry(false);
+        playerSession.setEditingWhitelistEntry(false);
+        playerSession.setRemovingWhitelistEntry(false);
     }
 
     /**

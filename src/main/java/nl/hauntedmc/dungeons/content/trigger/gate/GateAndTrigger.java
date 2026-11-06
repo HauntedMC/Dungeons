@@ -1,13 +1,15 @@
 package nl.hauntedmc.dungeons.content.trigger.gate;
 
-import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
+
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.event.EventHandler;
+
+import java.util.Map;
 
 /**
  * Gate trigger that fires only after every child trigger has fired once.
@@ -36,7 +38,7 @@ public class GateAndTrigger extends GateTrigger {
      */
     @EventHandler
     public void onChildTriggered(TriggerFireEvent event) {
-        if (event.getInstance().getInstanceWorld() == this.instance.getInstanceWorld()) {
+        if (!event.isCancelled() && event.getInstance() == this.instance) {
             DungeonTrigger trigger = event.getTrigger();
             if (this.triggerTracker.containsKey(trigger)) {
                 this.triggerTracker.put(trigger, true);

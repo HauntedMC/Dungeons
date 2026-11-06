@@ -1,9 +1,5 @@
 package nl.hauntedmc.dungeons.content.reward;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.TypeKey;
 import nl.hauntedmc.dungeons.gui.framework.buttons.Button;
 import nl.hauntedmc.dungeons.gui.framework.window.GuiInventory;
@@ -15,6 +11,7 @@ import nl.hauntedmc.dungeons.util.math.MathUtils;
 import nl.hauntedmc.dungeons.util.math.RandomCollection;
 import nl.hauntedmc.dungeons.util.text.ColorUtils;
 import nl.hauntedmc.dungeons.util.text.ComponentUtils;
+
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.SerializableAs;
@@ -23,6 +20,11 @@ import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Weighted loot table with an in-game editor UI.
@@ -93,7 +95,7 @@ public class LootTable implements ConfigurationSerializable {
      */
     public List<ItemStack> randomizeItems(int bonusItems) {
         List<ItemStack> items = new ArrayList<>();
-        RandomCollection<LootTableItem> randomizer = new RandomCollection<>();
+        RandomCollection<LootTableItem> randomizer = this.createRandomizer();
 
         for (LootTableItem lootItem : this.lootItems.values()) {
             randomizer.add(lootItem.getWeight(), lootItem);
@@ -115,22 +117,19 @@ public class LootTable implements ConfigurationSerializable {
         }
 
         List<LootTableItem> foundItems = new ArrayList<>();
-        int i = 0;
-
-        while (i < amount && foundItems.size() < this.lootItems.size()) {
+        while (foundItems.size() < amount) {
             LootTableItem lootItem = randomizer.next();
             if (lootItem == null) {
-                RuntimeContext.plugin()
-                        .getSLF4JLogger()
-                        .warn(
-                                "Loot table '{}' could not resolve another weighted item during randomization.",
-                                this.namespace);
                 break;
             }
-
-            if (this.allowDuplicates || !foundItems.contains(lootItem)) {
-                foundItems.add(lootItem);
-                i++;
+            foundItems.add(lootItem);
+            if (!this.allowDuplicates) {
+                randomizer = this.createRandomizer();
+                for (LootTableItem candidate : this.lootItems.values()) {
+                    if (!foundItems.contains(candidate)) {
+                        randomizer.add(candidate.getWeight(), candidate);
+                    }
+                }
             }
         }
 
@@ -484,5 +483,9 @@ public class LootTable implements ConfigurationSerializable {
      */
     public void setEditor(Player editor) {
         this.editor = editor;
+    }
+
+    RandomCollection<LootTableItem> createRandomizer() {
+        return new RandomCollection<>();
     }
 }
