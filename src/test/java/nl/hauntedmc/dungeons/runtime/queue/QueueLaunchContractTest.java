@@ -105,6 +105,26 @@ class QueueLaunchContractTest {
         }
     }
 
+    @Test
+    void aRevokedReservedKeyCannotLaunchAndItsPhysicalItemIsRefundedOnlyOnce() {
+        try (var f = new Fixture(directory)) {
+            var session = f.player();
+            var inventory = f.giveKey(session);
+            when(f.dungeon.reserveIssuedAccessKey(any())).thenReturn(true);
+            when(f.dungeon.isReservedAccessKey(any())).thenReturn(true);
+            f.coordinator.sendToDungeon(session.getPlayer(), "crypt", "hard");
+            var queue = f.queues.getQueue(session);
+            assertTrue(session.hasReservedAccessKey());
+            when(f.dungeon.isReservedAccessKey(any())).thenReturn(false);
+            assertFalse(f.coordinator.tryStartQueuedDungeon(queue));
+            assertNull(f.queues.getQueue(session));
+            assertFalse(session.hasReservedAccessKey());
+            assertFalse(session.isAwaitingDungeon());
+            verify(inventory, times(1)).addItem(any(org.bukkit.inventory.ItemStack.class));
+            verify(f.catalog, never()).createInstance(anyString(), any(), anyString(), anyInt(), any());
+        }
+    }
+
     static class Fixture implements AutoCloseable {
         final PaperBoundary paper = new PaperBoundary();
         final PlayerSessionRegistry sessions = new PlayerSessionRegistry(paper.plugin);
