@@ -32,4 +32,22 @@ class WorldFunctionContractTest {
             assertEquals(1,forced.values().stream().filter(Boolean::booleanValue).count()); assertTrue(forced.get("100,100"));
         }
     }
+    @Test
+    void hologramsToggleVisibilityAndCleanupOnlyDisplaysOwnedByTheRun() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            var display=mock(org.bukkit.entity.TextDisplay.class); when(display.isValid()).thenReturn(true);
+            when(display.getPersistentDataContainer()).thenReturn(mock(org.bukkit.persistence.PersistentDataContainer.class));
+            when(f.world.spawn(any(Location.class),eq(org.bukkit.entity.TextDisplay.class))).thenReturn(display);
+            var outsider=mock(org.bukkit.entity.TextDisplay.class);
+            when(outsider.getPersistentDataContainer()).thenReturn(mock(org.bukkit.persistence.PersistentDataContainer.class));
+            when(f.world.getEntitiesByClass(org.bukkit.entity.TextDisplay.class)).thenReturn(List.of(display,outsider));
+            var hologram=GameplayFunctionContractTest.bind(new HologramFunction(Map.of("message","hello","radius",32,"visibleByDefault",true)),f);
+            hologram.onEnable(); assertTrue(hologram.isVisible());
+            hologram.runFunction(null,List.of()); assertFalse(hologram.isVisible()); verify(display).setViewRange(0f);
+            hologram.runFunction(null,List.of()); assertTrue(hologram.isVisible()); verify(display,atLeastOnce()).setViewRange(.5f);
+            hologram.onDisable(); f.run.clearHolograms();
+            verify(display).remove(); verify(outsider,never()).remove();
+        }
+    }
+
 }
