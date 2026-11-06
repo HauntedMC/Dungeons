@@ -76,4 +76,19 @@ class GameplayFunctionContractTest {
         }
     }
 
+    @Test
+    void livesMechanicsApplySetMultiplyAndAddWithoutChangingUntargetedParticipants() throws Exception {
+        var settings=new YamlConfiguration(); settings.set("players.lives",3);
+        try(var f=new RunFixture(directory,settings)) {
+            var first=f.session(new PlayerState()); var second=f.session(new PlayerState()); f.run.addPlayer(first); f.run.addPlayer(second);
+            bind(new LivesFunction(Map.of("mode",1,"amount",5)),f).runFunction(null,List.of(first));
+            assertEquals(5,f.run.getPlayerLives().get(first.getPlayer().getUniqueId()));
+            bind(new LivesFunction(Map.of("mode",2,"amount",2)),f).runFunction(null,List.of(first));
+            assertEquals(10,f.run.getPlayerLives().get(first.getPlayer().getUniqueId()));
+            bind(new LivesFunction(Map.of("mode",0,"amount",-3)),f).runFunction(null,List.of(first));
+            assertEquals(7,f.run.getPlayerLives().get(first.getPlayer().getUniqueId()));
+            assertEquals(3,f.run.getPlayerLives().get(second.getPlayer().getUniqueId()));
+        }
+    }
+
 }
