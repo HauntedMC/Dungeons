@@ -170,4 +170,25 @@ class TriggerExecutionContractTest {
         }
     }
 
+    @Test
+    void asynchronousChatUsesTheMainThreadBridgeAndBridgeFailureLeavesChatUnconsumed() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            var state=new PlayerState(); source(f,state);
+            var trigger=bind(new ChatTrigger(Map.of("text","Open")),f);
+            var event=mock(io.papermc.paper.event.player.AsyncChatEvent.class);
+            when(event.originalMessage()).thenReturn(net.kyori.adventure.text.Component.text("Open"));
+            when(event.getPlayer()).thenReturn(state.player); when(event.isAsynchronous()).thenReturn(true);
+            when(f.scheduler.scheduler.callSyncMethod(any(),any())).thenAnswer(c ->
+                java.util.concurrent.CompletableFuture.completedFuture(((java.util.concurrent.Callable<?>)c.getArgument(1)).call()));
+            trigger.onChat(event); verify(event).setCancelled(true);
+            assertEquals(1,f.scheduler.immediate.size());
+            clearInvocations(event);
+            doReturn(java.util.concurrent.CompletableFuture.failedFuture(new IllegalStateException("bridge failed")))
+                .when(f.scheduler.scheduler).callSyncMethod(any(),any());
+            trigger.onChat(event);
+            verify(event,never()).setCancelled(true); assertEquals(1,f.scheduler.immediate.size());
+        }
+    }
+
+
 }
