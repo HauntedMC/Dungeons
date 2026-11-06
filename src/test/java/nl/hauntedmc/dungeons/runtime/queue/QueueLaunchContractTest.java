@@ -79,6 +79,32 @@ class QueueLaunchContractTest {
         }
     }
 
+    @Test
+    void teamReservationFailureRollsBackAlreadyReservedKeysBeforeAnyStartOrQueueIsPublished() {
+        try (var f = new Fixture(directory)) {
+            var leader = f.player();
+            var member = f.player();
+            var team = new nl.hauntedmc.dungeons.runtime.team.DungeonTeam(leader.getPlayer().getUniqueId());
+            team.addMember(member.getPlayer().getUniqueId());
+            when(f.teams.getTeam(team.getLeaderId())).thenReturn(team);
+            var leaderInventory = f.giveKey(leader);
+            var memberInventory = f.giveKey(member);
+            when(f.dungeon.reserveIssuedAccessKey(any())).thenReturn(true, false);
+            f.coordinator.sendToDungeon(leader.getPlayer(), "crypt", "hard");
+            assertTrue(f.queues.snapshotQueues().isEmpty());
+            assertFalse(leader.isAwaitingDungeon());
+            assertFalse(member.isAwaitingDungeon());
+            assertFalse(leader.hasReservedAccessKey());
+            assertFalse(member.hasReservedAccessKey());
+            var returned = org.mockito.ArgumentCaptor.forClass(org.bukkit.inventory.ItemStack.class);
+            verify(leaderInventory).addItem(returned.capture());
+            assertEquals(1, returned.getValue().getAmount());
+            verify(memberInventory, never()).setItem(anyInt(), any());
+            verify(f.catalog, never()).createInstance(anyString(), any(), anyString(), anyInt(), any());
+            verify(f.teams, never()).markQueued(any(), anyString(), anyString());
+        }
+    }
+
     static class Fixture implements AutoCloseable {
         final PaperBoundary paper = new PaperBoundary();
         final PlayerSessionRegistry sessions = new PlayerSessionRegistry(paper.plugin);
@@ -99,6 +125,27 @@ class QueueLaunchContractTest {
             when(catalog.get("crypt")).thenReturn(dungeon);
             coordinator.setDungeonCatalog(catalog);
             queues.setQueueCoordinator(coordinator);
+        }
+        org.bukkit.inventory.PlayerInventory giveKey(DungeonPlayerSession session) {
+            var inventory = mock(org.bukkit.inventory.PlayerInventory.class);
+            var held = item(2);
+            var template = item(1);
+            when(session.getPlayer().getInventory()).thenReturn(inventory);
+            when(inventory.getContents()).thenReturn(new org.bukkit.inventory.ItemStack[] {held});
+            when(dungeon.getValidKeys()).thenReturn(java.util.List.of(template));
+            when(dungeon.isValidKey(held)).thenReturn(template);
+            when(dungeon.getFirstKeyAmount(session.getPlayer())).thenReturn(1);
+            doAnswer(call -> ((DungeonPlayerSession) call.getArgument(0)).refundReservedAccessKey("crypt")).when(dungeon).refundReservedAccessKey(any());
+            return inventory;
+        }
+        static org.bukkit.inventory.ItemStack item(int amount) {
+            var item = mock(org.bukkit.inventory.ItemStack.class);
+            var quantity = new java.util.concurrent.atomic.AtomicInteger(amount);
+            when(item.getType()).thenReturn(mock(org.bukkit.Material.class));
+            when(item.getAmount()).thenAnswer(call -> quantity.get());
+            doAnswer(call -> { quantity.set(call.getArgument(0)); return null; }).when(item).setAmount(anyInt());
+            when(item.clone()).thenAnswer(call -> item(quantity.get()));
+            return item;
         }
         DungeonPlayerSession player() {
             Player player = mock(Player.class);
