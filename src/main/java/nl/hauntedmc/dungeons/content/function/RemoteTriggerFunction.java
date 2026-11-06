@@ -67,6 +67,7 @@ public class RemoteTriggerFunction extends DungeonFunction {
         if (instance != null) {
             RemoteTrigger remoteTrig = new RemoteTrigger();
             remoteTrig.setTriggerName(this.triggerName);
+            remoteTrig.setInstance(instance);
             RemoteTriggerEvent event =
                     new RemoteTriggerEvent(
                             remoteTrig.getTriggerName(),
@@ -75,7 +76,11 @@ public class RemoteTriggerFunction extends DungeonFunction {
                             this.range,
                             this.location,
                             triggerEvent.getPlayerSession());
-            Bukkit.getPluginManager().callEvent(event);
+            try {
+                Bukkit.getPluginManager().callEvent(event);
+            } finally {
+                remoteTrig.disable();
+            }
         }
     }
 

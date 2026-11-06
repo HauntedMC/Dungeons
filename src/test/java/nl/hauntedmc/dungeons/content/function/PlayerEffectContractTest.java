@@ -171,4 +171,44 @@ class PlayerEffectContractTest {
             assertEquals(outsideOriginal, outsider.location);
         }
     }
+
+    @Test
+    void remoteSignalsPreserveTheirSourceAndReleaseTemporaryListenersEvenWhenDispatchFails()
+            throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration());
+                var handlers = mockStatic(org.bukkit.event.HandlerList.class)) {
+            var session = f.session(new PlayerState());
+            var source = mock(TriggerFireEvent.class);
+            when(source.getPlayerSession()).thenReturn(session);
+            var signal =
+                    GameplayFunctionContractTest.bind(
+                            new RemoteTriggerFunction(
+                                    Map.of("triggerName", "puzzle", "range", 6.0)),
+                            f);
+            var manager = Bukkit.getPluginManager();
+            clearInvocations(manager);
+            signal.runFunction(source, List.of());
+            signal.runFunction(source, List.of());
+            org.mockito.ArgumentCaptor<nl.hauntedmc.dungeons.event.RemoteTriggerEvent> events =
+                    org.mockito.ArgumentCaptor.captor();
+            verify(manager, times(2)).callEvent(events.capture());
+            for (var event : events.getAllValues()) {
+                assertEquals("puzzle", event.getTriggerName());
+                assertEquals(6, event.getRange());
+                assertEquals(signal.getLocation(), event.getOrigin());
+                assertSame(session, event.getPlayerSession());
+                assertSame(f.run, event.getInstance());
+            }
+            doThrow(new IllegalStateException("external listener failed"))
+                    .when(manager)
+                    .callEvent(any(nl.hauntedmc.dungeons.event.RemoteTriggerEvent.class));
+            assertThrows(IllegalStateException.class, () -> signal.runFunction(source, List.of()));
+            org.mockito.ArgumentCaptor<org.bukkit.event.Listener> listeners =
+                    org.mockito.ArgumentCaptor.captor();
+            verify(manager, times(3)).registerEvents(listeners.capture(), eq(f.paper.plugin));
+            for (var listener : listeners.getAllValues()) {
+                handlers.verify(() -> org.bukkit.event.HandlerList.unregisterAll(listener));
+            }
+        }
+    }
 }
