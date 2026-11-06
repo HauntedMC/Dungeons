@@ -41,6 +41,29 @@ class FunctionCompositionContractTest {
         }
     }
 
+    @Test
+    void sequencesExecuteExactlyOneStepPerActivationAndLoopInConfiguredOrder() {
+        try (var paper = new PaperBoundary()) {
+            var sequence = new SequenceFunction();
+            var event = mock(TriggerFireEvent.class);
+            var source = mock(DungeonPlayerSession.class);
+            sequence.runFunction(event, List.of(source));
+            List<String> effects = new ArrayList<>();
+            var first = new Effect("first", effects);
+            var second = new Effect("second", effects);
+            sequence.addFunction(first);
+            sequence.addFunction(second);
+            sequence.runFunction(event, List.of(source));
+            assertEquals(List.of("first"), effects);
+            sequence.runFunction(event, List.of(source));
+            assertEquals(List.of("first", "second"), effects);
+            sequence.runFunction(event, List.of(source));
+            assertEquals(List.of("first", "second", "first"), effects);
+            assertEquals(List.of(source), first.received);
+            assertEquals(List.of(source), second.received);
+        }
+    }
+
     static class Effect extends DungeonFunction {
         final String name;
         final List<String> effects;
