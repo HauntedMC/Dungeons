@@ -472,6 +472,10 @@ public abstract class DungeonInstance {
                     .runTaskLater(
                             this.plugin(),
                             () -> {
+                                if (playerSession.getInstance() != this
+                                        || !this.players.contains(playerSession)) {
+                                    return;
+                                }
                                 if (!this.config.getBoolean(
                                         "players.keep_on_entry.inventory", true)) {
                                     player.getInventory().clear();

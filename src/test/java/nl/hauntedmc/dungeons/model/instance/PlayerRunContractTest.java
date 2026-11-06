@@ -50,4 +50,18 @@ class PlayerRunContractTest {
             assertEquals(1,state.armor[0].getAmount());
         }
     }
+    @Test
+    void deferredEntryCannotClearRestoredItemsOrExperienceAfterThePlayerHasAlreadyLeft() throws Exception {
+        try(var fixture=new RunFixture(directory,settings())) {
+            var state=new PlayerState(); state.contents[0]=PlayerState.stack(7);
+            var session=fixture.session(state);
+            fixture.run.addPlayer(session);
+            fixture.run.removePlayer(session);
+            fixture.scheduler.jobs.getFirst().run();
+            assertEquals(7,state.contents[0].getAmount());
+            assertEquals(17,state.level); assertEquals(.4f,state.exp);
+            assertNull(session.getInstance());
+        }
+    }
+
 }
