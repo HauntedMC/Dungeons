@@ -17,7 +17,8 @@ public final class PlayerState {
     public int food = 9, level = 17, heldSlot = 2;
     public float exp = .4f;
     public GameMode gameMode = GameMode.SURVIVAL;
-    public Location location = new Location(mock(World.class), 10, 65, 20);
+    public final World originWorld = mock(World.class);
+    public Location location = new Location(originWorld, 10, 65, 20);
     public boolean online = true;
 
     public PlayerState() {

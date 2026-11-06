@@ -64,4 +64,31 @@ class PlayerRunContractTest {
         }
     }
 
+    @Test
+    void cancelledDeparturePreservesEveryMembershipAndEmitsNoEndUntilAForcedDepartureSucceeds() throws Exception {
+        try(var fixture=new RunFixture(directory,settings())) {
+            var state=new PlayerState(); var session=fixture.session(state);
+            fixture.run.addPlayer(session);
+            fixture.scheduler.jobs.getFirst().run();
+            java.util.List<org.bukkit.event.Event> events=new java.util.ArrayList<>();
+            var manager=org.bukkit.Bukkit.getPluginManager();
+            doAnswer(c -> {
+                org.bukkit.event.Event event=c.getArgument(0); events.add(event);
+                if(event instanceof nl.hauntedmc.dungeons.event.PlayerLeaveDungeonEvent leave) leave.setCancelled(true);
+                return null;
+            }).when(manager).callEvent(any());
+            fixture.run.removePlayer(session,false);
+            assertSame(fixture.run,session.getInstance());
+            assertTrue(fixture.run.getPlayers().contains(session));
+            assertTrue(fixture.run.getLivingPlayers().contains(session));
+            assertEquals(GameMode.ADVENTURE,state.gameMode);
+            assertEquals(0,state.level);
+            assertTrue(events.stream().noneMatch(e -> e instanceof nl.hauntedmc.dungeons.event.DungeonEndEvent));
+            fixture.run.removePlayer(session,true);
+            assertNull(session.getInstance());
+            assertTrue(fixture.run.getPlayers().isEmpty());
+            assertEquals(1,events.stream().filter(e -> e instanceof nl.hauntedmc.dungeons.event.DungeonEndEvent).count());
+        }
+    }
+
 }

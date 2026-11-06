@@ -454,6 +454,9 @@ public abstract class PlayableInstance extends DungeonInstance {
     public void removePlayer(DungeonPlayerSession playerSession, boolean force) {
         if (this.players.contains(playerSession)) {
             super.removePlayer(playerSession, force);
+            if (this.players.contains(playerSession)) {
+                return;
+            }
             Player player = playerSession.getPlayer();
             this.livingPlayers.remove(playerSession);
             this.hideCustomDragonBossBars(player);

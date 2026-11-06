@@ -522,10 +522,6 @@ public abstract class DungeonInstance {
                 playerSession.setSavedPosition(null);
             }
         } else {
-            if (this.players.size() == 1) {
-                Bukkit.getPluginManager().callEvent(new DungeonEndEvent(this));
-            }
-
             PlayerLeaveDungeonEvent leaveEvent = new PlayerLeaveDungeonEvent(this, playerSession);
             Bukkit.getPluginManager().callEvent(leaveEvent);
             if (force || !leaveEvent.isCancelled()) {
@@ -535,6 +531,9 @@ public abstract class DungeonInstance {
                 }
 
                 this.players.remove(playerSession);
+                if (this.players.isEmpty()) {
+                    Bukkit.getPluginManager().callEvent(new DungeonEndEvent(this));
+                }
                 player.setGameMode(playerSession.getSavedGameMode());
                 playerSession.setInstance(null);
                 playerSession.setDungeonRespawn(null);
