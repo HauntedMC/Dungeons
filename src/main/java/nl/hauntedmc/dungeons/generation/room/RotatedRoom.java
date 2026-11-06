@@ -277,7 +277,10 @@ public class RotatedRoom {
                 }
 
                 SimpleLocation target = SimpleLocation.from(targetLoc);
-                tp.setTeleportTarget(rotateLocation(target, this.rotation, size).asLocation());
+                Location rotatedTarget = rotateLocation(target, this.rotation, size).asLocation();
+                rotatedTarget.setYaw(targetLoc.getYaw());
+                rotatedTarget.setPitch(targetLoc.getPitch());
+                tp.setTeleportTarget(rotatedTarget);
             }
             this.functions.put(rotatedLocation, function);
         } catch (Throwable throwable) {

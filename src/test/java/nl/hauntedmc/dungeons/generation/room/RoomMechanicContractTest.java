@@ -207,4 +207,73 @@ class RoomMechanicContractTest {
             assertTrue(scan.cancelled);
         }
     }
+
+    @Test
+    void rotatedRoomMechanicsTranslatePositionsAndFacingsWithoutMutatingReusableTemplates()
+            throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration());
+                var menus = mockStatic(RoomMenus.class);
+                var hotbars = new HeadlessMenus()) {
+            var b = new BranchingRunFixture(f);
+            var definition =
+                    new BranchingRoomDefinition(
+                            b.dungeon, "rotated", new BoundingBox(0, 0, 0, 8, 4, 6));
+            var teleport =
+                    new nl.hauntedmc.dungeons.content.function.TeleportFunction(
+                            Map.of("teleportTarget", new Location(null, 4, 1, 5, 90, 15)));
+            var checkpoint =
+                    new nl.hauntedmc.dungeons.content.function.CheckpointFunction(
+                            Map.of("yaw", 100.0));
+            var spawner =
+                    new nl.hauntedmc.dungeons.content.function.SpawnMobFunction(
+                            Map.of("yaw", 45.0));
+            var functions = List.of(teleport, checkpoint, spawner);
+            var locations =
+                    List.of(
+                            new Location(null, 2, 1, 3),
+                            new Location(null, 1, 1, 2),
+                            new Location(null, 3, 1, 1));
+            for (int index = 0; index < functions.size(); index++) {
+                var function = functions.get(index);
+                function.initializeFields();
+                function.setLocation(locations.get(index));
+                definition.addFunction(function.getLocation(), function);
+            }
+            var rotated = new RotatedRoom(definition, 90);
+            var first =
+                    new InstanceRoom(
+                            rotated, new SimpleLocation(100, 70, 200), new SimpleLocation(0, 0, 0));
+            b.add(first);
+            var second =
+                    new InstanceRoom(
+                            rotated, new SimpleLocation(200, 70, 200), new SimpleLocation(0, 0, 0));
+            b.add(second);
+            var left =
+                    assertInstanceOf(
+                            nl.hauntedmc.dungeons.content.function.TeleportFunction.class,
+                            b.run.getFunctions().get(new Location(f.world, 103, 71, 206)));
+            var right =
+                    assertInstanceOf(
+                            nl.hauntedmc.dungeons.content.function.TeleportFunction.class,
+                            b.run.getFunctions().get(new Location(f.world, 203, 71, 206)));
+            assertEquals(new Location(f.world, 105, 71, 204, 0, 15), left.getInstanceLoc());
+            assertEquals(new Location(f.world, 205, 71, 204, 0, 15), right.getInstanceLoc());
+            var placedCheckpoint =
+                    assertInstanceOf(
+                            nl.hauntedmc.dungeons.content.function.CheckpointFunction.class,
+                            b.run.getFunctions().get(new Location(f.world, 102, 71, 207)));
+            var placedSpawner =
+                    assertInstanceOf(
+                            nl.hauntedmc.dungeons.content.function.SpawnMobFunction.class,
+                            b.run.getFunctions().get(new Location(f.world, 101, 71, 205)));
+            assertEquals(10, placedCheckpoint.getYaw());
+            assertEquals(-45, placedSpawner.getYaw());
+            left.getInstanceLoc().setX(999);
+            assertEquals(205, right.getInstanceLoc().getX());
+            assertEquals(new Location(null, 4, 1, 5, 90, 15), teleport.getTeleportTarget());
+            assertEquals(locations.getFirst(), teleport.getLocation());
+            assertEquals(100, checkpoint.getYaw());
+            assertEquals(45, spawner.getYaw());
+        }
+    }
 }
