@@ -46,6 +46,30 @@ class AccessKeyReservationContractTest {
         }
     }
 
+    @Test
+    void successfulConsumptionCannotLaterRefundTheKeyAndWrongDungeonCannotConsumeIt() {
+        try (var paper = new PaperBoundary()) {
+            when(paper.plugin.getDataFolder()).thenReturn(directory.toFile());
+            var player = mock(Player.class);
+            when(player.getUniqueId()).thenReturn(UUID.randomUUID());
+            var inventory = mock(PlayerInventory.class);
+            when(player.getInventory()).thenReturn(inventory);
+            var key = item();
+            var reserved = item();
+            when(key.clone()).thenReturn(reserved);
+            var session = new DungeonPlayerSession(paper.plugin, player);
+            assertTrue(session.reserveAccessKey("crypt", key));
+            assertFalse(session.completeReservedAccessKey("other", null));
+            assertTrue(session.hasReservedAccessKey("crypt"));
+            assertTrue(session.completeReservedAccessKey("crypt", null));
+            assertFalse(session.completeReservedAccessKey("crypt", null));
+            assertFalse(session.refundReservedAccessKey());
+            when(player.isOnline()).thenReturn(true);
+            session.flushPendingAccessKeyRefund();
+            verifyNoInteractions(inventory);
+        }
+    }
+
     ItemStack item() {
         var item = mock(ItemStack.class);
         // Material registry behavior belongs to Paper; only its non-air result matters here.
