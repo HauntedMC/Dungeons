@@ -44,4 +44,22 @@ class TeamTransitionsContractTest {
             service.handleAcceptInvite(outsider.player); assertNull(service.getTeam(outsider.player.getUniqueId()));
         }
     }
+    @Test
+    void idleExpiryClearsInvitationsAndCannotExpireAReplacementOrStartedTeam() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            var service=service(f); f.paper.config.set("team.unstarted_expiry_seconds",1);
+            var leader=player(f); var member=player(f);
+            service.handleCreateTeam(leader.player); var original=service.getTeam(leader.player.getUniqueId());
+            var expiry=f.scheduler.jobs.getFirst(); assertEquals(20,expiry.delay);
+            service.handleInvite(leader.player,member.player); expiry.run();
+            assertNull(service.getTeamById(original.getTeamId()));
+            assertNull(service.getTeam(leader.player.getUniqueId()));
+            service.handleAcceptInvite(member.player); assertNull(service.getTeam(member.player.getUniqueId()));
+            service.handleCreateTeam(leader.player); var replacement=service.getTeam(leader.player.getUniqueId());
+            service.markStarted(replacement.getTeamId(),f.run);
+            assertTrue(f.scheduler.jobs.getLast().cancelled);
+            expiry.run(); assertSame(replacement,service.getTeam(leader.player.getUniqueId()));
+        }
+    }
+
 }
