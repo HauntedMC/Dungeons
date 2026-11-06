@@ -109,4 +109,35 @@ class PlayerStateContractTest {
             assertEquals(8, state.contents[0].getAmount());
         }
     }
+
+    @Test
+    void restoringVitalStatsPreservesFoodAndClampsSavedHealthToTheCurrentMaximum() {
+        try (var paper = new PaperBoundary();
+                var health =
+                        org.mockito.Mockito.mockStatic(
+                                nl.hauntedmc.dungeons.util.entity.EntityUtils.class)) {
+            when(paper.plugin.getDataFolder()).thenReturn(directory.toFile());
+            when(paper.plugin.isEnabled()).thenReturn(true);
+            var state = new PlayerState();
+            var session = new DungeonPlayerSession(paper.plugin, state.player);
+            session.saveInventory();
+            state.health = 1;
+            state.food = 0;
+            health.when(
+                            () ->
+                                    nl.hauntedmc.dungeons.util.entity.EntityUtils.getMaxHealth(
+                                            state.player))
+                    .thenReturn(10.0);
+            session.restoreInventory();
+            assertEquals(10, state.health);
+            assertEquals(9, state.food);
+            health.when(
+                            () ->
+                                    nl.hauntedmc.dungeons.util.entity.EntityUtils.getMaxHealth(
+                                            state.player))
+                    .thenReturn(20.0);
+            session.restoreInventory();
+            assertEquals(13, state.health);
+        }
+    }
 }
