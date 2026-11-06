@@ -44,4 +44,14 @@ class ConditionExecutionContractTest {
         }
     }
 
+    @Test
+    void chanceEndpointsAndOutOfRangeValuesHaveDeterministicOutcomes() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            for(double chance:List.of(-2.0,0.0,1.0,2.0)) {
+                var condition=bind(new ChanceCondition(Map.of("chance",chance)),f);
+                for(int i=0;i<10;i++) assertEquals(chance>=1,condition.check(null));
+            }
+        }
+    }
+
 }
