@@ -136,17 +136,12 @@ public class LivesFunction extends DungeonFunction {
                      */
                     @Override
                     public void onSelect(Player player) {
-                        switch (LivesFunction.this.mode) {
-                            case 0:
-                            case 1:
-                                LangUtils.sendMessage(player, "editor.function.lives.ask-set");
-                                break;
-                            case 2:
-                                LangUtils.sendMessage(player, "editor.function.lives.ask-multiply");
-                            default:
-                                LangUtils.sendMessage(player, "editor.function.lives.ask-gain");
-                                break;
-                        }
+                        String prompt = switch (MathType.intToMode(LivesFunction.this.mode)) {
+                            case ADD -> "editor.function.lives.ask-gain";
+                            case SET -> "editor.function.lives.ask-set";
+                            case MULTIPLY -> "editor.function.lives.ask-multiply";
+                        };
+                        LangUtils.sendMessage(player, prompt);
                     }
 
                     /**
