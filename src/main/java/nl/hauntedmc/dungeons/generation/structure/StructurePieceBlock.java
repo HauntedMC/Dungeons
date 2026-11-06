@@ -1,9 +1,7 @@
 package nl.hauntedmc.dungeons.generation.structure;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
 import nl.hauntedmc.dungeons.util.world.BlockNbtUtils;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -14,6 +12,10 @@ import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3i;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * Captured block state within a structure piece.
@@ -88,23 +90,21 @@ public class StructurePieceBlock implements Cloneable {
     public boolean equals(Object obj) {
         if (this == obj) {
             return true;
-        } else if (obj == null) {
-            return false;
-        } else if (this.getClass() != obj.getClass()) {
-            return false;
-        } else {
-            StructurePieceBlock compare = (StructurePieceBlock) obj;
-            if (this.x != compare.x) {
-                return false;
-            } else if (this.y != compare.y) {
-                return false;
-            } else if (this.z != compare.z) {
-                return false;
-            } else {
-                return this.blockData.equals(compare.blockData)
-                        && Objects.equals(this.blockNbt, compare.blockNbt);
-            }
         }
+        if (obj == null || this.getClass() != obj.getClass()) {
+            return false;
+        }
+        StructurePieceBlock other = (StructurePieceBlock) obj;
+        return this.x == other.x
+                && this.y == other.y
+                && this.z == other.z
+                && this.blockData.equals(other.blockData)
+                && Objects.equals(this.blockNbt, other.blockNbt);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.x, this.y, this.z, this.blockData, this.blockNbt);
     }
 
     @Override
