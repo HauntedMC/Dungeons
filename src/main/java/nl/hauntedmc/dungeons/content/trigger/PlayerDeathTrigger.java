@@ -35,7 +35,7 @@ import java.util.UUID;
 public class PlayerDeathTrigger extends DungeonTrigger {
     @PersistedField private int deathsRequired = 1;
     @PersistedField private boolean oneDeathPerPlayer = false;
-    private final List<UUID> playerDeaths;
+    private List<UUID> playerDeaths;
     private transient boolean invalidDeathRequirementLogged;
 
     /**
@@ -229,4 +229,13 @@ public class PlayerDeathTrigger extends DungeonTrigger {
                 });
         this.addRoomLimitToggleButton();
     }
+    @Override
+    public PlayerDeathTrigger clone() {
+        PlayerDeathTrigger clone = (PlayerDeathTrigger) super.clone();
+        if (clone != null) {
+            clone.playerDeaths = new ArrayList<>();
+        }
+        return clone;
+    }
+
 }

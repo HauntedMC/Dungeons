@@ -2,6 +2,7 @@ package nl.hauntedmc.dungeons.content.trigger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.any;
@@ -324,4 +325,21 @@ class TriggerExecutionContractTest {
             verify(event).setCancelled(true);
         }
     }
+    @Test
+    void clonedDeathCountersDoNotShareProgressWithEachOtherOrTheirTemplate() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration());var menus=new HeadlessMenus()) {
+            var first=new PlayerState(); source(f,first); var second=new PlayerState(); source(f,second);
+            var template=bind(new PlayerDeathTrigger(Map.of("deathsRequired",2,"oneDeathPerPlayer",true)),f);
+            var left=(PlayerDeathTrigger)template.clone(); var right=(PlayerDeathTrigger)template.clone();
+            assertNotNull(left); assertNotNull(right);
+            var event=mock(PlayerDeathEvent.class); when(event.getEntity()).thenReturn(first.player); left.onPlayerDeath(event);
+            when(event.getEntity()).thenReturn(second.player); right.onPlayerDeath(event);
+            assertTrue(f.scheduler.immediate.isEmpty());
+            left.onPlayerDeath(event); assertEquals(1,f.scheduler.immediate.size());
+            when(event.getEntity()).thenReturn(first.player); right.onPlayerDeath(event);
+            assertEquals(2,f.scheduler.immediate.size());
+            template.onPlayerDeath(event); assertEquals(2,f.scheduler.immediate.size());
+        }
+    }
+
 }
