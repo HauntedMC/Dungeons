@@ -329,6 +329,24 @@ class EditorPersistenceContractTest {
         }
     }
 
+    @Test
+    void rejectedMainThreadSaveSchedulingCompletesTheFutureAndReleasesItsWaiter() throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var editor = new Editor(f);
+            when(f.paper.plugin.isEnabled()).thenReturn(true);
+            f.paper.bukkit.when(Bukkit::isPrimaryThread).thenReturn(false);
+            doThrow(new IllegalStateException("scheduler stopped"))
+                    .when(f.scheduler.scheduler)
+                    .runTask(any(org.bukkit.plugin.Plugin.class), any(Runnable.class));
+            var latch = new CountDownLatch(1);
+            var result = assertDoesNotThrow(() -> editor.saveWorldAsync(latch));
+            assertFalse(result.get(1, TimeUnit.SECONDS));
+            assertEquals(0, latch.getCount());
+            assertFalse(f.dungeon.isSaving());
+            verify(f.world, never()).save(true);
+        }
+    }
+
     static class Editor extends EditableInstance {
         CompletableFuture<Boolean> pending;
         boolean throwCommit;

@@ -318,7 +318,19 @@ public class EditableInstance extends DungeonInstance {
                 };
 
         if (this.plugin().isEnabled() && !Bukkit.isPrimaryThread()) {
-            Bukkit.getScheduler().runTask(this.plugin(), saveTask);
+            try {
+                Bukkit.getScheduler().runTask(this.plugin(), saveTask);
+            } catch (RuntimeException exception) {
+                if (latch != null) {
+                    latch.countDown();
+                }
+                result.complete(false);
+                this.logger()
+                        .error(
+                                "Failed to schedule editor save for dungeon '{}'.",
+                                this.dungeon.getWorldName(),
+                                exception);
+            }
         } else {
             saveTask.run();
         }
