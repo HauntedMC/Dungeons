@@ -33,4 +33,22 @@ class AdmissionContractTest {
             assertFalse(dungeon.canAcceptStartNow(1, "", 0, 0));
         }
     }
+    @Test
+    void activeRunRegistrationIsIdempotentAndSnapshotsCannotChangeCapacity() throws Exception {
+        try (var paper = new PaperBoundary()) {
+            paper.config.set("instances.max_active", 1);
+            var dungeon = paper.dungeon(directory.resolve("crypt"), new YamlConfiguration());
+            var registry = new ActiveInstanceRegistry(paper.plugin);
+            var run = new StaticInstance(dungeon, null);
+            registry.registerActiveInstance(run);
+            registry.registerActiveInstance(run);
+            assertEquals(1, registry.getRegisteredInstanceCount());
+            registry.getActiveInstances().clear();
+            assertFalse(registry.canStartDungeonNow(dungeon));
+            registry.unregisterActiveInstance(run);
+            registry.unregisterActiveInstance(run);
+            assertEquals(0, registry.getRegisteredInstanceCount());
+            assertTrue(registry.canStartDungeonNow(dungeon));
+        }
+    }
 }
