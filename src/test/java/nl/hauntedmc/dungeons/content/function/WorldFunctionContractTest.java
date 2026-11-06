@@ -8,9 +8,11 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -253,6 +255,65 @@ class WorldFunctionContractTest {
             assertTrue(f.scheduler.jobs.getFirst().cancelled);
             assertTrue(f.scheduler.jobs.get(1).cancelled);
             assertEquals(new Location(f.world, 0, 70, 0), source.getLocation());
+        }
+    }
+
+    @Test
+    void blockEditingAppliesDirectionalStateAndRemovesOnlyTheConfiguredMaterial() throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration());
+                var materials = mockStatic(Material.class)) {
+            var material = mock(Material.class);
+            when(material.isBlock()).thenReturn(true);
+            materials.when(() -> Material.valueOf("TEST_BLOCK")).thenReturn(material);
+            materials
+                    .when(() -> Material.valueOf("MISSING"))
+                    .thenThrow(new IllegalArgumentException("unknown material"));
+            var block = mock(org.bukkit.block.Block.class);
+            var state = mock(org.bukkit.block.BlockState.class);
+            when(f.world.getBlockAt(any(Location.class))).thenReturn(block);
+            when(block.getState()).thenReturn(state);
+            var directional = mock(org.bukkit.block.data.Directional.class);
+            var rotatable = mock(org.bukkit.block.data.Rotatable.class);
+            var orientable = mock(org.bukkit.block.data.Orientable.class);
+            var data = List.<org.bukkit.block.data.BlockData>of(directional, rotatable, orientable);
+            for (int index = 0; index < data.size(); index++) {
+                clearInvocations(block, state);
+                when(block.getBlockData()).thenReturn(data.get(index));
+                var function =
+                        new BlockEditorFunction(
+                                Map.of(
+                                        "blockType",
+                                        "TEST_BLOCK",
+                                        "direction",
+                                        List.of("SOUTH", "WEST", "X").get(index)));
+                function.initializeFields();
+                function.setInstance(f.run);
+                function.setLocation(new Location(f.world, 0, 70, 0));
+                function.runFunction(null, List.of());
+                verify(block).setType(material);
+                verify(state).setBlockData(data.get(index));
+                verify(state).update(true);
+            }
+            verify(directional).setFacing(org.bukkit.block.BlockFace.SOUTH);
+            verify(rotatable).setRotation(org.bukkit.block.BlockFace.WEST);
+            verify(orientable).setAxis(org.bukkit.Axis.X);
+            clearInvocations(block, state);
+            var invalid = new BlockEditorFunction(Map.of("blockType", "missing"));
+            invalid.initializeFields();
+            invalid.setInstance(f.run);
+            invalid.setLocation(new Location(f.world, 0, 70, 0));
+            invalid.runFunction(null, List.of());
+            verify(block, never()).setType(any(Material.class));
+            var remove = new BlockEditorFunction(Map.of("blockType", "TEST_BLOCK", "remove", true));
+            remove.initializeFields();
+            remove.setInstance(f.run);
+            remove.setLocation(new Location(f.world, 0, 70, 0));
+            when(block.getType()).thenReturn(Material.AIR);
+            remove.runFunction(null, List.of());
+            verify(block, never()).setType(any(Material.class));
+            when(block.getType()).thenReturn(material);
+            remove.runFunction(null, List.of());
+            verify(block).setType(Material.AIR);
         }
     }
 }
