@@ -1,15 +1,5 @@
 package nl.hauntedmc.dungeons.model.instance;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
 import nl.hauntedmc.dungeons.content.function.reward.RewardFunction;
 import nl.hauntedmc.dungeons.event.DungeonDisposeEvent;
 import nl.hauntedmc.dungeons.event.DungeonEndEvent;
@@ -28,9 +18,10 @@ import nl.hauntedmc.dungeons.util.config.DungeonConfigView;
 import nl.hauntedmc.dungeons.util.entity.EntityUtils;
 import nl.hauntedmc.dungeons.util.entity.HologramManager;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
-import nl.hauntedmc.dungeons.util.text.TextUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+import nl.hauntedmc.dungeons.util.text.TextUtils;
 import nl.hauntedmc.dungeons.util.world.WorldUtils;
+
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.GameRules;
@@ -51,6 +42,17 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * Base runtime representation of a concrete dungeon world copy.
@@ -265,9 +267,16 @@ public abstract class DungeonInstance {
             if (Bukkit.unloadWorld(this.instanceWorld, false)) {
                 return true;
             }
-            this.logger().error("Retaining files for instance world '{}' because Bukkit refused to unload it.", this.instanceWorld.getName());
+            this.logger()
+                    .error(
+                            "Retaining files for instance world '{}' because Bukkit refused to unload it.",
+                            this.instanceWorld.getName());
         } catch (Exception exception) {
-            this.logger().error("Retaining files for instance world '{}' because world unload failed.", this.instanceWorld.getName(), exception);
+            this.logger()
+                    .error(
+                            "Retaining files for instance world '{}' because world unload failed.",
+                            this.instanceWorld.getName(),
+                            exception);
         }
         return false;
     }

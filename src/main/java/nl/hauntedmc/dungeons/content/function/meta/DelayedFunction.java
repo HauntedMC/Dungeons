@@ -1,10 +1,5 @@
 package nl.hauntedmc.dungeons.content.function.meta;
 
-import java.util.List;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.Map;
-import java.util.Optional;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
@@ -16,11 +11,18 @@ import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerEvent;
 import org.bukkit.scheduler.BukkitRunnable;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * Composite function that runs its child functions after a configured delay.
@@ -122,7 +124,9 @@ public class DelayedFunction extends CompositeFunction {
                         public void run() {
                             try {
                                 DelayedFunction.this.executeNestedFunction(
-                                        DelayedFunction.this.function, triggerEvent, functionTargets);
+                                        DelayedFunction.this.function,
+                                        triggerEvent,
+                                        functionTargets);
                             } finally {
                                 DelayedFunction.this.tasks.remove(this);
                             }

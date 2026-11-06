@@ -211,7 +211,9 @@ public abstract class DungeonDefinition {
                     playerUUID = UUID.fromString(FilenameUtils.getBaseName(playerFile.getName()));
                 } catch (IllegalArgumentException exception) {
                     this.logger()
-                            .warn("Ignoring player data with an invalid UUID filename '{}'.", playerFile);
+                            .warn(
+                                    "Ignoring player data with an invalid UUID filename '{}'.",
+                                    playerFile);
                     continue;
                 }
 

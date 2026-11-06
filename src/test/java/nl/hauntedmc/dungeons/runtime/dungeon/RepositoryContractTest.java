@@ -1,32 +1,49 @@
 package nl.hauntedmc.dungeons.runtime.dungeon;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Map;
 import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.registry.DungeonTypeRegistry;
 import nl.hauntedmc.dungeons.support.CapturedScheduler;
 import nl.hauntedmc.dungeons.support.PaperBoundary;
+
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Map;
+import java.util.UUID;
 
 class RepositoryContractTest {
     @TempDir Path directory;
 
     @Test
-    void discoveryLoadsHealthyNeighborsWithoutOverwritingMalformedOrUnknownDungeonConfigs() throws Exception {
+    void discoveryLoadsHealthyNeighborsWithoutOverwritingMalformedOrUnknownDungeonConfigs()
+            throws Exception {
         try (var fixture = new Fixture(directory)) {
             Path healthy = Files.createDirectory(directory.resolve("healthy"));
             Files.writeString(healthy.resolve("config.yml"), "dungeon:\n  type: static\n");
             Path broken = Files.createDirectory(directory.resolve("broken")).resolve("config.yml");
             Files.writeString(broken, "dungeon: [unfinished");
-            Path unknown = Files.createDirectory(directory.resolve("unknown")).resolve("config.yml");
+            Path unknown =
+                    Files.createDirectory(directory.resolve("unknown")).resolve("config.yml");
             Files.writeString(unknown, "dungeon:\n  type: nonexistent\n");
             Files.writeString(directory.resolve("notes.txt"), "not a dungeon");
             fixture.scheduler.jobs.getFirst().run();
@@ -42,9 +59,9 @@ class RepositoryContractTest {
     void savesBlockLaunchesAndEditsUntilCompleteAndLaunchArgumentsReachTheDungeonUnchanged() {
         try (var fixture = new Fixture(directory)) {
             var dungeon = mock(DungeonDefinition.class);
-            var player = mock(org.bukkit.entity.Player.class);
-            var playerId = java.util.UUID.randomUUID();
-            var leaderId = java.util.UUID.randomUUID();
+            var player = mock(Player.class);
+            var playerId = UUID.randomUUID();
+            var leaderId = UUID.randomUUID();
             when(player.isOnline()).thenReturn(true);
             fixture.paper.bukkit.when(() -> Bukkit.getPlayer(playerId)).thenReturn(player);
             when(dungeon.getWorldName()).thenReturn("crypt");
@@ -66,13 +83,14 @@ class RepositoryContractTest {
     }
 
     @Test
-    void unrelatedOrMalformedPlayerFilesCannotPreventLoadingValidDungeonAndPlayerData() throws Exception {
+    void unrelatedOrMalformedPlayerFilesCannotPreventLoadingValidDungeonAndPlayerData()
+            throws Exception {
         try (var fixture = new Fixture(directory)) {
             Path folder = Files.createDirectory(directory.resolve("healthy"));
             Files.writeString(folder.resolve("config.yml"), "dungeon:\n  type: static\n");
             Path players = Files.createDirectory(folder.resolve("players"));
-            var validId = java.util.UUID.fromString("00000000-0000-0000-0000-000000000001");
-            var brokenId = java.util.UUID.fromString("00000000-0000-0000-0000-000000000002");
+            var validId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+            var brokenId = UUID.fromString("00000000-0000-0000-0000-000000000002");
             Files.writeString(players.resolve(validId + ".yml"), "AccessCooldown: 123456789\n");
             Files.writeString(players.resolve("notes.yml"), "operator: notes\n");
             Files.writeString(players.resolve(brokenId + ".yml"), "RewardsInfo: [unfinished");
@@ -82,24 +100,28 @@ class RepositoryContractTest {
             assertEquals(123456789L, dungeon.getPlayerData(validId).getLong("AccessCooldown"));
             assertNull(dungeon.getPlayerData(brokenId));
             assertEquals("operator: notes\n", Files.readString(players.resolve("notes.yml")));
-            assertEquals("RewardsInfo: [unfinished", Files.readString(players.resolve(brokenId + ".yml")));
+            assertEquals(
+                    "RewardsInfo: [unfinished",
+                    Files.readString(players.resolve(brokenId + ".yml")));
         }
     }
 
     @Test
-    void wrongRewardRecordTypeCannotDiscardOtherPlayerStateOrPreventDungeonLoading() throws Exception {
+    void wrongRewardRecordTypeCannotDiscardOtherPlayerStateOrPreventDungeonLoading()
+            throws Exception {
         try (var fixture = new Fixture(directory)) {
             Path folder = Files.createDirectory(directory.resolve("healthy"));
             Files.writeString(folder.resolve("config.yml"), "dungeon:\n  type: static\n");
             Path players = Files.createDirectory(folder.resolve("players"));
-            var playerId = java.util.UUID.randomUUID();
-            String saved = "RewardsInfo: invalid-legacy-record\nFinished: true\nAccessCooldown: 123456789\n";
+            var playerId = UUID.randomUUID();
+            String saved =
+                    "RewardsInfo: invalid-legacy-record\nFinished: true\nAccessCooldown: 123456789\n";
             Path data = players.resolve(playerId + ".yml");
             Files.writeString(data, saved);
             fixture.scheduler.jobs.getFirst().run();
             var dungeon = fixture.repository.get("healthy");
             assertNotNull(dungeon);
-            var player = mock(org.bukkit.entity.Player.class);
+            var player = mock(Player.class);
             when(player.getUniqueId()).thenReturn(playerId);
             assertTrue(dungeon.hasPlayerCompletedDungeon(player));
             assertEquals(123456789L, dungeon.getPlayerData(playerId).getLong("AccessCooldown"));
@@ -111,20 +133,28 @@ class RepositoryContractTest {
     static final class Fixture implements AutoCloseable {
         final PaperBoundary paper = new PaperBoundary();
         final CapturedScheduler scheduler = new CapturedScheduler(paper);
-        final Map<String, Class<? extends DungeonDefinition>> originalTypes = DungeonTypeRegistry.getDungeonTypes();
+        final Map<String, Class<? extends DungeonDefinition>> originalTypes =
+                DungeonTypeRegistry.getDungeonTypes();
         final DungeonRepository repository;
+
         Fixture(Path directory) {
             paper.runtime.setDungeonFiles(directory.toFile());
             paper.runtime.setDefaultDungeonConfig(new YamlConfiguration());
             paper.bukkit.when(Bukkit::getWorldContainer).thenReturn(directory.toFile());
             paper.bukkit.when(Bukkit::isPrimaryThread).thenReturn(true);
             when(paper.plugin.getResource("dungeons/config_default.yml"))
-                    .thenAnswer(call -> getClass().getClassLoader().getResourceAsStream("dungeons/config_default.yml"));
+                    .thenAnswer(
+                            call ->
+                                    getClass()
+                                            .getClassLoader()
+                                            .getResourceAsStream("dungeons/config_default.yml"));
             DungeonTypeRegistry.register(StaticDungeon.class, "static");
             repository = new DungeonRepository(paper.runtime);
             paper.runtime.setDungeonCatalog(repository);
         }
-        @Override public void close() {
+
+        @Override
+        public void close() {
             DungeonTypeRegistry.clear();
             originalTypes.forEach((name, type) -> DungeonTypeRegistry.register(type, name));
             paper.close();

@@ -1,17 +1,31 @@
 package nl.hauntedmc.dungeons.content.function.meta;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyList;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import nl.hauntedmc.dungeons.event.TriggerFireEvent;
+import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
+import nl.hauntedmc.dungeons.model.element.DungeonFunction;
+import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
+import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
+import nl.hauntedmc.dungeons.support.CapturedScheduler;
+import nl.hauntedmc.dungeons.support.PaperBoundary;
+
+import org.bukkit.Location;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import nl.hauntedmc.dungeons.event.TriggerFireEvent;
-import nl.hauntedmc.dungeons.model.element.DungeonFunction;
-import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.support.CapturedScheduler;
-import nl.hauntedmc.dungeons.support.PaperBoundary;
-import org.junit.jupiter.api.Test;
 
 class ScheduledFunctionContractTest {
     @Test
@@ -33,6 +47,7 @@ class ScheduledFunctionContractTest {
             verify(child).runFunction(eq(event), eq(List.of(player)));
         }
     }
+
     @Test
     void disablingARetriggeredDelayCancelsEveryPendingActivation() {
         try (var paper = new PaperBoundary()) {
@@ -50,35 +65,43 @@ class ScheduledFunctionContractTest {
             verify(child).disable();
         }
     }
+
     @Test
     void repeatersUseAFiniteCountAndPreserveTargetsEvenWhenAChildMutatesItsArguments() {
         try (var paper = new PaperBoundary()) {
             var scheduler = new CapturedScheduler(paper);
             var child = mock(DungeonFunction.class);
             List<List<DungeonPlayerSession>> effects = new ArrayList<>();
-            doAnswer(call -> {
-                List<DungeonPlayerSession> targets = call.getArgument(1);
-                effects.add(new ArrayList<>(targets));
-                targets.clear();
-                return null;
-            }).when(child).runFunction(any(), anyList());
+            doAnswer(
+                            call -> {
+                                List<DungeonPlayerSession> targets = call.getArgument(1);
+                                effects.add(new ArrayList<>(targets));
+                                targets.clear();
+                                return null;
+                            })
+                    .when(child)
+                    .runFunction(any(), anyList());
             var repeat = new RepeaterFunction(Map.of("maxRepeats", 2, "interval", 0));
             repeat.initializeFields();
             repeat.addFunction(child);
-            var run = mock(nl.hauntedmc.dungeons.model.instance.PlayableInstance.class);
-            var dungeon = mock(nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition.class);
+            var run = mock(PlayableInstance.class);
+            var dungeon = mock(DungeonDefinition.class);
             when(run.getDungeon()).thenReturn(dungeon);
             repeat.setInstance(run);
-            repeat.setLocation(new org.bukkit.Location(null, 0, 64, 0));
+            repeat.setLocation(new Location(null, 0, 64, 0));
             var player = mock(DungeonPlayerSession.class);
             repeat.runFunction(mock(TriggerFireEvent.class), List.of(player));
             var work = scheduler.jobs.getFirst();
             assertEquals(1, work.period);
-            work.run(); work.run(); work.run(); work.run();
+            work.run();
+            work.run();
+            work.run();
+            work.run();
             assertEquals(List.of(List.of(player), List.of(player)), effects);
             assertTrue(work.cancelled);
         }
     }
+
     @Test
     void overlappingRepeatsHaveIndependentCountsAndDisableCancelsAllRemainingWork() {
         try (var paper = new PaperBoundary()) {

@@ -1,11 +1,5 @@
 package nl.hauntedmc.dungeons.content.function.meta;
 
-import java.util.List;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.Optional;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
@@ -17,11 +11,19 @@ import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerEvent;
 import org.bukkit.scheduler.BukkitRunnable;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * Composite function that re-runs its child functions a configured number of times.
@@ -141,21 +143,25 @@ public class RepeaterFunction extends CompositeFunction {
         final List<DungeonPlayerSession> functionTargets =
                 this.resolveNestedFunctionTargets(this.function, triggerEvent, targets);
 
-        BukkitRunnable repeater = new BukkitRunnable() {
-            private int repeatCount;
+        BukkitRunnable repeater =
+                new BukkitRunnable() {
+                    private int repeatCount;
 
-            @Override
-            public void run() {
-                if (RepeaterFunction.this.maxRepeats > 0 && this.repeatCount >= RepeaterFunction.this.maxRepeats) {
-                    this.cancel();
-                    RepeaterFunction.this.repeaters.remove(this);
-                    return;
-                }
-                RepeaterFunction.this.executeNestedFunction(
-                        RepeaterFunction.this.function, triggerEvent, new ArrayList<>(functionTargets));
-                this.repeatCount++;
-            }
-        };
+                    @Override
+                    public void run() {
+                        if (RepeaterFunction.this.maxRepeats > 0
+                                && this.repeatCount >= RepeaterFunction.this.maxRepeats) {
+                            this.cancel();
+                            RepeaterFunction.this.repeaters.remove(this);
+                            return;
+                        }
+                        RepeaterFunction.this.executeNestedFunction(
+                                RepeaterFunction.this.function,
+                                triggerEvent,
+                                new ArrayList<>(functionTargets));
+                        this.repeatCount++;
+                    }
+                };
         this.repeaters.add(repeater);
         try {
             repeater.runTaskTimer(RuntimeContext.plugin(), this.delay, effectiveInterval);
@@ -164,7 +170,6 @@ public class RepeaterFunction extends CompositeFunction {
             throw exception;
         }
     }
-
 
     /**
      * Builds menu button.

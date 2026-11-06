@@ -1,9 +1,11 @@
 package nl.hauntedmc.dungeons.util.command;
 
-import java.util.Optional;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+
+import java.util.Optional;
 
 /** Typed command-input parsing helpers with localized validation errors. */
 public final class InputUtils {
