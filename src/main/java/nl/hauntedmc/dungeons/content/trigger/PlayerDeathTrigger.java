@@ -63,6 +63,9 @@ public class PlayerDeathTrigger extends DungeonTrigger {
      */
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
+        if (event.isCancelled()) {
+            return;
+        }
         Player player = event.getEntity();
         World world = player.getWorld();
         if (world == this.instance.getInstanceWorld()) {

@@ -123,4 +123,23 @@ class TriggerExecutionContractTest {
         }
     }
 
+    @Test
+    void deathTriggersIgnoreCancelledDeathsAndCountDistinctPlayersBeforeResetting() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            var first=new PlayerState(); source(f,first);
+            var second=new PlayerState(); source(f,second);
+            var trigger=bind(new PlayerDeathTrigger(Map.of("deathsRequired",2,"oneDeathPerPlayer",true)),f);
+            var event=mock(PlayerDeathEvent.class); when(event.getEntity()).thenReturn(first.player);
+            when(event.isCancelled()).thenReturn(true); trigger.onPlayerDeath(event);
+            when(event.isCancelled()).thenReturn(false); when(event.getEntity()).thenReturn(second.player);
+            trigger.onPlayerDeath(event); assertTrue(f.scheduler.immediate.isEmpty());
+            trigger.onPlayerDeath(event); assertTrue(f.scheduler.immediate.isEmpty());
+            when(event.getEntity()).thenReturn(first.player); trigger.onPlayerDeath(event);
+            assertEquals(1,f.scheduler.immediate.size());
+            trigger.onPlayerDeath(event); assertEquals(1,f.scheduler.immediate.size());
+            when(event.getEntity()).thenReturn(second.player); trigger.onPlayerDeath(event);
+            assertEquals(2,f.scheduler.immediate.size());
+        }
+    }
+
 }
