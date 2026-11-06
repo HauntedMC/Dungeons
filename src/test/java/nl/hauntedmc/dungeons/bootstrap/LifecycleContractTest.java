@@ -83,6 +83,7 @@ class LifecycleContractTest {
             order.verify(catalog).reloadAll();
         }
     }
+
     @Test
     void shutdownRestoresAndDetachesOnlinePlayersBeforeDisposingTheirWorlds() {
         try (var paper = new PaperBoundary()) {
@@ -112,5 +113,4 @@ class LifecycleContractTest {
             order.verify(run).dispose();
         }
     }
-
 }

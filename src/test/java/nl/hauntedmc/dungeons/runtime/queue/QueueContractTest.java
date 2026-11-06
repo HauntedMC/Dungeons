@@ -3,9 +3,11 @@ package nl.hauntedmc.dungeons.runtime.queue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -90,6 +92,35 @@ class QueueContractTest {
         verify(dungeon).refundReservedAccessKey(offline);
         queues.snapshotQueues().clear();
         assertEquals(3, queues.snapshotQueues().size());
+    }
+
+    @Test
+    void memberDeparturePreservesTheTeamQueueWhileLeaderDepartureRefundsAndRemovesIt() {
+        DungeonPlayerSession leader = player();
+        DungeonPlayerSession member = player();
+        DungeonPlayerSession remaining = player();
+        var queue =
+                new DungeonQueueEntry(
+                        leader,
+                        dungeon,
+                        "",
+                        List.of(
+                                member.getPlayer().getUniqueId(),
+                                remaining.getPlayer().getUniqueId()),
+                        UUID.randomUUID());
+        queues.enqueue(queue);
+        queues.removePlayer(member.getPlayer().getUniqueId());
+        assertNull(queues.getQueue(member));
+        assertSame(queue, queues.getQueue(leader));
+        assertSame(queue, queues.getQueue(remaining));
+        verify(dungeon).refundReservedAccessKey(member);
+        verify(dungeon, never()).refundReservedAccessKey(leader);
+        queues.removePlayer(leader.getPlayer().getUniqueId());
+        assertTrue(queues.snapshotQueues().isEmpty());
+        assertNull(queues.getQueue(remaining));
+        verify(dungeon).refundReservedAccessKey(leader);
+        verify(dungeon).refundReservedAccessKey(remaining);
+        verify(dungeon, times(1)).refundReservedAccessKey(member);
     }
 
     DungeonPlayerSession player() {
