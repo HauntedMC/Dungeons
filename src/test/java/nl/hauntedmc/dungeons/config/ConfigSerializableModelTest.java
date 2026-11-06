@@ -3,11 +3,13 @@ package nl.hauntedmc.dungeons.config;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
-import java.util.List;
-import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.annotation.TypeKey;
+
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
+import java.util.Map;
 
 class ConfigSerializableModelTest {
     @Test
@@ -37,6 +39,17 @@ class ConfigSerializableModelTest {
             assertEquals(7, assertInstanceOf(Child.class, roundTrip.children.getFirst()).value);
         } finally {
             ConfigSerializableModel.pluginSerializables.remove(Child.class);
+        }
+    }
+
+    @Test
+    void malformedTypeDiscriminatorsAreRejectedWithoutThrowingOrConstructingFallbackObjects() {
+        var malformed = new java.util.HashMap<String, Object>();
+        for (Object type : java.util.Arrays.asList(42, java.util.List.of("test.child"), null)) {
+            malformed.put("TYPE--", type);
+            org.junit.jupiter.api.Assertions.assertNull(
+                    org.junit.jupiter.api.Assertions.assertDoesNotThrow(
+                            () -> ConfigSerializableModel.deserialize(Child.class, malformed)));
         }
     }
 
