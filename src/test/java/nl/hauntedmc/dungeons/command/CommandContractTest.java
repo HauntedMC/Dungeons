@@ -28,6 +28,23 @@ class CommandContractTest {
             assertTrue(Files.isDirectory(f.dungeon.getFolder().toPath())); assertFalse(f.dungeon.isMarkedForDelete());
         }
     }
+
+    @Test
+    void playCommandsForwardTheCorrectPlayerAndRejectUnauthorizedBusyOrDisabledStarts() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            var command=new CommandFixture(f); command.permissions.add("dungeons.play");
+            command.execute("play","crypt"); verify(command.coordinator).sendToDungeon(command.caller.player,"crypt","");
+            clearInvocations(command.coordinator);
+            var other=new PlayerState(); var session=f.session(other); f.paper.bukkit.when(() -> Bukkit.getPlayer("Other")).thenReturn(other.player);
+            command.execute("play","crypt","Other"); verifyNoInteractions(command.coordinator);
+            command.permissions.add("dungeons.play.send"); command.execute("play","crypt:hard","Other");
+            verify(command.coordinator).sendToDungeon(other.player,"crypt","hard"); clearInvocations(command.coordinator);
+            session.setAwaitingDungeon(true); command.execute("play","crypt","Other"); verifyNoInteractions(command.coordinator);
+            session.setAwaitingDungeon(false); session.setInstance(f.run); command.execute("play","crypt","Other"); verifyNoInteractions(command.coordinator);
+            session.setInstance(null); f.dungeon.setSaveConfig("dungeon.enabled",false);
+            command.execute("play","crypt","Other"); verifyNoInteractions(command.coordinator);
+        }
+    }
     static final class CommandFixture {
         final PlayerState caller=new PlayerState();
         final Set<String> permissions=new HashSet<>(Set.of("dungeons.core"));
