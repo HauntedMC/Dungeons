@@ -178,34 +178,29 @@ public final class ItemUtils {
     public static boolean verifyKeyItem(ItemStack item) {
         if (item == null) {
             return false;
-        } else {
-            ItemMeta meta = item.getItemMeta();
-            if (meta == null) {
-                return false;
-            } else {
-                PersistentDataContainer data = meta.getPersistentDataContainer();
-                NamespacedKey verification =
-                        new NamespacedKey(RuntimeContext.plugin(), DUNGEON_KEY_TAG);
-                return data.has(verification, PersistentDataType.INTEGER);
-            }
         }
+        ItemMeta meta = item.getItemMeta();
+        if (meta == null) {
+            return false;
+        }
+        PersistentDataContainer data = meta.getPersistentDataContainer();
+        NamespacedKey verification = new NamespacedKey(RuntimeContext.plugin(), DUNGEON_KEY_TAG);
+        return data.has(verification, PersistentDataType.INTEGER);
     }
 
     /** Returns whether an item is tagged as a dungeon-runtime item. */
     public static boolean verifyDungeonItem(ItemStack item) {
         if (item == null) {
             return false;
-        } else {
-            ItemMeta meta = item.getItemMeta();
-            if (meta == null) {
-                return false;
-            } else {
-                PersistentDataContainer data = meta.getPersistentDataContainer();
-                NamespacedKey verification =
-                        new NamespacedKey(RuntimeContext.plugin(), DUNGEON_RUNTIME_ITEM_TAG);
-                return data.has(verification, PersistentDataType.INTEGER);
-            }
         }
+        ItemMeta meta = item.getItemMeta();
+        if (meta == null) {
+            return false;
+        }
+        PersistentDataContainer data = meta.getPersistentDataContainer();
+        NamespacedKey verification =
+                new NamespacedKey(RuntimeContext.plugin(), DUNGEON_RUNTIME_ITEM_TAG);
+        return data.has(verification, PersistentDataType.INTEGER);
     }
 
     /** Applies a stable plugin-owned dungeon access-key identity tag to an item. */
@@ -358,15 +353,14 @@ public final class ItemUtils {
         List<String> bannedItems = dungeon.getBannedItems();
         if (bannedItems.contains(itemStack.getType().toString())) {
             return true;
-        } else {
-            for (ItemStack item : dungeon.getCustomBannedItems()) {
-                if (item.isSimilar(itemStack)) {
-                    return true;
-                }
-            }
-
-            return false;
         }
+        for (ItemStack item : dungeon.getCustomBannedItems()) {
+            if (item.isSimilar(itemStack)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** Returns the default blocked menu filler item. */

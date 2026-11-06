@@ -143,20 +143,18 @@ public abstract class Layout implements Cloneable {
         if (weightedRooms.size() <= 0) {
             this.recordFailure(GenerationFailureReason.NO_VALID_CANDIDATE_ROOMS);
             return false;
-        } else {
-            SimpleLocation adjusted = connector.getLocation().clone();
-            adjusted.shift(1.0);
-            InstanceRoom roomInst =
-                    this.findRoom(from.getSource().getOrigin(), connector, adjusted, weightedRooms);
-            if (roomInst == null) {
-                this.recordFailure(GenerationFailureReason.NO_VALID_ORIENTATION);
-                return false;
-            } else {
-                roomInst.setDepth(from.getDepth() + 1);
-                this.queueRoom(roomInst);
-                return true;
-            }
         }
+        SimpleLocation adjusted = connector.getLocation().clone();
+        adjusted.shift(1.0);
+        InstanceRoom roomInst =
+                this.findRoom(from.getSource().getOrigin(), connector, adjusted, weightedRooms);
+        if (roomInst == null) {
+            this.recordFailure(GenerationFailureReason.NO_VALID_ORIENTATION);
+            return false;
+        }
+        roomInst.setDepth(from.getDepth() + 1);
+        this.queueRoom(roomInst);
+        return true;
     }
 
     protected boolean verifyLayout() {
@@ -344,27 +342,25 @@ public abstract class Layout implements Cloneable {
         if (!this.selectFirstRoom()) {
             this.recordFailure(GenerationFailureReason.INVALID_CONFIGURATION);
             return GenerationResult.NO_START_ROOM;
-        } else {
-            GenerationResult queueResult = this.processQueue();
-            if (!queueResult.isPassed()) {
-                return queueResult;
-            }
-
-            for (InstanceRoom room : this.roomsToAdd) {
-                this.addRoom(room);
-            }
-
-            if (!this.verifyLayout()) {
-                return GenerationResult.BAD_LAYOUT;
-            } else {
-                this.logger()
-                        .info(
-                                "Validated generated layout for dungeon '{}': {} total rooms.",
-                                this.dungeon.getWorldName(),
-                                this.totalRooms);
-                return GenerationResult.SUCCESS;
-            }
         }
+        GenerationResult queueResult = this.processQueue();
+        if (!queueResult.isPassed()) {
+            return queueResult;
+        }
+
+        for (InstanceRoom room : this.roomsToAdd) {
+            this.addRoom(room);
+        }
+
+        if (!this.verifyLayout()) {
+            return GenerationResult.BAD_LAYOUT;
+        }
+        this.logger()
+                .info(
+                        "Validated generated layout for dungeon '{}': {} total rooms.",
+                        this.dungeon.getWorldName(),
+                        this.totalRooms);
+        return GenerationResult.SUCCESS;
     }
 
     protected boolean selectFirstRoom() {
@@ -372,40 +368,36 @@ public abstract class Layout implements Cloneable {
             this.logger()
                     .error("Dungeon '{}' has no rooms configured.", this.dungeon.getWorldName());
             return false;
-        } else {
-            List<BranchingRoomDefinition> possibleRooms =
-                    new ArrayList<>(this.dungeon.getStartRooms().values());
-            if (possibleRooms.isEmpty()) {
-                possibleRooms = new ArrayList<>(this.dungeon.getUniqueRooms().values());
-            }
+        }
+        List<BranchingRoomDefinition> possibleRooms =
+                new ArrayList<>(this.dungeon.getStartRooms().values());
+        if (possibleRooms.isEmpty()) {
+            possibleRooms = new ArrayList<>(this.dungeon.getUniqueRooms().values());
+        }
 
-            if (!this.roomWhitelist.isEmpty()) {
-                possibleRooms.removeIf(
-                        roomCandidate -> !this.roomWhitelist.contains(roomCandidate));
-            }
+        if (!this.roomWhitelist.isEmpty()) {
+            possibleRooms.removeIf(roomCandidate -> !this.roomWhitelist.contains(roomCandidate));
+        }
 
-            RandomCollection<BranchingRoomDefinition> weightedRooms = new RandomCollection<>();
+        RandomCollection<BranchingRoomDefinition> weightedRooms = new RandomCollection<>();
 
-            for (BranchingRoomDefinition room : possibleRooms) {
-                if (!(room.getDepth().getMin() > 0.0)) {
-                    weightedRooms.add(
-                            room.getWeight() * (room.getOccurrences().getMin() + 1.0), room);
-                }
-            }
-
-            BranchingRoomDefinition first = weightedRooms.next();
-            if (first == null) {
-                return false;
-            } else {
-                this.addRoom(new SimpleLocation(0.0, 128.0, 0.0), first.getRandomOrientation());
-                this.logger()
-                        .info(
-                                "Selected '{}' as the first room for dungeon '{}'.",
-                                first.getNamespace(),
-                                this.dungeon.getWorldName());
-                return true;
+        for (BranchingRoomDefinition room : possibleRooms) {
+            if (!(room.getDepth().getMin() > 0.0)) {
+                weightedRooms.add(room.getWeight() * (room.getOccurrences().getMin() + 1.0), room);
             }
         }
+
+        BranchingRoomDefinition first = weightedRooms.next();
+        if (first == null) {
+            return false;
+        }
+        this.addRoom(new SimpleLocation(0.0, 128.0, 0.0), first.getRandomOrientation());
+        this.logger()
+                .info(
+                        "Selected '{}' as the first room for dungeon '{}'.",
+                        first.getNamespace(),
+                        this.dungeon.getWorldName());
+        return true;
     }
 
     protected GenerationResult processQueue() {
@@ -615,11 +607,10 @@ public abstract class Layout implements Cloneable {
     public boolean isRoomMaxedOut(BranchingRoomDefinition room) {
         if (room.getOccurrences().getMax() == 0.0) {
             return false;
-        } else {
-            int count = this.getRoomCount(room);
-            int max = (int) room.getOccurrences().getMax();
-            return count >= (max == -1 ? Integer.MAX_VALUE : max);
         }
+        int count = this.getRoomCount(room);
+        int max = (int) room.getOccurrences().getMax();
+        return count >= (max == -1 ? Integer.MAX_VALUE : max);
     }
 
     /**

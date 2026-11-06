@@ -20,15 +20,14 @@ public final class LocationUtils {
     public static Location readLocation(ConfigurationSection config) {
         if (config == null) {
             return null;
-        } else {
-            return new Location(
-                    null,
-                    config.getDouble("x"),
-                    config.getDouble("y"),
-                    config.getDouble("z"),
-                    (float) config.getDouble("yaw"),
-                    (float) config.getDouble("pitch"));
         }
+        return new Location(
+                null,
+                config.getDouble("x"),
+                config.getDouble("y"),
+                config.getDouble("z"),
+                (float) config.getDouble("yaw"),
+                (float) config.getDouble("pitch"));
     }
 
     /** Reads a location or returns a fallback default when absent. */

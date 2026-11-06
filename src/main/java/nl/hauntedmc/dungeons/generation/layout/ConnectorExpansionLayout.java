@@ -33,22 +33,21 @@ public class ConnectorExpansionLayout extends Layout {
     protected boolean tryConnectors(InstanceRoom from) {
         if (from.getAvailableConnectors().isEmpty()) {
             return false;
-        } else {
-            for (Connector connector : from.getAvailableConnectors()) {
-                if (MathUtils.getRandomBoolean(connector.getSuccessChance())) {
-                    if (this.queuedRoomCount >= this.maxRooms) {
-                        from.setEndRoom(true);
-                        return false;
-                    }
+        }
+        for (Connector connector : from.getAvailableConnectors()) {
+            if (MathUtils.getRandomBoolean(connector.getSuccessChance())) {
+                if (this.queuedRoomCount >= this.maxRooms) {
+                    from.setEndRoom(true);
+                    return false;
+                }
 
-                    if (this.tryConnector(connector, from)) {
-                        from.getUsedConnectors().add(connector);
-                    }
+                if (this.tryConnector(connector, from)) {
+                    from.getUsedConnectors().add(connector);
                 }
             }
-
-            return true;
         }
+
+        return true;
     }
 
     /**

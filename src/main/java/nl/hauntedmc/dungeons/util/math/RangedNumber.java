@@ -98,18 +98,16 @@ public class RangedNumber {
     public String toString() {
         if (this.min == this.max) {
             return String.valueOf(this.min);
-        } else {
-            return this.max == -1.0 ? this.min + "+" : this.min + "-" + this.max;
         }
+        return this.max == -1.0 ? this.min + "+" : this.min + "-" + this.max;
     }
 
     /** Returns a normalized integer-style representation of this range. */
     public String toIntString() {
         if (this.min == this.max) {
             return String.valueOf((int) this.min);
-        } else {
-            return this.max == -1.0 ? (int) this.min + "+" : (int) this.min + "-" + (int) this.max;
         }
+        return this.max == -1.0 ? (int) this.min + "+" : (int) this.min + "-" + (int) this.max;
     }
 
     /** Returns whether a numeric value is within this range. */

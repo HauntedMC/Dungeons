@@ -164,10 +164,9 @@ public abstract class DungeonInstance {
         File instFolder = new File(Bukkit.getWorldContainer(), this.instanceWorldName);
         if (!instFolder.exists()) {
             return instFolder;
-        } else {
-            this.id++;
-            return this.getUniqueWorldName();
         }
+        this.id++;
+        return this.getUniqueWorldName();
     }
 
     /**

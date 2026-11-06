@@ -1203,27 +1203,26 @@ public abstract class DungeonDefinition {
         if (!this.bannedItems.contains(item.getType().toString())
                 && !this.customBannedItems.contains(item)) {
             return false;
-        } else {
-            if (item.isSimilar(vanillaItem)) {
-                this.bannedItems.remove(item.getType().toString());
-                this.config.set("rules.items.banned_materials", this.bannedItems);
-            } else {
-                this.customBannedItems.remove(item);
-                this.config.set("rules.items.banned_items", this.customBannedItems);
-            }
-
-            try {
-                this.config.save(new File(this.folder, "config.yml"));
-            } catch (IOException exception) {
-                this.logger()
-                        .error(
-                                "Failed to save config while unbanning an item in dungeon '{}'.",
-                                this.worldName,
-                                exception);
-            }
-
-            return true;
         }
+        if (item.isSimilar(vanillaItem)) {
+            this.bannedItems.remove(item.getType().toString());
+            this.config.set("rules.items.banned_materials", this.bannedItems);
+        } else {
+            this.customBannedItems.remove(item);
+            this.config.set("rules.items.banned_items", this.customBannedItems);
+        }
+
+        try {
+            this.config.save(new File(this.folder, "config.yml"));
+        } catch (IOException exception) {
+            this.logger()
+                    .error(
+                            "Failed to save config while unbanning an item in dungeon '{}'.",
+                            this.worldName,
+                            exception);
+        }
+
+        return true;
     }
 
     public AccessKeyDefinition addAccessKey(ItemStack item, @Nullable Player addedBy) {
@@ -1594,87 +1593,82 @@ public abstract class DungeonDefinition {
     public Date getNextUnlockTime() {
         if (!this.config.getBoolean("access.cooldown.enabled", false)) {
             return new Date();
-        } else {
-            CooldownPeriod period =
-                    CooldownPeriod.valueOf(
-                            DungeonConfigView.getAccessCooldownPeriodName(this.config));
-            int cooldownTime = DungeonConfigView.getAccessCooldownValue(this.config);
-            if (period == CooldownPeriod.TIMER) {
-                return period.fromNow(cooldownTime);
-            } else {
-                Calendar cal = Calendar.getInstance();
-                if (cooldownTime > cal.get(Calendar.HOUR_OF_DAY)) {
-                    cal.set(Calendar.DATE, cal.get(Calendar.DATE) - 1);
-                }
-
-                cal.set(Calendar.HOUR_OF_DAY, cooldownTime);
-                cal.set(Calendar.MINUTE, 0);
-                cal.set(Calendar.SECOND, 0);
-                cal.set(Calendar.MILLISECOND, 0);
-                if (period == CooldownPeriod.WEEKLY) {
-                    int dayOfWeek = DungeonConfigView.getAccessCooldownResetDay(this.config);
-                    if (dayOfWeek > cal.get(Calendar.DAY_OF_WEEK)) {
-                        cal.set(Calendar.WEEK_OF_MONTH, cal.get(Calendar.WEEK_OF_MONTH) - 1);
-                    }
-
-                    cal.set(Calendar.DAY_OF_WEEK, dayOfWeek);
-                }
-
-                if (period == CooldownPeriod.MONTHLY) {
-                    int dayOfMonth = DungeonConfigView.getAccessCooldownResetDay(this.config);
-                    if (dayOfMonth > cal.get(Calendar.DAY_OF_WEEK)) {
-                        cal.set(Calendar.MONTH, cal.get(Calendar.MONTH) - 1);
-                    }
-
-                    cal.set(Calendar.DATE, dayOfMonth);
-                }
-
-                return period.fromDate(cal.getTime());
-            }
         }
+        CooldownPeriod period =
+                CooldownPeriod.valueOf(DungeonConfigView.getAccessCooldownPeriodName(this.config));
+        int cooldownTime = DungeonConfigView.getAccessCooldownValue(this.config);
+        if (period == CooldownPeriod.TIMER) {
+            return period.fromNow(cooldownTime);
+        }
+        Calendar cal = Calendar.getInstance();
+        if (cooldownTime > cal.get(Calendar.HOUR_OF_DAY)) {
+            cal.set(Calendar.DATE, cal.get(Calendar.DATE) - 1);
+        }
+
+        cal.set(Calendar.HOUR_OF_DAY, cooldownTime);
+        cal.set(Calendar.MINUTE, 0);
+        cal.set(Calendar.SECOND, 0);
+        cal.set(Calendar.MILLISECOND, 0);
+        if (period == CooldownPeriod.WEEKLY) {
+            int dayOfWeek = DungeonConfigView.getAccessCooldownResetDay(this.config);
+            if (dayOfWeek > cal.get(Calendar.DAY_OF_WEEK)) {
+                cal.set(Calendar.WEEK_OF_MONTH, cal.get(Calendar.WEEK_OF_MONTH) - 1);
+            }
+
+            cal.set(Calendar.DAY_OF_WEEK, dayOfWeek);
+        }
+
+        if (period == CooldownPeriod.MONTHLY) {
+            int dayOfMonth = DungeonConfigView.getAccessCooldownResetDay(this.config);
+            if (dayOfMonth > cal.get(Calendar.DAY_OF_WEEK)) {
+                cal.set(Calendar.MONTH, cal.get(Calendar.MONTH) - 1);
+            }
+
+            cal.set(Calendar.DATE, dayOfMonth);
+        }
+
+        return period.fromDate(cal.getTime());
     }
 
     public Date getNextLootTime() {
         if (!this.config.getBoolean("rewards.loot_cooldown.enabled", false)) {
             return new Date();
-        } else {
-            CooldownPeriod period =
-                    CooldownPeriod.valueOf(
-                            this.config.getString("rewards.loot_cooldown.period", "DAILY"));
-            int cooldownTime = this.config.getInt("rewards.loot_cooldown.value", 1);
-            if (period == CooldownPeriod.TIMER) {
-                return period.fromNow(cooldownTime);
-            } else {
-                Calendar cal = Calendar.getInstance();
-                if (cooldownTime > cal.get(Calendar.HOUR_OF_DAY)) {
-                    cal.set(Calendar.DATE, cal.get(Calendar.DATE) - 1);
-                }
-
-                cal.set(Calendar.HOUR_OF_DAY, cooldownTime);
-                cal.set(Calendar.MINUTE, 0);
-                cal.set(Calendar.SECOND, 0);
-                cal.set(Calendar.MILLISECOND, 0);
-                if (period == CooldownPeriod.WEEKLY) {
-                    int dayOfWeek = this.config.getInt("rewards.loot_cooldown.reset_day", 1);
-                    if (dayOfWeek > cal.get(Calendar.DAY_OF_WEEK)) {
-                        cal.set(Calendar.WEEK_OF_MONTH, cal.get(Calendar.WEEK_OF_MONTH) - 1);
-                    }
-
-                    cal.set(Calendar.DAY_OF_WEEK, dayOfWeek);
-                }
-
-                if (period == CooldownPeriod.MONTHLY) {
-                    int dayOfMonth = this.config.getInt("rewards.loot_cooldown.reset_day", 1);
-                    if (dayOfMonth > cal.get(Calendar.DAY_OF_WEEK)) {
-                        cal.set(Calendar.MONTH, cal.get(Calendar.MONTH) - 1);
-                    }
-
-                    cal.set(Calendar.DATE, dayOfMonth);
-                }
-
-                return period.fromDate(cal.getTime());
-            }
         }
+        CooldownPeriod period =
+                CooldownPeriod.valueOf(
+                        this.config.getString("rewards.loot_cooldown.period", "DAILY"));
+        int cooldownTime = this.config.getInt("rewards.loot_cooldown.value", 1);
+        if (period == CooldownPeriod.TIMER) {
+            return period.fromNow(cooldownTime);
+        }
+        Calendar cal = Calendar.getInstance();
+        if (cooldownTime > cal.get(Calendar.HOUR_OF_DAY)) {
+            cal.set(Calendar.DATE, cal.get(Calendar.DATE) - 1);
+        }
+
+        cal.set(Calendar.HOUR_OF_DAY, cooldownTime);
+        cal.set(Calendar.MINUTE, 0);
+        cal.set(Calendar.SECOND, 0);
+        cal.set(Calendar.MILLISECOND, 0);
+        if (period == CooldownPeriod.WEEKLY) {
+            int dayOfWeek = this.config.getInt("rewards.loot_cooldown.reset_day", 1);
+            if (dayOfWeek > cal.get(Calendar.DAY_OF_WEEK)) {
+                cal.set(Calendar.WEEK_OF_MONTH, cal.get(Calendar.WEEK_OF_MONTH) - 1);
+            }
+
+            cal.set(Calendar.DAY_OF_WEEK, dayOfWeek);
+        }
+
+        if (period == CooldownPeriod.MONTHLY) {
+            int dayOfMonth = this.config.getInt("rewards.loot_cooldown.reset_day", 1);
+            if (dayOfMonth > cal.get(Calendar.DAY_OF_WEEK)) {
+                cal.set(Calendar.MONTH, cal.get(Calendar.MONTH) - 1);
+            }
+
+            cal.set(Calendar.DATE, dayOfMonth);
+        }
+
+        return period.fromDate(cal.getTime());
     }
 
     public void setSaveConfig(String path, Object value) {

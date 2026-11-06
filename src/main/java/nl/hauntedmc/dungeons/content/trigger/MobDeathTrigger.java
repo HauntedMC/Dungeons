@@ -135,40 +135,35 @@ public class MobDeathTrigger extends DungeonTrigger {
     public boolean matchesRoom(Entity ent) {
         if (!this.limitToRoom) {
             return true;
-        } else {
-            BranchingInstance instance = this.instance.as(BranchingInstance.class);
-            if (instance == null) {
-                return false;
-            } else {
-                InstanceRoom room = instance.getRoom(this.location);
-                if (room == null) {
-                    return false;
-                } else {
-                    String uuidString =
-                            ent.getPersistentDataContainer()
-                                    .get(
-                                            new NamespacedKey(
-                                                    RuntimeContext.plugin(), "originroom"),
-                                            PersistentDataType.STRING);
-                    if (uuidString == null) {
-                        return false;
-                    } else {
-                        try {
-                            UUID uuid = UUID.fromString(uuidString);
-                            return uuid.equals(room.getUuid());
-                        } catch (IllegalArgumentException exception) {
-                            this.logger()
-                                    .warn(
-                                            "MobDeathTrigger in dungeon '{}' at {} encountered invalid origin room metadata '{}'.",
-                                            this.dungeonNameForLogs(),
-                                            this.locationForLogs(),
-                                            uuidString,
-                                            exception);
-                            return false;
-                        }
-                    }
-                }
-            }
+        }
+        BranchingInstance instance = this.instance.as(BranchingInstance.class);
+        if (instance == null) {
+            return false;
+        }
+        InstanceRoom room = instance.getRoom(this.location);
+        if (room == null) {
+            return false;
+        }
+        String uuidString =
+                ent.getPersistentDataContainer()
+                        .get(
+                                new NamespacedKey(RuntimeContext.plugin(), "originroom"),
+                                PersistentDataType.STRING);
+        if (uuidString == null) {
+            return false;
+        }
+        try {
+            UUID uuid = UUID.fromString(uuidString);
+            return uuid.equals(room.getUuid());
+        } catch (IllegalArgumentException exception) {
+            this.logger()
+                    .warn(
+                            "MobDeathTrigger in dungeon '{}' at {} encountered invalid origin room metadata '{}'.",
+                            this.dungeonNameForLogs(),
+                            this.locationForLogs(),
+                            uuidString,
+                            exception);
+            return false;
         }
     }
 

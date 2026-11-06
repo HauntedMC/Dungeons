@@ -101,9 +101,8 @@ public class Connector implements Cloneable, ConfigSerializableModel {
             }
 
             return false;
-        } else {
-            return true;
         }
+        return true;
     }
 
     /**

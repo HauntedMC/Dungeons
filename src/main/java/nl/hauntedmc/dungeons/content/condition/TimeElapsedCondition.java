@@ -47,21 +47,20 @@ public class TimeElapsedCondition extends TriggerCondition {
         PlayableInstance instance = this.instance.asPlayInstance();
         if (instance == null) {
             return false;
-        } else {
-            int requiredTime = Math.max(0, this.time);
-            if (requiredTime != this.time && !this.invalidTimeLogged) {
-                this.invalidTimeLogged = true;
-                this.logger()
-                        .warn(
-                                "TimeElapsedCondition in dungeon '{}' at {} had invalid time {}. Clamping to 0.",
-                                this.dungeonNameForLogs(),
-                                this.locationForLogs(),
-                                this.time);
-            }
-
-            int timeElapsed = instance.getTimeElapsed();
-            return timeElapsed >= requiredTime;
         }
+        int requiredTime = Math.max(0, this.time);
+        if (requiredTime != this.time && !this.invalidTimeLogged) {
+            this.invalidTimeLogged = true;
+            this.logger()
+                    .warn(
+                            "TimeElapsedCondition in dungeon '{}' at {} had invalid time {}. Clamping to 0.",
+                            this.dungeonNameForLogs(),
+                            this.locationForLogs(),
+                            this.time);
+        }
+
+        int timeElapsed = instance.getTimeElapsed();
+        return timeElapsed >= requiredTime;
     }
 
     /**

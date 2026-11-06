@@ -154,118 +154,115 @@ public class BranchingLayout extends Layout {
         Layout.GenerationResult result = this.generateTrunk();
         if (!result.isPassed()) {
             return result;
+        }
+        RuntimeContext.plugin()
+                .getSLF4JLogger()
+                .info(
+                        "Generated trunk for dungeon '{}' with {} rooms.",
+                        this.dungeon.getWorldName(),
+                        this.roomCount);
+
+        result = this.generateAllBranches();
+        if (!result.isPassed()) {
+            return result;
+        } else if (!this.verifyLayout()) {
+            return Layout.GenerationResult.BAD_LAYOUT;
         } else {
+            RuntimeContext.logger()
+                    .info(
+                            "Found valid branching layout for dungeon '{}'.",
+                            this.dungeon.getWorldName());
             RuntimeContext.plugin()
                     .getSLF4JLogger()
                     .info(
-                            "Generated trunk for dungeon '{}' with {} rooms.",
+                            "Dungeon '{}' layout contains {} rooms across {} branches.",
                             this.dungeon.getWorldName(),
-                            this.roomCount);
-
-            result = this.generateAllBranches();
-            if (!result.isPassed()) {
-                return result;
-            } else if (!this.verifyLayout()) {
-                return Layout.GenerationResult.BAD_LAYOUT;
-            } else {
-                RuntimeContext.logger()
-                        .info(
-                                "Found valid branching layout for dungeon '{}'.",
-                                this.dungeon.getWorldName());
-                RuntimeContext.plugin()
-                        .getSLF4JLogger()
-                        .info(
-                                "Dungeon '{}' layout contains {} rooms across {} branches.",
-                                this.dungeon.getWorldName(),
-                                this.totalRooms,
-                                this.branchCount);
-                return Layout.GenerationResult.SUCCESS;
-            }
+                            this.totalRooms,
+                            this.branchCount);
+            return Layout.GenerationResult.SUCCESS;
         }
     }
 
     protected Layout.GenerationResult generateTrunk() {
         if (!this.selectFirstRoom()) {
             return Layout.GenerationResult.NO_START_ROOM;
-        } else {
-            this.generationCheckpoint = this.first;
-            this.queuedRoomCount = this.roomCount;
-            this.queuedCountsByRoom = new HashMap<>(this.countsByRoom);
-            this.queuedRoomAreas = new ArrayList<>(this.roomAreas);
-            this.queuedRoomAnchors = new HashMap<>(this.roomAnchors);
-            int segmentTries = 0;
+        }
+        this.generationCheckpoint = this.first;
+        this.queuedRoomCount = this.roomCount;
+        this.queuedCountsByRoom = new HashMap<>(this.countsByRoom);
+        this.queuedRoomAreas = new ArrayList<>(this.roomAreas);
+        this.queuedRoomAnchors = new HashMap<>(this.roomAnchors);
+        int segmentTries = 0;
 
-            while (segmentTries <= 50) {
-                segmentTries++;
-                InstanceRoom prevCheckpoint = this.generationCheckpoint;
-                List<Connector> usedCheckConnectors =
-                        new ArrayList<>(this.generationCheckpoint.getUsedConnectors());
-                int savedRoomCount = this.queuedRoomCount;
-                List<BoundingBox> savedRoomAreas = new ArrayList<>(this.queuedRoomAreas);
-                Map<BranchingRoomDefinition, Integer> savedCountsByRoom =
-                        new HashMap<>(this.queuedCountsByRoom);
-                Map<SimpleLocation, InstanceRoom> savedRoomAnchors =
-                        new HashMap<>(this.queuedRoomAnchors);
-                List<InstanceRoom> savedRoomsToAdd = new ArrayList<>(this.roomsToAdd);
+        while (segmentTries <= 50) {
+            segmentTries++;
+            InstanceRoom prevCheckpoint = this.generationCheckpoint;
+            List<Connector> usedCheckConnectors =
+                    new ArrayList<>(this.generationCheckpoint.getUsedConnectors());
+            int savedRoomCount = this.queuedRoomCount;
+            List<BoundingBox> savedRoomAreas = new ArrayList<>(this.queuedRoomAreas);
+            Map<BranchingRoomDefinition, Integer> savedCountsByRoom =
+                    new HashMap<>(this.queuedCountsByRoom);
+            Map<SimpleLocation, InstanceRoom> savedRoomAnchors =
+                    new HashMap<>(this.queuedRoomAnchors);
+            List<InstanceRoom> savedRoomsToAdd = new ArrayList<>(this.roomsToAdd);
 
-                Layout.GenerationResult result = this.processQueue(25);
-                if (!result.isPassed()) {
-                    RuntimeContext.plugin()
-                            .getSLF4JLogger()
-                            .warn(
-                                    "Trunk segment generation failed for dungeon '{}': {}",
-                                    this.dungeon.getWorldName(),
-                                    result.getMsg());
-                }
-
-                if (this.queuedRoomCount >= this.minBranchRooms) {
-                    break;
-                }
-
-                if (this.generationCheckpoint == null) {
-                    this.generationCheckpoint = prevCheckpoint;
-                    this.generationCheckpoint.setUsedConnectors(usedCheckConnectors);
-                    this.queue.add(this.generationCheckpoint);
-                    this.queuedRoomCount = savedRoomCount;
-                    this.queuedRoomAreas = savedRoomAreas;
-                    this.queuedCountsByRoom = savedCountsByRoom;
-                    this.queuedRoomAnchors = savedRoomAnchors;
-                    this.roomsToAdd = savedRoomsToAdd;
-                } else {
-                    this.queue.add(this.generationCheckpoint);
-                    RuntimeContext.plugin()
-                            .getSLF4JLogger()
-                            .info(
-                                    "Generating trunk for dungeon '{}': {} / {} rooms.",
-                                    this.dungeon.getWorldName(),
-                                    this.queuedRoomCount,
-                                    this.minBranchRooms);
-
-                    segmentTries = 0;
-                }
-            }
-
-            if (this.strictRooms && this.queuedRoomCount < this.minBranchRooms) {
-                this.recordFailure(GenerationFailureReason.BRANCH_TARGET_TOO_SMALL);
+            Layout.GenerationResult result = this.processQueue(25);
+            if (!result.isPassed()) {
                 RuntimeContext.plugin()
                         .getSLF4JLogger()
                         .warn(
-                                "Failed to generate trunk for dungeon '{}': required at least {} rooms but generated {}.",
+                                "Trunk segment generation failed for dungeon '{}': {}",
                                 this.dungeon.getWorldName(),
-                                this.minBranchRooms,
-                                this.queuedRoomCount);
+                                result.getMsg());
+            }
 
-                return Layout.GenerationResult.BAD_LAYOUT;
+            if (this.queuedRoomCount >= this.minBranchRooms) {
+                break;
+            }
+
+            if (this.generationCheckpoint == null) {
+                this.generationCheckpoint = prevCheckpoint;
+                this.generationCheckpoint.setUsedConnectors(usedCheckConnectors);
+                this.queue.add(this.generationCheckpoint);
+                this.queuedRoomCount = savedRoomCount;
+                this.queuedRoomAreas = savedRoomAreas;
+                this.queuedCountsByRoom = savedCountsByRoom;
+                this.queuedRoomAnchors = savedRoomAnchors;
+                this.roomsToAdd = savedRoomsToAdd;
             } else {
-                this.generationCheckpoint = null;
+                this.queue.add(this.generationCheckpoint);
+                RuntimeContext.plugin()
+                        .getSLF4JLogger()
+                        .info(
+                                "Generating trunk for dungeon '{}': {} / {} rooms.",
+                                this.dungeon.getWorldName(),
+                                this.queuedRoomCount,
+                                this.minBranchRooms);
 
-                for (InstanceRoom room : this.roomsToAdd) {
-                    this.addRoom(room);
-                }
-
-                return Layout.GenerationResult.SUCCESS;
+                segmentTries = 0;
             }
         }
+
+        if (this.strictRooms && this.queuedRoomCount < this.minBranchRooms) {
+            this.recordFailure(GenerationFailureReason.BRANCH_TARGET_TOO_SMALL);
+            RuntimeContext.plugin()
+                    .getSLF4JLogger()
+                    .warn(
+                            "Failed to generate trunk for dungeon '{}': required at least {} rooms but generated {}.",
+                            this.dungeon.getWorldName(),
+                            this.minBranchRooms,
+                            this.queuedRoomCount);
+
+            return Layout.GenerationResult.BAD_LAYOUT;
+        }
+        this.generationCheckpoint = null;
+
+        for (InstanceRoom room : this.roomsToAdd) {
+            this.addRoom(room);
+        }
+
+        return Layout.GenerationResult.SUCCESS;
     }
 
     protected Layout.GenerationResult generateAllBranches() {

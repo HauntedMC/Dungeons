@@ -53,9 +53,8 @@ public final class DungeonTypeRegistry {
             config.load(configFile);
             return createDungeon(
                     runtime, config.getString("dungeon.type", "static"), folder, config);
-        } else {
-            return createDungeon(runtime, "static", folder, null);
         }
+        return createDungeon(runtime, "static", folder, null);
     }
 
     /**

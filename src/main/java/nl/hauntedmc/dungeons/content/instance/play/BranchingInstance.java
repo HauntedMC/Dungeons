@@ -47,26 +47,24 @@ public class BranchingInstance extends PlayableInstance {
     public DungeonInstance initialize() {
         if (this.initialized) {
             return this;
-        } else {
-            this.initialized = true;
-            this.id = this.dungeon.getInstances().size();
-            File instFolder = this.getUniqueWorldName();
-            new File(instFolder, "config.yml").delete();
-            new File(instFolder, "uid.dat").delete();
-            this.builder = this.dungeon.getLayout().clone();
-            Layout.GenerationResult result = this.builder.generate();
-            if (!result.isPassed()) {
-                this.logger()
-                        .error(
-                                "Failed to initialize branching instance for dungeon '{}': {}",
-                                this.dungeon.getWorldName(),
-                                result.getMsg());
-                return null;
-            } else {
-                this.initializeWorldGeneration();
-                return this;
-            }
         }
+        this.initialized = true;
+        this.id = this.dungeon.getInstances().size();
+        File instFolder = this.getUniqueWorldName();
+        new File(instFolder, "config.yml").delete();
+        new File(instFolder, "uid.dat").delete();
+        this.builder = this.dungeon.getLayout().clone();
+        Layout.GenerationResult result = this.builder.generate();
+        if (!result.isPassed()) {
+            this.logger()
+                    .error(
+                            "Failed to initialize branching instance for dungeon '{}': {}",
+                            this.dungeon.getWorldName(),
+                            result.getMsg());
+            return null;
+        }
+        this.initializeWorldGeneration();
+        return this;
     }
 
     /**

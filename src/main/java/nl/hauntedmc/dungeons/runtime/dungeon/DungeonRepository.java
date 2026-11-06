@@ -167,20 +167,20 @@ public final class DungeonRepository {
 
             if (dungeon == null) {
                 return null;
-            } else {
-                dungeon.setGenerator(generator);
-                this.put(dungeon);
-                if (dungeon.isUseDifficultyLevels()) {
-                    PlayMenus.initializeDifficultySelector(dungeon);
-                }
-
-                this.runtime
-                        .environment()
-                        .logger()
-                        .info("Loaded dungeon '{}' successfully.", dungeon.getWorldName());
-
-                return dungeon;
             }
+            dungeon.setGenerator(generator);
+            this.put(dungeon);
+            if (dungeon.isUseDifficultyLevels()) {
+                PlayMenus.initializeDifficultySelector(dungeon);
+            }
+
+            this.runtime
+                    .environment()
+                    .logger()
+                    .info("Loaded dungeon '{}' successfully.", dungeon.getWorldName());
+
+            return dungeon;
+
         } catch (InvalidConfigurationException | IOException exception) {
             this.runtime
                     .environment()

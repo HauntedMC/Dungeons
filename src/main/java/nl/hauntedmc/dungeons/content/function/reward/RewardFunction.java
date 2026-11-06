@@ -638,52 +638,50 @@ public class RewardFunction extends DungeonFunction {
         int cooldownTime = Math.max(0, this.cooldownTime);
         if (period == CooldownPeriod.TIMER) {
             return period.fromNow(cooldownTime);
-        } else {
-            int normalizedResetDay = this.resetDay;
-            Calendar cal = Calendar.getInstance();
-            if (cooldownTime > 23) {
-                cooldownTime = 23;
+        }
+        int normalizedResetDay = this.resetDay;
+        Calendar cal = Calendar.getInstance();
+        if (cooldownTime > 23) {
+            cooldownTime = 23;
+            this.logInvalidCooldownConfiguration();
+        }
+
+        if (cooldownTime > cal.get(Calendar.HOUR_OF_DAY)) {
+            cal.set(Calendar.DATE, cal.get(Calendar.DATE) - 1);
+        }
+
+        cal.set(Calendar.HOUR_OF_DAY, cooldownTime);
+        cal.set(Calendar.MINUTE, 0);
+        cal.set(Calendar.SECOND, 0);
+        cal.set(Calendar.MILLISECOND, 0);
+        if (period == CooldownPeriod.WEEKLY) {
+            int dayOfWeek = Math.clamp(normalizedResetDay, Calendar.SUNDAY, Calendar.SATURDAY);
+            if (dayOfWeek != normalizedResetDay) {
                 this.logInvalidCooldownConfiguration();
             }
-
-            if (cooldownTime > cal.get(Calendar.HOUR_OF_DAY)) {
-                cal.set(Calendar.DATE, cal.get(Calendar.DATE) - 1);
+            if (dayOfWeek > cal.get(Calendar.DAY_OF_WEEK)) {
+                cal.set(Calendar.WEEK_OF_MONTH, cal.get(Calendar.WEEK_OF_MONTH) - 1);
             }
 
-            cal.set(Calendar.HOUR_OF_DAY, cooldownTime);
-            cal.set(Calendar.MINUTE, 0);
-            cal.set(Calendar.SECOND, 0);
-            cal.set(Calendar.MILLISECOND, 0);
-            if (period == CooldownPeriod.WEEKLY) {
-                int dayOfWeek =
-                        Math.clamp(normalizedResetDay, Calendar.SUNDAY, Calendar.SATURDAY);
-                if (dayOfWeek != normalizedResetDay) {
-                    this.logInvalidCooldownConfiguration();
-                }
-                if (dayOfWeek > cal.get(Calendar.DAY_OF_WEEK)) {
-                    cal.set(Calendar.WEEK_OF_MONTH, cal.get(Calendar.WEEK_OF_MONTH) - 1);
-                }
-
-                cal.set(Calendar.DAY_OF_WEEK, dayOfWeek);
-            }
-
-            if (period == CooldownPeriod.MONTHLY) {
-                int dayOfMonth = Math.max(1, normalizedResetDay);
-                dayOfMonth = Math.min(dayOfMonth, cal.getActualMaximum(Calendar.DAY_OF_MONTH));
-                if (dayOfMonth != normalizedResetDay) {
-                    this.logInvalidCooldownConfiguration();
-                }
-                if (dayOfMonth > cal.get(Calendar.DAY_OF_MONTH)) {
-                    cal.set(Calendar.MONTH, cal.get(Calendar.MONTH) - 1);
-                }
-
-                cal.set(
-                        Calendar.DAY_OF_MONTH,
-                        Math.min(dayOfMonth, cal.getActualMaximum(Calendar.DAY_OF_MONTH)));
-            }
-
-            return period.fromDate(cal.getTime());
+            cal.set(Calendar.DAY_OF_WEEK, dayOfWeek);
         }
+
+        if (period == CooldownPeriod.MONTHLY) {
+            int dayOfMonth = Math.max(1, normalizedResetDay);
+            dayOfMonth = Math.min(dayOfMonth, cal.getActualMaximum(Calendar.DAY_OF_MONTH));
+            if (dayOfMonth != normalizedResetDay) {
+                this.logInvalidCooldownConfiguration();
+            }
+            if (dayOfMonth > cal.get(Calendar.DAY_OF_MONTH)) {
+                cal.set(Calendar.MONTH, cal.get(Calendar.MONTH) - 1);
+            }
+
+            cal.set(
+                    Calendar.DAY_OF_MONTH,
+                    Math.min(dayOfMonth, cal.getActualMaximum(Calendar.DAY_OF_MONTH)));
+        }
+
+        return period.fromDate(cal.getTime());
     }
 
     /**

@@ -512,17 +512,16 @@ public class BranchingDungeon extends DungeonDefinition {
     public BranchingRoomDefinition defineRoom(String namespace, BoundingBox bounds) {
         if (this.uniqueRooms.containsKey(namespace)) {
             return null;
-        } else {
-            for (BranchingRoomDefinition room : this.uniqueRooms.values()) {
-                if (bounds.overlaps(room.getBounds())) {
-                    return null;
-                }
-            }
-
-            BranchingRoomDefinition newRoom = new BranchingRoomDefinition(this, namespace, bounds);
-            this.addRoom(newRoom);
-            return newRoom;
         }
+        for (BranchingRoomDefinition room : this.uniqueRooms.values()) {
+            if (bounds.overlaps(room.getBounds())) {
+                return null;
+            }
+        }
+
+        BranchingRoomDefinition newRoom = new BranchingRoomDefinition(this, namespace, bounds);
+        this.addRoom(newRoom);
+        return newRoom;
     }
 
     /**

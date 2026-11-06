@@ -59,16 +59,15 @@ public class DifficultyCondition extends TriggerCondition {
         PlayableInstance instance = this.instance.asPlayInstance();
         if (instance == null) {
             return false;
-        } else {
-            String instanceDif;
-            if (instance.getDifficulty() == null) {
-                instanceDif = "DEFAULT";
-            } else {
-                instanceDif = instance.getDifficulty().getNamespace();
-            }
-
-            return this.difficulty.equals(instanceDif);
         }
+        String instanceDif;
+        if (instance.getDifficulty() == null) {
+            instanceDif = "DEFAULT";
+        } else {
+            instanceDif = instance.getDifficulty().getNamespace();
+        }
+
+        return this.difficulty.equals(instanceDif);
     }
 
     /**
