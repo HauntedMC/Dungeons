@@ -214,4 +214,45 @@ class WorldFunctionContractTest {
             assertTrue(f.scheduler.jobs.stream().allMatch(job -> job.cancelled));
         }
     }
+
+    @Test
+    void clonedMobSpawnersKeepActivationCountsAndPendingTasksIndependent() throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration());
+                var menus = new HeadlessMenus()) {
+            var block = mock(org.bukkit.block.Block.class);
+            when(f.world.getBlockAt(any(Location.class))).thenReturn(block);
+            // Count and placement contracts stop at Paper's spawn boundary; entity attributes need
+            // its registry.
+            when(f.world.spawnEntity(any(Location.class), any(org.bukkit.entity.EntityType.class)))
+                    .thenReturn(mock(org.bukkit.entity.Entity.class));
+            var source =
+                    new SpawnMobFunction(
+                            Map.of("mob", "not-a-mob", "maxCount", 2, "delay", 3, "interval", 4));
+            source.initializeFields();
+            source.setInstance(f.run);
+            source.setLocation(new Location(f.world, 0, 70, 0));
+            source.runFunction(null, List.of());
+            source.runFunction(null, List.of());
+            var copy = (SpawnMobFunction) source.clone();
+            copy.runFunction(null, List.of());
+            assertEquals(3, f.scheduler.jobs.size());
+            assertEquals(3, f.scheduler.jobs.getFirst().delay);
+            assertEquals(4, f.scheduler.jobs.getFirst().period);
+            copy.onDisable();
+            assertFalse(f.scheduler.jobs.getFirst().cancelled);
+            assertFalse(f.scheduler.jobs.get(1).cancelled);
+            assertTrue(f.scheduler.jobs.get(2).cancelled);
+            for (int tick = 0; tick < 3; tick++) {
+                f.scheduler.jobs.getFirst().run();
+                f.scheduler.jobs.get(1).run();
+            }
+            verify(f.world, times(4))
+                    .spawnEntity(
+                            eq(new Location(f.world, 0.5, 70.1, 0.5)),
+                            eq(org.bukkit.entity.EntityType.ZOMBIE));
+            assertTrue(f.scheduler.jobs.getFirst().cancelled);
+            assertTrue(f.scheduler.jobs.get(1).cancelled);
+            assertEquals(new Location(f.world, 0, 70, 0), source.getLocation());
+        }
+    }
 }

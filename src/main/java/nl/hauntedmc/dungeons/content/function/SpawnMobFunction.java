@@ -56,7 +56,7 @@ public class SpawnMobFunction extends DungeonFunction {
     @PersistedField private int interval = 0;
     @PersistedField private double yaw = 0.0;
     private int count;
-    private final List<BukkitRunnable> spawners;
+    private List<BukkitRunnable> spawners;
 
     /**
      * Creates the function from persisted configuration.
@@ -76,6 +76,17 @@ public class SpawnMobFunction extends DungeonFunction {
         this.setAllowChangingTargetType(false);
         this.setCategory(FunctionCategory.LOCATION);
         this.spawners = new ArrayList<>();
+    }
+
+    /** Returns a template clone with independent runtime spawn scheduling. */
+    @Override
+    public SpawnMobFunction clone() {
+        SpawnMobFunction clone = (SpawnMobFunction) super.clone();
+        if (clone != null) {
+            clone.spawners = new ArrayList<>();
+            clone.count = 0;
+        }
+        return clone;
     }
 
     /**
