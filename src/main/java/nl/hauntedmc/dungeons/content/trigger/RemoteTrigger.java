@@ -118,7 +118,7 @@ public class RemoteTrigger extends DungeonTrigger {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -150,11 +150,12 @@ public class RemoteTrigger extends DungeonTrigger {
                                 player,
                                 "editor.trigger.remote.signal-set",
                                 LangUtils.placeholder("signal", message));
-                        RemoteTrigger.this.setDisplayName("Signal: " + RemoteTrigger.this.triggerName);
+                        RemoteTrigger.this.setDisplayName(
+                                "Signal: " + RemoteTrigger.this.triggerName);
                     }
                 });
         this.menu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -180,7 +181,7 @@ public class RemoteTrigger extends DungeonTrigger {
                     }
                 });
         this.menu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -197,13 +198,16 @@ public class RemoteTrigger extends DungeonTrigger {
                     @Override
                     public void onSelect(Player player) {
                         if (!RemoteTrigger.this.awaitConditions) {
-                            LangUtils.sendMessage(player, "editor.trigger.remote.wait-after-trigger");
+                            LangUtils.sendMessage(
+                                    player, "editor.trigger.remote.wait-after-trigger");
                         } else {
-                            LangUtils.sendMessage(player, "editor.trigger.remote.require-conditions-now");
+                            LangUtils.sendMessage(
+                                    player, "editor.trigger.remote.require-conditions-now");
                         }
 
                         RemoteTrigger.this.awaitConditions = !RemoteTrigger.this.awaitConditions;
-                        RemoteTrigger.this.waitForConditions = !RemoteTrigger.this.waitForConditions;
+                        RemoteTrigger.this.waitForConditions =
+                                !RemoteTrigger.this.waitForConditions;
                     }
                 });
         this.addRoomLimitToggleButton();

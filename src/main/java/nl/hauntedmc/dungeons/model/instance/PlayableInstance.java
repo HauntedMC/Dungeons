@@ -150,11 +150,12 @@ public abstract class PlayableInstance extends DungeonInstance {
 
             this.participants = this.players.size();
             final int timeLimit = this.config.getInt("runs.time_limit_minutes", 0);
-            final Set<Integer> warningSeconds = DungeonConfigView.getTimeLimitWarningSeconds(this.config);
+            final Set<Integer> warningSeconds =
+                    DungeonConfigView.getTimeLimitWarningSeconds(this.config);
             this.timeLeft = timeLimit * 60;
             this.instanceTicker =
-                                        new BukkitRunnable() {
-                                                public void run() {
+                    new BukkitRunnable() {
+                        public void run() {
                             PlayableInstance.this.timeElapsed++;
                             if (timeLimit != 0) {
                                 PlayableInstance.this.timeLeft--;
@@ -164,10 +165,11 @@ public abstract class PlayableInstance extends DungeonInstance {
                                                     PlayableInstance.this.timeLeft));
                                 }
 
-                                                if (PlayableInstance.this.timeLeft <= 0) {
-                                                    PlayableInstance.this.messagePlayers(
-                                                            LangUtils.getMessage("instance.play.time-limit.times-up"));
-                                                    this.cancel();
+                                if (PlayableInstance.this.timeLeft <= 0) {
+                                    PlayableInstance.this.messagePlayers(
+                                            LangUtils.getMessage(
+                                                    "instance.play.time-limit.times-up"));
+                                    this.cancel();
 
                                     for (DungeonPlayerSession playerSession :
                                             new ArrayList<>(PlayableInstance.this.players)) {
@@ -175,13 +177,12 @@ public abstract class PlayableInstance extends DungeonInstance {
                                     }
                                 }
                             }
-
                         }
                     };
             this.instanceTicker.runTaskTimer(this.plugin(), 0L, 20L);
             this.dragonBossBarTicker =
-                                        new BukkitRunnable() {
-                                                public void run() {
+                    new BukkitRunnable() {
+                        public void run() {
                             PlayableInstance.this.updateCustomDragonBossBars();
                         }
                     };
@@ -303,8 +304,14 @@ public abstract class PlayableInstance extends DungeonInstance {
                                 this.dungeon.getWorldName(),
                                 loc == null
                                         ? "<no-location>"
-                                        : (loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ()),
-                                root.getMessage() == null ? root.getClass().getSimpleName() : root.getMessage(),
+                                        : (loc.getBlockX()
+                                                + ","
+                                                + loc.getBlockY()
+                                                + ","
+                                                + loc.getBlockZ()),
+                                root.getMessage() == null
+                                        ? root.getClass().getSimpleName()
+                                        : root.getMessage(),
                                 root);
             }
         }
@@ -364,7 +371,9 @@ public abstract class PlayableInstance extends DungeonInstance {
         try {
             GameMode gamemode =
                     GameMode.valueOf(
-                            this.config.getString("players.gamemode", "ADVENTURE").toUpperCase(Locale.ROOT));
+                            this.config
+                                    .getString("players.gamemode", "ADVENTURE")
+                                    .toUpperCase(Locale.ROOT));
             player.setGameMode(gamemode);
         } catch (IllegalArgumentException exception) {
             this.logger()
@@ -378,7 +387,8 @@ public abstract class PlayableInstance extends DungeonInstance {
         }
 
         if (this.livesEnabled) {
-            this.playerLives.putIfAbsent(player.getUniqueId(), this.config.getInt("players.lives", 1));
+            this.playerLives.putIfAbsent(
+                    player.getUniqueId(), this.config.getInt("players.lives", 1));
         }
     }
 
@@ -719,7 +729,8 @@ public abstract class PlayableInstance extends DungeonInstance {
         this.discoverCustomDragonBossBars();
         List<UUID> staleBars = new ArrayList<>();
 
-        for (Entry<UUID, net.kyori.adventure.bossbar.BossBar> entry : this.customDragonBossBars.entrySet()) {
+        for (Entry<UUID, net.kyori.adventure.bossbar.BossBar> entry :
+                this.customDragonBossBars.entrySet()) {
             Entity entity = Bukkit.getEntity(entry.getKey());
             net.kyori.adventure.bossbar.BossBar bossBar = entry.getValue();
             if (!(entity instanceof EnderDragon dragon)
@@ -731,9 +742,10 @@ public abstract class PlayableInstance extends DungeonInstance {
                 continue;
             }
 
-            double maxHealth = dragon.getAttribute(Attribute.MAX_HEALTH) == null
-                    ? 200.0
-                    : dragon.getAttribute(Attribute.MAX_HEALTH).getValue();
+            double maxHealth =
+                    dragon.getAttribute(Attribute.MAX_HEALTH) == null
+                            ? 200.0
+                            : dragon.getAttribute(Attribute.MAX_HEALTH).getValue();
             double progress = maxHealth <= 0.0 ? 0.0 : dragon.getHealth() / maxHealth;
             bossBar.progress((float) Math.max(0.0, Math.min(1.0, progress)));
             if (dragon.getCustomName() != null && !dragon.getCustomName().isBlank()) {
@@ -822,5 +834,4 @@ public abstract class PlayableInstance extends DungeonInstance {
             playerSession.getPlayer().hideBossBar(bossBar);
         }
     }
-
 }

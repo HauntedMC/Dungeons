@@ -98,7 +98,7 @@ public abstract class GateTrigger extends DungeonTrigger {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     /**
                      * Builds button.
                      */
@@ -115,14 +115,15 @@ public abstract class GateTrigger extends DungeonTrigger {
                     public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
                         if (GateTrigger.this.triggers.size() >= 54) {
-                            LangUtils.sendMessage(player, "editor.trigger.gate.max-triggers-reached");
+                            LangUtils.sendMessage(
+                                    player, "editor.trigger.gate.max-triggers-reached");
                         } else {
                             RuntimeContext.guiService().openGui(player, "triggermenu");
                         }
                     }
                 });
         this.menu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     /**
                      * Builds button.
                      */
@@ -142,7 +143,7 @@ public abstract class GateTrigger extends DungeonTrigger {
                     }
                 });
         this.menu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     /**
                      * Builds button.
                      */

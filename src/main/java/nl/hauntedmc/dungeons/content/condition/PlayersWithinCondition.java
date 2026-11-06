@@ -83,7 +83,8 @@ public class PlayersWithinCondition extends TriggerCondition {
         Collection<Entity> entities =
                 this.location
                         .getWorld()
-                        .getNearbyEntities(this.location, effectiveRadius, effectiveRadius, effectiveRadius);
+                        .getNearbyEntities(
+                                this.location, effectiveRadius, effectiveRadius, effectiveRadius);
         List<Player> players = new ArrayList<>();
 
         for (Entity ent : entities) {
@@ -116,7 +117,7 @@ public class PlayersWithinCondition extends TriggerCondition {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -124,7 +125,8 @@ public class PlayersWithinCondition extends TriggerCondition {
                     public void buildButton() {
                         this.button = new MenuButton(Material.DETECTOR_RAIL);
                         this.button.setDisplayName("&d&lDistance");
-                        this.button.setAmount((int) MathUtils.round(PlayersWithinCondition.this.radius, 0));
+                        this.button.setAmount(
+                                (int) MathUtils.round(PlayersWithinCondition.this.radius, 0));
                     }
 
                     /**
@@ -141,18 +143,20 @@ public class PlayersWithinCondition extends TriggerCondition {
                     @Override
                     public void onInput(Player player, String message) {
                         Optional<Double> value = InputUtils.readDoubleInput(player, message);
-                        PlayersWithinCondition.this.radius = value.orElse(PlayersWithinCondition.this.radius);
+                        PlayersWithinCondition.this.radius =
+                                value.orElse(PlayersWithinCondition.this.radius);
                         if (value.isPresent()) {
                             LangUtils.sendMessage(
                                     player,
                                     "editor.condition.players-within.radius-set",
                                     LangUtils.placeholder(
-                                            "radius", String.valueOf(PlayersWithinCondition.this.radius)));
+                                            "radius",
+                                            String.valueOf(PlayersWithinCondition.this.radius)));
                         }
                     }
                 });
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -180,18 +184,20 @@ public class PlayersWithinCondition extends TriggerCondition {
                     @Override
                     public void onInput(Player player, String message) {
                         Optional<Integer> value = InputUtils.readIntegerInput(player, message);
-                        PlayersWithinCondition.this.count = value.orElse(PlayersWithinCondition.this.count);
+                        PlayersWithinCondition.this.count =
+                                value.orElse(PlayersWithinCondition.this.count);
                         if (value.isPresent()) {
                             LangUtils.sendMessage(
                                     player,
                                     "editor.condition.players-within.count-set",
                                     LangUtils.placeholder(
-                                            "count", String.valueOf(PlayersWithinCondition.this.count)));
+                                            "count",
+                                            String.valueOf(PlayersWithinCondition.this.count)));
                         }
                     }
                 });
         this.menu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -210,10 +216,12 @@ public class PlayersWithinCondition extends TriggerCondition {
                         if (!PlayersWithinCondition.this.playersExact) {
                             LangUtils.sendMessage(player, "editor.condition.players-within.exact");
                         } else {
-                            LangUtils.sendMessage(player, "editor.condition.players-within.minimum");
+                            LangUtils.sendMessage(
+                                    player, "editor.condition.players-within.minimum");
                         }
 
-                        PlayersWithinCondition.this.playersExact = !PlayersWithinCondition.this.playersExact;
+                        PlayersWithinCondition.this.playersExact =
+                                !PlayersWithinCondition.this.playersExact;
                     }
                 });
     }

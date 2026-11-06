@@ -63,7 +63,10 @@ public final class SchematicUtils {
             FileUtils.writeByteArrayToFile(file, bytes);
         } catch (IOException exception) {
             RuntimeContext.logger()
-                    .error("Failed to save structure piece to '{}'.", file.getAbsolutePath(), exception);
+                    .error(
+                            "Failed to save structure piece to '{}'.",
+                            file.getAbsolutePath(),
+                            exception);
         }
     }
 
@@ -94,14 +97,18 @@ public final class SchematicUtils {
                                         Integer.parseInt(posSplit[1]),
                                         Integer.parseInt(posSplit[2]));
                         BlockData blockData = data.get(blockDataPointer);
-                        String blockNbt = !nbtStr.equals("null") ? BlockNbtUtils.normalizeSnbt(nbtStr) : null;
+                        String blockNbt =
+                                !nbtStr.equals("null") ? BlockNbtUtils.normalizeSnbt(nbtStr) : null;
                         struct.add(new StructurePieceBlock(pos, blockData, blockNbt));
                     }
                 }
             }
         } catch (IOException exception) {
             RuntimeContext.logger()
-                    .error("Failed to load structure piece from '{}'.", file.getAbsolutePath(), exception);
+                    .error(
+                            "Failed to load structure piece from '{}'.",
+                            file.getAbsolutePath(),
+                            exception);
         }
 
         return struct;

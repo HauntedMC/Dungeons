@@ -120,7 +120,7 @@ public class LivesFunction extends DungeonFunction {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -159,11 +159,12 @@ public class LivesFunction extends DungeonFunction {
                         LangUtils.sendMessage(
                                 player,
                                 "editor.function.lives.amount-set",
-                                LangUtils.placeholder("amount", String.valueOf(LivesFunction.this.amount)));
+                                LangUtils.placeholder(
+                                        "amount", String.valueOf(LivesFunction.this.amount)));
                     }
                 });
         this.menu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     /**
                      * Builds button.
                      */
@@ -187,7 +188,8 @@ public class LivesFunction extends DungeonFunction {
                         LangUtils.sendMessage(
                                 player,
                                 "editor.function.lives.mode-set",
-                                LangUtils.placeholder("mode", MathType.intToMode(LivesFunction.this.mode)));
+                                LangUtils.placeholder(
+                                        "mode", MathType.intToMode(LivesFunction.this.mode)));
                     }
                 });
     }
@@ -215,7 +217,7 @@ public class LivesFunction extends DungeonFunction {
          * Performs int to mode.
          */
         public static MathType intToMode(int index) {
-                        return switch (index) {
+            return switch (index) {
                 case 1 -> SET;
                 case 2 -> MULTIPLY;
                 default -> ADD;

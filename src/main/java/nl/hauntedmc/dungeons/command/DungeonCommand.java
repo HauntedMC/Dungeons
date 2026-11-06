@@ -94,10 +94,18 @@ public final class DungeonCommand implements TabExecutor {
     /**
      * Creates the root command executor and binds it to the configured Bukkit command name.
      */
-    public DungeonCommand(DungeonsPlugin plugin, PlayerSessionRegistry playerManager, DungeonRepository dungeonManager,
-            ActiveInstanceRegistry activeInstanceManager, DungeonQueueCoordinator dungeonQueueCoordinator,
-            DungeonQueueRegistry queueManager, DungeonTeamService teamManager, LootTableRepository lootTableManager,
-            FunctionRegistry functionManager, LifecycleCoordinator lifecycleCoordinator, GuiService guiService,
+    public DungeonCommand(
+            DungeonsPlugin plugin,
+            PlayerSessionRegistry playerManager,
+            DungeonRepository dungeonManager,
+            ActiveInstanceRegistry activeInstanceManager,
+            DungeonQueueCoordinator dungeonQueueCoordinator,
+            DungeonQueueRegistry queueManager,
+            DungeonTeamService teamManager,
+            LootTableRepository lootTableManager,
+            FunctionRegistry functionManager,
+            LifecycleCoordinator lifecycleCoordinator,
+            GuiService guiService,
             String command) {
         this.plugin = plugin;
         this.playerManager = playerManager;
@@ -109,8 +117,9 @@ public final class DungeonCommand implements TabExecutor {
         this.lootTableManager = lootTableManager;
         this.lifecycleCoordinator = lifecycleCoordinator;
         this.guiService = guiService;
-        this.configCommandHandler = new DungeonConfigCommandHandler(dungeonManager, playerManager,
-                activeInstanceManager);
+        this.configCommandHandler =
+                new DungeonConfigCommandHandler(
+                        dungeonManager, playerManager, activeInstanceManager);
         this.teamCommandGroup = new TeamCommandGroup();
         this.lootCommandGroup = new LootCommandGroup();
         this.dungeonCommandGroup = new DungeonDefinitionCommandGroup();
@@ -129,8 +138,11 @@ public final class DungeonCommand implements TabExecutor {
      * Handles Bukkit command execution after the server has resolved the root command.
      */
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull org.bukkit.command.Command cmd,
-            @NotNull String label, @NotNull String @NotNull [] args) {
+    public boolean onCommand(
+            @NotNull CommandSender sender,
+            @NotNull org.bukkit.command.Command cmd,
+            @NotNull String label,
+            @NotNull String @NotNull [] args) {
         if (!sender.hasPermission(this.getPermissionNode())) {
             LangUtils.sendMessage(sender, "general.errors.no-permission");
             return true;
@@ -148,8 +160,11 @@ public final class DungeonCommand implements TabExecutor {
      * Produces tab completions for the root command and its nested subcommands.
      */
     @Override
-    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull org.bukkit.command.Command cmd,
-            @NotNull String label, @NotNull String @NotNull [] args) {
+    public List<String> onTabComplete(
+            @NotNull CommandSender sender,
+            @NotNull org.bukkit.command.Command cmd,
+            @NotNull String label,
+            @NotNull String @NotNull [] args) {
         if (!sender.hasPermission(this.getPermissionNode())) {
             return null;
         }
@@ -233,10 +248,12 @@ public final class DungeonCommand implements TabExecutor {
 
         if (args.length == 1) {
             String query = args[0];
-            boolean canPlayFromHere = playerSender
-                    ? CommandUtils.hasPermissionSilent(sender, "dungeons.play")
-                            || CommandUtils.hasPermissionSilent(sender, "dungeons.play.send")
-                    : CommandUtils.hasPermissionSilent(sender, "dungeons.play.send");
+            boolean canPlayFromHere =
+                    playerSender
+                            ? CommandUtils.hasPermissionSilent(sender, "dungeons.play")
+                                    || CommandUtils.hasPermissionSilent(
+                                            sender, "dungeons.play.send")
+                            : CommandUtils.hasPermissionSilent(sender, "dungeons.play.send");
             if (this.canUseDiscoveryCommands(sender)) {
                 this.addMatchingLiteralOptions(options, query, "list");
             }
@@ -287,34 +304,47 @@ public final class DungeonCommand implements TabExecutor {
         }
 
         String root = args[0].toLowerCase(Locale.ROOT);
-        // Nested command groups own their second-level completions so each branch can evolve without
+        // Nested command groups own their second-level completions so each branch can evolve
+        // without
         // making the root completion logic unreadable.
         return switch (root) {
             case "help" -> args.length == 2 ? List.of("<page>") : List.of();
-            case "list" -> this.canUseDiscoveryCommands(sender) ? this.completeListCommand(args) : List.of();
+            case "list" ->
+                    this.canUseDiscoveryCommands(sender)
+                            ? this.completeListCommand(args)
+                            : List.of();
             case "play" ->
-                this.canTabCompletePlay(sender, playerSender) ? this.completePlayCommand(sender, args) : List.of();
-            case "team" -> playerSender && CommandUtils.hasPermissionSilent(sender, "dungeons.play")
-                    ? this.teamCommandGroup.handleTabComplete(sender, args)
-                    : List.of();
-            case "loot" -> playerSender && CommandUtils.hasPermissionSilent(sender, "dungeons.loottables")
-                    ? this.lootCommandGroup.handleTabComplete(sender, args)
-                    : List.of();
-            case "dungeon" -> CommandUtils.hasPermissionSilent(sender, "dungeons.admin")
-                    ? this.dungeonCommandGroup.handleTabComplete(sender, args)
-                    : List.of();
-            case "edit" -> playerSender && CommandUtils.hasAnyDungeonEditAccess(sender)
-                    ? this.editCommandGroup.handleTabComplete(sender, args)
-                    : List.of();
-            case "player" -> CommandUtils.hasPermissionSilent(sender, "dungeons.admin")
-                    ? this.playerCommandGroup.handleTabComplete(sender, args)
-                    : List.of();
-            case "instance" -> playerSender && CommandUtils.hasPermissionSilent(sender, "dungeons.admin")
-                    ? this.instanceCommandGroup.handleTabComplete(sender, args)
-                    : List.of();
-            case "debug" -> playerSender && CommandUtils.hasPermissionSilent(sender, "dungeons.admin")
-                    ? this.debugCommandGroup.handleTabComplete(sender, args)
-                    : List.of();
+                    this.canTabCompletePlay(sender, playerSender)
+                            ? this.completePlayCommand(sender, args)
+                            : List.of();
+            case "team" ->
+                    playerSender && CommandUtils.hasPermissionSilent(sender, "dungeons.play")
+                            ? this.teamCommandGroup.handleTabComplete(sender, args)
+                            : List.of();
+            case "loot" ->
+                    playerSender && CommandUtils.hasPermissionSilent(sender, "dungeons.loottables")
+                            ? this.lootCommandGroup.handleTabComplete(sender, args)
+                            : List.of();
+            case "dungeon" ->
+                    CommandUtils.hasPermissionSilent(sender, "dungeons.admin")
+                            ? this.dungeonCommandGroup.handleTabComplete(sender, args)
+                            : List.of();
+            case "edit" ->
+                    playerSender && CommandUtils.hasAnyDungeonEditAccess(sender)
+                            ? this.editCommandGroup.handleTabComplete(sender, args)
+                            : List.of();
+            case "player" ->
+                    CommandUtils.hasPermissionSilent(sender, "dungeons.admin")
+                            ? this.playerCommandGroup.handleTabComplete(sender, args)
+                            : List.of();
+            case "instance" ->
+                    playerSender && CommandUtils.hasPermissionSilent(sender, "dungeons.admin")
+                            ? this.instanceCommandGroup.handleTabComplete(sender, args)
+                            : List.of();
+            case "debug" ->
+                    playerSender && CommandUtils.hasPermissionSilent(sender, "dungeons.admin")
+                            ? this.debugCommandGroup.handleTabComplete(sender, args)
+                            : List.of();
             default -> List.of();
         };
     }
@@ -335,7 +365,8 @@ public final class DungeonCommand implements TabExecutor {
     /**
      * Adds matching editable dungeon names.
      */
-    private void addMatchingEditableDungeonNames(CommandSender sender, List<String> options, String query) {
+    private void addMatchingEditableDungeonNames(
+            CommandSender sender, List<String> options, String query) {
         String lowerQuery = query.toLowerCase(Locale.ROOT);
         for (DungeonDefinition dungeon : this.dungeonManager.getLoadedDungeons()) {
             if (!CommandUtils.hasDungeonEditAccess(sender, dungeon.getWorldName())) {
@@ -380,9 +411,11 @@ public final class DungeonCommand implements TabExecutor {
     private void addMatchingDungeonTypeNames(List<String> options, String query) {
         String lowerQuery = query.toLowerCase(Locale.ROOT);
         List<Class<?>> found = new ArrayList<>();
-        for (Entry<String, Class<? extends DungeonDefinition>> pair : DungeonTypeRegistry.getDungeonTypes().entrySet()) {
+        for (Entry<String, Class<? extends DungeonDefinition>> pair :
+                DungeonTypeRegistry.getDungeonTypes().entrySet()) {
             String dungeonType = pair.getKey();
-            if (!found.contains(pair.getValue()) && dungeonType.toLowerCase(Locale.ROOT).contains(lowerQuery)) {
+            if (!found.contains(pair.getValue())
+                    && dungeonType.toLowerCase(Locale.ROOT).contains(lowerQuery)) {
                 found.add(pair.getValue());
                 options.add(dungeonType);
             }
@@ -395,7 +428,8 @@ public final class DungeonCommand implements TabExecutor {
     private void addMatchingLiteralOptions(List<String> options, String query, String... literals) {
         String lowerQuery = query.toLowerCase(Locale.ROOT);
         for (String literal : literals) {
-            if (literal.toLowerCase(Locale.ROOT).contains(lowerQuery) && !options.contains(literal)) {
+            if (literal.toLowerCase(Locale.ROOT).contains(lowerQuery)
+                    && !options.contains(literal)) {
                 options.add(literal);
             }
         }
@@ -413,7 +447,8 @@ public final class DungeonCommand implements TabExecutor {
 
             for (String difficulty : dungeon.getDifficultyLevels().keySet()) {
                 String option = dungeon.getWorldName() + ":" + difficulty;
-                if (option.toLowerCase(Locale.ROOT).contains(lowerQuery) && !options.contains(option)) {
+                if (option.toLowerCase(Locale.ROOT).contains(lowerQuery)
+                        && !options.contains(option)) {
                     options.add(option);
                 }
             }
@@ -531,13 +566,19 @@ public final class DungeonCommand implements TabExecutor {
      */
     private void sendRootHelp(CommandSender sender) {
         boolean playerSender = sender instanceof Player;
-        sender.sendMessage(LangUtils.getMessage("commands.root.header", false,
-                LangUtils.placeholder("version", this.plugin.getPluginMeta().getVersion().split("-")[0])));
+        sender.sendMessage(
+                LangUtils.getMessage(
+                        "commands.root.header",
+                        false,
+                        LangUtils.placeholder(
+                                "version",
+                                this.plugin.getPluginMeta().getVersion().split("-")[0])));
         LangUtils.sendMessage(sender, "commands.root.help");
-        boolean canPlayFromHere = playerSender
-                ? CommandUtils.hasPermissionSilent(sender, "dungeons.play")
-                        || CommandUtils.hasPermissionSilent(sender, "dungeons.play.send")
-                : CommandUtils.hasPermissionSilent(sender, "dungeons.play.send");
+        boolean canPlayFromHere =
+                playerSender
+                        ? CommandUtils.hasPermissionSilent(sender, "dungeons.play")
+                                || CommandUtils.hasPermissionSilent(sender, "dungeons.play.send")
+                        : CommandUtils.hasPermissionSilent(sender, "dungeons.play.send");
         if (this.canUseDiscoveryCommands(sender)) {
             LangUtils.sendMessage(sender, "commands.root.list");
         }
@@ -634,25 +675,34 @@ public final class DungeonCommand implements TabExecutor {
 
         DungeonDefinition dungeon = this.dungeonManager.get(args[1]);
         if (dungeon == null) {
-            LangUtils.sendMessage(sender, "commands.player.cooldown.set.dungeon-not-found",
+            LangUtils.sendMessage(
+                    sender,
+                    "commands.player.cooldown.set.dungeon-not-found",
                     LangUtils.placeholder("dungeon", args[1]));
             return true;
         }
 
         Player targetPlayer = Bukkit.getPlayer(args[2]);
         if (targetPlayer == null) {
-            LangUtils.sendMessage(sender, "commands.player.cooldown.set.player-not-found",
+            LangUtils.sendMessage(
+                    sender,
+                    "commands.player.cooldown.set.player-not-found",
                     LangUtils.placeholder("player", args[2]));
             return true;
         }
 
         if (args.length == 3) {
             dungeon.addAccessCooldown(targetPlayer);
-            LangUtils.sendMessage(sender, "commands.player.cooldown.set.success",
+            LangUtils.sendMessage(
+                    sender,
+                    "commands.player.cooldown.set.success",
                     LangUtils.placeholder("player", PlayerUtils.playerDisplayName(targetPlayer)),
                     LangUtils.placeholder("dungeon", dungeon.getWorldName()));
-            LangUtils.sendMessage(sender, "commands.player.cooldown.set.cooldown-time",
-                    LangUtils.placeholder("time", TimeUtils.formatDate(dungeon.getNextUnlockTime())));
+            LangUtils.sendMessage(
+                    sender,
+                    "commands.player.cooldown.set.cooldown-time",
+                    LangUtils.placeholder(
+                            "time", TimeUtils.formatDate(dungeon.getNextUnlockTime())));
             return true;
         }
 
@@ -665,10 +715,14 @@ public final class DungeonCommand implements TabExecutor {
         }
 
         dungeon.addAccessCooldown(targetPlayer, resetTime);
-        LangUtils.sendMessage(sender, "commands.player.cooldown.set.success",
+        LangUtils.sendMessage(
+                sender,
+                "commands.player.cooldown.set.success",
                 LangUtils.placeholder("player", PlayerUtils.playerDisplayName(targetPlayer)),
                 LangUtils.placeholder("dungeon", dungeon.getWorldName()));
-        LangUtils.sendMessage(sender, "commands.player.cooldown.set.cooldown-time",
+        LangUtils.sendMessage(
+                sender,
+                "commands.player.cooldown.set.cooldown-time",
                 LangUtils.placeholder("time", TimeUtils.formatDate(resetTime)));
         return true;
     }
@@ -697,7 +751,9 @@ public final class DungeonCommand implements TabExecutor {
         }
 
         int cleanedSigns = ((EditableInstance) playerSession.getInstance()).cleanSigns();
-        LangUtils.sendMessage(player, "commands.edit.signs.clean.success",
+        LangUtils.sendMessage(
+                player,
+                "commands.edit.signs.clean.success",
                 LangUtils.placeholder("count", String.valueOf(cleanedSigns)));
         return true;
     }
@@ -717,13 +773,17 @@ public final class DungeonCommand implements TabExecutor {
 
         String worldName = args[1].trim();
         if (!this.isSafeImportWorldName(worldName)) {
-            LangUtils.sendMessage(sender, "commands.dungeon.import.world-not-found",
+            LangUtils.sendMessage(
+                    sender,
+                    "commands.dungeon.import.world-not-found",
                     LangUtils.placeholder("world", args[1]));
             return true;
         }
 
         if (this.dungeonManager.get(worldName) != null) {
-            LangUtils.sendMessage(sender, "commands.dungeon.import.already-exists",
+            LangUtils.sendMessage(
+                    sender,
+                    "commands.dungeon.import.already-exists",
                     LangUtils.placeholder("world", worldName));
             return true;
         }
@@ -732,20 +792,28 @@ public final class DungeonCommand implements TabExecutor {
         try {
             importFolder = this.resolveSafeChildDirectory(Bukkit.getWorldContainer(), worldName);
         } catch (IOException exception) {
-            this.plugin.getSLF4JLogger().warn("Rejected unsafe import world path '{}'.", worldName, exception);
-            LangUtils.sendMessage(sender, "commands.dungeon.import.world-not-found",
+            this.plugin
+                    .getSLF4JLogger()
+                    .warn("Rejected unsafe import world path '{}'.", worldName, exception);
+            LangUtils.sendMessage(
+                    sender,
+                    "commands.dungeon.import.world-not-found",
                     LangUtils.placeholder("world", args[1]));
             return true;
         }
 
         if (!importFolder.isDirectory()) {
-            LangUtils.sendMessage(sender, "commands.dungeon.import.world-not-found",
+            LangUtils.sendMessage(
+                    sender,
+                    "commands.dungeon.import.world-not-found",
                     LangUtils.placeholder("world", args[1]));
             return true;
         }
 
         if (Bukkit.getWorld(worldName) != null) {
-            LangUtils.sendMessage(sender, "commands.dungeon.import.world-loaded",
+            LangUtils.sendMessage(
+                    sender,
+                    "commands.dungeon.import.world-loaded",
                     LangUtils.placeholder("world", worldName));
             return true;
         }
@@ -754,14 +822,20 @@ public final class DungeonCommand implements TabExecutor {
         try {
             saveFolder = this.resolveDungeonSaveFolder(worldName);
         } catch (IOException exception) {
-            this.plugin.getSLF4JLogger().error("Failed to resolve safe dungeon folder for import '{}'.", worldName,
-                    exception);
+            this.plugin
+                    .getSLF4JLogger()
+                    .error(
+                            "Failed to resolve safe dungeon folder for import '{}'.",
+                            worldName,
+                            exception);
             this.runImportFailure(sender);
             return true;
         }
 
         if (saveFolder.exists()) {
-            LangUtils.sendMessage(sender, "commands.dungeon.import.already-exists",
+            LangUtils.sendMessage(
+                    sender,
+                    "commands.dungeon.import.already-exists",
                     LangUtils.placeholder("world", worldName));
             return true;
         }
@@ -772,7 +846,9 @@ public final class DungeonCommand implements TabExecutor {
                 Environment dimension = Environment.valueOf(args[2].toUpperCase(Locale.ROOT));
                 importer.environment(dimension);
             } catch (IllegalArgumentException exception) {
-                LangUtils.sendMessage(sender, "commands.dungeon.import.invalid-dimension",
+                LangUtils.sendMessage(
+                        sender,
+                        "commands.dungeon.import.invalid-dimension",
                         LangUtils.placeholder("dimension", args[2].toUpperCase(Locale.ROOT)));
                 return true;
             }
@@ -788,52 +864,79 @@ public final class DungeonCommand implements TabExecutor {
         Location importSpawn = importWorld.getSpawnLocation();
         String dimension = importWorld.getEnvironment().toString();
         if (!Bukkit.unloadWorld(importWorld, false)) {
-            this.plugin.getSLF4JLogger().error(
-                    "Failed to unload imported source world '{}' before copying it into a dungeon folder.", worldName);
+            this.plugin
+                    .getSLF4JLogger()
+                    .error(
+                            "Failed to unload imported source world '{}' before copying it into a dungeon folder.",
+                            worldName);
             this.runImportFailure(sender);
             return true;
         }
 
-        Bukkit.getScheduler().runTaskAsynchronously(this.plugin, () -> {
-            if (saveFolder.exists()) {
-                this.plugin.getSLF4JLogger().error(
-                        "Refusing to import world '{}' because the target dungeon folder '{}' already exists.",
-                        worldName, saveFolder.getAbsolutePath());
-                this.runImportFailure(sender);
-                return;
-            }
+        Bukkit.getScheduler()
+                .runTaskAsynchronously(
+                        this.plugin,
+                        () -> {
+                            if (saveFolder.exists()) {
+                                this.plugin
+                                        .getSLF4JLogger()
+                                        .error(
+                                                "Refusing to import world '{}' because the target dungeon folder '{}' already exists.",
+                                                worldName,
+                                                saveFolder.getAbsolutePath());
+                                this.runImportFailure(sender);
+                                return;
+                            }
 
-            if (!saveFolder.mkdirs()) {
-                this.plugin.getSLF4JLogger().error("Failed to create dungeon import folder '{}'.",
-                        saveFolder.getAbsolutePath());
-                this.runImportFailure(sender);
-                return;
-            }
+                            if (!saveFolder.mkdirs()) {
+                                this.plugin
+                                        .getSLF4JLogger()
+                                        .error(
+                                                "Failed to create dungeon import folder '{}'.",
+                                                saveFolder.getAbsolutePath());
+                                this.runImportFailure(sender);
+                                return;
+                            }
 
-            try {
-                FileUtils.copyDirectory(importFolder, saveFolder);
-            } catch (IOException exception) {
-                this.cleanupDirectory(saveFolder, "failed import target");
-                this.plugin.getSLF4JLogger().error("Failed to import world '{}' into dungeon folder '{}'.", worldName,
-                        saveFolder.getAbsolutePath(), exception);
-                this.runImportFailure(sender);
-                return;
-            }
+                            try {
+                                FileUtils.copyDirectory(importFolder, saveFolder);
+                            } catch (IOException exception) {
+                                this.cleanupDirectory(saveFolder, "failed import target");
+                                this.plugin
+                                        .getSLF4JLogger()
+                                        .error(
+                                                "Failed to import world '{}' into dungeon folder '{}'.",
+                                                worldName,
+                                                saveFolder.getAbsolutePath(),
+                                                exception);
+                                this.runImportFailure(sender);
+                                return;
+                            }
 
-            Bukkit.getScheduler().runTask(this.plugin, () -> {
-                DungeonDefinition importDungeon = this.dungeonManager.loadDungeon(saveFolder);
-                if (importDungeon == null) {
-                    this.cleanupDirectoryAsync(saveFolder, "failed imported dungeon");
-                    LangUtils.sendMessage(sender, "commands.dungeon.import.failed");
-                    return;
-                }
+                            Bukkit.getScheduler()
+                                    .runTask(
+                                            this.plugin,
+                                            () -> {
+                                                DungeonDefinition importDungeon =
+                                                        this.dungeonManager.loadDungeon(saveFolder);
+                                                if (importDungeon == null) {
+                                                    this.cleanupDirectoryAsync(
+                                                            saveFolder, "failed imported dungeon");
+                                                    LangUtils.sendMessage(
+                                                            sender,
+                                                            "commands.dungeon.import.failed");
+                                                    return;
+                                                }
 
-                importDungeon.setSaveConfig("dungeon.environment", dimension);
-                importDungeon.setLobbySpawn(importSpawn);
-                LangUtils.sendMessage(sender, "commands.dungeon.import.success",
-                        LangUtils.placeholder("world", worldName));
-            });
-        });
+                                                importDungeon.setSaveConfig(
+                                                        "dungeon.environment", dimension);
+                                                importDungeon.setLobbySpawn(importSpawn);
+                                                LangUtils.sendMessage(
+                                                        sender,
+                                                        "commands.dungeon.import.success",
+                                                        LangUtils.placeholder("world", worldName));
+                                            });
+                        });
 
         return true;
     }
@@ -849,7 +952,8 @@ public final class DungeonCommand implements TabExecutor {
      * Resolves dungeon save folder.
      */
     private File resolveDungeonSaveFolder(String worldName) throws IOException {
-        return this.resolveSafeChildDirectory(new File(this.plugin.getDataFolder(), "dungeons"), worldName);
+        return this.resolveSafeChildDirectory(
+                new File(this.plugin.getDataFolder(), "dungeons"), worldName);
     }
 
     /**
@@ -863,8 +967,12 @@ public final class DungeonCommand implements TabExecutor {
         try {
             return this.resolveSafeChildDirectory(Bukkit.getWorldContainer(), worldName).exists();
         } catch (IOException exception) {
-            this.plugin.getSLF4JLogger().warn("Failed to resolve world folder collision check for '{}'.", worldName,
-                    exception);
+            this.plugin
+                    .getSLF4JLogger()
+                    .warn(
+                            "Failed to resolve world folder collision check for '{}'.",
+                            worldName,
+                            exception);
             return true;
         }
     }
@@ -912,12 +1020,21 @@ public final class DungeonCommand implements TabExecutor {
             if (directory.isDirectory()) {
                 FileUtils.deleteDirectory(directory);
             } else if (!directory.delete()) {
-                this.plugin.getSLF4JLogger().warn("Failed to delete {} '{}'.", description,
-                        directory.getAbsolutePath());
+                this.plugin
+                        .getSLF4JLogger()
+                        .warn(
+                                "Failed to delete {} '{}'.",
+                                description,
+                                directory.getAbsolutePath());
             }
         } catch (IOException exception) {
-            this.plugin.getSLF4JLogger().warn("Failed to clean up {} '{}'.", description, directory.getAbsolutePath(),
-                    exception);
+            this.plugin
+                    .getSLF4JLogger()
+                    .warn(
+                            "Failed to clean up {} '{}'.",
+                            description,
+                            directory.getAbsolutePath(),
+                            exception);
         }
     }
 
@@ -939,8 +1056,10 @@ public final class DungeonCommand implements TabExecutor {
      * Runs run import failure.
      */
     private void runImportFailure(CommandSender sender) {
-        Bukkit.getScheduler().runTask(this.plugin,
-                () -> LangUtils.sendMessage(sender, "commands.dungeon.import.failed"));
+        Bukkit.getScheduler()
+                .runTask(
+                        this.plugin,
+                        () -> LangUtils.sendMessage(sender, "commands.dungeon.import.failed"));
     }
 
     /**
@@ -975,20 +1094,36 @@ public final class DungeonCommand implements TabExecutor {
 
         LangUtils.sendMessage(player, "commands.edit.save.saving");
         editable.saveWorldAsync()
-                .whenComplete((success, throwable) -> Bukkit.getScheduler().runTask(this.plugin, () -> {
-                    if (!player.isOnline()) {
-                        return;
-                    }
+                .whenComplete(
+                        (success, throwable) ->
+                                Bukkit.getScheduler()
+                                        .runTask(
+                                                this.plugin,
+                                                () -> {
+                                                    if (!player.isOnline()) {
+                                                        return;
+                                                    }
 
-                    if (throwable != null || !Boolean.TRUE.equals(success)) {
-                        LangUtils.sendMessage(player, "commands.edit.save.failed",
-                                LangUtils.placeholder("dungeon", instance.getDungeon().getWorldName()));
-                        return;
-                    }
+                                                    if (throwable != null
+                                                            || !Boolean.TRUE.equals(success)) {
+                                                        LangUtils.sendMessage(
+                                                                player,
+                                                                "commands.edit.save.failed",
+                                                                LangUtils.placeholder(
+                                                                        "dungeon",
+                                                                        instance.getDungeon()
+                                                                                .getWorldName()));
+                                                        return;
+                                                    }
 
-                    LangUtils.sendMessage(player, "commands.edit.save.success",
-                            LangUtils.placeholder("dungeon", instance.getDungeon().getWorldName()));
-                }));
+                                                    LangUtils.sendMessage(
+                                                            player,
+                                                            "commands.edit.save.success",
+                                                            LangUtils.placeholder(
+                                                                    "dungeon",
+                                                                    instance.getDungeon()
+                                                                            .getWorldName()));
+                                                }));
         return true;
     }
 
@@ -1013,7 +1148,9 @@ public final class DungeonCommand implements TabExecutor {
         playerSession.restoreEditorTools();
         int functionSlot = PluginConfigView.getFunctionToolSlot(this.plugin.getConfig());
         player.getInventory().setHeldItemSlot(functionSlot);
-        LangUtils.sendMessage(player, "commands.edit.tools.function.restored",
+        LangUtils.sendMessage(
+                player,
+                "commands.edit.tools.function.restored",
                 LangUtils.placeholder("slot", String.valueOf(functionSlot + 1)));
         return true;
     }
@@ -1044,7 +1181,9 @@ public final class DungeonCommand implements TabExecutor {
         playerSession.restoreEditorTools();
         int roomSlot = PluginConfigView.getRoomToolSlot(this.plugin.getConfig());
         player.getInventory().setHeldItemSlot(roomSlot);
-        LangUtils.sendMessage(player, "commands.edit.tools.room.restored",
+        LangUtils.sendMessage(
+                player,
+                "commands.edit.tools.room.restored",
                 LangUtils.placeholder("slot", String.valueOf(roomSlot + 1)));
         return true;
     }
@@ -1164,7 +1303,9 @@ public final class DungeonCommand implements TabExecutor {
 
         DungeonDefinition dungeon = this.dungeonManager.get(args[1]);
         if (dungeon == null) {
-            LangUtils.sendMessage(player, "commands.dungeon.exit.set.dungeon-not-found",
+            LangUtils.sendMessage(
+                    player,
+                    "commands.dungeon.exit.set.dungeon-not-found",
                     LangUtils.placeholder("dungeon", args[1]));
             return true;
         }
@@ -1180,8 +1321,11 @@ public final class DungeonCommand implements TabExecutor {
         double exitY = MathUtils.round(exitLoc.getY(), 2);
         double exitZ = MathUtils.round(exitLoc.getZ(), 2);
         double exitYAW = MathUtils.round(exitLoc.getYaw(), 2);
-        LangUtils.sendMessage(player, "commands.dungeon.exit.set.success",
-                LangUtils.placeholder("x", String.valueOf(exitX)), LangUtils.placeholder("y", String.valueOf(exitY)),
+        LangUtils.sendMessage(
+                player,
+                "commands.dungeon.exit.set.success",
+                LangUtils.placeholder("x", String.valueOf(exitX)),
+                LangUtils.placeholder("y", String.valueOf(exitY)),
                 LangUtils.placeholder("z", String.valueOf(exitZ)),
                 LangUtils.placeholder("yaw", String.valueOf(exitYAW)));
         return true;
@@ -1190,26 +1334,36 @@ public final class DungeonCommand implements TabExecutor {
     /**
      * Runs handle set dungeon enabled command.
      */
-    private boolean handleSetDungeonEnabledCommand(CommandSender sender, String[] args, boolean enabled) {
+    private boolean handleSetDungeonEnabledCommand(
+            CommandSender sender, String[] args, boolean enabled) {
         if (!CommandUtils.hasPermission(sender, "dungeons.admin")) {
             return false;
         }
 
         if (args.length != 2) {
-            LangUtils.sendMessage(sender, enabled ? "commands.dungeon.enable.usage" : "commands.dungeon.disable.usage");
+            LangUtils.sendMessage(
+                    sender,
+                    enabled ? "commands.dungeon.enable.usage" : "commands.dungeon.disable.usage");
             return true;
         }
 
         DungeonDefinition dungeon = this.dungeonManager.get(args[1]);
         if (dungeon == null) {
-            LangUtils.sendMessage(sender, enabled ? "commands.dungeon.enable.dungeon-not-found"
-                    : "commands.dungeon.disable.dungeon-not-found", LangUtils.placeholder("dungeon", args[1]));
+            LangUtils.sendMessage(
+                    sender,
+                    enabled
+                            ? "commands.dungeon.enable.dungeon-not-found"
+                            : "commands.dungeon.disable.dungeon-not-found",
+                    LangUtils.placeholder("dungeon", args[1]));
             return true;
         }
 
         if (dungeon.isEnabled() == enabled) {
-            LangUtils.sendMessage(sender, enabled ? "commands.dungeon.enable.already-enabled"
-                    : "commands.dungeon.disable.already-disabled",
+            LangUtils.sendMessage(
+                    sender,
+                    enabled
+                            ? "commands.dungeon.enable.already-enabled"
+                            : "commands.dungeon.disable.already-disabled",
                     LangUtils.placeholder("dungeon", dungeon.getWorldName()));
             return true;
         }
@@ -1219,7 +1373,9 @@ public final class DungeonCommand implements TabExecutor {
             this.clearQueuedStartsForDisabledDungeon(dungeon);
         }
 
-        LangUtils.sendMessage(sender, enabled ? "commands.dungeon.enable.success" : "commands.dungeon.disable.success",
+        LangUtils.sendMessage(
+                sender,
+                enabled ? "commands.dungeon.enable.success" : "commands.dungeon.disable.success",
                 LangUtils.placeholder("dungeon", dungeon.getWorldName()));
         return true;
     }
@@ -1237,7 +1393,9 @@ public final class DungeonCommand implements TabExecutor {
                 DungeonPlayerSession playerSession = this.playerManager.get(playerId);
                 Player player = playerSession == null ? null : playerSession.getPlayer();
                 if (player != null && player.isOnline()) {
-                    LangUtils.sendMessage(player, "commands.play.disabled",
+                    LangUtils.sendMessage(
+                            player,
+                            "commands.play.disabled",
                             LangUtils.placeholder("dungeon", dungeon.getWorldName()));
                 }
             }
@@ -1277,8 +1435,11 @@ public final class DungeonCommand implements TabExecutor {
         double spawnY = MathUtils.round(spawnLoc.getY(), 2);
         double spawnZ = MathUtils.round(spawnLoc.getZ(), 2);
         double spawnYAW = MathUtils.round(spawnLoc.getYaw(), 2);
-        LangUtils.sendMessage(player, "commands.edit.start.set.success",
-                LangUtils.placeholder("x", String.valueOf(spawnX)), LangUtils.placeholder("y", String.valueOf(spawnY)),
+        LangUtils.sendMessage(
+                player,
+                "commands.edit.start.set.success",
+                LangUtils.placeholder("x", String.valueOf(spawnX)),
+                LangUtils.placeholder("y", String.valueOf(spawnY)),
                 LangUtils.placeholder("z", String.valueOf(spawnZ)),
                 LangUtils.placeholder("yaw", String.valueOf(spawnYAW)));
         return true;
@@ -1314,8 +1475,11 @@ public final class DungeonCommand implements TabExecutor {
         double lobbyY = MathUtils.round(lobbyLocation.getY(), 2);
         double lobbyZ = MathUtils.round(lobbyLocation.getZ(), 2);
         double lobbyYAW = MathUtils.round(lobbyLocation.getYaw(), 2);
-        LangUtils.sendMessage(player, "commands.edit.lobby.set.success",
-                LangUtils.placeholder("x", String.valueOf(lobbyX)), LangUtils.placeholder("y", String.valueOf(lobbyY)),
+        LangUtils.sendMessage(
+                player,
+                "commands.edit.lobby.set.success",
+                LangUtils.placeholder("x", String.valueOf(lobbyX)),
+                LangUtils.placeholder("y", String.valueOf(lobbyY)),
                 LangUtils.placeholder("z", String.valueOf(lobbyZ)),
                 LangUtils.placeholder("yaw", String.valueOf(lobbyYAW)));
         return true;
@@ -1336,7 +1500,9 @@ public final class DungeonCommand implements TabExecutor {
 
         DungeonDefinition dungeon = this.dungeonManager.get(args[1]);
         if (dungeon == null) {
-            LangUtils.sendMessage(player, "commands.dungeon.keys.clear.dungeon-not-found",
+            LangUtils.sendMessage(
+                    player,
+                    "commands.dungeon.keys.clear.dungeon-not-found",
                     LangUtils.placeholder("dungeon", args[1]));
             return true;
         }
@@ -1347,7 +1513,9 @@ public final class DungeonCommand implements TabExecutor {
         }
 
         int removedCount = dungeon.removeAllAccessKeys();
-        LangUtils.sendMessage(player, "commands.dungeon.keys.clear.success",
+        LangUtils.sendMessage(
+                player,
+                "commands.dungeon.keys.clear.success",
                 LangUtils.placeholder("count", String.valueOf(removedCount)));
         return true;
     }
@@ -1363,7 +1531,9 @@ public final class DungeonCommand implements TabExecutor {
 
         DungeonDefinition dungeon = this.dungeonManager.get(args[1]);
         if (dungeon == null) {
-            LangUtils.sendMessage(sender, "commands.dungeon.keys.remove.dungeon-not-found",
+            LangUtils.sendMessage(
+                    sender,
+                    "commands.dungeon.keys.remove.dungeon-not-found",
                     LangUtils.placeholder("dungeon", args[1]));
             return true;
         }
@@ -1380,13 +1550,17 @@ public final class DungeonCommand implements TabExecutor {
             }
 
             if (!dungeon.removeAccessKey(parsedKeyId.get())) {
-                LangUtils.sendMessage(sender, "commands.dungeon.keys.remove.invalid-key",
+                LangUtils.sendMessage(
+                        sender,
+                        "commands.dungeon.keys.remove.invalid-key",
                         LangUtils.placeholder("id", args[2]),
                         LangUtils.placeholder("dungeon", dungeon.getWorldName()));
                 return true;
             }
 
-            LangUtils.sendMessage(sender, "commands.dungeon.keys.remove.success",
+            LangUtils.sendMessage(
+                    sender,
+                    "commands.dungeon.keys.remove.success",
                     LangUtils.placeholder("count", "1"));
             return true;
         }
@@ -1404,7 +1578,9 @@ public final class DungeonCommand implements TabExecutor {
 
         int removedCount = dungeon.removeAccessKey(heldItem);
         if (removedCount > 0) {
-            LangUtils.sendMessage(player, "commands.dungeon.keys.remove.success",
+            LangUtils.sendMessage(
+                    player,
+                    "commands.dungeon.keys.remove.success",
                     LangUtils.placeholder("count", String.valueOf(removedCount)));
         } else {
             LangUtils.sendMessage(player, "commands.dungeon.keys.remove.no-key-found");
@@ -1429,7 +1605,9 @@ public final class DungeonCommand implements TabExecutor {
 
         DungeonDefinition dungeon = this.dungeonManager.get(args[1]);
         if (dungeon == null) {
-            LangUtils.sendMessage(player, "commands.dungeon.keys.add.dungeon-not-found",
+            LangUtils.sendMessage(
+                    player,
+                    "commands.dungeon.keys.add.dungeon-not-found",
                     LangUtils.placeholder("dungeon", args[1]));
             return true;
         }
@@ -1449,14 +1627,18 @@ public final class DungeonCommand implements TabExecutor {
         ItemStack taggedKeyItem = dungeon.issueAccessKey(addedKey);
         int keyId = dungeon.getAccessKeys().indexOf(addedKey) + 1;
         if (taggedKeyItem == null || taggedKeyItem.getType() == Material.AIR) {
-            LangUtils.sendMessage(player, "commands.dungeon.keys.add.issue-failed",
+            LangUtils.sendMessage(
+                    player,
+                    "commands.dungeon.keys.add.issue-failed",
                     LangUtils.placeholder("id", String.valueOf(keyId)));
             return true;
         }
 
         player.getInventory().setItemInMainHand(taggedKeyItem);
         player.updateInventory();
-        LangUtils.sendMessage(player, "commands.dungeon.keys.add.success",
+        LangUtils.sendMessage(
+                player,
+                "commands.dungeon.keys.add.success",
                 LangUtils.placeholder("id", String.valueOf(keyId)));
         return true;
     }
@@ -1476,7 +1658,9 @@ public final class DungeonCommand implements TabExecutor {
 
         DungeonDefinition dungeon = this.dungeonManager.get(args[3]);
         if (dungeon == null) {
-            LangUtils.sendMessage(sender, "commands.dungeon.keys.list.dungeon-not-found",
+            LangUtils.sendMessage(
+                    sender,
+                    "commands.dungeon.keys.list.dungeon-not-found",
                     LangUtils.placeholder("dungeon", args[3]));
             return true;
         }
@@ -1496,10 +1680,16 @@ public final class DungeonCommand implements TabExecutor {
             lines.add(this.formatAccessKeyLine(index + 1, accessKeys.get(index)));
         }
 
-        this.sendPaginatedLines(sender,
-                LangUtils.getMessage("commands.dungeon.keys.list.header", false,
+        this.sendPaginatedLines(
+                sender,
+                LangUtils.getMessage(
+                        "commands.dungeon.keys.list.header",
+                        false,
                         LangUtils.placeholder("dungeon", dungeon.getWorldName())),
-                lines, "commands.dungeon.keys.list.none", "commands.dungeon.keys.list.footer", page);
+                lines,
+                "commands.dungeon.keys.list.none",
+                "commands.dungeon.keys.list.footer",
+                page);
         return true;
     }
 
@@ -1518,14 +1708,18 @@ public final class DungeonCommand implements TabExecutor {
 
         DungeonDefinition dungeon = this.dungeonManager.get(args[3]);
         if (dungeon == null) {
-            LangUtils.sendMessage(sender, "commands.dungeon.keys.give.dungeon-not-found",
+            LangUtils.sendMessage(
+                    sender,
+                    "commands.dungeon.keys.give.dungeon-not-found",
                     LangUtils.placeholder("dungeon", args[3]));
             return true;
         }
 
         Player targetPlayer = Bukkit.getPlayer(args[4]);
         if (targetPlayer == null) {
-            LangUtils.sendMessage(sender, "commands.dungeon.keys.give.player-not-found",
+            LangUtils.sendMessage(
+                    sender,
+                    "commands.dungeon.keys.give.player-not-found",
                     LangUtils.placeholder("player", args[4]));
             return true;
         }
@@ -1537,7 +1731,9 @@ public final class DungeonCommand implements TabExecutor {
 
         AccessKeyDefinition accessKey = dungeon.getAccessKey(parsedKeyId.get());
         if (accessKey == null) {
-            LangUtils.sendMessage(sender, "commands.dungeon.keys.give.invalid-key",
+            LangUtils.sendMessage(
+                    sender,
+                    "commands.dungeon.keys.give.invalid-key",
                     LangUtils.placeholder("id", args[5]),
                     LangUtils.placeholder("dungeon", dungeon.getWorldName()));
             return true;
@@ -1559,7 +1755,9 @@ public final class DungeonCommand implements TabExecutor {
 
         ItemStack previewItem = accessKey.createItemCopy();
         if (previewItem == null || previewItem.getType() == Material.AIR) {
-            LangUtils.sendMessage(sender, "commands.dungeon.keys.give.invalid-key",
+            LangUtils.sendMessage(
+                    sender,
+                    "commands.dungeon.keys.give.invalid-key",
                     LangUtils.placeholder("id", args[5]),
                     LangUtils.placeholder("dungeon", dungeon.getWorldName()));
             return true;
@@ -1575,20 +1773,26 @@ public final class DungeonCommand implements TabExecutor {
         }
 
         if (grantedCopies < 1) {
-            LangUtils.sendMessage(sender, "commands.dungeon.keys.give.issue-failed",
+            LangUtils.sendMessage(
+                    sender,
+                    "commands.dungeon.keys.give.issue-failed",
                     LangUtils.placeholder("id", args[5]),
                     LangUtils.placeholder("dungeon", dungeon.getWorldName()));
             return true;
         }
 
-        LangUtils.sendMessage(sender, "commands.dungeon.keys.give.success",
+        LangUtils.sendMessage(
+                sender,
+                "commands.dungeon.keys.give.success",
                 LangUtils.placeholder("player", PlayerUtils.playerDisplayName(targetPlayer)),
                 LangUtils.placeholder("dungeon", dungeon.getWorldName()),
                 LangUtils.placeholder("id", args[5]),
                 LangUtils.placeholder("copies", String.valueOf(grantedCopies)),
                 LangUtils.placeholder("item", ItemUtils.getItemDisplayName(previewItem)));
         if (!sender.equals(targetPlayer)) {
-            LangUtils.sendMessage(targetPlayer, "commands.dungeon.keys.give.target",
+            LangUtils.sendMessage(
+                    targetPlayer,
+                    "commands.dungeon.keys.give.target",
                     LangUtils.placeholder("dungeon", dungeon.getWorldName()),
                     LangUtils.placeholder("id", args[5]),
                     LangUtils.placeholder("copies", String.valueOf(grantedCopies)),
@@ -1618,7 +1822,9 @@ public final class DungeonCommand implements TabExecutor {
 
         DungeonDefinition dungeon = this.dungeonManager.get(args[1]);
         if (dungeon == null) {
-            LangUtils.sendMessage(sender, "commands.dungeon.delete.dungeon-not-found",
+            LangUtils.sendMessage(
+                    sender,
+                    "commands.dungeon.delete.dungeon-not-found",
                     LangUtils.placeholder("dungeon", args[1]));
             return true;
         }
@@ -1645,11 +1851,13 @@ public final class DungeonCommand implements TabExecutor {
             return true;
         }
 
-        for (DungeonInstance instance : new ArrayList<>(this.activeInstanceManager.getActiveInstances())) {
+        for (DungeonInstance instance :
+                new ArrayList<>(this.activeInstanceManager.getActiveInstances())) {
             if (instance.getDungeon() == dungeon) {
                 for (DungeonPlayerSession playerSession : new ArrayList<>(instance.getPlayers())) {
                     instance.removePlayer(playerSession);
-                    LangUtils.sendMessage(playerSession.getPlayer(), "commands.dungeon.delete.notification");
+                    LangUtils.sendMessage(
+                            playerSession.getPlayer(), "commands.dungeon.delete.notification");
                 }
             }
         }
@@ -1658,11 +1866,18 @@ public final class DungeonCommand implements TabExecutor {
         try {
             FileUtils.deleteDirectory(dungeon.getFolder());
         } catch (IOException exception) {
-            this.plugin.getSLF4JLogger().error("Failed to delete dungeon folder '{}'.",
-                    dungeon.getFolder().getAbsolutePath(), exception);
+            this.plugin
+                    .getSLF4JLogger()
+                    .error(
+                            "Failed to delete dungeon folder '{}'.",
+                            dungeon.getFolder().getAbsolutePath(),
+                            exception);
         }
 
-        LangUtils.sendMessage(sender, "commands.dungeon.delete.success", LangUtils.placeholder("dungeon", args[1]));
+        LangUtils.sendMessage(
+                sender,
+                "commands.dungeon.delete.success",
+                LangUtils.placeholder("dungeon", args[1]));
         return true;
     }
 
@@ -1686,7 +1901,9 @@ public final class DungeonCommand implements TabExecutor {
         }
 
         if (this.dungeonManager.get(args[1]) == null) {
-            LangUtils.sendMessage(player, "commands.edit.open.dungeon-not-found",
+            LangUtils.sendMessage(
+                    player,
+                    "commands.edit.open.dungeon-not-found",
                     LangUtils.placeholder("dungeon", args[1]));
             return true;
         }
@@ -1698,8 +1915,9 @@ public final class DungeonCommand implements TabExecutor {
 
         LangUtils.sendMessage(player, "commands.edit.open.loading");
         UUID playerId = player.getUniqueId();
-        Bukkit.getScheduler().runTaskAsynchronously(this.plugin,
-                () -> this.dungeonManager.editDungeon(args[1], playerId));
+        Bukkit.getScheduler()
+                .runTaskAsynchronously(
+                        this.plugin, () -> this.dungeonManager.editDungeon(args[1], playerId));
         return true;
     }
 
@@ -1730,8 +1948,12 @@ public final class DungeonCommand implements TabExecutor {
         try {
             saveFolder = this.resolveDungeonSaveFolder(worldName);
         } catch (IOException exception) {
-            this.plugin.getSLF4JLogger().error("Failed to resolve safe dungeon folder for creation '{}'.", worldName,
-                    exception);
+            this.plugin
+                    .getSLF4JLogger()
+                    .error(
+                            "Failed to resolve safe dungeon folder for creation '{}'.",
+                            worldName,
+                            exception);
             LangUtils.sendMessage(player, "commands.dungeon.create.failed-to-create");
             return true;
         }
@@ -1742,7 +1964,9 @@ public final class DungeonCommand implements TabExecutor {
         }
 
         if (this.worldNameConflictsWithExistingServerWorld(worldName)) {
-            LangUtils.sendMessage(player, "commands.dungeon.create.world-conflict",
+            LangUtils.sendMessage(
+                    player,
+                    "commands.dungeon.create.world-conflict",
                     LangUtils.placeholder("world", worldName));
             return true;
         }
@@ -1768,66 +1992,118 @@ public final class DungeonCommand implements TabExecutor {
         Location spawnpoint = world.getSpawnLocation();
         File worldFolder = world.getWorldFolder();
         if (!Bukkit.unloadWorld(world, true)) {
-            this.plugin.getSLF4JLogger().error("Failed to unload temporary world '{}' while creating dungeon '{}'.",
-                    tempWorldName, worldName);
+            this.plugin
+                    .getSLF4JLogger()
+                    .error(
+                            "Failed to unload temporary world '{}' while creating dungeon '{}'.",
+                            tempWorldName,
+                            worldName);
             LangUtils.sendMessage(player, "commands.dungeon.create.failed-to-create");
             return true;
         }
 
-        Bukkit.getScheduler().runTaskAsynchronously(this.plugin, () -> {
-            if (saveFolder.exists()) {
-                this.plugin.getSLF4JLogger().error(
-                        "Refusing to create dungeon '{}' because the target folder '{}' already exists.", worldName,
-                        saveFolder.getAbsolutePath());
-                this.cleanupDirectory(worldFolder, "temporary world folder");
-                Bukkit.getScheduler().runTask(this.plugin,
-                        () -> LangUtils.sendMessage(player, "commands.dungeon.create.already-exists"));
-                return;
-            }
+        Bukkit.getScheduler()
+                .runTaskAsynchronously(
+                        this.plugin,
+                        () -> {
+                            if (saveFolder.exists()) {
+                                this.plugin
+                                        .getSLF4JLogger()
+                                        .error(
+                                                "Refusing to create dungeon '{}' because the target folder '{}' already exists.",
+                                                worldName,
+                                                saveFolder.getAbsolutePath());
+                                this.cleanupDirectory(worldFolder, "temporary world folder");
+                                Bukkit.getScheduler()
+                                        .runTask(
+                                                this.plugin,
+                                                () ->
+                                                        LangUtils.sendMessage(
+                                                                player,
+                                                                "commands.dungeon.create.already-exists"));
+                                return;
+                            }
 
-            if (!saveFolder.mkdirs()) {
-                this.plugin.getSLF4JLogger().error("Failed to create dungeon folder '{}'.",
-                        saveFolder.getAbsolutePath());
-                this.cleanupDirectory(worldFolder, "temporary world folder");
-                Bukkit.getScheduler().runTask(this.plugin,
-                        () -> LangUtils.sendMessage(player, "commands.dungeon.create.failed-to-create"));
-                return;
-            }
+                            if (!saveFolder.mkdirs()) {
+                                this.plugin
+                                        .getSLF4JLogger()
+                                        .error(
+                                                "Failed to create dungeon folder '{}'.",
+                                                saveFolder.getAbsolutePath());
+                                this.cleanupDirectory(worldFolder, "temporary world folder");
+                                Bukkit.getScheduler()
+                                        .runTask(
+                                                this.plugin,
+                                                () ->
+                                                        LangUtils.sendMessage(
+                                                                player,
+                                                                "commands.dungeon.create.failed-to-create"));
+                                return;
+                            }
 
-            try {
-                FileUtils.copyDirectory(worldFolder, saveFolder);
-            } catch (IOException exception) {
-                this.cleanupDirectory(saveFolder, "failed creation target");
-                this.cleanupDirectory(worldFolder, "temporary world folder");
-                this.plugin.getSLF4JLogger().error("Failed to create dungeon '{}' from world folder '{}'.", worldName,
-                        worldFolder.getAbsolutePath(), exception);
-                Bukkit.getScheduler().runTask(this.plugin,
-                        () -> LangUtils.sendMessage(player, "commands.dungeon.create.failed-to-create"));
-                return;
-            }
+                            try {
+                                FileUtils.copyDirectory(worldFolder, saveFolder);
+                            } catch (IOException exception) {
+                                this.cleanupDirectory(saveFolder, "failed creation target");
+                                this.cleanupDirectory(worldFolder, "temporary world folder");
+                                this.plugin
+                                        .getSLF4JLogger()
+                                        .error(
+                                                "Failed to create dungeon '{}' from world folder '{}'.",
+                                                worldName,
+                                                worldFolder.getAbsolutePath(),
+                                                exception);
+                                Bukkit.getScheduler()
+                                        .runTask(
+                                                this.plugin,
+                                                () ->
+                                                        LangUtils.sendMessage(
+                                                                player,
+                                                                "commands.dungeon.create.failed-to-create"));
+                                return;
+                            }
 
-            this.cleanupDirectory(worldFolder, "temporary world folder");
+                            this.cleanupDirectory(worldFolder, "temporary world folder");
 
-            Bukkit.getScheduler().runTask(this.plugin, () -> {
-                DungeonDefinition newDungeon = this.dungeonManager.loadDungeon(saveFolder, dungeonType, generatorType);
-                if (newDungeon == null) {
-                    this.cleanupDirectoryAsync(saveFolder, "failed created dungeon");
-                    LangUtils.sendMessage(player, "commands.dungeon.create.failed-to-create");
-                    this.plugin.getSLF4JLogger().warn("Dungeon creation failed for '{}': unknown dungeon type '{}'.",
-                            worldName, dungeonType);
-                    return;
-                }
+                            Bukkit.getScheduler()
+                                    .runTask(
+                                            this.plugin,
+                                            () -> {
+                                                DungeonDefinition newDungeon =
+                                                        this.dungeonManager.loadDungeon(
+                                                                saveFolder,
+                                                                dungeonType,
+                                                                generatorType);
+                                                if (newDungeon == null) {
+                                                    this.cleanupDirectoryAsync(
+                                                            saveFolder, "failed created dungeon");
+                                                    LangUtils.sendMessage(
+                                                            player,
+                                                            "commands.dungeon.create.failed-to-create");
+                                                    this.plugin
+                                                            .getSLF4JLogger()
+                                                            .warn(
+                                                                    "Dungeon creation failed for '{}': unknown dungeon type '{}'.",
+                                                                    worldName,
+                                                                    dungeonType);
+                                                    return;
+                                                }
 
-                newDungeon.setLobbySpawn(spawnpoint);
-                if (!dungeonType.isEmpty()) {
-                    newDungeon.getConfig().set("dungeon.type", dungeonType);
-                }
+                                                newDungeon.setLobbySpawn(spawnpoint);
+                                                if (!dungeonType.isEmpty()) {
+                                                    newDungeon
+                                                            .getConfig()
+                                                            .set("dungeon.type", dungeonType);
+                                                }
 
-                newDungeon.saveConfig();
-                LangUtils.sendMessage(player, "commands.dungeon.create.success",
-                        LangUtils.placeholder("dungeon", worldName));
-            });
-        });
+                                                newDungeon.saveConfig();
+                                                LangUtils.sendMessage(
+                                                        player,
+                                                        "commands.dungeon.create.success",
+                                                        LangUtils.placeholder(
+                                                                "dungeon", worldName));
+                                            });
+                        });
 
         return true;
     }
@@ -1862,15 +2138,21 @@ public final class DungeonCommand implements TabExecutor {
 
             DungeonDefinition dungeon = this.dungeonManager.get(args[1]);
             if (dungeon == null) {
-                LangUtils.sendMessage(sender, "commands.dungeon.reload.dungeon-not-found",
+                LangUtils.sendMessage(
+                        sender,
+                        "commands.dungeon.reload.dungeon-not-found",
                         LangUtils.placeholder("dungeon", args[1]));
                 return true;
             }
 
-            LangUtils.sendMessage(sender, "commands.dungeon.reload.dungeon-reloading",
+            LangUtils.sendMessage(
+                    sender,
+                    "commands.dungeon.reload.dungeon-reloading",
                     LangUtils.placeholder("dungeon", args[1]));
             this.lifecycleCoordinator.reloadDungeon(dungeon);
-            LangUtils.sendMessage(sender, "commands.dungeon.reload.dungeon-reloaded",
+            LangUtils.sendMessage(
+                    sender,
+                    "commands.dungeon.reload.dungeon-reloaded",
                     LangUtils.placeholder("dungeon", args[1]));
             return true;
         }
@@ -1884,7 +2166,8 @@ public final class DungeonCommand implements TabExecutor {
         }
 
         if (args[1].equalsIgnoreCase("all")) {
-            if (playerSession.isReloadQueued() || this.activeInstanceManager.getActiveInstances().isEmpty()) {
+            if (playerSession.isReloadQueued()
+                    || this.activeInstanceManager.getActiveInstances().isEmpty()) {
                 LangUtils.sendMessage(sender, "commands.dungeon.reload.all-dungeons-reloading");
                 this.lifecycleCoordinator.reloadAllDungeons();
                 playerSession.unqueueReload();
@@ -1894,26 +2177,36 @@ public final class DungeonCommand implements TabExecutor {
         } else {
             DungeonDefinition dungeon = this.dungeonManager.get(args[1]);
             if (dungeon == null) {
-                LangUtils.sendMessage(sender, "commands.dungeon.reload.dungeon-not-found",
+                LangUtils.sendMessage(
+                        sender,
+                        "commands.dungeon.reload.dungeon-not-found",
                         LangUtils.placeholder("dungeon", args[1]));
                 return true;
             }
 
             if (playerSession.isReloadQueued() || dungeon.getInstances().isEmpty()) {
-                LangUtils.sendMessage(sender, "commands.dungeon.reload.dungeon-reloading",
+                LangUtils.sendMessage(
+                        sender,
+                        "commands.dungeon.reload.dungeon-reloading",
                         LangUtils.placeholder("dungeon", args[1]));
                 this.lifecycleCoordinator.reloadDungeon(dungeon);
                 playerSession.unqueueReload();
-                LangUtils.sendMessage(sender, "commands.dungeon.reload.dungeon-reloaded",
+                LangUtils.sendMessage(
+                        sender,
+                        "commands.dungeon.reload.dungeon-reloaded",
                         LangUtils.placeholder("dungeon", args[1]));
                 return true;
             }
         }
 
         playerSession.queueReload();
-        LangUtils.sendMessage(sender, "commands.dungeon.reload.reload-dungeon-warning",
+        LangUtils.sendMessage(
+                sender,
+                "commands.dungeon.reload.reload-dungeon-warning",
                 LangUtils.placeholder("dungeon", args[1]));
-        LangUtils.sendMessage(sender, "commands.dungeon.reload.reload-dungeon-confirm",
+        LangUtils.sendMessage(
+                sender,
+                "commands.dungeon.reload.reload-dungeon-confirm",
                 LangUtils.placeholder("dungeon", args[1]));
         return true;
     }
@@ -1931,31 +2224,51 @@ public final class DungeonCommand implements TabExecutor {
         }
 
         if (args.length == 1) {
-            player.sendMessage(LangUtils.getMessage("commands.dungeon.status.global-header", false,
-                    LangUtils.placeholder("version", this.plugin.getPluginMeta().getVersion().split("-")[0])));
-            LangUtils.sendMessage(player, "commands.dungeon.status.total-instances", LangUtils.placeholder("count",
-                    String.valueOf(this.activeInstanceManager.getActiveInstances().size())));
+            player.sendMessage(
+                    LangUtils.getMessage(
+                            "commands.dungeon.status.global-header",
+                            false,
+                            LangUtils.placeholder(
+                                    "version",
+                                    this.plugin.getPluginMeta().getVersion().split("-")[0])));
+            LangUtils.sendMessage(
+                    player,
+                    "commands.dungeon.status.total-instances",
+                    LangUtils.placeholder(
+                            "count",
+                            String.valueOf(
+                                    this.activeInstanceManager.getActiveInstances().size())));
 
             List<DungeonPlayerSession> players = new ArrayList<>();
             for (DungeonInstance instance : this.activeInstanceManager.getActiveInstances()) {
                 players.addAll(instance.getPlayers());
             }
 
-            LangUtils.sendMessage(player, "commands.dungeon.status.total-players",
+            LangUtils.sendMessage(
+                    player,
+                    "commands.dungeon.status.total-players",
                     LangUtils.placeholder("count", String.valueOf(players.size())));
 
             for (DungeonDefinition dungeonInfo : this.dungeonManager.getLoadedDungeons()) {
-                player.sendMessage(LangUtils.getMessage("commands.dungeon.status.dungeon-section-header", false,
-                        LangUtils.placeholder("dungeon", dungeonInfo.getWorldName())));
-                LangUtils.sendMessage(player, "commands.dungeon.status.dungeon-instances",
-                        LangUtils.placeholder("count", String.valueOf(dungeonInfo.getInstances().size())));
+                player.sendMessage(
+                        LangUtils.getMessage(
+                                "commands.dungeon.status.dungeon-section-header",
+                                false,
+                                LangUtils.placeholder("dungeon", dungeonInfo.getWorldName())));
+                LangUtils.sendMessage(
+                        player,
+                        "commands.dungeon.status.dungeon-instances",
+                        LangUtils.placeholder(
+                                "count", String.valueOf(dungeonInfo.getInstances().size())));
 
                 players = new ArrayList<>();
                 for (DungeonInstance instance : dungeonInfo.getInstances()) {
                     players.addAll(instance.getPlayers());
                 }
 
-                LangUtils.sendMessage(player, "commands.dungeon.status.dungeon-players",
+                LangUtils.sendMessage(
+                        player,
+                        "commands.dungeon.status.dungeon-players",
                         LangUtils.placeholder("count", String.valueOf(players.size())));
             }
 
@@ -1965,27 +2278,42 @@ public final class DungeonCommand implements TabExecutor {
         if (args.length == 2) {
             DungeonDefinition dungeon = this.dungeonManager.get(args[1]);
             if (dungeon == null) {
-                LangUtils.sendMessage(player, "commands.dungeon.status.dungeon-not-found",
+                LangUtils.sendMessage(
+                        player,
+                        "commands.dungeon.status.dungeon-not-found",
                         LangUtils.placeholder("dungeon", args[1]));
                 return true;
             }
 
-            player.sendMessage(LangUtils.getMessage("commands.dungeon.status.dungeon-header", false,
-                    LangUtils.placeholder("dungeon", dungeon.getWorldName())));
+            player.sendMessage(
+                    LangUtils.getMessage(
+                            "commands.dungeon.status.dungeon-header",
+                            false,
+                            LangUtils.placeholder("dungeon", dungeon.getWorldName())));
             if (dungeon.getInstances().isEmpty()) {
                 LangUtils.sendMessage(player, "commands.dungeon.status.none-loaded");
             }
 
             for (DungeonInstance instance : dungeon.getInstances()) {
-                player.sendMessage(LangUtils.getMessage("commands.dungeon.status.instance-line", false,
-                        LangUtils.placeholder("instance", instance.getInstanceWorld().getName())));
+                player.sendMessage(
+                        LangUtils.getMessage(
+                                "commands.dungeon.status.instance-line",
+                                false,
+                                LangUtils.placeholder(
+                                        "instance", instance.getInstanceWorld().getName())));
                 if (instance.isEditInstance()) {
-                    player.sendMessage(LangUtils.getMessage("commands.dungeon.status.edit-session-label", false));
+                    player.sendMessage(
+                            LangUtils.getMessage(
+                                    "commands.dungeon.status.edit-session-label", false));
                 }
 
                 for (DungeonPlayerSession dPlayer : instance.getPlayers()) {
-                    player.sendMessage(LangUtils.getMessage("commands.dungeon.status.player-line", false,
-                            LangUtils.placeholder("player", dPlayer.getPlayer().getName())));
+                    player.sendMessage(
+                            LangUtils.getMessage(
+                                    "commands.dungeon.status.player-line",
+                                    false,
+                                    LangUtils.placeholder(
+                                            "player", dPlayer.getPlayer().getName())));
                 }
             }
 
@@ -2011,20 +2339,27 @@ public final class DungeonCommand implements TabExecutor {
 
         Player kickPlayer = Bukkit.getPlayer(args[1]);
         if (kickPlayer == null) {
-            LangUtils.sendMessage(sender, "commands.play.player-not-found", LangUtils.placeholder("player", args[1]));
+            LangUtils.sendMessage(
+                    sender,
+                    "commands.play.player-not-found",
+                    LangUtils.placeholder("player", args[1]));
             return true;
         }
 
         DungeonPlayerSession kickAPlayer = this.playerManager.get(kickPlayer);
         if (kickAPlayer.getInstance() == null) {
-            LangUtils.sendMessage(sender, "commands.instance.kick-player.not-in-dungeon",
+            LangUtils.sendMessage(
+                    sender,
+                    "commands.instance.kick-player.not-in-dungeon",
                     LangUtils.placeholder("player", kickPlayer.getName()));
             return true;
         }
 
         LangUtils.sendMessage(kickPlayer, "commands.instance.kick-player.kick-alert");
         kickAPlayer.getInstance().removePlayer(kickAPlayer);
-        LangUtils.sendMessage(sender, "commands.instance.kick-player.success",
+        LangUtils.sendMessage(
+                sender,
+                "commands.instance.kick-player.success",
                 LangUtils.placeholder("player", kickPlayer.getName()));
         return true;
     }
@@ -2063,7 +2398,8 @@ public final class DungeonCommand implements TabExecutor {
                 return true;
             }
 
-            DungeonInstance instance = this.activeInstanceManager.getDungeonInstance(player.getWorld().getName());
+            DungeonInstance instance =
+                    this.activeInstanceManager.getDungeonInstance(player.getWorld().getName());
             if (instance != null) {
                 if (playerSession.getSavedPosition() != null) {
                     EntityUtils.forceTeleport(player, playerSession.getSavedPosition());
@@ -2078,7 +2414,10 @@ public final class DungeonCommand implements TabExecutor {
 
         String dungeonName = playerSession.getInstance().getDungeon().getDisplayName();
         playerSession.getInstance().removePlayer(playerSession);
-        LangUtils.sendMessage(player, "commands.leave.left-dungeon", LangUtils.placeholder("dungeon", dungeonName));
+        LangUtils.sendMessage(
+                player,
+                "commands.leave.left-dungeon",
+                LangUtils.placeholder("dungeon", dungeonName));
         return true;
     }
 
@@ -2102,7 +2441,10 @@ public final class DungeonCommand implements TabExecutor {
         DungeonPlayerSession playerSession = this.playerManager.get(player);
         Player targetPlayer = Bukkit.getPlayer(args[1]);
         if (targetPlayer == null) {
-            LangUtils.sendMessage(player, "commands.play.player-not-found", LangUtils.placeholder("player", args[1]));
+            LangUtils.sendMessage(
+                    player,
+                    "commands.play.player-not-found",
+                    LangUtils.placeholder("player", args[1]));
             return true;
         }
 
@@ -2114,9 +2456,12 @@ public final class DungeonCommand implements TabExecutor {
 
         targetAPlayer.getInstance().addPlayer(playerSession);
         if (playerSession.getInstance() == targetAPlayer.getInstance()) {
-            LangUtils.sendMessage(player, "commands.instance.join-player.success",
+            LangUtils.sendMessage(
+                    player,
+                    "commands.instance.join-player.success",
                     LangUtils.placeholder("player", targetPlayer.getName()),
-                    LangUtils.placeholder("dungeon", targetAPlayer.getInstance().getDungeon().getDisplayName()));
+                    LangUtils.placeholder(
+                            "dungeon", targetAPlayer.getInstance().getDungeon().getDisplayName()));
         }
         return true;
     }
@@ -2146,7 +2491,9 @@ public final class DungeonCommand implements TabExecutor {
             if (livesRemaining == null) {
                 LangUtils.sendMessage(player, "commands.lives.infinite-lives");
             } else {
-                LangUtils.sendMessage(player, "commands.lives.lives-remaining",
+                LangUtils.sendMessage(
+                        player,
+                        "commands.lives.lives-remaining",
                         LangUtils.placeholder("lives", String.valueOf(livesRemaining)));
             }
         }
@@ -2216,7 +2563,9 @@ public final class DungeonCommand implements TabExecutor {
 
             targetPlayer = Bukkit.getPlayer(args[2]);
             if (targetPlayer == null || !targetPlayer.isOnline()) {
-                LangUtils.sendMessage(sender, "commands.play.player-not-found",
+                LangUtils.sendMessage(
+                        sender,
+                        "commands.play.player-not-found",
                         LangUtils.placeholder("player", args[2]));
                 return true;
             }
@@ -2252,15 +2601,22 @@ public final class DungeonCommand implements TabExecutor {
 
         DungeonDefinition dungeon = this.dungeonManager.get(dungeonName);
         if (dungeon == null) {
-            LangUtils.sendMessage(sender, "commands.play.dungeon-not-found", LangUtils.placeholder("dungeon", args[1]));
+            LangUtils.sendMessage(
+                    sender,
+                    "commands.play.dungeon-not-found",
+                    LangUtils.placeholder("dungeon", args[1]));
             return true;
         }
 
         if (!dungeon.isEnabled()) {
-            LangUtils.sendMessage(sender, "commands.play.disabled",
+            LangUtils.sendMessage(
+                    sender,
+                    "commands.play.disabled",
                     LangUtils.placeholder("dungeon", dungeon.getWorldName()));
             if (!sender.equals(targetPlayer)) {
-                LangUtils.sendMessage(targetPlayer, "commands.play.disabled",
+                LangUtils.sendMessage(
+                        targetPlayer,
+                        "commands.play.disabled",
                         LangUtils.placeholder("dungeon", dungeon.getWorldName()));
             }
             return true;
@@ -2328,7 +2684,10 @@ public final class DungeonCommand implements TabExecutor {
 
         Player target = Bukkit.getPlayer(args[2]);
         if (target == null || !target.isOnline()) {
-            LangUtils.sendMessage(player, "commands.play.player-not-found", LangUtils.placeholder("player", args[2]));
+            LangUtils.sendMessage(
+                    player,
+                    "commands.play.player-not-found",
+                    LangUtils.placeholder("player", args[2]));
             return true;
         }
 
@@ -2346,7 +2705,10 @@ public final class DungeonCommand implements TabExecutor {
 
         Player target = Bukkit.getPlayer(args[2]);
         if (target == null || !target.isOnline()) {
-            LangUtils.sendMessage(player, "commands.play.player-not-found", LangUtils.placeholder("player", args[2]));
+            LangUtils.sendMessage(
+                    player,
+                    "commands.play.player-not-found",
+                    LangUtils.placeholder("player", args[2]));
             return true;
         }
 
@@ -2364,7 +2726,10 @@ public final class DungeonCommand implements TabExecutor {
 
         Player target = Bukkit.getPlayer(args[2]);
         if (target == null || !target.isOnline()) {
-            LangUtils.sendMessage(player, "commands.play.player-not-found", LangUtils.placeholder("player", args[2]));
+            LangUtils.sendMessage(
+                    player,
+                    "commands.play.player-not-found",
+                    LangUtils.placeholder("player", args[2]));
             return true;
         }
 
@@ -2407,13 +2772,18 @@ public final class DungeonCommand implements TabExecutor {
 
         LootTable table = this.lootTableManager.get(args[2]);
         if (table != null) {
-            LangUtils.sendMessage(player, "commands.loot.create.already-exists",
+            LangUtils.sendMessage(
+                    player,
+                    "commands.loot.create.already-exists",
                     LangUtils.placeholder("loot_table", args[2]));
             return true;
         }
 
         this.lootTableManager.put(new LootTable(args[2]));
-        LangUtils.sendMessage(player, "commands.loot.create.success", LangUtils.placeholder("loot_table", args[2]));
+        LangUtils.sendMessage(
+                player,
+                "commands.loot.create.success",
+                LangUtils.placeholder("loot_table", args[2]));
         this.guiService.openGui(player, "loottable_" + args[2]);
         return true;
     }
@@ -2428,7 +2798,10 @@ public final class DungeonCommand implements TabExecutor {
         }
 
         this.lootTableManager.remove(args[2]);
-        LangUtils.sendMessage(player, "commands.loot.remove.success", LangUtils.placeholder("loot_table", args[2]));
+        LangUtils.sendMessage(
+                player,
+                "commands.loot.remove.success",
+                LangUtils.placeholder("loot_table", args[2]));
         return true;
     }
 
@@ -2443,7 +2816,10 @@ public final class DungeonCommand implements TabExecutor {
 
         LootTable table = this.lootTableManager.get(args[2]);
         if (table == null) {
-            LangUtils.sendMessage(player, "commands.loot.edit.not-found", LangUtils.placeholder("loot_table", args[2]));
+            LangUtils.sendMessage(
+                    player,
+                    "commands.loot.edit.not-found",
+                    LangUtils.placeholder("loot_table", args[2]));
             return true;
         }
 
@@ -2488,15 +2864,25 @@ public final class DungeonCommand implements TabExecutor {
         List<DungeonDefinition> dungeons = this.getFilteredDungeons(query.filter(), false);
         List<String> lines = new ArrayList<>();
         for (DungeonDefinition dungeon : dungeons) {
-            lines.add(LangUtils.getMessage("commands.list.line", false,
-                    LangUtils.placeholder("dungeon", dungeon.getWorldName()),
-                    LangUtils.placeholder("display", dungeon.getDisplayName()),
-                    LangUtils.placeholder("team_size", String.valueOf(dungeon.getMaxTeamSize())),
-                    LangUtils.placeholder("difficulties", this.formatDungeonDifficulties(dungeon))));
+            lines.add(
+                    LangUtils.getMessage(
+                            "commands.list.line",
+                            false,
+                            LangUtils.placeholder("dungeon", dungeon.getWorldName()),
+                            LangUtils.placeholder("display", dungeon.getDisplayName()),
+                            LangUtils.placeholder(
+                                    "team_size", String.valueOf(dungeon.getMaxTeamSize())),
+                            LangUtils.placeholder(
+                                    "difficulties", this.formatDungeonDifficulties(dungeon))));
         }
 
-        this.sendPaginatedLines(sender, LangUtils.getMessage("commands.list.header", false), lines,
-                "commands.list.no-match", "commands.list.footer", query.page());
+        this.sendPaginatedLines(
+                sender,
+                LangUtils.getMessage("commands.list.header", false),
+                lines,
+                "commands.list.no-match",
+                "commands.list.footer",
+                query.page());
         return true;
     }
 
@@ -2508,7 +2894,8 @@ public final class DungeonCommand implements TabExecutor {
             return false;
         }
 
-        FilterPageQuery query = this.parseFilterPageQuery(sender, args, 1, "commands.dungeon.list.usage");
+        FilterPageQuery query =
+                this.parseFilterPageQuery(sender, args, 1, "commands.dungeon.list.usage");
         if (query == null) {
             return true;
         }
@@ -2516,17 +2903,28 @@ public final class DungeonCommand implements TabExecutor {
         List<DungeonDefinition> dungeons = this.getFilteredDungeons(query.filter(), true);
         List<String> lines = new ArrayList<>();
         for (DungeonDefinition dungeon : dungeons) {
-            lines.add(LangUtils.getMessage("commands.dungeon.list.line", false,
-                    LangUtils.placeholder("dungeon", dungeon.getWorldName()),
-                    LangUtils.placeholder("display", dungeon.getDisplayName()),
-                    LangUtils.placeholder("type", this.getDungeonTypeName(dungeon)),
-                    LangUtils.placeholder("instances", String.valueOf(dungeon.getInstances().size())),
-                    LangUtils.placeholder("team_size", String.valueOf(dungeon.getMaxTeamSize())),
-                    LangUtils.placeholder("difficulties", this.formatDungeonDifficulties(dungeon))));
+            lines.add(
+                    LangUtils.getMessage(
+                            "commands.dungeon.list.line",
+                            false,
+                            LangUtils.placeholder("dungeon", dungeon.getWorldName()),
+                            LangUtils.placeholder("display", dungeon.getDisplayName()),
+                            LangUtils.placeholder("type", this.getDungeonTypeName(dungeon)),
+                            LangUtils.placeholder(
+                                    "instances", String.valueOf(dungeon.getInstances().size())),
+                            LangUtils.placeholder(
+                                    "team_size", String.valueOf(dungeon.getMaxTeamSize())),
+                            LangUtils.placeholder(
+                                    "difficulties", this.formatDungeonDifficulties(dungeon))));
         }
 
-        this.sendPaginatedLines(sender, LangUtils.getMessage("commands.dungeon.list.header", false), lines,
-                "commands.dungeon.list.no-match", "commands.dungeon.list.footer", query.page());
+        this.sendPaginatedLines(
+                sender,
+                LangUtils.getMessage("commands.dungeon.list.header", false),
+                lines,
+                "commands.dungeon.list.no-match",
+                "commands.dungeon.list.footer",
+                query.page());
         return true;
     }
 
@@ -2545,35 +2943,62 @@ public final class DungeonCommand implements TabExecutor {
 
         DungeonDefinition dungeon = this.dungeonManager.get(args[1]);
         if (dungeon == null) {
-            LangUtils.sendMessage(sender, "commands.dungeon.status.dungeon-not-found",
+            LangUtils.sendMessage(
+                    sender,
+                    "commands.dungeon.status.dungeon-not-found",
                     LangUtils.placeholder("dungeon", args[1]));
             return true;
         }
 
-        sender.sendMessage(LangUtils.getMessage("commands.dungeon.info.header", false,
-                LangUtils.placeholder("dungeon", dungeon.getWorldName())));
-        LangUtils.sendMessage(sender, "commands.dungeon.info.display",
+        sender.sendMessage(
+                LangUtils.getMessage(
+                        "commands.dungeon.info.header",
+                        false,
+                        LangUtils.placeholder("dungeon", dungeon.getWorldName())));
+        LangUtils.sendMessage(
+                sender,
+                "commands.dungeon.info.display",
                 LangUtils.placeholder("display", dungeon.getDisplayName()));
-        LangUtils.sendMessage(sender, "commands.dungeon.info.type",
+        LangUtils.sendMessage(
+                sender,
+                "commands.dungeon.info.type",
                 LangUtils.placeholder("type", this.getDungeonTypeName(dungeon)));
-        LangUtils.sendMessage(sender, "commands.dungeon.info.team-size",
+        LangUtils.sendMessage(
+                sender,
+                "commands.dungeon.info.team-size",
                 LangUtils.placeholder("team_size", String.valueOf(dungeon.getMaxTeamSize())));
-        LangUtils.sendMessage(sender, "commands.dungeon.info.instances",
+        LangUtils.sendMessage(
+                sender,
+                "commands.dungeon.info.instances",
                 LangUtils.placeholder("count", String.valueOf(dungeon.getInstances().size())));
-        LangUtils.sendMessage(sender, "commands.dungeon.info.locations",
+        LangUtils.sendMessage(
+                sender,
+                "commands.dungeon.info.locations",
                 LangUtils.placeholder("lobby", this.formatConfiguredState(dungeon.getLobbySpawn())),
                 LangUtils.placeholder("start", this.formatConfiguredState(dungeon.getStartSpawn())),
                 LangUtils.placeholder("exit", this.formatConfiguredState(dungeon.getExitLoc())));
-        LangUtils.sendMessage(sender, "commands.dungeon.info.difficulties",
+        LangUtils.sendMessage(
+                sender,
+                "commands.dungeon.info.difficulties",
                 LangUtils.placeholder("difficulties", this.formatDungeonDifficulties(dungeon)));
-        LangUtils.sendMessage(sender, "commands.dungeon.info.keys",
+        LangUtils.sendMessage(
+                sender,
+                "commands.dungeon.info.keys",
                 LangUtils.placeholder("count", String.valueOf(dungeon.getValidKeys().size())));
-        LangUtils.sendMessage(sender, "commands.dungeon.info.enabled",
+        LangUtils.sendMessage(
+                sender,
+                "commands.dungeon.info.enabled",
                 LangUtils.placeholder("state", this.formatEnabledState(dungeon.isEnabled())));
-        LangUtils.sendMessage(sender, "commands.dungeon.info.access-cooldown",
-                LangUtils.placeholder("state", this.formatEnabledState(dungeon.isAccessCooldownEnabled())));
-        LangUtils.sendMessage(sender, "commands.dungeon.info.edit-session",
-                LangUtils.placeholder("state", this.formatYesNoState(dungeon.getEditSession() != null)));
+        LangUtils.sendMessage(
+                sender,
+                "commands.dungeon.info.access-cooldown",
+                LangUtils.placeholder(
+                        "state", this.formatEnabledState(dungeon.isAccessCooldownEnabled())));
+        LangUtils.sendMessage(
+                sender,
+                "commands.dungeon.info.edit-session",
+                LangUtils.placeholder(
+                        "state", this.formatYesNoState(dungeon.getEditSession() != null)));
         return true;
     }
 
@@ -2592,38 +3017,68 @@ public final class DungeonCommand implements TabExecutor {
 
         Player targetPlayer = Bukkit.getPlayer(args[0]);
         if (targetPlayer == null) {
-            LangUtils.sendMessage(sender, "commands.play.player-not-found", LangUtils.placeholder("player", args[0]));
+            LangUtils.sendMessage(
+                    sender,
+                    "commands.play.player-not-found",
+                    LangUtils.placeholder("player", args[0]));
             return true;
         }
 
         DungeonPlayerSession targetSession = this.playerManager.get(targetPlayer);
-        DungeonQueueEntry queue = targetSession == null ? null : this.queueManager.getQueue(targetSession);
+        DungeonQueueEntry queue =
+                targetSession == null ? null : this.queueManager.getQueue(targetSession);
         DungeonTeam team = this.teamManager.getTeam(targetPlayer.getUniqueId());
 
-        sender.sendMessage(LangUtils.getMessage("commands.player.status.header", false,
-                LangUtils.placeholder("player", PlayerUtils.playerDisplayName(targetPlayer))));
+        sender.sendMessage(
+                LangUtils.getMessage(
+                        "commands.player.status.header",
+                        false,
+                        LangUtils.placeholder(
+                                "player", PlayerUtils.playerDisplayName(targetPlayer))));
 
-        String instanceName = targetSession != null && targetSession.getInstance() != null
-                && targetSession.getInstance().getInstanceWorld() != null
+        String instanceName =
+                targetSession != null
+                                && targetSession.getInstance() != null
+                                && targetSession.getInstance().getInstanceWorld() != null
                         ? targetSession.getInstance().getInstanceWorld().getName()
                         : LangUtils.getMessage("commands.player.status.labels.none", false);
-        LangUtils.sendMessage(sender, "commands.player.status.instance", LangUtils.placeholder("value", instanceName));
-        LangUtils.sendMessage(sender, "commands.player.status.queue.label",
+        LangUtils.sendMessage(
+                sender,
+                "commands.player.status.instance",
+                LangUtils.placeholder("value", instanceName));
+        LangUtils.sendMessage(
+                sender,
+                "commands.player.status.queue.label",
                 LangUtils.placeholder("value", this.formatQueueStatus(targetPlayer, queue)));
-        LangUtils.sendMessage(sender, "commands.player.status.awaiting", LangUtils.placeholder("value",
-                this.formatYesNoState(targetSession != null && targetSession.isAwaitingDungeon())));
-        LangUtils.sendMessage(sender, "commands.player.status.team.label",
+        LangUtils.sendMessage(
+                sender,
+                "commands.player.status.awaiting",
+                LangUtils.placeholder(
+                        "value",
+                        this.formatYesNoState(
+                                targetSession != null && targetSession.isAwaitingDungeon())));
+        LangUtils.sendMessage(
+                sender,
+                "commands.player.status.team.label",
                 LangUtils.placeholder("value", this.formatTeamStatus(targetPlayer, team)));
-        LangUtils.sendMessage(sender, "commands.player.status.reserved-key",
+        LangUtils.sendMessage(
+                sender,
+                "commands.player.status.reserved-key",
                 LangUtils.placeholder("value", this.formatReservedKeyStatus(targetSession)));
 
         List<String> cooldownLines = new ArrayList<>();
         List<DungeonDefinition> loadedDungeons = this.getFilteredDungeons("", true);
         for (DungeonDefinition dungeon : loadedDungeons) {
             if (dungeon.hasAccessCooldown(targetPlayer)) {
-                cooldownLines.add(LangUtils.getMessage("commands.player.status.cooldown-line", false,
-                        LangUtils.placeholder("dungeon", dungeon.getWorldName()),
-                        LangUtils.placeholder("time", TimeUtils.formatDate(dungeon.getAccessCooldown(targetPlayer)))));
+                cooldownLines.add(
+                        LangUtils.getMessage(
+                                "commands.player.status.cooldown-line",
+                                false,
+                                LangUtils.placeholder("dungeon", dungeon.getWorldName()),
+                                LangUtils.placeholder(
+                                        "time",
+                                        TimeUtils.formatDate(
+                                                dungeon.getAccessCooldown(targetPlayer)))));
             }
         }
 
@@ -2654,30 +3109,41 @@ public final class DungeonCommand implements TabExecutor {
 
         Player targetPlayer = Bukkit.getPlayer(args[0]);
         if (targetPlayer == null) {
-            LangUtils.sendMessage(sender, "commands.play.player-not-found", LangUtils.placeholder("player", args[0]));
+            LangUtils.sendMessage(
+                    sender,
+                    "commands.play.player-not-found",
+                    LangUtils.placeholder("player", args[0]));
             return true;
         }
 
         DungeonDefinition dungeon = this.dungeonManager.get(args[3]);
         if (dungeon == null) {
-            LangUtils.sendMessage(sender, "commands.player.cooldown.set.dungeon-not-found",
+            LangUtils.sendMessage(
+                    sender,
+                    "commands.player.cooldown.set.dungeon-not-found",
                     LangUtils.placeholder("dungeon", args[3]));
             return true;
         }
 
         if (!dungeon.clearAccessCooldown(targetPlayer)) {
-            LangUtils.sendMessage(sender, "commands.player.cooldown.clear.none",
+            LangUtils.sendMessage(
+                    sender,
+                    "commands.player.cooldown.clear.none",
                     LangUtils.placeholder("player", PlayerUtils.playerDisplayName(targetPlayer)),
                     LangUtils.placeholder("dungeon", dungeon.getWorldName()));
             return true;
         }
 
         dungeon.saveCooldowns(targetPlayer);
-        LangUtils.sendMessage(sender, "commands.player.cooldown.clear.success",
+        LangUtils.sendMessage(
+                sender,
+                "commands.player.cooldown.clear.success",
                 LangUtils.placeholder("player", PlayerUtils.playerDisplayName(targetPlayer)),
                 LangUtils.placeholder("dungeon", dungeon.getWorldName()));
         if (!sender.equals(targetPlayer)) {
-            LangUtils.sendMessage(targetPlayer, "commands.player.cooldown.clear.target",
+            LangUtils.sendMessage(
+                    targetPlayer,
+                    "commands.player.cooldown.clear.target",
                     LangUtils.placeholder("dungeon", dungeon.getWorldName()));
         }
 
@@ -2699,12 +3165,16 @@ public final class DungeonCommand implements TabExecutor {
 
         Player targetPlayer = Bukkit.getPlayer(args[0]);
         if (targetPlayer == null) {
-            LangUtils.sendMessage(sender, "commands.play.player-not-found", LangUtils.placeholder("player", args[0]));
+            LangUtils.sendMessage(
+                    sender,
+                    "commands.play.player-not-found",
+                    LangUtils.placeholder("player", args[0]));
             return true;
         }
 
         DungeonPlayerSession targetSession = this.playerManager.get(targetPlayer);
-        DungeonQueueEntry queue = targetSession == null ? null : this.queueManager.getQueue(targetSession);
+        DungeonQueueEntry queue =
+                targetSession == null ? null : this.queueManager.getQueue(targetSession);
         DungeonTeam team = this.teamManager.getTeam(targetPlayer.getUniqueId());
         boolean changed = false;
         boolean notifiedTarget = false;
@@ -2716,9 +3186,12 @@ public final class DungeonCommand implements TabExecutor {
                     this.queueManager.unqueue(queue);
                     this.teamManager.clearQueued(team);
                 } else {
-                    notifiedTarget = this.teamManager.adminRemoveMember(targetPlayer.getUniqueId(),
-                            "commands.player.queue.cleared.target", "commands.player.queue.cleared.team",
-                            targetPlayer.getName());
+                    notifiedTarget =
+                            this.teamManager.adminRemoveMember(
+                                    targetPlayer.getUniqueId(),
+                                    "commands.player.queue.cleared.target",
+                                    "commands.player.queue.cleared.team",
+                                    targetPlayer.getName());
                     if (!notifiedTarget) {
                         this.queueManager.removePlayer(targetPlayer.getUniqueId());
                     }
@@ -2735,9 +3208,12 @@ public final class DungeonCommand implements TabExecutor {
                 this.teamManager.clearQueued(team);
                 changed = true;
             } else {
-                notifiedTarget = this.teamManager.adminRemoveMember(targetPlayer.getUniqueId(),
-                        "commands.player.queue.cleared.target", "commands.player.queue.cleared.team",
-                        targetPlayer.getName());
+                notifiedTarget =
+                        this.teamManager.adminRemoveMember(
+                                targetPlayer.getUniqueId(),
+                                "commands.player.queue.cleared.target",
+                                "commands.player.queue.cleared.team",
+                                targetPlayer.getName());
                 changed = changed || notifiedTarget;
             }
         }
@@ -2750,7 +3226,9 @@ public final class DungeonCommand implements TabExecutor {
         if (targetSession != null && targetSession.hasReservedAccessKey()) {
             String reservedDungeonName = targetSession.getReservedAccessKeyDungeon();
             DungeonDefinition reservedDungeon =
-                    reservedDungeonName == null ? null : this.dungeonManager.get(reservedDungeonName);
+                    reservedDungeonName == null
+                            ? null
+                            : this.dungeonManager.get(reservedDungeonName);
             if (reservedDungeon != null) {
                 reservedDungeon.refundReservedAccessKey(targetSession);
             } else {
@@ -2760,12 +3238,16 @@ public final class DungeonCommand implements TabExecutor {
         }
 
         if (!changed) {
-            LangUtils.sendMessage(sender, "commands.player.queue.clear.none",
+            LangUtils.sendMessage(
+                    sender,
+                    "commands.player.queue.clear.none",
                     LangUtils.placeholder("player", PlayerUtils.playerDisplayName(targetPlayer)));
             return true;
         }
 
-        LangUtils.sendMessage(sender, "commands.player.queue.clear.success",
+        LangUtils.sendMessage(
+                sender,
+                "commands.player.queue.clear.success",
                 LangUtils.placeholder("player", PlayerUtils.playerDisplayName(targetPlayer)));
         if (!notifiedTarget && !sender.equals(targetPlayer)) {
             LangUtils.sendMessage(targetPlayer, "commands.player.queue.clear.target");
@@ -2778,34 +3260,49 @@ public final class DungeonCommand implements TabExecutor {
      * Runs handle loot list.
      */
     private boolean handleLootList(Player player, String[] args) {
-        FilterPageQuery query = this.parseFilterPageQuery(player, args, 1, "commands.loot.list.usage");
+        FilterPageQuery query =
+                this.parseFilterPageQuery(player, args, 1, "commands.loot.list.usage");
         if (query == null) {
             return true;
         }
 
         List<LootTable> tables = new ArrayList<>(this.lootTableManager.getTables());
-        tables.sort((left, right) -> String.CASE_INSENSITIVE_ORDER.compare(left.getNamespace(), right.getNamespace()));
+        tables.sort(
+                (left, right) ->
+                        String.CASE_INSENSITIVE_ORDER.compare(
+                                left.getNamespace(), right.getNamespace()));
 
         List<String> lines = new ArrayList<>();
         String filter = query.filter().toLowerCase(Locale.ROOT);
         for (LootTable table : tables) {
-            if (!filter.isBlank() && !table.getNamespace().toLowerCase(Locale.ROOT).contains(filter)) {
+            if (!filter.isBlank()
+                    && !table.getNamespace().toLowerCase(Locale.ROOT).contains(filter)) {
                 continue;
             }
 
-            String editor = table.getEditor() == null
-                    ? LangUtils.getMessage("commands.loot.list.no-editor", false)
-                    : table.getEditor().getName();
-            lines.add(LangUtils.getMessage("commands.loot.list.line", false,
-                    LangUtils.placeholder("loot_table", table.getNamespace()),
-                    LangUtils.placeholder("min", String.valueOf(table.getMinItems())),
-                    LangUtils.placeholder("max", String.valueOf(table.getMaxItems())),
-                    LangUtils.placeholder("duplicates", this.formatYesNoState(table.isAllowDuplicates())),
-                    LangUtils.placeholder("editor", editor)));
+            String editor =
+                    table.getEditor() == null
+                            ? LangUtils.getMessage("commands.loot.list.no-editor", false)
+                            : table.getEditor().getName();
+            lines.add(
+                    LangUtils.getMessage(
+                            "commands.loot.list.line",
+                            false,
+                            LangUtils.placeholder("loot_table", table.getNamespace()),
+                            LangUtils.placeholder("min", String.valueOf(table.getMinItems())),
+                            LangUtils.placeholder("max", String.valueOf(table.getMaxItems())),
+                            LangUtils.placeholder(
+                                    "duplicates", this.formatYesNoState(table.isAllowDuplicates())),
+                            LangUtils.placeholder("editor", editor)));
         }
 
-        this.sendPaginatedLines(player, LangUtils.getMessage("commands.loot.list.header", false), lines,
-                "commands.loot.list.no-match", "commands.loot.list.footer", query.page());
+        this.sendPaginatedLines(
+                player,
+                LangUtils.getMessage("commands.loot.list.header", false),
+                lines,
+                "commands.loot.list.no-match",
+                "commands.loot.list.footer",
+                query.page());
         return true;
     }
 
@@ -2840,7 +3337,10 @@ public final class DungeonCommand implements TabExecutor {
 
         String dungeonName = instance.getDungeon().getDisplayName();
         instance.removePlayer(playerSession);
-        LangUtils.sendMessage(player, "commands.edit.close.success", LangUtils.placeholder("dungeon", dungeonName));
+        LangUtils.sendMessage(
+                player,
+                "commands.edit.close.success",
+                LangUtils.placeholder("dungeon", dungeonName));
         return true;
     }
 
@@ -2856,14 +3356,17 @@ public final class DungeonCommand implements TabExecutor {
         }
 
         dungeons.sort(
-                (left, right) -> String.CASE_INSENSITIVE_ORDER.compare(left.getWorldName(), right.getWorldName()));
+                (left, right) ->
+                        String.CASE_INSENSITIVE_ORDER.compare(
+                                left.getWorldName(), right.getWorldName()));
         return dungeons;
     }
 
     /**
      * Runs matches dungeon filter.
      */
-    private boolean matchesDungeonFilter(DungeonDefinition dungeon, String filter, boolean includeType) {
+    private boolean matchesDungeonFilter(
+            DungeonDefinition dungeon, String filter, boolean includeType) {
         if (filter == null || filter.isBlank()) {
             return true;
         }
@@ -2878,7 +3381,8 @@ public final class DungeonCommand implements TabExecutor {
             return true;
         }
 
-        return includeType && this.getDungeonTypeName(dungeon).toLowerCase(Locale.ROOT).contains(lowerFilter);
+        return includeType
+                && this.getDungeonTypeName(dungeon).toLowerCase(Locale.ROOT).contains(lowerFilter);
     }
 
     /**
@@ -2906,7 +3410,10 @@ public final class DungeonCommand implements TabExecutor {
      */
     private String formatConfiguredState(Location location) {
         return LangUtils.getMessage(
-                location == null ? "commands.dungeon.info.labels.not-set" : "commands.dungeon.info.labels.set", false);
+                location == null
+                        ? "commands.dungeon.info.labels.not-set"
+                        : "commands.dungeon.info.labels.set",
+                false);
     }
 
     /**
@@ -2914,14 +3421,18 @@ public final class DungeonCommand implements TabExecutor {
      */
     private String formatEnabledState(boolean enabled) {
         return LangUtils.getMessage(
-                enabled ? "commands.dungeon.info.labels.enabled" : "commands.dungeon.info.labels.disabled", false);
+                enabled
+                        ? "commands.dungeon.info.labels.enabled"
+                        : "commands.dungeon.info.labels.disabled",
+                false);
     }
 
     /**
      * Runs format yes no state.
      */
     private String formatYesNoState(boolean value) {
-        return LangUtils.getMessage(value ? "commands.player.status.labels.yes" : "commands.player.status.labels.no",
+        return LangUtils.getMessage(
+                value ? "commands.player.status.labels.yes" : "commands.player.status.labels.no",
                 false);
     }
 
@@ -2942,9 +3453,12 @@ public final class DungeonCommand implements TabExecutor {
             modeKey = "commands.player.status.queue.modes.team-member";
         }
 
-        return LangUtils.getMessage("commands.player.status.queue.entry", false,
+        return LangUtils.getMessage(
+                "commands.player.status.queue.entry",
+                false,
                 LangUtils.placeholder("dungeon", queue.getDungeon().getWorldName()),
-                LangUtils.placeholder("difficulty", this.formatDifficultyValue(queue.getDifficulty())),
+                LangUtils.placeholder(
+                        "difficulty", this.formatDifficultyValue(queue.getDifficulty())),
                 LangUtils.placeholder("mode", LangUtils.getMessage(modeKey, false)));
     }
 
@@ -2956,22 +3470,29 @@ public final class DungeonCommand implements TabExecutor {
             return LangUtils.getMessage("commands.player.status.labels.none", false);
         }
 
-        String stateKey = team.isStarted()
-                ? "commands.player.status.team.states.running"
-                : team.isQueued()
-                        ? "commands.player.status.team.states.queued"
-                        : "commands.player.status.team.states.idle";
+        String stateKey =
+                team.isStarted()
+                        ? "commands.player.status.team.states.running"
+                        : team.isQueued()
+                                ? "commands.player.status.team.states.queued"
+                                : "commands.player.status.team.states.idle";
         String state = LangUtils.getMessage(stateKey, false);
         if (team.isLeader(targetPlayer.getUniqueId())) {
-            return LangUtils.getMessage("commands.player.status.team.as-leader", false,
-                    LangUtils.placeholder("count", String.valueOf(team.size())), LangUtils.placeholder("state", state));
+            return LangUtils.getMessage(
+                    "commands.player.status.team.as-leader",
+                    false,
+                    LangUtils.placeholder("count", String.valueOf(team.size())),
+                    LangUtils.placeholder("state", state));
         }
 
         Player leader = Bukkit.getPlayer(team.getLeaderId());
         String leaderName = leader == null ? team.getLeaderId().toString() : leader.getName();
-        return LangUtils.getMessage("commands.player.status.team.as-member", false,
+        return LangUtils.getMessage(
+                "commands.player.status.team.as-member",
+                false,
                 LangUtils.placeholder("leader", leaderName),
-                LangUtils.placeholder("count", String.valueOf(team.size())), LangUtils.placeholder("state", state));
+                LangUtils.placeholder("count", String.valueOf(team.size())),
+                LangUtils.placeholder("state", state));
     }
 
     /**
@@ -3002,12 +3523,18 @@ public final class DungeonCommand implements TabExecutor {
      */
     private String formatAccessKeyLine(int keyId, AccessKeyDefinition accessKey) {
         ItemStack item = accessKey.createItemCopy();
-        String itemName = item == null ? LangUtils.getMessage("commands.dungeon.keys.list.labels.unknown", false)
-                : ItemUtils.getItemDisplayName(item);
-        String material = item == null ? LangUtils.getMessage("commands.dungeon.keys.list.labels.unknown", false)
-                : TextUtils.humanize(item.getType().name());
+        String itemName =
+                item == null
+                        ? LangUtils.getMessage("commands.dungeon.keys.list.labels.unknown", false)
+                        : ItemUtils.getItemDisplayName(item);
+        String material =
+                item == null
+                        ? LangUtils.getMessage("commands.dungeon.keys.list.labels.unknown", false)
+                        : TextUtils.humanize(item.getType().name());
         String amount = item == null ? "0" : String.valueOf(item.getAmount());
-        return LangUtils.getMessage("commands.dungeon.keys.list.line", false,
+        return LangUtils.getMessage(
+                "commands.dungeon.keys.list.line",
+                false,
                 LangUtils.placeholder("id", String.valueOf(keyId)),
                 LangUtils.placeholder("item", itemName),
                 LangUtils.placeholder("material", material),
@@ -3043,7 +3570,8 @@ public final class DungeonCommand implements TabExecutor {
     /**
      * Runs parse filter page query.
      */
-    private FilterPageQuery parseFilterPageQuery(CommandSender sender, String[] args, int startIndex, String usageKey) {
+    private FilterPageQuery parseFilterPageQuery(
+            CommandSender sender, String[] args, int startIndex, String usageKey) {
         int remainingArgs = args.length - startIndex;
         if (remainingArgs < 0 || remainingArgs > 2) {
             LangUtils.sendMessage(sender, usageKey);
@@ -3089,8 +3617,13 @@ public final class DungeonCommand implements TabExecutor {
     /**
      * Runs send paginated lines.
      */
-    private void sendPaginatedLines(CommandSender sender, String headerLine, List<String> lines, String noMatchKey,
-            String footerKey, int requestedPage) {
+    private void sendPaginatedLines(
+            CommandSender sender,
+            String headerLine,
+            List<String> lines,
+            String noMatchKey,
+            String footerKey,
+            int requestedPage) {
         sender.sendMessage(headerLine);
         if (lines.isEmpty()) {
             LangUtils.sendMessage(sender, noMatchKey);
@@ -3106,15 +3639,18 @@ public final class DungeonCommand implements TabExecutor {
             sender.sendMessage(lines.get(i));
         }
 
-        sender.sendMessage(LangUtils.getMessage(footerKey, false, LangUtils.placeholder("page", String.valueOf(page)),
-                LangUtils.placeholder("total_pages", String.valueOf(totalPages))));
+        sender.sendMessage(
+                LangUtils.getMessage(
+                        footerKey,
+                        false,
+                        LangUtils.placeholder("page", String.valueOf(page)),
+                        LangUtils.placeholder("total_pages", String.valueOf(totalPages))));
     }
 
     /**
      * Runs filter page query.
      */
-    private record FilterPageQuery(String filter, int page) {
-    }
+    private record FilterPageQuery(String filter, int page) {}
 
     /**
      * Runs handle test door command.
@@ -3256,13 +3792,16 @@ public final class DungeonCommand implements TabExecutor {
         public List<String> handleTabComplete(CommandSender sender, String[] args) {
             List<String> options = new ArrayList<>();
             if (args.length == 2) {
-                DungeonCommand.this.addMatchingLiteralOptions(options, args[1], "create", "invite", "kick", "revoke",
-                        "accept", "deny", "leave", "delete", "info");
+                DungeonCommand.this.addMatchingLiteralOptions(
+                        options, args[1], "create", "invite", "kick", "revoke", "accept", "deny",
+                        "leave", "delete", "info");
                 return options;
             }
 
-            if (args.length == 3 && (args[1].equalsIgnoreCase("invite") || args[1].equalsIgnoreCase("kick")
-                    || args[1].equalsIgnoreCase("revoke"))) {
+            if (args.length == 3
+                    && (args[1].equalsIgnoreCase("invite")
+                            || args[1].equalsIgnoreCase("kick")
+                            || args[1].equalsIgnoreCase("revoke"))) {
                 DungeonCommand.this.addMatchingPlayers(options, args[2]);
             }
 
@@ -3296,7 +3835,9 @@ public final class DungeonCommand implements TabExecutor {
                 case "create" -> DungeonCommand.this.handleLootCreate(player, args);
                 case "remove" -> DungeonCommand.this.handleLootRemove(player, args);
                 case "edit" -> DungeonCommand.this.handleLootEdit(player, args);
-                case "list" -> DungeonCommand.this.handleLootList(player, DungeonCommand.this.shiftArgs(args));
+                case "list" ->
+                        DungeonCommand.this.handleLootList(
+                                player, DungeonCommand.this.shiftArgs(args));
                 default -> {
                     LangUtils.sendMessage(player, "commands.loot.usage");
                     yield true;
@@ -3311,7 +3852,8 @@ public final class DungeonCommand implements TabExecutor {
         public List<String> handleTabComplete(CommandSender sender, String[] args) {
             List<String> options = new ArrayList<>();
             if (args.length == 2) {
-                DungeonCommand.this.addMatchingLiteralOptions(options, args[1], "create", "edit", "remove", "list");
+                DungeonCommand.this.addMatchingLiteralOptions(
+                        options, args[1], "create", "edit", "remove", "list");
                 return options;
             }
 
@@ -3320,7 +3862,8 @@ public final class DungeonCommand implements TabExecutor {
             } else if (args.length == 3 && !args[1].equalsIgnoreCase("create")) {
                 DungeonCommand.this.addMatchingLootTables(options, args[2]);
             } else if (args.length == 4 && args[1].equalsIgnoreCase("list")) {
-                DungeonCommand.this.addMatchingLiteralOptions(options, args[3], "1", "2", "3", "4", "5");
+                DungeonCommand.this.addMatchingLiteralOptions(
+                        options, args[3], "1", "2", "3", "4", "5");
             }
 
             return options;
@@ -3342,20 +3885,33 @@ public final class DungeonCommand implements TabExecutor {
             }
 
             return switch (args[1].toLowerCase(Locale.ROOT)) {
-                case "create" -> DungeonCommand.this.handleCreateCommand(sender, DungeonCommand.this.shiftArgs(args));
-                case "import" -> DungeonCommand.this.handleImportCommand(sender, DungeonCommand.this.shiftArgs(args));
-                case "delete" -> DungeonCommand.this.handleDeleteCommand(sender, DungeonCommand.this.shiftArgs(args));
-                case "reload" -> DungeonCommand.this.handleReloadCommand(sender, DungeonCommand.this.shiftArgs(args));
+                case "create" ->
+                        DungeonCommand.this.handleCreateCommand(
+                                sender, DungeonCommand.this.shiftArgs(args));
+                case "import" ->
+                        DungeonCommand.this.handleImportCommand(
+                                sender, DungeonCommand.this.shiftArgs(args));
+                case "delete" ->
+                        DungeonCommand.this.handleDeleteCommand(
+                                sender, DungeonCommand.this.shiftArgs(args));
+                case "reload" ->
+                        DungeonCommand.this.handleReloadCommand(
+                                sender, DungeonCommand.this.shiftArgs(args));
                 case "list" ->
-                    DungeonCommand.this.handleDungeonListCommand(sender, DungeonCommand.this.shiftArgs(args));
+                        DungeonCommand.this.handleDungeonListCommand(
+                                sender, DungeonCommand.this.shiftArgs(args));
                 case "info" ->
-                    DungeonCommand.this.handleDungeonInfoCommand(sender, DungeonCommand.this.shiftArgs(args));
-                case "status" -> DungeonCommand.this.handleStatusCommand(sender, DungeonCommand.this.shiftArgs(args));
+                        DungeonCommand.this.handleDungeonInfoCommand(
+                                sender, DungeonCommand.this.shiftArgs(args));
+                case "status" ->
+                        DungeonCommand.this.handleStatusCommand(
+                                sender, DungeonCommand.this.shiftArgs(args));
                 case "enable" ->
-                    DungeonCommand.this.handleSetDungeonEnabledCommand(sender, DungeonCommand.this.shiftArgs(args), true);
+                        DungeonCommand.this.handleSetDungeonEnabledCommand(
+                                sender, DungeonCommand.this.shiftArgs(args), true);
                 case "disable" ->
-                    DungeonCommand.this.handleSetDungeonEnabledCommand(sender, DungeonCommand.this.shiftArgs(args),
-                            false);
+                        DungeonCommand.this.handleSetDungeonEnabledCommand(
+                                sender, DungeonCommand.this.shiftArgs(args), false);
                 case "keys" -> this.handleKeysCommand(sender, args);
                 case "exit" -> this.handleExitCommand(sender, args);
                 default -> {
@@ -3372,8 +3928,9 @@ public final class DungeonCommand implements TabExecutor {
         public List<String> handleTabComplete(CommandSender sender, String[] args) {
             List<String> options = new ArrayList<>();
             if (args.length == 2) {
-                DungeonCommand.this.addMatchingLiteralOptions(options, args[1], "create", "import", "delete", "reload",
-                        "list", "info", "status", "enable", "disable", "keys", "exit");
+                DungeonCommand.this.addMatchingLiteralOptions(
+                        options, args[1], "create", "import", "delete", "reload", "list", "info",
+                        "status", "enable", "disable", "keys", "exit");
                 return options;
             }
 
@@ -3387,7 +3944,8 @@ public final class DungeonCommand implements TabExecutor {
                     if (args.length == 3) {
                         DungeonCommand.this.addMatchingDungeonNames(options, args[2]);
                     } else if (args.length == 4) {
-                        DungeonCommand.this.addMatchingLiteralOptions(options, args[3], "1", "2", "3", "4", "5");
+                        DungeonCommand.this.addMatchingLiteralOptions(
+                                options, args[3], "1", "2", "3", "4", "5");
                     }
                 }
                 case "reload" -> {
@@ -3398,7 +3956,8 @@ public final class DungeonCommand implements TabExecutor {
                 }
                 case "import" -> {
                     if (args.length == 4) {
-                        DungeonCommand.this.addMatchingLiteralOptions(options, args[3], "NORMAL", "NETHER", "THE_END");
+                        DungeonCommand.this.addMatchingLiteralOptions(
+                                options, args[3], "NORMAL", "NETHER", "THE_END");
                     }
                 }
                 case "create" -> {
@@ -3408,8 +3967,8 @@ public final class DungeonCommand implements TabExecutor {
                 }
                 case "keys" -> {
                     if (args.length == 3) {
-                        DungeonCommand.this.addMatchingLiteralOptions(options, args[2], "add", "remove", "clear",
-                                "list", "give");
+                        DungeonCommand.this.addMatchingLiteralOptions(
+                                options, args[2], "add", "remove", "clear", "list", "give");
                     } else if (args.length == 4) {
                         DungeonCommand.this.addMatchingDungeonNames(options, args[3]);
                     } else if (args.length == 5 && args[2].equalsIgnoreCase("remove")) {
@@ -3431,9 +3990,11 @@ public final class DungeonCommand implements TabExecutor {
                             }
                         }
                     } else if (args.length == 7 && args[2].equalsIgnoreCase("give")) {
-                        DungeonCommand.this.addMatchingLiteralOptions(options, args[6], "1", "2", "4", "8");
+                        DungeonCommand.this.addMatchingLiteralOptions(
+                                options, args[6], "1", "2", "4", "8");
                     } else if (args.length == 5 && args[2].equalsIgnoreCase("list")) {
-                        DungeonCommand.this.addMatchingLiteralOptions(options, args[4], "1", "2", "3", "4", "5");
+                        DungeonCommand.this.addMatchingLiteralOptions(
+                                options, args[4], "1", "2", "3", "4", "5");
                     }
                 }
                 case "exit" -> {
@@ -3461,20 +4022,25 @@ public final class DungeonCommand implements TabExecutor {
             }
 
             return switch (args[2].toLowerCase(Locale.ROOT)) {
-                case "add" -> args.length == 4
-                        ? DungeonCommand.this.handleAddKeyCommand(sender, new String[]{"addkey", args[3]})
-                        : DungeonCommand.this.handleInvalidDungeonKeysUsage(sender);
+                case "add" ->
+                        args.length == 4
+                                ? DungeonCommand.this.handleAddKeyCommand(
+                                        sender, new String[] {"addkey", args[3]})
+                                : DungeonCommand.this.handleInvalidDungeonKeysUsage(sender);
                 case "remove" ->
-                    args.length == 4
-                            ? DungeonCommand.this.handleRemoveKeyCommand(sender, new String[]{"removekey", args[3]})
-                            : args.length == 5
-                                    ? DungeonCommand.this.handleRemoveKeyCommand(sender,
-                                            new String[]{"removekey", args[3], args[4]})
-                            : DungeonCommand.this.handleInvalidDungeonKeysUsage(sender);
+                        args.length == 4
+                                ? DungeonCommand.this.handleRemoveKeyCommand(
+                                        sender, new String[] {"removekey", args[3]})
+                                : args.length == 5
+                                        ? DungeonCommand.this.handleRemoveKeyCommand(
+                                                sender,
+                                                new String[] {"removekey", args[3], args[4]})
+                                        : DungeonCommand.this.handleInvalidDungeonKeysUsage(sender);
                 case "clear" ->
-                    args.length == 4
-                            ? DungeonCommand.this.handleRemoveAllkeysCommand(sender, new String[]{"clearkeys", args[3]})
-                            : DungeonCommand.this.handleInvalidDungeonKeysUsage(sender);
+                        args.length == 4
+                                ? DungeonCommand.this.handleRemoveAllkeysCommand(
+                                        sender, new String[] {"clearkeys", args[3]})
+                                : DungeonCommand.this.handleInvalidDungeonKeysUsage(sender);
                 case "list" -> DungeonCommand.this.handleListKeysCommand(sender, args);
                 case "give" -> DungeonCommand.this.handleGiveKeyCommand(sender, args);
                 default -> {
@@ -3489,7 +4055,8 @@ public final class DungeonCommand implements TabExecutor {
          */
         private boolean handleExitCommand(CommandSender sender, String[] args) {
             if (args.length == 4 && args[2].equalsIgnoreCase("set")) {
-                return DungeonCommand.this.handleSetExitCommand(sender, new String[]{"setexit", args[3]});
+                return DungeonCommand.this.handleSetExitCommand(
+                        sender, new String[] {"setexit", args[3]});
             }
 
             DungeonCommand.this.sendUsageList(sender, "commands.dungeon.help.lines");
@@ -3512,7 +4079,8 @@ public final class DungeonCommand implements TabExecutor {
             }
 
             if (args.length == 2 && !this.isNamedSubcommand(args[1])) {
-                return DungeonCommand.this.handleEditCommand(sender, new String[]{"edit", args[1]});
+                return DungeonCommand.this.handleEditCommand(
+                        sender, new String[] {"edit", args[1]});
             }
 
             return switch (args[1].toLowerCase(Locale.ROOT)) {
@@ -3538,8 +4106,9 @@ public final class DungeonCommand implements TabExecutor {
         public List<String> handleTabComplete(CommandSender sender, String[] args) {
             List<String> options = new ArrayList<>();
             if (args.length == 2) {
-                DungeonCommand.this.addMatchingLiteralOptions(options, args[1], "open", "close", "save", "lobby",
-                        "start", "items", "tools", "signs");
+                DungeonCommand.this.addMatchingLiteralOptions(
+                        options, args[1], "open", "close", "save", "lobby", "start", "items",
+                        "tools", "signs");
                 DungeonCommand.this.addMatchingEditableDungeonNames(sender, options, args[1]);
                 return options;
             }
@@ -3547,7 +4116,8 @@ public final class DungeonCommand implements TabExecutor {
             switch (args[1].toLowerCase(Locale.ROOT)) {
                 case "open" -> {
                     if (args.length == 3) {
-                        DungeonCommand.this.addMatchingEditableDungeonNames(sender, options, args[2]);
+                        DungeonCommand.this.addMatchingEditableDungeonNames(
+                                sender, options, args[2]);
                     }
                 }
                 case "lobby", "start" -> {
@@ -3557,12 +4127,14 @@ public final class DungeonCommand implements TabExecutor {
                 }
                 case "items" -> {
                     if (args.length == 3) {
-                        DungeonCommand.this.addMatchingLiteralOptions(options, args[2], "ban", "unban", "mark-dungeon");
+                        DungeonCommand.this.addMatchingLiteralOptions(
+                                options, args[2], "ban", "unban", "mark-dungeon");
                     }
                 }
                 case "tools" -> {
                     if (args.length == 3) {
-                        DungeonCommand.this.addMatchingLiteralOptions(options, args[2], "function", "room");
+                        DungeonCommand.this.addMatchingLiteralOptions(
+                                options, args[2], "function", "room");
                     }
                 }
                 case "signs" -> {
@@ -3582,9 +4154,13 @@ public final class DungeonCommand implements TabExecutor {
          * Returns whether named subcommand.
          */
         private boolean isNamedSubcommand(String value) {
-            return value.equalsIgnoreCase("open") || value.equalsIgnoreCase("close") || value.equalsIgnoreCase("save")
-                    || value.equalsIgnoreCase("lobby") || value.equalsIgnoreCase("start")
-                    || value.equalsIgnoreCase("items") || value.equalsIgnoreCase("tools")
+            return value.equalsIgnoreCase("open")
+                    || value.equalsIgnoreCase("close")
+                    || value.equalsIgnoreCase("save")
+                    || value.equalsIgnoreCase("lobby")
+                    || value.equalsIgnoreCase("start")
+                    || value.equalsIgnoreCase("items")
+                    || value.equalsIgnoreCase("tools")
                     || value.equalsIgnoreCase("signs");
         }
 
@@ -3597,7 +4173,7 @@ public final class DungeonCommand implements TabExecutor {
                 return true;
             }
 
-            return DungeonCommand.this.handleEditCommand(sender, new String[]{"edit", args[2]});
+            return DungeonCommand.this.handleEditCommand(sender, new String[] {"edit", args[2]});
         }
 
         /**
@@ -3617,7 +4193,7 @@ public final class DungeonCommand implements TabExecutor {
          */
         private boolean handleLobbyCommand(CommandSender sender, String[] args) {
             if (args.length == 3 && args[2].equalsIgnoreCase("set")) {
-                return DungeonCommand.this.handleSetLobbyCommand(sender, new String[]{"setlobby"});
+                return DungeonCommand.this.handleSetLobbyCommand(sender, new String[] {"setlobby"});
             }
 
             DungeonCommand.this.sendUsageList(sender, "commands.edit.help.lines");
@@ -3629,7 +4205,7 @@ public final class DungeonCommand implements TabExecutor {
          */
         private boolean handleStartCommand(CommandSender sender, String[] args) {
             if (args.length == 3 && args[2].equalsIgnoreCase("set")) {
-                return DungeonCommand.this.handleSetSpawnCommand(sender, new String[]{"setspawn"});
+                return DungeonCommand.this.handleSetSpawnCommand(sender, new String[] {"setspawn"});
             }
 
             DungeonCommand.this.sendUsageList(sender, "commands.edit.help.lines");
@@ -3646,10 +4222,14 @@ public final class DungeonCommand implements TabExecutor {
             }
 
             return switch (args[2].toLowerCase(Locale.ROOT)) {
-                case "ban" -> DungeonCommand.this.handleBanItemCommand(sender, new String[]{"banitem"});
-                case "unban" -> DungeonCommand.this.handleUnbanItemCommand(sender, new String[]{"unbanitem"});
+                case "ban" ->
+                        DungeonCommand.this.handleBanItemCommand(sender, new String[] {"banitem"});
+                case "unban" ->
+                        DungeonCommand.this.handleUnbanItemCommand(
+                                sender, new String[] {"unbanitem"});
                 case "mark-dungeon" ->
-                    DungeonCommand.this.handleDungeonItemCommand(sender, new String[]{"dungeonitem"});
+                        DungeonCommand.this.handleDungeonItemCommand(
+                                sender, new String[] {"dungeonitem"});
                 default -> {
                     DungeonCommand.this.sendUsageList(sender, "commands.edit.help.lines");
                     yield true;
@@ -3681,7 +4261,8 @@ public final class DungeonCommand implements TabExecutor {
          */
         private boolean handleSignsCommand(CommandSender sender, String[] args) {
             if (args.length == 3 && args[2].equalsIgnoreCase("clean")) {
-                return DungeonCommand.this.handleCleanSignsCommand(sender, new String[]{"cleansigns"});
+                return DungeonCommand.this.handleCleanSignsCommand(
+                        sender, new String[] {"cleansigns"});
             }
 
             DungeonCommand.this.sendUsageList(sender, "commands.edit.help.lines");
@@ -3705,7 +4286,8 @@ public final class DungeonCommand implements TabExecutor {
 
             return switch (args[2].toLowerCase(Locale.ROOT)) {
                 case "status" ->
-                    DungeonCommand.this.handlePlayerStatusCommand(sender, DungeonCommand.this.shiftArgs(args));
+                        DungeonCommand.this.handlePlayerStatusCommand(
+                                sender, DungeonCommand.this.shiftArgs(args));
                 case "cooldown" -> this.handleCooldownCommand(sender, args);
                 case "queue" -> this.handleQueueCommand(sender, args);
                 default -> {
@@ -3727,7 +4309,8 @@ public final class DungeonCommand implements TabExecutor {
             }
 
             if (args.length == 3) {
-                DungeonCommand.this.addMatchingLiteralOptions(options, args[2], "status", "cooldown", "queue");
+                DungeonCommand.this.addMatchingLiteralOptions(
+                        options, args[2], "status", "cooldown", "queue");
                 return options;
             }
 
@@ -3749,7 +4332,8 @@ public final class DungeonCommand implements TabExecutor {
             } else if (args.length == 5 && args[3].equalsIgnoreCase("clear")) {
                 DungeonCommand.this.addMatchingDungeonNames(options, args[4]);
             } else if (args.length == 6 && args[3].equalsIgnoreCase("set")) {
-                DungeonCommand.this.addMatchingLiteralOptions(options, args[5], "30m", "1h", "12h", "1d", "7d");
+                DungeonCommand.this.addMatchingLiteralOptions(
+                        options, args[5], "30m", "1h", "12h", "1d", "7d");
             }
 
             return options;
@@ -3766,7 +4350,8 @@ public final class DungeonCommand implements TabExecutor {
 
             if (!args[3].equalsIgnoreCase("set")) {
                 if (args[3].equalsIgnoreCase("clear")) {
-                    return DungeonCommand.this.handleClearCooldownCommand(sender, DungeonCommand.this.shiftArgs(args));
+                    return DungeonCommand.this.handleClearCooldownCommand(
+                            sender, DungeonCommand.this.shiftArgs(args));
                 }
 
                 DungeonCommand.this.sendUsageList(sender, "commands.player.help.lines");
@@ -3774,13 +4359,13 @@ public final class DungeonCommand implements TabExecutor {
             }
 
             if (args.length == 5) {
-                return DungeonCommand.this.handleSetCooldownCommand(sender,
-                        new String[]{"setcooldown", args[4], args[1]});
+                return DungeonCommand.this.handleSetCooldownCommand(
+                        sender, new String[] {"setcooldown", args[4], args[1]});
             }
 
             if (args.length == 6) {
-                return DungeonCommand.this.handleSetCooldownCommand(sender,
-                        new String[]{"setcooldown", args[4], args[1], args[5]});
+                return DungeonCommand.this.handleSetCooldownCommand(
+                        sender, new String[] {"setcooldown", args[4], args[1], args[5]});
             }
 
             DungeonCommand.this.sendUsageList(sender, "commands.player.help.lines");
@@ -3792,7 +4377,8 @@ public final class DungeonCommand implements TabExecutor {
          */
         private boolean handleQueueCommand(CommandSender sender, String[] args) {
             if (args.length == 4 && args[3].equalsIgnoreCase("clear")) {
-                return DungeonCommand.this.handleClearQueueCommand(sender, DungeonCommand.this.shiftArgs(args));
+                return DungeonCommand.this.handleClearQueueCommand(
+                        sender, DungeonCommand.this.shiftArgs(args));
             }
 
             DungeonCommand.this.sendUsageList(sender, "commands.player.help.lines");
@@ -3832,12 +4418,14 @@ public final class DungeonCommand implements TabExecutor {
         public List<String> handleTabComplete(CommandSender sender, String[] args) {
             List<String> options = new ArrayList<>();
             if (args.length == 2) {
-                DungeonCommand.this.addMatchingLiteralOptions(options, args[1], "join-player", "kick-player", "map");
+                DungeonCommand.this.addMatchingLiteralOptions(
+                        options, args[1], "join-player", "kick-player", "map");
                 return options;
             }
 
             if (args.length == 3
-                    && (args[1].equalsIgnoreCase("join-player") || args[1].equalsIgnoreCase("kick-player"))) {
+                    && (args[1].equalsIgnoreCase("join-player")
+                            || args[1].equalsIgnoreCase("kick-player"))) {
                 DungeonCommand.this.addMatchingPlayers(options, args[2]);
             }
 
@@ -3853,7 +4441,7 @@ public final class DungeonCommand implements TabExecutor {
                 return true;
             }
 
-            return DungeonCommand.this.handleJoinCommand(sender, new String[]{"join", args[2]});
+            return DungeonCommand.this.handleJoinCommand(sender, new String[] {"join", args[2]});
         }
 
         /**
@@ -3865,7 +4453,7 @@ public final class DungeonCommand implements TabExecutor {
                 return true;
             }
 
-            return DungeonCommand.this.handleKickCommand(sender, new String[]{"kick", args[2]});
+            return DungeonCommand.this.handleKickCommand(sender, new String[] {"kick", args[2]});
         }
 
         /**
@@ -3877,7 +4465,7 @@ public final class DungeonCommand implements TabExecutor {
                 return true;
             }
 
-            return DungeonCommand.this.handleMapCommand(sender, new String[]{"getmap"});
+            return DungeonCommand.this.handleMapCommand(sender, new String[] {"getmap"});
         }
     }
 
@@ -3896,11 +4484,13 @@ public final class DungeonCommand implements TabExecutor {
             }
 
             if (args.length == 3 && args[2].equalsIgnoreCase("test-all")) {
-                return DungeonCommand.this.handleTestAllDoorsCommand(sender, new String[]{"testalldoors"});
+                return DungeonCommand.this.handleTestAllDoorsCommand(
+                        sender, new String[] {"testalldoors"});
             }
 
             if (args.length == 4 && args[2].equalsIgnoreCase("test")) {
-                return DungeonCommand.this.handleTestDoorCommand(sender, new String[]{"testdoor", args[3]});
+                return DungeonCommand.this.handleTestDoorCommand(
+                        sender, new String[] {"testdoor", args[3]});
             }
 
             DungeonCommand.this.sendUsageList(sender, "commands.debug.help.lines");

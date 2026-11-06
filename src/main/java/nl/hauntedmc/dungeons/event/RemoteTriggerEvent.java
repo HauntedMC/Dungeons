@@ -52,7 +52,8 @@ public class RemoteTriggerEvent extends DungeonEvent implements Cancellable {
      *
      * @return triggering player or {@code null}
      */
-    @Nullable public Player getPlayer() {
+    @Nullable
+    public Player getPlayer() {
         return this.playerSession == null ? null : this.playerSession.getPlayer();
     }
 
@@ -113,7 +114,8 @@ public class RemoteTriggerEvent extends DungeonEvent implements Cancellable {
      *
      * @return signal origin or {@code null}
      */
-    @Nullable public Location getOrigin() {
+    @Nullable
+    public Location getOrigin() {
         return this.origin;
     }
 
@@ -122,7 +124,8 @@ public class RemoteTriggerEvent extends DungeonEvent implements Cancellable {
      *
      * @return triggering player session or {@code null}
      */
-    @Nullable public DungeonPlayerSession getPlayerSession() {
+    @Nullable
+    public DungeonPlayerSession getPlayerSession() {
         return this.playerSession;
     }
 }

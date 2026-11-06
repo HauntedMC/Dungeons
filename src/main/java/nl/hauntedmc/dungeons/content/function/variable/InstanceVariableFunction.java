@@ -69,7 +69,8 @@ public class InstanceVariableFunction extends DungeonFunction {
                                 double change;
                                 switch (this.mode) {
                                     case SET:
-                                        play.getInstanceVariables().set(this.varName, this.varValue);
+                                        play.getInstanceVariables()
+                                                .set(this.varName, this.varValue);
                                         break;
                                     case ADD:
                                         try {
@@ -82,7 +83,9 @@ public class InstanceVariableFunction extends DungeonFunction {
                                                             "Failed to add value '{}' to instance variable '{}' in dungeon '{}' at {},{},{}: value is not numeric.",
                                                             this.varValue,
                                                             this.varName,
-                                                            this.instance.getDungeon().getWorldName(),
+                                                            this.instance
+                                                                    .getDungeon()
+                                                                    .getWorldName(),
                                                             this.location.getBlockX(),
                                                             this.location.getBlockY(),
                                                             this.location.getBlockZ());
@@ -91,7 +94,8 @@ public class InstanceVariableFunction extends DungeonFunction {
                                     case SUBTRACT:
                                         try {
                                             change = Double.parseDouble(this.varValue);
-                                            play.getInstanceVariables().subtract(this.varName, change);
+                                            play.getInstanceVariables()
+                                                    .subtract(this.varName, change);
                                         } catch (NumberFormatException exception) {
                                             RuntimeContext.plugin()
                                                     .getSLF4JLogger()
@@ -99,7 +103,9 @@ public class InstanceVariableFunction extends DungeonFunction {
                                                             "Failed to subtract value '{}' from instance variable '{}' in dungeon '{}' at {},{},{}: value is not numeric.",
                                                             this.varValue,
                                                             this.varName,
-                                                            this.instance.getDungeon().getWorldName(),
+                                                            this.instance
+                                                                    .getDungeon()
+                                                                    .getWorldName(),
                                                             this.location.getBlockX(),
                                                             this.location.getBlockY(),
                                                             this.location.getBlockZ());
@@ -129,7 +135,7 @@ public class InstanceVariableFunction extends DungeonFunction {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -148,7 +154,8 @@ public class InstanceVariableFunction extends DungeonFunction {
                         LangUtils.sendMessage(
                                 player,
                                 "editor.function.instance-variable.current-name",
-                                LangUtils.placeholder("name", InstanceVariableFunction.this.varName));
+                                LangUtils.placeholder(
+                                        "name", InstanceVariableFunction.this.varName));
                     }
 
                     /**
@@ -160,18 +167,20 @@ public class InstanceVariableFunction extends DungeonFunction {
                         LangUtils.sendMessage(
                                 player,
                                 "editor.function.instance-variable.name-set",
-                                LangUtils.placeholder("name", InstanceVariableFunction.this.varName));
+                                LangUtils.placeholder(
+                                        "name", InstanceVariableFunction.this.varName));
                     }
                 });
         this.menu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     /**
                      * Builds button.
                      */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.OBSERVER);
-                        this.button.setDisplayName("&d&lEdit Mode: " + InstanceVariableFunction.this.mode);
+                        this.button.setDisplayName(
+                                "&d&lEdit Mode: " + InstanceVariableFunction.this.mode);
                     }
 
                     /**
@@ -180,18 +189,20 @@ public class InstanceVariableFunction extends DungeonFunction {
                     @Override
                     public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
-                        DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                        DungeonPlayerSession playerSession =
+                                RuntimeContext.playerSessions().get(player);
                         InstanceVariableFunction.this.modeIndex++;
                         InstanceVariableFunction.this.verifyModeType();
                         LangUtils.sendMessage(
                                 player,
                                 "editor.function.instance-variable.mode-set",
-                                LangUtils.placeholder("mode", InstanceVariableFunction.this.mode.toString()));
+                                LangUtils.placeholder(
+                                        "mode", InstanceVariableFunction.this.mode.toString()));
                         playerSession.showHotbar(this.menu);
                     }
                 });
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -208,21 +219,25 @@ public class InstanceVariableFunction extends DungeonFunction {
                     public void onSelect(Player player) {
                         switch (InstanceVariableFunction.this.mode) {
                             case SET:
-                                LangUtils.sendMessage(player, "editor.function.instance-variable.ask-value-set");
+                                LangUtils.sendMessage(
+                                        player, "editor.function.instance-variable.ask-value-set");
                                 break;
                             case ADD:
-                                LangUtils.sendMessage(player, "editor.function.instance-variable.ask-value-add");
+                                LangUtils.sendMessage(
+                                        player, "editor.function.instance-variable.ask-value-add");
                                 break;
                             case SUBTRACT:
                                 LangUtils.sendMessage(
-                                        player, "editor.function.instance-variable.ask-value-subtract");
+                                        player,
+                                        "editor.function.instance-variable.ask-value-subtract");
                         }
 
                         LangUtils.sendMessage(
                                 player,
                                 "editor.function.instance-variable.current-value",
                                 LangUtils.placeholder(
-                                        "value", String.valueOf(InstanceVariableFunction.this.varValue)));
+                                        "value",
+                                        String.valueOf(InstanceVariableFunction.this.varValue)));
                     }
 
                     /**
@@ -233,13 +248,17 @@ public class InstanceVariableFunction extends DungeonFunction {
                         if (InstanceVariableFunction.this.mode != VariableEditMode.SET) {
                             Optional<Double> value = InputUtils.readDoubleInput(player, message);
                             InstanceVariableFunction.this.varValue =
-                                    value.isPresent() ? message : InstanceVariableFunction.this.varValue;
+                                    value.isPresent()
+                                            ? message
+                                            : InstanceVariableFunction.this.varValue;
                             if (value.isPresent()) {
                                 LangUtils.sendMessage(
                                         player,
                                         "editor.function.instance-variable.value-set",
                                         LangUtils.placeholder(
-                                                "value", String.valueOf(InstanceVariableFunction.this.varValue)));
+                                                "value",
+                                                String.valueOf(
+                                                        InstanceVariableFunction.this.varValue)));
                             }
                         } else {
                             InstanceVariableFunction.this.varValue = message;
@@ -247,7 +266,9 @@ public class InstanceVariableFunction extends DungeonFunction {
                                     player,
                                     "editor.function.instance-variable.value-set",
                                     LangUtils.placeholder(
-                                            "value", String.valueOf(InstanceVariableFunction.this.varValue)));
+                                            "value",
+                                            String.valueOf(
+                                                    InstanceVariableFunction.this.varValue)));
                         }
                     }
                 });

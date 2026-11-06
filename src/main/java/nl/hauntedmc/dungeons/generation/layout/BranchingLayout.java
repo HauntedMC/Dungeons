@@ -43,7 +43,7 @@ public class BranchingLayout extends Layout {
     }
 
     @Override
-        public LayoutValidationReport validateConfiguration() {
+    public LayoutValidationReport validateConfiguration() {
         LayoutValidationReport report = super.validateConfiguration();
         this.validateStraightness(
                 report,
@@ -88,17 +88,21 @@ public class BranchingLayout extends Layout {
     }
 
     @Override
-        protected Layout.GenerationResult tryLayout() {
+    protected Layout.GenerationResult tryLayout() {
         RuntimeContext.logger()
                 .info("Generating branching layout for dungeon '{}'.", this.dungeon.getWorldName());
 
-        this.roomWhitelist = this.resolveRooms(this.config.getStringList("generator.branching.trunk.room_pool"));
+        this.roomWhitelist =
+                this.resolveRooms(this.config.getStringList("generator.branching.trunk.room_pool"));
         this.endRoomWhitelist =
-                this.resolveRooms(this.config.getStringList("generator.branching.trunk.end_room_pool"));
+                this.resolveRooms(
+                        this.config.getStringList("generator.branching.trunk.end_room_pool"));
         this.straightness = this.config.getDouble("generator.branching.trunk.straightness", 0.5);
         this.minBranchRooms = this.config.getInt("generator.branching.trunk.room_target.min", 12);
         this.maxBranchRooms = this.config.getInt("generator.branching.trunk.room_target.max", 24);
-        this.strictRooms = this.config.getBoolean("generator.branching.trunk.room_target.enforce_minimum", true);
+        this.strictRooms =
+                this.config.getBoolean(
+                        "generator.branching.trunk.room_target.enforce_minimum", true);
         this.roomCount = 0;
         this.totalRooms = 0;
         this.branchCount = 0;
@@ -114,7 +118,8 @@ public class BranchingLayout extends Layout {
         this.queuedCountsByRoom = new HashMap<>();
         this.queuedRoomAreas = new ArrayList<>();
         this.queuedRoomAnchors = new HashMap<>();
-        this.targetSize = MathUtils.getRandomNumberInRange(this.minBranchRooms, this.maxBranchRooms);
+        this.targetSize =
+                MathUtils.getRandomNumberInRange(this.minBranchRooms, this.maxBranchRooms);
 
         List<Integer> available = new ArrayList<>();
         for (int i = 1; i <= this.targetSize; i++) {
@@ -164,7 +169,9 @@ public class BranchingLayout extends Layout {
                 return Layout.GenerationResult.BAD_LAYOUT;
             } else {
                 RuntimeContext.logger()
-                        .info("Found valid branching layout for dungeon '{}'.", this.dungeon.getWorldName());
+                        .info(
+                                "Found valid branching layout for dungeon '{}'.",
+                                this.dungeon.getWorldName());
                 RuntimeContext.plugin()
                         .getSLF4JLogger()
                         .info(
@@ -177,7 +184,7 @@ public class BranchingLayout extends Layout {
         }
     }
 
-        protected Layout.GenerationResult generateTrunk() {
+    protected Layout.GenerationResult generateTrunk() {
         if (!this.selectFirstRoom()) {
             return Layout.GenerationResult.NO_START_ROOM;
         } else {
@@ -197,7 +204,8 @@ public class BranchingLayout extends Layout {
                 List<BoundingBox> savedRoomAreas = new ArrayList<>(this.queuedRoomAreas);
                 Map<BranchingRoomDefinition, Integer> savedCountsByRoom =
                         new HashMap<>(this.queuedCountsByRoom);
-                Map<SimpleLocation, InstanceRoom> savedRoomAnchors = new HashMap<>(this.queuedRoomAnchors);
+                Map<SimpleLocation, InstanceRoom> savedRoomAnchors =
+                        new HashMap<>(this.queuedRoomAnchors);
                 List<InstanceRoom> savedRoomsToAdd = new ArrayList<>(this.roomsToAdd);
 
                 Layout.GenerationResult result = this.processQueue(25);
@@ -260,7 +268,7 @@ public class BranchingLayout extends Layout {
         }
     }
 
-        protected Layout.GenerationResult generateAllBranches() {
+    protected Layout.GenerationResult generateAllBranches() {
         int totalBranches = 0;
         ConfigurationSection branchesSection =
                 this.config.getConfigurationSection("generator.branching.branches");
@@ -269,7 +277,8 @@ public class BranchingLayout extends Layout {
                 this.roomWhitelist.clear();
                 this.branchCount = 0;
 
-                this.roomWhitelist = this.resolveRooms(branchesSection.getStringList(path + ".room_pool"));
+                this.roomWhitelist =
+                        this.resolveRooms(branchesSection.getStringList(path + ".room_pool"));
                 this.endRoomWhitelist =
                         this.resolveRooms(branchesSection.getStringList(path + ".end_room_pool"));
 
@@ -280,11 +289,16 @@ public class BranchingLayout extends Layout {
                 this.straightness = branchesSection.getDouble(path + ".straightness", 0.5);
                 this.minBranchRooms = branchesSection.getInt(path + ".room_target.min", 6);
                 this.maxBranchRooms = branchesSection.getInt(path + ".room_target.max", 12);
-                this.strictRooms = branchesSection.getBoolean(path + ".room_target.enforce_minimum", true);
-                this.strictBranches = branchesSection.getBoolean(path + ".enforce_occurrences", true);
+                this.strictRooms =
+                        branchesSection.getBoolean(path + ".room_target.enforce_minimum", true);
+                this.strictBranches =
+                        branchesSection.getBoolean(path + ".enforce_occurrences", true);
 
                 RuntimeContext.logger()
-                        .info("Generating branch '{}' for dungeon '{}'.", path, this.dungeon.getWorldName());
+                        .info(
+                                "Generating branch '{}' for dungeon '{}'.",
+                                path,
+                                this.dungeon.getWorldName());
 
                 Layout.GenerationResult result = this.generateBranches();
                 if (!result.isPassed()) {
@@ -304,7 +318,7 @@ public class BranchingLayout extends Layout {
         return Layout.GenerationResult.SUCCESS;
     }
 
-        private List<BranchingRoomDefinition> resolveRooms(List<String> roomNames) {
+    private List<BranchingRoomDefinition> resolveRooms(List<String> roomNames) {
         List<BranchingRoomDefinition> resolved = new ArrayList<>();
         for (String roomName : roomNames) {
             BranchingRoomDefinition room = this.dungeon.getRoom(roomName);
@@ -315,20 +329,20 @@ public class BranchingLayout extends Layout {
         return resolved;
     }
 
-        private void validateRoomTarget(
+    private void validateRoomTarget(
             LayoutValidationReport report, String pathPrefix, int min, int max) {
         if (min > max) {
             report.addError(pathPrefix + ".min is greater than " + pathPrefix + ".max.");
         }
     }
 
-        private void validateStraightness(LayoutValidationReport report, String path, double value) {
+    private void validateStraightness(LayoutValidationReport report, String path, double value) {
         if (value < 0.0 || value > 1.0) {
             report.addError(path + " must be between 0.0 and 1.0.");
         }
     }
 
-        private void validateRangedNumber(
+    private void validateRangedNumber(
             LayoutValidationReport report, String path, String rawValue, boolean nonNegativeOnly) {
         try {
             RangedNumber range = new RangedNumber(rawValue);
@@ -341,7 +355,7 @@ public class BranchingLayout extends Layout {
         }
     }
 
-        protected Layout.GenerationResult generateBranches() {
+    protected Layout.GenerationResult generateBranches() {
         ArrayList<InstanceRoom> rooms = new ArrayList<>(this.getAllRooms());
         rooms.removeIf(
                 room ->
@@ -363,13 +377,17 @@ public class BranchingLayout extends Layout {
         int branchTries = 0;
         int maxBranchTries = Math.max(10, targetBranches * 5);
 
-        while (branchTries <= maxBranchTries && !rooms.isEmpty() && this.branchCount < targetBranches) {
+        while (branchTries <= maxBranchTries
+                && !rooms.isEmpty()
+                && this.branchCount < targetBranches) {
             branchTries++;
             this.queuedRoomCount = 0;
             this.roomCount = 0;
-            this.targetSize = MathUtils.getRandomNumberInRange(this.minBranchRooms, this.maxBranchRooms);
+            this.targetSize =
+                    MathUtils.getRandomNumberInRange(this.minBranchRooms, this.maxBranchRooms);
 
-            InstanceRoom branchRoom = rooms.get(MathUtils.getRandomNumberInRange(0, rooms.size() - 1));
+            InstanceRoom branchRoom =
+                    rooms.get(MathUtils.getRandomNumberInRange(0, rooms.size() - 1));
             Layout.GenerationResult result = this.generateBranch(branchRoom);
 
             if (result.isPassed() && this.queuedRoomCount > 0 && this.verifyBranch()) {
@@ -417,7 +435,7 @@ public class BranchingLayout extends Layout {
         return Layout.GenerationResult.SUCCESS;
     }
 
-        protected Layout.GenerationResult generateBranch(InstanceRoom startRoom) {
+    protected Layout.GenerationResult generateBranch(InstanceRoom startRoom) {
         this.queue.clear();
         this.queue.add(startRoom);
         this.generationCheckpoint = startRoom;
@@ -436,7 +454,8 @@ public class BranchingLayout extends Layout {
             List<BoundingBox> savedRoomAreas = new ArrayList<>(this.queuedRoomAreas);
             Map<BranchingRoomDefinition, Integer> savedCountsByRoom =
                     new HashMap<>(this.queuedCountsByRoom);
-            Map<SimpleLocation, InstanceRoom> savedRoomAnchors = new HashMap<>(this.queuedRoomAnchors);
+            Map<SimpleLocation, InstanceRoom> savedRoomAnchors =
+                    new HashMap<>(this.queuedRoomAnchors);
             List<InstanceRoom> savedRoomsToAdd = new ArrayList<>(this.roomsToAdd);
 
             Layout.GenerationResult result = this.processQueue(25);
@@ -473,13 +492,16 @@ public class BranchingLayout extends Layout {
     }
 
     @Override
-        protected boolean tryConnectors(InstanceRoom from) {
+    protected boolean tryConnectors(InstanceRoom from) {
         if (!from.getAvailableConnectors().isEmpty()) {
             boolean straight = MathUtils.getRandomBoolean(this.straightness);
             if (straight && from.getStartConnector() != null) {
                 List<Connector> connectors =
                         from.getConnectorsByDirection(
-                                from.getStartConnector().getLocation().getDirection().getOpposite());
+                                from.getStartConnector()
+                                        .getLocation()
+                                        .getDirection()
+                                        .getOpposite());
                 Collections.shuffle(connectors);
 
                 for (Connector connector : connectors) {
@@ -514,7 +536,7 @@ public class BranchingLayout extends Layout {
         return false;
     }
 
-        protected boolean verifyBranch() {
+    protected boolean verifyBranch() {
         if (!this.strictRooms) {
             return true;
         }
@@ -528,7 +550,7 @@ public class BranchingLayout extends Layout {
     }
 
     @Override
-        public RandomCollection<BranchingRoomDefinition> filterRooms(
+    public RandomCollection<BranchingRoomDefinition> filterRooms(
             Connector connector, InstanceRoom from) {
         int nextDepth = from.getDepth() + 1;
         List<BranchingRoomDefinition> fullWhitelist = new ArrayList<>();
@@ -550,7 +572,8 @@ public class BranchingLayout extends Layout {
                     this.roomWhitelist.isEmpty() || fullWhitelist.contains(room);
             boolean allowedByDepth =
                     !(nextDepth < room.getDepth().getMin())
-                            && (room.getDepth().getMax() == -1.0 || !(nextDepth > room.getDepth().getMax()));
+                            && (room.getDepth().getMax() == -1.0
+                                    || !(nextDepth > room.getDepth().getMax()));
             boolean allowedByOccurrences = !this.isRoomMaxedOut(room);
 
             boolean allowedByTerminalRule;

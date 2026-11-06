@@ -16,7 +16,8 @@ import org.reflections.Reflections;
  * Type metadata and auto-discovery helpers for plugin model registration.
  */
 public final class TypeMetadataSupport {
-    private static final ConcurrentMap<Class<?>, TypeMetadata> TYPE_CACHE = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<Class<?>, TypeMetadata> TYPE_CACHE =
+            new ConcurrentHashMap<>();
 
     /** Utility class. */
     private TypeMetadataSupport() {}
@@ -67,7 +68,8 @@ public final class TypeMetadataSupport {
     }
 
     /** Registers one alias while guarding against conflicting existing mappings. */
-    private static void registerAlias(Class<? extends ConfigurationSerializable> type, String alias) {
+    private static void registerAlias(
+            Class<? extends ConfigurationSerializable> type, String alias) {
         Class<? extends ConfigurationSerializable> existing =
                 ConfigurationSerialization.getClassByAlias(alias);
         if (existing != null && !existing.equals(type)) {
@@ -91,7 +93,8 @@ public final class TypeMetadataSupport {
 
         if (typeKey != null) {
             if (id != null && !Objects.equals(id, typeKey.id())) {
-                throw new IllegalStateException("Type '" + type.getName() + "' declares conflicting ids.");
+                throw new IllegalStateException(
+                        "Type '" + type.getName() + "' declares conflicting ids.");
             }
 
             id = typeKey.id();

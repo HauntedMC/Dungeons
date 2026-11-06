@@ -20,8 +20,20 @@ class TimeUtilsTest {
 
     @Test
     void rejectsMalformedAndOverflowingDurations() {
-        for (String value : new String[] {null, "", "m", "5minutes", "5m junk", "-1h", "1.5h", " 5m",
-                "9999999999999999999999999s", "9223372036854775807y", "9223372036854775807s"}) {
+        for (String value :
+                new String[] {
+                    null,
+                    "",
+                    "m",
+                    "5minutes",
+                    "5m junk",
+                    "-1h",
+                    "1.5h",
+                    " 5m",
+                    "9999999999999999999999999s",
+                    "9223372036854775807y",
+                    "9223372036854775807s"
+                }) {
             assertNull(TimeUtils.convertDurationString(value), value);
         }
     }

@@ -41,7 +41,9 @@ public final class DungeonConfigCommandHandler {
     /**
      * Creates the config command handler against the runtime services it needs.
      */
-    public DungeonConfigCommandHandler(DungeonRepository dungeonManager, PlayerSessionRegistry playerManager,
+    public DungeonConfigCommandHandler(
+            DungeonRepository dungeonManager,
+            PlayerSessionRegistry playerManager,
             ActiveInstanceRegistry activeInstanceManager) {
         this.dungeonManager = dungeonManager;
         this.playerManager = playerManager;
@@ -64,7 +66,9 @@ public final class DungeonConfigCommandHandler {
 
         DungeonDefinition dungeon = this.resolveDungeon(sender, args[1]);
         if (dungeon == null) {
-            LangUtils.sendMessage(sender, "commands.edit.open.dungeon-not-found",
+            LangUtils.sendMessage(
+                    sender,
+                    "commands.edit.open.dungeon-not-found",
                     LangUtils.placeholder("dungeon", args[1]));
             return true;
         }
@@ -92,7 +96,10 @@ public final class DungeonConfigCommandHandler {
 
         DungeonConfigEntry entry = DungeonConfigRegistry.resolve(dungeon, action);
         if (entry == null || !entry.supports(dungeon)) {
-            LangUtils.sendMessage(sender, "commands.config.unknown-setting", LangUtils.placeholder("setting", args[2]),
+            LangUtils.sendMessage(
+                    sender,
+                    "commands.config.unknown-setting",
+                    LangUtils.placeholder("setting", args[2]),
                     LangUtils.placeholder("dungeon", dungeon.getWorldName()));
             return true;
         }
@@ -139,7 +146,8 @@ public final class DungeonConfigCommandHandler {
             return options;
         }
 
-        List<String> values = new ArrayList<>(this.completeValue(entry, dungeon, this.joinArgs(args, 3)));
+        List<String> values =
+                new ArrayList<>(this.completeValue(entry, dungeon, this.joinArgs(args, 3)));
         if (this.isRuleSetting(entry)) {
             values.addAll(this.completeSimple(this.joinArgs(args, 3), List.of("inherit")));
         }
@@ -173,7 +181,10 @@ public final class DungeonConfigCommandHandler {
     /**
      * Applies setting.
      */
-    private boolean applySetting(CommandSender sender, DungeonDefinition dungeon, DungeonConfigEntry entry,
+    private boolean applySetting(
+            CommandSender sender,
+            DungeonDefinition dungeon,
+            DungeonConfigEntry entry,
             String rawValue) {
         rawValue = rawValue == null ? "" : rawValue.trim();
 
@@ -217,14 +228,17 @@ public final class DungeonConfigCommandHandler {
             case MATERIAL -> {
                 Material parsed = this.parseMaterial(rawValue);
                 if (parsed == null) {
-                    return this.sendInvalidValue(sender, entry, "Expected a valid Bukkit material.");
+                    return this.sendInvalidValue(
+                            sender, entry, "Expected a valid Bukkit material.");
                 }
                 return this.persistValue(sender, dungeon, entry, parsed.name());
             }
             case MATERIAL_LIST -> {
                 List<String> parsed = this.parseMaterialList(rawValue);
                 if (parsed == null) {
-                    return this.sendInvalidValue(sender, entry,
+                    return this.sendInvalidValue(
+                            sender,
+                            entry,
                             "Expected a comma separated list of valid Bukkit materials, or clear.");
                 }
                 return this.persistValue(sender, dungeon, entry, parsed);
@@ -232,7 +246,9 @@ public final class DungeonConfigCommandHandler {
             case ENTITY_TYPE_LIST -> {
                 List<String> parsed = this.parseEntityTypeList(rawValue);
                 if (parsed == null) {
-                    return this.sendInvalidValue(sender, entry,
+                    return this.sendInvalidValue(
+                            sender,
+                            entry,
                             "Expected a comma separated list of valid Bukkit entity types, or clear.");
                 }
                 return this.persistValue(sender, dungeon, entry, parsed);
@@ -243,14 +259,17 @@ public final class DungeonConfigCommandHandler {
             case GAMEMODE -> {
                 GameMode parsed = this.parseGameMode(rawValue);
                 if (parsed == null) {
-                    return this.sendInvalidValue(sender, entry, "Expected a valid Bukkit gamemode.");
+                    return this.sendInvalidValue(
+                            sender, entry, "Expected a valid Bukkit gamemode.");
                 }
                 return this.persistValue(sender, dungeon, entry, parsed.name());
             }
             case WORLD_ENVIRONMENT -> {
                 Environment parsed = this.parseEnvironment(rawValue);
                 if (parsed == null) {
-                    return this.sendInvalidValue(sender, entry,
+                    return this.sendInvalidValue(
+                            sender,
+                            entry,
                             "Expected NORMAL, NETHER, THE_END, or another valid environment.");
                 }
                 return this.persistValue(sender, dungeon, entry, parsed.name());
@@ -258,7 +277,9 @@ public final class DungeonConfigCommandHandler {
             case COOLDOWN_PERIOD -> {
                 CooldownPeriod parsed = this.parseCooldownPeriod(rawValue);
                 if (parsed == null) {
-                    return this.sendInvalidValue(sender, entry,
+                    return this.sendInvalidValue(
+                            sender,
+                            entry,
                             "Expected one of: TIMER, HOURLY, DAILY, WEEKLY, MONTHLY.");
                 }
                 return this.persistValue(sender, dungeon, entry, parsed.name());
@@ -268,11 +289,16 @@ public final class DungeonConfigCommandHandler {
             }
             case LAYOUT -> {
                 String parsed = rawValue.toLowerCase(Locale.ROOT);
-                boolean valid = entry.getSuggestions(dungeon).stream()
-                        .anyMatch(candidate -> candidate.equalsIgnoreCase(parsed));
+                boolean valid =
+                        entry.getSuggestions(dungeon).stream()
+                                .anyMatch(candidate -> candidate.equalsIgnoreCase(parsed));
                 if (!valid) {
-                    return this.sendInvalidValue(sender, entry,
-                            "Expected one of: " + String.join(", ", entry.getSuggestions(dungeon)) + ".");
+                    return this.sendInvalidValue(
+                            sender,
+                            entry,
+                            "Expected one of: "
+                                    + String.join(", ", entry.getSuggestions(dungeon))
+                                    + ".");
                 }
                 return this.persistValue(sender, dungeon, entry, parsed);
             }
@@ -283,7 +309,9 @@ public final class DungeonConfigCommandHandler {
                 return this.persistValue(sender, dungeon, entry, rawValue);
             }
             default -> {
-                return this.sendInvalidValue(sender, entry,
+                return this.sendInvalidValue(
+                        sender,
+                        entry,
                         "This setting type is not supported by the command handler.");
             }
         }
@@ -292,7 +320,10 @@ public final class DungeonConfigCommandHandler {
     /**
      * Applies location setting.
      */
-    private boolean applyLocationSetting(CommandSender sender, DungeonDefinition dungeon, DungeonConfigEntry entry,
+    private boolean applyLocationSetting(
+            CommandSender sender,
+            DungeonDefinition dungeon,
+            DungeonConfigEntry entry,
             String rawValue) {
         if (!(sender instanceof Player player)) {
             LangUtils.sendMessage(sender, "commands.config.location-player-only");
@@ -300,19 +331,22 @@ public final class DungeonConfigCommandHandler {
         }
 
         String lowered = rawValue.toLowerCase(Locale.ROOT);
-        if (!lowered.equals("here") && !(entry.getKey().equals("exit-location") && lowered.equals("clear"))) {
+        if (!lowered.equals("here")
+                && !(entry.getKey().equals("exit-location") && lowered.equals("clear"))) {
             return this.sendInvalidValue(sender, entry, "Use here, or clear for exit-location.");
         }
 
         switch (entry.getKey()) {
             case "lobby-location" -> {
                 dungeon.setLobbySpawn(player.getLocation());
-                this.sendUpdated(sender, dungeon, entry, this.formatLocation(dungeon.getLobbySpawn()), true);
+                this.sendUpdated(
+                        sender, dungeon, entry, this.formatLocation(dungeon.getLobbySpawn()), true);
                 return true;
             }
             case "start-location" -> {
                 dungeon.setStartSpawn(player.getLocation());
-                this.sendUpdated(sender, dungeon, entry, this.formatLocation(dungeon.getStartSpawn()), true);
+                this.sendUpdated(
+                        sender, dungeon, entry, this.formatLocation(dungeon.getStartSpawn()), true);
                 return true;
             }
             case "exit-location" -> {
@@ -321,7 +355,12 @@ public final class DungeonConfigCommandHandler {
                     this.sendUpdated(sender, dungeon, entry, "<cleared>", true);
                 } else {
                     dungeon.setExit(player.getLocation());
-                    this.sendUpdated(sender, dungeon, entry, this.formatLocation(dungeon.getExitLoc()), true);
+                    this.sendUpdated(
+                            sender,
+                            dungeon,
+                            entry,
+                            this.formatLocation(dungeon.getExitLoc()),
+                            true);
                 }
                 return true;
             }
@@ -333,16 +372,21 @@ public final class DungeonConfigCommandHandler {
     /**
      * Adds branch.
      */
-    private boolean addBranch(CommandSender sender, DungeonDefinition dungeon, DungeonConfigEntry entry,
+    private boolean addBranch(
+            CommandSender sender,
+            DungeonDefinition dungeon,
+            DungeonConfigEntry entry,
             String rawValue) {
         BranchingDungeon branching = dungeon.asBranching();
         if (branching == null) {
-            return this.sendInvalidValue(sender, entry, "This setting only exists on branching dungeons.");
+            return this.sendInvalidValue(
+                    sender, entry, "This setting only exists on branching dungeons.");
         }
 
         String branchId = this.normalizeBranchId(rawValue);
         if (branchId == null) {
-            return this.sendInvalidValue(sender, entry, "Use a branch id with letters, numbers, '-' or '_'.");
+            return this.sendInvalidValue(
+                    sender, entry, "Use a branch id with letters, numbers, '-' or '_'.");
         }
 
         String path = "generator.branching.branches." + branchId;
@@ -369,11 +413,15 @@ public final class DungeonConfigCommandHandler {
     /**
      * Removes branch.
      */
-    private boolean removeBranch(CommandSender sender, DungeonDefinition dungeon, DungeonConfigEntry entry,
+    private boolean removeBranch(
+            CommandSender sender,
+            DungeonDefinition dungeon,
+            DungeonConfigEntry entry,
             String rawValue) {
         BranchingDungeon branching = dungeon.asBranching();
         if (branching == null) {
-            return this.sendInvalidValue(sender, entry, "This setting only exists on branching dungeons.");
+            return this.sendInvalidValue(
+                    sender, entry, "This setting only exists on branching dungeons.");
         }
 
         String branchId = this.normalizeBranchId(rawValue);
@@ -396,7 +444,10 @@ public final class DungeonConfigCommandHandler {
     /**
      * Runs persist value.
      */
-    private boolean persistValue(CommandSender sender, DungeonDefinition dungeon, DungeonConfigEntry entry,
+    private boolean persistValue(
+            CommandSender sender,
+            DungeonDefinition dungeon,
+            DungeonConfigEntry entry,
             Object value) {
         dungeon.getConfig().set(entry.getPath(), value);
         dungeon.saveConfig();
@@ -418,10 +469,18 @@ public final class DungeonConfigCommandHandler {
     /**
      * Runs send updated.
      */
-    private void sendUpdated(CommandSender sender, DungeonDefinition dungeon, DungeonConfigEntry entry, String value,
+    private void sendUpdated(
+            CommandSender sender,
+            DungeonDefinition dungeon,
+            DungeonConfigEntry entry,
+            String value,
             boolean immediate) {
-        LangUtils.sendMessage(sender, "commands.config.updated", LangUtils.placeholder("setting", entry.getKey()),
-                LangUtils.placeholder("dungeon", dungeon.getWorldName()), LangUtils.placeholder("value", value));
+        LangUtils.sendMessage(
+                sender,
+                "commands.config.updated",
+                LangUtils.placeholder("setting", entry.getKey()),
+                LangUtils.placeholder("dungeon", dungeon.getWorldName()),
+                LangUtils.placeholder("value", value));
         if (immediate) {
             LangUtils.sendMessage(sender, "commands.config.updated-live");
         } else {
@@ -432,8 +491,12 @@ public final class DungeonConfigCommandHandler {
     /**
      * Runs show setting.
      */
-    private void showSetting(CommandSender sender, DungeonDefinition dungeon, DungeonConfigEntry entry) {
-        LangUtils.sendMessage(sender, "commands.config.setting-value", LangUtils.placeholder("setting", entry.getKey()),
+    private void showSetting(
+            CommandSender sender, DungeonDefinition dungeon, DungeonConfigEntry entry) {
+        LangUtils.sendMessage(
+                sender,
+                "commands.config.setting-value",
+                LangUtils.placeholder("setting", entry.getKey()),
                 LangUtils.placeholder("value", this.getCurrentValue(dungeon, entry)),
                 LangUtils.placeholder("description", entry.getDescription()));
     }
@@ -443,9 +506,14 @@ public final class DungeonConfigCommandHandler {
      */
     private void listSettings(CommandSender sender, DungeonDefinition dungeon, String filter) {
         String loweredFilter = filter == null ? "" : filter.toLowerCase(Locale.ROOT);
-        sender.sendMessage(LangUtils.getMessage("commands.config.list-header", false,
-                LangUtils.placeholder("dungeon", dungeon.getWorldName())));
-        LangUtils.sendMessage(sender, "commands.config.list-usage",
+        sender.sendMessage(
+                LangUtils.getMessage(
+                        "commands.config.list-header",
+                        false,
+                        LangUtils.placeholder("dungeon", dungeon.getWorldName())));
+        LangUtils.sendMessage(
+                sender,
+                "commands.config.list-usage",
                 LangUtils.placeholder("dungeon", dungeon.getWorldName()));
         if (sender instanceof Player) {
             LangUtils.sendMessage(sender, "commands.config.list-shortcut");
@@ -454,17 +522,21 @@ public final class DungeonConfigCommandHandler {
         boolean found = false;
         for (DungeonConfigEntry entry : DungeonConfigRegistry.getEntries(dungeon)) {
             if (!loweredFilter.isBlank()) {
-                String searchable = (entry.getKey() + " " + entry.getDescription() + " " + entry.getPath())
-                        .toLowerCase(Locale.ROOT);
+                String searchable =
+                        (entry.getKey() + " " + entry.getDescription() + " " + entry.getPath())
+                                .toLowerCase(Locale.ROOT);
                 if (!searchable.contains(loweredFilter)) {
                     continue;
                 }
             }
 
-            sender.sendMessage(LangUtils.getMessage("commands.config.setting-line", false,
-                    LangUtils.placeholder("setting", entry.getKey()),
-                    LangUtils.placeholder("value", this.getCurrentValue(dungeon, entry)),
-                    LangUtils.placeholder("description", entry.getDescription())));
+            sender.sendMessage(
+                    LangUtils.getMessage(
+                            "commands.config.setting-line",
+                            false,
+                            LangUtils.placeholder("setting", entry.getKey()),
+                            LangUtils.placeholder("value", this.getCurrentValue(dungeon, entry)),
+                            LangUtils.placeholder("description", entry.getDescription())));
             found = true;
         }
 
@@ -484,8 +556,12 @@ public final class DungeonConfigCommandHandler {
     /**
      * Runs send invalid value.
      */
-    private boolean sendInvalidValue(CommandSender sender, DungeonConfigEntry entry, String message) {
-        LangUtils.sendMessage(sender, "commands.config.invalid-value", LangUtils.placeholder("setting", entry.getKey()),
+    private boolean sendInvalidValue(
+            CommandSender sender, DungeonConfigEntry entry, String message) {
+        LangUtils.sendMessage(
+                sender,
+                "commands.config.invalid-value",
+                LangUtils.placeholder("setting", entry.getKey()),
                 LangUtils.placeholder("reason", message));
         return true;
     }
@@ -513,8 +589,8 @@ public final class DungeonConfigCommandHandler {
                 return "<unsupported>";
             }
 
-            ConfigurationSection branchSection = branching.getConfig()
-                    .getConfigurationSection("generator.branching.branches");
+            ConfigurationSection branchSection =
+                    branching.getConfig().getConfigurationSection("generator.branching.branches");
             if (branchSection == null || branchSection.getKeys(false).isEmpty()) {
                 return "<none>";
             }
@@ -527,7 +603,9 @@ public final class DungeonConfigCommandHandler {
         FileConfiguration config = dungeon.getConfig();
         String value = this.stringifyValue(config.get(entry.getPath()));
         if (this.isRuleSetting(entry) && !config.getKeys(true).contains(entry.getPath())) {
-            return LangUtils.getMessage("commands.config.inherited-value", false,
+            return LangUtils.getMessage(
+                    "commands.config.inherited-value",
+                    false,
                     LangUtils.placeholder("value", value));
         }
         return value;
@@ -541,11 +619,12 @@ public final class DungeonConfigCommandHandler {
     /**
      * Runs complete value.
      */
-    private List<String> completeValue(DungeonConfigEntry entry, DungeonDefinition dungeon, String rawValue) {
+    private List<String> completeValue(
+            DungeonConfigEntry entry, DungeonDefinition dungeon, String rawValue) {
         return switch (entry.getValueType()) {
             case BOOLEAN -> this.completeSimple(rawValue, List.of("true", "false"));
             case MATERIAL_LIST, ENTITY_TYPE_LIST, STRING_LIST ->
-                this.completeList(rawValue, entry.getSuggestions(dungeon));
+                    this.completeList(rawValue, entry.getSuggestions(dungeon));
             case LOCATION -> this.completeSimple(rawValue, entry.getSuggestions(dungeon));
             default -> this.completeSimple(rawValue, entry.getSuggestions(dungeon));
         };
@@ -589,7 +668,8 @@ public final class DungeonConfigCommandHandler {
         }
 
         List<String> matches = new ArrayList<>();
-        if (prefix.isBlank() && (token.isBlank() || "clear".contains(token.toLowerCase(Locale.ROOT)))) {
+        if (prefix.isBlank()
+                && (token.isBlank() || "clear".contains(token.toLowerCase(Locale.ROOT)))) {
             matches.add("clear");
         }
 
@@ -598,7 +678,10 @@ public final class DungeonConfigCommandHandler {
                 continue;
             }
 
-            if (token.isBlank() || candidate.toLowerCase(Locale.ROOT).contains(token.toLowerCase(Locale.ROOT))) {
+            if (token.isBlank()
+                    || candidate
+                            .toLowerCase(Locale.ROOT)
+                            .contains(token.toLowerCase(Locale.ROOT))) {
                 matches.add(prefix + candidate);
             }
         }
@@ -769,8 +852,14 @@ public final class DungeonConfigCommandHandler {
             return "<unset>";
         }
 
-        return location.getBlockX() + ", " + location.getBlockY() + ", " + location.getBlockZ() + " (yaw "
-                + Math.round(location.getYaw()) + ")";
+        return location.getBlockX()
+                + ", "
+                + location.getBlockY()
+                + ", "
+                + location.getBlockZ()
+                + " (yaw "
+                + Math.round(location.getYaw())
+                + ")";
     }
 
     /**
@@ -836,7 +925,8 @@ public final class DungeonConfigCommandHandler {
                 return worldDungeon;
             }
 
-            var instance = this.activeInstanceManager.getDungeonInstance(player.getWorld().getName());
+            var instance =
+                    this.activeInstanceManager.getDungeonInstance(player.getWorld().getName());
             if (instance != null) {
                 return instance.getDungeon();
             }

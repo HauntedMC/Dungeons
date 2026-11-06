@@ -45,7 +45,7 @@ public class ConnectorDoor implements ConfigSerializableModel {
     private Map<SimpleLocation, StructurePieceBlock> blocks = new HashMap<>();
     private boolean hasAdjacentRoom;
 
-        private ConnectorDoor() {}
+    private ConnectorDoor() {}
 
     /**
      * Creates a connector door using the connector position as default namespace seed.
@@ -61,7 +61,7 @@ public class ConnectorDoor implements ConfigSerializableModel {
         this.namespace = namespace == null ? "" : namespace;
     }
 
-        static String defaultNamespace(SimpleLocation location) {
+    static String defaultNamespace(SimpleLocation location) {
         if (location == null) {
             return "";
         }
@@ -73,7 +73,7 @@ public class ConnectorDoor implements ConfigSerializableModel {
     }
 
     @Override
-        public void postDeserialize() {
+    public void postDeserialize() {
         this.namespace = this.namespace == null ? "" : this.namespace;
         this.locations = this.locations == null ? new ArrayList<>() : this.locations;
         this.blocks = this.blocks == null ? new HashMap<>() : this.blocks;
@@ -167,7 +167,10 @@ public class ConnectorDoor implements ConfigSerializableModel {
 
             if (!this.locations.isEmpty() && !this.disableSound) {
                 world.playSound(
-                        this.locations.getFirst().asLocation(world), "block.iron_door.open", 1.0F, 0.8F);
+                        this.locations.getFirst().asLocation(world),
+                        "block.iron_door.open",
+                        1.0F,
+                        0.8F);
             }
 
             DungeonInstance instance = this.room == null ? null : this.room.getInstance();
@@ -196,12 +199,16 @@ public class ConnectorDoor implements ConfigSerializableModel {
 
             if (!this.locations.isEmpty() && !this.disableSound) {
                 world.playSound(
-                        this.locations.getFirst().asLocation(world), "block.iron_door.close", 1.0F, 0.8F);
+                        this.locations.getFirst().asLocation(world),
+                        "block.iron_door.close",
+                        1.0F,
+                        0.8F);
             }
 
             DungeonInstance instance = this.room == null ? null : this.room.getInstance();
             Bukkit.getPluginManager()
-                    .callEvent(new RoomDoorChangeEvent(instance, this.room, this, DoorAction.CLOSE));
+                    .callEvent(
+                            new RoomDoorChangeEvent(instance, this.room, this, DoorAction.CLOSE));
         }
     }
 
@@ -212,7 +219,7 @@ public class ConnectorDoor implements ConfigSerializableModel {
         for (SimpleLocation rawLoc : this.locations) {
             Location loc = rawLoc.asLocation(player.getWorld());
             BoundingBox blockBox =
-                                        new BoundingBox(
+                    new BoundingBox(
                             loc.getX(),
                             loc.getY(),
                             loc.getZ(),
@@ -220,7 +227,7 @@ public class ConnectorDoor implements ConfigSerializableModel {
                             loc.getY() + 1.0,
                             loc.getZ() + 1.0);
             ParticleUtils.displayBoundingBox(
-                                        player, Particle.DUST, new DustOptions(Color.LIME, 0.25F), blockBox);
+                    player, Particle.DUST, new DustOptions(Color.LIME, 0.25F), blockBox);
             loc.setX(loc.getX() + 0.5);
             loc.setY(loc.getY() + 0.7);
             loc.setZ(loc.getZ() + 0.5);
@@ -261,20 +268,26 @@ public class ConnectorDoor implements ConfigSerializableModel {
                 case -270:
                 case 90:
                     finalOffset.add(
-                                                        new Vector(
-                                    -blockOffset.getBlockZ(), blockOffset.getBlockY(), blockOffset.getBlockX()));
+                            new Vector(
+                                    -blockOffset.getBlockZ(),
+                                    blockOffset.getBlockY(),
+                                    blockOffset.getBlockX()));
                     break;
                 case -180:
                 case 180:
                     finalOffset.add(
-                                                        new Vector(
-                                    -blockOffset.getBlockX(), blockOffset.getBlockY(), -blockOffset.getBlockZ()));
+                            new Vector(
+                                    -blockOffset.getBlockX(),
+                                    blockOffset.getBlockY(),
+                                    -blockOffset.getBlockZ()));
                     break;
                 case -90:
                 case 270:
                     finalOffset.add(
-                                                        new Vector(
-                                    -blockOffset.getBlockZ(), blockOffset.getBlockY(), -blockOffset.getBlockX()));
+                            new Vector(
+                                    -blockOffset.getBlockZ(),
+                                    blockOffset.getBlockY(),
+                                    -blockOffset.getBlockX()));
             }
 
             adjusted.shift(finalOffset);
@@ -303,7 +316,7 @@ public class ConnectorDoor implements ConfigSerializableModel {
     }
 
     @Override
-        public ConnectorDoor clone() {
+    public ConnectorDoor clone() {
         ConnectorDoor clone = new ConnectorDoor(this.namespace);
         clone.startOpen = this.startOpen;
         clone.disableSound = this.disableSound;

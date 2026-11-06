@@ -27,8 +27,9 @@ public class StructurePiece implements Iterable<StructurePieceBlock> {
         this.blocks.add(block);
     }
 
-    @NotNull @Override
-        public Iterator<StructurePieceBlock> iterator() {
+    @NotNull
+    @Override
+    public Iterator<StructurePieceBlock> iterator() {
         return this.blocks.iterator();
     }
 

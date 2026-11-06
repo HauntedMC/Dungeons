@@ -60,7 +60,10 @@ public class BranchingEditableInstance extends EditableInstance {
             FileUtils.deleteDirectory(roomFolder);
         } catch (IOException exception) {
             RuntimeContext.logger()
-                    .error("Failed to delete room folder '{}'.", roomFolder.getAbsolutePath(), exception);
+                    .error(
+                            "Failed to delete room folder '{}'.",
+                            roomFolder.getAbsolutePath(),
+                            exception);
         }
         this.loadFunctions();
         long previewInterval =
@@ -71,7 +74,7 @@ public class BranchingEditableInstance extends EditableInstance {
                             this.plugin().getConfig());
             final double markerRadiusSquared = markerRadius * markerRadius;
             this.functionParticles =
-                                        new BukkitRunnable() {
+                    new BukkitRunnable() {
                         /**
                          * Performs run.
                          */
@@ -86,14 +89,24 @@ public class BranchingEditableInstance extends EditableInstance {
                                 loc.setY(loc.getY() + 0.7);
                                 loc.setZ(loc.getZ() + 0.5);
                                 DustOptions dustOptions =
-                                                                                new DustOptions(ColorUtils.hexToColor(function.getColour()), 1.0F);
+                                        new DustOptions(
+                                                ColorUtils.hexToColor(function.getColour()), 1.0F);
 
                                 for (DungeonPlayerSession playerSession :
                                         new ArrayList<>(BranchingEditableInstance.this.players)) {
                                     Player player = playerSession.getPlayer();
-                                    if (loc.distanceSquared(player.getLocation()) <= markerRadiusSquared) {
-                                        player.spawnParticle(Particle.DUST, loc, 12, 0.25, 0.25, 0.25, dustOptions);
-                                        player.spawnParticle(Particle.END_ROD, loc, 1, 0.25, 0.25, 0.25, 0.01);
+                                    if (loc.distanceSquared(player.getLocation())
+                                            <= markerRadiusSquared) {
+                                        player.spawnParticle(
+                                                Particle.DUST,
+                                                loc,
+                                                12,
+                                                0.25,
+                                                0.25,
+                                                0.25,
+                                                dustOptions);
+                                        player.spawnParticle(
+                                                Particle.END_ROD, loc, 1, 0.25, 0.25, 0.25, 0.01);
                                     }
                                 }
                             }
@@ -105,9 +118,10 @@ public class BranchingEditableInstance extends EditableInstance {
         final boolean showRoomBounds =
                 PluginConfigView.isBranchingRoomPreviewEnabled(this.plugin().getConfig());
         final double roomPreviewRadius =
-                PluginConfigView.getBranchingRoomPreviewVisibleRadiusBlocks(this.plugin().getConfig());
+                PluginConfigView.getBranchingRoomPreviewVisibleRadiusBlocks(
+                        this.plugin().getConfig());
         this.roomPreviewTicker =
-                                new BukkitRunnable() {
+                new BukkitRunnable() {
                     /**
                      * Performs run.
                      */
@@ -115,7 +129,8 @@ public class BranchingEditableInstance extends EditableInstance {
                         for (DungeonPlayerSession playerSession :
                                 new ArrayList<>(BranchingEditableInstance.this.players)) {
                             Player player = playerSession.getPlayer();
-                            if (playerSession.getPos1() != null && playerSession.getPos2() != null) {
+                            if (playerSession.getPos1() != null
+                                    && playerSession.getPos2() != null) {
                                 ParticleUtils.displayBoundingBox(
                                         player,
                                         LocationUtils.captureBlockSelectionPreviewBox(
@@ -123,20 +138,28 @@ public class BranchingEditableInstance extends EditableInstance {
                             }
 
                             BranchingRoomDefinition activeRoom = playerSession.getActiveRoom();
-                            boolean holdingTool = ItemUtils.isRoomTool(player.getInventory().getItemInMainHand());
+                            boolean holdingTool =
+                                    ItemUtils.isRoomTool(player.getInventory().getItemInMainHand());
 
                             for (BranchingRoomDefinition room :
-                                    BranchingEditableInstance.this.dungeon.getUniqueRooms().values()) {
+                                    BranchingEditableInstance.this
+                                            .dungeon
+                                            .getUniqueRooms()
+                                            .values()) {
                                 // Only show nearby room bounds unless the player is actively
                                 // editing that room, which keeps the editor readable in dense maps.
                                 if (showRoomBounds && room == activeRoom) {
-                                    BranchingEditableInstance.this.displayRoomParticles(player, room);
+                                    BranchingEditableInstance.this.displayRoomParticles(
+                                            player, room);
                                 } else if (showRoomBounds
                                         && holdingTool
-                                        && player
-                                                .getBoundingBox()
-                                                .overlaps(room.getBounds().clone().expand(roomPreviewRadius))) {
-                                    BranchingEditableInstance.this.displayRoomParticles(player, room);
+                                        && player.getBoundingBox()
+                                                .overlaps(
+                                                        room.getBounds()
+                                                                .clone()
+                                                                .expand(roomPreviewRadius))) {
+                                    BranchingEditableInstance.this.displayRoomParticles(
+                                            player, room);
                                 } else {
                                     BranchingEditableInstance.this.clearRoomDisplay(player, room);
                                 }
@@ -153,9 +176,7 @@ public class BranchingEditableInstance extends EditableInstance {
     @Override
     protected void beforeCommitWorldSave(World world) {
         for (String rule : world.getGameRules()) {
-            this.dungeon
-                    .getRuleConfig()
-                    .set("Gamerule." + rule, world.getGameRuleValue(rule));
+            this.dungeon.getRuleConfig().set("Gamerule." + rule, world.getGameRuleValue(rule));
         }
 
         this.dungeon.getRuleConfig().set("Difficulty", world.getDifficulty().name());
@@ -271,7 +292,8 @@ public class BranchingEditableInstance extends EditableInstance {
                         trigger.setInstance(this);
                     }
                 } catch (Throwable throwable) {
-                    Throwable root = throwable.getCause() == null ? throwable : throwable.getCause();
+                    Throwable root =
+                            throwable.getCause() == null ? throwable : throwable.getCause();
                     Location loc = function.getLocation();
                     RuntimeContext.plugin()
                             .getSLF4JLogger()
@@ -282,8 +304,14 @@ public class BranchingEditableInstance extends EditableInstance {
                                     this.dungeon.getWorldName(),
                                     loc == null
                                             ? "<no-location>"
-                                            : (loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ()),
-                                    root.getMessage() == null ? root.getClass().getSimpleName() : root.getMessage(),
+                                            : (loc.getBlockX()
+                                                    + ","
+                                                    + loc.getBlockY()
+                                                    + ","
+                                                    + loc.getBlockZ()),
+                                    root.getMessage() == null
+                                            ? root.getClass().getSimpleName()
+                                            : root.getMessage(),
                                     root);
                 }
             }
@@ -309,7 +337,7 @@ public class BranchingEditableInstance extends EditableInstance {
         if (this.hologramManager != null) {
             Vector vec = room.getBounds().getCenter();
             Location loc =
-                                        new Location(this.instanceWorld, vec.getX(), vec.getY(), vec.getZ())
+                    new Location(this.instanceWorld, vec.getX(), vec.getY(), vec.getZ())
                             .add(0.5, Math.abs(room.getBounds().getHeight() / 2.0) + 1.5, 0.5);
             this.hologramManager.updateHologram(
                     loc,
@@ -338,7 +366,7 @@ public class BranchingEditableInstance extends EditableInstance {
         if (this.hologramManager != null) {
             Vector vec = room.getBounds().getCenter();
             Location loc =
-                                        new Location(this.instanceWorld, vec.getX(), vec.getY(), vec.getZ())
+                    new Location(this.instanceWorld, vec.getX(), vec.getY(), vec.getZ())
                             .add(0.5, Math.abs(room.getBounds().getHeight() / 2.0) + 1.5, 0.5);
             this.hologramManager.removeHologram(loc);
             if (room.getSpawn() != null) {
@@ -374,7 +402,7 @@ public class BranchingEditableInstance extends EditableInstance {
         for (Connector connector : room.getConnectors()) {
             Location loc = connector.getLocation().asLocation(this.instanceWorld);
             BoundingBox blockBox =
-                                        new BoundingBox(
+                    new BoundingBox(
                             loc.getX(),
                             loc.getY(),
                             loc.getZ(),

@@ -16,7 +16,8 @@ class DungeonRuleConfigurationTest {
     @Test
     void missingRulesInheritEvenWhenGetterHasAnExplicitFallback() throws Exception {
         YamlConfiguration global = new YamlConfiguration();
-        global.loadFromString("global_rules:\n  combat:\n    pvp: true\n  commands:\n    allow_list: [dungeon leave]\n");
+        global.loadFromString(
+                "global_rules:\n  combat:\n    pvp: true\n  commands:\n    allow_list: [dungeon leave]\n");
         DungeonRuleConfiguration dungeon = new DungeonRuleConfiguration(global);
         dungeon.loadFromString("rules:\n  combat:\n    hide_death_messages: true\n");
 
@@ -80,17 +81,26 @@ class DungeonRuleConfigurationTest {
         reloaded.set("global_rules.commands.allow_list", List.of("dungeon leave", "balance"));
         current.set(reloaded);
 
-        assertEquals(List.of("dungeon leave", "balance"), first.getStringList("rules.commands.allow_list"));
-        assertEquals(List.of("dungeon leave", "balance"), second.getStringList("rules.commands.allow_list"));
-        assertEquals(List.of("dungeon help"), overridden.getStringList("rules.commands.allow_list"));
+        assertEquals(
+                List.of("dungeon leave", "balance"),
+                first.getStringList("rules.commands.allow_list"));
+        assertEquals(
+                List.of("dungeon leave", "balance"),
+                second.getStringList("rules.commands.allow_list"));
+        assertEquals(
+                List.of("dungeon help"), overridden.getStringList("rules.commands.allow_list"));
         overridden.set("rules.commands.allow_list", null);
-        assertEquals(List.of("dungeon leave", "balance"), overridden.getStringList("rules.commands.allow_list"));
+        assertEquals(
+                List.of("dungeon leave", "balance"),
+                overridden.getStringList("rules.commands.allow_list"));
 
         for (DungeonRuleConfiguration dungeon : List.of(first, second, overridden)) {
             DungeonRuleConfiguration saved = new DungeonRuleConfiguration(current::get);
             saved.loadFromString(dungeon.saveToString());
             assertFalse(saved.getKeys(true).contains("rules.commands.allow_list"));
-            assertEquals(List.of("dungeon leave", "balance"), saved.getStringList("rules.commands.allow_list"));
+            assertEquals(
+                    List.of("dungeon leave", "balance"),
+                    saved.getStringList("rules.commands.allow_list"));
         }
     }
 
@@ -110,13 +120,16 @@ class DungeonRuleConfigurationTest {
     @Test
     void bundledNewMapTemplateInheritsGlobalRulesWithoutPersistingThem() throws Exception {
         YamlConfiguration global;
-        try (var reader = new InputStreamReader(
-                getClass().getResourceAsStream("/config.yml"), StandardCharsets.UTF_8)) {
+        try (var reader =
+                new InputStreamReader(
+                        getClass().getResourceAsStream("/config.yml"), StandardCharsets.UTF_8)) {
             global = YamlConfiguration.loadConfiguration(reader);
         }
         DungeonRuleConfiguration dungeon = new DungeonRuleConfiguration(global);
-        try (var reader = new InputStreamReader(
-                getClass().getResourceAsStream("/dungeons/config_default.yml"), StandardCharsets.UTF_8)) {
+        try (var reader =
+                new InputStreamReader(
+                        getClass().getResourceAsStream("/dungeons/config_default.yml"),
+                        StandardCharsets.UTF_8)) {
             dungeon.load(reader);
         }
 

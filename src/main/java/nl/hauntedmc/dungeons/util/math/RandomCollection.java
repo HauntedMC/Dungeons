@@ -41,8 +41,10 @@ public class RandomCollection<E> {
         }
 
         double value =
-                (this.random != null ? this.random.nextDouble() : ThreadLocalRandom.current().nextDouble())
-                     * this.total;
+                (this.random != null
+                                ? this.random.nextDouble()
+                                : ThreadLocalRandom.current().nextDouble())
+                        * this.total;
         var entry = this.map.higherEntry(value);
         if (entry != null) {
             return entry.getValue();

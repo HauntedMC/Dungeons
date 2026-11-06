@@ -116,8 +116,7 @@ public class ChatTrigger extends DungeonTrigger {
             return message.contains(this.text);
         }
 
-        return message
-                .toLowerCase(java.util.Locale.ROOT)
+        return message.toLowerCase(java.util.Locale.ROOT)
                 .contains(this.text.toLowerCase(java.util.Locale.ROOT));
     }
 
@@ -165,7 +164,8 @@ public class ChatTrigger extends DungeonTrigger {
             return false;
         }
 
-        player.playSound(player.getLocation(), "minecraft:entity.experience_orb.pickup", 0.5F, 1.2F);
+        player.playSound(
+                player.getLocation(), "minecraft:entity.experience_orb.pickup", 0.5F, 1.2F);
         this.trigger(session);
         return true;
     }
@@ -176,7 +176,7 @@ public class ChatTrigger extends DungeonTrigger {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -202,7 +202,7 @@ public class ChatTrigger extends DungeonTrigger {
                     }
                 });
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -231,11 +231,13 @@ public class ChatTrigger extends DungeonTrigger {
                     public void onInput(Player player, String message) {
                         ChatTrigger.this.text = message;
                         LangUtils.sendMessage(
-                                player, "editor.trigger.chat.text-set", LangUtils.placeholder("text", message));
+                                player,
+                                "editor.trigger.chat.text-set",
+                                LangUtils.placeholder("text", message));
                     }
                 });
         this.menu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -261,7 +263,7 @@ public class ChatTrigger extends DungeonTrigger {
                     }
                 });
         this.menu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     /**
                      * Builds button.
                      */

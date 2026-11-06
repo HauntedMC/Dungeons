@@ -94,15 +94,15 @@ public abstract class DungeonTrigger extends DungeonElement
     }
 
     @Override
-        protected final void initializeAdditionalFields() {
+    protected final void initializeAdditionalFields() {
         for (TriggerCondition condition : this.conditions) {
             condition.initializeFields();
         }
     }
 
-        public void onEnable() {}
+    public void onEnable() {}
 
-        public void onDisable() {}
+    public void onDisable() {}
 
     /**
      * Enables the trigger using the bound function's instance.
@@ -151,11 +151,11 @@ public abstract class DungeonTrigger extends DungeonElement
         super.disable();
     }
 
-        public final void register() {
+    public final void register() {
         this.instance.registerTriggerListener(this);
     }
 
-        public final void unregister() {
+    public final void unregister() {
         this.instance.unregisterTriggerListener(this);
     }
 
@@ -201,17 +201,17 @@ public abstract class DungeonTrigger extends DungeonElement
         return true;
     }
 
-        public void addCondition(TriggerCondition condition) {
+    public void addCondition(TriggerCondition condition) {
         this.conditions.add(condition);
     }
 
-        public void removeCondition(TriggerCondition condition) {
+    public void removeCondition(TriggerCondition condition) {
         this.conditions.remove(condition);
     }
 
-        public void onTrigger(TriggerFireEvent event) {}
+    public void onTrigger(TriggerFireEvent event) {}
 
-        protected final boolean hasTrackedTarget(DungeonPlayerSession player) {
+    protected final boolean hasTrackedTarget(DungeonPlayerSession player) {
         if (player == null) {
             return false;
         }
@@ -225,13 +225,13 @@ public abstract class DungeonTrigger extends DungeonElement
         return false;
     }
 
-        protected final void rememberTriggeredTargets(DungeonPlayerSession player) {
+    protected final void rememberTriggeredTargets(DungeonPlayerSession player) {
         for (DungeonPlayerSession target : this.resolveTrackedTargets(player)) {
             this.playersFound.add(target.getPlayer().getUniqueId());
         }
     }
 
-        protected final boolean hasOpenlyTriggeredTarget(DungeonPlayerSession player) {
+    protected final boolean hasOpenlyTriggeredTarget(DungeonPlayerSession player) {
         if (player == null) {
             return false;
         }
@@ -245,13 +245,13 @@ public abstract class DungeonTrigger extends DungeonElement
         return false;
     }
 
-        protected final void rememberOpenlyTriggeredTargets(DungeonPlayerSession player) {
+    protected final void rememberOpenlyTriggeredTargets(DungeonPlayerSession player) {
         for (DungeonPlayerSession target : this.resolveTrackedTargets(player)) {
             this.playersTriggered.add(target.getPlayer().getUniqueId());
         }
     }
 
-        private List<DungeonPlayerSession> resolveTrackedTargets(DungeonPlayerSession player) {
+    private List<DungeonPlayerSession> resolveTrackedTargets(DungeonPlayerSession player) {
         if (player == null) {
             return new ArrayList<>();
         }
@@ -265,7 +265,7 @@ public abstract class DungeonTrigger extends DungeonElement
         return List.of(player);
     }
 
-        public final void trigger() {
+    public final void trigger() {
         this.trigger(null);
     }
 
@@ -276,7 +276,7 @@ public abstract class DungeonTrigger extends DungeonElement
         this.trigger(playerSession, !this.allowRetrigger);
     }
 
-        public final void trigger(DungeonPlayerSession playerSession, boolean disable) {
+    public final void trigger(DungeonPlayerSession playerSession, boolean disable) {
         PlayableInstance instance = this.instance.asPlayInstance();
         if (instance != null) {
             this.triggered = true;
@@ -303,11 +303,13 @@ public abstract class DungeonTrigger extends DungeonElement
 
             final boolean finalDisable = disable;
             this.conditionWaiter =
-                                        new BukkitRunnable() {
-                                                public void run() {
+                    new BukkitRunnable() {
+                        public void run() {
                             try {
-                                // Waiting triggers reuse the same event object so conditions and downstream
-                                // listeners observe a consistent cause while the polling task retries.
+                                // Waiting triggers reuse the same event object so conditions and
+                                // downstream
+                                // listeners observe a consistent cause while the polling task
+                                // retries.
                                 if (DungeonTrigger.this.checkConditions(event)) {
                                     Bukkit.getPluginManager().callEvent(event);
                                     if (!event.isCancelled()) {
@@ -344,53 +346,55 @@ public abstract class DungeonTrigger extends DungeonElement
     }
 
     @Override
-        public abstract MenuButton buildMenuButton();
+    public abstract MenuButton buildMenuButton();
 
     @Override
-        public abstract void buildHotbarMenu();
+    public abstract void buildHotbarMenu();
 
     @Override
-        public final void initializeMenu() {
+    public final void initializeMenu() {
         this.menu = PlayerHotbarMenu.createMenu();
         this.menu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     @Override
-                                        public void buildButton() {
+                    public void buildButton() {
                         this.button = new MenuButton(Material.RED_STAINED_GLASS_PANE);
                         this.button.setDisplayName("&c&lBACK");
                     }
 
                     @Override
-                                        public void onSelect(PlayerEvent event) {
+                    public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
-                        DungeonPlayerSession playerSession = DungeonTrigger.this.playerSession(player);
+                        DungeonPlayerSession playerSession =
+                                DungeonTrigger.this.playerSession(player);
                         playerSession.setActiveTrigger(null);
                         playerSession.restorePreviousHotbar();
                     }
                 });
         this.menu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     @Override
-                                        public void buildButton() {
+                    public void buildButton() {
                         this.button = new MenuButton(Material.COMPARATOR);
                         this.button.setDisplayName("&a&lTrigger Conditions");
                     }
 
                     @Override
-                                        public void onSelect(PlayerEvent event) {
+                    public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
-                        DungeonPlayerSession playerSession = DungeonTrigger.this.playerSession(player);
+                        DungeonPlayerSession playerSession =
+                                DungeonTrigger.this.playerSession(player);
                         playerSession.showHotbar(DungeonTrigger.this.conditionsMenu, true);
                     }
                 });
         this.buildHotbarMenu();
     }
 
-        public void addRoomLimitToggleButton() {
+    public void addRoomLimitToggleButton() {
         this.menu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     @Override
-                                        public void buildButton() {
+                    public void buildButton() {
                         BranchingEditableInstance instance =
                                 DungeonTrigger.this.instance.as(BranchingEditableInstance.class);
                         if (instance == null) {
@@ -403,7 +407,7 @@ public abstract class DungeonTrigger extends DungeonElement
                     }
 
                     @Override
-                                        public void onSelect(Player player) {
+                    public void onSelect(Player player) {
                         if (!DungeonTrigger.this.limitToRoom) {
                             LangUtils.sendMessage(player, "editor.trigger.same-room-required");
                         } else {
@@ -415,33 +419,34 @@ public abstract class DungeonTrigger extends DungeonElement
                 });
     }
 
-        public void initializeConditionsMenu() {
+    public void initializeConditionsMenu() {
         this.conditionsMenu = PlayerHotbarMenu.createMenu();
         this.conditionsMenu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     @Override
-                                        public void buildButton() {
+                    public void buildButton() {
                         this.button = new MenuButton(Material.RED_STAINED_GLASS_PANE);
                         this.button.setDisplayName("&c&lBACK");
                     }
 
                     @Override
-                                        public void onSelect(PlayerEvent event) {
+                    public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
-                        DungeonPlayerSession playerSession = DungeonTrigger.this.playerSession(player);
+                        DungeonPlayerSession playerSession =
+                                DungeonTrigger.this.playerSession(player);
                         playerSession.restorePreviousHotbar();
                     }
                 });
         this.conditionsMenu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     @Override
-                                        public void buildButton() {
+                    public void buildButton() {
                         this.button = new MenuButton(Material.COMMAND_BLOCK);
                         this.button.setDisplayName("&a&lAdd Condition");
                     }
 
                     @Override
-                                        public void onSelect(PlayerEvent event) {
+                    public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
                         if (DungeonTrigger.this.conditions.size() >= 54) {
                             LangUtils.sendMessage(player, "editor.trigger.max-conditions-reached");
@@ -451,36 +456,36 @@ public abstract class DungeonTrigger extends DungeonElement
                     }
                 });
         this.conditionsMenu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     @Override
-                                        public void buildButton() {
+                    public void buildButton() {
                         this.button = new MenuButton(Material.CHAIN_COMMAND_BLOCK);
                         this.button.setDisplayName("&e&lEdit Condition");
                     }
 
                     @Override
-                                        public void onSelect(PlayerEvent event) {
+                    public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
                         DungeonTrigger.this.guiService().openGui(player, "editcondition");
                     }
                 });
         this.conditionsMenu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     @Override
-                                        public void buildButton() {
+                    public void buildButton() {
                         this.button = new MenuButton(Material.BARRIER);
                         this.button.setDisplayName("&c&lRemove Condition");
                     }
 
                     @Override
-                                        public void onSelect(PlayerEvent event) {
+                    public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
                         DungeonTrigger.this.guiService().openGui(player, "removecondition");
                     }
                 });
     }
 
-        public void setDisplayName(String displayName) {
+    public void setDisplayName(String displayName) {
         this.displayName = displayName;
         if (this.instance != null) {
             EditableInstance instance = this.instance.asEditInstance();
@@ -490,7 +495,7 @@ public abstract class DungeonTrigger extends DungeonElement
         }
     }
 
-        public DungeonTrigger clone() {
+    public DungeonTrigger clone() {
         try {
             DungeonTrigger clone = (DungeonTrigger) super.clone();
             List<TriggerCondition> newConditions = new ArrayList<>();
@@ -510,80 +515,84 @@ public abstract class DungeonTrigger extends DungeonElement
             return clone;
         } catch (CloneNotSupportedException exception) {
             this.logger()
-                    .error("Failed to clone trigger '{}'.", this.getClass().getSimpleName(), exception);
+                    .error(
+                            "Failed to clone trigger '{}'.",
+                            this.getClass().getSimpleName(),
+                            exception);
             return null;
         }
     }
 
-        public String getNamespace() {
+    public String getNamespace() {
         return this.namespace;
     }
 
-        public String getDisplayName() {
+    public String getDisplayName() {
         return this.displayName;
     }
 
-        public boolean isInitialized() {
+    public boolean isInitialized() {
         return this.initialized;
     }
 
-        public TriggerCategory getCategory() {
+    public TriggerCategory getCategory() {
         return this.category;
     }
 
-        public void setCategory(TriggerCategory category) {
+    public void setCategory(TriggerCategory category) {
         this.category = category;
     }
 
-        public boolean isAllowRetrigger() {
+    public boolean isAllowRetrigger() {
         return this.allowRetrigger;
     }
 
-        public void setAllowRetrigger(boolean allowRetrigger) {
+    public void setAllowRetrigger(boolean allowRetrigger) {
         this.allowRetrigger = allowRetrigger;
     }
 
-        public List<TriggerCondition> getConditions() {
+    public List<TriggerCondition> getConditions() {
         return this.conditions;
     }
 
-        public boolean isLimitToRoom() {
+    public boolean isLimitToRoom() {
         return this.limitToRoom;
     }
 
-    @Nullable public DungeonFunction getFunction() {
+    @Nullable
+    public DungeonFunction getFunction() {
         return this.function;
     }
 
-        public void setFunction(@Nullable DungeonFunction function) {
+    public void setFunction(@Nullable DungeonFunction function) {
         this.function = function;
     }
 
-        public boolean isWaitForConditions() {
+    public boolean isWaitForConditions() {
         return this.waitForConditions;
     }
 
-        public boolean isHasTarget() {
+    public boolean isHasTarget() {
         return this.hasTarget;
     }
 
-        public void setHasTarget(boolean hasTarget) {
+    public void setHasTarget(boolean hasTarget) {
         this.hasTarget = hasTarget;
     }
 
-        public List<UUID> getPlayersFound() {
+    public List<UUID> getPlayersFound() {
         return this.playersFound;
     }
 
-        public boolean isTriggered() {
+    public boolean isTriggered() {
         return this.triggered;
     }
 
-        public PlayerHotbarMenu getConditionsMenu() {
+    public PlayerHotbarMenu getConditionsMenu() {
         return this.conditionsMenu;
     }
 
-        public List<UUID> getPlayersTriggered() {
+    public List<UUID> getPlayersTriggered() {
         return this.playersTriggered;
     }
 }

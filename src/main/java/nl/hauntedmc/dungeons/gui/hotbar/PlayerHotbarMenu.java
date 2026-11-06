@@ -105,7 +105,10 @@ public abstract class PlayerHotbarMenu extends PlayerHotbarSnapshot implements L
                         // so the player can keep the editor open without moving items around.
                         event.setCancelled(true);
                         player.playSound(
-                                player.getLocation(), "minecraft:item.lodestone_compass.lock", 1.0F, 1.2F);
+                                player.getLocation(),
+                                "minecraft:item.lodestone_compass.lock",
+                                1.0F,
+                                1.2F);
                         playerSession.setChatListening(false);
                         menuItem.runSelectActions(event);
                         this.renderMenu();
@@ -127,7 +130,10 @@ public abstract class PlayerHotbarMenu extends PlayerHotbarSnapshot implements L
                 if (menuItem != null) {
                     event.setCancelled(true);
                     player.playSound(
-                            player.getLocation(), "minecraft:item.lodestone_compass.lock", 1.0F, 1.2F);
+                            player.getLocation(),
+                            "minecraft:item.lodestone_compass.lock",
+                            1.0F,
+                            1.2F);
                     playerSession.setChatListening(false);
                     menuItem.runSelectActions(event);
                     this.renderMenu();
@@ -150,7 +156,10 @@ public abstract class PlayerHotbarMenu extends PlayerHotbarSnapshot implements L
                     if (menuItem != null) {
                         event.setCancelled(true);
                         player.playSound(
-                                player.getLocation(), "minecraft:item.lodestone_compass.lock", 1.0F, 1.2F);
+                                player.getLocation(),
+                                "minecraft:item.lodestone_compass.lock",
+                                1.0F,
+                                1.2F);
                         playerSession.setChatListening(false);
                         menuItem.runClickActions(event);
                         this.renderMenu();

@@ -148,7 +148,7 @@ public class CommandFunction extends DungeonFunction {
         this.normalizeCommandType();
 
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -184,7 +184,7 @@ public class CommandFunction extends DungeonFunction {
                 });
 
         this.menu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     @Override
                     public void buildButton() {
                         this.button =
@@ -213,12 +213,13 @@ public class CommandFunction extends DungeonFunction {
                                         LangUtils.placeholder(
                                                 "command",
                                                 "Execution set to "
-                                                        + CommandFunction.this.getCommandTypeDisplay())));
+                                                        + CommandFunction.this
+                                                                .getCommandTypeDisplay())));
                     }
                 });
 
         this.menu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -235,7 +236,8 @@ public class CommandFunction extends DungeonFunction {
                     @Override
                     public void onSelect(Player player) {
                         if (!CommandFunction.this.forEachPlayer) {
-                            LangUtils.sendMessage(player, "editor.function.command.for-each-player");
+                            LangUtils.sendMessage(
+                                    player, "editor.function.command.for-each-player");
                         } else {
                             LangUtils.sendMessage(player, "editor.function.command.run-once");
                         }
@@ -281,12 +283,14 @@ public class CommandFunction extends DungeonFunction {
      */
     private void runConsoleCommand(String commandToRunTemplate, List<Player> players) {
         if (players.isEmpty()) {
-            this.dispatchConsoleCommand(this.resolveConsoleCommand(commandToRunTemplate, null), null);
+            this.dispatchConsoleCommand(
+                    this.resolveConsoleCommand(commandToRunTemplate, null), null);
             return;
         }
 
         for (Player player : players) {
-            this.dispatchConsoleCommand(this.resolveConsoleCommand(commandToRunTemplate, player), player);
+            this.dispatchConsoleCommand(
+                    this.resolveConsoleCommand(commandToRunTemplate, player), player);
         }
     }
 
@@ -363,7 +367,9 @@ public class CommandFunction extends DungeonFunction {
         if (source != null) {
             for (DungeonPlayerSession target : targets) {
                 if (target != null
-                        && target.getPlayer().getUniqueId().equals(source.getPlayer().getUniqueId())) {
+                        && target.getPlayer()
+                                .getUniqueId()
+                                .equals(source.getPlayer().getUniqueId())) {
                     return target;
                 }
             }
@@ -408,7 +414,8 @@ public class CommandFunction extends DungeonFunction {
 
         String playerName = player.getName();
         String playerId = player.getUniqueId().toString();
-        return commandToRun.replace("{player}", playerName)
+        return commandToRun
+                .replace("{player}", playerName)
                 .replace("{player_name}", playerName)
                 .replace("<player>", playerName)
                 .replace("%player%", playerName)

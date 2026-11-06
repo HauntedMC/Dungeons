@@ -30,7 +30,7 @@ public class ConnectorExpansionLayout extends Layout {
     }
 
     @Override
-        protected boolean tryConnectors(InstanceRoom from) {
+    protected boolean tryConnectors(InstanceRoom from) {
         if (from.getAvailableConnectors().isEmpty()) {
             return false;
         } else {
@@ -84,7 +84,7 @@ public class ConnectorExpansionLayout extends Layout {
     }
 
     @Override
-        protected boolean verifyLayout() {
+    protected boolean verifyLayout() {
         if (this.roomCount < this.minRooms) {
             RuntimeContext.plugin()
                     .getSLF4JLogger()
@@ -101,18 +101,18 @@ public class ConnectorExpansionLayout extends Layout {
     }
 
     @Override
-        protected boolean requiresGlobalRoomTargetValidation() {
+    protected boolean requiresGlobalRoomTargetValidation() {
         return true;
     }
 
     @Override
-        public void initializeConnectorEditMenu() {
+    public void initializeConnectorEditMenu() {
         super.initializeConnectorEditMenu();
         if (this.dungeon.getLayout() instanceof ConnectorExpansionLayout) {
             this.connectorEditMenu.addMenuItem(
-                                        new ChatMenuItem() {
+                    new ChatMenuItem() {
                         @Override
-                                                public void buildButton() {
+                        public void buildButton() {
                             this.button = new MenuButton(Material.ENDER_EYE);
                             this.button.setDisplayName("&d&lConnector Use Chance");
                             this.button.addLore("&eHow likely a room will generate");
@@ -120,36 +120,45 @@ public class ConnectorExpansionLayout extends Layout {
                         }
 
                         @Override
-                                                public void onSelect(Player player) {
+                        public void onSelect(Player player) {
                             DungeonPlayerSession playerSession =
                                     RuntimeContext.playerSessions().get(player);
                             Connector connector = playerSession.getActiveConnector();
                             if (connector != null) {
                                 double chance = connector.getSuccessChance();
-                                LangUtils.sendMessage(player, "editor.layout.minecrafty.ask-success-chance");
+                                LangUtils.sendMessage(
+                                        player, "editor.layout.minecrafty.ask-success-chance");
                                 LangUtils.sendMessage(
                                         player,
                                         "editor.layout.minecrafty.current-success-chance",
-                                        LangUtils.placeholder("chance", String.valueOf(MathUtils.round(chance, 2))));
+                                        LangUtils.placeholder(
+                                                "chance",
+                                                String.valueOf(MathUtils.round(chance, 2))));
                             }
                         }
 
                         @Override
-                                                public void onInput(Player player, String message) {
+                        public void onInput(Player player, String message) {
                             DungeonPlayerSession playerSession =
                                     RuntimeContext.playerSessions().get(player);
                             Connector connector = playerSession.getActiveConnector();
                             if (connector != null) {
-                                Optional<Double> value = InputUtils.readDoubleInput(player, message);
-                                connector.setSuccessChance(value.orElse(connector.getSuccessChance()) / 100.0);
+                                Optional<Double> value =
+                                        InputUtils.readDoubleInput(player, message);
+                                connector.setSuccessChance(
+                                        value.orElse(connector.getSuccessChance()) / 100.0);
                                 if (value.isPresent()) {
                                     double chance = value.get();
                                     LangUtils.sendMessage(
                                             player,
                                             "editor.layout.minecrafty.success-chance-set",
-                                            LangUtils.placeholder("chance", String.valueOf(MathUtils.round(chance, 2))));
+                                            LangUtils.placeholder(
+                                                    "chance",
+                                                    String.valueOf(MathUtils.round(chance, 2))));
                                     if (chance >= 1.0) {
-                                        LangUtils.sendMessage(player, "editor.layout.minecrafty.success-chance-note");
+                                        LangUtils.sendMessage(
+                                                player,
+                                                "editor.layout.minecrafty.success-chance-note");
                                     }
                                 }
                             }

@@ -14,7 +14,8 @@ public final class LayoutRegistry {
     private static final Map<String, Class<? extends Layout>> layouts = new HashMap<>();
 
     /** Registers one layout type class under a primary name and optional aliases. */
-    public static <T extends Layout> void register(Class<T> layoutType, String name, String... aliases) {
+    public static <T extends Layout> void register(
+            Class<T> layoutType, String name, String... aliases) {
         layouts.put(name.toLowerCase(), layoutType);
 
         for (String alias : aliases) {
@@ -28,12 +29,17 @@ public final class LayoutRegistry {
     }
 
     /** Creates a layout instance from the registered type alias and generator config. */
-    public static Layout createLayoutInstance(String type, BranchingDungeon dungeon, FileConfiguration config)
-            throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+    public static Layout createLayoutInstance(
+            String type, BranchingDungeon dungeon, FileConfiguration config)
+            throws NoSuchMethodException,
+                    InvocationTargetException,
+                    InstantiationException,
+                    IllegalAccessException {
         Class<? extends Layout> typeClass = layouts.get(type.toLowerCase());
         return typeClass == null
                 ? null
-                : typeClass.getDeclaredConstructor(BranchingDungeon.class, FileConfiguration.class)
+                : typeClass
+                        .getDeclaredConstructor(BranchingDungeon.class, FileConfiguration.class)
                         .newInstance(dungeon, config);
     }
 }

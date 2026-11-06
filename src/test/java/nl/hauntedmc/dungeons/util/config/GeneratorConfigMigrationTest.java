@@ -20,12 +20,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class GeneratorConfigMigrationTest {
-    @TempDir
-    Path folder;
+    @TempDir Path folder;
 
     @Test
     void importsBeforeDefaultsAndPreservesNamedBranchesThroughSyncAndReload() throws Exception {
-        File legacy = writeLegacy("generation.yml", """
+        File legacy =
+                writeLegacy(
+                        "generation.yml",
+                        """
                 generator:
                   layout: minecrafty
                   room_target:
@@ -55,11 +57,15 @@ class GeneratorConfigMigrationTest {
         assertEquals("minecrafty", saved.getString("generator.layout"));
         assertEquals(3, saved.getInt("generator.room_target.min"));
         assertFalse(saved.getBoolean("generator.room_target.enforce_minimum", true));
-        assertEquals(List.of("crypt", "hall"), saved.getStringList("generator.branching.trunk.room_pool"));
+        assertEquals(
+                List.of("crypt", "hall"),
+                saved.getStringList("generator.branching.trunk.room_pool"));
         assertEquals(0.8, saved.getDouble("generator.branching.trunk.straightness"));
         assertEquals("2+", saved.getString("generator.branching.branches.treasure.eligible_depth"));
         assertEquals("1-2", saved.getString("generator.branching.branches.treasure.occurrences"));
-        assertEquals(List.of("vault"), saved.getStringList("generator.branching.branches.treasure.room_pool"));
+        assertEquals(
+                List.of("vault"),
+                saved.getStringList("generator.branching.branches.treasure.room_pool"));
         assertTrue(saved.getBoolean("rules.combat.pvp"));
         assertFalse(saved.contains("branching"));
         assertFalse(legacy.exists());
@@ -72,7 +78,10 @@ class GeneratorConfigMigrationTest {
 
     @Test
     void explicitUnifiedSettingsWinWhileMissingSiblingSettingsAreImported() throws Exception {
-        File legacy = writeLegacy("generation.yml", """
+        File legacy =
+                writeLegacy(
+                        "generation.yml",
+                        """
                 generator:
                   layout: minecrafty
                   room_target:
@@ -98,15 +107,23 @@ class GeneratorConfigMigrationTest {
 
     @Test
     void migratesTheLegacyDefaultTemplateAndKeepsExistingArchives() throws Exception {
-        File legacy = writeLegacy("generator_settings_default.yml", "generator:\n  layout: minecrafty\nbranching:\n  branches: {}\n");
-        Files.writeString(folder.resolve("generator_settings_default.yml.migrated"), "previous backup");
+        File legacy =
+                writeLegacy(
+                        "generator_settings_default.yml",
+                        "generator:\n  layout: minecrafty\nbranching:\n  branches: {}\n");
+        Files.writeString(
+                folder.resolve("generator_settings_default.yml.migrated"), "previous backup");
         YamlConfiguration config = new YamlConfiguration();
         File main = folder.resolve("config_default.yml").toFile();
         GeneratorConfigMigration.migrate(legacy, main, config);
 
-        assertEquals("minecrafty", YamlConfiguration.loadConfiguration(main).getString("generator.layout"));
+        assertEquals(
+                "minecrafty",
+                YamlConfiguration.loadConfiguration(main).getString("generator.layout"));
         assertTrue(config.isConfigurationSection("generator.branching.branches"));
-        assertEquals("previous backup", Files.readString(folder.resolve("generator_settings_default.yml.migrated")));
+        assertEquals(
+                "previous backup",
+                Files.readString(folder.resolve("generator_settings_default.yml.migrated")));
         assertTrue(folder.resolve("generator_settings_default.yml.migrated.1").toFile().exists());
     }
 
@@ -115,23 +132,30 @@ class GeneratorConfigMigrationTest {
         File legacy = writeLegacy("generation.yml", "generator: [broken\n");
         Path main = folder.resolve("config.yml");
         Files.writeString(main, "existing: true\n");
-        assertThrows(InvalidConfigurationException.class,
-                () -> GeneratorConfigMigration.migrate(legacy, main.toFile(), new YamlConfiguration()));
+        assertThrows(
+                InvalidConfigurationException.class,
+                () ->
+                        GeneratorConfigMigration.migrate(
+                                legacy, main.toFile(), new YamlConfiguration()));
         assertEquals("existing: true\n", Files.readString(main));
         assertTrue(legacy.exists());
     }
 
     @Test
-    void failedFirstTemplateMigrationCanBeRepairedWithoutDefaultValuesMaskingLegacySettings() throws Exception {
+    void failedFirstTemplateMigrationCanBeRepairedWithoutDefaultValuesMaskingLegacySettings()
+            throws Exception {
         File legacy = writeLegacy("generator_settings_default.yml", "generator: [broken\n");
         File main = folder.resolve("config_default.yml").toFile();
         YamlConfiguration defaults = bundledDefaults();
-        assertThrows(InvalidConfigurationException.class,
+        assertThrows(
+                InvalidConfigurationException.class,
                 () -> GeneratorConfigMigration.loadTemplate(legacy, main, defaults));
         assertFalse(main.exists());
         assertTrue(legacy.exists());
 
-        Files.writeString(legacy.toPath(), "generator:\n  layout: minecrafty\nbranching:\n  trunk:\n    straightness: 0.9\n");
+        Files.writeString(
+                legacy.toPath(),
+                "generator:\n  layout: minecrafty\nbranching:\n  trunk:\n    straightness: 0.9\n");
         YamlConfiguration repaired = GeneratorConfigMigration.loadTemplate(legacy, main, defaults);
         assertEquals("minecrafty", repaired.getString("generator.layout"));
         assertEquals(0.9, repaired.getDouble("generator.branching.trunk.straightness"));
@@ -142,24 +166,33 @@ class GeneratorConfigMigrationTest {
 
     @Test
     void templateMigrationPreservesExplicitValuesAndWorksOnSubsequentLoads() throws Exception {
-        File legacy = writeLegacy("generator_settings_default.yml", "generator:\n  layout: minecrafty\nbranching:\n  trunk:\n    straightness: 0.9\n");
+        File legacy =
+                writeLegacy(
+                        "generator_settings_default.yml",
+                        "generator:\n  layout: minecrafty\nbranching:\n  trunk:\n    straightness: 0.9\n");
         File main = folder.resolve("config_default.yml").toFile();
         Files.writeString(main.toPath(), "generator:\n  layout: branching\n");
-        YamlConfiguration first = GeneratorConfigMigration.loadTemplate(legacy, main, bundledDefaults());
+        YamlConfiguration first =
+                GeneratorConfigMigration.loadTemplate(legacy, main, bundledDefaults());
         assertEquals("branching", first.getString("generator.layout"));
         assertEquals(0.9, first.getDouble("generator.branching.trunk.straightness"));
         first.set("generator.branching.trunk.straightness", 0.3);
         first.save(main);
-        YamlConfiguration second = GeneratorConfigMigration.loadTemplate(legacy, main, bundledDefaults());
+        YamlConfiguration second =
+                GeneratorConfigMigration.loadTemplate(legacy, main, bundledDefaults());
         assertEquals(0.3, second.getDouble("generator.branching.trunk.straightness"));
     }
 
     @Test
     void invalidLegacySectionsAreRejectedBeforeWritingOrModifyingTheTarget() throws Exception {
-        File legacy = writeLegacy("generation.yml", "generator:\n  layout: minecrafty\nbranching: [invalid]\n");
+        File legacy =
+                writeLegacy(
+                        "generation.yml",
+                        "generator:\n  layout: minecrafty\nbranching: [invalid]\n");
         File main = folder.resolve("config.yml").toFile();
         YamlConfiguration target = new YamlConfiguration();
-        assertThrows(InvalidConfigurationException.class,
+        assertThrows(
+                InvalidConfigurationException.class,
                 () -> GeneratorConfigMigration.migrate(legacy, main, target));
         assertFalse(main.exists());
         assertTrue(target.getKeys(true).isEmpty());
@@ -168,12 +201,14 @@ class GeneratorConfigMigrationTest {
 
     @Test
     void explicitMalformedUnifiedSectionsAreReportedWithoutBeingOverwritten() throws Exception {
-        File legacy = writeLegacy("generation.yml", "branching:\n  trunk:\n    straightness: 0.9\n");
+        File legacy =
+                writeLegacy("generation.yml", "branching:\n  trunk:\n    straightness: 0.9\n");
         File main = folder.resolve("config.yml").toFile();
         YamlConfiguration target = new YamlConfiguration();
         target.set("generator.branching", false);
         target.save(main);
-        assertThrows(InvalidConfigurationException.class,
+        assertThrows(
+                InvalidConfigurationException.class,
                 () -> GeneratorConfigMigration.migrate(legacy, main, target));
         assertEquals(false, YamlConfiguration.loadConfiguration(main).get("generator.branching"));
         assertTrue(legacy.exists());
@@ -182,14 +217,18 @@ class GeneratorConfigMigrationTest {
     @Test
     void failedSaveKeepsTheLegacyFile() throws Exception {
         File legacy = writeLegacy("generation.yml", "generator:\n  layout: minecrafty\n");
-        assertThrows(IOException.class,
-                () -> GeneratorConfigMigration.migrate(legacy, folder.toFile(), new YamlConfiguration()));
+        assertThrows(
+                IOException.class,
+                () ->
+                        GeneratorConfigMigration.migrate(
+                                legacy, folder.toFile(), new YamlConfiguration()));
         assertTrue(legacy.exists());
         assertFalse(folder.resolve("generation.yml.migrated").toFile().exists());
     }
 
     @Test
-    void newMapTemplateContainsGeneratorSettingsWithoutASeparateFileOrTopLevelBranching() throws Exception {
+    void newMapTemplateContainsGeneratorSettingsWithoutASeparateFileOrTopLevelBranching()
+            throws Exception {
         YamlConfiguration config = bundledDefaults();
         assertEquals("branching", config.getString("generator.layout"));
         assertEquals(12, config.getInt("generator.branching.trunk.room_target.min"));
@@ -203,8 +242,10 @@ class GeneratorConfigMigrationTest {
     }
 
     private YamlConfiguration bundledDefaults() throws IOException {
-        try (var reader = new InputStreamReader(
-                getClass().getResourceAsStream("/dungeons/config_default.yml"), StandardCharsets.UTF_8)) {
+        try (var reader =
+                new InputStreamReader(
+                        getClass().getResourceAsStream("/dungeons/config_default.yml"),
+                        StandardCharsets.UTF_8)) {
             return YamlConfiguration.loadConfiguration(reader);
         }
     }

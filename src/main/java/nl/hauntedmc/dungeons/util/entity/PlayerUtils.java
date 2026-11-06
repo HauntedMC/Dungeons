@@ -21,13 +21,18 @@ public final class PlayerUtils {
     }
 
     /** Returns nearby online players within radius filtered by allowed game modes. */
-    public static List<Player> getPlayersWithin(Location loc, double radius, GameMode... gameModes) {
+    public static List<Player> getPlayersWithin(
+            Location loc, double radius, GameMode... gameModes) {
         List<Player> players = new ArrayList<>();
         World world = loc.getWorld();
         if (world != null) {
             for (Entity ent :
                     world.getNearbyEntities(
-                            loc, radius, radius, radius, entity -> entity.getType() == EntityType.PLAYER)) {
+                            loc,
+                            radius,
+                            radius,
+                            radius,
+                            entity -> entity.getType() == EntityType.PLAYER)) {
                 if (ent instanceof Player player
                         && Bukkit.getOnlinePlayers().contains(player)
                         && Arrays.asList(gameModes).contains(player.getGameMode())) {

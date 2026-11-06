@@ -54,7 +54,8 @@ public final class ColorUtils {
         Matcher matcher = pattern.matcher(input);
         StringBuilder output = new StringBuilder();
         while (matcher.find()) {
-            matcher.appendReplacement(output, Matcher.quoteReplacement(toLegacyHex(matcher.group(1))));
+            matcher.appendReplacement(
+                    output, Matcher.quoteReplacement(toLegacyHex(matcher.group(1))));
         }
 
         matcher.appendTail(output);
@@ -70,7 +71,8 @@ public final class ColorUtils {
         Matcher matcher = BRACE_HEX_PATTERN.matcher(input);
         StringBuilder output = new StringBuilder();
         while (matcher.find()) {
-            matcher.appendReplacement(output, Matcher.quoteReplacement("<" + matcher.group(1) + ">"));
+            matcher.appendReplacement(
+                    output, Matcher.quoteReplacement("<" + matcher.group(1) + ">"));
         }
 
         matcher.appendTail(output);

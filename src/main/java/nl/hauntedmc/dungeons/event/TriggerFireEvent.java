@@ -45,7 +45,8 @@ public class TriggerFireEvent extends DungeonEvent implements Cancellable {
      *
      * @return triggering player or {@code null}
      */
-    @Nullable public Player getPlayer() {
+    @Nullable
+    public Player getPlayer() {
         return this.playerSession == null ? null : this.playerSession.getPlayer();
     }
 

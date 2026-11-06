@@ -26,7 +26,8 @@ final class WorldGeneratorResolver {
      * Returns the generator for the provided id or {@code null} when Bukkit should use its default
      * world generation behavior.
      */
-    @Nullable ChunkGenerator resolve(@NotNull String worldName, @Nullable String id) {
+    @Nullable
+    ChunkGenerator resolve(@NotNull String worldName, @Nullable String id) {
         if (id == null) {
             return null;
         }

@@ -123,7 +123,8 @@ public class PlayerLootData implements ConfigurationSerializable {
         return this.lootByLocation.containsKey(loc);
     }
 
-    @NotNull public Map<String, Object> serialize() {
+    @NotNull
+    public Map<String, Object> serialize() {
         Map<String, Object> map = new HashMap<>();
         map.put("Player", this.playerName);
         map.put("UUID", this.playerId.toString());

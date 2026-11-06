@@ -21,14 +21,15 @@ public enum VariableEditMode implements ConfigurationSerializable {
      * Creates a value from index.
      */
     public static VariableEditMode fromIndex(int index) {
-                return switch (index) {
+        return switch (index) {
             case 1 -> ADD;
             case 2 -> SUBTRACT;
             default -> SET;
         };
     }
 
-    @NotNull public Map<String, Object> serialize() {
+    @NotNull
+    public Map<String, Object> serialize() {
         return Collections.singletonMap("value", this.name());
     }
 
@@ -36,6 +37,6 @@ public enum VariableEditMode implements ConfigurationSerializable {
      * Performs deserialize.
      */
     public static VariableEditMode deserialize(Map<String, Object> map) {
-                return valueOf((String) map.get("value"));
+        return valueOf((String) map.get("value"));
     }
 }

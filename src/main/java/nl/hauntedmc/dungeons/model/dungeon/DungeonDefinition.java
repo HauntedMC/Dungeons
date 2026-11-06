@@ -139,7 +139,8 @@ public abstract class DungeonDefinition {
                 if (!configFile.exists()) {
                     this.logger().info("Creating fresh config file for '{}'.", folder.getName());
                     this.config.load(new File(this.runtime.dungeonFiles(), "config_default.yml"));
-                    // Older on-disk templates may still contain active rules. New maps inherit globally.
+                    // Older on-disk templates may still contain active rules. New maps inherit
+                    // globally.
                     this.config.set("rules", null);
                     if (new File(folder, "generation.yml").exists()) {
                         this.config.set("generator", null);
@@ -150,7 +151,8 @@ public abstract class DungeonDefinition {
                 }
             }
             File configFile = new File(folder, "config.yml");
-            GeneratorConfigMigration.migrate(new File(folder, "generation.yml"), configFile, this.config);
+            GeneratorConfigMigration.migrate(
+                    new File(folder, "generation.yml"), configFile, this.config);
             if (!configFile.exists()) {
                 this.config.save(configFile);
             }
@@ -159,9 +161,14 @@ public abstract class DungeonDefinition {
                     "Access of config.yml or legacy generation.yml failed!",
                     false,
                     exception.getMessage());
-        } catch (InvalidConfigurationException | IllegalArgumentException | YAMLException exception) {
-            DungeonLoadException failure = new DungeonLoadException(
-                    "Dungeon config or legacy generator config is invalid!", true, exception.getMessage());
+        } catch (InvalidConfigurationException
+                | IllegalArgumentException
+                | YAMLException exception) {
+            DungeonLoadException failure =
+                    new DungeonLoadException(
+                            "Dungeon config or legacy generator config is invalid!",
+                            true,
+                            exception.getMessage());
             failure.initCause(exception);
             throw failure;
         }
@@ -238,7 +245,7 @@ public abstract class DungeonDefinition {
         try {
             this.config.save(new File(this.folder, "config.yml"));
         } catch (IOException exception) {
-                        throw new DungeonLoadException(
+            throw new DungeonLoadException(
                     "Failed to synchronize dungeon config with the default template!",
                     false,
                     "Check the config.yml file permissions for this map.");
@@ -252,27 +259,27 @@ public abstract class DungeonDefinition {
         return this.runtime;
     }
 
-        protected final DungeonsRuntime runtime() {
+    protected final DungeonsRuntime runtime() {
         return this.runtime;
     }
 
-        public final PluginEnvironment getEnvironment() {
+    public final PluginEnvironment getEnvironment() {
         return this.runtime.environment();
     }
 
-        protected final DungeonsPlugin plugin() {
+    protected final DungeonsPlugin plugin() {
         return this.runtime.environment().plugin();
     }
 
-        protected final org.slf4j.Logger logger() {
+    protected final org.slf4j.Logger logger() {
         return this.runtime.environment().logger();
     }
 
-        protected final PlayerSessionRegistry playerSessions() {
+    protected final PlayerSessionRegistry playerSessions() {
         return this.runtime.playerSessions();
     }
 
-        protected final ActiveInstanceRegistry activeInstances() {
+    protected final ActiveInstanceRegistry activeInstances() {
         return this.runtime.activeInstances();
     }
 
@@ -283,7 +290,8 @@ public abstract class DungeonDefinition {
     protected void loadRuntimeSettingsFromConfig() {
         this.enabled = this.config.getBoolean("dungeon.enabled", true);
         this.displayName =
-                ColorUtils.fullColor(this.config.getString("dungeon.display_name", "&c" + this.worldName));
+                ColorUtils.fullColor(
+                        this.config.getString("dungeon.display_name", "&c" + this.worldName));
         int configuredMaxTeamSize = this.config.getInt("team.max_size", DEFAULT_MAX_TEAM_SIZE);
         if (configuredMaxTeamSize < 1) {
             this.logger()
@@ -305,7 +313,7 @@ public abstract class DungeonDefinition {
             this.lobbySpawn =
                     LocationUtils.readLocation(
                             this.config.getConfigurationSection("locations.lobby.spawn"),
-                                                        new Location(null, 0.0, 64.0, 0.0));
+                            new Location(null, 0.0, 64.0, 0.0));
         }
 
         genericLoc = this.config.get("locations.start");
@@ -313,12 +321,15 @@ public abstract class DungeonDefinition {
             this.startSpawn = (Location) genericLoc;
         } else {
             this.startSpawn =
-                    LocationUtils.readLocation(this.config.getConfigurationSection("locations.start"));
+                    LocationUtils.readLocation(
+                            this.config.getConfigurationSection("locations.start"));
         }
 
         ConfigurationSection exitLocSect = this.config.getConfigurationSection("locations.exit");
         this.exitLoc = exitLocSect == null ? null : LocationUtils.readLocation(exitLocSect);
-        if (this.exitLoc != null && this.exitLoc.getWorld() == null && !this.exitLoc.isWorldLoaded()) {
+        if (this.exitLoc != null
+                && this.exitLoc.getWorld() == null
+                && !this.exitLoc.isWorldLoaded()) {
             this.exitLoc = null;
             this.logger()
                     .warn(
@@ -331,10 +342,12 @@ public abstract class DungeonDefinition {
         this.showDifficultyMenu = this.config.getBoolean("difficulty.use_menu", false);
         this.difficultyLevels = new LinkedHashMap<>();
         if (this.useDifficultyLevels) {
-            ConfigurationSection difficulties = this.config.getConfigurationSection("difficulty.presets");
+            ConfigurationSection difficulties =
+                    this.config.getConfigurationSection("difficulty.presets");
             if (difficulties != null) {
                 for (String path : difficulties.getKeys(false)) {
-                    ConfigurationSection difficultySection = difficulties.getConfigurationSection(path);
+                    ConfigurationSection difficultySection =
+                            difficulties.getConfigurationSection(path);
                     if (difficultySection != null) {
                         this.difficultyLevels.put(path, new DungeonDifficulty(difficultySection));
                     }
@@ -351,7 +364,8 @@ public abstract class DungeonDefinition {
         this.onlyLeaderNeedsCooldown = this.config.getBoolean("access.cooldown.leader_only", false);
         this.cooldownOnFinish = this.config.getBoolean("access.cooldown.on_finish", true);
         this.cooldownOnLeave = DungeonConfigView.isAccessCooldownAppliedOnLeave(this.config);
-        this.cooldownOnLoseLives = this.config.getBoolean("access.cooldown.on_lives_depleted", false);
+        this.cooldownOnLoseLives =
+                this.config.getBoolean("access.cooldown.on_lives_depleted", false);
         this.cooldownOnStart = this.config.getBoolean("access.cooldown.on_start", false);
         this.cooldownsPerReward =
                 this.config.getBoolean("rewards.loot_cooldown.track_per_reward", true);
@@ -387,9 +401,10 @@ public abstract class DungeonDefinition {
             if (accessKey != null) {
                 loadedKeys.add(accessKey);
             } else {
-                this.logger().warn(
-                        "Skipping unsupported or invalid access key entry while loading dungeon '{}'.",
-                        this.worldName);
+                this.logger()
+                        .warn(
+                                "Skipping unsupported or invalid access key entry while loading dungeon '{}'.",
+                                this.worldName);
             }
         }
 
@@ -397,10 +412,11 @@ public abstract class DungeonDefinition {
     }
 
     private void rebuildValidKeys() {
-        this.validKeys = this.accessKeys.stream()
-                .map(AccessKeyDefinition::createItemCopy)
-                .filter(Objects::nonNull)
-                .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
+        this.validKeys =
+                this.accessKeys.stream()
+                        .map(AccessKeyDefinition::createItemCopy)
+                        .filter(Objects::nonNull)
+                        .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
     }
 
     private void loadAccessKeyState() throws DungeonLoadException {
@@ -419,8 +435,8 @@ public abstract class DungeonDefinition {
 
         try {
             this.accessKeyStateConfig.load(this.accessKeyStateFile);
-            boolean hadPersistedReservations = !this.accessKeyStateConfig.getStringList("reserved_instance_ids")
-                    .isEmpty();
+            boolean hadPersistedReservations =
+                    !this.accessKeyStateConfig.getStringList("reserved_instance_ids").isEmpty();
             Object rawIssuedInstances = this.accessKeyStateConfig.get("issued_instances");
             if (rawIssuedInstances instanceof ConfigurationSection section) {
                 for (String instanceId : section.getKeys(false)) {
@@ -453,8 +469,11 @@ public abstract class DungeonDefinition {
                     "Access of access_keys.yml file failed!",
                     false,
                     "There may be another process accessing the file, or we may not have permission.");
-        } catch (InvalidConfigurationException | IllegalArgumentException | YAMLException exception) {
-            throw new DungeonLoadException("Dungeon access key state has invalid YAML! See error below...", true);
+        } catch (InvalidConfigurationException
+                | IllegalArgumentException
+                | YAMLException exception) {
+            throw new DungeonLoadException(
+                    "Dungeon access key state has invalid YAML! See error below...", true);
         }
     }
 
@@ -463,17 +482,20 @@ public abstract class DungeonDefinition {
             return;
         }
 
-        this.accessKeyStateConfig.set("issued_instances", new LinkedHashMap<>(this.issuedAccessKeyInstances));
-        this.accessKeyStateConfig.set("reserved_instance_ids", new ArrayList<>(this.reservedAccessKeyInstances));
+        this.accessKeyStateConfig.set(
+                "issued_instances", new LinkedHashMap<>(this.issuedAccessKeyInstances));
+        this.accessKeyStateConfig.set(
+                "reserved_instance_ids", new ArrayList<>(this.reservedAccessKeyInstances));
         this.accessKeyStateConfig.set(
                 "invalidated_instance_ids", new ArrayList<>(this.invalidatedAccessKeyInstances));
         try {
             this.accessKeyStateConfig.save(this.accessKeyStateFile);
         } catch (IOException exception) {
-            this.logger().error(
-                    "Failed to save access key state while updating dungeon '{}'.",
-                    this.worldName,
-                    exception);
+            this.logger()
+                    .error(
+                            "Failed to save access key state while updating dungeon '{}'.",
+                            this.worldName,
+                            exception);
         }
     }
 
@@ -491,19 +513,27 @@ public abstract class DungeonDefinition {
             configuredKeyIds.add(accessKey.getKeyId());
         }
 
-        boolean changed = this.issuedAccessKeyInstances.entrySet().removeIf(entry ->
-                entry.getKey() == null
-                        || entry.getKey().isBlank()
-                        || entry.getValue() == null
-                        || entry.getValue().isBlank()
-                        || this.invalidatedAccessKeyInstances.contains(entry.getKey())
-                        || !configuredKeyIds.contains(entry.getValue()));
-        changed |= this.reservedAccessKeyInstances.removeIf(instanceId ->
-                instanceId == null
-                        || instanceId.isBlank()
-                        || !this.issuedAccessKeyInstances.containsKey(instanceId));
-        changed |= this.invalidatedAccessKeyInstances.removeIf(instanceId ->
-                instanceId == null || instanceId.isBlank());
+        boolean changed =
+                this.issuedAccessKeyInstances
+                        .entrySet()
+                        .removeIf(
+                                entry ->
+                                        entry.getKey() == null
+                                                || entry.getKey().isBlank()
+                                                || entry.getValue() == null
+                                                || entry.getValue().isBlank()
+                                                || this.invalidatedAccessKeyInstances.contains(
+                                                        entry.getKey())
+                                                || !configuredKeyIds.contains(entry.getValue()));
+        changed |=
+                this.reservedAccessKeyInstances.removeIf(
+                        instanceId ->
+                                instanceId == null
+                                        || instanceId.isBlank()
+                                        || !this.issuedAccessKeyInstances.containsKey(instanceId));
+        changed |=
+                this.invalidatedAccessKeyInstances.removeIf(
+                        instanceId -> instanceId == null || instanceId.isBlank());
         if (changed) {
             this.saveAccessKeyState();
         }
@@ -553,7 +583,8 @@ public abstract class DungeonDefinition {
         }
     }
 
-    private @Nullable String getTrackedIssuedAccessKeyId(@Nullable ItemStack item, boolean allowReserved) {
+    private @Nullable String getTrackedIssuedAccessKeyId(
+            @Nullable ItemStack item, boolean allowReserved) {
         String keyId = this.readAccessKeyId(item);
         String instanceId = this.readAccessKeyInstanceId(item);
         if (keyId == null
@@ -568,7 +599,8 @@ public abstract class DungeonDefinition {
     }
 
     private boolean usesUniqueAccessKeyValidation() {
-        boolean enabled = PluginConfigView.isUniqueAccessKeyValidationEnabled(this.runtime.config());
+        boolean enabled =
+                PluginConfigView.isUniqueAccessKeyValidationEnabled(this.runtime.config());
         if (this.uniqueAccessKeyValidationEnabled == null
                 || this.uniqueAccessKeyValidationEnabled.booleanValue() != enabled) {
             this.uniqueAccessKeyValidationEnabled = enabled;
@@ -626,7 +658,8 @@ public abstract class DungeonDefinition {
 
         boolean changed = false;
         List<String> revokedInstanceIds = new ArrayList<>();
-        for (Map.Entry<String, String> entry : new ArrayList<>(this.issuedAccessKeyInstances.entrySet())) {
+        for (Map.Entry<String, String> entry :
+                new ArrayList<>(this.issuedAccessKeyInstances.entrySet())) {
             if (!keyId.equals(entry.getValue())) {
                 continue;
             }
@@ -645,7 +678,7 @@ public abstract class DungeonDefinition {
         }
     }
 
-        protected List<EntityType> loadEntityTypeList(String path) {
+    protected List<EntityType> loadEntityTypeList(String path) {
         List<EntityType> types = new ArrayList<>();
         for (String name : this.config.getStringList(path)) {
             try {
@@ -665,13 +698,18 @@ public abstract class DungeonDefinition {
 
     /** Refreshes cached gameplay rules after global configuration changes. */
     public void refreshRuleSettings() {
-        this.bannedItems = new ArrayList<>(this.config.getStringList("rules.items.banned_materials"));
+        this.bannedItems =
+                new ArrayList<>(this.config.getStringList("rules.items.banned_materials"));
         this.customBannedItems = new ArrayList<>();
         for (Object entry : this.config.getList("rules.items.banned_items", List.of())) {
             if (entry instanceof ItemStack item) {
                 this.customBannedItems.add(item);
             } else {
-                this.logger().warn("Skipping invalid banned item in dungeon '{}': {}", this.worldName, entry);
+                this.logger()
+                        .warn(
+                                "Skipping invalid banned item in dungeon '{}': {}",
+                                this.worldName,
+                                entry);
             }
         }
 
@@ -679,21 +717,23 @@ public abstract class DungeonDefinition {
         this.breakWhitelist = this.loadMaterialList("rules.building.break_whitelist");
         this.placeBlacklist = this.loadMaterialList("rules.building.place_blacklist");
         this.breakBlacklist = this.loadMaterialList("rules.building.break_blacklist");
-        this.breakPlacedBlocks = this.config.getBoolean("rules.building.break_placed_blocks", false);
+        this.breakPlacedBlocks =
+                this.config.getBoolean("rules.building.break_placed_blocks", false);
         this.damageProtectedEntities = this.loadEntityTypeList("rules.entities.damage_protected");
-        this.interactProtectedEntities = this.loadEntityTypeList("rules.entities.interact_protected");
+        this.interactProtectedEntities =
+                this.loadEntityTypeList("rules.entities.interact_protected");
     }
 
-        public void refreshRuntimeSettings() {
+    public void refreshRuntimeSettings() {
         this.loadRuntimeSettingsFromConfig();
     }
 
-        public boolean hasAvailableInstances() {
+    public boolean hasAvailableInstances() {
         int maxInstances = this.config.getInt("runs.max_active", 0);
         return maxInstances == 0 || this.getTrackedInstanceCount() < maxInstances;
     }
 
-        protected int getTrackedInstanceCount() {
+    protected int getTrackedInstanceCount() {
         return this.instances.size();
     }
 
@@ -714,15 +754,15 @@ public abstract class DungeonDefinition {
                 && this.hasAvailableInstances();
     }
 
-        public boolean canEverFitTeamSize(int requestedPlayers) {
+    public boolean canEverFitTeamSize(int requestedPlayers) {
         return this.canFitTeamSize(requestedPlayers);
     }
 
-        public boolean canFitTeamSize(int requestedPlayers) {
+    public boolean canFitTeamSize(int requestedPlayers) {
         return Math.max(1, requestedPlayers) <= this.maxTeamSize;
     }
 
-        public void sendTeamTooLargeMessage(Player player, int requestedPlayers) {
+    public void sendTeamTooLargeMessage(Player player, int requestedPlayers) {
         LangUtils.sendMessage(
                 player,
                 "commands.play.team.team-too-large",
@@ -730,7 +770,7 @@ public abstract class DungeonDefinition {
                 LangUtils.placeholder("max", String.valueOf(this.maxTeamSize)));
     }
 
-        protected void cleanDeadInstances() {
+    protected void cleanDeadInstances() {
         File[] worlds = Bukkit.getWorldContainer().listFiles();
         if (worlds != null) {
             for (File world : worlds) {
@@ -751,7 +791,7 @@ public abstract class DungeonDefinition {
         }
     }
 
-        private boolean isOwnedInstanceWorldFolder(File worldFolder) {
+    private boolean isOwnedInstanceWorldFolder(File worldFolder) {
         String worldName = worldFolder.getName();
         String prefix = this.folder.getName() + "_";
         if (!worldName.startsWith(prefix)) {
@@ -772,15 +812,15 @@ public abstract class DungeonDefinition {
         return true;
     }
 
-        public boolean instantiate(Player player) {
+    public boolean instantiate(Player player) {
         return this.instantiate(player, "DEFAULT", 1);
     }
 
-        public boolean instantiate(Player player, String difficultyName) {
+    public boolean instantiate(Player player, String difficultyName) {
         return this.instantiate(player, difficultyName, 1);
     }
 
-        public boolean instantiate(Player player, String difficultyName, int requestedPlayers) {
+    public boolean instantiate(Player player, String difficultyName, int requestedPlayers) {
         return this.instantiate(player, difficultyName, requestedPlayers, null);
     }
 
@@ -806,27 +846,28 @@ public abstract class DungeonDefinition {
         return this.prepareInstance(player, difficultyName, normalizedPlayers, startedTeamLeaderId);
     }
 
-        public boolean prepareInstance(Player player, String difficultyName) {
+    public boolean prepareInstance(Player player, String difficultyName) {
         return this.prepareInstance(player, difficultyName, 1);
     }
 
-        public boolean prepareInstance(Player player, String difficultyName, int requestedPlayers) {
+    public boolean prepareInstance(Player player, String difficultyName, int requestedPlayers) {
         return this.prepareInstance(player, difficultyName, requestedPlayers, null);
     }
 
-        public abstract boolean prepareInstance(
+    public abstract boolean prepareInstance(
             Player player,
             String difficultyName,
             int requestedPlayers,
             @Nullable UUID startedTeamLeaderId);
 
-        public void edit(UUID playerId) {
+    public void edit(UUID playerId) {
         if (this.editSession != null) {
             Bukkit.getScheduler()
                     .runTask(
                             this.plugin(),
                             () -> {
-                                DungeonPlayerSession playerSession = this.playerSessions().get(playerId);
+                                DungeonPlayerSession playerSession =
+                                        this.playerSessions().get(playerId);
                                 if (this.editSession != null && playerSession != null) {
                                     this.editSession.addPlayer(playerSession);
                                 }
@@ -894,7 +935,8 @@ public abstract class DungeonDefinition {
                     .runTask(
                             this.plugin(),
                             () -> {
-                                DungeonPlayerSession playerSession = this.playerSessions().get(playerId);
+                                DungeonPlayerSession playerSession =
+                                        this.playerSessions().get(playerId);
                                 if (playerSession != null) {
                                     session.addPlayer(playerSession);
                                 }
@@ -918,7 +960,7 @@ public abstract class DungeonDefinition {
         }
     }
 
-        private void scheduleEditMessage(UUID playerId, String messageKey) {
+    private void scheduleEditMessage(UUID playerId, String messageKey) {
         Bukkit.getScheduler()
                 .runTask(
                         this.plugin(),
@@ -926,26 +968,28 @@ public abstract class DungeonDefinition {
                             Player player = Bukkit.getPlayer(playerId);
                             if (player != null && player.isOnline()) {
                                 LangUtils.sendMessage(
-                                        player, messageKey, LangUtils.placeholder("dungeon", this.getDisplayName()));
+                                        player,
+                                        messageKey,
+                                        LangUtils.placeholder("dungeon", this.getDisplayName()));
                             }
                         });
     }
 
-        public final PlayableInstance createPlaySession(CountDownLatch latch) {
+    public final PlayableInstance createPlaySession(CountDownLatch latch) {
         return this.createPlaySession(latch, null);
     }
 
-        public abstract PlayableInstance createPlaySession(
+    public abstract PlayableInstance createPlaySession(
             CountDownLatch latch, @Nullable UUID startedTeamLeaderId);
 
-        public abstract EditableInstance createEditSession(CountDownLatch latch);
+    public abstract EditableInstance createEditSession(CountDownLatch latch);
 
-        public void removeInstance(DungeonInstance instance) {
+    public void removeInstance(DungeonInstance instance) {
         this.instances.remove(instance);
         this.activeInstances().unregisterActiveInstance(instance);
     }
 
-        protected void discardInstance(@Nullable DungeonInstance instance) {
+    protected void discardInstance(@Nullable DungeonInstance instance) {
         if (instance == null) {
             return;
         }
@@ -958,7 +1002,7 @@ public abstract class DungeonDefinition {
         }
     }
 
-        public void timeout(DungeonInstance instance, DungeonPlayerSession playerSession) {
+    public void timeout(DungeonInstance instance, DungeonPlayerSession playerSession) {
         Player player = playerSession.getPlayer();
         this.cancelInstance(instance, playerSession);
         nl.hauntedmc.dungeons.util.lang.LangUtils.sendMessage(
@@ -967,36 +1011,36 @@ public abstract class DungeonDefinition {
                 LangUtils.placeholder("dungeon", this.getDisplayName()));
     }
 
-        public void cancelInstance(DungeonInstance instance, DungeonPlayerSession playerSession) {
+    public void cancelInstance(DungeonInstance instance, DungeonPlayerSession playerSession) {
         this.removeInstance(instance);
         playerSession.setAwaitingDungeon(false);
     }
 
-        public abstract void addFunction(Location location, DungeonFunction function);
+    public abstract void addFunction(Location location, DungeonFunction function);
 
-        public abstract void removeFunction(Location location);
+    public abstract void removeFunction(Location location);
 
-        public abstract void saveFunctions();
+    public abstract void saveFunctions();
 
-        public abstract Map<Location, DungeonFunction> getFunctions();
+    public abstract Map<Location, DungeonFunction> getFunctions();
 
-        public void addAccessCooldown(Player player) {
+    public void addAccessCooldown(Player player) {
         this.addAccessCooldown(player, this.getNextUnlockTime());
     }
 
-        public void addAccessCooldown(Player player, Date resetTime) {
+    public void addAccessCooldown(Player player, Date resetTime) {
         this.accessCooldownsByPlayer.put(player.getUniqueId(), resetTime);
     }
 
-        public boolean clearAccessCooldown(Player player) {
+    public boolean clearAccessCooldown(Player player) {
         return player != null && this.clearAccessCooldown(player.getUniqueId());
     }
 
-        public boolean clearAccessCooldown(UUID playerId) {
+    public boolean clearAccessCooldown(UUID playerId) {
         return this.accessCooldownsByPlayer.remove(playerId) != null;
     }
 
-        public boolean shouldApplyAccessCooldown(@Nullable DungeonInstance instance, UUID playerId) {
+    public boolean shouldApplyAccessCooldown(@Nullable DungeonInstance instance, UUID playerId) {
         Player player = Bukkit.getPlayer(playerId);
         if (player != null && CommandUtils.hasPermissionSilent(player, "dungeons.admin")) {
             return false;
@@ -1007,7 +1051,7 @@ public abstract class DungeonDefinition {
                 this.onlyLeaderNeedsCooldown, startedTeamLeaderId, playerId);
     }
 
-        public boolean hasAccessCooldown(Player player) {
+    public boolean hasAccessCooldown(Player player) {
         Date cooldown = this.accessCooldownsByPlayer.get(player.getUniqueId());
         if (cooldown == null) {
             return false;
@@ -1019,17 +1063,17 @@ public abstract class DungeonDefinition {
         }
     }
 
-        public Date getAccessCooldown(Player player) {
+    public Date getAccessCooldown(Player player) {
         return !this.hasAccessCooldown(player)
                 ? null
                 : this.accessCooldownsByPlayer.get(player.getUniqueId());
     }
 
-        public void addLootCooldown(Player player, RewardFunction reward) {
+    public void addLootCooldown(Player player, RewardFunction reward) {
         this.addLootCooldown(player, reward, this.getNextLootTime());
     }
 
-        public void addLootCooldown(Player player, RewardFunction reward, Date resetTime) {
+    public void addLootCooldown(Player player, RewardFunction reward, Date resetTime) {
         PlayerLootData playerCooldown = this.lootCooldownsByPlayer.get(player.getUniqueId());
         if (playerCooldown == null) {
             playerCooldown = new PlayerLootData(player);
@@ -1040,7 +1084,7 @@ public abstract class DungeonDefinition {
         playerCooldown.addLootCooldown(reward, resetTime);
     }
 
-        public boolean hasLootCooldown(Player player, RewardFunction reward) {
+    public boolean hasLootCooldown(Player player, RewardFunction reward) {
         PlayerLootData playerCooldown = this.lootCooldownsByPlayer.get(player.getUniqueId());
         if (playerCooldown == null) {
             playerCooldown = new PlayerLootData(player);
@@ -1051,17 +1095,17 @@ public abstract class DungeonDefinition {
         return playerCooldown.hasLootOnCooldown(reward);
     }
 
-        public Date getLootUnlockTime(Player player, RewardFunction function) {
+    public Date getLootUnlockTime(Player player, RewardFunction function) {
         PlayerLootData lootData = this.getPlayerLootData(player);
         LootCooldown cd = lootData.getLootCooldown(function);
         return cd == null ? null : cd.getResetTime();
     }
 
-        public PlayerLootData getPlayerLootData(Player player) {
+    public PlayerLootData getPlayerLootData(Player player) {
         return this.lootCooldownsByPlayer.get(player.getUniqueId());
     }
 
-        public void loadCooldowns(UUID playerID) {
+    public void loadCooldowns(UUID playerID) {
         FileConfiguration data = this.playerData.get(playerID);
         if (data.get("RewardsInfo") != null) {
             PlayerLootData playerData = (PlayerLootData) data.get("RewardsInfo");
@@ -1076,7 +1120,7 @@ public abstract class DungeonDefinition {
         }
     }
 
-        public void saveCooldowns(Player player) {
+    public void saveCooldowns(Player player) {
         UUID playerID = player.getUniqueId();
         PlayerLootData playerData = this.lootCooldownsByPlayer.get(player.getUniqueId());
         if (playerData == null) {
@@ -1092,7 +1136,7 @@ public abstract class DungeonDefinition {
         data.set("AccessCooldown", cooldown == null ? null : cooldown.getTime());
     }
 
-        public void savePlayerData(Player player) {
+    public void savePlayerData(Player player) {
         File playersFolder = new File(this.folder, "players");
         UUID playerID = player.getUniqueId();
         FileConfiguration data = this.playerData.getOrDefault(playerID, new YamlConfiguration());
@@ -1111,28 +1155,29 @@ public abstract class DungeonDefinition {
         }
     }
 
-    @Nullable public FileConfiguration getPlayerData(UUID playerID) {
+    @Nullable
+    public FileConfiguration getPlayerData(UUID playerID) {
         return this.playerData.get(playerID);
     }
 
-        public boolean hasPlayerCompletedDungeon(Player player) {
+    public boolean hasPlayerCompletedDungeon(Player player) {
         UUID playerID = player.getUniqueId();
         FileConfiguration data = this.playerData.get(playerID);
         return data != null && data.getBoolean("Finished", false);
     }
 
-        public void setPlayerCompletedDungeon(Player player) {
+    public void setPlayerCompletedDungeon(Player player) {
         this.setPlayerCompletedDungeon(player, true);
     }
 
-        public void setPlayerCompletedDungeon(Player player, boolean complete) {
+    public void setPlayerCompletedDungeon(Player player, boolean complete) {
         UUID playerID = player.getUniqueId();
         FileConfiguration data = this.playerData.getOrDefault(playerID, new YamlConfiguration());
         this.playerData.putIfAbsent(playerID, data);
         data.set("Finished", complete);
     }
 
-        public void banItem(ItemStack item) {
+    public void banItem(ItemStack item) {
         ItemStack vanillaItem = new ItemStack(item.getType());
         if (item.isSimilar(vanillaItem)) {
             this.bannedItems.add(item.getType().toString());
@@ -1153,7 +1198,7 @@ public abstract class DungeonDefinition {
         }
     }
 
-        public boolean unbanItem(ItemStack item) {
+    public boolean unbanItem(ItemStack item) {
         ItemStack vanillaItem = new ItemStack(item.getType());
         if (!this.bannedItems.contains(item.getType().toString())
                 && !this.customBannedItems.contains(item)) {
@@ -1181,10 +1226,12 @@ public abstract class DungeonDefinition {
         }
     }
 
-        public AccessKeyDefinition addAccessKey(ItemStack item, @Nullable Player addedBy) {
+    public AccessKeyDefinition addAccessKey(ItemStack item, @Nullable Player addedBy) {
         AccessKeyDefinition accessKey =
                 new AccessKeyDefinition(
-                        item, new Date(System.currentTimeMillis()), addedBy == null ? null : addedBy.getName(),
+                        item,
+                        new Date(System.currentTimeMillis()),
+                        addedBy == null ? null : addedBy.getName(),
                         addedBy == null ? null : addedBy.getUniqueId());
         this.accessKeys.add(accessKey);
         this.rebuildValidKeys();
@@ -1192,7 +1239,7 @@ public abstract class DungeonDefinition {
         return accessKey;
     }
 
-        public int removeAllAccessKeys() {
+    public int removeAllAccessKeys() {
         int removedCount = this.accessKeys.size();
         for (AccessKeyDefinition accessKey : this.accessKeys) {
             this.revokeIssuedAccessKeysByDefinition(accessKey.getKeyId());
@@ -1203,16 +1250,17 @@ public abstract class DungeonDefinition {
         return removedCount;
     }
 
-        public int removeAccessKey(ItemStack item) {
+    public int removeAccessKey(ItemStack item) {
         List<String> removedKeyIds = new ArrayList<>();
-        this.accessKeys.removeIf(accessKey -> {
-            if (!accessKey.matches(item)) {
-                return false;
-            }
+        this.accessKeys.removeIf(
+                accessKey -> {
+                    if (!accessKey.matches(item)) {
+                        return false;
+                    }
 
-            removedKeyIds.add(accessKey.getKeyId());
-            return true;
-        });
+                    removedKeyIds.add(accessKey.getKeyId());
+                    return true;
+                });
         int removedCount = removedKeyIds.size();
         if (removedCount > 0) {
             for (String removedKeyId : removedKeyIds) {
@@ -1224,7 +1272,7 @@ public abstract class DungeonDefinition {
         return removedCount;
     }
 
-        public boolean removeAccessKey(int keyId) {
+    public boolean removeAccessKey(int keyId) {
         int index = keyId - 1;
         if (index < 0 || index >= this.accessKeys.size()) {
             return false;
@@ -1237,7 +1285,7 @@ public abstract class DungeonDefinition {
         return true;
     }
 
-        public ItemStack isValidKey(ItemStack item) {
+    public ItemStack isValidKey(ItemStack item) {
         if (item == null || item.getType() == Material.AIR) {
             return null;
         }
@@ -1266,7 +1314,8 @@ public abstract class DungeonDefinition {
         return accessKey == null ? null : this.issueAccessKey(accessKey);
     }
 
-    public synchronized @Nullable ItemStack issueAccessKey(@Nullable AccessKeyDefinition accessKey) {
+    public synchronized @Nullable ItemStack issueAccessKey(
+            @Nullable AccessKeyDefinition accessKey) {
         if (accessKey == null) {
             return null;
         }
@@ -1310,7 +1359,9 @@ public abstract class DungeonDefinition {
         }
 
         String instanceId = this.readAccessKeyInstanceId(item);
-        if (instanceId == null || instanceId.isBlank() || !this.reservedAccessKeyInstances.add(instanceId)) {
+        if (instanceId == null
+                || instanceId.isBlank()
+                || !this.reservedAccessKeyInstances.add(instanceId)) {
             return false;
         }
 
@@ -1325,7 +1376,9 @@ public abstract class DungeonDefinition {
 
         this.ensureUniqueAccessKeyStateLoaded();
         String instanceId = this.readAccessKeyInstanceId(item);
-        if (instanceId == null || instanceId.isBlank() || !this.reservedAccessKeyInstances.remove(instanceId)) {
+        if (instanceId == null
+                || instanceId.isBlank()
+                || !this.reservedAccessKeyInstances.remove(instanceId)) {
             return false;
         }
 
@@ -1429,23 +1482,26 @@ public abstract class DungeonDefinition {
         ItemStack reservedKey = playerSession.getReservedAccessKey(this.worldName);
         if (reservedKey == null || reservedKey.getType() == Material.AIR) {
             Player reservedKeyOwner = playerSession.getPlayer();
-            this.logger().warn(
-                    "Reserved access key for dungeon '{}' could not be recovered for player '{}'.",
-                    this.worldName,
-                    reservedKeyOwner == null ? "unknown" : reservedKeyOwner.getName());
+            this.logger()
+                    .warn(
+                            "Reserved access key for dungeon '{}' could not be recovered for player '{}'.",
+                            this.worldName,
+                            reservedKeyOwner == null ? "unknown" : reservedKeyOwner.getName());
             return false;
         }
 
         ItemStack replacementKey = null;
-        boolean finalized = this.config.getBoolean("access.keys.consume_on_entry", true)
-                ? this.consumeAccessKey(reservedKey)
-                : (replacementKey = this.rotateAccessKey(reservedKey)) != null;
+        boolean finalized =
+                this.config.getBoolean("access.keys.consume_on_entry", true)
+                        ? this.consumeAccessKey(reservedKey)
+                        : (replacementKey = this.rotateAccessKey(reservedKey)) != null;
         if (!finalized) {
             Player reservedKeyOwner = playerSession.getPlayer();
-            this.logger().warn(
-                    "Failed to finalize reserved access key usage for player '{}' in dungeon '{}'.",
-                    reservedKeyOwner == null ? "unknown" : reservedKeyOwner.getName(),
-                    this.worldName);
+            this.logger()
+                    .warn(
+                            "Failed to finalize reserved access key usage for player '{}' in dungeon '{}'.",
+                            reservedKeyOwner == null ? "unknown" : reservedKeyOwner.getName(),
+                            this.worldName);
             return false;
         }
 
@@ -1461,12 +1517,16 @@ public abstract class DungeonDefinition {
         try {
             this.config.save(new File(this.folder, "config.yml"));
         } catch (IOException exception) {
-            this.logger().error("Failed to save config while {} in dungeon '{}'.", action, this.worldName,
-                    exception);
+            this.logger()
+                    .error(
+                            "Failed to save config while {} in dungeon '{}'.",
+                            action,
+                            this.worldName,
+                            exception);
         }
     }
 
-        public int getFirstKeyAmount(Player player) {
+    public int getFirstKeyAmount(Player player) {
         PlayerInventory inv = player.getInventory();
 
         for (ItemStack item : inv.getContents()) {
@@ -1483,7 +1543,7 @@ public abstract class DungeonDefinition {
         return -1;
     }
 
-        public ItemStack getFirstKey(Player player) {
+    public ItemStack getFirstKey(Player player) {
         PlayerInventory inv = player.getInventory();
 
         for (ItemStack item : inv.getContents()) {
@@ -1495,14 +1555,14 @@ public abstract class DungeonDefinition {
         return null;
     }
 
-        public void setGenerator(@NotNull String generator) {
+    public void setGenerator(@NotNull String generator) {
         if (!generator.isEmpty()) {
             this.config.set("dungeon.chunk_generator", generator);
             this.saveConfig();
         }
     }
 
-        public void setLobbySpawn(Location lobbySpawn) {
+    public void setLobbySpawn(Location lobbySpawn) {
         this.lobbySpawn = lobbySpawn;
         this.config.set("locations.lobby.enabled", this.lobbyEnabled);
         Location lobbyLocation = lobbySpawn.clone();
@@ -1511,7 +1571,7 @@ public abstract class DungeonDefinition {
         this.saveConfig();
     }
 
-        public void setStartSpawn(Location startSpawn) {
+    public void setStartSpawn(Location startSpawn) {
         this.startSpawn = startSpawn;
         Location startLocation = startSpawn.clone();
         startLocation.setWorld(null);
@@ -1519,7 +1579,7 @@ public abstract class DungeonDefinition {
         this.saveConfig();
     }
 
-        public void setExit(@Nullable Location exitLoc) {
+    public void setExit(@Nullable Location exitLoc) {
         this.exitLoc = exitLoc;
         if (exitLoc == null) {
             this.config.set("locations.exit", null);
@@ -1531,12 +1591,13 @@ public abstract class DungeonDefinition {
         this.saveConfig();
     }
 
-        public Date getNextUnlockTime() {
+    public Date getNextUnlockTime() {
         if (!this.config.getBoolean("access.cooldown.enabled", false)) {
-                        return new Date();
+            return new Date();
         } else {
             CooldownPeriod period =
-                    CooldownPeriod.valueOf(DungeonConfigView.getAccessCooldownPeriodName(this.config));
+                    CooldownPeriod.valueOf(
+                            DungeonConfigView.getAccessCooldownPeriodName(this.config));
             int cooldownTime = DungeonConfigView.getAccessCooldownValue(this.config);
             if (period == CooldownPeriod.TIMER) {
                 return period.fromNow(cooldownTime);
@@ -1573,12 +1634,13 @@ public abstract class DungeonDefinition {
         }
     }
 
-        public Date getNextLootTime() {
+    public Date getNextLootTime() {
         if (!this.config.getBoolean("rewards.loot_cooldown.enabled", false)) {
-                        return new Date();
+            return new Date();
         } else {
             CooldownPeriod period =
-                    CooldownPeriod.valueOf(this.config.getString("rewards.loot_cooldown.period", "DAILY"));
+                    CooldownPeriod.valueOf(
+                            this.config.getString("rewards.loot_cooldown.period", "DAILY"));
             int cooldownTime = this.config.getInt("rewards.loot_cooldown.value", 1);
             if (period == CooldownPeriod.TIMER) {
                 return period.fromNow(cooldownTime);
@@ -1615,41 +1677,45 @@ public abstract class DungeonDefinition {
         }
     }
 
-        public void setSaveConfig(String path, Object value) {
+    public void setSaveConfig(String path, Object value) {
         this.config.set(path, value);
         this.saveConfig();
         this.refreshRuntimeSettings();
     }
 
-        public void saveConfig() {
+    public void saveConfig() {
         try {
             this.config.save(new File(this.folder, "config.yml"));
         } catch (IOException exception) {
-            this.logger().error("Failed to save config for dungeon '{}'.", this.worldName, exception);
+            this.logger()
+                    .error("Failed to save config for dungeon '{}'.", this.worldName, exception);
         }
     }
 
-    @Nullable public StaticDungeon asStatic() {
+    @Nullable
+    public StaticDungeon asStatic() {
         return this.as(StaticDungeon.class);
     }
 
-    @Nullable public BranchingDungeon asBranching() {
+    @Nullable
+    public BranchingDungeon asBranching() {
         return this.as(BranchingDungeon.class);
     }
 
-    @Nullable public <T extends DungeonDefinition> T as(Class<T> clazz) {
+    @Nullable
+    public <T extends DungeonDefinition> T as(Class<T> clazz) {
         return clazz.isInstance(this) ? clazz.cast(this) : null;
     }
 
-        public String getWorldName() {
+    public String getWorldName() {
         return this.worldName;
     }
 
-        public File getFolder() {
+    public File getFolder() {
         return this.folder;
     }
 
-        public FileConfiguration getConfig() {
+    public FileConfiguration getConfig() {
         return this.config;
     }
 
@@ -1665,59 +1731,59 @@ public abstract class DungeonDefinition {
         return this.maxTeamSize;
     }
 
-        public boolean isLobbyEnabled() {
+    public boolean isLobbyEnabled() {
         return this.lobbyEnabled;
     }
 
-        public void setLobbyEnabled(boolean lobbyEnabled) {
+    public void setLobbyEnabled(boolean lobbyEnabled) {
         this.lobbyEnabled = lobbyEnabled;
     }
 
-        public Location getLobbySpawn() {
+    public Location getLobbySpawn() {
         return this.lobbySpawn;
     }
 
-        public Location getStartSpawn() {
+    public Location getStartSpawn() {
         return this.startSpawn;
     }
 
-        public Location getExitLoc() {
+    public Location getExitLoc() {
         return this.exitLoc;
     }
 
-        public boolean isAlwaysUseExit() {
+    public boolean isAlwaysUseExit() {
         return this.alwaysUseExit;
     }
 
-        public boolean isUseDifficultyLevels() {
+    public boolean isUseDifficultyLevels() {
         return this.useDifficultyLevels;
     }
 
-        public boolean isShowDifficultyMenu() {
+    public boolean isShowDifficultyMenu() {
         return this.showDifficultyMenu;
     }
 
-        public Map<String, DungeonDifficulty> getDifficultyLevels() {
+    public Map<String, DungeonDifficulty> getDifficultyLevels() {
         return this.difficultyLevels;
     }
 
-        public List<ItemStack> getCustomBannedItems() {
+    public List<ItemStack> getCustomBannedItems() {
         return this.customBannedItems;
     }
 
-        public List<String> getBannedItems() {
+    public List<String> getBannedItems() {
         return this.bannedItems;
     }
 
-        public List<String> getJoinCommands() {
+    public List<String> getJoinCommands() {
         return List.copyOf(this.joinCommands);
     }
 
-        public List<AccessKeyDefinition> getAccessKeys() {
+    public List<AccessKeyDefinition> getAccessKeys() {
         return List.copyOf(this.accessKeys);
     }
 
-        public @Nullable AccessKeyDefinition getAccessKey(int keyId) {
+    public @Nullable AccessKeyDefinition getAccessKey(int keyId) {
         int index = keyId - 1;
         if (index < 0 || index >= this.accessKeys.size()) {
             return null;
@@ -1726,99 +1792,99 @@ public abstract class DungeonDefinition {
         return this.accessKeys.get(index);
     }
 
-        public List<ItemStack> getValidKeys() {
+    public List<ItemStack> getValidKeys() {
         return List.copyOf(this.validKeys);
     }
 
-        public boolean isOnlyLeaderNeedsKey() {
+    public boolean isOnlyLeaderNeedsKey() {
         return this.onlyLeaderNeedsKey;
     }
 
-        public List<Material> getPlaceWhitelist() {
+    public List<Material> getPlaceWhitelist() {
         return this.placeWhitelist;
     }
 
-        public List<Material> getBreakWhitelist() {
+    public List<Material> getBreakWhitelist() {
         return this.breakWhitelist;
     }
 
-        public List<Material> getPlaceBlacklist() {
+    public List<Material> getPlaceBlacklist() {
         return this.placeBlacklist;
     }
 
-        public List<Material> getBreakBlacklist() {
+    public List<Material> getBreakBlacklist() {
         return this.breakBlacklist;
     }
 
-        public boolean isBreakPlacedBlocks() {
+    public boolean isBreakPlacedBlocks() {
         return this.breakPlacedBlocks;
     }
 
-        public List<EntityType> getDamageProtectedEntities() {
+    public List<EntityType> getDamageProtectedEntities() {
         return this.damageProtectedEntities;
     }
 
-        public List<EntityType> getInteractProtectedEntities() {
+    public List<EntityType> getInteractProtectedEntities() {
         return this.interactProtectedEntities;
     }
 
-        public boolean isAccessCooldownEnabled() {
+    public boolean isAccessCooldownEnabled() {
         return this.accessCooldownEnabled;
     }
 
-        public boolean isOnlyLeaderNeedsCooldown() {
+    public boolean isOnlyLeaderNeedsCooldown() {
         return this.onlyLeaderNeedsCooldown;
     }
 
-        public boolean isCooldownOnFinish() {
+    public boolean isCooldownOnFinish() {
         return this.cooldownOnFinish;
     }
 
-        public boolean isCooldownOnLeave() {
+    public boolean isCooldownOnLeave() {
         return this.cooldownOnLeave;
     }
 
-        public boolean isCooldownOnLoseLives() {
+    public boolean isCooldownOnLoseLives() {
         return this.cooldownOnLoseLives;
     }
 
-        public boolean isCooldownOnStart() {
+    public boolean isCooldownOnStart() {
         return this.cooldownOnStart;
     }
 
-        public boolean isCooldownsPerReward() {
+    public boolean isCooldownsPerReward() {
         return this.cooldownsPerReward;
     }
 
-        public List<PlayerLootData> getLootCooldowns() {
+    public List<PlayerLootData> getLootCooldowns() {
         return this.lootCooldowns;
     }
 
-        public List<DungeonInstance> getInstances() {
+    public List<DungeonInstance> getInstances() {
         return this.instances;
     }
 
-        public EditableInstance getEditSession() {
+    public EditableInstance getEditSession() {
         return this.editSession;
     }
 
-        public void setEditSession(EditableInstance editSession) {
+    public void setEditSession(EditableInstance editSession) {
         this.editSession = editSession;
     }
 
-        public boolean isSaving() {
+    public boolean isSaving() {
         return this.saving;
     }
 
-        public void setSaving(boolean saving) {
+    public void setSaving(boolean saving) {
         this.saving = saving;
     }
 
-        public boolean isMarkedForDelete() {
+    public boolean isMarkedForDelete() {
         return this.markedForDelete;
     }
 
-        public void setMarkedForDelete(boolean markedForDelete) {
+    public void setMarkedForDelete(boolean markedForDelete) {
         this.markedForDelete = markedForDelete;
     }
 }

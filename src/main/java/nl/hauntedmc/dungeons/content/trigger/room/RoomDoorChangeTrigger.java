@@ -74,7 +74,8 @@ public class RoomDoorChangeTrigger extends DungeonTrigger {
                 InstanceRoom room = branchingInstance.getRoom(this.location);
                 if (room != null) {
                     if (event.getRoom() == room) {
-                        if (this.matchesAnyDoor() || event.getDoor().getNamespace().equals(this.doorName)) {
+                        if (this.matchesAnyDoor()
+                                || event.getDoor().getNamespace().equals(this.doorName)) {
                             this.trigger();
                         }
                     }
@@ -89,7 +90,7 @@ public class RoomDoorChangeTrigger extends DungeonTrigger {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -106,16 +107,19 @@ public class RoomDoorChangeTrigger extends DungeonTrigger {
                     @Override
                     public void onSelect(Player player) {
                         if (!RoomDoorChangeTrigger.this.allowRetrigger) {
-                            LangUtils.sendMessage(player, "editor.trigger.room-door-change.allow-repeat");
+                            LangUtils.sendMessage(
+                                    player, "editor.trigger.room-door-change.allow-repeat");
                         } else {
-                            LangUtils.sendMessage(player, "editor.trigger.room-door-change.prevent-repeat");
+                            LangUtils.sendMessage(
+                                    player, "editor.trigger.room-door-change.prevent-repeat");
                         }
 
-                        RoomDoorChangeTrigger.this.allowRetrigger = !RoomDoorChangeTrigger.this.allowRetrigger;
+                        RoomDoorChangeTrigger.this.allowRetrigger =
+                                !RoomDoorChangeTrigger.this.allowRetrigger;
                     }
                 });
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -150,7 +154,7 @@ public class RoomDoorChangeTrigger extends DungeonTrigger {
                     }
                 });
         this.menu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     /**
                      * Builds button.
                      */
@@ -160,7 +164,8 @@ public class RoomDoorChangeTrigger extends DungeonTrigger {
                         RoomDoorChangeTrigger.this.action =
                                 Math.floorMod(RoomDoorChangeTrigger.this.action, actions.length);
                         this.button = new MenuButton(Material.DIAMOND);
-                        this.button.setDisplayName("&d&lAction: " + actions[RoomDoorChangeTrigger.this.action]);
+                        this.button.setDisplayName(
+                                "&d&lAction: " + actions[RoomDoorChangeTrigger.this.action]);
                     }
 
                     /**
@@ -169,7 +174,8 @@ public class RoomDoorChangeTrigger extends DungeonTrigger {
                     @Override
                     public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
-                        DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                        DungeonPlayerSession playerSession =
+                                RuntimeContext.playerSessions().get(player);
                         RoomDoorChangeTrigger.this.action++;
                         if (RoomDoorChangeTrigger.this.action >= DoorAction.values().length) {
                             RoomDoorChangeTrigger.this.action = 1;
@@ -177,12 +183,16 @@ public class RoomDoorChangeTrigger extends DungeonTrigger {
 
                         DoorAction[] actions = DoorAction.values();
                         DoorAction action =
-                                actions[Math.floorMod(RoomDoorChangeTrigger.this.action, actions.length)];
+                                actions[
+                                        Math.floorMod(
+                                                RoomDoorChangeTrigger.this.action, actions.length)];
                         this.menu.openFor(playerSession);
                         if (action == DoorAction.OPEN) {
-                            LangUtils.sendMessage(player, "editor.trigger.room-door-change.on-open");
+                            LangUtils.sendMessage(
+                                    player, "editor.trigger.room-door-change.on-open");
                         } else {
-                            LangUtils.sendMessage(player, "editor.trigger.room-door-change.on-close");
+                            LangUtils.sendMessage(
+                                    player, "editor.trigger.room-door-change.on-close");
                         }
                     }
                 });

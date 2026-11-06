@@ -18,13 +18,22 @@ class ConfigSerializableModelTest {
             Base restored = ConfigSerializableModel.deserialize(Base.class, child);
             assertEquals(7, assertInstanceOf(Child.class, restored).value);
 
-            Container container = ConfigSerializableModel.deserialize(Container.class,
-                    Map.of("single", child, "children", List.of(child), "named", Map.of("first", child)));
+            Container container =
+                    ConfigSerializableModel.deserialize(
+                            Container.class,
+                            Map.of(
+                                    "single",
+                                    child,
+                                    "children",
+                                    List.of(child),
+                                    "named",
+                                    Map.of("first", child)));
             assertEquals(7, assertInstanceOf(Child.class, container.single).value);
             assertEquals(7, assertInstanceOf(Child.class, container.children.getFirst()).value);
             assertEquals(7, assertInstanceOf(Child.class, container.named.get("first")).value);
 
-            Container roundTrip = ConfigSerializableModel.deserialize(Container.class, container.serialize());
+            Container roundTrip =
+                    ConfigSerializableModel.deserialize(Container.class, container.serialize());
             assertEquals(7, assertInstanceOf(Child.class, roundTrip.children.getFirst()).value);
         } finally {
             ConfigSerializableModel.pluginSerializables.remove(Child.class);

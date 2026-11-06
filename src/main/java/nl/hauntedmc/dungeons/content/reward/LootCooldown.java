@@ -42,7 +42,8 @@ public class LootCooldown implements ConfigurationSerializable {
         this.resetTime = resetTime;
     }
 
-    @NotNull public Map<String, Object> serialize() {
+    @NotNull
+    public Map<String, Object> serialize() {
         Map<String, Object> map = new HashMap<>();
         map.put("LootLocation", this.location);
         map.put("LootedTime", this.lootedAt.getTime());

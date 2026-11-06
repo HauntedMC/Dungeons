@@ -51,8 +51,8 @@ public class BranchingInstance extends PlayableInstance {
             this.initialized = true;
             this.id = this.dungeon.getInstances().size();
             File instFolder = this.getUniqueWorldName();
-                        new File(instFolder, "config.yml").delete();
-                        new File(instFolder, "uid.dat").delete();
+            new File(instFolder, "config.yml").delete();
+            new File(instFolder, "uid.dat").delete();
             this.builder = this.dungeon.getLayout().clone();
             Layout.GenerationResult result = this.builder.generate();
             if (!result.isPassed()) {
@@ -89,7 +89,7 @@ public class BranchingInstance extends PlayableInstance {
                                 // World creation must happen on the server thread, but the heavy
                                 // block collection work has already been prepared above.
                                 super.initializeWorld(
-                                                                                new DungeonChunkGenerator(
+                                        new DungeonChunkGenerator(
                                                 this.plugin(),
                                                 this.builder.getClosedConnectorBlock(),
                                                 this.rooms,
@@ -140,9 +140,13 @@ public class BranchingInstance extends PlayableInstance {
         this.startLocation = spawn;
     }
 
-    @Nullable public InstanceRoom getRoom(Location loc) {
+    @Nullable
+    public InstanceRoom getRoom(Location loc) {
         for (InstanceRoom room : this.rooms) {
-            if (room.getBounds().clone().expand(0.0, 0.0, 0.0, 1.0, 1.0, 1.0).contains(loc.toVector())) {
+            if (room.getBounds()
+                    .clone()
+                    .expand(0.0, 0.0, 0.0, 1.0, 1.0, 1.0)
+                    .contains(loc.toVector())) {
                 return room;
             }
         }
@@ -150,7 +154,8 @@ public class BranchingInstance extends PlayableInstance {
         return null;
     }
 
-    @Nullable public InstanceRoom getRoom(UUID uuid) {
+    @Nullable
+    public InstanceRoom getRoom(UUID uuid) {
         return this.roomsByUuid.get(uuid);
     }
 

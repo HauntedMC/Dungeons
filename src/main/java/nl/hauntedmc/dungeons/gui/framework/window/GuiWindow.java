@@ -115,7 +115,8 @@ public class GuiWindow implements Listener {
             gui =
                     new GuiInventory(
                             this,
-                            Bukkit.createInventory(player, this.size, GuiTextUtils.component(this.display)));
+                            Bukkit.createInventory(
+                                    player, this.size, GuiTextUtils.component(this.display)));
             this.inventories.put(player, gui);
         }
 
@@ -151,7 +152,8 @@ public class GuiWindow implements Listener {
         GuiInventory gui = this.inventories.get(player);
         if (gui != null) {
             boolean clickedManagedButton = gui.buttons().containsKey(event.getRawSlot());
-            if ((event.getClick() == ClickType.SHIFT_LEFT || event.getClick() == ClickType.SHIFT_RIGHT)
+            if ((event.getClick() == ClickType.SHIFT_LEFT
+                            || event.getClick() == ClickType.SHIFT_RIGHT)
                     && event.getInventory() == gui.inventory()
                     && this.cancelClick) {
                 event.setCancelled(true);
@@ -180,7 +182,8 @@ public class GuiWindow implements Listener {
             GuiInventory gui = this.inventories.get(player);
             if (gui != null) {
                 boolean clickedManagedButton = gui.buttons().containsKey(event.getRawSlot());
-                if ((event.getClick() == ClickType.SHIFT_LEFT || event.getClick() == ClickType.SHIFT_RIGHT)
+                if ((event.getClick() == ClickType.SHIFT_LEFT
+                                || event.getClick() == ClickType.SHIFT_RIGHT)
                         && event.getInventory() == gui.inventory()
                         && this.cancelClick) {
                     event.setCancelled(true);

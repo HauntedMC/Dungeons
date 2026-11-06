@@ -51,11 +51,13 @@ public final class DungeonRepository {
         try {
             YamlConfiguration bundledDefaults = this.loadBundledDefaultDungeonConfig();
             if (bundledDefaults == null || bundledDefaults.getKeys(true).isEmpty()) {
-                throw new IOException("Cannot load dungeon defaults because the bundled template is missing or empty.");
+                throw new IOException(
+                        "Cannot load dungeon defaults because the bundled template is missing or empty.");
             }
             GeneratorConfigMigration.loadTemplate(
                     new File(this.runtime.dungeonFiles(), "generator_settings_default.yml"),
-                    defaultConfig, bundledDefaults);
+                    defaultConfig,
+                    bundledDefaults);
 
             this.runtime.defaultDungeonConfig().load(defaultConfig);
         } catch (InvalidConfigurationException | IOException exception) {
@@ -134,7 +136,9 @@ public final class DungeonRepository {
             }
 
             try {
-                dungeon = DungeonTypeRegistry.createDungeon(this.runtime, dungeonType, folder, config);
+                dungeon =
+                        DungeonTypeRegistry.createDungeon(
+                                this.runtime, dungeonType, folder, config);
             } catch (InvocationTargetException exception) {
                 Throwable ex = exception.getTargetException();
                 if (ex instanceof DungeonLoadException) {
@@ -148,7 +152,9 @@ public final class DungeonRepository {
                                     folder.getName(),
                                     ex);
                 }
-            } catch (InstantiationException | IllegalAccessException | NoSuchMethodException exception) {
+            } catch (InstantiationException
+                    | IllegalAccessException
+                    | NoSuchMethodException exception) {
                 this.runtime
                         .environment()
                         .logger()
@@ -259,7 +265,8 @@ public final class DungeonRepository {
 
         Bukkit.getScheduler()
                 .runTask(
-                        this.runtime.environment().plugin(), () -> LangUtils.sendMessage(player, messageKey));
+                        this.runtime.environment().plugin(),
+                        () -> LangUtils.sendMessage(player, messageKey));
     }
 
     /** Resolves a UUID to an online player before sending a localized message. */

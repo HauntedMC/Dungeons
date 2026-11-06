@@ -78,7 +78,7 @@ public class RandomRewardFunction extends RewardFunction {
                         + "_"
                         + this.location.getBlockZ();
         this.instanceGui =
-                                new GuiWindow(
+                new GuiWindow(
                         this.instanceGuiName,
                         54,
                         LangUtils.getMessage("instance.play.rewards.gui-name", false));
@@ -90,23 +90,33 @@ public class RandomRewardFunction extends RewardFunction {
                     if (!this.playerRewards.contains(player.getUniqueId())) {
                         if (!(this.instance instanceof EditableInstance)) {
                             PlayableInstance instance = (PlayableInstance) this.instance;
-                            if (!this.cooldownDisabled && instance.getDungeon().hasLootCooldown(player, this)) {
-                                LangUtils.sendMessage(player, "instance.play.rewards.already-received");
-                                Date unlockTime = instance.getDungeon().getLootUnlockTime(player, this);
+                            if (!this.cooldownDisabled
+                                    && instance.getDungeon().hasLootCooldown(player, this)) {
+                                LangUtils.sendMessage(
+                                        player, "instance.play.rewards.already-received");
+                                Date unlockTime =
+                                        instance.getDungeon().getLootUnlockTime(player, this);
                                 if (unlockTime != null) {
-                                    SimpleDateFormat format = new SimpleDateFormat("EEE, MMM d, hh:mm aaa z");
+                                    SimpleDateFormat format =
+                                            new SimpleDateFormat("EEE, MMM d, hh:mm aaa z");
                                     LangUtils.sendMessage(
                                             player,
                                             "instance.play.rewards.cooldown-time",
-                                            LangUtils.placeholder("time", format.format(unlockTime)));
+                                            LangUtils.placeholder(
+                                                    "time", format.format(unlockTime)));
                                 }
 
                                 event.setCancelled(true);
                             } else {
-                                if (instance.getConfig().getBoolean("rewards.deliver_on_finish", false)
-                                        || !instance.getConfig().getBoolean("players.keep_on_entry.inventory", true)) {
-                                    LangUtils.sendMessage(player, "instance.play.rewards.rewards-inv-info");
-                                    LangUtils.sendMessage(player, "instance.play.rewards.view-rewards-info");
+                                if (instance.getConfig()
+                                                .getBoolean("rewards.deliver_on_finish", false)
+                                        || !instance.getConfig()
+                                                .getBoolean(
+                                                        "players.keep_on_entry.inventory", true)) {
+                                    LangUtils.sendMessage(
+                                            player, "instance.play.rewards.rewards-inv-info");
+                                    LangUtils.sendMessage(
+                                            player, "instance.play.rewards.view-rewards-info");
                                 }
 
                                 GuiInventory guiInv = this.instanceGui.getInventoryFor(player);
@@ -123,12 +133,16 @@ public class RandomRewardFunction extends RewardFunction {
                                     this.playerRewards.add(player.getUniqueId());
                                     int bonusItems = 0;
                                     if (instance.getDifficulty() != null) {
-                                        bonusItems = instance.getDifficulty().getBonusLoot().randomizeAsInt();
+                                        bonusItems =
+                                                instance.getDifficulty()
+                                                        .getBonusLoot()
+                                                        .randomizeAsInt();
                                     }
 
                                     int minRewards = Math.max(0, this.rewardMinCount);
                                     int maxRewards = Math.max(minRewards, this.rewardMaxCount);
-                                    if ((minRewards != this.rewardMinCount || maxRewards != this.rewardMaxCount)
+                                    if ((minRewards != this.rewardMinCount
+                                                    || maxRewards != this.rewardMaxCount)
                                             && !this.invalidRewardCountLogged) {
                                         this.invalidRewardCountLogged = true;
                                         this.logger()
@@ -143,19 +157,24 @@ public class RandomRewardFunction extends RewardFunction {
                                     }
 
                                     int rewardCount =
-                                            MathUtils.getRandomNumberInRange(minRewards, maxRewards) + bonusItems;
+                                            MathUtils.getRandomNumberInRange(minRewards, maxRewards)
+                                                    + bonusItems;
                                     rewardCount = Math.min(rewardCount, validRewards.size());
 
                                     for (int r = 0; r < rewardCount; r++) {
                                         ItemStack rewardItem =
                                                 validRewards.get(
-                                                        MathUtils.getRandomNumberInRange(0, validRewards.size() - 1));
+                                                        MathUtils.getRandomNumberInRange(
+                                                                0, validRewards.size() - 1));
                                         validRewards.remove(rewardItem);
 
-                                        if (!instance.getConfig().getBoolean("rewards.deliver_on_finish", false)
-                                                && instance
-                                                        .getConfig()
-                                                        .getBoolean("players.keep_on_entry.inventory", true)) {
+                                        if (!instance.getConfig()
+                                                        .getBoolean(
+                                                                "rewards.deliver_on_finish", false)
+                                                && instance.getConfig()
+                                                        .getBoolean(
+                                                                "players.keep_on_entry.inventory",
+                                                                true)) {
                                             inv.setItem(r, rewardItem);
                                         } else if (rewardItem != null) {
                                             Button button = new Button("item_" + r, rewardItem);
@@ -164,8 +183,10 @@ public class RandomRewardFunction extends RewardFunction {
                                                     "click",
                                                     clickEvent -> {
                                                         clickEvent.setCancelled(true);
-                                                        Player clicker = (Player) clickEvent.getWhoClicked();
-                                                        instance.addPlayerReward(clicker, rewardItem);
+                                                        Player clicker =
+                                                                (Player) clickEvent.getWhoClicked();
+                                                        instance.addPlayerReward(
+                                                                clicker, rewardItem);
                                                         guiInv.removeButton(finalSlot);
                                                     });
                                             guiInv.setButton(r, button);
@@ -190,15 +211,19 @@ public class RandomRewardFunction extends RewardFunction {
                         Player player = (Player) event.getPlayer();
                         Inventory inv = this.instanceGui.getInventoryFor(player).inventory();
                         if (!inv.isEmpty()) {
-                            if (!this.instance.getConfig().getBoolean("rewards.deliver_on_finish", false)
+                            if (!this.instance
+                                            .getConfig()
+                                            .getBoolean("rewards.deliver_on_finish", false)
                                     && this.instance
                                             .getConfig()
                                             .getBoolean("players.keep_on_entry.inventory", true)) {
                                 LangUtils.sendMessage(player, "instance.play.rewards.added-to-inv");
                                 ItemUtils.giveOrDrop(player, inv.getContents());
                             } else {
-                                LangUtils.sendMessage(player, "instance.play.rewards.added-to-rewards-inv");
-                                ((PlayableInstance) this.instance).addPlayerReward(player, inv.getContents());
+                                LangUtils.sendMessage(
+                                        player, "instance.play.rewards.added-to-rewards-inv");
+                                ((PlayableInstance) this.instance)
+                                        .addPlayerReward(player, inv.getContents());
                             }
 
                             inv.clear();
@@ -214,7 +239,7 @@ public class RandomRewardFunction extends RewardFunction {
     public void buildHotbarMenu() {
         super.buildHotbarMenu();
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -246,12 +271,14 @@ public class RandomRewardFunction extends RewardFunction {
                                     player,
                                     "editor.function.random-reward.min-set",
                                     LangUtils.placeholder(
-                                            "min", String.valueOf(RandomRewardFunction.this.rewardMinCount)));
+                                            "min",
+                                            String.valueOf(
+                                                    RandomRewardFunction.this.rewardMinCount)));
                         }
                     }
                 });
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -282,7 +309,8 @@ public class RandomRewardFunction extends RewardFunction {
                                 player,
                                 "editor.function.random-reward.max-set",
                                 LangUtils.placeholder(
-                                        "max", String.valueOf(RandomRewardFunction.this.rewardMaxCount)));
+                                        "max",
+                                        String.valueOf(RandomRewardFunction.this.rewardMaxCount)));
                     }
                 });
     }

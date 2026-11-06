@@ -147,7 +147,7 @@ public class KeyItemTrigger extends DungeonTrigger {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -173,7 +173,7 @@ public class KeyItemTrigger extends DungeonTrigger {
                     }
                 });
         this.menu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     /**
                      * Builds button.
                      */
@@ -193,7 +193,7 @@ public class KeyItemTrigger extends DungeonTrigger {
                     }
                 });
         this.menu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -219,7 +219,7 @@ public class KeyItemTrigger extends DungeonTrigger {
                     }
                 });
         this.menu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -245,14 +245,15 @@ public class KeyItemTrigger extends DungeonTrigger {
                     }
                 });
         this.menu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     /**
                      * Builds button.
                      */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.PLAYER_HEAD);
-                        this.button.setDisplayName("&d&lClick Type: " + KeyItemTrigger.this.clickType);
+                        this.button.setDisplayName(
+                                "&d&lClick Type: " + KeyItemTrigger.this.clickType);
                     }
 
                     /**
@@ -261,7 +262,8 @@ public class KeyItemTrigger extends DungeonTrigger {
                     @Override
                     public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
-                        DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                        DungeonPlayerSession playerSession =
+                                RuntimeContext.playerSessions().get(player);
                         String currentClickType = KeyItemTrigger.this.clickType;
                         switch (currentClickType) {
                             case "RIGHT":
@@ -274,11 +276,13 @@ public class KeyItemTrigger extends DungeonTrigger {
                                 KeyItemTrigger.this.clickType = "RIGHT";
                         }
 
-                        KeyItemTrigger.this.click = ClickType.valueOf(KeyItemTrigger.this.clickType);
+                        KeyItemTrigger.this.click =
+                                ClickType.valueOf(KeyItemTrigger.this.clickType);
                         LangUtils.sendMessage(
                                 player,
                                 "editor.trigger.key-item.click-type-set",
-                                LangUtils.placeholder("click_type", KeyItemTrigger.this.clickType.toString()));
+                                LangUtils.placeholder(
+                                        "click_type", KeyItemTrigger.this.clickType.toString()));
                         playerSession.showHotbar(this.menu, false);
                     }
                 });

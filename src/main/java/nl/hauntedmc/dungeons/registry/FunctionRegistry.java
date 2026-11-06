@@ -35,10 +35,13 @@ public final class FunctionRegistry {
     private final Map<String, Class<? extends DungeonFunction>> functions = new LinkedHashMap<>();
     private final Map<Class<? extends DungeonFunction>, String> functionIds = new LinkedHashMap<>();
     private final Map<String, MenuButton> functionButtons = new LinkedHashMap<>();
-    private final Map<FunctionCategory, Map<String, MenuButton>> buttonsByCategory = new LinkedHashMap<>();
+    private final Map<FunctionCategory, Map<String, MenuButton>> buttonsByCategory =
+            new LinkedHashMap<>();
 
     /** Creates a function registry bound to plugin/runtime event dispatch infrastructure. */
-    public FunctionRegistry(DungeonsPlugin plugin, ActiveInstanceRegistry activeInstanceManager,
+    public FunctionRegistry(
+            DungeonsPlugin plugin,
+            ActiveInstanceRegistry activeInstanceManager,
             EventRelayListener elementEventHandler) {
         this.plugin = plugin;
         this.activeInstanceManager = activeInstanceManager;
@@ -62,9 +65,11 @@ public final class FunctionRegistry {
             DungeonFunction function = functionClass.getDeclaredConstructor().newInstance();
             MenuButton button = (MenuButton) menuButtonMethod.invoke(function);
             if (button == null) {
-                this.plugin.getSLF4JLogger().warn(
-                        "Function '{}' does not expose a menu button and will not appear in the editor.",
-                        functionClass.getSimpleName());
+                this.plugin
+                        .getSLF4JLogger()
+                        .warn(
+                                "Function '{}' does not expose a menu button and will not appear in the editor.",
+                                functionClass.getSimpleName());
                 return;
             }
 
@@ -76,47 +81,78 @@ public final class FunctionRegistry {
                 this.buttonsByCategory.get(category).put(functionId, button);
             }
 
-            List<Method> eventMethods = MethodUtils.getMethodsListWithAnnotation(functionClass, EventHandler.class);
+            List<Method> eventMethods =
+                    MethodUtils.getMethodsListWithAnnotation(functionClass, EventHandler.class);
             for (Method method : eventMethods) {
                 EventHandler handler = method.getAnnotation(EventHandler.class);
                 Class<?> rawEvent = method.getParameterTypes()[0];
                 if (Event.class.isAssignableFrom(rawEvent)) {
                     Class<? extends Event> eventClass = rawEvent.asSubclass(Event.class);
-                    Bukkit.getPluginManager().registerEvent(eventClass, this.elementEventHandler, handler.priority(),
-                            (listener, event) -> {
-                                for (DungeonInstance instance : this.activeInstanceManager.getActiveInstances()) {
-                                    List<DungeonFunction> elements = instance.getFunctionListeners(functionClass);
-                                    if (elements != null) {
-                                        for (DungeonFunction element : new ArrayList<>(elements)) {
-                                            if (eventClass.isAssignableFrom(event.getClass())) {
-                                                try {
-                                                    method.invoke(element, event);
-                                                } catch (Exception exception) {
-                                                    Throwable cause = exception.getCause() == null
-                                                            ? exception
-                                                            : exception.getCause();
-                                                    String instanceName = instance.getInstanceWorld() == null
-                                                            ? "<unloaded>"
-                                                            : instance.getInstanceWorld().getName();
-                                                    this.plugin.getSLF4JLogger().error(
-                                                            "Function listener '{}#{}' failed for event '{}' in instance '{}'.",
-                                                            functionClass.getSimpleName(), method.getName(),
-                                                            eventClass.getSimpleName(), instanceName, cause);
+                    Bukkit.getPluginManager()
+                            .registerEvent(
+                                    eventClass,
+                                    this.elementEventHandler,
+                                    handler.priority(),
+                                    (listener, event) -> {
+                                        for (DungeonInstance instance :
+                                                this.activeInstanceManager.getActiveInstances()) {
+                                            List<DungeonFunction> elements =
+                                                    instance.getFunctionListeners(functionClass);
+                                            if (elements != null) {
+                                                for (DungeonFunction element :
+                                                        new ArrayList<>(elements)) {
+                                                    if (eventClass.isAssignableFrom(
+                                                            event.getClass())) {
+                                                        try {
+                                                            method.invoke(element, event);
+                                                        } catch (Exception exception) {
+                                                            Throwable cause =
+                                                                    exception.getCause() == null
+                                                                            ? exception
+                                                                            : exception.getCause();
+                                                            String instanceName =
+                                                                    instance.getInstanceWorld()
+                                                                                    == null
+                                                                            ? "<unloaded>"
+                                                                            : instance.getInstanceWorld()
+                                                                                    .getName();
+                                                            this.plugin
+                                                                    .getSLF4JLogger()
+                                                                    .error(
+                                                                            "Function listener '{}#{}' failed for event '{}' in instance '{}'.",
+                                                                            functionClass
+                                                                                    .getSimpleName(),
+                                                                            method.getName(),
+                                                                            eventClass
+                                                                                    .getSimpleName(),
+                                                                            instanceName,
+                                                                            cause);
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }
-                                    }
-                                }
-                            }, this.plugin);
+                                    },
+                                    this.plugin);
                 }
             }
-        } catch (NoSuchMethodException | InvocationTargetException | InstantiationException
+        } catch (NoSuchMethodException
+                | InvocationTargetException
+                | InstantiationException
                 | IllegalAccessException exception) {
-            this.plugin.getSLF4JLogger().error("Function '{}' has an invalid buildMenuButton declaration.",
-                    functionClass.getSimpleName(), exception);
+            this.plugin
+                    .getSLF4JLogger()
+                    .error(
+                            "Function '{}' has an invalid buildMenuButton declaration.",
+                            functionClass.getSimpleName(),
+                            exception);
         } catch (NoSuchFieldException exception) {
-            this.plugin.getSLF4JLogger().error("Function '{}' is missing the required 'category' field.",
-                    functionClass.getSimpleName(), exception);
+            this.plugin
+                    .getSLF4JLogger()
+                    .error(
+                            "Function '{}' is missing the required 'category' field.",
+                            functionClass.getSimpleName(),
+                            exception);
         }
     }
 

@@ -120,7 +120,7 @@ public final class DungeonQueueCoordinator {
         }
     }
 
-        private void sendSoloToDungeon(Player player, String dungeonName, String difficulty) {
+    private void sendSoloToDungeon(Player player, String dungeonName, String difficulty) {
         DungeonPlayerSession playerSession = this.playerManager.get(player);
         DungeonDefinition targetDungeon =
                 this.dungeonManager == null ? null : this.dungeonManager.get(dungeonName);
@@ -149,7 +149,8 @@ public final class DungeonQueueCoordinator {
         }
 
         playerSession.setAwaitingDungeon(true);
-        if (this.activeInstanceManager.canStartDungeonNow(targetDungeon, players.size(), difficulty)) {
+        if (this.activeInstanceManager.canStartDungeonNow(
+                targetDungeon, players.size(), difficulty)) {
             if (!this.startQueue(queue)) {
                 if (this.canRemainQueued(queue)
                         && !this.activeInstanceManager.canStartDungeonNow(
@@ -169,7 +170,7 @@ public final class DungeonQueueCoordinator {
         }
     }
 
-        private void sendTeamToDungeon(DungeonTeam team, String dungeonName, String difficulty) {
+    private void sendTeamToDungeon(DungeonTeam team, String dungeonName, String difficulty) {
         DungeonPlayerSession leaderState = this.playerManager.get(team.getLeaderId());
         Player leader = leaderState == null ? null : leaderState.getPlayer();
         DungeonDefinition targetDungeon =
@@ -209,11 +210,16 @@ public final class DungeonQueueCoordinator {
 
         this.setAwaitingDungeon(members, true);
         DungeonQueueEntry queue =
-                                new DungeonQueueEntry(
-                        leaderState, targetDungeon, difficulty, team.getMemberIds(), team.getTeamId());
+                new DungeonQueueEntry(
+                        leaderState,
+                        targetDungeon,
+                        difficulty,
+                        team.getMemberIds(),
+                        team.getTeamId());
         this.teamManager.markQueued(team, dungeonName, difficulty);
 
-        if (this.activeInstanceManager.canStartDungeonNow(targetDungeon, members.size(), difficulty)) {
+        if (this.activeInstanceManager.canStartDungeonNow(
+                targetDungeon, members.size(), difficulty)) {
             if (!this.startQueue(queue)) {
                 if (this.canRemainQueued(queue)
                         && !this.activeInstanceManager.canStartDungeonNow(
@@ -222,8 +228,10 @@ public final class DungeonQueueCoordinator {
                     for (UUID memberId : team.getMemberIds()) {
                         DungeonPlayerSession memberState = this.playerManager.get(memberId);
                         if (memberState != null && memberState.getPlayer() != null) {
-                            LangUtils.sendMessage(memberState.getPlayer(), "commands.play.instances-full");
-                            LangUtils.sendMessage(memberState.getPlayer(), "commands.play.how-to-cancel");
+                            LangUtils.sendMessage(
+                                    memberState.getPlayer(), "commands.play.instances-full");
+                            LangUtils.sendMessage(
+                                    memberState.getPlayer(), "commands.play.how-to-cancel");
                         }
                     }
                 } else {
@@ -244,7 +252,7 @@ public final class DungeonQueueCoordinator {
         }
     }
 
-        private boolean hasRequiredAccessKey(DungeonDefinition dungeon, Player player) {
+    private boolean hasRequiredAccessKey(DungeonDefinition dungeon, Player player) {
         if (dungeon.getValidKeys().isEmpty()) {
             return true;
         }
@@ -252,7 +260,7 @@ public final class DungeonQueueCoordinator {
         return dungeon.getFirstKeyAmount(player) != -1;
     }
 
-        private boolean reserveRequiredAccessKeys(
+    private boolean reserveRequiredAccessKeys(
             DungeonDefinition dungeon, List<DungeonPlayerSession> players, Player leader) {
         if (dungeon.getValidKeys().isEmpty()) {
             return true;
@@ -287,7 +295,8 @@ public final class DungeonQueueCoordinator {
                 }
             }
 
-            // Keys are reserved up front so a queue cannot hold a slot indefinitely and then fail later
+            // Keys are reserved up front so a queue cannot hold a slot indefinitely and then fail
+            // later
             // because one member spent or moved the required key while waiting for capacity.
             if (leaderId != null
                     && !TeamRequirementPolicy.requiresAccessKey(
@@ -325,7 +334,7 @@ public final class DungeonQueueCoordinator {
         return true;
     }
 
-        private ItemStack reserveAccessKey(DungeonDefinition dungeon, Player player) {
+    private ItemStack reserveAccessKey(DungeonDefinition dungeon, Player player) {
         if (dungeon.getValidKeys().isEmpty()) {
             return null;
         }
@@ -416,7 +425,8 @@ public final class DungeonQueueCoordinator {
         return started;
     }
 
-    private boolean validateSoloRequest(DungeonPlayerSession dungeonPlayer, DungeonDefinition dungeon) {
+    private boolean validateSoloRequest(
+            DungeonPlayerSession dungeonPlayer, DungeonDefinition dungeon) {
         Player player = dungeonPlayer.getPlayer();
         if (player == null || !player.isOnline()) {
             return false;
@@ -464,7 +474,7 @@ public final class DungeonQueueCoordinator {
         return true;
     }
 
-        private List<DungeonPlayerSession> collectReadyTeamMembers(DungeonTeam team, Player leader) {
+    private List<DungeonPlayerSession> collectReadyTeamMembers(DungeonTeam team, Player leader) {
         List<DungeonPlayerSession> members = new ArrayList<>();
         for (UUID memberId : team.getMemberIds()) {
             DungeonPlayerSession memberState = this.playerManager.get(memberId);
@@ -488,7 +498,7 @@ public final class DungeonQueueCoordinator {
         return members;
     }
 
-        private void setAwaitingDungeon(List<DungeonPlayerSession> players, boolean awaitingDungeon) {
+    private void setAwaitingDungeon(List<DungeonPlayerSession> players, boolean awaitingDungeon) {
         for (DungeonPlayerSession player : players) {
             if (player != null) {
                 player.setAwaitingDungeon(awaitingDungeon);
@@ -496,7 +506,7 @@ public final class DungeonQueueCoordinator {
         }
     }
 
-        private void sendMissingKeyMessage(DungeonDefinition dungeon, Player leader, Player player) {
+    private void sendMissingKeyMessage(DungeonDefinition dungeon, Player leader, Player player) {
         if (leader == null || leader.getUniqueId().equals(player.getUniqueId())) {
             LangUtils.sendMessage(
                     player,
@@ -541,7 +551,7 @@ public final class DungeonQueueCoordinator {
                 && this.validateQueuedAccessKeyRequirements(queue, queuedPlayers, false);
     }
 
-        private boolean validateRequestedTeamSize(
+    private boolean validateRequestedTeamSize(
             DungeonDefinition dungeon, int requestedPlayers, List<DungeonPlayerSession> players) {
         int normalizedPlayers = Math.max(1, requestedPlayers);
         if (!dungeon.canFitTeamSize(normalizedPlayers)) {
@@ -559,14 +569,15 @@ public final class DungeonQueueCoordinator {
                     "commands.play.team.open-too-large",
                     LangUtils.placeholder("count", String.valueOf(normalizedPlayers)),
                     LangUtils.placeholder(
-                            "max", String.valueOf(dungeon.getConfig().getInt("open.max_players", 0))));
+                            "max",
+                            String.valueOf(dungeon.getConfig().getInt("open.max_players", 0))));
             return false;
         }
 
         return true;
     }
 
-        private List<DungeonPlayerSession> resolveQueuedPlayers(DungeonQueueEntry queue) {
+    private List<DungeonPlayerSession> resolveQueuedPlayers(DungeonQueueEntry queue) {
         List<DungeonPlayerSession> players = new ArrayList<>();
         for (UUID playerId : new ArrayList<>(queue.getPlayers())) {
             DungeonPlayerSession player = this.playerManager.get(playerId);
@@ -578,8 +589,10 @@ public final class DungeonQueueCoordinator {
         return players;
     }
 
-        private void notifyPlayers(
-            List<DungeonPlayerSession> players, String messageKey, LangPlaceholder... placeholders) {
+    private void notifyPlayers(
+            List<DungeonPlayerSession> players,
+            String messageKey,
+            LangPlaceholder... placeholders) {
         for (DungeonPlayerSession player : players) {
             Player bukkitPlayer = player == null ? null : player.getPlayer();
             if (bukkitPlayer != null && bukkitPlayer.isOnline()) {
@@ -588,7 +601,7 @@ public final class DungeonQueueCoordinator {
         }
     }
 
-        private boolean hasReservedAccessKeys(DungeonQueueEntry queue, boolean notify) {
+    private boolean hasReservedAccessKeys(DungeonQueueEntry queue, boolean notify) {
         DungeonDefinition dungeon = queue.getDungeon();
         if (dungeon.getValidKeys().isEmpty()) {
             return true;
@@ -618,7 +631,7 @@ public final class DungeonQueueCoordinator {
         return true;
     }
 
-        private void refundReservedAccessKeys(
+    private void refundReservedAccessKeys(
             List<DungeonPlayerSession> players, DungeonDefinition dungeon) {
         for (DungeonPlayerSession player : players) {
             if (player != null && player.getInstance() == null) {
@@ -627,7 +640,7 @@ public final class DungeonQueueCoordinator {
         }
     }
 
-        private void reconcileQueuedReservedAccessKeys(
+    private void reconcileQueuedReservedAccessKeys(
             DungeonQueueEntry queue, List<DungeonPlayerSession> players) {
         DungeonDefinition dungeon = queue.getDungeon();
         if (!queue.isTeamQueue()
@@ -664,8 +677,11 @@ public final class DungeonQueueCoordinator {
                 && this.validateTeamAccessKeyRequirements(dungeon, leader, members, true);
     }
 
-        private boolean validateTeamCooldownRequirements(
-            DungeonDefinition dungeon, Player leader, List<DungeonPlayerSession> members, boolean notify) {
+    private boolean validateTeamCooldownRequirements(
+            DungeonDefinition dungeon,
+            Player leader,
+            List<DungeonPlayerSession> members,
+            boolean notify) {
         UUID leaderId = leader.getUniqueId();
         for (DungeonPlayerSession memberState : members) {
             Player member = memberState.getPlayer();
@@ -695,8 +711,11 @@ public final class DungeonQueueCoordinator {
         return true;
     }
 
-        private boolean validateTeamAccessKeyRequirements(
-            DungeonDefinition dungeon, Player leader, List<DungeonPlayerSession> members, boolean notify) {
+    private boolean validateTeamAccessKeyRequirements(
+            DungeonDefinition dungeon,
+            Player leader,
+            List<DungeonPlayerSession> members,
+            boolean notify) {
         UUID leaderId = leader.getUniqueId();
         for (DungeonPlayerSession memberState : members) {
             Player member = memberState.getPlayer();
@@ -720,7 +739,7 @@ public final class DungeonQueueCoordinator {
         return true;
     }
 
-        private boolean validateQueuedCooldownRequirements(
+    private boolean validateQueuedCooldownRequirements(
             DungeonQueueEntry queue, List<DungeonPlayerSession> players, boolean notify) {
         if (queue.isTeamQueue()) {
             Player leader = this.getQueuedLeader(queue);
@@ -771,7 +790,7 @@ public final class DungeonQueueCoordinator {
         return false;
     }
 
-        private boolean validateQueuedAccessKeyRequirements(
+    private boolean validateQueuedAccessKeyRequirements(
             DungeonQueueEntry queue, List<DungeonPlayerSession> players, boolean notify) {
         DungeonDefinition dungeon = queue.getDungeon();
         if (dungeon.getValidKeys().isEmpty() || this.hasReservedAccessKeys(queue, notify)) {
@@ -821,7 +840,7 @@ public final class DungeonQueueCoordinator {
         return false;
     }
 
-        private void sendCooldownMessage(DungeonDefinition dungeon, Player leader, Player player) {
+    private void sendCooldownMessage(DungeonDefinition dungeon, Player leader, Player player) {
         if (leader.getUniqueId().equals(player.getUniqueId())) {
             LangUtils.sendMessage(
                     leader,
@@ -837,7 +856,8 @@ public final class DungeonQueueCoordinator {
                 LangUtils.placeholder("dungeon", dungeon.getWorldName()));
     }
 
-    @Nullable private Player getQueuedLeader(DungeonQueueEntry queue) {
+    @Nullable
+    private Player getQueuedLeader(DungeonQueueEntry queue) {
         DungeonPlayerSession leaderState = this.playerManager.get(queue.getLeaderId());
         if (leaderState != null && leaderState.getPlayer() != null) {
             return leaderState.getPlayer();

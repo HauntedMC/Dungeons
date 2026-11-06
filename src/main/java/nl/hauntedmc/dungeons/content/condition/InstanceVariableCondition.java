@@ -79,7 +79,7 @@ public class InstanceVariableCondition extends TriggerCondition {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -88,7 +88,8 @@ public class InstanceVariableCondition extends TriggerCondition {
                         this.button = new MenuButton(Material.NAME_TAG);
                         this.button.setDisplayName("&d&lSet Comparison");
                         this.button.addLore(
-                                "&7Current comparison: &6" + InstanceVariableCondition.this.comparison);
+                                "&7Current comparison: &6"
+                                        + InstanceVariableCondition.this.comparison);
                     }
 
                     /**
@@ -96,8 +97,10 @@ public class InstanceVariableCondition extends TriggerCondition {
                      */
                     @Override
                     public void onSelect(Player player) {
-                        LangUtils.sendMessage(player, "editor.condition.instance-variable.ask-expression");
-                        LangUtils.sendMessage(player, "editor.condition.instance-variable.examples");
+                        LangUtils.sendMessage(
+                                player, "editor.condition.instance-variable.ask-expression");
+                        LangUtils.sendMessage(
+                                player, "editor.condition.instance-variable.examples");
                     }
 
                     /**

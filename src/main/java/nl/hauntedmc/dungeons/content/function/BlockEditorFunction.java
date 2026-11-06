@@ -172,7 +172,7 @@ public class BlockEditorFunction extends DungeonFunction {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -188,9 +188,11 @@ public class BlockEditorFunction extends DungeonFunction {
                     @Override
                     public void onSelect(Player player) {
                         if (!BlockEditorFunction.this.remove) {
-                            LangUtils.sendMessage(player, "editor.function.block-editor.ask-place-block");
+                            LangUtils.sendMessage(
+                                    player, "editor.function.block-editor.ask-place-block");
                         } else {
-                            LangUtils.sendMessage(player, "editor.function.block-editor.ask-remove-block");
+                            LangUtils.sendMessage(
+                                    player, "editor.function.block-editor.ask-remove-block");
                         }
 
                         LangUtils.sendMessage(
@@ -213,13 +215,14 @@ public class BlockEditorFunction extends DungeonFunction {
                                 LangUtils.sendMessage(
                                         player,
                                         "editor.function.block-editor.block-set",
-                                        LangUtils.placeholder("block", BlockEditorFunction.this.blockType));
+                                        LangUtils.placeholder(
+                                                "block", BlockEditorFunction.this.blockType));
                                 return;
                             }
 
                             Material mat = Material.valueOf(matString);
                             if (!mat.isBlock()) {
-                                                                throw new IllegalArgumentException("Invalid block");
+                                throw new IllegalArgumentException("Invalid block");
                             }
 
                             BlockEditorFunction.this.blockType = matString;
@@ -234,18 +237,21 @@ public class BlockEditorFunction extends DungeonFunction {
                             LangUtils.sendMessage(
                                     player,
                                     "editor.function.block-editor.block-set",
-                                    LangUtils.placeholder("block", BlockEditorFunction.this.blockType));
+                                    LangUtils.placeholder(
+                                            "block", BlockEditorFunction.this.blockType));
                         } catch (IllegalArgumentException exception) {
-                            LangUtils.sendMessage(player, "editor.function.block-editor.invalid-material");
+                            LangUtils.sendMessage(
+                                    player, "editor.function.block-editor.invalid-material");
                             MessageUtils.sendClickableLink(
                                     player,
-                                    LangUtils.getMessage("editor.function.block-editor.valid-materials-link"),
+                                    LangUtils.getMessage(
+                                            "editor.function.block-editor.valid-materials-link"),
                                     "https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Material.html");
                         }
                     }
                 });
         this.menu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -261,11 +267,13 @@ public class BlockEditorFunction extends DungeonFunction {
                     @Override
                     public void onSelect(Player player) {
                         if (!BlockEditorFunction.this.remove) {
-                            LangUtils.sendMessage(player, "editor.function.block-editor.mode-remove");
+                            LangUtils.sendMessage(
+                                    player, "editor.function.block-editor.mode-remove");
                             BlockEditorFunction.this.setDisplayName(
                                     BlockEditorFunction.this.blockType + " Remover");
                         } else {
-                            LangUtils.sendMessage(player, "editor.function.block-editor.mode-place");
+                            LangUtils.sendMessage(
+                                    player, "editor.function.block-editor.mode-place");
                             BlockEditorFunction.this.setDisplayName(
                                     BlockEditorFunction.this.blockType + " Placer");
                         }
@@ -274,7 +282,7 @@ public class BlockEditorFunction extends DungeonFunction {
                     }
                 });
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -291,7 +299,8 @@ public class BlockEditorFunction extends DungeonFunction {
                     public void onSelect(Player player) {
                         Material mat = BlockEditorFunction.this.resolveConfiguredMaterial(true);
                         if (mat == null) {
-                            LangUtils.sendMessage(player, "editor.function.block-editor.invalid-material");
+                            LangUtils.sendMessage(
+                                    player, "editor.function.block-editor.invalid-material");
                             this.setCancelled(true);
                             return;
                         }
@@ -299,19 +308,23 @@ public class BlockEditorFunction extends DungeonFunction {
                         BlockData data = mat.createBlockData();
                         if (BlockEditorFunction.this.remove) {
                             LangUtils.sendMessage(
-                                    player, "editor.function.block-editor.no-direction-while-removing");
+                                    player,
+                                    "editor.function.block-editor.no-direction-while-removing");
                             this.setCancelled(true);
                         } else if (!(data instanceof Directional)
                                 && !(data instanceof Rotatable)
                                 && !(data instanceof Orientable)) {
-                            LangUtils.sendMessage(player, "editor.function.block-editor.no-direction-for-block");
+                            LangUtils.sendMessage(
+                                    player, "editor.function.block-editor.no-direction-for-block");
                             this.setCancelled(true);
                         } else {
-                            LangUtils.sendMessage(player, "editor.function.block-editor.ask-direction");
+                            LangUtils.sendMessage(
+                                    player, "editor.function.block-editor.ask-direction");
                             LangUtils.sendMessage(
                                     player,
                                     "editor.function.block-editor.current-direction",
-                                    LangUtils.placeholder("direction", BlockEditorFunction.this.direction));
+                                    LangUtils.placeholder(
+                                            "direction", BlockEditorFunction.this.direction));
                         }
                     }
 
@@ -323,7 +336,8 @@ public class BlockEditorFunction extends DungeonFunction {
                         String directionString = message.toUpperCase();
                         Material mat = BlockEditorFunction.this.resolveConfiguredMaterial(true);
                         if (mat == null) {
-                            LangUtils.sendMessage(player, "editor.function.block-editor.invalid-material");
+                            LangUtils.sendMessage(
+                                    player, "editor.function.block-editor.invalid-material");
                             return;
                         }
 
@@ -334,12 +348,15 @@ public class BlockEditorFunction extends DungeonFunction {
                                 LangUtils.sendMessage(
                                         player,
                                         "editor.function.block-editor.direction-set",
-                                        LangUtils.placeholder("direction", BlockEditorFunction.this.direction));
+                                        LangUtils.placeholder(
+                                                "direction", BlockEditorFunction.this.direction));
                             } catch (IllegalArgumentException exception) {
-                                LangUtils.sendMessage(player, "editor.function.block-editor.invalid-direction");
+                                LangUtils.sendMessage(
+                                        player, "editor.function.block-editor.invalid-direction");
                                 MessageUtils.sendClickableLink(
                                         player,
-                                        LangUtils.getMessage("editor.function.block-editor.valid-directions-link"),
+                                        LangUtils.getMessage(
+                                                "editor.function.block-editor.valid-directions-link"),
                                         "https://hub.spigotmc.org/javadocs/spigot/org/bukkit/block/BlockFace.html");
                             }
                         } else if (data instanceof Rotatable) {
@@ -348,12 +365,15 @@ public class BlockEditorFunction extends DungeonFunction {
                                 LangUtils.sendMessage(
                                         player,
                                         "editor.function.block-editor.direction-set",
-                                        LangUtils.placeholder("direction", BlockEditorFunction.this.direction));
+                                        LangUtils.placeholder(
+                                                "direction", BlockEditorFunction.this.direction));
                             } catch (IllegalArgumentException exception) {
-                                LangUtils.sendMessage(player, "editor.function.block-editor.invalid-direction");
+                                LangUtils.sendMessage(
+                                        player, "editor.function.block-editor.invalid-direction");
                                 MessageUtils.sendClickableLink(
                                         player,
-                                        LangUtils.getMessage("editor.function.block-editor.valid-directions-link"),
+                                        LangUtils.getMessage(
+                                                "editor.function.block-editor.valid-directions-link"),
                                         "https://hub.spigotmc.org/javadocs/spigot/org/bukkit/block/BlockFace.html");
                             }
                         } else {
@@ -362,10 +382,14 @@ public class BlockEditorFunction extends DungeonFunction {
                                 LangUtils.sendMessage(
                                         player,
                                         "editor.function.block-editor.axis-set",
-                                        LangUtils.placeholder("axis", BlockEditorFunction.this.direction));
+                                        LangUtils.placeholder(
+                                                "axis", BlockEditorFunction.this.direction));
                             } catch (IllegalArgumentException exception) {
-                                LangUtils.sendMessage(player, "editor.function.block-editor.invalid-direction");
-                                LangUtils.sendMessage(player, "editor.function.block-editor.valid-axis-directions");
+                                LangUtils.sendMessage(
+                                        player, "editor.function.block-editor.invalid-direction");
+                                LangUtils.sendMessage(
+                                        player,
+                                        "editor.function.block-editor.valid-axis-directions");
                             }
                         }
                     }
@@ -407,7 +431,7 @@ public class BlockEditorFunction extends DungeonFunction {
         try {
             Material material = Material.valueOf(this.blockType.toUpperCase(Locale.ROOT));
             if (!material.isBlock()) {
-                                throw new IllegalArgumentException("Configured material is not a block");
+                throw new IllegalArgumentException("Configured material is not a block");
             }
 
             return material;

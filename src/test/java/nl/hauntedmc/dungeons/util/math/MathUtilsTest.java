@@ -15,7 +15,8 @@ class MathUtilsTest {
             int negative = MathUtils.getRandomNumberInRange(Integer.MIN_VALUE, 0);
             assertTrue(negative <= 0);
             MathUtils.getRandomNumberInRange(Integer.MIN_VALUE, Integer.MAX_VALUE);
-            int nearMaximum = MathUtils.getRandomNumberInRange(Integer.MAX_VALUE - 1, Integer.MAX_VALUE);
+            int nearMaximum =
+                    MathUtils.getRandomNumberInRange(Integer.MAX_VALUE - 1, Integer.MAX_VALUE);
             assertTrue(nearMaximum >= Integer.MAX_VALUE - 1);
         }
     }

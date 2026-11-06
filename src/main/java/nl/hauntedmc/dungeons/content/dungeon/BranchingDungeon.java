@@ -61,14 +61,19 @@ public class BranchingDungeon extends DungeonDefinition {
         try {
             this.layout = this.createConfiguredLayout(true);
             if (this.layout == null) {
-                throw new DungeonLoadException("Generator config references an unknown layout.", true);
+                throw new DungeonLoadException(
+                        "Generator config references an unknown layout.", true);
             }
         } catch (InvocationTargetException
                 | InstantiationException
                 | IllegalAccessException
                 | NoSuchMethodException exception) {
-            this.logger().error("Failed to initialize layout '{}' for dungeon '{}'.",
-                    this.config.getString("generator.layout", "branching"), this.getWorldName(), exception);
+            this.logger()
+                    .error(
+                            "Failed to initialize layout '{}' for dungeon '{}'.",
+                            this.config.getString("generator.layout", "branching"),
+                            this.getWorldName(),
+                            exception);
             throw new DungeonLoadException("Generator layout failed to initialize.", true);
         }
 
@@ -80,12 +85,13 @@ public class BranchingDungeon extends DungeonDefinition {
                 this.ruleConfig.load(configFile);
             }
         } catch (IOException exception) {
-                        throw new DungeonLoadException(
+            throw new DungeonLoadException(
                     "Access of gamerules.yml file failed!",
                     false,
                     "There may be another process accessing the file, or we may not have permission.");
         } catch (InvalidConfigurationException exception) {
-                        throw new DungeonLoadException("Gamerule config has invalid YAML! See error below...", true);
+            throw new DungeonLoadException(
+                    "Gamerule config has invalid YAML! See error below...", true);
         }
 
         this.roomsFolder = new File(folder, "rooms");
@@ -182,19 +188,29 @@ public class BranchingDungeon extends DungeonDefinition {
                                         "Loading Dungeon " + this.getWorldName(),
                                         () -> {
                                             CountDownLatch latch = new CountDownLatch(1);
-                                            AtomicReference<BranchingInstance> instanceRef = new AtomicReference<>();
+                                            AtomicReference<BranchingInstance> instanceRef =
+                                                    new AtomicReference<>();
 
                                             Bukkit.getScheduler()
                                                     .runTask(
                                                             this.plugin(),
                                                             () -> {
-                                                                // Layout cloning and world bootstrapping still
-                                                                // touch Bukkit state, so the actual instance
-                                                                // creation is deferred to the server thread.
+                                                                // Layout cloning and world
+                                                                // bootstrapping still
+                                                                // touch Bukkit state, so the actual
+                                                                // instance
+                                                                // creation is deferred to the
+                                                                // server thread.
                                                                 PlayableInstance raw =
-                                                                        this.createPlaySession(latch, startedTeamLeaderId);
+                                                                        this.createPlaySession(
+                                                                                latch,
+                                                                                startedTeamLeaderId);
                                                                 BranchingInstance instance =
-                                                                        raw == null ? null : raw.as(BranchingInstance.class);
+                                                                        raw == null
+                                                                                ? null
+                                                                                : raw.as(
+                                                                                        BranchingInstance
+                                                                                                .class);
                                                                 instanceRef.set(instance);
 
                                                                 if (instance == null) {
@@ -208,13 +224,20 @@ public class BranchingDungeon extends DungeonDefinition {
 
                                                 if (!loaded || instance == null) {
                                                     this.schedulePrepareFailure(
-                                                            player, playerSession, instance, "instance.lifecycle.load-failed");
+                                                            player,
+                                                            playerSession,
+                                                            instance,
+                                                            "instance.lifecycle.load-failed");
                                                     return;
                                                 }
 
-                                                if (instance.hasLoadFailed() || !instance.isReady()) {
+                                                if (instance.hasLoadFailed()
+                                                        || !instance.isReady()) {
                                                     this.schedulePrepareFailure(
-                                                            player, playerSession, instance, "instance.lifecycle.load-failed");
+                                                            player,
+                                                            playerSession,
+                                                            instance,
+                                                            "instance.lifecycle.load-failed");
                                                     return;
                                                 }
 
@@ -222,30 +245,49 @@ public class BranchingDungeon extends DungeonDefinition {
                                                         .runTask(
                                                                 this.plugin(),
                                                                 () -> {
-                                                                    // Start-point resolution depends on the
-                                                                    // generated world being ready, so the player
-                                                                    // is only admitted after the spawn has been
+                                                                    // Start-point resolution
+                                                                    // depends on the
+                                                                    // generated world being ready,
+                                                                    // so the player
+                                                                    // is only admitted after the
+                                                                    // spawn has been
                                                                     // validated here.
                                                                     if (!player.isOnline()) {
-                                                                        this.refundReservedAccessKey(playerSession);
-                                                                        playerSession.setAwaitingDungeon(false);
-                                                                        this.discardInstance(instance);
+                                                                        this
+                                                                                .refundReservedAccessKey(
+                                                                                        playerSession);
+                                                                        playerSession
+                                                                                .setAwaitingDungeon(
+                                                                                        false);
+                                                                        this.discardInstance(
+                                                                                instance);
                                                                         this.logger()
                                                                                 .warn(
                                                                                         "Aborted loading branching instance '{}' because player '{}' disconnected before join.",
-                                                                                        this.getWorldName(),
-                                                                                        player.getName());
+                                                                                        this
+                                                                                                .getWorldName(),
+                                                                                        player
+                                                                                                .getName());
                                                                         return;
                                                                     }
 
-                                                                    instance.setDifficulty(difficulty);
+                                                                    instance.setDifficulty(
+                                                                            difficulty);
                                                                     this.instances.add(instance);
-                                                                    this.activeInstances().registerActiveInstance(instance);
-                                                                    instance.prepareValidStartPoint();
+                                                                    this.activeInstances()
+                                                                            .registerActiveInstance(
+                                                                                    instance);
+                                                                    instance
+                                                                            .prepareValidStartPoint();
 
-                                                                    if (instance.getStartLoc() == null) {
-                                                                        this.refundReservedAccessKey(playerSession);
-                                                                        this.timeout(instance, playerSession);
+                                                                    if (instance.getStartLoc()
+                                                                            == null) {
+                                                                        this
+                                                                                .refundReservedAccessKey(
+                                                                                        playerSession);
+                                                                        this.timeout(
+                                                                                instance,
+                                                                                playerSession);
                                                                         instance.dispose();
                                                                         return;
                                                                     }
@@ -254,33 +296,64 @@ public class BranchingDungeon extends DungeonDefinition {
                                                                             .runTaskLater(
                                                                                     this.plugin(),
                                                                                     () -> {
-                                                                                        instance.addPlayer(playerSession);
-                                                                                        if (playerSession.getInstance() == instance) {
-                                                                                            this.completeReservedAccessKey(
-                                                                                                    playerSession);
-                                                                                            nl.hauntedmc.dungeons.util.lang.LangUtils.sendMessage(
-                                                                                                    player,
-                                                                                                    "instance.lifecycle.entered",
-                                                                                                    LangUtils.placeholder(
-                                                                                                            "dungeon", this.getDisplayName()));
+                                                                                        instance
+                                                                                                .addPlayer(
+                                                                                                        playerSession);
+                                                                                        if (playerSession
+                                                                                                        .getInstance()
+                                                                                                == instance) {
+                                                                                            this
+                                                                                                    .completeReservedAccessKey(
+                                                                                                            playerSession);
+                                                                                            nl
+                                                                                                    .hauntedmc
+                                                                                                    .dungeons
+                                                                                                    .util
+                                                                                                    .lang
+                                                                                                    .LangUtils
+                                                                                                    .sendMessage(
+                                                                                                            player,
+                                                                                                            "instance.lifecycle.entered",
+                                                                                                            LangUtils
+                                                                                                                    .placeholder(
+                                                                                                                            "dungeon",
+                                                                                                                            this
+                                                                                                                                    .getDisplayName()));
                                                                                         } else {
-                                                                                            this.refundReservedAccessKey(
-                                                                                                    playerSession);
-                                                                                            this.discardInstance(instance);
-                                                                                            nl.hauntedmc.dungeons.util.lang.LangUtils.sendMessage(
-                                                                                                    player,
-                                                                                                    "instance.lifecycle.load-failed",
-                                                                                                    LangUtils.placeholder(
-                                                                                                            "dungeon", this.getDisplayName()));
+                                                                                            this
+                                                                                                    .refundReservedAccessKey(
+                                                                                                            playerSession);
+                                                                                            this
+                                                                                                    .discardInstance(
+                                                                                                            instance);
+                                                                                            nl
+                                                                                                    .hauntedmc
+                                                                                                    .dungeons
+                                                                                                    .util
+                                                                                                    .lang
+                                                                                                    .LangUtils
+                                                                                                    .sendMessage(
+                                                                                                            player,
+                                                                                                            "instance.lifecycle.load-failed",
+                                                                                                            LangUtils
+                                                                                                                    .placeholder(
+                                                                                                                            "dungeon",
+                                                                                                                            this
+                                                                                                                                    .getDisplayName()));
                                                                                         }
-                                                                                        playerSession.setAwaitingDungeon(false);
+                                                                                        playerSession
+                                                                                                .setAwaitingDungeon(
+                                                                                                        false);
                                                                                     },
                                                                                     1L);
                                                                 });
                                             } catch (InterruptedException exception) {
                                                 Thread.currentThread().interrupt();
                                                 this.schedulePrepareFailure(
-                                                        player, playerSession, null, "instance.lifecycle.load-failed");
+                                                        player,
+                                                        playerSession,
+                                                        null,
+                                                        "instance.lifecycle.load-failed");
                                                 this.logger()
                                                         .error(
                                                                 "Interrupted while waiting for branching instance '{}' to initialize.",
@@ -314,7 +387,9 @@ public class BranchingDungeon extends DungeonDefinition {
                             }
 
                             LangUtils.sendMessage(
-                                    player, messageKey, LangUtils.placeholder("dungeon", this.getDisplayName()));
+                                    player,
+                                    messageKey,
+                                    LangUtils.placeholder("dungeon", this.getDisplayName()));
                         });
     }
 
@@ -355,7 +430,10 @@ public class BranchingDungeon extends DungeonDefinition {
                         this.ruleConfig.save(new File(this.folder, "gamerules.yml"));
                     } catch (IOException exception) {
                         this.logger()
-                                .error("Failed to save gamerules for dungeon '{}'.", this.worldName, exception);
+                                .error(
+                                        "Failed to save gamerules for dungeon '{}'.",
+                                        this.worldName,
+                                        exception);
                     }
                 };
         if (this.plugin().isEnabled()) {
@@ -386,7 +464,9 @@ public class BranchingDungeon extends DungeonDefinition {
     public void loadRooms() {
         if (!this.roomsFolder.exists() && !this.roomsFolder.mkdirs()) {
             this.logger()
-                    .error("Failed to create rooms folder '{}'.", this.roomsFolder.getAbsolutePath());
+                    .error(
+                            "Failed to create rooms folder '{}'.",
+                            this.roomsFolder.getAbsolutePath());
         }
 
         File[] files = this.roomsFolder.listFiles();
@@ -464,13 +544,18 @@ public class BranchingDungeon extends DungeonDefinition {
         room.delete();
     }
 
-    @Nullable public BranchingRoomDefinition getRoom(String namespace) {
+    @Nullable
+    public BranchingRoomDefinition getRoom(String namespace) {
         return this.uniqueRooms.get(namespace);
     }
 
-    @Nullable public BranchingRoomDefinition getRoom(Location loc) {
+    @Nullable
+    public BranchingRoomDefinition getRoom(Location loc) {
         for (BranchingRoomDefinition room : this.uniqueRooms.values()) {
-            if (room.getBounds().clone().expand(0.0, 0.0, 0.0, 1.0, 1.0, 1.0).contains(loc.toVector())) {
+            if (room.getBounds()
+                    .clone()
+                    .expand(0.0, 0.0, 0.0, 1.0, 1.0, 1.0)
+                    .contains(loc.toVector())) {
                 return room;
             }
         }

@@ -37,7 +37,8 @@ public final class LootTableRepository {
 
             this.tablesConfig = new YamlConfiguration();
             this.tablesConfig.load(tablesFile);
-            ConfigurationSection tablesSection = this.tablesConfig.getConfigurationSection("Tables");
+            ConfigurationSection tablesSection =
+                    this.tablesConfig.getConfigurationSection("Tables");
             if (tablesSection == null) {
                 return;
             }
@@ -50,7 +51,8 @@ public final class LootTableRepository {
                     .getSLF4JLogger()
                     .error(
                             "Failed to initialize loot tables from '{}'.",
-                            new File(this.plugin.getDataFolder(), "loottables.yml").getAbsolutePath(),
+                            new File(this.plugin.getDataFolder(), "loottables.yml")
+                                    .getAbsolutePath(),
                             exception);
         }
     }
@@ -92,7 +94,10 @@ public final class LootTableRepository {
         } catch (IOException exception) {
             this.plugin
                     .getSLF4JLogger()
-                    .error("Failed to save loot tables to '{}'.", tablesFile.getAbsolutePath(), exception);
+                    .error(
+                            "Failed to save loot tables to '{}'.",
+                            tablesFile.getAbsolutePath(),
+                            exception);
         }
     }
 }

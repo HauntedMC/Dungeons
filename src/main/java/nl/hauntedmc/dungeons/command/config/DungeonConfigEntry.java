@@ -23,9 +23,14 @@ public final class DungeonConfigEntry {
     /**
      * Creates a new config entry definition.
      */
-    public DungeonConfigEntry(String key, String description, String path,
-            DungeonConfigValueType valueType, Predicate<DungeonDefinition> supportPredicate,
-            Function<DungeonDefinition, List<String>> suggestionsProvider, List<String> aliases) {
+    public DungeonConfigEntry(
+            String key,
+            String description,
+            String path,
+            DungeonConfigValueType valueType,
+            Predicate<DungeonDefinition> supportPredicate,
+            Function<DungeonDefinition, List<String>> suggestionsProvider,
+            List<String> aliases) {
         this.key = key;
         this.description = description;
         this.path = path;

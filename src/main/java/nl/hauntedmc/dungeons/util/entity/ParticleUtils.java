@@ -45,7 +45,8 @@ public final class ParticleUtils {
     /** Displays fake structure blocks to visualize one or more bounding boxes. */
     public static void displayStructureBox(Player to, BoundingBox... boxes) {
         for (BoundingBox box : boxes) {
-            StructureBlock struct = (StructureBlock) Bukkit.createBlockData(Material.STRUCTURE_BLOCK);
+            StructureBlock struct =
+                    (StructureBlock) Bukkit.createBlockData(Material.STRUCTURE_BLOCK);
             struct.setMode(Mode.SAVE);
             Location target = box.getMin().toLocation(to.getWorld()).subtract(0.0, 1.0, 0.0);
             to.sendBlockChange(target, struct);

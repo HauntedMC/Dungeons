@@ -84,7 +84,7 @@ public abstract class DungeonFunction extends DungeonElement
     }
 
     @Override
-        protected final void initializeAdditionalFields() {
+    protected final void initializeAdditionalFields() {
         if (this.trigger != null) {
             this.trigger.setFunction(this);
             this.trigger.initializeFields();
@@ -92,14 +92,14 @@ public abstract class DungeonFunction extends DungeonElement
     }
 
     @Override
-        public void setLocation(Location loc) {
+    public void setLocation(Location loc) {
         this.location = loc;
         super.location = loc;
     }
 
-        public void onEnable() {}
+    public void onEnable() {}
 
-        public void onDisable() {}
+    public void onDisable() {}
 
     /**
      * Enables the function for the supplied instance and location and registers its trigger
@@ -144,20 +144,20 @@ public abstract class DungeonFunction extends DungeonElement
         }
     }
 
-        public void setCategory(FunctionCategory category) {
+    public void setCategory(FunctionCategory category) {
         this.category = category;
         this.setColour(category.getColor());
     }
 
-        public final void register() {
+    public final void register() {
         this.instance.registerFunctionListener(this);
     }
 
-        public final void unregister() {
+    public final void unregister() {
         this.instance.unregisterFunctionListener(this);
     }
 
-        public abstract void runFunction(
+    public abstract void runFunction(
             TriggerFireEvent triggerEvent, List<DungeonPlayerSession> targets);
 
     /**
@@ -201,7 +201,8 @@ public abstract class DungeonFunction extends DungeonElement
             return;
         }
 
-        // Target resolution happens after the pre-execution hook so wrapper functions can still adjust
+        // Target resolution happens after the pre-execution hook so wrapper functions can still
+        // adjust
         // target mode or other state just before dispatch.
         this.runFunctionSafely(event, this.resolveTargets(event));
     }
@@ -243,14 +244,14 @@ public abstract class DungeonFunction extends DungeonElement
         return nestedFunction.resolveTargets(event);
     }
 
-        private void addTarget(
+    private void addTarget(
             LinkedHashSet<DungeonPlayerSession> targets, @Nullable DungeonPlayerSession target) {
         if (target != null) {
             targets.add(target);
         }
     }
 
-        private List<DungeonPlayerSession> resolveTeamTargets(@Nullable DungeonPlayerSession source) {
+    private List<DungeonPlayerSession> resolveTeamTargets(@Nullable DungeonPlayerSession source) {
         if (source == null || this.runtime() == null) {
             return new ArrayList<>();
         }
@@ -258,7 +259,7 @@ public abstract class DungeonFunction extends DungeonElement
         return this.runtime().teamService().getActiveMembers(source, this.instance);
     }
 
-        private void resolveRoomTargets(LinkedHashSet<DungeonPlayerSession> targets) {
+    private void resolveRoomTargets(LinkedHashSet<DungeonPlayerSession> targets) {
         BranchingInstance instance = this.instance.as(BranchingInstance.class);
         if (instance == null) {
             return;
@@ -271,16 +272,18 @@ public abstract class DungeonFunction extends DungeonElement
 
         for (DungeonPlayerSession targetPlayer : instance.getPlayers()) {
             Player player = targetPlayer.getPlayer();
-            if (player
-                    .getBoundingBox()
-                    .overlaps(targetRoom.getBounds().clone().expand(0.0, 0.0, 0.0, 1.0, 1.0, 1.0))) {
+            if (player.getBoundingBox()
+                    .overlaps(
+                            targetRoom.getBounds().clone().expand(0.0, 0.0, 0.0, 1.0, 1.0, 1.0))) {
                 targets.add(targetPlayer);
             }
         }
     }
 
-        protected final void executeNestedFunction(
-            DungeonFunction nestedFunction, TriggerFireEvent event, List<DungeonPlayerSession> targets) {
+    protected final void executeNestedFunction(
+            DungeonFunction nestedFunction,
+            TriggerFireEvent event,
+            List<DungeonPlayerSession> targets) {
         if (nestedFunction == null) {
             this.logger()
                     .warn(
@@ -294,7 +297,7 @@ public abstract class DungeonFunction extends DungeonElement
         nestedFunction.runFunctionSafely(event, targets);
     }
 
-        private void runFunctionSafely(TriggerFireEvent event, List<DungeonPlayerSession> targets) {
+    private void runFunctionSafely(TriggerFireEvent event, List<DungeonPlayerSession> targets) {
         try {
             this.runFunction(event, targets);
         } catch (Exception exception) {
@@ -309,33 +312,34 @@ public abstract class DungeonFunction extends DungeonElement
     }
 
     @Override
-        public abstract MenuButton buildMenuButton();
+    public abstract MenuButton buildMenuButton();
 
     @Override
-        public abstract void buildHotbarMenu();
+    public abstract void buildHotbarMenu();
 
     @Override
-        public final void initializeMenu() {
+    public final void initializeMenu() {
         this.menu = PlayerHotbarMenu.createMenu();
         this.menu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     @Override
-                                        public void buildButton() {
+                    public void buildButton() {
                         this.button = new MenuButton(Material.RED_STAINED_GLASS_PANE);
                         this.button.setDisplayName("&c&lBACK");
                     }
 
                     @Override
-                                        public void onSelect(PlayerEvent event) {
+                    public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
-                        DungeonPlayerSession playerSession = DungeonFunction.this.playerSession(player);
+                        DungeonPlayerSession playerSession =
+                                DungeonFunction.this.playerSession(player);
                         playerSession.restorePreviousHotbar();
                     }
                 });
         this.menu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     @Override
-                                        public void buildButton() {
+                    public void buildButton() {
                         this.button = new MenuButton(Material.STICKY_PISTON);
                         String triggerName = "NONE";
                         if (DungeonFunction.this.trigger != null) {
@@ -346,9 +350,10 @@ public abstract class DungeonFunction extends DungeonElement
                     }
 
                     @Override
-                                        public void onSelect(PlayerEvent event) {
+                    public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
-                        DungeonPlayerSession playerSession = DungeonFunction.this.playerSession(player);
+                        DungeonPlayerSession playerSession =
+                                DungeonFunction.this.playerSession(player);
                         if (DungeonFunction.this.trigger == null) {
                             LangUtils.sendMessage(player, "editor.function.no-trigger");
                         } else {
@@ -358,18 +363,19 @@ public abstract class DungeonFunction extends DungeonElement
                 });
         if (this.allowChangingTargetType) {
             this.menu.addMenuItem(
-                                        new MenuItem() {
+                    new MenuItem() {
                         @Override
-                                                public void buildButton() {
+                        public void buildButton() {
                             this.button = new MenuButton(Material.OBSERVER);
                             String targetTypeDisplay = DungeonFunction.this.targetType.toString();
                             this.button.setDisplayName("&d&lTarget Type: " + targetTypeDisplay);
                         }
 
                         @Override
-                                                public void onSelect(PlayerEvent event) {
+                        public void onSelect(PlayerEvent event) {
                             Player player = event.getPlayer();
-                            DungeonPlayerSession playerSession = DungeonFunction.this.playerSession(player);
+                            DungeonPlayerSession playerSession =
+                                    DungeonFunction.this.playerSession(player);
                             DungeonFunction.this.targetIndex++;
                             DungeonFunction.this.verifyTargetType(playerSession.getInstance());
                             String targetTypeDisplay = DungeonFunction.this.targetType.getDisplay();
@@ -385,11 +391,11 @@ public abstract class DungeonFunction extends DungeonElement
         this.buildHotbarMenu();
     }
 
-        private void verifyTargetType() {
+    private void verifyTargetType() {
         this.verifyTargetType(null);
     }
 
-        private void verifyTargetType(DungeonInstance instance) {
+    private void verifyTargetType(DungeonInstance instance) {
         FunctionTargetType[] values = FunctionTargetType.values();
         for (int attempts = 0; attempts < values.length; attempts++) {
             if (this.targetIndex >= values.length) {
@@ -409,14 +415,15 @@ public abstract class DungeonFunction extends DungeonElement
         this.targetType = FunctionTargetType.NONE;
     }
 
-        private boolean isSupportedTargetType(FunctionTargetType candidate, DungeonInstance instance) {
+    private boolean isSupportedTargetType(FunctionTargetType candidate, DungeonInstance instance) {
         if (this.requiresTarget && candidate == FunctionTargetType.NONE) {
             return false;
         }
 
         if (this.trigger != null
                 && !this.trigger.hasTarget
-                && (candidate == FunctionTargetType.PLAYER || candidate == FunctionTargetType.TEAM)) {
+                && (candidate == FunctionTargetType.PLAYER
+                        || candidate == FunctionTargetType.TEAM)) {
             return false;
         }
 
@@ -426,14 +433,14 @@ public abstract class DungeonFunction extends DungeonElement
     }
 
     @Override
-        public void setInstance(DungeonInstance instance) {
+    public void setInstance(DungeonInstance instance) {
         this.instance = instance;
         if (this.trigger != null) {
             this.trigger.setInstance(this.instance);
         }
     }
 
-        public void setDisplayName(String displayName) {
+    public void setDisplayName(String displayName) {
         this.displayName = displayName;
         if (this.instance != null) {
             if (this.instance instanceof EditableInstance) {
@@ -442,7 +449,7 @@ public abstract class DungeonFunction extends DungeonElement
         }
     }
 
-        public DungeonFunction clone() {
+    public DungeonFunction clone() {
         try {
             DungeonFunction clone = (DungeonFunction) super.clone();
             clone.location = this.location == null ? null : this.location.clone();
@@ -455,89 +462,94 @@ public abstract class DungeonFunction extends DungeonElement
             return clone;
         } catch (CloneNotSupportedException exception) {
             this.logger()
-                    .error("Failed to clone function '{}'.", this.getClass().getSimpleName(), exception);
+                    .error(
+                            "Failed to clone function '{}'.",
+                            this.getClass().getSimpleName(),
+                            exception);
             return null;
         }
     }
 
-        public String getNamespace() {
+    public String getNamespace() {
         return this.namespace;
     }
 
-        public String getDisplayName() {
+    public String getDisplayName() {
         return this.displayName;
     }
 
-        public boolean isInitialized() {
+    public boolean isInitialized() {
         return this.initialized;
     }
 
-        public String getColour() {
+    public String getColour() {
         return this.colour;
     }
 
-        protected void setColour(String colour) {
+    protected void setColour(String colour) {
         this.colour = colour;
     }
 
-        public boolean isRequiresTrigger() {
+    public boolean isRequiresTrigger() {
         return this.requiresTrigger;
     }
 
-        public void setRequiresTrigger(boolean requiresTrigger) {
+    public void setRequiresTrigger(boolean requiresTrigger) {
         this.requiresTrigger = requiresTrigger;
     }
 
-        public boolean isAllowRetriggerByDefault() {
+    public boolean isAllowRetriggerByDefault() {
         return this.allowRetriggerByDefault;
     }
 
-        public void setAllowRetriggerByDefault(boolean allowRetriggerByDefault) {
+    public void setAllowRetriggerByDefault(boolean allowRetriggerByDefault) {
         this.allowRetriggerByDefault = allowRetriggerByDefault;
     }
 
-        public FunctionCategory getCategory() {
+    public FunctionCategory getCategory() {
         return this.category;
     }
 
-        public boolean isRequiresTarget() {
+    public boolean isRequiresTarget() {
         return this.requiresTarget;
     }
 
-        public void setRequiresTarget(boolean requiresTarget) {
+    public void setRequiresTarget(boolean requiresTarget) {
         this.requiresTarget = requiresTarget;
     }
 
-        public boolean isAllowChangingTargetType() {
+    public boolean isAllowChangingTargetType() {
         return this.allowChangingTargetType;
     }
 
-        public void setAllowChangingTargetType(boolean allowChangingTargetType) {
+    public void setAllowChangingTargetType(boolean allowChangingTargetType) {
         this.allowChangingTargetType = allowChangingTargetType;
     }
 
-        public FunctionTargetType getTargetType() {
+    public FunctionTargetType getTargetType() {
         return this.targetType;
     }
 
-        public void setTargetType(FunctionTargetType targetType) {
+    public void setTargetType(FunctionTargetType targetType) {
         this.targetType = targetType;
     }
 
-    @Nullable public DungeonTrigger getTrigger() {
+    @Nullable
+    public DungeonTrigger getTrigger() {
         return this.trigger;
     }
 
     @Override
-        public Location getLocation() {
+    public Location getLocation() {
         return this.location;
     }
 
-        public void setParentFunction(@Nullable DungeonFunction parentFunction) {
+    public void setParentFunction(@Nullable DungeonFunction parentFunction) {
         this.parentFunction = parentFunction;
     }
 
-    @Nullable public DungeonFunction getParentFunction() {
+    @Nullable
+    public DungeonFunction getParentFunction() {
         return this.parentFunction;
     }
 }

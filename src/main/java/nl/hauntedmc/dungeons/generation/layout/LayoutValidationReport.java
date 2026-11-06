@@ -78,7 +78,10 @@ public class LayoutValidationReport {
     public void log(String dungeonName) {
         for (String warning : this.warnings) {
             RuntimeContext.logger()
-                    .warn("Generation validation warning for dungeon '{}': {}", dungeonName, warning);
+                    .warn(
+                            "Generation validation warning for dungeon '{}': {}",
+                            dungeonName,
+                            warning);
         }
         for (String error : this.errors) {
             RuntimeContext.logger()

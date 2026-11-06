@@ -65,7 +65,7 @@ public enum CooldownPeriod {
      * Creates a value from index.
      */
     public static CooldownPeriod fromIndex(int index) {
-                return switch (index) {
+        return switch (index) {
             case 1 -> HOURLY;
             case 2 -> DAILY;
             case 3 -> WEEKLY;

@@ -34,7 +34,8 @@ final class ListenerBootstrap {
                                 this.runtime.guiService()),
                         plugin);
         Bukkit.getPluginManager()
-                .registerEvents(new HotbarMenuListener(plugin, this.runtime.playerSessions()), plugin);
+                .registerEvents(
+                        new HotbarMenuListener(plugin, this.runtime.playerSessions()), plugin);
         Bukkit.getPluginManager().registerEvents(this.runtime.queueRegistry(), plugin);
         Bukkit.getPluginManager().registerEvents(this.runtime.teamService(), plugin);
     }

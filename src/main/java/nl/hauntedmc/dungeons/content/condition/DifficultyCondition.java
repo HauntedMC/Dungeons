@@ -92,7 +92,7 @@ public class DifficultyCondition extends TriggerCondition {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -100,7 +100,8 @@ public class DifficultyCondition extends TriggerCondition {
                     public void buildButton() {
                         this.button = new MenuButton(Material.BLAZE_POWDER);
                         this.button.setDisplayName("&d&lSet Difficulty");
-                        this.button.addLore("&7Current difficulty: &6" + DifficultyCondition.this.difficulty);
+                        this.button.addLore(
+                                "&7Current difficulty: &6" + DifficultyCondition.this.difficulty);
                     }
 
                     /**
@@ -112,7 +113,8 @@ public class DifficultyCondition extends TriggerCondition {
                         LangUtils.sendMessage(
                                 player,
                                 "editor.condition.difficulty.current-difficulty",
-                                LangUtils.placeholder("difficulty", DifficultyCondition.this.difficulty));
+                                LangUtils.placeholder(
+                                        "difficulty", DifficultyCondition.this.difficulty));
                     }
 
                     /**

@@ -75,7 +75,8 @@ public class StartDungeonFunction extends DungeonFunction {
             }
 
             this.readyPlayers.add(playerId);
-            LangUtils.sendMessage(target.getPlayer(), "instance.play.functions.start-dungeon-ready");
+            LangUtils.sendMessage(
+                    target.getPlayer(), "instance.play.functions.start-dungeon-ready");
             markedNewPlayer = true;
         }
 

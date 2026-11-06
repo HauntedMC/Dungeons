@@ -59,8 +59,7 @@ public class HologramManager {
             display.text(ComponentUtils.component(text.replace("\\n", "\n")));
             display.setViewRange(viewRange / 64.0F);
             if (isLabel) {
-                display
-                        .getPersistentDataContainer()
+                display.getPersistentDataContainer()
                         .set(this.getDungeonHologramKey(), PersistentDataType.BOOLEAN, true);
             }
 
@@ -199,7 +198,8 @@ public class HologramManager {
         }
 
         for (TextDisplay display : key.getWorld().getEntitiesByClass(TextDisplay.class)) {
-            if (this.isTaggedDungeonHologram(display) && this.samePosition(display.getLocation(), key)) {
+            if (this.isTaggedDungeonHologram(display)
+                    && this.samePosition(display.getLocation(), key)) {
                 display.remove();
             }
         }
@@ -207,8 +207,7 @@ public class HologramManager {
 
     /** Returns whether a display carries the dungeon hologram persistent tag. */
     private boolean isTaggedDungeonHologram(TextDisplay display) {
-        return display
-                .getPersistentDataContainer()
+        return display.getPersistentDataContainer()
                 .has(this.getDungeonHologramKey(), PersistentDataType.BOOLEAN);
     }
 

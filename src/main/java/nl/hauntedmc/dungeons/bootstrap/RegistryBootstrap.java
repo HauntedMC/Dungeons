@@ -103,7 +103,8 @@ final class RegistryBootstrap {
      * Reflectively multiplexes Bukkit events to the matching per-instance listener class.
      */
     private <T extends InstanceListener> void registerInstanceListener(Class<T> type) {
-        List<Method> eventMethods = MethodUtils.getMethodsListWithAnnotation(type, EventHandler.class);
+        List<Method> eventMethods =
+                MethodUtils.getMethodsListWithAnnotation(type, EventHandler.class);
 
         for (Method method : eventMethods) {
             EventHandler handler = method.getAnnotation(EventHandler.class);
@@ -117,22 +118,31 @@ final class RegistryBootstrap {
                                 handler.priority(),
                                 (listener, event) -> {
                                     // Use a snapshot because instance listeners may dispose worlds
-                                    // or mutate the active-instance collection while handling an event.
+                                    // or mutate the active-instance collection while handling an
+                                    // event.
                                     for (var instance :
-                                            new ArrayList<>(this.runtime.activeInstances().getActiveInstances())) {
+                                            new ArrayList<>(
+                                                    this.runtime
+                                                            .activeInstances()
+                                                            .getActiveInstances())) {
                                         if (eventClass.isAssignableFrom(event.getClass())) {
-                                            InstanceListener instanceListener = instance.getListener();
+                                            InstanceListener instanceListener =
+                                                    instance.getListener();
                                             if (instanceListener != null
-                                                    && type.isAssignableFrom(instanceListener.getClass())) {
+                                                    && type.isAssignableFrom(
+                                                            instanceListener.getClass())) {
                                                 try {
                                                     method.invoke(instanceListener, event);
                                                 } catch (Exception exception) {
                                                     Throwable cause =
-                                                            exception.getCause() == null ? exception : exception.getCause();
+                                                            exception.getCause() == null
+                                                                    ? exception
+                                                                    : exception.getCause();
                                                     String instanceName =
                                                             instance.getInstanceWorld() == null
                                                                     ? "<unloaded>"
-                                                                    : instance.getInstanceWorld().getName();
+                                                                    : instance.getInstanceWorld()
+                                                                            .getName();
                                                     this.runtime
                                                             .environment()
                                                             .logger()
@@ -183,7 +193,8 @@ final class RegistryBootstrap {
      */
     private void registerFunctions(String functionsPackage) {
         for (Class<? extends DungeonFunction> function :
-                TypeMetadataSupport.discoverAutoRegisteredTypes(functionsPackage, DungeonFunction.class)) {
+                TypeMetadataSupport.discoverAutoRegisteredTypes(
+                        functionsPackage, DungeonFunction.class)) {
             this.registerFunction(function);
         }
     }
@@ -193,7 +204,8 @@ final class RegistryBootstrap {
      */
     private void registerTriggers(String triggersPackage) {
         for (Class<? extends DungeonTrigger> trigger :
-                TypeMetadataSupport.discoverAutoRegisteredTypes(triggersPackage, DungeonTrigger.class)) {
+                TypeMetadataSupport.discoverAutoRegisteredTypes(
+                        triggersPackage, DungeonTrigger.class)) {
             this.registerTrigger(trigger);
         }
     }

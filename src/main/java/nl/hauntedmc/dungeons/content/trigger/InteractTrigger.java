@@ -81,7 +81,9 @@ public class InteractTrigger extends DungeonTrigger {
                                 if (this.allowRetrigger || !this.hasTrackedTarget(dungeonPlayer)) {
                                     event.setCancelled(true);
                                     if (this.function != null
-                                            && this.function.getTargetType().isTargetedAtPlayers()) {
+                                            && this.function
+                                                    .getTargetType()
+                                                    .isTargetedAtPlayers()) {
                                         if (!this.allowRetrigger) {
                                             this.rememberTriggeredTargets(dungeonPlayer);
                                         }
@@ -105,7 +107,7 @@ public class InteractTrigger extends DungeonTrigger {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     /**
                      * Builds button.
                      */

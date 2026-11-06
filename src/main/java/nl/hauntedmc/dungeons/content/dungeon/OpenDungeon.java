@@ -43,7 +43,8 @@ public class OpenDungeon extends StaticDungeon {
             throws DungeonLoadException {
         super(runtime, folder, loadedConfig);
         if (this.config.getBoolean("open.preload_world", false)) {
-            Bukkit.getScheduler().runTaskLater(this.plugin(), () -> this.schedulePreLoadIfNeeded(0L), 1L);
+            Bukkit.getScheduler()
+                    .runTaskLater(this.plugin(), () -> this.schedulePreLoadIfNeeded(0L), 1L);
         }
     }
 
@@ -136,10 +137,13 @@ public class OpenDungeon extends StaticDungeon {
                         this.plugin(),
                         () -> {
                             try {
-                                boolean completed = instance.awaitInitialization(30L, TimeUnit.SECONDS);
+                                boolean completed =
+                                        instance.awaitInitialization(30L, TimeUnit.SECONDS);
                                 if (completed && instance.hasLoadFailed()) {
                                     Bukkit.getScheduler()
-                                            .runTask(this.plugin(), () -> this.cancelUnusedInstance(instance));
+                                            .runTask(
+                                                    this.plugin(),
+                                                    () -> this.cancelUnusedInstance(instance));
                                 }
                             } catch (InterruptedException exception) {
                                 Thread.currentThread().interrupt();
@@ -177,7 +181,8 @@ public class OpenDungeon extends StaticDungeon {
             return true;
         }
 
-        if (this.findReservableInstance(this.loadingInstances, normalizedPlayers, requestedDifficulty)
+        if (this.findReservableInstance(
+                        this.loadingInstances, normalizedPlayers, requestedDifficulty)
                 != null) {
             return true;
         }
@@ -235,15 +240,19 @@ public class OpenDungeon extends StaticDungeon {
         UUID reservationId = player.getUniqueId();
 
         OpenInstance readyInstance =
-                this.reserveInstance(this.readyInstances, reservationId, normalizedPlayers, difficulty);
+                this.reserveInstance(
+                        this.readyInstances, reservationId, normalizedPlayers, difficulty);
         if (readyInstance != null) {
-            return this.completeReservedJoin(player, playerSession, readyInstance, reservationId, true);
+            return this.completeReservedJoin(
+                    player, playerSession, readyInstance, reservationId, true);
         }
 
         OpenInstance loadingInstance =
-                this.reserveInstance(this.loadingInstances, reservationId, normalizedPlayers, difficulty);
+                this.reserveInstance(
+                        this.loadingInstances, reservationId, normalizedPlayers, difficulty);
         if (loadingInstance != null) {
-            this.waitForReservedInstance(player, playerSession, loadingInstance, reservationId, true);
+            this.waitForReservedInstance(
+                    player, playerSession, loadingInstance, reservationId, true);
             return true;
         }
 
@@ -270,7 +279,8 @@ public class OpenDungeon extends StaticDungeon {
         return true;
     }
 
-    @Nullable private OpenInstance createReservedInstance(
+    @Nullable
+    private OpenInstance createReservedInstance(
             @Nullable DungeonDifficulty difficulty,
             UUID reservationId,
             int requestedPlayers,
@@ -307,35 +317,61 @@ public class OpenDungeon extends StaticDungeon {
                                         "Loading ongoing dungeon " + this.getWorldName(),
                                         () -> {
                                             try {
-                                                boolean loaded = instance.awaitInitialization(5L, TimeUnit.SECONDS);
+                                                boolean loaded =
+                                                        instance.awaitInitialization(
+                                                                5L, TimeUnit.SECONDS);
                                                 Bukkit.getScheduler()
                                                         .runTask(
                                                                 this.plugin(),
                                                                 () -> {
-                                                                    // Reservation cleanup must run on the main
-                                                                    // thread because it can dispose worlds and
+                                                                    // Reservation cleanup must run
+                                                                    // on the main
+                                                                    // thread because it can dispose
+                                                                    // worlds and
                                                                     // mutate player/session state.
                                                                     if (!loaded) {
                                                                         this.releaseReservation(
-                                                                                instance, reservationId, keepWarmIfEmpty);
-                                                                        this.refundReservedAccessKey(playerSession);
-                                                                        playerSession.setAwaitingDungeon(false);
+                                                                                instance,
+                                                                                reservationId,
+                                                                                keepWarmIfEmpty);
+                                                                        this
+                                                                                .refundReservedAccessKey(
+                                                                                        playerSession);
+                                                                        playerSession
+                                                                                .setAwaitingDungeon(
+                                                                                        false);
                                                                         LangUtils.sendMessage(
                                                                                 player,
                                                                                 "instance.lifecycle.load-timeout",
-                                                                                LangUtils.placeholder("dungeon", this.getDisplayName()));
+                                                                                LangUtils
+                                                                                        .placeholder(
+                                                                                                "dungeon",
+                                                                                                this
+                                                                                                        .getDisplayName()));
                                                                         return;
                                                                     }
 
-                                                                    if (instance.hasLoadFailed() || !instance.isReady()) {
+                                                                    if (instance.hasLoadFailed()
+                                                                            || !instance
+                                                                                    .isReady()) {
                                                                         this.releaseReservation(
-                                                                                instance, reservationId, keepWarmIfEmpty);
-                                                                        this.refundReservedAccessKey(playerSession);
-                                                                        playerSession.setAwaitingDungeon(false);
+                                                                                instance,
+                                                                                reservationId,
+                                                                                keepWarmIfEmpty);
+                                                                        this
+                                                                                .refundReservedAccessKey(
+                                                                                        playerSession);
+                                                                        playerSession
+                                                                                .setAwaitingDungeon(
+                                                                                        false);
                                                                         LangUtils.sendMessage(
                                                                                 player,
                                                                                 "instance.lifecycle.load-failed",
-                                                                                LangUtils.placeholder("dungeon", this.getDisplayName()));
+                                                                                LangUtils
+                                                                                        .placeholder(
+                                                                                                "dungeon",
+                                                                                                this
+                                                                                                        .getDisplayName()));
                                                                         return;
                                                                     }
 
@@ -352,13 +388,22 @@ public class OpenDungeon extends StaticDungeon {
                                                         .runTask(
                                                                 this.plugin(),
                                                                 () -> {
-                                                                    this.releaseReservation(instance, reservationId, keepWarmIfEmpty);
-                                                                    this.refundReservedAccessKey(playerSession);
-                                                                    playerSession.setAwaitingDungeon(false);
+                                                                    this.releaseReservation(
+                                                                            instance,
+                                                                            reservationId,
+                                                                            keepWarmIfEmpty);
+                                                                    this.refundReservedAccessKey(
+                                                                            playerSession);
+                                                                    playerSession
+                                                                            .setAwaitingDungeon(
+                                                                                    false);
                                                                     LangUtils.sendMessage(
                                                                             player,
                                                                             "instance.lifecycle.load-failed",
-                                                                            LangUtils.placeholder("dungeon", this.getDisplayName()));
+                                                                            LangUtils.placeholder(
+                                                                                    "dungeon",
+                                                                                    this
+                                                                                            .getDisplayName()));
                                                                 });
                                                 this.logger()
                                                         .error(
@@ -443,7 +488,8 @@ public class OpenDungeon extends StaticDungeon {
         }
     }
 
-    @Nullable private OpenInstance reserveInstance(
+    @Nullable
+    private OpenInstance reserveInstance(
             List<OpenInstance> pool,
             UUID reservationId,
             int requestedPlayers,
@@ -464,7 +510,8 @@ public class OpenDungeon extends StaticDungeon {
         return null;
     }
 
-    @Nullable private OpenInstance findReservableInstance(
+    @Nullable
+    private OpenInstance findReservableInstance(
             List<OpenInstance> pool,
             int requestedPlayers,
             @Nullable DungeonDifficulty requestedDifficulty) {

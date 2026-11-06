@@ -91,7 +91,7 @@ public class LootTableRewardsFunction extends RewardFunction {
                         + "_"
                         + this.location.getBlockZ();
         this.instanceGui =
-                                new GuiWindow(
+                new GuiWindow(
                         this.instanceGuiName,
                         54,
                         LangUtils.getMessage("instance.play.rewards.gui-name", false));
@@ -103,21 +103,27 @@ public class LootTableRewardsFunction extends RewardFunction {
                     if (!this.playerRewards.contains(player.getUniqueId())) {
                         if (!(this.instance instanceof EditableInstance)) {
                             PlayableInstance instance = (PlayableInstance) this.instance;
-                            if (!this.cooldownDisabled && instance.getDungeon().hasLootCooldown(player, this)) {
-                                LangUtils.sendMessage(player, "instance.play.rewards.already-received");
-                                Date unlockTime = instance.getDungeon().getLootUnlockTime(player, this);
+                            if (!this.cooldownDisabled
+                                    && instance.getDungeon().hasLootCooldown(player, this)) {
+                                LangUtils.sendMessage(
+                                        player, "instance.play.rewards.already-received");
+                                Date unlockTime =
+                                        instance.getDungeon().getLootUnlockTime(player, this);
                                 if (unlockTime != null) {
-                                    SimpleDateFormat format = new SimpleDateFormat("EEE, MMM d, hh:mm aaa z");
+                                    SimpleDateFormat format =
+                                            new SimpleDateFormat("EEE, MMM d, hh:mm aaa z");
                                     LangUtils.sendMessage(
                                             player,
                                             "instance.play.rewards.cooldown-time",
-                                            LangUtils.placeholder("time", format.format(unlockTime)));
+                                            LangUtils.placeholder(
+                                                    "time", format.format(unlockTime)));
                                 }
 
                                 event.setCancelled(true);
                             } else {
                                 LootTable table =
-                                        RuntimeContext.lootTableRepository().get(this.loottableName);
+                                        RuntimeContext.lootTableRepository()
+                                                .get(this.loottableName);
                                 if (table == null) {
                                     this.logger()
                                             .warn(
@@ -125,12 +131,16 @@ public class LootTableRewardsFunction extends RewardFunction {
                                                     this.dungeonNameForLogs(),
                                                     this.locationForLogs(),
                                                     this.loottableName);
-                                    LangUtils.sendMessage(player, "instance.play.rewards.invalid-loottable");
+                                    LangUtils.sendMessage(
+                                            player, "instance.play.rewards.invalid-loottable");
                                 } else {
                                     this.playerRewards.add(player.getUniqueId());
-                                    if (instance.getConfig().getBoolean("rewards.deliver_on_finish", false)) {
-                                        LangUtils.sendMessage(player, "instance.play.rewards.rewards-inv-info");
-                                        LangUtils.sendMessage(player, "instance.play.rewards.view-rewards-info");
+                                    if (instance.getConfig()
+                                            .getBoolean("rewards.deliver_on_finish", false)) {
+                                        LangUtils.sendMessage(
+                                                player, "instance.play.rewards.rewards-inv-info");
+                                        LangUtils.sendMessage(
+                                                player, "instance.play.rewards.view-rewards-info");
                                     }
 
                                     GuiInventory guiInv = this.instanceGui.getInventoryFor(player);
@@ -139,7 +149,9 @@ public class LootTableRewardsFunction extends RewardFunction {
                                     if (instance.getDifficulty() != null) {
                                         items =
                                                 table.randomizeItems(
-                                                        instance.getDifficulty().getBonusLoot().randomizeAsInt());
+                                                        instance.getDifficulty()
+                                                                .getBonusLoot()
+                                                                .randomizeAsInt());
                                     } else {
                                         items = table.randomizeItems();
                                     }
@@ -158,7 +170,8 @@ public class LootTableRewardsFunction extends RewardFunction {
                                         }
 
                                         occupied.add(i);
-                                        if (instance.getConfig().getBoolean("rewards.deliver_on_finish", false)) {
+                                        if (instance.getConfig()
+                                                .getBoolean("rewards.deliver_on_finish", false)) {
                                             if (item != null) {
                                                 Button button = new Button("item_" + i, item);
                                                 int finalSlot = i;
@@ -166,7 +179,10 @@ public class LootTableRewardsFunction extends RewardFunction {
                                                         "click",
                                                         clickEvent -> {
                                                             clickEvent.setCancelled(true);
-                                                            Player clicker = (Player) clickEvent.getWhoClicked();
+                                                            Player clicker =
+                                                                    (Player)
+                                                                            clickEvent
+                                                                                    .getWhoClicked();
                                                             instance.addPlayerReward(clicker, item);
                                                             guiInv.removeButton(finalSlot);
                                                         });
@@ -193,11 +209,14 @@ public class LootTableRewardsFunction extends RewardFunction {
                             PlayableInstance instance = (PlayableInstance) this.instance;
                             Inventory inv = this.instanceGui.getInventoryFor(player).inventory();
                             if (!inv.isEmpty()) {
-                                if (instance.getConfig().getBoolean("rewards.deliver_on_finish", false)) {
-                                    LangUtils.sendMessage(player, "instance.play.rewards.added-to-rewards-inv");
+                                if (instance.getConfig()
+                                        .getBoolean("rewards.deliver_on_finish", false)) {
+                                    LangUtils.sendMessage(
+                                            player, "instance.play.rewards.added-to-rewards-inv");
                                     instance.addPlayerReward(player, inv.getContents());
                                 } else {
-                                    LangUtils.sendMessage(player, "instance.play.rewards.added-to-inv");
+                                    LangUtils.sendMessage(
+                                            player, "instance.play.rewards.added-to-inv");
                                     ItemUtils.giveOrDrop(player, inv.getContents());
                                 }
 
@@ -214,7 +233,7 @@ public class LootTableRewardsFunction extends RewardFunction {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -229,11 +248,13 @@ public class LootTableRewardsFunction extends RewardFunction {
                      */
                     @Override
                     public void onSelect(Player player) {
-                        LangUtils.sendMessage(player, "editor.function.loot-table-rewards.ask-loot-table");
+                        LangUtils.sendMessage(
+                                player, "editor.function.loot-table-rewards.ask-loot-table");
                         LangUtils.sendMessage(
                                 player,
                                 "editor.function.loot-table-rewards.current-loot-table",
-                                LangUtils.placeholder("loot_table", LootTableRewardsFunction.this.loottableName));
+                                LangUtils.placeholder(
+                                        "loot_table", LootTableRewardsFunction.this.loottableName));
                     }
 
                     /**
@@ -242,14 +263,17 @@ public class LootTableRewardsFunction extends RewardFunction {
                     @Override
                     public void onInput(Player player, String message) {
                         if (message.contains(" ")) {
-                            LangUtils.sendMessage(player, "editor.function.loot-table-rewards.warning-no-spaces");
                             LangUtils.sendMessage(
-                                    player, "editor.function.loot-table-rewards.warning-spaces-replaced");
+                                    player, "editor.function.loot-table-rewards.warning-no-spaces");
+                            LangUtils.sendMessage(
+                                    player,
+                                    "editor.function.loot-table-rewards.warning-spaces-replaced");
                             message = message.replace(" ", "_");
                         }
 
                         if (!RuntimeContext.lootTableRepository().contains(message)) {
-                            LangUtils.sendMessage(player, "editor.function.loot-table-rewards.warning-not-found");
+                            LangUtils.sendMessage(
+                                    player, "editor.function.loot-table-rewards.warning-not-found");
                             MessageUtils.sendClickableCommand(
                                     player,
                                     RuntimeContext.logPrefix() + "&b&lClick here &bto create it!",
@@ -260,11 +284,12 @@ public class LootTableRewardsFunction extends RewardFunction {
                         LangUtils.sendMessage(
                                 player,
                                 "editor.function.loot-table-rewards.loot-table-set",
-                                LangUtils.placeholder("loot_table", LootTableRewardsFunction.this.loottableName));
+                                LangUtils.placeholder(
+                                        "loot_table", LootTableRewardsFunction.this.loottableName));
                     }
                 });
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -289,17 +314,20 @@ public class LootTableRewardsFunction extends RewardFunction {
                     @Override
                     public void onInput(Player player, String message) {
                         Optional<Integer> value = InputUtils.readIntegerInput(player, message);
-                        LootTableRewardsFunction.this.xp = value.orElse(LootTableRewardsFunction.this.xp);
+                        LootTableRewardsFunction.this.xp =
+                                value.orElse(LootTableRewardsFunction.this.xp);
                         if (value.isPresent()) {
                             LangUtils.sendMessage(
                                     player,
                                     "editor.function.loot-table-rewards.exp-set",
-                                    LangUtils.placeholder("xp", String.valueOf(LootTableRewardsFunction.this.xp)));
+                                    LangUtils.placeholder(
+                                            "xp",
+                                            String.valueOf(LootTableRewardsFunction.this.xp)));
                         }
                     }
                 });
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -315,7 +343,8 @@ public class LootTableRewardsFunction extends RewardFunction {
                      */
                     @Override
                     public void onSelect(Player player) {
-                        LangUtils.sendMessage(player, "editor.function.loot-table-rewards.ask-levels");
+                        LangUtils.sendMessage(
+                                player, "editor.function.loot-table-rewards.ask-levels");
                     }
 
                     /**
@@ -331,12 +360,13 @@ public class LootTableRewardsFunction extends RewardFunction {
                                     player,
                                     "editor.function.loot-table-rewards.levels-set",
                                     LangUtils.placeholder(
-                                            "levels", String.valueOf(LootTableRewardsFunction.this.levels)));
+                                            "levels",
+                                            String.valueOf(LootTableRewardsFunction.this.levels)));
                         }
                     }
                 });
         this.menu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     /**
                      * Builds button.
                      */
@@ -352,7 +382,8 @@ public class LootTableRewardsFunction extends RewardFunction {
                     @Override
                     public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
-                        DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                        DungeonPlayerSession playerSession =
+                                RuntimeContext.playerSessions().get(player);
                         playerSession.showHotbar(LootTableRewardsFunction.this.cooldownMenu, true);
                     }
                 });

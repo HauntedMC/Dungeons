@@ -71,21 +71,23 @@ public class ConfigurationFile extends YamlConfiguration {
     public CompletableFuture<Boolean> saveAsync(@NotNull File file) {
         File normalized = this.normalize(file);
         CompletableFuture<Boolean> result = new CompletableFuture<>();
-        Runnable task = () -> {
-            synchronized (this.getMonitor(normalized)) {
-                try {
-                    super.save(normalized);
-                    result.complete(true);
-                } catch (IOException exception) {
-                    this.plugin.getSLF4JLogger()
-                            .error(
-                                    "Failed to asynchronously save configuration '{}'.",
-                                    normalized.getAbsolutePath(),
-                                    exception);
-                    result.complete(false);
-                }
-            }
-        };
+        Runnable task =
+                () -> {
+                    synchronized (this.getMonitor(normalized)) {
+                        try {
+                            super.save(normalized);
+                            result.complete(true);
+                        } catch (IOException exception) {
+                            this.plugin
+                                    .getSLF4JLogger()
+                                    .error(
+                                            "Failed to asynchronously save configuration '{}'.",
+                                            normalized.getAbsolutePath(),
+                                            exception);
+                            result.complete(false);
+                        }
+                    }
+                };
 
         if (!this.plugin.isEnabled()) {
             task.run();
@@ -108,7 +110,8 @@ public class ConfigurationFile extends YamlConfiguration {
             try {
                 super.save(normalized);
             } catch (IOException exception) {
-                this.plugin.getSLF4JLogger()
+                this.plugin
+                        .getSLF4JLogger()
                         .error(
                                 "Failed to save configuration '{}'.",
                                 normalized.getAbsolutePath(),
@@ -128,7 +131,8 @@ public class ConfigurationFile extends YamlConfiguration {
             try {
                 super.load(normalized);
             } catch (InvalidConfigurationException | IOException exception) {
-                this.plugin.getSLF4JLogger()
+                this.plugin
+                        .getSLF4JLogger()
                         .error(
                                 "Failed to load configuration '{}'.",
                                 normalized.getAbsolutePath(),
@@ -155,7 +159,8 @@ public class ConfigurationFile extends YamlConfiguration {
                 List<Object> contents = new ArrayList<>();
                 for (Object entry : col) {
                     if (entry instanceof ConfigSerializableModel serializableEntry) {
-                        contents.add(ConfigSerializableModel.serializeWithTypeId(serializableEntry));
+                        contents.add(
+                                ConfigSerializableModel.serializeWithTypeId(serializableEntry));
                     } else {
                         contents.add(entry);
                     }
@@ -204,7 +209,8 @@ public class ConfigurationFile extends YamlConfiguration {
      * @param <T> target model type
      * @return restored list, possibly empty
      */
-    public <T extends ConfigSerializableModel> List<T> getListOf(Class<T> type, @NotNull String path) {
+    public <T extends ConfigSerializableModel> List<T> getListOf(
+            Class<T> type, @NotNull String path) {
         List<T> list = new ArrayList<>();
         List<?> origin = this.getList(path);
         if (origin == null) {
@@ -212,7 +218,8 @@ public class ConfigurationFile extends YamlConfiguration {
         }
 
         Map<String, Class<? extends T>> subclasses = new HashMap<>();
-        for (Class<? extends ConfigSerializableModel> clazz : ConfigSerializableModel.pluginSerializables) {
+        for (Class<? extends ConfigSerializableModel> clazz :
+                ConfigSerializableModel.pluginSerializables) {
             if (type.isAssignableFrom(clazz)) {
                 Class<? extends T> typedClazz = clazz.asSubclass(type);
                 subclasses.put(TypeMetadataSupport.requiredId(clazz), typedClazz);

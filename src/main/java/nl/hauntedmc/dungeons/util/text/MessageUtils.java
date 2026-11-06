@@ -17,7 +17,8 @@ public final class MessageUtils {
                         Duration.ofMillis(stay * 50L),
                         Duration.ofMillis(fadeOut * 50L));
         Title adventureTitle =
-                Title.title(ComponentUtils.component(title), ComponentUtils.component(subtitle), times);
+                Title.title(
+                        ComponentUtils.component(title), ComponentUtils.component(subtitle), times);
         player.showTitle(adventureTitle);
     }
 

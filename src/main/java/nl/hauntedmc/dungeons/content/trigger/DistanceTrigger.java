@@ -105,13 +105,14 @@ public class DistanceTrigger extends DungeonTrigger {
 
             final TriggerFireEvent event = new TriggerFireEvent(instance, this);
             this.playerScan =
-                                        new BukkitRunnable() {
+                    new BukkitRunnable() {
                         /**
                          * Performs run.
                          */
                         public void run() {
                             if (DistanceTrigger.this.count == -1) {
-                                DistanceTrigger.this.finalCount = Math.max(instance.getLivingPlayers().size(), 1);
+                                DistanceTrigger.this.finalCount =
+                                        Math.max(instance.getLivingPlayers().size(), 1);
                             }
 
                             if (!DistanceTrigger.this.location.isWorldLoaded()) {
@@ -125,7 +126,8 @@ public class DistanceTrigger extends DungeonTrigger {
                                                 GameMode.ADVENTURE);
                                 players.removeIf(
                                         candidatePlayer ->
-                                                !DistanceTrigger.this.matchesRoom(candidatePlayer.getLocation()));
+                                                !DistanceTrigger.this.matchesRoom(
+                                                        candidatePlayer.getLocation()));
 
                                 // Already-triggered players are filtered out so non-retriggerable
                                 // detectors do not fire repeatedly for the same presence.
@@ -150,8 +152,10 @@ public class DistanceTrigger extends DungeonTrigger {
                                         for (Player player : players) {
                                             DungeonPlayerSession dungeonPlayer =
                                                     RuntimeContext.playerSessions().get(player);
-                                            if (!DistanceTrigger.this.hasTrackedTarget(dungeonPlayer)) {
-                                                DistanceTrigger.this.rememberTriggeredTargets(dungeonPlayer);
+                                            if (!DistanceTrigger.this.hasTrackedTarget(
+                                                    dungeonPlayer)) {
+                                                DistanceTrigger.this.rememberTriggeredTargets(
+                                                        dungeonPlayer);
                                                 DistanceTrigger.this.trigger(dungeonPlayer, false);
                                             }
                                         }
@@ -163,9 +167,11 @@ public class DistanceTrigger extends DungeonTrigger {
                                     DungeonPlayerSession triggerSource = null;
                                     for (Player candidatePlayer : players) {
                                         DungeonPlayerSession dungeonPlayer =
-                                                RuntimeContext.playerSessions().get(candidatePlayer);
+                                                RuntimeContext.playerSessions()
+                                                        .get(candidatePlayer);
                                         if (!DistanceTrigger.this.hasTrackedTarget(dungeonPlayer)) {
-                                            DistanceTrigger.this.rememberTriggeredTargets(dungeonPlayer);
+                                            DistanceTrigger.this.rememberTriggeredTargets(
+                                                    dungeonPlayer);
                                             foundNewTarget = true;
                                             if (triggerSource == null) {
                                                 triggerSource = dungeonPlayer;
@@ -232,7 +238,7 @@ public class DistanceTrigger extends DungeonTrigger {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -250,7 +256,8 @@ public class DistanceTrigger extends DungeonTrigger {
                     public void onSelect(Player player) {
                         if (!DistanceTrigger.this.allowRetrigger) {
                             LangUtils.sendMessage(player, "editor.trigger.distance.allow-repeat");
-                            LangUtils.sendMessage(player, "editor.trigger.distance.allow-repeat-note");
+                            LangUtils.sendMessage(
+                                    player, "editor.trigger.distance.allow-repeat-note");
                         } else {
                             LangUtils.sendMessage(player, "editor.trigger.distance.prevent-repeat");
                         }
@@ -259,7 +266,7 @@ public class DistanceTrigger extends DungeonTrigger {
                     }
                 });
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -267,7 +274,8 @@ public class DistanceTrigger extends DungeonTrigger {
                     public void buildButton() {
                         this.button = new MenuButton(Material.DETECTOR_RAIL);
                         this.button.setDisplayName("&d&lDistance");
-                        this.button.setAmount((int) MathUtils.round(DistanceTrigger.this.radius, 0));
+                        this.button.setAmount(
+                                (int) MathUtils.round(DistanceTrigger.this.radius, 0));
                     }
 
                     /**
@@ -289,12 +297,13 @@ public class DistanceTrigger extends DungeonTrigger {
                             LangUtils.sendMessage(
                                     player,
                                     "editor.trigger.distance.radius-set",
-                                    LangUtils.placeholder("radius", String.valueOf(DistanceTrigger.this.radius)));
+                                    LangUtils.placeholder(
+                                            "radius", String.valueOf(DistanceTrigger.this.radius)));
                         }
                     }
                 });
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -329,13 +338,15 @@ public class DistanceTrigger extends DungeonTrigger {
                                 LangUtils.sendMessage(
                                         player,
                                         "editor.trigger.distance.count-set",
-                                        LangUtils.placeholder("count", String.valueOf(DistanceTrigger.this.count)));
+                                        LangUtils.placeholder(
+                                                "count",
+                                                String.valueOf(DistanceTrigger.this.count)));
                             }
                         }
                     }
                 });
         this.menu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -352,9 +363,11 @@ public class DistanceTrigger extends DungeonTrigger {
                     @Override
                     public void onSelect(Player player) {
                         if (!DistanceTrigger.this.forEachPlayer) {
-                            LangUtils.sendMessage(player, "editor.trigger.distance.behaviour-all-in-range");
+                            LangUtils.sendMessage(
+                                    player, "editor.trigger.distance.behaviour-all-in-range");
                         } else {
-                            LangUtils.sendMessage(player, "editor.trigger.distance.behaviour-nearest");
+                            LangUtils.sendMessage(
+                                    player, "editor.trigger.distance.behaviour-nearest");
                         }
 
                         DistanceTrigger.this.forEachPlayer = !DistanceTrigger.this.forEachPlayer;

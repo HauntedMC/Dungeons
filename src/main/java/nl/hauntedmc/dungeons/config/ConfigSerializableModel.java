@@ -80,7 +80,8 @@ public interface ConfigSerializableModel {
                     this,
                     values,
                     (metadata, rawValue) ->
-                            deserializeFieldValue(metadata.field(), metadata, rawValue, this.getClass()));
+                            deserializeFieldValue(
+                                    metadata.field(), metadata, rawValue, this.getClass()));
         } catch (IllegalAccessException | IllegalArgumentException exception) {
             LOGGER.error(
                     "Failed to initialize serialized fields on '{}'.",
@@ -133,7 +134,8 @@ public interface ConfigSerializableModel {
     default Map<String, Object> serialize() {
         try {
             return PersistedFieldSupport.serialize(
-                    this, (metadata, fieldValue) -> serializeFieldValue(metadata.field(), fieldValue));
+                    this,
+                    (metadata, fieldValue) -> serializeFieldValue(metadata.field(), fieldValue));
         } catch (IllegalAccessException | IllegalArgumentException exception) {
             LOGGER.error("Failed to serialize '{}'.", this.getClass().getSimpleName(), exception);
             return new HashMap<>();
@@ -176,7 +178,8 @@ public interface ConfigSerializableModel {
         Map<String, Class<? extends T>> subclasses = new HashMap<>();
         for (Class<? extends ConfigSerializableModel> clazz : pluginSerializables) {
             if (serializable.isAssignableFrom(clazz)) {
-                subclasses.put(TypeMetadataSupport.requiredId(clazz), clazz.asSubclass(serializable));
+                subclasses.put(
+                        TypeMetadataSupport.requiredId(clazz), clazz.asSubclass(serializable));
             }
         }
 
@@ -195,7 +198,9 @@ public interface ConfigSerializableModel {
                 instance.postDeserialize();
             } catch (RuntimeException exception) {
                 LOGGER.error(
-                        "Failed to normalize serialized type '{}'.", serializable.getName(), exception);
+                        "Failed to normalize serialized type '{}'.",
+                        serializable.getName(),
+                        exception);
                 return null;
             }
 
@@ -272,7 +277,8 @@ public interface ConfigSerializableModel {
         }
         if (ConfigSerializableModel.class.isAssignableFrom(field.getType())
                 && rawValue instanceof Map<?, ?> map) {
-            return deserialize(field.getType().asSubclass(ConfigSerializableModel.class), castMap(map));
+            return deserialize(
+                    field.getType().asSubclass(ConfigSerializableModel.class), castMap(map));
         }
         if (List.class.isAssignableFrom(field.getType()) && rawValue instanceof List<?> baseList) {
             return deserializeListField(field, baseList, metadata.name(), ownerType);
@@ -312,7 +318,10 @@ public interface ConfigSerializableModel {
                 // independently to preserve mixed key/value payloads.
                 Object key = pair.getKey();
                 if (keySerializable && key instanceof Map<?, ?> map) {
-                    key = deserialize(keyClass.asSubclass(ConfigSerializableModel.class), castMap(map));
+                    key =
+                            deserialize(
+                                    keyClass.asSubclass(ConfigSerializableModel.class),
+                                    castMap(map));
                     if (key == null) {
                         continue;
                     }
@@ -320,7 +329,10 @@ public interface ConfigSerializableModel {
 
                 Object value = pair.getValue();
                 if (valueSerializable && value instanceof Map<?, ?> map) {
-                    value = deserialize(valueClass.asSubclass(ConfigSerializableModel.class), castMap(map));
+                    value =
+                            deserialize(
+                                    valueClass.asSubclass(ConfigSerializableModel.class),
+                                    castMap(map));
                     if (value == null) {
                         continue;
                     }
@@ -368,7 +380,10 @@ public interface ConfigSerializableModel {
                 if (entry instanceof Map<?, ?> map) {
                     // Invalid child entries are dropped so one bad element does not poison the
                     // entire collection payload.
-                    Object deserialized = deserialize(itemClass.asSubclass(ConfigSerializableModel.class), castMap(map));
+                    Object deserialized =
+                            deserialize(
+                                    itemClass.asSubclass(ConfigSerializableModel.class),
+                                    castMap(map));
                     if (deserialized != null) {
                         converted.add(deserialized);
                     }
@@ -540,7 +555,9 @@ public interface ConfigSerializableModel {
                     exception);
         } catch (ReflectiveOperationException | RuntimeException exception) {
             LOGGER.error(
-                    "Failed to instantiate serialized type '{}'.", serializable.getName(), exception);
+                    "Failed to instantiate serialized type '{}'.",
+                    serializable.getName(),
+                    exception);
         }
 
         return null;

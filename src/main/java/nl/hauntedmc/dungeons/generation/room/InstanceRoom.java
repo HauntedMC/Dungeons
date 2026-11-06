@@ -100,14 +100,20 @@ public class InstanceRoom {
             // Room schematics are stored in local room coordinates, so each block is rotated and
             // translated into final instance coordinates before being queued for generation.
             Vector size =
-                                        new Vector(this.bounds.getWidthX(), this.bounds.getHeight(), this.bounds.getWidthZ());
+                    new Vector(
+                            this.bounds.getWidthX(),
+                            this.bounds.getHeight(),
+                            this.bounds.getWidthZ());
             Vector rotatedMin =
                     this.rotateLocation(
-                            this.source.getOrigin().getBounds().getMin(), this.source.getRotation(), size);
+                            this.source.getOrigin().getBounds().getMin(),
+                            this.source.getRotation(),
+                            size);
             Vector rotatedPos =
-                    this.rotateLocation(Vector.fromJOML(block.getPos()), this.source.getRotation(), size);
+                    this.rotateLocation(
+                            Vector.fromJOML(block.getPos()), this.source.getRotation(), size);
             Vector3i target =
-                                        new Vector3i(
+                    new Vector3i(
                             (int) this.bounds.getMinX(),
                             (int) this.bounds.getMinY(),
                             (int) this.bounds.getMinZ());
@@ -131,12 +137,12 @@ public class InstanceRoom {
         return blocks;
     }
 
-        private Vector rotateLocation(Vector originalLocus, int rotationDegrees, Vector size) {
+    private Vector rotateLocation(Vector originalLocus, int rotationDegrees, Vector size) {
         int x = originalLocus.getBlockX();
         int y = originalLocus.getBlockY();
         int z = originalLocus.getBlockZ();
 
-                return switch (rotationDegrees) {
+        return switch (rotationDegrees) {
             case -90, 270 -> new Vector(size.getZ() - z, y, x);
             case 90 -> new Vector(z, y, size.getX() - x);
             case 180 -> new Vector(size.getX() - x, y, size.getZ() - z);
@@ -225,8 +231,7 @@ public class InstanceRoom {
                 newFunction.enable(instance, loc);
                 instance.getFunctions().put(loc, newFunction);
                 if (newFunction instanceof RewardFunction) {
-                    instance
-                            .getRewardFunctions()
+                    instance.getRewardFunctions()
                             .put(newFunction.getLocation(), (RewardFunction) newFunction);
                 }
 

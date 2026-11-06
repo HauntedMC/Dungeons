@@ -38,7 +38,8 @@ public class RandomFunction extends CompositeFunction {
     public void runFunction(TriggerFireEvent triggerEvent, List<DungeonPlayerSession> targets) {
         if (!this.functions.isEmpty()) {
             DungeonFunction function =
-                    this.functions.get(MathUtils.getRandomNumberInRange(0, this.functions.size() - 1));
+                    this.functions.get(
+                            MathUtils.getRandomNumberInRange(0, this.functions.size() - 1));
             this.executeNestedFunction(
                     function,
                     triggerEvent,

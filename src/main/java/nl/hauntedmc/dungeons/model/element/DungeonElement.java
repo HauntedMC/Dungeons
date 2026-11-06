@@ -54,30 +54,30 @@ public abstract class DungeonElement implements ConfigurationSerializable {
         Bukkit.getPluginManager().registerEvents(this.editListener, this.plugin());
     }
 
-        protected final DungeonsRuntime runtime() {
+    protected final DungeonsRuntime runtime() {
         return this.instance == null ? null : this.instance.getRuntime();
     }
 
-        protected final DungeonsPlugin plugin() {
+    protected final DungeonsPlugin plugin() {
         return this.instance == null
                 ? JavaPlugin.getPlugin(DungeonsPlugin.class)
                 : this.instance.getEnvironment().plugin();
     }
 
-        protected final Logger logger() {
+    protected final Logger logger() {
         return this.instance == null ? LOGGER : this.instance.getEnvironment().logger();
     }
 
-        protected final GuiService guiService() {
+    protected final GuiService guiService() {
         return this.runtime() == null ? null : this.runtime().guiService();
     }
 
-        protected final nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession playerSession(
+    protected final nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession playerSession(
             Player player) {
         return this.runtime() == null ? null : this.runtime().playerSessions().get(player);
     }
 
-        protected final String dungeonNameForLogs() {
+    protected final String dungeonNameForLogs() {
         if (this.instance != null && this.instance.getDungeon() != null) {
             return this.instance.getDungeon().getWorldName();
         }
@@ -85,7 +85,7 @@ public abstract class DungeonElement implements ConfigurationSerializable {
         return "<unknown>";
     }
 
-        protected final String locationForLogs() {
+    protected final String locationForLogs() {
         if (this.location == null) {
             return "<unknown>";
         }
@@ -97,7 +97,7 @@ public abstract class DungeonElement implements ConfigurationSerializable {
                 + this.location.getBlockZ();
     }
 
-        public abstract void initialize();
+    public abstract void initialize();
 
     /**
      * Populates fields annotated with persisted metadata and then gives subclasses a second pass for
@@ -110,7 +110,8 @@ public abstract class DungeonElement implements ConfigurationSerializable {
                         this,
                         this.config,
                         (metadata, rawValue) -> {
-                            Object coerced = PersistedFieldSupport.coerceSimpleValue(metadata, rawValue);
+                            Object coerced =
+                                    PersistedFieldSupport.coerceSimpleValue(metadata, rawValue);
                             if (coerced == PersistedFieldSupport.SKIP) {
                                 this.logger()
                                         .warn(
@@ -133,7 +134,7 @@ public abstract class DungeonElement implements ConfigurationSerializable {
         }
     }
 
-        protected void initializeAdditionalFields() {}
+    protected void initializeAdditionalFields() {}
 
     /**
      * Releases shared listeners owned by the base element implementation.
@@ -152,7 +153,7 @@ public abstract class DungeonElement implements ConfigurationSerializable {
      */
     public abstract void buildHotbarMenu();
 
-        protected abstract void initializeMenu();
+    protected abstract void initializeMenu();
 
     /**
      * Serializes persisted element fields back into configuration data.
@@ -176,7 +177,10 @@ public abstract class DungeonElement implements ConfigurationSerializable {
                     });
         } catch (IllegalAccessException | IllegalArgumentException exception) {
             this.logger()
-                    .error("Failed to serialize element '{}'.", this.getClass().getSimpleName(), exception);
+                    .error(
+                            "Failed to serialize element '{}'.",
+                            this.getClass().getSimpleName(),
+                            exception);
         }
 
         return new HashMap<>();

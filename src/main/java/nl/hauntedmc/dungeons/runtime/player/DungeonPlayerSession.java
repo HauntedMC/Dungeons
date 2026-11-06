@@ -102,14 +102,16 @@ public final class DungeonPlayerSession {
         this.rewardItems = new ArrayList<>();
         this.playerData = new ConfigurationFile(plugin);
         this.playerDataFile =
-                                new File(plugin.getDataFolder(), "players/" + player.getUniqueId() + ".yml");
+                new File(plugin.getDataFolder(), "players/" + player.getUniqueId() + ".yml");
 
         try {
             File parent = this.playerDataFile.getParentFile();
             if (parent != null && !parent.exists() && !parent.mkdirs()) {
                 this.plugin
                         .getSLF4JLogger()
-                        .error("Failed to create player data directory '{}'.", parent.getAbsolutePath());
+                        .error(
+                                "Failed to create player data directory '{}'.",
+                                parent.getAbsolutePath());
             }
 
             if (!this.playerDataFile.exists()) {
@@ -117,7 +119,8 @@ public final class DungeonPlayerSession {
                     this.plugin
                             .getSLF4JLogger()
                             .error(
-                                    "Failed to create player data file '{}'.", this.playerDataFile.getAbsolutePath());
+                                    "Failed to create player data file '{}'.",
+                                    this.playerDataFile.getAbsolutePath());
                 }
             }
 
@@ -129,9 +132,9 @@ public final class DungeonPlayerSession {
                     .getSLF4JLogger()
                     .error(
                             "Failed to initialize player data for '{}' at '{}'.",
-                    player.getName(),
-                    this.playerDataFile.getAbsolutePath(),
-                    exception);
+                            player.getName(),
+                            this.playerDataFile.getAbsolutePath(),
+                            exception);
         }
     }
 
@@ -170,7 +173,8 @@ public final class DungeonPlayerSession {
         if (this.plugin.isEnabled()) {
             this.player.getInventory().setContents(this.savedInventory);
             this.player.getInventory().setArmorContents(this.savedArmor);
-            this.player.setHealth(Math.min(this.savedHealth, EntityUtils.getMaxHealth(this.player)));
+            this.player.setHealth(
+                    Math.min(this.savedHealth, EntityUtils.getMaxHealth(this.player)));
             this.player.setFoodLevel(this.savedFood);
         } else {
             this.player.getInventory().setContents(this.savedInventory);
@@ -229,11 +233,13 @@ public final class DungeonPlayerSession {
                             LangUtils.placeholder(
                                     "function_slot",
                                     String.valueOf(
-                                            PluginConfigView.getFunctionToolDisplaySlot(this.plugin.getConfig()))),
+                                            PluginConfigView.getFunctionToolDisplaySlot(
+                                                    this.plugin.getConfig()))),
                             LangUtils.placeholder(
                                     "room_slot",
                                     String.valueOf(
-                                            PluginConfigView.getRoomToolDisplaySlot(this.plugin.getConfig()))));
+                                            PluginConfigView.getRoomToolDisplaySlot(
+                                                    this.plugin.getConfig()))));
                     LangUtils.sendMessage(this.player, "editor.session.tip-edit-existing");
                     LangUtils.sendMessage(this.player, "editor.session.tip-config-list");
                     this.sendEditorStatusActionBar();
@@ -279,11 +285,13 @@ public final class DungeonPlayerSession {
         this.sendEditorStatusActionBar();
     }
 
-        public List<ItemStack> getRewardItems() {
+    public List<ItemStack> getRewardItems() {
         List<ItemStack> rewards = new ArrayList<>(this.rewardItems);
         if (this.instance != null && this.instance instanceof PlayableInstance) {
             List<ItemStack> instanceRewards =
-                    ((PlayableInstance) this.instance).getRewardInventories().get(this.player.getUniqueId());
+                    ((PlayableInstance) this.instance)
+                            .getRewardInventories()
+                            .get(this.player.getUniqueId());
             if (instanceRewards != null && !instanceRewards.isEmpty()) {
                 rewards.addAll(instanceRewards);
             }
@@ -292,11 +300,11 @@ public final class DungeonPlayerSession {
         return rewards;
     }
 
-        public void addReward(ItemStack... items) {
+    public void addReward(ItemStack... items) {
         this.rewardItems.addAll(Arrays.asList(items));
     }
 
-        public void removeReward(ItemStack item) {
+    public void removeReward(ItemStack item) {
         this.rewardItems.remove(item);
     }
 
@@ -339,7 +347,7 @@ public final class DungeonPlayerSession {
         this.showHotbar(hotbar, true);
     }
 
-        public void showHotbar(PlayerHotbarSnapshot hotbar) {
+    public void showHotbar(PlayerHotbarSnapshot hotbar) {
         this.showHotbar(hotbar, false);
     }
 
@@ -348,8 +356,9 @@ public final class DungeonPlayerSession {
      */
     public void showHotbar(final PlayerHotbarSnapshot hotbar, final boolean restoreHeldSlot) {
         (new BukkitRunnable() {
-                                        public void run() {
-                        HotbarSetEvent event = new HotbarSetEvent(hotbar, DungeonPlayerSession.this);
+                    public void run() {
+                        HotbarSetEvent event =
+                                new HotbarSetEvent(hotbar, DungeonPlayerSession.this);
                         Bukkit.getPluginManager().callEvent(event);
                         if (!event.isCancelled()) {
                             if (DungeonPlayerSession.this.currentHotbar != null
@@ -359,7 +368,9 @@ public final class DungeonPlayerSession {
                             }
 
                             DungeonPlayerSession.this.currentHotbar = hotbar;
-                            hotbar.applyTo(DungeonPlayerSession.this.player.getInventory(), restoreHeldSlot);
+                            hotbar.applyTo(
+                                    DungeonPlayerSession.this.player.getInventory(),
+                                    restoreHeldSlot);
                             DungeonPlayerSession.this.player.playSound(
                                     DungeonPlayerSession.this.player.getLocation(),
                                     "minecraft:item.armor.equip_gold",
@@ -374,11 +385,11 @@ public final class DungeonPlayerSession {
                 .runTaskLater(this.plugin, 1L);
     }
 
-        public PlayerHotbarSnapshot getPreviousHotbar() {
+    public PlayerHotbarSnapshot getPreviousHotbar() {
         return this.hotbarHistory.isEmpty() ? null : this.hotbarHistory.getLast();
     }
 
-        public void restorePreviousHotbar() {
+    public void restorePreviousHotbar() {
         this.restorePreviousHotbar(false);
     }
 
@@ -388,17 +399,20 @@ public final class DungeonPlayerSession {
      */
     public void restorePreviousHotbar(final boolean resetHand) {
         (new BukkitRunnable() {
-                                        public void run() {
-                        PlayerHotbarSnapshot previousHotbar = DungeonPlayerSession.this.getPreviousHotbar();
+                    public void run() {
+                        PlayerHotbarSnapshot previousHotbar =
+                                DungeonPlayerSession.this.getPreviousHotbar();
                         if (previousHotbar == null) {
                             DungeonPlayerSession.this.restoreCapturedHotbar();
                         } else {
-                            HotbarSetEvent event = new HotbarSetEvent(previousHotbar, DungeonPlayerSession.this);
+                            HotbarSetEvent event =
+                                    new HotbarSetEvent(previousHotbar, DungeonPlayerSession.this);
                             Bukkit.getPluginManager().callEvent(event);
                             if (!event.isCancelled()) {
                                 DungeonPlayerSession.this.hotbarHistory.removeLast();
                                 DungeonPlayerSession.this.currentHotbar = previousHotbar;
-                                previousHotbar.applyTo(DungeonPlayerSession.this.player.getInventory(), resetHand);
+                                previousHotbar.applyTo(
+                                        DungeonPlayerSession.this.player.getInventory(), resetHand);
                                 DungeonPlayerSession.this.player.playSound(
                                         DungeonPlayerSession.this.player.getLocation(),
                                         "minecraft:item.armor.equip_gold",
@@ -412,32 +426,33 @@ public final class DungeonPlayerSession {
                 .runTaskLater(this.plugin, 1L);
     }
 
-        public void sendToCheckpoint() {
+    public void sendToCheckpoint() {
         EntityUtils.forceTeleport(this.player, this.dungeonRespawn);
     }
 
-        public void setSavedPosition(Location loc) {
+    public void setSavedPosition(Location loc) {
         this.savedPosition = loc;
         this.saveExitLocation();
     }
 
-        public void saveExitLocation() {
+    public void saveExitLocation() {
         if (this.instance != null) {
             this.playerData.set("DungeonReturnLocation", this.savedPosition);
             this.playerData.save(this.playerDataFile);
         }
     }
 
-    @Nullable public Location getExitLocation() {
+    @Nullable
+    public Location getExitLocation() {
         return this.playerData.getLocation("DungeonReturnLocation");
     }
 
-        public void clearExitLocation() {
+    public void clearExitLocation() {
         this.playerData.set("DungeonReturnLocation", null);
         this.playerData.save(this.playerDataFile);
     }
 
-        public void setDungeonFinished(StaticDungeon dungeon) {
+    public void setDungeonFinished(StaticDungeon dungeon) {
         if (!this.completedDungeons.contains(dungeon.getWorldName())) {
             this.completedDungeons.add(dungeon.getWorldName());
         }
@@ -446,29 +461,30 @@ public final class DungeonPlayerSession {
         this.playerData.save(this.playerDataFile);
     }
 
-        public void setDungeonUnfinished(StaticDungeon dungeon) {
+    public void setDungeonUnfinished(StaticDungeon dungeon) {
         this.completedDungeons.remove(dungeon.getWorldName());
         this.playerData.set("CompletedDungeons", this.completedDungeons);
         this.playerData.save(this.playerDataFile);
     }
 
-        public void setDungeonSavePoint(Location loc, String dungeon) {
+    public void setDungeonSavePoint(Location loc, String dungeon) {
         loc = loc.clone();
         loc.setWorld(null);
         this.playerData.set("SavePoints." + dungeon, loc);
         this.playerData.save(this.playerDataFile);
     }
 
-    @Nullable public Location getDungeonSavePoint(String dungeon) {
+    @Nullable
+    public Location getDungeonSavePoint(String dungeon) {
         return this.playerData.getLocation("SavePoints." + dungeon);
     }
 
-        public void clearDungeonSavePoint(String dungeon) {
+    public void clearDungeonSavePoint(String dungeon) {
         this.playerData.set("SavePoints." + dungeon, null);
         this.playerData.save(this.playerDataFile);
     }
 
-        public void queueReload() {
+    public void queueReload() {
         this.reloadQueued = true;
         Bukkit.getScheduler()
                 .runTaskLater(
@@ -481,11 +497,11 @@ public final class DungeonPlayerSession {
                         200L);
     }
 
-        public void unqueueReload() {
+    public void unqueueReload() {
         this.reloadQueued = false;
     }
 
-        private void sendMenuActionBar() {
+    private void sendMenuActionBar() {
         if (this.player == null || !this.player.isOnline()) {
             return;
         }
@@ -493,7 +509,7 @@ public final class DungeonPlayerSession {
         LangUtils.sendActionBar(this.player, "editor.session.actionbar-menu");
     }
 
-        private void sendEditorStatusActionBar() {
+    private void sendEditorStatusActionBar() {
         if (this.player == null || !this.player.isOnline() || !this.editMode) {
             return;
         }
@@ -503,52 +519,56 @@ public final class DungeonPlayerSession {
                 "editor.session.actionbar-status",
                 LangUtils.placeholder(
                         "function_slot",
-                        String.valueOf(PluginConfigView.getFunctionToolDisplaySlot(this.plugin.getConfig()))),
+                        String.valueOf(
+                                PluginConfigView.getFunctionToolDisplaySlot(
+                                        this.plugin.getConfig()))),
                 LangUtils.placeholder(
                         "room_slot",
-                        String.valueOf(PluginConfigView.getRoomToolDisplaySlot(this.plugin.getConfig()))));
+                        String.valueOf(
+                                PluginConfigView.getRoomToolDisplaySlot(this.plugin.getConfig()))));
     }
 
-        public Player getPlayer() {
+    public Player getPlayer() {
         return this.player;
     }
 
-        public void setPlayer(Player player) {
+    public void setPlayer(Player player) {
         this.player = player;
         this.flushPendingAccessKeyRefund();
     }
 
-        public DungeonInstance getInstance() {
+    public DungeonInstance getInstance() {
         return this.instance;
     }
 
-        public void setInstance(DungeonInstance instance) {
+    public void setInstance(DungeonInstance instance) {
         this.instance = instance;
     }
 
-        public boolean isAwaitingDungeon() {
+    public boolean isAwaitingDungeon() {
         return this.awaitingDungeon;
     }
 
-        public void setAwaitingDungeon(boolean awaitingDungeon) {
+    public void setAwaitingDungeon(boolean awaitingDungeon) {
         this.awaitingDungeon = awaitingDungeon;
     }
 
-        public boolean hasReservedAccessKey() {
+    public boolean hasReservedAccessKey() {
         return this.reservedAccessKey != null;
     }
 
-        public boolean hasReservedAccessKey(String dungeonName) {
+    public boolean hasReservedAccessKey(String dungeonName) {
         return this.reservedAccessKey != null
                 && dungeonName != null
                 && dungeonName.equals(this.reservedAccessKeyDungeon);
     }
 
-    @Nullable public String getReservedAccessKeyDungeon() {
+    @Nullable
+    public String getReservedAccessKeyDungeon() {
         return this.reservedAccessKeyDungeon;
     }
 
-        public boolean reserveAccessKey(String dungeonName, ItemStack reservedKey) {
+    public boolean reserveAccessKey(String dungeonName, ItemStack reservedKey) {
         if (reservedKey == null || reservedKey.getType().isAir()) {
             return false;
         }
@@ -570,7 +590,8 @@ public final class DungeonPlayerSession {
         return this.reservedAccessKey == null ? null : this.reservedAccessKey.clone();
     }
 
-        public boolean completeReservedAccessKey(String dungeonName, @Nullable ItemStack replacementKey) {
+    public boolean completeReservedAccessKey(
+            String dungeonName, @Nullable ItemStack replacementKey) {
         if (!this.hasReservedAccessKey(dungeonName)) {
             return false;
         }
@@ -583,7 +604,7 @@ public final class DungeonPlayerSession {
         return true;
     }
 
-        public boolean refundReservedAccessKey(String dungeonName) {
+    public boolean refundReservedAccessKey(String dungeonName) {
         if (!this.hasReservedAccessKey(dungeonName)) {
             return false;
         }
@@ -591,7 +612,7 @@ public final class DungeonPlayerSession {
         return this.refundReservedAccessKey();
     }
 
-        public boolean refundReservedAccessKey() {
+    public boolean refundReservedAccessKey() {
         if (!this.hasReservedAccessKey()) {
             return false;
         }
@@ -603,7 +624,7 @@ public final class DungeonPlayerSession {
         return true;
     }
 
-        public void flushPendingAccessKeyRefund() {
+    public void flushPendingAccessKeyRefund() {
         if (this.pendingAccessKeyRefund == null
                 || this.pendingAccessKeyRefund.getType().isAir()
                 || this.player == null
@@ -615,7 +636,7 @@ public final class DungeonPlayerSession {
         this.pendingAccessKeyRefund = null;
     }
 
-        private void queueAccessKeyRefund(@Nullable ItemStack refundedKey) {
+    private void queueAccessKeyRefund(@Nullable ItemStack refundedKey) {
         if (refundedKey == null || refundedKey.getType().isAir()) {
             return;
         }
@@ -628,107 +649,107 @@ public final class DungeonPlayerSession {
         this.pendingAccessKeyRefund = refundedKey.clone();
     }
 
-        public GameMode getSavedGameMode() {
+    public GameMode getSavedGameMode() {
         return this.savedGameMode;
     }
 
-        public void setSavedGameMode(GameMode savedGameMode) {
+    public void setSavedGameMode(GameMode savedGameMode) {
         this.savedGameMode = savedGameMode;
     }
 
-        public Location getSavedPosition() {
+    public Location getSavedPosition() {
         return this.savedPosition;
     }
 
-        public void setSavedExp(float savedExp) {
+    public void setSavedExp(float savedExp) {
         this.savedExp = savedExp;
     }
 
-        public void setSavedLevel(int savedLevel) {
+    public void setSavedLevel(int savedLevel) {
         this.savedLevel = savedLevel;
     }
 
-        public Location getDungeonRespawn() {
+    public Location getDungeonRespawn() {
         return this.dungeonRespawn == null ? null : this.dungeonRespawn.clone();
     }
 
-        public void setDungeonRespawn(Location dungeonRespawn) {
+    public void setDungeonRespawn(Location dungeonRespawn) {
         this.dungeonRespawn = dungeonRespawn == null ? null : dungeonRespawn.clone();
     }
 
-        public boolean isDisconnecting() {
+    public boolean isDisconnecting() {
         return this.isDisconnecting;
     }
 
-        public void setDisconnecting(boolean isDisconnecting) {
+    public void setDisconnecting(boolean isDisconnecting) {
         this.isDisconnecting = isDisconnecting;
     }
 
-        public boolean isDead() {
+    public boolean isDead() {
         return this.dead;
     }
 
-        public void setDead(boolean dead) {
+    public void setDead(boolean dead) {
         this.dead = dead;
     }
 
-        public boolean isEditMode() {
+    public boolean isEditMode() {
         return this.editMode;
     }
 
-        public ItemStack[] getSavedEditInventory() {
+    public ItemStack[] getSavedEditInventory() {
         return this.savedEditInventory;
     }
 
-        public PlayerHotbarSnapshot getSavedHotbar() {
+    public PlayerHotbarSnapshot getSavedHotbar() {
         return this.savedHotbar;
     }
 
-        public DungeonFunction getActiveFunction() {
+    public DungeonFunction getActiveFunction() {
         return this.activeFunction;
     }
 
-        public void setActiveFunction(DungeonFunction activeFunction) {
+    public void setActiveFunction(DungeonFunction activeFunction) {
         this.activeFunction = activeFunction;
     }
 
-        public DungeonTrigger getActiveTrigger() {
+    public DungeonTrigger getActiveTrigger() {
         return this.activeTrigger;
     }
 
-        public void setActiveTrigger(DungeonTrigger activeTrigger) {
+    public void setActiveTrigger(DungeonTrigger activeTrigger) {
         this.activeTrigger = activeTrigger;
     }
 
-        public Location getTargetLocation() {
+    public Location getTargetLocation() {
         return this.targetLocation;
     }
 
-        public void setTargetLocation(Location targetLocation) {
+    public void setTargetLocation(Location targetLocation) {
         this.targetLocation = targetLocation;
     }
 
-        public PlayerHotbarSnapshot getCurrentHotbar() {
+    public PlayerHotbarSnapshot getCurrentHotbar() {
         return this.currentHotbar;
     }
 
-        public boolean isChatListening() {
+    public boolean isChatListening() {
         return this.chatListening;
     }
 
-        public void setChatListening(boolean chatListening) {
+    public void setChatListening(boolean chatListening) {
         this.chatListening = chatListening;
     }
 
-        public DungeonFunction getCopiedFunction() {
+    public DungeonFunction getCopiedFunction() {
         return this.copiedFunction;
     }
 
-        public void setCopiedFunction(DungeonFunction copiedFunction) {
+    public void setCopiedFunction(DungeonFunction copiedFunction) {
         this.copiedFunction = copiedFunction;
     }
 
-        public void beginFunctionCopy(DungeonFunction function) {
+    public void beginFunctionCopy(DungeonFunction function) {
         this.copiedFunction = function;
         this.copiedConnector = null;
         this.clipboardType = EditorClipboardType.FUNCTION;
@@ -736,7 +757,7 @@ public final class DungeonPlayerSession {
         this.isCutting = false;
     }
 
-        public void beginFunctionCut(DungeonFunction function) {
+    public void beginFunctionCut(DungeonFunction function) {
         this.copiedFunction = function;
         this.copiedConnector = null;
         this.clipboardType = EditorClipboardType.FUNCTION;
@@ -744,15 +765,15 @@ public final class DungeonPlayerSession {
         this.isCutting = true;
     }
 
-        public boolean isFunctionCopying() {
+    public boolean isFunctionCopying() {
         return this.clipboardType == EditorClipboardType.FUNCTION && this.isCopying;
     }
 
-        public boolean isFunctionCutting() {
+    public boolean isFunctionCutting() {
         return this.clipboardType == EditorClipboardType.FUNCTION && this.isCutting;
     }
 
-        public void clearFunctionClipboard() {
+    public void clearFunctionClipboard() {
         this.copiedFunction = null;
         if (this.clipboardType == EditorClipboardType.FUNCTION) {
             this.clipboardType = EditorClipboardType.NONE;
@@ -761,101 +782,101 @@ public final class DungeonPlayerSession {
         }
     }
 
-        public boolean isCopying() {
+    public boolean isCopying() {
         return this.isCopying;
     }
 
-        public void setCopying(boolean isCopying) {
+    public void setCopying(boolean isCopying) {
         this.isCopying = isCopying;
         if (!this.isCopying && !this.isCutting) {
             this.clipboardType = EditorClipboardType.NONE;
         }
     }
 
-        public boolean isCutting() {
+    public boolean isCutting() {
         return this.isCutting;
     }
 
-        public void setCutting(boolean isCutting) {
+    public void setCutting(boolean isCutting) {
         this.isCutting = isCutting;
         if (!this.isCopying && !this.isCutting) {
             this.clipboardType = EditorClipboardType.NONE;
         }
     }
 
-        public EditorClipboardType getClipboardType() {
+    public EditorClipboardType getClipboardType() {
         return this.clipboardType;
     }
 
-        public void setClipboardType(EditorClipboardType clipboardType) {
+    public void setClipboardType(EditorClipboardType clipboardType) {
         this.clipboardType = clipboardType == null ? EditorClipboardType.NONE : clipboardType;
     }
 
-        public Location getPos1() {
+    public Location getPos1() {
         return this.pos1;
     }
 
-        public void setPos1(Location pos1) {
+    public void setPos1(Location pos1) {
         this.pos1 = pos1;
     }
 
-        public Location getPos2() {
+    public Location getPos2() {
         return this.pos2;
     }
 
-        public void setPos2(Location pos2) {
+    public void setPos2(Location pos2) {
         this.pos2 = pos2;
     }
 
-        public boolean isAwaitingRoomName() {
+    public boolean isAwaitingRoomName() {
         return this.awaitingRoomName;
     }
 
-        public void setAwaitingRoomName(boolean awaitingRoomName) {
+    public void setAwaitingRoomName(boolean awaitingRoomName) {
         this.awaitingRoomName = awaitingRoomName;
     }
 
-        public BranchingRoomDefinition getActiveRoom() {
+    public BranchingRoomDefinition getActiveRoom() {
         return this.activeRoom;
     }
 
-        public void setActiveRoom(BranchingRoomDefinition activeRoom) {
+    public void setActiveRoom(BranchingRoomDefinition activeRoom) {
         this.activeRoom = activeRoom;
     }
 
-        public Connector getActiveConnector() {
+    public Connector getActiveConnector() {
         return this.activeConnector;
     }
 
-        public void setActiveConnector(Connector activeConnector) {
+    public void setActiveConnector(Connector activeConnector) {
         this.activeConnector = activeConnector;
     }
 
-        public ConnectorDoor getActiveDoor() {
+    public ConnectorDoor getActiveDoor() {
         return this.activeDoor;
     }
 
-        public void setActiveDoor(ConnectorDoor activeDoor) {
+    public void setActiveDoor(ConnectorDoor activeDoor) {
         this.activeDoor = activeDoor;
     }
 
-        public boolean isConfirmRoomAction() {
+    public boolean isConfirmRoomAction() {
         return this.confirmRoomAction;
     }
 
-        public void setConfirmRoomAction(boolean confirmRoomAction) {
+    public void setConfirmRoomAction(boolean confirmRoomAction) {
         this.confirmRoomAction = confirmRoomAction;
     }
 
-        public Connector getCopiedConnector() {
+    public Connector getCopiedConnector() {
         return this.copiedConnector;
     }
 
-        public void setCopiedConnector(Connector copiedConnector) {
+    public void setCopiedConnector(Connector copiedConnector) {
         this.copiedConnector = copiedConnector;
     }
 
-        public void beginConnectorCopy(Connector connector) {
+    public void beginConnectorCopy(Connector connector) {
         this.copiedConnector = connector;
         this.copiedFunction = null;
         this.clipboardType = EditorClipboardType.CONNECTOR;
@@ -863,7 +884,7 @@ public final class DungeonPlayerSession {
         this.isCutting = false;
     }
 
-        public void beginConnectorCut(Connector connector) {
+    public void beginConnectorCut(Connector connector) {
         this.copiedConnector = connector;
         this.copiedFunction = null;
         this.clipboardType = EditorClipboardType.CONNECTOR;
@@ -871,15 +892,15 @@ public final class DungeonPlayerSession {
         this.isCutting = true;
     }
 
-        public boolean isConnectorCopying() {
+    public boolean isConnectorCopying() {
         return this.clipboardType == EditorClipboardType.CONNECTOR && this.isCopying;
     }
 
-        public boolean isConnectorCutting() {
+    public boolean isConnectorCutting() {
         return this.clipboardType == EditorClipboardType.CONNECTOR && this.isCutting;
     }
 
-        public void clearConnectorClipboard() {
+    public void clearConnectorClipboard() {
         this.copiedConnector = null;
         if (this.clipboardType == EditorClipboardType.CONNECTOR) {
             this.clipboardType = EditorClipboardType.NONE;
@@ -888,31 +909,31 @@ public final class DungeonPlayerSession {
         }
     }
 
-        public boolean isAddingWhitelistEntry() {
+    public boolean isAddingWhitelistEntry() {
         return this.addingWhitelistEntry;
     }
 
-        public void setAddingWhitelistEntry(boolean addingWhitelistEntry) {
+    public void setAddingWhitelistEntry(boolean addingWhitelistEntry) {
         this.addingWhitelistEntry = addingWhitelistEntry;
     }
 
-        public boolean isEditingWhitelistEntry() {
+    public boolean isEditingWhitelistEntry() {
         return this.editingWhitelistEntry;
     }
 
-        public void setEditingWhitelistEntry(boolean editingWhitelistEntry) {
+    public void setEditingWhitelistEntry(boolean editingWhitelistEntry) {
         this.editingWhitelistEntry = editingWhitelistEntry;
     }
 
-        public boolean isRemovingWhitelistEntry() {
+    public boolean isRemovingWhitelistEntry() {
         return this.removingWhitelistEntry;
     }
 
-        public void setRemovingWhitelistEntry(boolean removingWhitelistEntry) {
+    public void setRemovingWhitelistEntry(boolean removingWhitelistEntry) {
         this.removingWhitelistEntry = removingWhitelistEntry;
     }
 
-        public boolean isReloadQueued() {
+    public boolean isReloadQueued() {
         return this.reloadQueued;
     }
 }

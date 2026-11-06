@@ -27,7 +27,8 @@ public final class ItemUtils {
     private static final String DUNGEON_KEY_TAG = "dungeonkey";
     private static final String DUNGEON_RUNTIME_ITEM_TAG = "DungeonItem";
     private static final String DUNGEON_ACCESS_KEY_ID_TAG = "dungeon_access_key_id";
-    private static final String DUNGEON_ACCESS_KEY_INSTANCE_ID_TAG = "dungeon_access_key_instance_id";
+    private static final String DUNGEON_ACCESS_KEY_INSTANCE_ID_TAG =
+            "dungeon_access_key_instance_id";
 
     /** Gives an item to a player inventory or drops it naturally if full. */
     public static void giveOrDrop(Player player, ItemStack item) {
@@ -62,7 +63,8 @@ public final class ItemUtils {
                 new ArrayList<>(LangUtils.getMessageList("general.items.function-tool.lore"));
         meta.lore(ComponentUtils.components(lore));
         meta.itemName(
-                ComponentUtils.component(LangUtils.getMessage("general.items.function-tool.name", false)));
+                ComponentUtils.component(
+                        LangUtils.getMessage("general.items.function-tool.name", false)));
         meta.addAttributeModifier(
                 Attribute.BLOCK_INTERACTION_RANGE,
                 new AttributeModifier(
@@ -90,10 +92,12 @@ public final class ItemUtils {
     public static ItemStack getRoomTool() {
         ItemStack tool = new ItemStack(RuntimeContext.roomEditorMaterial());
         ItemMeta meta = tool.getItemMeta();
-        List<String> lore = new ArrayList<>(LangUtils.getMessageList("general.items.room-tool.lore"));
+        List<String> lore =
+                new ArrayList<>(LangUtils.getMessageList("general.items.room-tool.lore"));
         meta.lore(ComponentUtils.components(lore));
         meta.itemName(
-                ComponentUtils.component(LangUtils.getMessage("general.items.room-tool.name", false)));
+                ComponentUtils.component(
+                        LangUtils.getMessage("general.items.room-tool.name", false)));
         meta.addAttributeModifier(
                 Attribute.BLOCK_INTERACTION_RANGE,
                 new AttributeModifier(
@@ -164,7 +168,8 @@ public final class ItemUtils {
         NamespacedKey keyData = new NamespacedKey(RuntimeContext.plugin(), DUNGEON_KEY_TAG);
         data.set(keyData, PersistentDataType.INTEGER, 1);
         meta.displayName(
-                ComponentUtils.component(LangUtils.getMessage("general.items.dungeon-key.name", false)));
+                ComponentUtils.component(
+                        LangUtils.getMessage("general.items.dungeon-key.name", false)));
         key.setItemMeta(meta);
         return key;
     }
@@ -179,7 +184,8 @@ public final class ItemUtils {
                 return false;
             } else {
                 PersistentDataContainer data = meta.getPersistentDataContainer();
-                NamespacedKey verification = new NamespacedKey(RuntimeContext.plugin(), DUNGEON_KEY_TAG);
+                NamespacedKey verification =
+                        new NamespacedKey(RuntimeContext.plugin(), DUNGEON_KEY_TAG);
                 return data.has(verification, PersistentDataType.INTEGER);
             }
         }
@@ -204,7 +210,10 @@ public final class ItemUtils {
 
     /** Applies a stable plugin-owned dungeon access-key identity tag to an item. */
     public static ItemStack tagDungeonAccessKey(ItemStack item, String accessKeyId) {
-        if (item == null || item.getType() == Material.AIR || accessKeyId == null || accessKeyId.isBlank()) {
+        if (item == null
+                || item.getType() == Material.AIR
+                || accessKeyId == null
+                || accessKeyId.isBlank()) {
             return item;
         }
 
@@ -213,10 +222,11 @@ public final class ItemUtils {
             return item;
         }
 
-        meta.getPersistentDataContainer().set(
-                new NamespacedKey(RuntimeContext.plugin(), DUNGEON_ACCESS_KEY_ID_TAG),
-                PersistentDataType.STRING,
-                accessKeyId);
+        meta.getPersistentDataContainer()
+                .set(
+                        new NamespacedKey(RuntimeContext.plugin(), DUNGEON_ACCESS_KEY_ID_TAG),
+                        PersistentDataType.STRING,
+                        accessKeyId);
         item.setItemMeta(meta);
         return item;
     }
@@ -232,14 +242,18 @@ public final class ItemUtils {
             return null;
         }
 
-        return meta.getPersistentDataContainer().get(
-                new NamespacedKey(RuntimeContext.plugin(), DUNGEON_ACCESS_KEY_ID_TAG),
-                PersistentDataType.STRING);
+        return meta.getPersistentDataContainer()
+                .get(
+                        new NamespacedKey(RuntimeContext.plugin(), DUNGEON_ACCESS_KEY_ID_TAG),
+                        PersistentDataType.STRING);
     }
 
     /** Applies a one-time issued-instance id to a dungeon access key item. */
     public static ItemStack tagDungeonAccessKeyInstance(ItemStack item, String instanceId) {
-        if (item == null || item.getType() == Material.AIR || instanceId == null || instanceId.isBlank()) {
+        if (item == null
+                || item.getType() == Material.AIR
+                || instanceId == null
+                || instanceId.isBlank()) {
             return item;
         }
 
@@ -248,10 +262,12 @@ public final class ItemUtils {
             return item;
         }
 
-        meta.getPersistentDataContainer().set(
-                new NamespacedKey(RuntimeContext.plugin(), DUNGEON_ACCESS_KEY_INSTANCE_ID_TAG),
-                PersistentDataType.STRING,
-                instanceId);
+        meta.getPersistentDataContainer()
+                .set(
+                        new NamespacedKey(
+                                RuntimeContext.plugin(), DUNGEON_ACCESS_KEY_INSTANCE_ID_TAG),
+                        PersistentDataType.STRING,
+                        instanceId);
         item.setItemMeta(meta);
         return item;
     }
@@ -268,7 +284,9 @@ public final class ItemUtils {
         }
 
         meta.getPersistentDataContainer()
-                .remove(new NamespacedKey(RuntimeContext.plugin(), DUNGEON_ACCESS_KEY_INSTANCE_ID_TAG));
+                .remove(
+                        new NamespacedKey(
+                                RuntimeContext.plugin(), DUNGEON_ACCESS_KEY_INSTANCE_ID_TAG));
         item.setItemMeta(meta);
         return item;
     }
@@ -302,9 +320,11 @@ public final class ItemUtils {
             return null;
         }
 
-        return meta.getPersistentDataContainer().get(
-                new NamespacedKey(RuntimeContext.plugin(), DUNGEON_ACCESS_KEY_INSTANCE_ID_TAG),
-                PersistentDataType.STRING);
+        return meta.getPersistentDataContainer()
+                .get(
+                        new NamespacedKey(
+                                RuntimeContext.plugin(), DUNGEON_ACCESS_KEY_INSTANCE_ID_TAG),
+                        PersistentDataType.STRING);
     }
 
     /** Returns the best available display name for an item stack. */

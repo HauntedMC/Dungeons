@@ -32,14 +32,15 @@ public final class TimeUtils {
             return null;
         }
 
-        long multiplier = switch (matcher.group(2).toLowerCase(Locale.ROOT)) {
-            case "m" -> 60;
-            case "h" -> 3600;
-            case "d" -> 86400;
-            case "w" -> 604800;
-            case "y" -> 31557600;
-            default -> 1;
-        };
+        long multiplier =
+                switch (matcher.group(2).toLowerCase(Locale.ROOT)) {
+                    case "m" -> 60;
+                    case "h" -> 3600;
+                    case "d" -> 86400;
+                    case "w" -> 604800;
+                    case "y" -> 31557600;
+                    default -> 1;
+                };
         try {
             long seconds = Math.multiplyExact(Long.parseLong(matcher.group(1)), multiplier);
             return getFutureTimeInSeconds(seconds);
@@ -60,6 +61,7 @@ public final class TimeUtils {
 
     /** Returns a timestamp offset by seconds, rejecting arithmetic overflow. */
     public static Timestamp getFutureTimeInSeconds(long seconds) {
-        return new Timestamp(Math.addExact(System.currentTimeMillis(), Math.multiplyExact(seconds, 1000L)));
+        return new Timestamp(
+                Math.addExact(System.currentTimeMillis(), Math.multiplyExact(seconds, 1000L)));
     }
 }

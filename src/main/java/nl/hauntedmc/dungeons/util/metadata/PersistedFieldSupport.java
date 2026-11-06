@@ -36,7 +36,8 @@ public final class PersistedFieldSupport {
     }
 
     /** Populates persisted fields on a target object using decoder-provided coercion. */
-    public static void populate(Object target, Map<String, Object> values, FieldValueDecoder decoder)
+    public static void populate(
+            Object target, Map<String, Object> values, FieldValueDecoder decoder)
             throws IllegalAccessException {
         for (FieldMetadata metadata : persistedFields(target.getClass())) {
             Object rawValue = resolveConfiguredValue(values, metadata);
@@ -68,7 +69,8 @@ public final class PersistedFieldSupport {
     }
 
     /** Resolves a raw configured value for one field metadata entry. */
-    public static Object resolveConfiguredValue(Map<String, Object> values, FieldMetadata metadata) {
+    public static Object resolveConfiguredValue(
+            Map<String, Object> values, FieldMetadata metadata) {
         return values.get(metadata.name());
     }
 

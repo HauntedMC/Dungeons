@@ -79,7 +79,8 @@ public final class LocationUtils {
             try {
                 return Bukkit.getScheduler()
                         .callSyncMethod(
-                                RuntimeContext.plugin(), () -> findSafeLocationInBoxSync(world, box))
+                                RuntimeContext.plugin(),
+                                () -> findSafeLocationInBoxSync(world, box))
                         .get();
             } catch (InterruptedException exception) {
                 Thread.currentThread().interrupt();
@@ -162,7 +163,8 @@ public final class LocationUtils {
                 continue;
             }
 
-            BoundingBox groundBox = new BoundingBox(x - 0.4D, y - 1.0D, z - 0.4D, x + 0.4D, y, z + 0.4D);
+            BoundingBox groundBox =
+                    new BoundingBox(x - 0.4D, y - 1.0D, z - 0.4D, x + 0.4D, y, z + 0.4D);
             if (!world.hasCollisionsIn(groundBox)) {
                 continue;
             }

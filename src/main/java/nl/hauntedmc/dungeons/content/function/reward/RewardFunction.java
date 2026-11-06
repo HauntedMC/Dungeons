@@ -232,7 +232,7 @@ public class RewardFunction extends DungeonFunction {
                         + "_"
                         + this.location.getBlockZ();
         this.instanceGui =
-                                new GuiWindow(
+                new GuiWindow(
                         this.instanceGuiName,
                         54,
                         LangUtils.getMessage("instance.play.rewards.gui-name", false));
@@ -244,21 +244,29 @@ public class RewardFunction extends DungeonFunction {
                     if (!this.playerRewards.contains(player.getUniqueId())) {
                         if (!(this.instance instanceof EditableInstance)) {
                             PlayableInstance instance = (PlayableInstance) this.instance;
-                            if (!this.cooldownDisabled && instance.getDungeon().hasLootCooldown(player, this)) {
-                                LangUtils.sendMessage(player, "instance.play.rewards.already-received");
-                                Date unlockTime = instance.getDungeon().getLootUnlockTime(player, this);
+                            if (!this.cooldownDisabled
+                                    && instance.getDungeon().hasLootCooldown(player, this)) {
+                                LangUtils.sendMessage(
+                                        player, "instance.play.rewards.already-received");
+                                Date unlockTime =
+                                        instance.getDungeon().getLootUnlockTime(player, this);
                                 if (unlockTime != null) {
-                                    SimpleDateFormat format = new SimpleDateFormat("EEE, MMM d, hh:mm aaa z");
+                                    SimpleDateFormat format =
+                                            new SimpleDateFormat("EEE, MMM d, hh:mm aaa z");
                                     LangUtils.sendMessage(
                                             player,
                                             "instance.play.rewards.cooldown-time",
-                                            LangUtils.placeholder("time", format.format(unlockTime)));
+                                            LangUtils.placeholder(
+                                                    "time", format.format(unlockTime)));
                                 }
                             } else {
                                 this.playerRewards.add(player.getUniqueId());
-                                if (instance.getConfig().getBoolean("rewards.deliver_on_finish", false)) {
-                                    LangUtils.sendMessage(player, "instance.play.rewards.rewards-inv-info");
-                                    LangUtils.sendMessage(player, "instance.play.rewards.view-rewards-info");
+                                if (instance.getConfig()
+                                        .getBoolean("rewards.deliver_on_finish", false)) {
+                                    LangUtils.sendMessage(
+                                            player, "instance.play.rewards.rewards-inv-info");
+                                    LangUtils.sendMessage(
+                                            player, "instance.play.rewards.view-rewards-info");
                                 }
 
                                 GuiInventory guiInv = this.instanceGui.getInventoryFor(player);
@@ -267,7 +275,8 @@ public class RewardFunction extends DungeonFunction {
 
                                 for (ItemStack item : this.rewards) {
 
-                                    if (instance.getConfig().getBoolean("rewards.deliver_on_finish", false)) {
+                                    if (instance.getConfig()
+                                            .getBoolean("rewards.deliver_on_finish", false)) {
                                         if (item == null) {
                                             continue;
                                         }
@@ -278,7 +287,8 @@ public class RewardFunction extends DungeonFunction {
                                                 "click",
                                                 clickEvent -> {
                                                     clickEvent.setCancelled(true);
-                                                    Player clicker = (Player) clickEvent.getWhoClicked();
+                                                    Player clicker =
+                                                            (Player) clickEvent.getWhoClicked();
                                                     instance.addPlayerReward(clicker, item);
                                                     guiInv.removeButton(finalSlot);
                                                 });
@@ -305,11 +315,14 @@ public class RewardFunction extends DungeonFunction {
                             Player player = (Player) event.getPlayer();
                             Inventory inv = this.instanceGui.getInventoryFor(player).inventory();
                             if (!inv.isEmpty()) {
-                                if (instance.getConfig().getBoolean("rewards.deliver_on_finish", false)) {
-                                    LangUtils.sendMessage(player, "instance.play.rewards.added-to-rewards-inv");
+                                if (instance.getConfig()
+                                        .getBoolean("rewards.deliver_on_finish", false)) {
+                                    LangUtils.sendMessage(
+                                            player, "instance.play.rewards.added-to-rewards-inv");
                                     instance.addPlayerReward(player, inv.getContents());
                                 } else {
-                                    LangUtils.sendMessage(player, "instance.play.rewards.added-to-inv");
+                                    LangUtils.sendMessage(
+                                            player, "instance.play.rewards.added-to-inv");
                                     ItemUtils.giveOrDrop(player, inv.getContents());
                                 }
 
@@ -338,7 +351,8 @@ public class RewardFunction extends DungeonFunction {
                 "loaditems",
                 event -> {
                     Player player = (Player) event.getPlayer();
-                    DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                    DungeonPlayerSession playerSession =
+                            RuntimeContext.playerSessions().get(player);
                     if (playerSession.isEditMode()) {
                         Inventory inv = this.rewardsGui.getInventoryFor(player).inventory();
                         int i = 0;
@@ -353,7 +367,8 @@ public class RewardFunction extends DungeonFunction {
                 "saveitems",
                 event -> {
                     Player player = (Player) event.getPlayer();
-                    DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                    DungeonPlayerSession playerSession =
+                            RuntimeContext.playerSessions().get(player);
                     if (playerSession.isEditMode()) {
                         Inventory inv = this.rewardsGui.getInventoryFor(player).inventory();
                         this.rewards = new ArrayList<>();
@@ -369,7 +384,7 @@ public class RewardFunction extends DungeonFunction {
     public void initializeCooldownMenu() {
         this.cooldownMenu = PlayerHotbarMenu.createMenu();
         this.cooldownMenu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     /**
                      * Builds button.
                      */
@@ -385,12 +400,13 @@ public class RewardFunction extends DungeonFunction {
                     @Override
                     public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
-                        DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                        DungeonPlayerSession playerSession =
+                                RuntimeContext.playerSessions().get(player);
                         playerSession.restorePreviousHotbar();
                     }
                 });
         this.cooldownMenu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -407,16 +423,19 @@ public class RewardFunction extends DungeonFunction {
                     @Override
                     public void onSelect(Player player) {
                         if (!RewardFunction.this.cooldownDisabled) {
-                            LangUtils.sendMessage(player, "editor.function.reward.cooldown-disabled");
+                            LangUtils.sendMessage(
+                                    player, "editor.function.reward.cooldown-disabled");
                         } else {
-                            LangUtils.sendMessage(player, "editor.function.reward.cooldown-enabled");
+                            LangUtils.sendMessage(
+                                    player, "editor.function.reward.cooldown-enabled");
                         }
 
-                        RewardFunction.this.cooldownDisabled = !RewardFunction.this.cooldownDisabled;
+                        RewardFunction.this.cooldownDisabled =
+                                !RewardFunction.this.cooldownDisabled;
                     }
                 });
         this.cooldownMenu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -433,17 +452,20 @@ public class RewardFunction extends DungeonFunction {
                     @Override
                     public void onSelect(Player player) {
                         if (!RewardFunction.this.overrideCooldown) {
-                            LangUtils.sendMessage(player, "editor.function.reward.custom-cooldown-enabled");
+                            LangUtils.sendMessage(
+                                    player, "editor.function.reward.custom-cooldown-enabled");
                         } else {
-                            LangUtils.sendMessage(player, "editor.function.reward.custom-cooldown-disabled");
+                            LangUtils.sendMessage(
+                                    player, "editor.function.reward.custom-cooldown-disabled");
                         }
 
-                        RewardFunction.this.overrideCooldown = !RewardFunction.this.overrideCooldown;
+                        RewardFunction.this.overrideCooldown =
+                                !RewardFunction.this.overrideCooldown;
                     }
                 });
         this.cooldownMenu.addMenuItem(
                 3,
-                                new MenuItem() {
+                new MenuItem() {
                     /**
                      * Builds button.
                      */
@@ -454,7 +476,8 @@ public class RewardFunction extends DungeonFunction {
                         } else {
                             this.button = new MenuButton(Material.CLOCK);
                             this.button.setDisplayName(
-                                    "&d&lType: " + CooldownPeriod.fromIndex(RewardFunction.this.period));
+                                    "&d&lType: "
+                                            + CooldownPeriod.fromIndex(RewardFunction.this.period));
                         }
                     }
 
@@ -472,7 +495,8 @@ public class RewardFunction extends DungeonFunction {
                                 RewardFunction.this.period = 0;
                             }
 
-                            CooldownPeriod period = CooldownPeriod.fromIndex(RewardFunction.this.period);
+                            CooldownPeriod period =
+                                    CooldownPeriod.fromIndex(RewardFunction.this.period);
                             LangUtils.sendMessage(
                                     player,
                                     "editor.function.reward.cooldown-type-set",
@@ -483,7 +507,7 @@ public class RewardFunction extends DungeonFunction {
                 });
         this.cooldownMenu.addMenuItem(
                 4,
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -492,7 +516,8 @@ public class RewardFunction extends DungeonFunction {
                         if (!RewardFunction.this.overrideCooldown) {
                             this.button = null;
                         } else {
-                            CooldownPeriod period = CooldownPeriod.fromIndex(RewardFunction.this.period);
+                            CooldownPeriod period =
+                                    CooldownPeriod.fromIndex(RewardFunction.this.period);
                             this.button = new MenuButton(Material.REPEATER);
                             if (period == CooldownPeriod.TIMER) {
                                 this.button.setDisplayName("&d&lCooldown in Minutes");
@@ -510,11 +535,14 @@ public class RewardFunction extends DungeonFunction {
                     @Override
                     public void onSelect(Player player) {
                         if (RewardFunction.this.overrideCooldown) {
-                            CooldownPeriod period = CooldownPeriod.fromIndex(RewardFunction.this.period);
+                            CooldownPeriod period =
+                                    CooldownPeriod.fromIndex(RewardFunction.this.period);
                             if (period == CooldownPeriod.TIMER) {
-                                LangUtils.sendMessage(player, "editor.function.reward.ask-cooldown-minutes");
+                                LangUtils.sendMessage(
+                                        player, "editor.function.reward.ask-cooldown-minutes");
                             } else {
-                                LangUtils.sendMessage(player, "editor.function.reward.ask-reset-hour");
+                                LangUtils.sendMessage(
+                                        player, "editor.function.reward.ask-reset-hour");
                             }
                         }
                     }
@@ -525,18 +553,21 @@ public class RewardFunction extends DungeonFunction {
                     @Override
                     public void onInput(Player player, String message) {
                         Optional<Integer> value = InputUtils.readIntegerInput(player, message);
-                        RewardFunction.this.cooldownTime = value.orElse(RewardFunction.this.cooldownTime);
+                        RewardFunction.this.cooldownTime =
+                                value.orElse(RewardFunction.this.cooldownTime);
                         if (value.isPresent()) {
                             LangUtils.sendMessage(
                                     player,
                                     "editor.function.reward.cooldown-time-set",
-                                    LangUtils.placeholder("time", String.valueOf(RewardFunction.this.cooldownTime)));
+                                    LangUtils.placeholder(
+                                            "time",
+                                            String.valueOf(RewardFunction.this.cooldownTime)));
                         }
                     }
                 });
         this.cooldownMenu.addMenuItem(
                 5,
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -545,7 +576,8 @@ public class RewardFunction extends DungeonFunction {
                         if (!RewardFunction.this.overrideCooldown) {
                             this.button = null;
                         } else {
-                            CooldownPeriod period = CooldownPeriod.fromIndex(RewardFunction.this.period);
+                            CooldownPeriod period =
+                                    CooldownPeriod.fromIndex(RewardFunction.this.period);
                             if (period == CooldownPeriod.WEEKLY) {
                                 this.button = new MenuButton(Material.CLOCK);
                                 this.button.setDisplayName("&d&lDay of Week");
@@ -567,11 +599,14 @@ public class RewardFunction extends DungeonFunction {
                     public void onSelect(Player player) {
                         if (RewardFunction.this.overrideCooldown) {
                             if (RewardFunction.this.period >= 3) {
-                                CooldownPeriod cPeriod = CooldownPeriod.fromIndex(RewardFunction.this.period);
+                                CooldownPeriod cPeriod =
+                                        CooldownPeriod.fromIndex(RewardFunction.this.period);
                                 if (cPeriod == CooldownPeriod.WEEKLY) {
-                                    LangUtils.sendMessage(player, "editor.function.reward.ask-reset-weekday");
+                                    LangUtils.sendMessage(
+                                            player, "editor.function.reward.ask-reset-weekday");
                                 } else if (cPeriod == CooldownPeriod.MONTHLY) {
-                                    LangUtils.sendMessage(player, "editor.function.reward.ask-reset-monthday");
+                                    LangUtils.sendMessage(
+                                            player, "editor.function.reward.ask-reset-monthday");
                                 }
                             }
                         }
@@ -588,7 +623,8 @@ public class RewardFunction extends DungeonFunction {
                             LangUtils.sendMessage(
                                     player,
                                     "editor.function.reward.reset-day-set",
-                                    LangUtils.placeholder("day", String.valueOf(RewardFunction.this.resetDay)));
+                                    LangUtils.placeholder(
+                                            "day", String.valueOf(RewardFunction.this.resetDay)));
                         }
                     }
                 });
@@ -619,7 +655,8 @@ public class RewardFunction extends DungeonFunction {
             cal.set(Calendar.SECOND, 0);
             cal.set(Calendar.MILLISECOND, 0);
             if (period == CooldownPeriod.WEEKLY) {
-                int dayOfWeek = Math.min(Math.max(normalizedResetDay, Calendar.SUNDAY), Calendar.SATURDAY);
+                int dayOfWeek =
+                        Math.min(Math.max(normalizedResetDay, Calendar.SUNDAY), Calendar.SATURDAY);
                 if (dayOfWeek != normalizedResetDay) {
                     this.logInvalidCooldownConfiguration();
                 }
@@ -655,7 +692,7 @@ public class RewardFunction extends DungeonFunction {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     /**
                      * Builds button.
                      */
@@ -671,11 +708,12 @@ public class RewardFunction extends DungeonFunction {
                     @Override
                     public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
-                        RuntimeContext.guiService().openGui(player, RewardFunction.this.rewardsGuiName);
+                        RuntimeContext.guiService()
+                                .openGui(player, RewardFunction.this.rewardsGuiName);
                     }
                 });
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -705,12 +743,13 @@ public class RewardFunction extends DungeonFunction {
                             LangUtils.sendMessage(
                                     player,
                                     "editor.function.reward.exp-set",
-                                    LangUtils.placeholder("xp", String.valueOf(RewardFunction.this.xp)));
+                                    LangUtils.placeholder(
+                                            "xp", String.valueOf(RewardFunction.this.xp)));
                         }
                     }
                 });
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -740,12 +779,13 @@ public class RewardFunction extends DungeonFunction {
                             LangUtils.sendMessage(
                                     player,
                                     "editor.function.reward.levels-set",
-                                    LangUtils.placeholder("levels", String.valueOf(RewardFunction.this.levels)));
+                                    LangUtils.placeholder(
+                                            "levels", String.valueOf(RewardFunction.this.levels)));
                         }
                     }
                 });
         this.menu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     /**
                      * Builds button.
                      */
@@ -761,7 +801,8 @@ public class RewardFunction extends DungeonFunction {
                     @Override
                     public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
-                        DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                        DungeonPlayerSession playerSession =
+                                RuntimeContext.playerSessions().get(player);
                         playerSession.showHotbar(RewardFunction.this.cooldownMenu, true);
                     }
                 });

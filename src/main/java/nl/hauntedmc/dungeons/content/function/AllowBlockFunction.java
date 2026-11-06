@@ -100,7 +100,7 @@ public class AllowBlockFunction extends DungeonFunction {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -117,16 +117,18 @@ public class AllowBlockFunction extends DungeonFunction {
                     @Override
                     public void onSelect(Player player) {
                         if (!AllowBlockFunction.this.allowPlace) {
-                            LangUtils.sendMessage(player, "editor.function.allow-block.placing-allowed");
+                            LangUtils.sendMessage(
+                                    player, "editor.function.allow-block.placing-allowed");
                         } else {
-                            LangUtils.sendMessage(player, "editor.function.allow-block.placing-denied");
+                            LangUtils.sendMessage(
+                                    player, "editor.function.allow-block.placing-denied");
                         }
 
                         AllowBlockFunction.this.allowPlace = !AllowBlockFunction.this.allowPlace;
                     }
                 });
         this.menu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -143,16 +145,18 @@ public class AllowBlockFunction extends DungeonFunction {
                     @Override
                     public void onSelect(Player player) {
                         if (!AllowBlockFunction.this.allowBreak) {
-                            LangUtils.sendMessage(player, "editor.function.allow-block.breaking-allowed");
+                            LangUtils.sendMessage(
+                                    player, "editor.function.allow-block.breaking-allowed");
                         } else {
-                            LangUtils.sendMessage(player, "editor.function.allow-block.breaking-denied");
+                            LangUtils.sendMessage(
+                                    player, "editor.function.allow-block.breaking-denied");
                         }
 
                         AllowBlockFunction.this.allowBreak = !AllowBlockFunction.this.allowBreak;
                     }
                 });
         this.menu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -169,9 +173,11 @@ public class AllowBlockFunction extends DungeonFunction {
                     @Override
                     public void onSelect(Player player) {
                         if (!AllowBlockFunction.this.allowBucket) {
-                            LangUtils.sendMessage(player, "editor.function.allow-block.buckets-allowed");
+                            LangUtils.sendMessage(
+                                    player, "editor.function.allow-block.buckets-allowed");
                         } else {
-                            LangUtils.sendMessage(player, "editor.function.allow-block.buckets-denied");
+                            LangUtils.sendMessage(
+                                    player, "editor.function.allow-block.buckets-denied");
                         }
 
                         AllowBlockFunction.this.allowBucket = !AllowBlockFunction.this.allowBucket;

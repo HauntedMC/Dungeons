@@ -23,7 +23,7 @@ public class WhitelistEntry implements ConfigSerializableModel {
     @PersistedField private String materialName;
     @PersistedField private double weight;
 
-        private WhitelistEntry() {}
+    private WhitelistEntry() {}
 
     /**
      * Creates an entry that points to the given room and inherits its current weight.
@@ -45,7 +45,7 @@ public class WhitelistEntry implements ConfigSerializableModel {
     }
 
     @Override
-        public void postDeserialize() {
+    public void postDeserialize() {
         if (this.roomName != null) {
             this.roomName = this.roomName.trim();
             if (this.roomName.isEmpty()) {
@@ -64,7 +64,7 @@ public class WhitelistEntry implements ConfigSerializableModel {
     }
 
     @Override
-        public boolean isDeserializedValid() {
+    public boolean isDeserializedValid() {
         return this.roomName != null;
     }
 
@@ -95,7 +95,8 @@ public class WhitelistEntry implements ConfigSerializableModel {
     @Nullable
     public Material getMaterial() {
         try {
-            return Material.valueOf(this.materialName != null ? this.materialName : "STRUCTURE_BLOCK");
+            return Material.valueOf(
+                    this.materialName != null ? this.materialName : "STRUCTURE_BLOCK");
         } catch (IllegalArgumentException exception) {
             return null;
         }
@@ -145,7 +146,7 @@ public class WhitelistEntry implements ConfigSerializableModel {
     }
 
     @Override
-        public boolean equals(Object obj) {
+    public boolean equals(Object obj) {
         if (this == obj) {
             return true;
         }
@@ -159,7 +160,7 @@ public class WhitelistEntry implements ConfigSerializableModel {
     }
 
     @Override
-        public int hashCode() {
+    public int hashCode() {
         return Objects.hash(this.roomName != null ? this.roomName : this.materialName);
     }
 }

@@ -142,7 +142,8 @@ public final class DungeonTeamService implements Listener {
                 this.plugin
                         .getSLF4JLogger()
                         .warn(
-                                "Failed to create a team for '{}': player session was missing.", leader.getName());
+                                "Failed to create a team for '{}': player session was missing.",
+                                leader.getName());
                 return true;
             }
 
@@ -205,7 +206,7 @@ public final class DungeonTeamService implements Listener {
 
         long now = System.currentTimeMillis();
         TeamInvite invite =
-                                new TeamInvite(
+                new TeamInvite(
                         team.getTeamId(),
                         leader.getUniqueId(),
                         target.getUniqueId(),
@@ -296,7 +297,8 @@ public final class DungeonTeamService implements Listener {
             DungeonInstance instance = requesterState == null ? null : requesterState.getInstance();
             if (instance == null
                     || instance.getInstanceWorld() == null
-                    || !Objects.equals(team.getInstanceWorldName(), instance.getInstanceWorld().getName())) {
+                    || !Objects.equals(
+                            team.getInstanceWorldName(), instance.getInstanceWorld().getName())) {
                 this.send(requester, "commands.team.delete.started");
                 return true;
             }
@@ -332,11 +334,13 @@ public final class DungeonTeamService implements Listener {
         if (team.isLeader(requester.getUniqueId())) {
             DungeonPlayerSession requesterState = this.playerManager.get(requester);
             if (team.isStarted()) {
-                DungeonInstance instance = requesterState == null ? null : requesterState.getInstance();
+                DungeonInstance instance =
+                        requesterState == null ? null : requesterState.getInstance();
                 if (instance == null
                         || instance.getInstanceWorld() == null
                         || !Objects.equals(
-                                team.getInstanceWorldName(), instance.getInstanceWorld().getName())) {
+                                team.getInstanceWorldName(),
+                                instance.getInstanceWorld().getName())) {
                     this.send(requester, "commands.team.leave.leader-cannot-leave");
                     this.send(requester, "commands.team.leave.leader-started-hint");
                     return true;
@@ -362,7 +366,8 @@ public final class DungeonTeamService implements Listener {
             DungeonInstance instance = dungeonPlayer == null ? null : dungeonPlayer.getInstance();
             if (instance != null
                     && instance.getInstanceWorld() != null
-                    && Objects.equals(team.getInstanceWorldName(), instance.getInstanceWorld().getName())) {
+                    && Objects.equals(
+                            team.getInstanceWorldName(), instance.getInstanceWorld().getName())) {
                 instance.removePlayer(dungeonPlayer);
                 return true;
             }
@@ -415,9 +420,14 @@ public final class DungeonTeamService implements Listener {
         if (team.getQueuedDungeonName() != null) {
             String difficulty =
                     team.getQueuedDifficulty() == null || team.getQueuedDifficulty().isEmpty()
-                            ? LangUtils.getMessage("commands.team.info.labels.default-difficulty", false)
+                            ? LangUtils.getMessage(
+                                    "commands.team.info.labels.default-difficulty", false)
                             : team.getQueuedDifficulty();
-            this.send(requester, "commands.team.info.dungeon", team.getQueuedDungeonName(), difficulty);
+            this.send(
+                    requester,
+                    "commands.team.info.dungeon",
+                    team.getQueuedDungeonName(),
+                    difficulty);
         }
 
         if (team.isLeader(requester.getUniqueId())) {
@@ -515,7 +525,8 @@ public final class DungeonTeamService implements Listener {
         }
 
         DungeonPlayerSession memberState = this.playerManager.get(memberId);
-        DungeonQueueEntry queue = memberState == null ? null : this.queueManager.getQueue(memberState);
+        DungeonQueueEntry queue =
+                memberState == null ? null : this.queueManager.getQueue(memberState);
         if (queue != null) {
             this.queueManager.removePlayer(memberId);
         }
@@ -587,7 +598,8 @@ public final class DungeonTeamService implements Listener {
                                     }
 
                                     DungeonQueueEntry queue =
-                                            this.queueManager.getQueue(this.playerManager.get(current.getLeaderId()));
+                                            this.queueManager.getQueue(
+                                                    this.playerManager.get(current.getLeaderId()));
                                     if (queue != null) {
                                         this.queueManager.unqueue(queue);
                                     }
@@ -597,14 +609,14 @@ public final class DungeonTeamService implements Listener {
                                 expiryTicks));
     }
 
-        private boolean isBusyForTeamMembership(DungeonPlayerSession playerSession) {
+    private boolean isBusyForTeamMembership(DungeonPlayerSession playerSession) {
         return playerSession == null
                 || playerSession.getInstance() != null
                 || playerSession.isAwaitingDungeon()
                 || this.queueManager.getQueue(playerSession) != null;
     }
 
-        private void disbandStartedTeamAndRemoveLeader(
+    private void disbandStartedTeamAndRemoveLeader(
             DungeonTeam team,
             DungeonInstance instance,
             DungeonPlayerSession leaderSession,
@@ -615,7 +627,7 @@ public final class DungeonTeamService implements Listener {
         }
     }
 
-        private void disbandStartedTeam(
+    private void disbandStartedTeam(
             DungeonTeam team, DungeonInstance instance, String teamMessageKey) {
         if (team == null || instance == null || instance.getInstanceWorld() == null) {
             return;
@@ -645,7 +657,8 @@ public final class DungeonTeamService implements Listener {
         }
 
         String instanceWorldName = instance.getInstanceWorld().getName();
-        BukkitTask previousTask = this.disbandShutdownTasksByInstanceWorld.remove(instanceWorldName);
+        BukkitTask previousTask =
+                this.disbandShutdownTasksByInstanceWorld.remove(instanceWorldName);
         if (previousTask != null) {
             previousTask.cancel();
         }
@@ -656,7 +669,8 @@ public final class DungeonTeamService implements Listener {
         }
 
         int delaySeconds =
-                DungeonConfigView.getTeamDisbandShutdownDelaySeconds(instance.getDungeon().getConfig());
+                DungeonConfigView.getTeamDisbandShutdownDelaySeconds(
+                        instance.getDungeon().getConfig());
         this.sendDisbandShutdownWarning(instance, delaySeconds);
 
         if (delaySeconds == 0) {
@@ -667,13 +681,15 @@ public final class DungeonTeamService implements Listener {
         Set<Integer> warningSeconds =
                 PluginConfigView.getDisbandShutdownWarningSeconds(this.plugin.getConfig());
         BukkitRunnable shutdownTask =
-                                new BukkitRunnable() {
+                new BukkitRunnable() {
                     private int remainingSeconds = delaySeconds;
 
                     @Override
-                                        public void run() {
-                        if (instance.getInstanceWorld() == null || instance.getPlayers().isEmpty()) {
-                            DungeonTeamService.this.disbandShutdownTasksByInstanceWorld.remove(instanceWorldName);
+                    public void run() {
+                        if (instance.getInstanceWorld() == null
+                                || instance.getPlayers().isEmpty()) {
+                            DungeonTeamService.this.disbandShutdownTasksByInstanceWorld.remove(
+                                    instanceWorldName);
                             this.cancel();
                             if (instance.getPlayers().isEmpty()) {
                                 instance.scheduleEmptyCleanup();
@@ -683,13 +699,15 @@ public final class DungeonTeamService implements Listener {
 
                         this.remainingSeconds--;
                         if (this.remainingSeconds <= 0) {
-                            DungeonTeamService.this.closeDisbandedInstance(instance, instanceWorldName);
+                            DungeonTeamService.this.closeDisbandedInstance(
+                                    instance, instanceWorldName);
                             this.cancel();
                             return;
                         }
 
                         if (warningSeconds.contains(this.remainingSeconds)) {
-                            DungeonTeamService.this.sendDisbandShutdownWarning(instance, this.remainingSeconds);
+                            DungeonTeamService.this.sendDisbandShutdownWarning(
+                                    instance, this.remainingSeconds);
                         }
                     }
                 };
@@ -704,7 +722,7 @@ public final class DungeonTeamService implements Listener {
                         delaySeconds);
     }
 
-        private void sendDisbandShutdownWarning(DungeonInstance instance, int remainingSeconds) {
+    private void sendDisbandShutdownWarning(DungeonInstance instance, int remainingSeconds) {
         String seconds = String.valueOf(Math.max(remainingSeconds, 0));
         for (DungeonPlayerSession playerSession : new ArrayList<>(instance.getPlayers())) {
             Player player = playerSession.getPlayer();
@@ -717,7 +735,7 @@ public final class DungeonTeamService implements Listener {
         }
     }
 
-        private void closeDisbandedInstance(DungeonInstance instance, String instanceWorldName) {
+    private void closeDisbandedInstance(DungeonInstance instance, String instanceWorldName) {
         BukkitTask task = this.disbandShutdownTasksByInstanceWorld.remove(instanceWorldName);
         if (task != null) {
             task.cancel();
@@ -728,15 +746,20 @@ public final class DungeonTeamService implements Listener {
             return;
         }
 
-        instance.messagePlayers(LangUtils.getMessage("instance.play.events.team-disbanded-timeout"));
+        instance.messagePlayers(
+                LangUtils.getMessage("instance.play.events.team-disbanded-timeout"));
         for (DungeonPlayerSession playerSession : new ArrayList<>(instance.getPlayers())) {
             instance.removePlayer(playerSession);
         }
         instance.dispose();
     }
 
-        private void removeMember(
-            DungeonTeam team, UUID memberId, String memberKey, String othersKey, String... othersArgs) {
+    private void removeMember(
+            DungeonTeam team,
+            UUID memberId,
+            String memberKey,
+            String othersKey,
+            String... othersArgs) {
         if (!team.removeMember(memberId)) {
             return;
         }
@@ -750,7 +773,7 @@ public final class DungeonTeamService implements Listener {
         this.notifyTeam(team, othersKey, othersArgs);
     }
 
-        private void dissolveTeam(DungeonTeam team, String messageKey, boolean notifyMembers) {
+    private void dissolveTeam(DungeonTeam team, String messageKey, boolean notifyMembers) {
         if (team == null) {
             return;
         }
@@ -765,7 +788,10 @@ public final class DungeonTeamService implements Listener {
             this.teamIdByMember.remove(memberId);
             if (notifyMembers) {
                 Player member = Bukkit.getPlayer(memberId);
-                if (member != null && member.isOnline() && messageKey != null && !messageKey.isEmpty()) {
+                if (member != null
+                        && member.isOnline()
+                        && messageKey != null
+                        && !messageKey.isEmpty()) {
                     this.send(member, messageKey);
                 }
             }
@@ -774,11 +800,11 @@ public final class DungeonTeamService implements Listener {
         this.clearInvitesForTeam(team.getTeamId());
     }
 
-        private void clearInvitesForTeam(UUID teamId) {
+    private void clearInvitesForTeam(UUID teamId) {
         this.invitesByTarget.entrySet().removeIf(entry -> entry.getValue().teamId().equals(teamId));
     }
 
-        private void clearInvitesForPlayer(UUID playerId) {
+    private void clearInvitesForPlayer(UUID playerId) {
         Iterator<Map.Entry<UUID, TeamInvite>> iterator = this.invitesByTarget.entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry<UUID, TeamInvite> entry = iterator.next();
@@ -789,7 +815,7 @@ public final class DungeonTeamService implements Listener {
         }
     }
 
-        private void notifyTeam(DungeonTeam team, String messageKey, String... args) {
+    private void notifyTeam(DungeonTeam team, String messageKey, String... args) {
         for (UUID memberId : team.getMemberIds()) {
             Player member = Bukkit.getPlayer(memberId);
             if (member != null && member.isOnline()) {
@@ -798,31 +824,38 @@ public final class DungeonTeamService implements Listener {
         }
     }
 
-        private void send(Player player, String messageKey, String... args) {
+    private void send(Player player, String messageKey, String... args) {
         // Team messages use named placeholders and this central switch keeps the placeholder
         // mapping explicit so mismatches fail fast during development.
         switch (messageKey) {
             case "commands.team.invite.sent",
-                            "commands.team.invite.received",
-                            "commands.team.invite.denied-other",
-                            "commands.team.member-joined",
-                            "commands.team.leave.other",
-                            "commands.team.leave.started-other",
-                            "commands.team.kick.removed-other",
-                            "commands.player.queue.cleared.team" ->
-                    LangUtils.sendMessage(player, messageKey, LangUtils.placeholder("player", args[0]));
+                    "commands.team.invite.received",
+                    "commands.team.invite.denied-other",
+                    "commands.team.member-joined",
+                    "commands.team.leave.other",
+                    "commands.team.leave.started-other",
+                    "commands.team.kick.removed-other",
+                    "commands.player.queue.cleared.team" ->
+                    LangUtils.sendMessage(
+                            player, messageKey, LangUtils.placeholder("player", args[0]));
             case "commands.team.joined" ->
-                    LangUtils.sendMessage(player, messageKey, LangUtils.placeholder("leader", args[0]));
+                    LangUtils.sendMessage(
+                            player, messageKey, LangUtils.placeholder("leader", args[0]));
             case "commands.team.revoke.notified" ->
-                    LangUtils.sendMessage(player, messageKey, LangUtils.placeholder("leader", args[0]));
+                    LangUtils.sendMessage(
+                            player, messageKey, LangUtils.placeholder("leader", args[0]));
             case "commands.team.revoke.success" ->
-                    LangUtils.sendMessage(player, messageKey, LangUtils.placeholder("player", args[0]));
+                    LangUtils.sendMessage(
+                            player, messageKey, LangUtils.placeholder("player", args[0]));
             case "commands.team.info.leader" ->
-                    LangUtils.sendMessage(player, messageKey, LangUtils.placeholder("leader", args[0]));
+                    LangUtils.sendMessage(
+                            player, messageKey, LangUtils.placeholder("leader", args[0]));
             case "commands.team.info.members" ->
-                    LangUtils.sendMessage(player, messageKey, LangUtils.placeholder("members", args[0]));
+                    LangUtils.sendMessage(
+                            player, messageKey, LangUtils.placeholder("members", args[0]));
             case "commands.team.info.state" ->
-                    LangUtils.sendMessage(player, messageKey, LangUtils.placeholder("state", args[0]));
+                    LangUtils.sendMessage(
+                            player, messageKey, LangUtils.placeholder("state", args[0]));
             case "commands.team.info.dungeon" ->
                     LangUtils.sendMessage(
                             player,
@@ -830,21 +863,24 @@ public final class DungeonTeamService implements Listener {
                             LangUtils.placeholder("dungeon", args[0]),
                             LangUtils.placeholder("difficulty", args[1]));
             case "commands.team.queued" ->
-                    LangUtils.sendMessage(player, messageKey, LangUtils.placeholder("dungeon", args[0]));
+                    LangUtils.sendMessage(
+                            player, messageKey, LangUtils.placeholder("dungeon", args[0]));
             case "commands.team.started" ->
-                    LangUtils.sendMessage(player, messageKey, LangUtils.placeholder("instance", args[0]));
+                    LangUtils.sendMessage(
+                            player, messageKey, LangUtils.placeholder("instance", args[0]));
             default -> {
                 if (args.length == 0) {
                     LangUtils.sendMessage(player, messageKey);
                 } else {
-                                        throw new IllegalArgumentException(
-                            "Unhandled named placeholder mapping for team message key: " + messageKey);
+                    throw new IllegalArgumentException(
+                            "Unhandled named placeholder mapping for team message key: "
+                                    + messageKey);
                 }
             }
         }
     }
 
-        private String getLeaderName(DungeonTeam team) {
+    private String getLeaderName(DungeonTeam team) {
         Player leader = Bukkit.getPlayer(team.getLeaderId());
         return leader == null ? team.getLeaderId().toString() : leader.getName();
     }
@@ -859,7 +895,8 @@ public final class DungeonTeamService implements Listener {
             return;
         }
 
-        DungeonQueueEntry queue = this.queueManager.getQueue(this.playerManager.get(event.getPlayer()));
+        DungeonQueueEntry queue =
+                this.queueManager.getQueue(this.playerManager.get(event.getPlayer()));
         if (queue != null && team.isLeader(playerId)) {
             this.queueManager.unqueue(queue);
         }

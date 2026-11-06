@@ -75,7 +75,7 @@ public class FinishDungeonFunction extends DungeonFunction {
 
             for (DungeonPlayerSession playerSession : targets) {
                 PlayerFinishDungeonEvent finishEvent =
-                                                new PlayerFinishDungeonEvent(instance, playerSession);
+                        new PlayerFinishDungeonEvent(instance, playerSession);
                 Bukkit.getPluginManager().callEvent(finishEvent);
                 instance.setDungeonFinished(true);
                 Player player = playerSession.getPlayer();
@@ -114,7 +114,7 @@ public class FinishDungeonFunction extends DungeonFunction {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -131,9 +131,11 @@ public class FinishDungeonFunction extends DungeonFunction {
                     @Override
                     public void onSelect(Player player) {
                         if (!FinishDungeonFunction.this.leave) {
-                            LangUtils.sendMessage(player, "editor.function.finish-dungeon.leave-after");
+                            LangUtils.sendMessage(
+                                    player, "editor.function.finish-dungeon.leave-after");
                         } else {
-                            LangUtils.sendMessage(player, "editor.function.finish-dungeon.stay-after");
+                            LangUtils.sendMessage(
+                                    player, "editor.function.finish-dungeon.stay-after");
                         }
 
                         FinishDungeonFunction.this.leave = !FinishDungeonFunction.this.leave;

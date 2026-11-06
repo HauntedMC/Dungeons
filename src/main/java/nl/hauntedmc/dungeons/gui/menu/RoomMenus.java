@@ -46,7 +46,7 @@ public class RoomMenus {
         }
 
         GuiWindow tableMenu =
-                                new GuiWindow(
+                new GuiWindow(
                         "whitelist_" + dungeon.getWorldName() + "_" + room.getNamespace(),
                         54,
                         "&8Edit Room Whitelist");
@@ -55,7 +55,8 @@ public class RoomMenus {
                 "load",
                 event -> {
                     Player player = (Player) event.getPlayer();
-                    DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                    DungeonPlayerSession playerSession =
+                            RuntimeContext.playerSessions().get(player);
 
                     for (int slot = 9; slot < 54; slot++) {
                         int i = slot - 9;
@@ -76,7 +77,7 @@ public class RoomMenus {
                             // The room whitelist menu doubles as both a weight editor and an icon
                             // picker, so each button carries multiple click behaviors.
                             Button button =
-                                                                        new Button(
+                                    new Button(
                                             "whitelist_"
                                                     + dungeon.getWorldName()
                                                     + "_"
@@ -98,15 +99,23 @@ public class RoomMenus {
                                                     gui.removeButton(finalSlot);
                                                     tableMenu.updateButtons(clicker);
                                                     clicker.playSound(
-                                                            clicker.getLocation(), "entity.enderman.teleport", 1.0F, 0.7F);
+                                                            clicker.getLocation(),
+                                                            "entity.enderman.teleport",
+                                                            1.0F,
+                                                            0.7F);
                                                     LangUtils.sendMessage(
                                                             player,
                                                             "editor.session.room-whitelist.remove-success",
-                                                            LangUtils.placeholder("room", whiteRoom.getNamespace()));
+                                                            LangUtils.placeholder(
+                                                                    "room",
+                                                                    whiteRoom.getNamespace()));
                                                     room.getRoomWhitelist().remove(entry);
                                                 } else {
                                                     clicker.playSound(
-                                                            clicker.getLocation(), "entity.experience_orb.pickup", 1.0F, 1.2F);
+                                                            clicker.getLocation(),
+                                                            "entity.experience_orb.pickup",
+                                                            1.0F,
+                                                            1.2F);
                                                     int amount = 1;
                                                     if (click.getClick() == ClickType.SHIFT_LEFT) {
                                                         amount = 5;
@@ -114,7 +123,10 @@ public class RoomMenus {
 
                                                     entry.setWeight(entry.getWeight() + amount);
                                                     updateWeightButton(
-                                                            button, whiteRoom, entry.getMaterial(), entry.getWeight());
+                                                            button,
+                                                            whiteRoom,
+                                                            entry.getMaterial(),
+                                                            entry.getWeight());
                                                     tableMenu.updateButtons(clicker);
                                                 }
                                             }
@@ -132,15 +144,23 @@ public class RoomMenus {
                                                     gui.removeButton(finalSlot);
                                                     tableMenu.updateButtons(clicker);
                                                     clicker.playSound(
-                                                            clicker.getLocation(), "entity.enderman.teleport", 1.0F, 0.7F);
+                                                            clicker.getLocation(),
+                                                            "entity.enderman.teleport",
+                                                            1.0F,
+                                                            0.7F);
                                                     LangUtils.sendMessage(
                                                             player,
                                                             "editor.session.room-whitelist.remove-success",
-                                                            LangUtils.placeholder("room", whiteRoom.getNamespace()));
+                                                            LangUtils.placeholder(
+                                                                    "room",
+                                                                    whiteRoom.getNamespace()));
                                                     room.getRoomWhitelist().remove(entry);
                                                 } else {
                                                     clicker.playSound(
-                                                            clicker.getLocation(), "entity.experience_orb.pickup", 1.0F, 0.8F);
+                                                            clicker.getLocation(),
+                                                            "entity.experience_orb.pickup",
+                                                            1.0F,
+                                                            0.8F);
                                                     int amount = 1;
                                                     if (click.getClick() == ClickType.SHIFT_RIGHT) {
                                                         amount = 5;
@@ -148,7 +168,10 @@ public class RoomMenus {
 
                                                     entry.setWeight(entry.getWeight() - amount);
                                                     updateWeightButton(
-                                                            button, whiteRoom, entry.getMaterial(), entry.getWeight());
+                                                            button,
+                                                            whiteRoom,
+                                                            entry.getMaterial(),
+                                                            entry.getWeight());
                                                     tableMenu.updateButtons(clicker);
                                                 }
                                             }
@@ -162,9 +185,16 @@ public class RoomMenus {
                                             click.setCancelled(true);
                                             Player clicker = (Player) click.getWhoClicked();
                                             clicker.playSound(
-                                                    clicker.getLocation(), "entity.experience_orb.pickup", 1.0F, 1.0F);
+                                                    clicker.getLocation(),
+                                                    "entity.experience_orb.pickup",
+                                                    1.0F,
+                                                    1.0F);
                                             entry.setMaterial(cursorMat);
-                                            updateWeightButton(button, whiteRoom, entry.getMaterial(), entry.getWeight());
+                                            updateWeightButton(
+                                                    button,
+                                                    whiteRoom,
+                                                    entry.getMaterial(),
+                                                    entry.getWeight());
                                             tableMenu.updateButtons(clicker);
                                         }
                                     });
@@ -183,7 +213,7 @@ public class RoomMenus {
         tableMenu.addButton(7, new Button("blocked_7", blockedSlot));
         tableMenu.addButton(8, new Button("blocked_8", blockedSlot));
         Button addButton =
-                                new Button(
+                new Button(
                         "whitelist_" + dungeon.getWorldName() + "_" + room.getNamespace() + "_ADD",
                         Material.JIGSAW,
                         "&aAdd Room");
@@ -191,7 +221,8 @@ public class RoomMenus {
                 "click",
                 event -> {
                     Player player = (Player) event.getWhoClicked();
-                    DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                    DungeonPlayerSession playerSession =
+                            RuntimeContext.playerSessions().get(player);
                     playerSession.setPos1(null);
                     playerSession.setPos2(null);
                     playerSession.setAwaitingRoomName(true);
@@ -201,7 +232,7 @@ public class RoomMenus {
                 });
         tableMenu.addButton(3, addButton);
         Button editButton =
-                                new Button(
+                new Button(
                         "whitelist_" + dungeon.getWorldName() + "_" + room.getNamespace() + "_EDIT",
                         Material.NAME_TAG,
                         "&eEdit Room");
@@ -217,8 +248,12 @@ public class RoomMenus {
                 });
         tableMenu.addButton(4, editButton);
         Button remButton =
-                                new Button(
-                        "whitelist_" + dungeon.getWorldName() + "_" + room.getNamespace() + "_REMOVE",
+                new Button(
+                        "whitelist_"
+                                + dungeon.getWorldName()
+                                + "_"
+                                + room.getNamespace()
+                                + "_REMOVE",
                         Material.STRUCTURE_VOID,
                         "&cRemove Room");
         updateRemovalModeButton(remButton, false);
@@ -226,7 +261,8 @@ public class RoomMenus {
                 "click",
                 event -> {
                     Player player = (Player) event.getWhoClicked();
-                    DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                    DungeonPlayerSession playerSession =
+                            RuntimeContext.playerSessions().get(player);
                     GuiInventory gui = tableMenu.getInventoryFor(player);
                     Button liveButton = gui == null ? remButton : gui.buttons().get(5);
                     event.setCancelled(true);
@@ -237,7 +273,8 @@ public class RoomMenus {
                     } else {
                         playerSession.setRemovingWhitelistEntry(true);
                         updateRemovalModeButton(liveButton == null ? remButton : liveButton, true);
-                        LangUtils.sendMessage(player, "editor.session.room-whitelist.remove-prompt");
+                        LangUtils.sendMessage(
+                                player, "editor.session.room-whitelist.remove-prompt");
                         tableMenu.updateButtons(player);
                     }
                 });
@@ -246,7 +283,8 @@ public class RoomMenus {
                 "cancel_removal",
                 event -> {
                     Player player = (Player) event.getPlayer();
-                    DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                    DungeonPlayerSession playerSession =
+                            RuntimeContext.playerSessions().get(player);
                     GuiInventory gui = tableMenu.getInventoryFor(player);
                     Button liveButton = gui == null ? remButton : gui.buttons().get(5);
                     playerSession.setRemovingWhitelistEntry(false);
@@ -261,13 +299,15 @@ public class RoomMenus {
             initializeOpenSlotItem();
         }
 
-        GuiWindow tableMenu = new GuiWindow("connector_whitelist", 54, "&8Edit Connector Whitelist");
+        GuiWindow tableMenu =
+                new GuiWindow("connector_whitelist", 54, "&8Edit Connector Whitelist");
         tableMenu.setCancelClick(false);
         tableMenu.addOpenAction(
                 "load",
                 event -> {
                     Player player = (Player) event.getPlayer();
-                    DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                    DungeonPlayerSession playerSession =
+                            RuntimeContext.playerSessions().get(player);
                     BranchingRoomDefinition room = playerSession.getActiveRoom();
                     if (room != null) {
                         BranchingDungeon dungeon = room.getDungeon();
@@ -294,8 +334,11 @@ public class RoomMenus {
                                         }
 
                                         Button button =
-                                                                                                new Button(
-                                                        "whitelist_" + player.getName() + "_" + slot,
+                                                new Button(
+                                                        "whitelist_"
+                                                                + player.getName()
+                                                                + "_"
+                                                                + slot,
                                                         mat,
                                                         "&b&l" + whiteRoom.getNamespace());
                                         int finalSlot = slot;
@@ -303,20 +346,32 @@ public class RoomMenus {
                                                 "add",
                                                 click -> {
                                                     if (click.getClick() == ClickType.LEFT
-                                                            || click.getClick() == ClickType.SHIFT_LEFT) {
-                                                        if (click.getCursor().getType() == Material.AIR) {
+                                                            || click.getClick()
+                                                                    == ClickType.SHIFT_LEFT) {
+                                                        if (click.getCursor().getType()
+                                                                == Material.AIR) {
                                                             click.setCancelled(true);
-                                                            Player clicker = (Player) click.getWhoClicked();
-                                                            if (playerSession.isRemovingWhitelistEntry()) {
+                                                            Player clicker =
+                                                                    (Player) click.getWhoClicked();
+                                                            if (playerSession
+                                                                    .isRemovingWhitelistEntry()) {
                                                                 gui.removeButton(finalSlot);
                                                                 tableMenu.updateButtons(clicker);
                                                                 clicker.playSound(
-                                                                        clicker.getLocation(), "entity.enderman.teleport", 1.0F, 0.7F);
+                                                                        clicker.getLocation(),
+                                                                        "entity.enderman.teleport",
+                                                                        1.0F,
+                                                                        0.7F);
                                                                 LangUtils.sendMessage(
                                                                         player,
                                                                         "editor.session.room-whitelist.remove-success",
-                                                                        LangUtils.placeholder("room", whiteRoom.getNamespace()));
-                                                                connector.getRoomWhitelist().remove(entry);
+                                                                        LangUtils.placeholder(
+                                                                                "room",
+                                                                                whiteRoom
+                                                                                        .getNamespace()));
+                                                                connector
+                                                                        .getRoomWhitelist()
+                                                                        .remove(entry);
                                                             } else {
                                                                 clicker.playSound(
                                                                         clicker.getLocation(),
@@ -324,13 +379,18 @@ public class RoomMenus {
                                                                         1.0F,
                                                                         1.2F);
                                                                 int amount = 1;
-                                                                if (click.getClick() == ClickType.SHIFT_LEFT) {
+                                                                if (click.getClick()
+                                                                        == ClickType.SHIFT_LEFT) {
                                                                     amount = 5;
                                                                 }
 
-                                                                entry.setWeight(entry.getWeight() + amount);
+                                                                entry.setWeight(
+                                                                        entry.getWeight() + amount);
                                                                 updateWeightButton(
-                                                                        button, whiteRoom, entry.getMaterial(), entry.getWeight());
+                                                                        button,
+                                                                        whiteRoom,
+                                                                        entry.getMaterial(),
+                                                                        entry.getWeight());
                                                                 tableMenu.updateButtons(clicker);
                                                             }
                                                         }
@@ -340,20 +400,32 @@ public class RoomMenus {
                                                 "subtract",
                                                 click -> {
                                                     if (click.getClick() == ClickType.RIGHT
-                                                            || click.getClick() == ClickType.SHIFT_RIGHT) {
-                                                        if (click.getCursor().getType() == Material.AIR) {
+                                                            || click.getClick()
+                                                                    == ClickType.SHIFT_RIGHT) {
+                                                        if (click.getCursor().getType()
+                                                                == Material.AIR) {
                                                             click.setCancelled(true);
-                                                            Player clicker = (Player) click.getWhoClicked();
-                                                            if (playerSession.isRemovingWhitelistEntry()) {
+                                                            Player clicker =
+                                                                    (Player) click.getWhoClicked();
+                                                            if (playerSession
+                                                                    .isRemovingWhitelistEntry()) {
                                                                 gui.removeButton(finalSlot);
                                                                 tableMenu.updateButtons(clicker);
                                                                 clicker.playSound(
-                                                                        clicker.getLocation(), "entity.enderman.teleport", 1.0F, 0.7F);
+                                                                        clicker.getLocation(),
+                                                                        "entity.enderman.teleport",
+                                                                        1.0F,
+                                                                        0.7F);
                                                                 LangUtils.sendMessage(
                                                                         player,
                                                                         "editor.session.room-whitelist.remove-success",
-                                                                        LangUtils.placeholder("room", whiteRoom.getNamespace()));
-                                                                connector.getRoomWhitelist().remove(entry);
+                                                                        LangUtils.placeholder(
+                                                                                "room",
+                                                                                whiteRoom
+                                                                                        .getNamespace()));
+                                                                connector
+                                                                        .getRoomWhitelist()
+                                                                        .remove(entry);
                                                             } else {
                                                                 clicker.playSound(
                                                                         clicker.getLocation(),
@@ -361,13 +433,18 @@ public class RoomMenus {
                                                                         1.0F,
                                                                         0.7F);
                                                                 int amount = 1;
-                                                                if (click.getClick() == ClickType.SHIFT_RIGHT) {
+                                                                if (click.getClick()
+                                                                        == ClickType.SHIFT_RIGHT) {
                                                                     amount = 5;
                                                                 }
 
-                                                                entry.setWeight(entry.getWeight() - amount);
+                                                                entry.setWeight(
+                                                                        entry.getWeight() - amount);
                                                                 updateWeightButton(
-                                                                        button, whiteRoom, entry.getMaterial(), entry.getWeight());
+                                                                        button,
+                                                                        whiteRoom,
+                                                                        entry.getMaterial(),
+                                                                        entry.getWeight());
                                                                 tableMenu.updateButtons(clicker);
                                                             }
                                                         }
@@ -376,20 +453,29 @@ public class RoomMenus {
                                         button.addAction(
                                                 "set_icon",
                                                 click -> {
-                                                    Material cursorMat = click.getCursor().getType();
+                                                    Material cursorMat =
+                                                            click.getCursor().getType();
                                                     if (cursorMat != Material.AIR) {
                                                         click.setCancelled(true);
-                                                        Player clicker = (Player) click.getWhoClicked();
+                                                        Player clicker =
+                                                                (Player) click.getWhoClicked();
                                                         clicker.playSound(
-                                                                clicker.getLocation(), "entity.experience_orb.pickup", 1.0F, 1.0F);
+                                                                clicker.getLocation(),
+                                                                "entity.experience_orb.pickup",
+                                                                1.0F,
+                                                                1.0F);
                                                         entry.setMaterial(cursorMat);
                                                         updateWeightButton(
-                                                                button, whiteRoom, entry.getMaterial(), entry.getWeight());
+                                                                button,
+                                                                whiteRoom,
+                                                                entry.getMaterial(),
+                                                                entry.getWeight());
                                                         tableMenu.updateButtons(clicker);
                                                     }
                                                 });
                                         gui.setButton(slot, button);
-                                        updateWeightButton(button, whiteRoom, mat, entry.getWeight());
+                                        updateWeightButton(
+                                                button, whiteRoom, mat, entry.getWeight());
                                     }
                                 }
 
@@ -410,7 +496,8 @@ public class RoomMenus {
                 "click",
                 event -> {
                     Player player = (Player) event.getWhoClicked();
-                    DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                    DungeonPlayerSession playerSession =
+                            RuntimeContext.playerSessions().get(player);
                     event.setCancelled(true);
                     playerSession.setPos1(null);
                     playerSession.setPos2(null);
@@ -420,7 +507,8 @@ public class RoomMenus {
                     player.closeInventory();
                 });
         tableMenu.addButton(3, addButton);
-        Button editButton = new Button("connector_whitelist_EDIT", Material.NAME_TAG, "&eEdit Room");
+        Button editButton =
+                new Button("connector_whitelist_EDIT", Material.NAME_TAG, "&eEdit Room");
         editButton.addLore(ColorUtils.colorize("&cNO FUNCTIONALITY HERE!"));
         editButton.addLore(
                 ColorUtils.colorize("&cThis button may be replaced with an explainer tooltip."));
@@ -433,13 +521,14 @@ public class RoomMenus {
                 });
         tableMenu.addButton(4, editButton);
         Button remButton =
-                                new Button("connector_whitelist_REMOVE", Material.STRUCTURE_VOID, "&cRemove Room");
+                new Button("connector_whitelist_REMOVE", Material.STRUCTURE_VOID, "&cRemove Room");
         updateRemovalModeButton(remButton, false);
         remButton.addAction(
                 "click",
                 event -> {
                     Player player = (Player) event.getWhoClicked();
-                    DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                    DungeonPlayerSession playerSession =
+                            RuntimeContext.playerSessions().get(player);
                     GuiInventory gui = tableMenu.getInventoryFor(player);
                     Button liveButton = gui == null ? remButton : gui.buttons().get(5);
                     event.setCancelled(true);
@@ -450,7 +539,8 @@ public class RoomMenus {
                     } else {
                         playerSession.setRemovingWhitelistEntry(true);
                         updateRemovalModeButton(liveButton == null ? remButton : liveButton, true);
-                        LangUtils.sendMessage(player, "editor.session.room-whitelist.remove-prompt");
+                        LangUtils.sendMessage(
+                                player, "editor.session.room-whitelist.remove-prompt");
                         tableMenu.updateButtons(player);
                     }
                 });
@@ -459,7 +549,8 @@ public class RoomMenus {
                 "cancel_removal",
                 event -> {
                     Player player = (Player) event.getPlayer();
-                    DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                    DungeonPlayerSession playerSession =
+                            RuntimeContext.playerSessions().get(player);
                     GuiInventory gui = tableMenu.getInventoryFor(player);
                     Button liveButton = gui == null ? remButton : gui.buttons().get(5);
                     playerSession.setRemovingWhitelistEntry(false);

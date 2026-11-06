@@ -37,7 +37,8 @@ public class LootTableItem implements ConfigurationSerializable {
      */
     public LootTableItem(Map<String, Object> config) {
         this.item =
-                (ItemStack) config.getOrDefault("item", new ItemStack(Material.RED_STAINED_GLASS_PANE));
+                (ItemStack)
+                        config.getOrDefault("item", new ItemStack(Material.RED_STAINED_GLASS_PANE));
         this.weight = (Integer) config.getOrDefault("weight", 1);
         this.minItems = (Integer) config.getOrDefault("minItems", 1);
         this.maxItems = (Integer) config.getOrDefault("maxItems", 1);
@@ -65,7 +66,8 @@ public class LootTableItem implements ConfigurationSerializable {
      */
     public void initializeEditorMenu(LootTable table) {
         this.itemMenu =
-                                new GuiWindow("loottable_" + table.getNamespace() + "_item", 27, "&8Edit Loot Item");
+                new GuiWindow(
+                        "loottable_" + table.getNamespace() + "_item", 27, "&8Edit Loot Item");
         this.itemMenu.addCloseAction(
                 "save",
                 event -> {
@@ -77,7 +79,8 @@ public class LootTableItem implements ConfigurationSerializable {
                 "click",
                 event -> {
                     Player player = (Player) event.getWhoClicked();
-                    RuntimeContext.guiService().openGui(player, "loottable_" + table.getNamespace());
+                    RuntimeContext.guiService()
+                            .openGui(player, "loottable_" + table.getNamespace());
                 });
         this.itemMenu.addButton(4, backButton);
         Button minButton = new Button("min", Material.COAL, "&aMinimum Items");
@@ -87,7 +90,8 @@ public class LootTableItem implements ConfigurationSerializable {
                 event -> {
                     if (event.getClick() == ClickType.LEFT) {
                         Player player = (Player) event.getWhoClicked();
-                        player.playSound(player.getLocation(), "entity.experience_orb.pickup", 1.0F, 1.2F);
+                        player.playSound(
+                                player.getLocation(), "entity.experience_orb.pickup", 1.0F, 1.2F);
                         this.minItems = Math.min(this.maxItems, this.minItems + 1);
                         this.updateMinButton(this.getLiveButton(player, 12));
                         this.itemMenu.updateButtons(player);
@@ -98,7 +102,8 @@ public class LootTableItem implements ConfigurationSerializable {
                 event -> {
                     if (event.getClick() == ClickType.RIGHT) {
                         Player player = (Player) event.getWhoClicked();
-                        player.playSound(player.getLocation(), "entity.experience_orb.pickup", 1.0F, 0.8F);
+                        player.playSound(
+                                player.getLocation(), "entity.experience_orb.pickup", 1.0F, 0.8F);
                         this.minItems = Math.max(0, this.minItems - 1);
                         this.updateMinButton(this.getLiveButton(player, 12));
                         this.itemMenu.updateButtons(player);
@@ -112,7 +117,8 @@ public class LootTableItem implements ConfigurationSerializable {
                 event -> {
                     if (event.getClick() == ClickType.LEFT) {
                         Player player = (Player) event.getWhoClicked();
-                        player.playSound(player.getLocation(), "entity.experience_orb.pickup", 1.0F, 1.2F);
+                        player.playSound(
+                                player.getLocation(), "entity.experience_orb.pickup", 1.0F, 1.2F);
                         this.maxItems++;
                         this.updateMaxButton(this.getLiveButton(player, 13));
                         this.itemMenu.updateButtons(player);
@@ -123,7 +129,8 @@ public class LootTableItem implements ConfigurationSerializable {
                 event -> {
                     if (event.getClick() == ClickType.RIGHT) {
                         Player player = (Player) event.getWhoClicked();
-                        player.playSound(player.getLocation(), "entity.experience_orb.pickup", 1.0F, 0.8F);
+                        player.playSound(
+                                player.getLocation(), "entity.experience_orb.pickup", 1.0F, 0.8F);
                         this.maxItems = Math.max(this.minItems, this.maxItems - 1);
                         this.updateMaxButton(this.getLiveButton(player, 13));
                         this.itemMenu.updateButtons(player);
@@ -135,9 +142,11 @@ public class LootTableItem implements ConfigurationSerializable {
         weightButton.addAction(
                 "left_click",
                 event -> {
-                    if (event.getClick() == ClickType.LEFT || event.getClick() == ClickType.SHIFT_LEFT) {
+                    if (event.getClick() == ClickType.LEFT
+                            || event.getClick() == ClickType.SHIFT_LEFT) {
                         Player player = (Player) event.getWhoClicked();
-                        player.playSound(player.getLocation(), "entity.experience_orb.pickup", 1.0F, 1.2F);
+                        player.playSound(
+                                player.getLocation(), "entity.experience_orb.pickup", 1.0F, 1.2F);
                         int amount = 1;
                         if (event.getClick() == ClickType.SHIFT_LEFT) {
                             amount = 5;
@@ -151,9 +160,11 @@ public class LootTableItem implements ConfigurationSerializable {
         weightButton.addAction(
                 "right_click",
                 event -> {
-                    if (event.getClick() == ClickType.RIGHT || event.getClick() == ClickType.SHIFT_RIGHT) {
+                    if (event.getClick() == ClickType.RIGHT
+                            || event.getClick() == ClickType.SHIFT_RIGHT) {
                         Player player = (Player) event.getWhoClicked();
-                        player.playSound(player.getLocation(), "entity.experience_orb.pickup", 1.0F, 0.8F);
+                        player.playSound(
+                                player.getLocation(), "entity.experience_orb.pickup", 1.0F, 0.8F);
                         int amount = 1;
                         if (event.getClick() == ClickType.SHIFT_RIGHT) {
                             amount = 5;
@@ -234,7 +245,8 @@ public class LootTableItem implements ConfigurationSerializable {
         return gui == null ? this.itemMenu.getButtons().get(slot) : gui.buttons().get(slot);
     }
 
-    @NotNull public Map<String, Object> serialize() {
+    @NotNull
+    public Map<String, Object> serialize() {
         Map<String, Object> map = new HashMap<>();
         map.put("item", this.item);
         map.put("weight", this.weight);

@@ -56,8 +56,8 @@ public class EditableInstance extends DungeonInstance {
                 PluginConfigView.getEditAutosaveIntervalSeconds(this.plugin().getConfig()) * 20L;
         if (autosaveTime > 0L) {
             this.autosaveTicker =
-                                        new BukkitRunnable() {
-                                                public void run() {
+                    new BukkitRunnable() {
+                        public void run() {
                             EditableInstance.this.autosave();
                         }
                     };
@@ -93,13 +93,14 @@ public class EditableInstance extends DungeonInstance {
         }
 
         double markerRadius =
-                PluginConfigView.getStaticFunctionMarkerVisibleRadiusBlocks(this.plugin().getConfig());
+                PluginConfigView.getStaticFunctionMarkerVisibleRadiusBlocks(
+                        this.plugin().getConfig());
         final double markerRadiusSquared = markerRadius * markerRadius;
         long previewInterval =
                 PluginConfigView.getEditorPreviewUpdateIntervalTicks(this.plugin().getConfig());
         this.functionParticles =
-                                new BukkitRunnable() {
-                                        public void run() {
+                new BukkitRunnable() {
+                    public void run() {
                         for (DungeonFunction dungeonFunction : dungeon.getFunctions().values()) {
                             Location loc = dungeonFunction.getLocation().clone();
                             loc.setX(loc.getX() + 0.5);
@@ -107,15 +108,21 @@ public class EditableInstance extends DungeonInstance {
                             loc.setZ(loc.getZ() + 0.5);
                             loc.setWorld(EditableInstance.this.instanceWorld);
                             DustOptions dustOptions =
-                                                                        new DustOptions(ColorUtils.hexToColor(dungeonFunction.getColour()), 1.0F);
+                                    new DustOptions(
+                                            ColorUtils.hexToColor(dungeonFunction.getColour()),
+                                            1.0F);
 
-                            for (DungeonPlayerSession playerSession : EditableInstance.this.players) {
+                            for (DungeonPlayerSession playerSession :
+                                    EditableInstance.this.players) {
                                 Player player = playerSession.getPlayer();
                                 // Marker particles are only sent to nearby editors to avoid
                                 // unnecessary packet load in large maps.
-                                if (loc.distanceSquared(player.getLocation()) <= markerRadiusSquared) {
-                                    player.spawnParticle(Particle.DUST, loc, 12, 0.25, 0.25, 0.25, dustOptions);
-                                    player.spawnParticle(Particle.END_ROD, loc, 1, 0.25, 0.25, 0.25, 0.01);
+                                if (loc.distanceSquared(player.getLocation())
+                                        <= markerRadiusSquared) {
+                                    player.spawnParticle(
+                                            Particle.DUST, loc, 12, 0.25, 0.25, 0.25, dustOptions);
+                                    player.spawnParticle(
+                                            Particle.END_ROD, loc, 1, 0.25, 0.25, 0.25, 0.01);
                                 }
                             }
                         }
@@ -157,7 +164,8 @@ public class EditableInstance extends DungeonInstance {
             playerSession
                     .getPlayer()
                     .sendActionBar(
-                            ComponentUtils.component(LangUtils.getMessage("editor.session.autosaving")));
+                            ComponentUtils.component(
+                                    LangUtils.getMessage("editor.session.autosaving")));
         }
 
         this.saveWorldAsync()
@@ -171,18 +179,23 @@ public class EditableInstance extends DungeonInstance {
                                     .runTask(
                                             this.plugin(),
                                             () -> {
-                                                for (DungeonPlayerSession playerSession : new ArrayList<>(this.players)) {
+                                                for (DungeonPlayerSession playerSession :
+                                                        new ArrayList<>(this.players)) {
                                                     Player player = playerSession.getPlayer();
                                                     if (!player.isOnline()) {
                                                         continue;
                                                     }
 
-                                                    if (throwable == null && Boolean.TRUE.equals(success)) {
+                                                    if (throwable == null
+                                                            && Boolean.TRUE.equals(success)) {
                                                         player.sendActionBar(
                                                                 ComponentUtils.component(
-                                                                        LangUtils.getMessage("editor.session.autosaved")));
+                                                                        LangUtils.getMessage(
+                                                                                "editor.session.autosaved")));
                                                     } else {
-                                                        LangUtils.sendActionBar(player, "editor.session.autosave-failed");
+                                                        LangUtils.sendActionBar(
+                                                                player,
+                                                                "editor.session.autosave-failed");
                                                     }
                                                 }
                                             });
@@ -246,7 +259,8 @@ public class EditableInstance extends DungeonInstance {
                         TextUtils.runTimed(
                                 "Saving of " + this.dungeon.getWorldName(),
                                 () -> {
-                                    // Paper writes chunk data asynchronously by default; wait for the writer so the
+                                    // Paper writes chunk data asynchronously by default; wait for
+                                    // the writer so the
                                     // folder copy is consistent.
                                     world.save(true);
                                     this.beforeCommitWorldSave(world);
@@ -283,7 +297,8 @@ public class EditableInstance extends DungeonInstance {
                                             return;
                                         }
 
-                                        this.finishSave(latch, result, Boolean.TRUE.equals(success));
+                                        this.finishSave(
+                                                latch, result, Boolean.TRUE.equals(success));
                                     });
                 };
 
@@ -476,7 +491,8 @@ public class EditableInstance extends DungeonInstance {
         }
 
         Location trackedLocation = function.getLocation().clone();
-        if (trackedLocation.getWorld() == null || trackedLocation.getWorld() != this.instanceWorld) {
+        if (trackedLocation.getWorld() == null
+                || trackedLocation.getWorld() != this.instanceWorld) {
             trackedLocation.setWorld(this.instanceWorld);
         }
 
@@ -508,7 +524,8 @@ public class EditableInstance extends DungeonInstance {
             fLoc.setY(fLoc.getY() + 1.2);
             fLoc.setZ(fLoc.getZ() + 0.5);
             String text =
-                    ColorUtils.fullColor("<" + function.getColour() + ">" + function.getDisplayName());
+                    ColorUtils.fullColor(
+                            "<" + function.getColour() + ">" + function.getDisplayName());
             if (function.getTrigger() != null) {
                 text = text + "\n<#5E55AD>" + function.getTrigger().getDisplayName();
             }
@@ -548,7 +565,8 @@ public class EditableInstance extends DungeonInstance {
                 }
 
                 Location blockLocation = functionLocation.clone();
-                if (blockLocation.getWorld() == null || blockLocation.getWorld() != this.instanceWorld) {
+                if (blockLocation.getWorld() == null
+                        || blockLocation.getWorld() != this.instanceWorld) {
                     blockLocation.setWorld(this.instanceWorld);
                 }
 

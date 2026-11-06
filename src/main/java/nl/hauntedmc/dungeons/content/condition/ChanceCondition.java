@@ -78,7 +78,7 @@ public class ChanceCondition extends TriggerCondition {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -98,7 +98,8 @@ public class ChanceCondition extends TriggerCondition {
                         LangUtils.sendMessage(
                                 player,
                                 "editor.condition.chance.current-chance",
-                                LangUtils.placeholder("chance", String.valueOf(ChanceCondition.this.chance)));
+                                LangUtils.placeholder(
+                                        "chance", String.valueOf(ChanceCondition.this.chance)));
                     }
 
                     /**
@@ -112,7 +113,8 @@ public class ChanceCondition extends TriggerCondition {
                             LangUtils.sendMessage(
                                     player,
                                     "editor.condition.chance.chance-set",
-                                    LangUtils.placeholder("chance", String.valueOf(ChanceCondition.this.chance)));
+                                    LangUtils.placeholder(
+                                            "chance", String.valueOf(ChanceCondition.this.chance)));
                         }
                     }
                 });

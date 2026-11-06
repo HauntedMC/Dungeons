@@ -147,7 +147,7 @@ public class CompositeFunction extends DungeonFunction {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     /**
                      * Builds button.
                      */
@@ -164,14 +164,15 @@ public class CompositeFunction extends DungeonFunction {
                     public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
                         if (CompositeFunction.this.functions.size() >= 54) {
-                            LangUtils.sendMessage(player, "editor.function.multi.max-functions-reached");
+                            LangUtils.sendMessage(
+                                    player, "editor.function.multi.max-functions-reached");
                         } else {
                             RuntimeContext.guiService().openGui(player, "functionmenu");
                         }
                     }
                 });
         this.menu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     /**
                      * Builds button.
                      */
@@ -191,7 +192,7 @@ public class CompositeFunction extends DungeonFunction {
                     }
                 });
         this.menu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     /**
                      * Builds button.
                      */
@@ -211,7 +212,7 @@ public class CompositeFunction extends DungeonFunction {
                     }
                 });
         this.menu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     /**
                      * Builds button.
                      */

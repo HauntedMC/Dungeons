@@ -14,7 +14,7 @@ public final class PluginConfigView {
 
     /** Returns maximum number of active instances allowed globally. */
     public static int getMaxActiveInstances(FileConfiguration config) {
-        return Math.max(0, getInt(config, "instances.max_active",  10));
+        return Math.max(0, getInt(config, "instances.max_active", 10));
     }
 
     /** Returns delay in ticks before the dungeon-start trigger fires for direct starts. */
@@ -114,7 +114,9 @@ public final class PluginConfigView {
         return Math.max(
                 0.0,
                 getDouble(
-                        config, "editor.preview.function_markers.static_visible_radius_blocks", 15.0));
+                        config,
+                        "editor.preview.function_markers.static_visible_radius_blocks",
+                        15.0));
     }
 
     /** Returns visible radius for branching function markers in blocks. */
@@ -137,7 +139,9 @@ public final class PluginConfigView {
         return Math.max(
                 0.0,
                 getDouble(
-                        config, "editor.preview.branching_room_bounds.visible_radius_blocks", 20.0));
+                        config,
+                        "editor.preview.branching_room_bounds.visible_radius_blocks",
+                        20.0));
     }
 
     /** Returns generation layout timeout in seconds. */
@@ -184,8 +188,7 @@ public final class PluginConfigView {
     }
 
     /** Reads an integer config value with fallback and key-exists guarding. */
-    private static int getInt(
-            FileConfiguration config, String path, int fallback) {
+    private static int getInt(FileConfiguration config, String path, int fallback) {
         if (config == null) {
             return fallback;
         }
@@ -198,8 +201,7 @@ public final class PluginConfigView {
     }
 
     /** Reads a double config value with fallback and key-exists guarding. */
-    private static double getDouble(
-            FileConfiguration config, String path, double fallback) {
+    private static double getDouble(FileConfiguration config, String path, double fallback) {
         if (config == null) {
             return fallback;
         }
@@ -212,8 +214,7 @@ public final class PluginConfigView {
     }
 
     /** Reads a boolean config value with fallback and key-exists guarding. */
-    private static boolean getBoolean(
-            FileConfiguration config, String path, boolean fallback) {
+    private static boolean getBoolean(FileConfiguration config, String path, boolean fallback) {
         if (config == null) {
             return fallback;
         }
@@ -226,8 +227,7 @@ public final class PluginConfigView {
     }
 
     /** Reads a trimmed non-blank string config value with fallback. */
-    private static String getString(
-            FileConfiguration config, String path, String fallback) {
+    private static String getString(FileConfiguration config, String path, String fallback) {
         if (config == null) {
             return fallback;
         }

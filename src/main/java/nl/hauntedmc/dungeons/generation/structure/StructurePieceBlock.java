@@ -80,12 +80,12 @@ public class StructurePieceBlock implements Cloneable {
     }
 
     @Override
-        public String toString() {
+    public String toString() {
         return this.blockData.getAsString(true);
     }
 
     @Override
-        public boolean equals(Object obj) {
+    public boolean equals(Object obj) {
         if (this == obj) {
             return true;
         } else if (obj == null) {
@@ -125,7 +125,7 @@ public class StructurePieceBlock implements Cloneable {
         }
     }
 
-        private static BlockData checkCache(BlockData data) {
+    private static BlockData checkCache(BlockData data) {
         String str = data.getAsString(true);
         // BlockData creation is relatively expensive and many structure blocks share identical
         // states, so a small string-keyed cache keeps memory use lower during captures.
