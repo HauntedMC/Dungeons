@@ -2,6 +2,9 @@ package nl.hauntedmc.dungeons.content.condition;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyDouble;
@@ -11,6 +14,7 @@ import static org.mockito.Mockito.when;
 import nl.hauntedmc.dungeons.content.function.SetStatusFunction;
 import nl.hauntedmc.dungeons.content.function.variable.InstanceVariableFunction;
 import nl.hauntedmc.dungeons.content.variable.VariableEditMode;
+import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDifficulty;
 import nl.hauntedmc.dungeons.model.element.TriggerCondition;
 import nl.hauntedmc.dungeons.support.*;
@@ -191,6 +195,42 @@ class ConditionExecutionContractTest {
             assertEquals("5", f.run.getInstanceVariables().getString("score"));
             assertFalse(
                     bind(new InstanceVariableCondition(Map.of("comparison", "")), f).check(null));
+        }
+    }
+
+    @Test
+    void enabledConditionGraphsCombineInversionAndTimeAndFailClosedWhenAChildThrows()
+            throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration());
+                var menus = new HeadlessMenus()) {
+            var trigger = new nl.hauntedmc.dungeons.content.trigger.RemoteTrigger();
+            var inverted = new ChanceCondition(Map.of("chance", 0.0, "inverted", true));
+            var elapsed = new TimeElapsedCondition(Map.of("time", 10));
+            trigger.addCondition(inverted);
+            trigger.addCondition(elapsed);
+            trigger.setLocation(new Location(f.world, 0, 70, 0));
+            trigger.initialize();
+            trigger.enable(null, f.run);
+            var event = new TriggerFireEvent(f.run, trigger);
+            assertSame(trigger, inverted.getTrigger());
+            assertSame(f.run, elapsed.getInstance());
+            f.run.elapsed(9);
+            assertFalse(trigger.checkConditions(event));
+            f.run.elapsed(10);
+            assertTrue(trigger.checkConditions(event));
+            var broken = mock(nl.hauntedmc.dungeons.model.element.TriggerCondition.class);
+            when(broken.check(event)).thenThrow(new IllegalStateException("condition failed"));
+            trigger.addCondition(broken);
+            assertFalse(trigger.checkConditions(event));
+            trigger.removeCondition(broken);
+            var copy = trigger.clone();
+            assertNotNull(copy);
+            assertNotSame(inverted, copy.getConditions().getFirst());
+            assertSame(copy, copy.getConditions().getFirst().getTrigger());
+            copy.getConditions().clear();
+            assertEquals(2, trigger.getConditions().size());
+            copy.disable();
+            trigger.disable();
         }
     }
 }
