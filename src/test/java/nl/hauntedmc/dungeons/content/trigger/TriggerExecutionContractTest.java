@@ -63,4 +63,19 @@ class TriggerExecutionContractTest {
         }
     }
 
+    @Test
+    void remoteSignalsHonorCancellationNameRunAndInclusiveSpatialBounds() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            var trigger=bind(new RemoteTrigger(Map.of("triggerName","open")),f);
+            trigger.onTriggerReceive(new RemoteTriggerEvent("other",null,f.run,0,null,null));
+            trigger.onTriggerReceive(new RemoteTriggerEvent("open",null,f.run,5,new Location(f.world,6,70,0),null));
+            trigger.onTriggerReceive(new RemoteTriggerEvent("open",null,new StaticInstance(f.dungeon,null),0,null,null));
+            var cancelled=new RemoteTriggerEvent("open",null,f.run,0,null,null); cancelled.setCancelled(true);
+            trigger.onTriggerReceive(cancelled);
+            assertTrue(f.scheduler.immediate.isEmpty());
+            trigger.onTriggerReceive(new RemoteTriggerEvent("open",null,f.run,5,new Location(f.world,3,70,4),null));
+            assertEquals(1,f.scheduler.immediate.size());
+        }
+    }
+
 }

@@ -75,6 +75,9 @@ public class RemoteTrigger extends DungeonTrigger {
      */
     @EventHandler
     public void onTriggerReceive(RemoteTriggerEvent event) {
+        if (event.isCancelled()) {
+            return;
+        }
         if (this.instance == event.getInstance()) {
             if (event.getTriggerName().equals(this.triggerName)) {
                 Location origin = event.getOrigin();
