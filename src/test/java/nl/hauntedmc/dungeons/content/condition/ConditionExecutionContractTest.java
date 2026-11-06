@@ -95,4 +95,19 @@ class ConditionExecutionContractTest {
         }
     }
 
+    @Test
+    void deferredVariableFunctionsDriveComparisonsWithoutMutatingStateBeforeTheirScheduledTick() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            f.run.getInstanceVariables().set("score",0);
+            var condition=bind(new InstanceVariableCondition(Map.of("comparison","<score> >= 5")),f);
+            var function=new nl.hauntedmc.dungeons.content.function.variable.InstanceVariableFunction(
+                Map.of("varName","score","varValue","5","mode",nl.hauntedmc.dungeons.content.variable.VariableEditMode.ADD));
+            function.initializeFields(); function.setInstance(f.run); function.setLocation(new Location(f.world,0,70,0));
+            function.runFunction(null,List.of()); assertFalse(condition.check(null));
+            f.scheduler.jobs.getFirst().run(); assertTrue(condition.check(null));
+            assertEquals("5",f.run.getInstanceVariables().getString("score"));
+            assertFalse(bind(new InstanceVariableCondition(Map.of("comparison","")),f).check(null));
+        }
+    }
+
 }
