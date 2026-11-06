@@ -320,7 +320,10 @@ public class ConnectorDoor implements ConfigSerializableModel {
         ConnectorDoor clone = new ConnectorDoor(this.namespace);
         clone.startOpen = this.startOpen;
         clone.disableSound = this.disableSound;
-        clone.locations = new ArrayList<>(this.locations);
+        clone.locations = new ArrayList<>();
+        for (SimpleLocation location : this.locations) {
+            clone.locations.add(location.clone());
+        }
         clone.blocks = new HashMap<>();
         return clone;
     }
