@@ -224,6 +224,12 @@ public final class AcceptancePlugin extends JavaPlugin {
         return result;
     }
 
+    CompletableFuture<Void> afterTicks(long ticks) {
+        var result = new CompletableFuture<Void>();
+        Bukkit.getScheduler().runTaskLater(this, () -> result.complete(null), ticks);
+        return result;
+    }
+
     CompletableFuture<Void> onMain(CompletionStage<?> pending) {
         var result = new CompletableFuture<Void>();
         pending.whenComplete(

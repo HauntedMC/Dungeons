@@ -46,19 +46,25 @@ final class NativeMechanics {
                         "native-signal", signal.getTrigger(), run, 0, signal.getLocation(), null);
         cancelled.setCancelled(true);
         Bukkit.getPluginManager().callEvent(cancelled);
-        require("waiting".equals(run.getStatus()), "Cancelled signal executed its function");
-        Bukkit.getPluginManager()
-                .callEvent(
-                        new RemoteTriggerEvent(
-                                "native-signal",
-                                signal.getTrigger(),
-                                run,
-                                0,
-                                signal.getLocation(),
-                                null));
-        return test.await(
-                "registered remote-trigger to function relay",
-                () -> "signal-received".equals(run.getStatus()));
+        return test.afterTicks(2L)
+                .thenCompose(
+                        ignored -> {
+                            require(
+                                    "waiting".equals(run.getStatus()),
+                                    "Cancelled signal scheduled its function");
+                            Bukkit.getPluginManager()
+                                    .callEvent(
+                                            new RemoteTriggerEvent(
+                                                    "native-signal",
+                                                    signal.getTrigger(),
+                                                    run,
+                                                    0,
+                                                    signal.getLocation(),
+                                                    null));
+                            return test.await(
+                                    "registered remote-trigger to function relay",
+                                    () -> "signal-received".equals(run.getStatus()));
+                        });
     }
 
     private static CompletionStage<Void> verifyEffects(
