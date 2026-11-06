@@ -201,24 +201,35 @@ public abstract class DungeonDefinition {
         File[] playerFiles = playersFolder.listFiles();
         if (playerFiles != null) {
             for (File playerFile : playerFiles) {
-                if (FilenameUtils.getExtension(playerFile.getName()).equals("yml")) {
-                    FileConfiguration data = new YamlConfiguration();
-
-                    try {
-                        data.load(playerFile);
-                    } catch (InvalidConfigurationException | IOException exception) {
-                        this.logger()
-                                .error(
-                                        "Failed to load player data '{}' for dungeon '{}'.",
-                                        playerFile.getAbsolutePath(),
-                                        this.worldName,
-                                        exception);
-                    }
-
-                    UUID playerUUID = UUID.fromString(playerFile.getName().replace(".yml", ""));
-                    this.playerData.put(playerUUID, data);
-                    this.loadCooldowns(playerUUID);
+                if (!playerFile.isFile()
+                        || !FilenameUtils.getExtension(playerFile.getName()).equals("yml")) {
+                    continue;
                 }
+
+                UUID playerUUID;
+                try {
+                    playerUUID = UUID.fromString(FilenameUtils.getBaseName(playerFile.getName()));
+                } catch (IllegalArgumentException exception) {
+                    this.logger()
+                            .warn("Ignoring player data with an invalid UUID filename '{}'.", playerFile);
+                    continue;
+                }
+
+                FileConfiguration data = new YamlConfiguration();
+                try {
+                    data.load(playerFile);
+                } catch (InvalidConfigurationException | IOException exception) {
+                    this.logger()
+                            .error(
+                                    "Failed to load player data '{}' for dungeon '{}'.",
+                                    playerFile.getAbsolutePath(),
+                                    this.worldName,
+                                    exception);
+                    continue;
+                }
+
+                this.playerData.put(playerUUID, data);
+                this.loadCooldowns(playerUUID);
             }
         }
 
