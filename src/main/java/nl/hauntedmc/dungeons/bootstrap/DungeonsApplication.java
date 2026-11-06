@@ -20,7 +20,6 @@ public final class DungeonsApplication {
     private final CoreBootstrap coreBootstrap;
     private final RegistryBootstrap registryBootstrap;
     private final ListenerBootstrap listenerBootstrap;
-    private final IntegrationBootstrap integrationBootstrap;
     private final MenuBootstrap menuBootstrap;
     private final LifecycleCoordinator lifecycleCoordinator;
     private final CommandBootstrap commandBootstrap;
@@ -35,7 +34,6 @@ public final class DungeonsApplication {
         this.coreBootstrap = new CoreBootstrap(this.runtime);
         this.registryBootstrap = new RegistryBootstrap(this.runtime);
         this.listenerBootstrap = new ListenerBootstrap(this.runtime);
-        this.integrationBootstrap = new IntegrationBootstrap(this.runtime);
         this.menuBootstrap = new MenuBootstrap(this.runtime);
         this.lifecycleCoordinator = new LifecycleCoordinator(this.runtime, this.coreBootstrap);
         this.commandBootstrap = new CommandBootstrap(this.runtime, this.lifecycleCoordinator);
@@ -131,7 +129,6 @@ public final class DungeonsApplication {
     private void bindBukkitIntegrations() {
         this.commandBootstrap.registerCommands();
         this.listenerBootstrap.registerCoreListeners();
-        this.integrationBootstrap.registerOptionalIntegrations();
     }
 
     /**
