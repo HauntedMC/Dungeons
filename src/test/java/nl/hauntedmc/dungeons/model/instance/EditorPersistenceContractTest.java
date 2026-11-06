@@ -11,6 +11,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -24,11 +25,13 @@ import nl.hauntedmc.dungeons.util.item.ItemUtils;
 
 import org.bukkit.*;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.*;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
 
 class EditorPersistenceContractTest {
@@ -289,6 +292,40 @@ class EditorPersistenceContractTest {
                 ticker.run();
                 verify(f.world, times(1)).save(true);
             }
+        }
+    }
+
+    @Test
+    void leavingAnEditorPreservesTaggedSurvivalItemsWithoutHandingThemToAnotherEditor()
+            throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration());
+                var tools = mockStatic(ItemUtils.class)) {
+            tools.when(() -> ItemUtils.verifyKeyItem(any())).thenCallRealMethod();
+            tools.when(() -> ItemUtils.verifyDungeonItem(any())).thenCallRealMethod();
+            var state = new PlayerState();
+            state.contents[0] =
+                    TaggedItems.stack(
+                            Material.STONE,
+                            7,
+                            Map.of(new NamespacedKey("dungeons", "dungeonkey"), 1));
+            state.contents[5] =
+                    TaggedItems.stack(
+                            Material.STONE,
+                            3,
+                            Map.of(new NamespacedKey("dungeons", "dungeonitem"), 1));
+            var session = f.session(state);
+            var other = f.session(new PlayerState());
+            var editor = new Editor(f);
+            editor.addPlayer(session);
+            editor.addPlayer(other);
+            editor.removePlayer(session, true);
+            assertNull(session.getInstance());
+            assertSame(editor, other.getInstance());
+            assertEquals(7, state.contents[0].getAmount());
+            assertEquals(3, state.contents[5].getAmount());
+            assertTrue(ItemUtils.verifyKeyItem(state.contents[0]));
+            assertTrue(ItemUtils.verifyDungeonItem(state.contents[5]));
+            tools.verify(() -> ItemUtils.giveOrDrop(any(), any(ItemStack.class)), never());
         }
     }
 

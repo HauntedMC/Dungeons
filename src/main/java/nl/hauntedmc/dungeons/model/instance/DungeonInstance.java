@@ -548,46 +548,8 @@ public abstract class DungeonInstance {
                     playerSession.clearExitLocation();
                 }
 
-                PlayerInventory inv = player.getInventory();
-                Player target = null;
-                boolean foundKeys = false;
-                boolean foundDungeonItems = false;
-
-                boolean transferDungeonItems =
-                        this.dungeon.getConfig().getBoolean("players.transfer_dungeon_items", true);
-                ItemStack[] contents = inv.getContents();
-                for (int slot = 0; slot < contents.length; slot++) {
-                    ItemStack item = contents[slot];
-                    boolean keyItem = ItemUtils.verifyKeyItem(item);
-                    boolean dungeonItem = ItemUtils.verifyDungeonItem(item);
-                    if (!keyItem && !dungeonItem) {
-                        continue;
-                    }
-                    // Slot removal preserves identical keys in other inventory or offhand slots.
-                    inv.setItem(slot, null);
-                    if (!this.players.isEmpty()
-                            && (keyItem || dungeonItem && transferDungeonItems)) {
-                        foundKeys |= keyItem;
-                        foundDungeonItems |= dungeonItem && transferDungeonItems;
-                        target = this.players.getFirst().getPlayer();
-                        ItemUtils.giveOrDrop(target, item);
-                    }
-                }
-
-                if (target != null) {
-                    if (foundKeys) {
-                        this.messagePlayers(
-                                LangUtils.getMessage(
-                                        "instance.play.events.key-inheritance",
-                                        LangUtils.placeholder("player", target.getName())));
-                    }
-
-                    if (foundDungeonItems) {
-                        this.messagePlayers(
-                                LangUtils.getMessage(
-                                        "instance.play.events.dungeon-item-inheritance",
-                                        LangUtils.placeholder("player", target.getName())));
-                    }
+                if (this.isPlayInstance()) {
+                    this.transferProgressionItems(player);
                 }
 
                 player.updateInventory();
@@ -600,6 +562,50 @@ public abstract class DungeonInstance {
                 if (this.players.isEmpty()) {
                     this.scheduleEmptyCleanup();
                 }
+            }
+        }
+    }
+
+    /** Hands a departing participant's progression items to another player in the run. */
+    private void transferProgressionItems(Player player) {
+        PlayerInventory inv = player.getInventory();
+        Player target = null;
+        boolean foundKeys = false;
+        boolean foundDungeonItems = false;
+
+        boolean transferDungeonItems =
+                this.dungeon.getConfig().getBoolean("players.transfer_dungeon_items", true);
+        ItemStack[] contents = inv.getContents();
+        for (int slot = 0; slot < contents.length; slot++) {
+            ItemStack item = contents[slot];
+            boolean keyItem = ItemUtils.verifyKeyItem(item);
+            boolean dungeonItem = ItemUtils.verifyDungeonItem(item);
+            if (!keyItem && !dungeonItem) {
+                continue;
+            }
+            // Slot removal preserves identical keys in other inventory or offhand slots.
+            inv.setItem(slot, null);
+            if (!this.players.isEmpty() && (keyItem || dungeonItem && transferDungeonItems)) {
+                foundKeys |= keyItem;
+                foundDungeonItems |= dungeonItem && transferDungeonItems;
+                target = this.players.getFirst().getPlayer();
+                ItemUtils.giveOrDrop(target, item);
+            }
+        }
+
+        if (target != null) {
+            if (foundKeys) {
+                this.messagePlayers(
+                        LangUtils.getMessage(
+                                "instance.play.events.key-inheritance",
+                                LangUtils.placeholder("player", target.getName())));
+            }
+
+            if (foundDungeonItems) {
+                this.messagePlayers(
+                        LangUtils.getMessage(
+                                "instance.play.events.dungeon-item-inheritance",
+                                LangUtils.placeholder("player", target.getName())));
             }
         }
     }
