@@ -14,6 +14,7 @@ import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.configuration.serialization.SerializableAs;
@@ -89,16 +90,15 @@ public class RedstoneBlockFunction extends DungeonFunction {
                         if (RedstoneBlockFunction.this.status >= effectiveCount) {
                             this.cancel();
                         } else {
-                            (new BukkitRunnable() {
-                                        /**
-                                         * Performs run.
-                                         */
-                                        public void run() {
-                                            world.getBlockAt(RedstoneBlockFunction.this.location)
-                                                    .setType(Material.AIR);
-                                        }
-                                    })
-                                    .runTaskLater(RuntimeContext.plugin(), effectiveRate - 1L);
+                            Bukkit.getScheduler()
+                                    .runTaskLater(
+                                            RuntimeContext.plugin(),
+                                            () ->
+                                                    world.getBlockAt(
+                                                                    RedstoneBlockFunction.this
+                                                                            .location)
+                                                            .setType(Material.AIR),
+                                            effectiveRate - 1L);
                         }
                     }
                 };

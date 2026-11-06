@@ -26,7 +26,6 @@ import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -354,34 +353,30 @@ public final class DungeonPlayerSession {
      * Displays a temporary hotbar snapshot and optionally restores the held slot selection.
      */
     public void showHotbar(final PlayerHotbarSnapshot hotbar, final boolean restoreHeldSlot) {
-        (new BukkitRunnable() {
-                    public void run() {
-                        HotbarSetEvent event =
-                                new HotbarSetEvent(hotbar, DungeonPlayerSession.this);
-                        Bukkit.getPluginManager().callEvent(event);
-                        if (!event.isCancelled()) {
-                            if (DungeonPlayerSession.this.currentHotbar != null
-                                    && hotbar != DungeonPlayerSession.this.currentHotbar) {
-                                DungeonPlayerSession.this.hotbarHistory.add(
-                                        DungeonPlayerSession.this.currentHotbar);
-                            }
+        Bukkit.getScheduler()
+                .runTaskLater(
+                        this.plugin,
+                        () -> {
+                            HotbarSetEvent event = new HotbarSetEvent(hotbar, this);
+                            Bukkit.getPluginManager().callEvent(event);
+                            if (!event.isCancelled()) {
+                                if (this.currentHotbar != null && hotbar != this.currentHotbar) {
+                                    this.hotbarHistory.add(this.currentHotbar);
+                                }
 
-                            DungeonPlayerSession.this.currentHotbar = hotbar;
-                            hotbar.applyTo(
-                                    DungeonPlayerSession.this.player.getInventory(),
-                                    restoreHeldSlot);
-                            DungeonPlayerSession.this.player.playSound(
-                                    DungeonPlayerSession.this.player.getLocation(),
-                                    "minecraft:item.armor.equip_gold",
-                                    1.0F,
-                                    1.2F);
-                            DungeonPlayerSession.this.pos1 = null;
-                            DungeonPlayerSession.this.pos2 = null;
-                            DungeonPlayerSession.this.sendMenuActionBar();
-                        }
-                    }
-                })
-                .runTaskLater(this.plugin, 1L);
+                                this.currentHotbar = hotbar;
+                                hotbar.applyTo(this.player.getInventory(), restoreHeldSlot);
+                                this.player.playSound(
+                                        this.player.getLocation(),
+                                        "minecraft:item.armor.equip_gold",
+                                        1.0F,
+                                        1.2F);
+                                this.pos1 = null;
+                                this.pos2 = null;
+                                this.sendMenuActionBar();
+                            }
+                        },
+                        1L);
     }
 
     public PlayerHotbarSnapshot getPreviousHotbar() {
@@ -397,32 +392,30 @@ public final class DungeonPlayerSession {
      * menu remains on the stack.
      */
     public void restorePreviousHotbar(final boolean resetHand) {
-        (new BukkitRunnable() {
-                    public void run() {
-                        PlayerHotbarSnapshot previousHotbar =
-                                DungeonPlayerSession.this.getPreviousHotbar();
-                        if (previousHotbar == null) {
-                            DungeonPlayerSession.this.restoreCapturedHotbar();
-                        } else {
-                            HotbarSetEvent event =
-                                    new HotbarSetEvent(previousHotbar, DungeonPlayerSession.this);
-                            Bukkit.getPluginManager().callEvent(event);
-                            if (!event.isCancelled()) {
-                                DungeonPlayerSession.this.hotbarHistory.removeLast();
-                                DungeonPlayerSession.this.currentHotbar = previousHotbar;
-                                previousHotbar.applyTo(
-                                        DungeonPlayerSession.this.player.getInventory(), resetHand);
-                                DungeonPlayerSession.this.player.playSound(
-                                        DungeonPlayerSession.this.player.getLocation(),
-                                        "minecraft:item.armor.equip_gold",
-                                        1.0F,
-                                        1.2F);
-                                DungeonPlayerSession.this.sendMenuActionBar();
+        Bukkit.getScheduler()
+                .runTaskLater(
+                        this.plugin,
+                        () -> {
+                            PlayerHotbarSnapshot previousHotbar = this.getPreviousHotbar();
+                            if (previousHotbar == null) {
+                                this.restoreCapturedHotbar();
+                            } else {
+                                HotbarSetEvent event = new HotbarSetEvent(previousHotbar, this);
+                                Bukkit.getPluginManager().callEvent(event);
+                                if (!event.isCancelled()) {
+                                    this.hotbarHistory.removeLast();
+                                    this.currentHotbar = previousHotbar;
+                                    previousHotbar.applyTo(this.player.getInventory(), resetHand);
+                                    this.player.playSound(
+                                            this.player.getLocation(),
+                                            "minecraft:item.armor.equip_gold",
+                                            1.0F,
+                                            1.2F);
+                                    this.sendMenuActionBar();
+                                }
                             }
-                        }
-                    }
-                })
-                .runTaskLater(this.plugin, 1L);
+                        },
+                        1L);
     }
 
     public void sendToCheckpoint() {
