@@ -256,7 +256,15 @@ public abstract class PlayableInstance extends DungeonInstance {
     private void disposeEntities() {
         for (Entity ent : this.entities) {
             if (ent != null) {
-                ent.remove();
+                try {
+                    ent.remove();
+                } catch (RuntimeException exception) {
+                    this.logger()
+                            .error(
+                                    "Failed to remove an owned entity while disposing dungeon '{}'.",
+                                    this.dungeon.getWorldName(),
+                                    exception);
+                }
             }
         }
 

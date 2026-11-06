@@ -262,4 +262,20 @@ class PlayerRunContractTest {
             assertFalse(f.run.isStarted());
         }
     }
+
+    @Test
+    void oneEntityRemovalFailureCannotAbandonTheRemainingOwnedEntities() throws Exception {
+        try (var f = new RunFixture(directory, settings())) {
+            var broken = mock(Entity.class);
+            var healthy = mock(Entity.class);
+            doThrow(new IllegalStateException("entity invalidated by another plugin"))
+                    .when(broken)
+                    .remove();
+            f.run.getEntities().add(broken);
+            f.run.getEntities().add(healthy);
+            assertDoesNotThrow(f.run::onDispose);
+            verify(healthy).remove();
+            assertNull(f.run.getEntities());
+        }
+    }
 }
