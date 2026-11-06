@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +24,7 @@ import org.joml.Vector3i;
  * Serialization helpers for compact structure-piece storage.
  */
 public final class SchematicUtils {
+    private static final String FORMAT_HEADER = "DUNGEONS-STRUCTURE-2\n";
     private SchematicUtils() {}
 
     /** Saves one structure piece to a compressed custom text format. */
@@ -49,7 +51,8 @@ public final class SchematicUtils {
                 blockDatas.append(blockData.getAsString(true));
             }
 
-            String nbtStr = block.getBlockNbt();
+            String nbt = block.getBlockNbt();
+            String nbtStr = nbt == null ? "null" : Base64.getEncoder().encodeToString(nbt.getBytes(StandardCharsets.UTF_8));
             if (!blockStrEmpty) {
                 blocksStr.append("!");
             } else {
@@ -59,7 +62,7 @@ public final class SchematicUtils {
             blocksStr.append(posString).append("|").append(index).append("|").append(nbtStr);
         }
 
-        byte[] bytes = compress(blockDatas + "\n" + blocksStr);
+        byte[] bytes = compress(FORMAT_HEADER + blockDatas + "\n" + blocksStr);
 
         try {
             FileUtils.writeByteArrayToFile(file, bytes);
@@ -79,7 +82,9 @@ public final class SchematicUtils {
         try {
             byte[] bytes = FileUtils.readFileToByteArray(file);
             String full = decompress(bytes);
-            String[] pair = full.split("\n", 2);
+            boolean versioned = full.startsWith(FORMAT_HEADER);
+            String payload = versioned ? full.substring(FORMAT_HEADER.length()) : full;
+            String[] pair = payload.split("\n", 2);
             String blocks = pair[0];
             if (blocks.isEmpty()) {
                 return struct;
@@ -90,11 +95,14 @@ public final class SchematicUtils {
 
             for (String strData : entries) {
                 if (strData != null && !strData.isEmpty()) {
-                    String[] set = strData.split("\\|");
+                    String[] set = strData.split("\\|", 3);
                     String posString = set[0];
                     int blockDataPointer = Integer.parseInt(set[1]);
                     if (blockDataPointer < data.size()) {
                         String nbtStr = set[2];
+                        if (versioned && !nbtStr.equals("null")) {
+                            nbtStr = new String(Base64.getDecoder().decode(nbtStr), StandardCharsets.UTF_8);
+                        }
                         String[] posSplit = posString.split(",");
                         Vector3i pos =
                                 new Vector3i(

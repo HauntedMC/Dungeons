@@ -52,6 +52,20 @@ class StructureFileContractTest {
         }
     }
 
+    @Test
+    void tilePayloadDelimitersCannotCorruptTheStructureOrLoseNeighboringBlocks() {
+        try (var paper = new PaperBoundary(); var nbt = mockStatic(BlockNbtUtils.class)) {
+            nbt.when(() -> BlockNbtUtils.normalizeSnbt(anyString())).thenAnswer(call -> call.getArgument(0));
+            BlockData stone = data(paper, "minecraft:stone");
+            StructurePiece source = new StructurePiece();
+            source.add(new StructurePieceBlock(new Vector3i(1, 2, 3), stone, "{Text:'hello|world!'}"));
+            source.add(new StructurePieceBlock(new Vector3i(4, 5, 6), stone, null));
+            var file = directory.resolve("tile.schem").toFile();
+            SchematicUtils.saveStructurePiece(file, source);
+            assertEquals(snapshots(source), snapshots(SchematicUtils.loadStructurePiece(file)));
+        }
+    }
+
     BlockData data(PaperBoundary paper, String state) {
         BlockData data = mock(BlockData.class);
         when(data.getAsString(true)).thenReturn(state);
