@@ -82,4 +82,16 @@ class WorldFunctionContractTest {
         }
     }
 
+    @Test
+    void clonedRedstoneMechanicsCannotCancelTheirSourcesScheduledPulseOrReset() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration());var menus=new HeadlessMenus()) {
+            var block=mock(org.bukkit.block.Block.class); when(f.world.getBlockAt(any(Location.class))).thenReturn(block);
+            var pulse=GameplayFunctionContractTest.bind(new RedstoneBlockFunction(Map.of("count",2)),f);
+            pulse.runFunction(null,List.of()); f.scheduler.jobs.getFirst().run();
+            var copy=pulse.clone(); assertNotNull(copy); copy.onDisable();
+            assertTrue(f.scheduler.jobs.stream().noneMatch(job -> job.cancelled));
+            pulse.onDisable(); assertTrue(f.scheduler.jobs.stream().allMatch(job -> job.cancelled));
+        }
+    }
+
 }

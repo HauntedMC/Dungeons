@@ -239,4 +239,15 @@ public class RedstoneBlockFunction extends DungeonFunction {
                     }
                 });
     }
+    @Override
+    public RedstoneBlockFunction clone() {
+        RedstoneBlockFunction clone = (RedstoneBlockFunction) super.clone();
+        if (clone != null) {
+            clone.repeater = null;
+            clone.pendingReset = null;
+            clone.status = 0;
+        }
+        return clone;
+    }
+
 }
