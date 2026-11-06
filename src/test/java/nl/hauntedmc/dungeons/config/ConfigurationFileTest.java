@@ -38,6 +38,28 @@ class ConfigurationFileTest {
                         .get(1, TimeUnit.SECONDS));
     }
 
+    @Test
+    void failedSavePreservesTheLastGoodFileAndItsLoadableValues() throws Exception {
+        var fail = new java.util.concurrent.atomic.AtomicBoolean();
+        var config = new ConfigurationFile(disabledPlugin()) {
+            @Override public String saveToString() {
+                if (fail.get()) throw new IllegalArgumentException("unserializable graph");
+                return super.saveToString();
+            }
+        };
+        var file = directory.resolve("durable.yml");
+        config.set("progress.completed", 10);
+        assertTrue(config.saveAsync(file.toFile()).join());
+        byte[] previous = java.nio.file.Files.readAllBytes(file);
+        config.set("progress.completed", 20);
+        fail.set(true);
+        assertFalse(config.saveAsync(file.toFile()).join());
+        org.junit.jupiter.api.Assertions.assertArrayEquals(previous, java.nio.file.Files.readAllBytes(file));
+        var restored = new ConfigurationFile(disabledPlugin());
+        restored.load(file.toFile());
+        assertEquals(10, restored.getInt("progress.completed"));
+    }
+
     private static Plugin disabledPlugin() {
         return (Plugin)
                 Proxy.newProxyInstance(
