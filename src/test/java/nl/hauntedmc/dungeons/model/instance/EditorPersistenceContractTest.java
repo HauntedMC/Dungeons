@@ -47,6 +47,21 @@ class EditorPersistenceContractTest {
             assertFalse(f.dungeon.isSaving()); verify(f.world,times(1)).save(true);
         }
     }
+
+    @Test
+    void failedWorldFlushCopyAndExceptionalCompletionAllReleaseSavingStateAndWaiters() throws Exception {
+        for(String failure:java.util.List.of("flush","copy","future")) {
+            try(var f=new RunFixture(directory,new YamlConfiguration())) {
+                var editor=new Editor(f);
+                when(f.world.getWorldFolder()).thenReturn(directory.resolve("missing-source").toFile());
+                if(failure.equals("flush")) doThrow(new IllegalStateException("flush failed")).when(f.world).save(true);
+                if(failure.equals("future")) editor.pending=CompletableFuture.failedFuture(new IllegalStateException("commit failed"));
+                var latch=new CountDownLatch(1);
+                assertFalse(editor.saveWorldAsync(latch).get(1,TimeUnit.SECONDS));
+                assertEquals(0,latch.getCount()); assertFalse(f.dungeon.isSaving());
+            }
+        }
+    }
     static class Editor extends EditableInstance {
         CompletableFuture<Boolean> pending;
         boolean throwCommit;
