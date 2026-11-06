@@ -64,7 +64,7 @@ final class RegistryBootstrap {
      * Registers custom serialization support that depends on the plugin instance.
      */
     void registerElementSerialization() {
-        ConfigSerializableModel.register(this.runtime.environment().plugin());
+        ConfigSerializableModel.register("nl.hauntedmc.dungeons");
     }
 
     /**
