@@ -45,20 +45,33 @@ public final class AcceptancePlugin extends JavaPlugin {
 
     private boolean runCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof org.bukkit.command.ConsoleCommandSender) || running) return false;
-        if (args.length != 1 || !args[0].equals("run")) return false;
+        if (args.length != 1 || !(args[0].equals("run") || args[0].equals("restart"))) return false;
         running = true;
-        var scenarios =
-                List.of(
-                        new Scenario("packaged-bootstrap", this::bootstrap),
-                        new Scenario(
-                                "native-item-and-graph-persistence",
-                                () -> NativePersistence.run(this)),
-                        new Scenario("copied-world-lifecycle", () -> WorldLifecycle.run(this)),
-                        new Scenario("native-gameplay-mechanics", () -> NativeMechanics.run(this)),
-                        new Scenario("native-tile-structure", () -> NativeStructure.run(this)),
-                        new Scenario(
-                                "native-branching-generation", () -> NativeBranching.run(this)),
-                        new Scenario("native-open-warm-pool", () -> NativeOpen.run(this)));
+        List<Scenario> scenarios =
+                args[0].equals("restart")
+                        ? List.of(
+                                new Scenario(
+                                        "cold-restart-persistence-and-cleanup",
+                                        () -> NativeRestart.verify(this)))
+                        : List.of(
+                                new Scenario("packaged-bootstrap", this::bootstrap),
+                                new Scenario(
+                                        "native-item-and-graph-persistence",
+                                        () -> NativePersistence.run(this)),
+                                new Scenario(
+                                        "copied-world-lifecycle", () -> WorldLifecycle.run(this)),
+                                new Scenario(
+                                        "native-gameplay-mechanics",
+                                        () -> NativeMechanics.run(this)),
+                                new Scenario(
+                                        "native-tile-structure", () -> NativeStructure.run(this)),
+                                new Scenario(
+                                        "native-branching-generation",
+                                        () -> NativeBranching.run(this)),
+                                new Scenario("native-open-warm-pool", () -> NativeOpen.run(this)),
+                                new Scenario(
+                                        "prepare-live-world-shutdown",
+                                        () -> NativeRestart.prepare(this)));
         var results = new ArrayList<Result>();
         CompletableFuture<Void> chain = CompletableFuture.completedFuture(null);
         for (var scenario : scenarios) {
