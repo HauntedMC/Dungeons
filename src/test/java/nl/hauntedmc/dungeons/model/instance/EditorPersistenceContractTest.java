@@ -246,6 +246,52 @@ class EditorPersistenceContractTest {
         }
     }
 
+    @Test
+    void autosaveSkipsAnInFlightSaveAndShutdownCancelsItsTickerWithoutLateFeedback()
+            throws Exception {
+        for (boolean success : List.of(true, false)) {
+            try (var f = new RunFixture(directory, new YamlConfiguration());
+                    var tools = mockStatic(ItemUtils.class)) {
+                f.paper.config.set("editor.autosave_interval_seconds", 1);
+                when(f.paper.plugin.isEnabled()).thenReturn(true);
+                var editor = new Editor(f);
+                f.dungeon.setEditSession(editor);
+                var ticker =
+                        f.scheduler.jobs.stream()
+                                .filter(job -> job.period == 20)
+                                .findFirst()
+                                .orElseThrow();
+                var session = f.session(new PlayerState());
+                editor.addPlayer(session);
+                f.scheduler.jobs.stream()
+                        .filter(job -> job.delay == 2 && job.period == 0)
+                        .findFirst()
+                        .orElseThrow()
+                        .run();
+                editor.pending = new CompletableFuture<>();
+                ticker.run();
+                assertTrue(f.dungeon.isSaving());
+                ticker.run();
+                verify(f.world, times(1)).save(true);
+                assertTrue(
+                        f.scheduler.immediate.isEmpty(),
+                        "An overlapping autosave must not report a false save failure");
+                when(f.paper.plugin.isEnabled()).thenReturn(false);
+                editor.removePlayer(session, true);
+                editor.onDispose();
+                assertTrue(ticker.cancelled);
+                assertNull(f.dungeon.getEditSession());
+                editor.pending.complete(success);
+                assertFalse(f.dungeon.isSaving());
+                assertTrue(
+                        f.scheduler.immediate.isEmpty(),
+                        "Completing a save after shutdown must not enqueue player feedback");
+                ticker.run();
+                verify(f.world, times(1)).save(true);
+            }
+        }
+    }
+
     static class Editor extends EditableInstance {
         CompletableFuture<Boolean> pending;
         boolean throwCommit;

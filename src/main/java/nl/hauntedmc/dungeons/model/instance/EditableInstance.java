@@ -158,7 +158,10 @@ public class EditableInstance extends DungeonInstance {
      * Triggers an asynchronous save and sends action-bar status feedback to editors.
      */
     public void autosave() {
-        if (this.disposing || this.instanceWorld == null || this.players.isEmpty()) {
+        if (this.disposing
+                || this.instanceWorld == null
+                || this.players.isEmpty()
+                || this.dungeon.isSaving()) {
             return;
         }
 
