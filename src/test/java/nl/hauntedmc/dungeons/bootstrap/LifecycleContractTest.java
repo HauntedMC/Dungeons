@@ -83,4 +83,34 @@ class LifecycleContractTest {
             order.verify(catalog).reloadAll();
         }
     }
+    @Test
+    void shutdownRestoresAndDetachesOnlinePlayersBeforeDisposingTheirWorlds() {
+        try (var paper = new PaperBoundary()) {
+            var queues = mock(DungeonQueueRegistry.class);
+            var teams = mock(DungeonTeamService.class);
+            var catalog = mock(DungeonRepository.class);
+            var sessions = mock(PlayerSessionRegistry.class);
+            paper.runtime.setQueueRegistry(queues);
+            paper.runtime.setTeamService(teams);
+            paper.runtime.setDungeonCatalog(catalog);
+            paper.runtime.setPlayerSessions(sessions);
+            var player = mock(Player.class);
+            var session = mock(DungeonPlayerSession.class);
+            var run = mock(DungeonInstance.class);
+            var dungeon = mock(DungeonDefinition.class);
+            paper.bukkit.when(Bukkit::getOnlinePlayers).thenReturn(List.of(player));
+            when(sessions.get(player)).thenReturn(session);
+            when(session.getInstance()).thenReturn(run);
+            when(catalog.getLoadedDungeons()).thenReturn(List.of(dungeon));
+            when(dungeon.getInstances()).thenReturn(List.of(run));
+
+            new LifecycleCoordinator(paper.runtime, mock(CoreBootstrap.class)).shutdown();
+
+            var order = inOrder(session, run);
+            order.verify(session).restoreCapturedHotbar();
+            order.verify(run).removePlayer(session);
+            order.verify(run).dispose();
+        }
+    }
+
 }
