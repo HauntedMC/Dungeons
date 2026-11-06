@@ -86,6 +86,21 @@ public final class PlayerState {
                         })
                 .when(player)
                 .setGameMode(any());
+        when(inventory.getSize()).thenAnswer(c -> contents.length);
+        doAnswer(
+                        c -> {
+                            ItemStack requested = c.getArgument(0);
+                            for (int slot = 0; slot < contents.length; slot++) {
+                                ItemStack item = contents[slot];
+                                if (item == requested
+                                        || item != null
+                                                && item.getAmount() == requested.getAmount()
+                                                && item.isSimilar(requested)) contents[slot] = null;
+                            }
+                            return null;
+                        })
+                .when(inventory)
+                .remove(any(ItemStack.class));
         when(inventory.getContents()).thenAnswer(c -> contents.clone());
         when(inventory.getArmorContents()).thenAnswer(c -> armor.clone());
         when(inventory.getItem(anyInt())).thenAnswer(c -> contents[(int) c.getArgument(0)]);

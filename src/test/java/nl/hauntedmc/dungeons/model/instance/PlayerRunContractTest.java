@@ -298,15 +298,6 @@ class PlayerRunContractTest {
             dead.contents[0] = item;
             var offhand = item.clone();
             dead.contents[40] = offhand;
-            doAnswer(
-                            c -> {
-                                for (int slot = 0; slot < dead.contents.length; slot++)
-                                    if (dead.contents[slot] == c.getArgument(0))
-                                        dead.contents[slot] = null;
-                                return null;
-                            })
-                    .when(dead.inventory)
-                    .remove(any(org.bukkit.inventory.ItemStack.class));
             var drops = new ArrayList<>(List.of(item, offhand));
             var event = mock(PlayerDeathEvent.class);
             when(event.getEntity()).thenReturn(dead.player);
@@ -342,6 +333,46 @@ class PlayerRunContractTest {
             f.scheduler.jobs.getFirst().run();
             assertEquals(20, state.health);
             assertEquals(20, state.food);
+        }
+    }
+
+    @Test
+    void
+            departuresTransferIdenticalKeysInSeparateSlotsOnceEachAndHonorTheDungeonItemTransferPolicy()
+                    throws Exception {
+        for (boolean transferItems : List.of(false, true)) {
+            var rules = settings();
+            rules.set("players.transfer_dungeon_items", transferItems);
+            try (var f =
+                    new RunFixture(directory.resolve(Boolean.toString(transferItems)), rules)) {
+                var departing = new PlayerState();
+                var survivor = new PlayerState();
+                var source = f.session(departing);
+                var target = f.session(survivor);
+                f.run.addPlayer(source);
+                f.run.addPlayer(target);
+                var tags = new java.util.HashMap<org.bukkit.NamespacedKey, Object>();
+                tags.put(new org.bukkit.NamespacedKey("dungeons", "dungeonkey"), 1);
+                tags.put(new org.bukkit.NamespacedKey("dungeons", "dungeonitem"), 1);
+                var first = TaggedItems.stack(org.bukkit.Material.TRIPWIRE_HOOK, 1, tags);
+                var second = first.clone();
+                var runtimeItem =
+                        TaggedItems.stack(
+                                org.bukkit.Material.PAPER,
+                                2,
+                                java.util.Map.of(
+                                        new org.bukkit.NamespacedKey("dungeons", "dungeonitem"),
+                                        1));
+                departing.contents[0] = first;
+                departing.contents[40] = second;
+                departing.contents[1] = runtimeItem;
+                f.run.removePlayer(source);
+                verify(survivor.inventory).addItem(first);
+                verify(survivor.inventory).addItem(second);
+                verify(survivor.inventory, times(transferItems ? 1 : 0)).addItem(runtimeItem);
+                assertNull(source.getInstance());
+                assertSame(f.run, target.getInstance());
+            }
         }
     }
 }

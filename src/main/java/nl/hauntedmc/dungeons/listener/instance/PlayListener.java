@@ -167,13 +167,17 @@ public class PlayListener extends InstanceListener {
                                 // dropping on the
                                 // ground so progression-critical items cannot be lost to despawn or
                                 // griefing.
-                                for (ItemStack item : inv) {
+                                ItemStack[] contents = inv.getContents();
+                                for (int slot = 0; slot < contents.length; slot++) {
+                                    ItemStack item = contents[slot];
                                     boolean keyItem = ItemUtils.verifyKeyItem(item);
                                     boolean dungeonItem = ItemUtils.verifyDungeonItem(item);
                                     if (!keyItem && !dungeonItem) {
                                         continue;
                                     }
-                                    inv.remove(item);
+                                    // Clear one slot, including offhand, without removing equal
+                                    // stacks elsewhere.
+                                    inv.setItem(slot, null);
                                     event.getDrops().remove(item);
                                     if (!this.instance.getLivingPlayers().isEmpty()) {
                                         foundKeys |= keyItem;
@@ -184,24 +188,6 @@ public class PlayListener extends InstanceListener {
                                                         .getFirst()
                                                         .getPlayer();
                                         ItemUtils.giveOrDrop(target, item);
-                                    }
-                                }
-
-                                ItemStack offhand = inv.getItemInOffHand();
-                                boolean offhandKey = ItemUtils.verifyKeyItem(offhand);
-                                boolean offhandDungeonItem = ItemUtils.verifyDungeonItem(offhand);
-                                if (offhandKey || offhandDungeonItem) {
-                                    inv.setItemInOffHand(null);
-                                    event.getDrops().remove(offhand);
-                                    if (!this.instance.getLivingPlayers().isEmpty()) {
-                                        foundKeys |= offhandKey;
-                                        foundDungeonItems |= offhandDungeonItem;
-                                        target =
-                                                this.instance
-                                                        .getLivingPlayers()
-                                                        .getFirst()
-                                                        .getPlayer();
-                                        ItemUtils.giveOrDrop(target, offhand);
                                     }
                                 }
 

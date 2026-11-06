@@ -549,48 +549,24 @@ public abstract class DungeonInstance {
                 boolean foundKeys = false;
                 boolean foundDungeonItems = false;
 
-                for (ItemStack item : inv) {
-                    if (ItemUtils.verifyKeyItem(item)) {
-                        inv.remove(item);
-                        if (!this.players.isEmpty()) {
-                            foundKeys = true;
-                            target = this.players.getFirst().getPlayer();
-                            ItemUtils.giveOrDrop(target, item);
-                        }
+                boolean transferDungeonItems =
+                        this.dungeon.getConfig().getBoolean("players.transfer_dungeon_items", true);
+                ItemStack[] contents = inv.getContents();
+                for (int slot = 0; slot < contents.length; slot++) {
+                    ItemStack item = contents[slot];
+                    boolean keyItem = ItemUtils.verifyKeyItem(item);
+                    boolean dungeonItem = ItemUtils.verifyDungeonItem(item);
+                    if (!keyItem && !dungeonItem) {
+                        continue;
                     }
-
-                    if (ItemUtils.verifyDungeonItem(item)) {
-                        inv.remove(item);
-                        if (!this.players.isEmpty()
-                                && this.dungeon
-                                        .getConfig()
-                                        .getBoolean("players.transfer_dungeon_items", true)) {
-                            foundDungeonItems = true;
-                            target = this.players.getFirst().getPlayer();
-                            ItemUtils.giveOrDrop(target, item);
-                        }
-                    }
-                }
-
-                ItemStack offhand = inv.getItemInOffHand();
-                if (ItemUtils.verifyKeyItem(offhand)) {
-                    inv.setItemInOffHand(null);
-                    if (!this.players.isEmpty()) {
-                        foundKeys = true;
-                        target = this.players.getFirst().getPlayer();
-                        ItemUtils.giveOrDrop(target, offhand);
-                    }
-                }
-
-                if (ItemUtils.verifyDungeonItem(offhand)) {
-                    inv.setItemInOffHand(null);
+                    // Slot removal preserves identical keys in other inventory or offhand slots.
+                    inv.setItem(slot, null);
                     if (!this.players.isEmpty()
-                            && this.dungeon
-                                    .getConfig()
-                                    .getBoolean("players.transfer_dungeon_items", true)) {
-                        foundDungeonItems = true;
+                            && (keyItem || dungeonItem && transferDungeonItems)) {
+                        foundKeys |= keyItem;
+                        foundDungeonItems |= dungeonItem && transferDungeonItems;
                         target = this.players.getFirst().getPlayer();
-                        ItemUtils.giveOrDrop(target, offhand);
+                        ItemUtils.giveOrDrop(target, item);
                     }
                 }
 
