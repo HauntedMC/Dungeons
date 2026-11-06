@@ -47,7 +47,12 @@ public final class AcceptancePlugin extends JavaPlugin {
         if (!(sender instanceof org.bukkit.command.ConsoleCommandSender) || running) return false;
         if (args.length != 1 || !args[0].equals("run")) return false;
         running = true;
-        var scenarios = List.of(new Scenario("packaged-bootstrap", this::bootstrap));
+        var scenarios =
+                List.of(
+                        new Scenario("packaged-bootstrap", this::bootstrap),
+                        new Scenario(
+                                "native-item-and-graph-persistence",
+                                () -> NativePersistence.run(this)));
         var results = new ArrayList<Result>();
         CompletableFuture<Void> chain = CompletableFuture.completedFuture(null);
         for (var scenario : scenarios) {
