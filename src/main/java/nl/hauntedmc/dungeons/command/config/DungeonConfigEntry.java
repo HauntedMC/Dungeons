@@ -14,7 +14,6 @@ import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 public final class DungeonConfigEntry {
     private final String key;
     private final String description;
-    private final DungeonConfigFile configFile;
     private final String path;
     private final DungeonConfigValueType valueType;
     private final Predicate<DungeonDefinition> supportPredicate;
@@ -24,12 +23,11 @@ public final class DungeonConfigEntry {
     /**
      * Creates a new config entry definition.
      */
-    public DungeonConfigEntry(String key, String description, DungeonConfigFile configFile, String path,
+    public DungeonConfigEntry(String key, String description, String path,
             DungeonConfigValueType valueType, Predicate<DungeonDefinition> supportPredicate,
             Function<DungeonDefinition, List<String>> suggestionsProvider, List<String> aliases) {
         this.key = key;
         this.description = description;
-        this.configFile = configFile;
         this.path = path;
         this.valueType = valueType;
         this.supportPredicate = supportPredicate;
@@ -63,13 +61,6 @@ public final class DungeonConfigEntry {
      */
     public String getDescription() {
         return this.description;
-    }
-
-    /**
-     * Returns the backing config file that stores this setting.
-     */
-    public DungeonConfigFile getConfigFile() {
-        return this.configFile;
     }
 
     /**

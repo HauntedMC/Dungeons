@@ -22,10 +22,8 @@ import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.registry.LayoutRegistry;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.util.config.ConfigSyncUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.text.TextUtils;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Difficulty;
@@ -41,11 +39,10 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Dungeon implementation that generates each run from a branching layout and room definitions.
  *
- * <p>Branching dungeons persist generation settings separately from normal dungeon config and keep
+ * <p>Branching dungeons read generation settings from the dungeon config and keep
  * room-scoped function data in the {@code rooms/} folder.
  */
 public class BranchingDungeon extends DungeonDefinition {
-    private final YamlConfiguration genConfig;
     private final YamlConfiguration ruleConfig;
     private Layout layout;
     private final File roomsFolder;
@@ -61,42 +58,18 @@ public class BranchingDungeon extends DungeonDefinition {
             @Nullable YamlConfiguration loadedConfig)
             throws DungeonLoadException {
         super(runtime, folder, loadedConfig);
-        this.genConfig = new YamlConfiguration();
-
         try {
-            File configFile = new File(folder, "generation.yml");
-            if (!configFile.exists()) {
-                this.logger().info("Creating generator config for dungeon '{}'.", folder.getName());
-                FileUtils.copyFile(
-                                                new File(this.runtime().dungeonFiles(), "generator_settings_default.yml"), configFile);
+            this.layout = this.createConfiguredLayout(true);
+            if (this.layout == null) {
+                throw new DungeonLoadException("Generator config references an unknown layout.", true);
             }
-
-            this.genConfig.load(configFile);
-            this.syncGenerationConfigWithDefaults(configFile);
-            try {
-                this.layout = this.createConfiguredLayout(true);
-                if (this.layout == null) {
-                                        throw new DungeonLoadException("Generator config references an unknown layout.", true);
-                }
-            } catch (InvocationTargetException
-                    | InstantiationException
-                    | IllegalAccessException
-                    | NoSuchMethodException exception) {
-                this.logger()
-                        .error(
-                                "Failed to initialize layout '{}' for dungeon '{}'.",
-                                this.genConfig.getString("generator.layout", "branching"),
-                                this.getWorldName(),
-                                exception);
-                                throw new DungeonLoadException("Generator layout failed to initialize.", true);
-            }
-        } catch (IOException exception) {
-                        throw new DungeonLoadException(
-                    "Access of generator.yml file failed!",
-                    false,
-                    "There may be another process accessing the file, or we may not have permission.");
-        } catch (InvalidConfigurationException exception) {
-                        throw new DungeonLoadException("Generator config has invalid YAML! See error below...", true);
+        } catch (InvocationTargetException
+                | InstantiationException
+                | IllegalAccessException
+                | NoSuchMethodException exception) {
+            this.logger().error("Failed to initialize layout '{}' for dungeon '{}'.",
+                    this.config.getString("generator.layout", "branching"), this.getWorldName(), exception);
+            throw new DungeonLoadException("Generator layout failed to initialize.", true);
         }
 
         this.ruleConfig = new YamlConfiguration();
@@ -136,7 +109,7 @@ public class BranchingDungeon extends DungeonDefinition {
             this.logger()
                     .error(
                             "Failed to initialize layout '{}' for dungeon '{}'.",
-                            this.genConfig.getString("generator.layout", "branching"),
+                            this.config.getString("generator.layout", "branching"),
                             this.getWorldName(),
                             exception);
         }
@@ -150,8 +123,8 @@ public class BranchingDungeon extends DungeonDefinition {
                     InstantiationException,
                     IllegalAccessException,
                     NoSuchMethodException {
-        String configuredLayout = this.genConfig.getString("generator.layout", "branching");
-        Layout resolved = LayoutRegistry.createLayoutInstance(configuredLayout, this, this.genConfig);
+        String configuredLayout = this.config.getString("generator.layout", "branching");
+        Layout resolved = LayoutRegistry.createLayoutInstance(configuredLayout, this, this.config);
         if (resolved != null) {
             return resolved;
         }
@@ -161,34 +134,12 @@ public class BranchingDungeon extends DungeonDefinition {
                         "Unknown generator layout '{}' in dungeon '{}'; falling back to 'branching'.",
                         configuredLayout,
                         this.getWorldName());
-        this.genConfig.set("generator.layout", "branching");
+        this.config.set("generator.layout", "branching");
         if (saveCorrection) {
-            this.saveGenerationConfig();
+            this.saveConfig();
         }
 
-        return LayoutRegistry.createLayoutInstance("branching", this, this.genConfig);
-    }
-
-    /**
-     * Synchronizes generation config with defaults.
-     */
-    private void syncGenerationConfigWithDefaults(File configFile)
-            throws IOException, InvalidConfigurationException {
-        File defaultConfigFile =
-                                new File(this.runtime().dungeonFiles(), "generator_settings_default.yml");
-        if (!defaultConfigFile.exists()) {
-            return;
-        }
-
-        YamlConfiguration defaultConfig = new YamlConfiguration();
-        defaultConfig.load(defaultConfigFile);
-        if (defaultConfig.getKeys(true).isEmpty()) {
-            return;
-        }
-
-        if (ConfigSyncUtils.syncMissingAndObsolete(defaultConfig, this.genConfig)) {
-            this.genConfig.save(configFile);
-        }
+        return LayoutRegistry.createLayoutInstance("branching", this, this.config);
     }
 
     /**
@@ -198,19 +149,6 @@ public class BranchingDungeon extends DungeonDefinition {
     public void refreshRuntimeSettings() {
         super.refreshRuntimeSettings();
         this.lobbyEnabled = false;
-    }
-
-    /**
-     * Saves generation config.
-     */
-    public void saveGenerationConfig() {
-        try {
-            this.genConfig.save(new File(this.folder, "generation.yml"));
-        } catch (IOException exception) {
-            this.logger()
-                    .error(
-                            "Failed to save generator config for dungeon '{}'.", this.getWorldName(), exception);
-        }
     }
 
     /**
@@ -611,13 +549,6 @@ public class BranchingDungeon extends DungeonDefinition {
         }
 
         return functions;
-    }
-
-    /**
-     * Returns the gen config.
-     */
-    public YamlConfiguration getGenConfig() {
-        return this.genConfig;
     }
 
     /**

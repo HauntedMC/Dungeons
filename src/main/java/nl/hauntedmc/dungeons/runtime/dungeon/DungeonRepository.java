@@ -14,7 +14,7 @@ import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonLoadException;
 import nl.hauntedmc.dungeons.registry.DungeonTypeRegistry;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
-import nl.hauntedmc.dungeons.util.config.ConfigSyncUtils;
+import nl.hauntedmc.dungeons.util.config.GeneratorConfigMigration;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.InvalidConfigurationException;
@@ -41,26 +41,8 @@ public final class DungeonRepository {
     /** Reloads the on-disk dungeon catalogue into this stable manager instance. */
     public void reloadAll() {
         this.dungeons.clear();
-        this.ensureDefaultResources();
         this.loadDefaultDungeonConfig();
-        this.syncDefaultGeneratorTemplate();
         this.scheduleDungeonDiscovery();
-    }
-
-    /** Ensures default bundled resources exist in the dungeon data directory. */
-    private void ensureDefaultResources() {
-        File defaultConfig = new File(this.runtime.dungeonFiles(), "config_default.yml");
-        if (!defaultConfig.exists()) {
-            this.runtime.environment().plugin().saveResource("dungeons/config_default.yml", false);
-        }
-
-        File defaultGenerator = new File(this.runtime.dungeonFiles(), "generator_settings_default.yml");
-        if (!defaultGenerator.exists()) {
-            this.runtime
-                    .environment()
-                    .plugin()
-                    .saveResource("dungeons/generator_settings_default.yml", false);
-        }
     }
 
     /** Loads and synchronizes the default dungeon configuration template. */
@@ -68,14 +50,12 @@ public final class DungeonRepository {
         File defaultConfig = new File(this.runtime.dungeonFiles(), "config_default.yml");
         try {
             YamlConfiguration bundledDefaults = this.loadBundledDefaultDungeonConfig();
-            if (bundledDefaults != null && !bundledDefaults.getKeys(true).isEmpty()) {
-                YamlConfiguration diskDefaults = new YamlConfiguration();
-                diskDefaults.load(defaultConfig);
-
-                if (ConfigSyncUtils.syncMissingAndObsolete(bundledDefaults, diskDefaults)) {
-                    diskDefaults.save(defaultConfig);
-                }
+            if (bundledDefaults == null || bundledDefaults.getKeys(true).isEmpty()) {
+                throw new IOException("Cannot load dungeon defaults because the bundled template is missing or empty.");
             }
+            GeneratorConfigMigration.loadTemplate(
+                    new File(this.runtime.dungeonFiles(), "generator_settings_default.yml"),
+                    defaultConfig, bundledDefaults);
 
             this.runtime.defaultDungeonConfig().load(defaultConfig);
         } catch (InvalidConfigurationException | IOException exception) {
@@ -108,56 +88,6 @@ public final class DungeonRepository {
                     .environment()
                     .logger()
                     .error("Failed to read bundled default dungeon config resource.", exception);
-            return null;
-        }
-    }
-
-    /** Loads and synchronizes the default generator settings template. */
-    private void syncDefaultGeneratorTemplate() {
-        File defaultGenerator = new File(this.runtime.dungeonFiles(), "generator_settings_default.yml");
-        try {
-            YamlConfiguration bundledDefaults = this.loadBundledDefaultGeneratorTemplate();
-            if (bundledDefaults != null && !bundledDefaults.getKeys(true).isEmpty()) {
-                YamlConfiguration diskDefaults = new YamlConfiguration();
-                diskDefaults.load(defaultGenerator);
-
-                if (ConfigSyncUtils.syncMissingAndObsolete(bundledDefaults, diskDefaults)) {
-                    diskDefaults.save(defaultGenerator);
-                }
-            }
-        } catch (InvalidConfigurationException | IOException exception) {
-            this.runtime
-                    .environment()
-                    .logger()
-                    .error(
-                            "Failed to load default generator settings '{}'.",
-                            defaultGenerator.getAbsolutePath(),
-                            exception);
-        }
-    }
-
-    /** Loads the bundled default generator settings from the plugin jar. */
-    private YamlConfiguration loadBundledDefaultGeneratorTemplate() {
-        try (InputStream resource =
-                this.runtime
-                        .environment()
-                        .plugin()
-                        .getResource("dungeons/generator_settings_default.yml")) {
-            if (resource == null) {
-                this.runtime
-                        .environment()
-                        .logger()
-                        .warn("Bundled default generator settings resource was not found.");
-                return null;
-            }
-
-            return YamlConfiguration.loadConfiguration(
-                    new InputStreamReader(resource, StandardCharsets.UTF_8));
-        } catch (IOException exception) {
-            this.runtime
-                    .environment()
-                    .logger()
-                    .error("Failed to read bundled default generator settings resource.", exception);
             return null;
         }
     }

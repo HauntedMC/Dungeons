@@ -16,7 +16,7 @@ import nl.hauntedmc.dungeons.util.math.RandomCollection;
 import nl.hauntedmc.dungeons.util.math.RangedNumber;
 import nl.hauntedmc.dungeons.util.world.SimpleLocation;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.util.BoundingBox;
 
 /**
@@ -38,7 +38,7 @@ public class BranchingLayout extends Layout {
     /**
      * Creates a branching layout with trunk and branch settings loaded from configuration.
      */
-    public BranchingLayout(BranchingDungeon dungeon, YamlConfiguration config) {
+    public BranchingLayout(BranchingDungeon dungeon, FileConfiguration config) {
         super(dungeon, config);
     }
 
@@ -47,22 +47,22 @@ public class BranchingLayout extends Layout {
         LayoutValidationReport report = super.validateConfiguration();
         this.validateStraightness(
                 report,
-                "branching.trunk.straightness",
-                this.config.getDouble("branching.trunk.straightness", 0.5));
+                "generator.branching.trunk.straightness",
+                this.config.getDouble("generator.branching.trunk.straightness", 0.5));
         this.validateRoomTarget(
                 report,
-                "branching.trunk.room_target",
-                this.config.getInt("branching.trunk.room_target.min", 12),
-                this.config.getInt("branching.trunk.room_target.max", 24));
+                "generator.branching.trunk.room_target",
+                this.config.getInt("generator.branching.trunk.room_target.min", 12),
+                this.config.getInt("generator.branching.trunk.room_target.max", 24));
 
         ConfigurationSection branchesSection =
-                this.config.getConfigurationSection("branching.branches");
+                this.config.getConfigurationSection("generator.branching.branches");
         if (branchesSection == null) {
             return report;
         }
 
         for (String branchName : branchesSection.getKeys(false)) {
-            String prefix = "branching.branches." + branchName;
+            String prefix = "generator.branching.branches." + branchName;
             this.validateStraightness(
                     report,
                     prefix + ".straightness",
@@ -92,13 +92,13 @@ public class BranchingLayout extends Layout {
         RuntimeContext.logger()
                 .info("Generating branching layout for dungeon '{}'.", this.dungeon.getWorldName());
 
-        this.roomWhitelist = this.resolveRooms(this.config.getStringList("branching.trunk.room_pool"));
+        this.roomWhitelist = this.resolveRooms(this.config.getStringList("generator.branching.trunk.room_pool"));
         this.endRoomWhitelist =
-                this.resolveRooms(this.config.getStringList("branching.trunk.end_room_pool"));
-        this.straightness = this.config.getDouble("branching.trunk.straightness", 0.5);
-        this.minBranchRooms = this.config.getInt("branching.trunk.room_target.min", 12);
-        this.maxBranchRooms = this.config.getInt("branching.trunk.room_target.max", 24);
-        this.strictRooms = this.config.getBoolean("branching.trunk.room_target.enforce_minimum", true);
+                this.resolveRooms(this.config.getStringList("generator.branching.trunk.end_room_pool"));
+        this.straightness = this.config.getDouble("generator.branching.trunk.straightness", 0.5);
+        this.minBranchRooms = this.config.getInt("generator.branching.trunk.room_target.min", 12);
+        this.maxBranchRooms = this.config.getInt("generator.branching.trunk.room_target.max", 24);
+        this.strictRooms = this.config.getBoolean("generator.branching.trunk.room_target.enforce_minimum", true);
         this.roomCount = 0;
         this.totalRooms = 0;
         this.branchCount = 0;
@@ -263,7 +263,7 @@ public class BranchingLayout extends Layout {
         protected Layout.GenerationResult generateAllBranches() {
         int totalBranches = 0;
         ConfigurationSection branchesSection =
-                this.config.getConfigurationSection("branching.branches");
+                this.config.getConfigurationSection("generator.branching.branches");
         if (branchesSection != null) {
             for (String path : branchesSection.getKeys(false)) {
                 this.roomWhitelist.clear();

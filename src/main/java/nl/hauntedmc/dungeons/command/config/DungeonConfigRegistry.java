@@ -382,37 +382,39 @@ public final class DungeonConfigRegistry {
         List<String> roomNames = branching.getUniqueRooms().keySet().stream().sorted(String.CASE_INSENSITIVE_ORDER)
                 .toList();
         entries.add(generation("trunk.room-pool", "Comma separated room whitelist for the trunk. Use clear to empty.",
-                "branching.trunk.room_pool", DungeonConfigValueType.STRING_LIST, suggestions(roomNames)));
+                "generator.branching.trunk.room_pool", DungeonConfigValueType.STRING_LIST, suggestions(roomNames)));
         entries.add(generation("trunk.end-room-pool",
                 "Comma separated terminal room whitelist for the trunk. Use clear to empty.",
-                "branching.trunk.end_room_pool", DungeonConfigValueType.STRING_LIST, suggestions(roomNames)));
+                "generator.branching.trunk.end_room_pool", DungeonConfigValueType.STRING_LIST, suggestions(roomNames)));
         entries.add(
                 generation("trunk.straightness", "How strongly the trunk favors straight generation. Range 0.0 to 1.0.",
-                        "branching.trunk.straightness", DungeonConfigValueType.DECIMAL));
+                        "generator.branching.trunk.straightness", DungeonConfigValueType.DECIMAL));
         entries.add(generation("trunk.room-target-min", "Minimum rooms for the trunk path.",
-                "branching.trunk.room_target.min", DungeonConfigValueType.INTEGER));
+                "generator.branching.trunk.room_target.min", DungeonConfigValueType.INTEGER));
         entries.add(generation("trunk.room-target-max", "Maximum rooms for the trunk path.",
-                "branching.trunk.room_target.max", DungeonConfigValueType.INTEGER));
+                "generator.branching.trunk.room_target.max", DungeonConfigValueType.INTEGER));
         entries.add(generation("trunk.enforce-room-target-minimum",
                 "Whether the trunk must satisfy its minimum room target.",
-                "branching.trunk.room_target.enforce_minimum", DungeonConfigValueType.BOOLEAN,
+                "generator.branching.trunk.room_target.enforce_minimum", DungeonConfigValueType.BOOLEAN,
                 suggestions(BOOLEAN_VALUES)));
 
-        ConfigurationSection branchSettings = branching.getGenConfig().getConfigurationSection("branching.branches");
-            List<String> branchNames = branchSettings == null
-                    ? List.of()
-                    : branchSettings.getKeys(false).stream().sorted(String.CASE_INSENSITIVE_ORDER).toList();
-            entries.add(generation("branch.add", "Create a named branch with default settings.", "branching.branches",
-                    DungeonConfigValueType.STRING, BRANCHING_LAYOUT_ONLY, ignoredDungeon -> List.of(), List.of()));
-            entries.add(generation("branch.remove", "Remove a named branch.", "branching.branches",
-                    DungeonConfigValueType.STRING, BRANCHING_LAYOUT_ONLY, ignoredDungeon -> branchNames, List.of()));
+        ConfigurationSection branchSettings =
+                branching.getConfig().getConfigurationSection("generator.branching.branches");
+        List<String> branchNames = branchSettings == null
+                ? List.of()
+                : branchSettings.getKeys(false).stream().sorted(String.CASE_INSENSITIVE_ORDER).toList();
+        entries.add(generation("branch.add", "Create a named branch with default settings.",
+                "generator.branching.branches", DungeonConfigValueType.STRING, BRANCHING_LAYOUT_ONLY,
+                ignoredDungeon -> List.of(), List.of()));
+        entries.add(generation("branch.remove", "Remove a named branch.", "generator.branching.branches",
+                DungeonConfigValueType.STRING, BRANCHING_LAYOUT_ONLY, ignoredDungeon -> branchNames, List.of()));
 
         if (branchSettings == null) {
             return entries;
         }
 
         for (String branchName : branchNames) {
-            String pathPrefix = "branching.branches." + branchName + ".";
+            String pathPrefix = "generator.branching.branches." + branchName + ".";
             String keyPrefix = "branch." + branchName.toLowerCase(Locale.ROOT) + ".";
             String readableName = "'" + branchName + "' branch";
 
@@ -512,7 +514,7 @@ public final class DungeonConfigRegistry {
     private static DungeonConfigEntry main(String key, String description, String path,
             DungeonConfigValueType valueType, Predicate<DungeonDefinition> supportPredicate,
             Function<DungeonDefinition, List<String>> suggestionsProvider, List<String> aliases) {
-        return new DungeonConfigEntry(key, description, DungeonConfigFile.MAIN, path, valueType, supportPredicate,
+        return new DungeonConfigEntry(key, description, path, valueType, supportPredicate,
                 suggestionsProvider, aliases);
     }
 
@@ -556,7 +558,7 @@ public final class DungeonConfigRegistry {
     private static DungeonConfigEntry generation(String key, String description, String path,
             DungeonConfigValueType valueType, Predicate<DungeonDefinition> supportPredicate,
             Function<DungeonDefinition, List<String>> suggestionsProvider, List<String> aliases) {
-        return new DungeonConfigEntry(key, description, DungeonConfigFile.GENERATION, path, valueType, supportPredicate,
+        return new DungeonConfigEntry(key, description, path, valueType, supportPredicate,
                 suggestionsProvider, aliases);
     }
 
