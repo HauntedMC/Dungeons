@@ -14,6 +14,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
@@ -252,8 +253,9 @@ public abstract class Layout implements Cloneable {
         long startTime = System.nanoTime();
 
         ExecutorService executor = Executors.newSingleThreadExecutor();
-        Future<GenerationResult> future =
-                executor.submit(
+        Future<GenerationResult> future;
+        try {
+            future = executor.submit(
                         () -> {
                             int tries = 0;
 
@@ -296,6 +298,13 @@ public abstract class Layout implements Cloneable {
                                             timeout);
                             return GenerationResult.TIMED_OUT;
                         });
+
+        } catch (RejectedExecutionException exception) {
+            executor.shutdownNow();
+            this.logger().error("Cannot schedule layout generation for dungeon '{}'.",
+                    this.dungeon.getWorldName(), exception);
+            return GenerationResult.GENERIC_FAILURE;
+        }
 
         GenerationResult result;
         try {
@@ -444,6 +453,10 @@ public abstract class Layout implements Cloneable {
                                 }
                             });
             future.get(timeout, TimeUnit.SECONDS);
+        } catch (RejectedExecutionException exception) {
+            this.logger().error("Cannot schedule room queue generation for dungeon '{}'.",
+                    this.dungeon.getWorldName(), exception);
+            return GenerationResult.GENERIC_FAILURE;
         } catch (InterruptedException exception) {
             future.cancel(true);
 

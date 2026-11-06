@@ -35,4 +35,18 @@ class GenerationRecoveryContractTest {
             }
         }
     }
+    @Test
+    void rejectedWorkerSubmissionReturnsFailureAndClosesBothGenerationExecutors() throws Exception {
+        try(var paper=new PaperBoundary();var executors=mockStatic(Executors.class)) {
+            var executor=mock(ExecutorService.class); executors.when(Executors::newSingleThreadExecutor).thenReturn(executor);
+            doThrow(new RejectedExecutionException("stopped")).when(executor).submit(any(Callable.class));
+            doThrow(new RejectedExecutionException("stopped")).when(executor).submit(any(Runnable.class));
+            var graph=new LayoutExecutionContractTest.Graph(paper);
+            assertEquals(Layout.GenerationResult.GENERIC_FAILURE,assertDoesNotThrow(graph.layout::generate));
+            verify(executor).shutdownNow(); clearInvocations(executor);
+            assertEquals(Layout.GenerationResult.GENERIC_FAILURE,assertDoesNotThrow(() -> graph.layout.processQueue()));
+            verify(executor).shutdownNow();
+        }
+    }
+
 }
