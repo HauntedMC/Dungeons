@@ -459,6 +459,9 @@ public abstract class DungeonInstance {
     }
 
     public void addPlayer(DungeonPlayerSession playerSession) {
+        if (playerSession.getInstance() != null && playerSession.getInstance() != this) {
+            return;
+        }
         if (!this.players.contains(playerSession)) {
             Player player = playerSession.getPlayer();
             this.players.add(playerSession);

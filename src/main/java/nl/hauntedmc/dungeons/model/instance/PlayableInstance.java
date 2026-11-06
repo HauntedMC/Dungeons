@@ -338,6 +338,9 @@ public abstract class PlayableInstance extends DungeonInstance {
         }
 
         super.addPlayer(playerSession);
+        if (playerSession.getInstance() != this) {
+            return;
+        }
         Player player = playerSession.getPlayer();
         this.livingPlayers.add(playerSession);
         this.showCustomDragonBossBars(player);

@@ -50,6 +50,25 @@ class PreparationContractTest {
         }
     }
 
+
+    @Test @Timeout(10)
+    void aStalePreparedRunCannotStealAPlayerAlreadyAttachedToAnotherRun() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            var dungeon=new PreparedDungeon(f,directory.resolve("stale"));
+            var state=new PlayerState(); var session=f.session(state); session.setAwaitingDungeon(true);
+            dungeon.prepareInstance(state.player,"DEFAULT",1,null); finishPreparation(f);
+            f.run.addPlayer(session);
+            var returnPosition=session.getSavedPosition().clone();
+            f.scheduler.readyImmediate.remove().run();
+            assertSame(f.run,session.getInstance());
+            assertTrue(f.run.getPlayers().contains(session));
+            assertTrue(dungeon.created.getPlayers().isEmpty());
+            assertEquals(returnPosition,session.getSavedPosition());
+            assertTrue(dungeon.getInstances().isEmpty());
+            assertTrue(f.paper.runtime.activeInstances().getActiveInstances().isEmpty());
+        }
+    }
+
     static void finishPreparation(RunFixture f) throws Exception {
         try(var executor=Executors.newSingleThreadExecutor()) {
             Future<?> loading=executor.submit(() -> {
@@ -73,7 +92,11 @@ class PreparationContractTest {
         }
         @Override public PlayableInstance createPlaySession(CountDownLatch latch,UUID leader) {
             if (absent) return null;
-            created=new RunFixture.Run(this,fixture.world,latch);
+            World world=mock(World.class);
+            when(world.getName()).thenReturn(getWorldName()+"_0");
+            when(world.key()).thenReturn(new NamespacedKey("dungeons",getWorldName()+"_0"));
+            when(world.getEntitiesByClass(org.bukkit.entity.EnderDragon.class)).thenReturn(List.of());
+            created=new RunFixture.Run(this,world,latch);
             created.completeInitialization(fail); return created;
         }
     }
