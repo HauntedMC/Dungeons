@@ -102,4 +102,48 @@ class OpenPreparationContractTest {
             }
         }
     }
+
+    @Test
+    void warmPreloadingCoalescesRequestsReplenishesDisposedRunsAndRejectsStalePublication()
+            throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            when(f.paper.plugin.isEnabled()).thenReturn(true);
+            var settings = new YamlConfiguration();
+            settings.set("open.preload_world", true);
+            settings.set("runs.max_active", 2);
+            var dungeon = new PreparedOpen(f, directory.resolve("open"), settings);
+            f.scheduler.jobs.getFirst().run();
+            var preload = f.scheduler.jobs.getLast();
+            int scheduled = f.scheduler.jobs.size();
+            dungeon.schedulePreLoadIfNeeded();
+            dungeon.schedulePreLoadIfNeeded();
+            assertEquals(scheduled, f.scheduler.jobs.size());
+            preload.run();
+            dungeon.preLoad();
+            assertEquals(1, dungeon.created.size());
+            var first = dungeon.created.getFirst();
+            first.complete(false);
+            assertTrue(dungeon.publishReadyInstance(first));
+            f.scheduler.asynchronous.getFirst().run();
+            dungeon.preLoad();
+            assertEquals(1, dungeon.created.size());
+            dungeon.removeInstance(first);
+            f.paper.runtime.activeInstances().unregisterActiveInstance(first);
+            dungeon.onOpenInstanceDisposed(first);
+            var replacement = f.scheduler.jobs.getLast();
+            assertEquals(20, replacement.delay);
+            replacement.run();
+            assertEquals(2, dungeon.created.size());
+            var second = dungeon.created.getLast();
+            second.cancelReadyRegistration();
+            second.complete(false);
+            assertFalse(dungeon.publishReadyInstance(second));
+            var newer = mock(OpenDungeon.class);
+            when(f.paper.runtime.dungeonCatalog().get(dungeon.getWorldName())).thenReturn(newer);
+            assertFalse(dungeon.publishReadyInstance(first));
+            dungeon.schedulePreLoadIfNeeded();
+            f.scheduler.jobs.getLast().run();
+            assertEquals(2, dungeon.created.size());
+        }
+    }
 }
