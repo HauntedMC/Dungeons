@@ -135,6 +135,30 @@ class TriggerLifecycleContractTest {
         }
     }
 
+    @Test
+    void failingConditionCleanupCannotLeaveOtherConditionsOrPendingPollsActive() {
+        try (var paper = new PaperBoundary()) {
+            var scheduler = new nl.hauntedmc.dungeons.support.CapturedScheduler(paper);
+            var run = mock(PlayableInstance.class);
+            when(run.asPlayInstance()).thenReturn(run);
+            when(run.getEnvironment()).thenReturn(paper.runtime.environment());
+            var bad = mock(TriggerCondition.class);
+            var healthy = mock(TriggerCondition.class);
+            org.mockito.Mockito.doThrow(new IllegalStateException("condition cleanup failed"))
+                    .when(bad)
+                    .disable();
+            var trigger = new WaitingTrigger();
+            trigger.addCondition(bad);
+            trigger.addCondition(healthy);
+            trigger.enable(null, run);
+            trigger.trigger();
+            org.junit.jupiter.api.Assertions.assertDoesNotThrow(trigger::disable);
+            assertTrue(scheduler.jobs.getFirst().cancelled);
+            verify(healthy).disable();
+            verify(run).unregisterTriggerListener(trigger);
+        }
+    }
+
     static class WaitingTrigger extends DungeonTrigger {
         int effects;
 

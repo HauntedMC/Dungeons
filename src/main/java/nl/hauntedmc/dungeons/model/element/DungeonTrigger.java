@@ -141,7 +141,16 @@ public abstract class DungeonTrigger extends DungeonElement
     @Override
     public final void disable() {
         for (TriggerCondition condition : this.conditions) {
-            condition.disable();
+            try {
+                condition.disable();
+            } catch (RuntimeException exception) {
+                this.logger()
+                        .error(
+                                "Failed to disable condition '{}' in dungeon '{}'.",
+                                condition.getClass().getSimpleName(),
+                                this.dungeonNameForLogs(),
+                                exception);
+            }
         }
 
         for (BukkitRunnable waiter : this.conditionWaiters) {
