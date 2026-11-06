@@ -5,10 +5,11 @@ Testing in this project is designed to catch regressions in dungeon lifecycle be
 ## Core contract suite
 
 The [core-system contracts and coverage map](CORE_TEST_CONTRACTS.md) describe the behavior
-protected by the suite and the bugs exposed while implementing it. The suite contains 113
-tests: 44 baseline tests, 39 initial behavioral scenarios, and 30 coverage-audit scenarios.
-Each new scenario was added in a separate commit. The coverage map records measured before/after
-coverage and prioritizes the remaining untested gameplay paths.
+protected by the suite and the bugs exposed while implementing it. The suite contains **264
+tests across 82 classes**. The final implementation adds 151 scenarios to the previous 113;
+every new `@Test` method has its own commit, alongside any fix it demonstrates. The
+[mechanic coverage map](MECHANIC_TEST_COVERAGE.md) identifies execution contracts for all 54
+registered concrete mechanics and states the server boundaries explicitly.
 Several scenarios cover tables of inputs or an entire state transition rather than one
 assertion or helper method.
 
@@ -62,13 +63,21 @@ Generate local coverage report:
 ./mvnw -B -ntp verify
 ```
 
-Run the real Paper boot and command smoke test for packaging or runtime changes:
+Run the separate real Paper boot and command smoke test for packaging or runtime changes:
 
 ```bash
 ./mvnw -B -ntp -Pplatform-acceptance verify
 ```
 
 The test downloads the HauntedPlatform-pinned Paper runtime and checks plugin startup and `/dungeon help`. It also migrates legacy generator files, loads a branching dungeon, and verifies that branch edits and layout switches persist to the normal `config.yml`.
+
+The final unit-suite implementation was verified with `clean verify` and the artifact audit:
+
+```bash
+bash scripts/verify-artifact.sh
+```
+
+The Paper profile is separate and was not rerun for this unit-suite pass.
 
 ## What to Test
 
@@ -90,8 +99,9 @@ After `./mvnw -B -ntp verify`:
 - CSV summary: `target/site/jacoco/jacoco.csv`
 
 Use a clean verification run when comparing coverage; repeated targeted test runs can append
-to the existing execution data. The current clean baseline is 17.9% line and 15.6% branch
-coverage across the whole codebase. This is a gap-finding measure, not a claim of complete
+to the existing execution data. The final clean suite measures **45.95% line (10,906/23,732)** and
+**36.81% branch (3,714/10,091)** coverage across the whole codebase, compared with the previous
+113-test baseline of 17.86% lines and 15.56% branches. This is a gap-finding measure, not a claim of complete
 gameplay coverage. The separate Paper acceptance process does not contribute to these unit
 coverage numbers.
 
