@@ -1,5 +1,8 @@
 # Legacy Java modernization review
 
+Follow-up: [second Java cleanup pass](modernization-pass-two.md), including resolutions for
+the lives-editor fall-through and exception serialization findings below.
+
 Review date: 2026-11-06. Baseline: `afefe04` (1.2.10).
 Branch: `refactor/legacy-modernization`.
 
