@@ -144,10 +144,9 @@ public class ConnectorExpansionLayout extends Layout {
                             if (connector != null) {
                                 Optional<Double> value =
                                         InputUtils.readDoubleInput(player, message);
-                                connector.setSuccessChance(
-                                        value.orElse(connector.getSuccessChance()) / 100.0);
                                 if (value.isPresent()) {
                                     double chance = value.get();
+                                    connector.setSuccessChance(chance / 100.0);
                                     LangUtils.sendMessage(
                                             player,
                                             "editor.layout.minecrafty.success-chance-set",
