@@ -50,9 +50,12 @@ public class LootTable implements ConfigurationSerializable {
         this.minItems = (Integer) config.getOrDefault("minItems", 1);
         this.maxItems = (Integer) config.getOrDefault("maxItems", 3);
         this.allowDuplicates = (Boolean) config.getOrDefault("allowDuplicates", true);
-        Map<Integer, LootTableItem> configuredLootItems =
-                (Map<Integer, LootTableItem>) config.get("lootItems");
-        this.lootItems = configuredLootItems == null ? new HashMap<>() : configuredLootItems;
+        this.lootItems = new HashMap<>();
+        if (config.get("lootItems") instanceof Map<?, ?> entries) {
+            for (Map.Entry<?, ?> entry : entries.entrySet()) {
+                this.lootItems.put(Integer.class.cast(entry.getKey()), LootTableItem.class.cast(entry.getValue()));
+            }
+        }
         this.initializeOpenSlotItem();
         this.initializeMenu();
     }

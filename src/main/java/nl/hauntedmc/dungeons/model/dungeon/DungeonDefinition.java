@@ -280,7 +280,6 @@ public abstract class DungeonDefinition {
      * Loads all gameplay-relevant settings from the current configuration snapshot into runtime
      * fields for faster access during play.
      */
-    @SuppressWarnings("unchecked")
     protected void loadRuntimeSettingsFromConfig() {
         this.enabled = this.config.getBoolean("dungeon.enabled", true);
         this.displayName =
@@ -665,15 +664,15 @@ public abstract class DungeonDefinition {
     }
 
     /** Refreshes cached gameplay rules after global configuration changes. */
-    @SuppressWarnings("unchecked")
     public void refreshRuleSettings() {
         this.bannedItems = new ArrayList<>(this.config.getStringList("rules.items.banned_materials"));
-        this.customBannedItems = (List<ItemStack>) this.config.get("rules.items.banned_items");
-        if (this.customBannedItems != null) {
-            this.customBannedItems = new ArrayList<>(this.customBannedItems);
-        }
-        if (this.customBannedItems == null) {
-            this.customBannedItems = new ArrayList<>();
+        this.customBannedItems = new ArrayList<>();
+        for (Object entry : this.config.getList("rules.items.banned_items", List.of())) {
+            if (entry instanceof ItemStack item) {
+                this.customBannedItems.add(item);
+            } else {
+                this.logger().warn("Skipping invalid banned item in dungeon '{}': {}", this.worldName, entry);
+            }
         }
 
         this.placeWhitelist = this.loadMaterialList("rules.building.place_whitelist");

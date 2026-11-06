@@ -208,24 +208,23 @@ public class BranchingRoomDefinition {
         return this.saveRoomAsync();
     }
 
-    @SuppressWarnings("unchecked")
         public void loadFunctions() {
-        List<DungeonFunction> functions = (List<DungeonFunction>) this.roomConfig.getList("Functions");
+        List<?> functions = this.roomConfig.getList("Functions");
         if (functions == null || functions.isEmpty()) {
             return;
         }
 
         int index = 0;
-        for (DungeonFunction function : functions) {
+        for (Object function : functions) {
             this.loadFunctionSafely(function, index++);
         }
     }
 
-        private void loadFunctionSafely(DungeonFunction function, int index) {
-        if (function == null) {
+        private void loadFunctionSafely(Object entry, int index) {
+        if (!(entry instanceof DungeonFunction function)) {
             this.logger()
                     .warn(
-                            "Skipping null function entry at index {} in room '{}' of dungeon '{}'.",
+                            "Skipping invalid or null function entry at index {} in room '{}' of dungeon '{}'.",
                             index,
                             this.namespace,
                             this.dungeon.getWorldName());

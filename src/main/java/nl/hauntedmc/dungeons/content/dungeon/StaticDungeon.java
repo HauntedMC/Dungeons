@@ -307,13 +307,13 @@ public class StaticDungeon extends DungeonDefinition {
 
         try {
             functionsYaml.load(loadFile);
-            List<DungeonFunction> functions = (List<DungeonFunction>) functionsYaml.getList("Functions");
+            List<?> functions = functionsYaml.getList("Functions");
             if (functions == null || functions.isEmpty()) {
                 return;
             }
 
             int index = 0;
-            for (DungeonFunction function : functions) {
+            for (Object function : functions) {
                 this.loadFunctionSafely(function, index++);
             }
         } catch (IOException exception) {
@@ -329,11 +329,11 @@ public class StaticDungeon extends DungeonDefinition {
     /**
      * Loads function safely.
      */
-    private void loadFunctionSafely(DungeonFunction function, int index) {
-        if (function == null) {
+    private void loadFunctionSafely(Object entry, int index) {
+        if (!(entry instanceof DungeonFunction function)) {
             this.logger()
                     .warn(
-                            "Skipping null function entry at index {} in static dungeon '{}'.",
+                            "Skipping invalid or null function entry at index {} in static dungeon '{}'.",
                             index,
                             this.getWorldName());
             return;
