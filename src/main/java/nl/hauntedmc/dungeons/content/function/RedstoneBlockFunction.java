@@ -20,6 +20,7 @@ import org.bukkit.World;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 
 /**
  * Function that toggles a redstone block state at its location.
@@ -31,6 +32,7 @@ public class RedstoneBlockFunction extends DungeonFunction {
     @PersistedField private int count = 1;
     @PersistedField private int rate = 5;
     private BukkitRunnable repeater;
+    private BukkitTask pendingReset;
     private int status = 0;
 
     /**
@@ -60,6 +62,10 @@ public class RedstoneBlockFunction extends DungeonFunction {
             this.repeater.cancel();
         }
 
+        if (this.pendingReset != null) {
+            this.pendingReset.cancel();
+            this.pendingReset = null;
+        }
         this.repeater = null;
         this.status = 0;
     }
@@ -70,11 +76,7 @@ public class RedstoneBlockFunction extends DungeonFunction {
     @Override
     public void runFunction(TriggerFireEvent triggerEvent, List<DungeonPlayerSession> targets) {
         final World world = this.instance.getInstanceWorld();
-        if (this.repeater != null && !this.repeater.isCancelled()) {
-            this.repeater.cancel();
-        }
-
-        this.status = 0;
+        this.onDisable();
         final int effectiveDelay = Math.max(0, this.delay);
         final int effectiveCount = Math.max(1, this.count);
         final int effectiveRate = Math.max(1, this.rate);
@@ -90,14 +92,14 @@ public class RedstoneBlockFunction extends DungeonFunction {
                         if (RedstoneBlockFunction.this.status >= effectiveCount) {
                             this.cancel();
                         } else {
-                            Bukkit.getScheduler()
+                            RedstoneBlockFunction.this.pendingReset = Bukkit.getScheduler()
                                     .runTaskLater(
                                             RuntimeContext.plugin(),
-                                            () ->
-                                                    world.getBlockAt(
-                                                                    RedstoneBlockFunction.this
-                                                                            .location)
-                                                            .setType(Material.AIR),
+                                            () -> {
+                                                world.getBlockAt(RedstoneBlockFunction.this.location)
+                                                        .setType(Material.AIR);
+                                                RedstoneBlockFunction.this.pendingReset = null;
+                                            },
                                             effectiveRate - 1L);
                         }
                     }

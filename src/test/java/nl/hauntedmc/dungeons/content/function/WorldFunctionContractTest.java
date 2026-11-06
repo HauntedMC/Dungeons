@@ -69,4 +69,17 @@ class WorldFunctionContractTest {
         }
     }
 
+    @Test
+    void disablingRedstonePulsesCancelsBothTheRepeaterAndItsPendingBlockReset() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            var block=mock(org.bukkit.block.Block.class); when(f.world.getBlockAt(any(Location.class))).thenReturn(block);
+            Material[] current={Material.AIR}; doAnswer(c -> { current[0]=c.getArgument(0); return null; }).when(block).setType(any(Material.class));
+            var pulse=GameplayFunctionContractTest.bind(new RedstoneBlockFunction(Map.of("count",2,"rate",3)),f);
+            pulse.runFunction(null,List.of()); var timer=f.scheduler.jobs.getFirst(); timer.run();
+            assertEquals(Material.REDSTONE_BLOCK,current[0]); assertEquals(2,f.scheduler.jobs.size());
+            pulse.onDisable(); assertTrue(f.scheduler.jobs.stream().allMatch(job -> job.cancelled));
+            f.scheduler.jobs.getLast().run(); assertEquals(Material.REDSTONE_BLOCK,current[0]);
+        }
+    }
+
 }
