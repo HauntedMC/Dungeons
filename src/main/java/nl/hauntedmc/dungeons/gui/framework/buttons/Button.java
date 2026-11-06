@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
+import net.kyori.adventure.text.Component;
 import nl.hauntedmc.dungeons.gui.framework.actions.Action;
 import nl.hauntedmc.dungeons.gui.framework.text.GuiTextUtils;
 import org.bukkit.Bukkit;
@@ -114,30 +115,19 @@ public class Button {
 
     /** Appends multiple lore lines to this button item. */
     public final void addLore(List<String> lines) {
-        ItemMeta meta = this.item.getItemMeta();
-        ArrayList<net.kyori.adventure.text.Component> lore;
-        if (meta.lore() == null) {
-            lore = new ArrayList<>();
-        } else {
-            lore = new ArrayList<>(meta.lore());
-        }
-
-        lore.addAll(GuiTextUtils.components(lines));
-        meta.lore(lore);
-        this.item.setItemMeta(meta);
+        this.appendLore(GuiTextUtils.components(lines));
     }
 
     /** Appends one lore line to this button item. */
     public final void addLore(String line) {
-        ItemMeta meta = this.item.getItemMeta();
-        ArrayList<net.kyori.adventure.text.Component> lore;
-        if (meta.lore() == null) {
-            lore = new ArrayList<>();
-        } else {
-            lore = new ArrayList<>(meta.lore());
-        }
+        this.appendLore(List.of(GuiTextUtils.component(line)));
+    }
 
-        lore.add(GuiTextUtils.component(line));
+    private void appendLore(List<Component> lines) {
+        ItemMeta meta = this.item.getItemMeta();
+        List<Component> existing = meta.lore();
+        List<Component> lore = existing == null ? new ArrayList<>() : new ArrayList<>(existing);
+        lore.addAll(lines);
         meta.lore(lore);
         this.item.setItemMeta(meta);
     }

@@ -7,6 +7,7 @@ import org.bukkit.event.Event;
  *
  * @param <T> inventory event type handled by the callback
  */
+@FunctionalInterface
 public interface Action<T extends Event> {
     /**
      * Runs the callback for the given event.
