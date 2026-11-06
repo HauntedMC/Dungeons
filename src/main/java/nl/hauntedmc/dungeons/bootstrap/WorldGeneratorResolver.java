@@ -1,5 +1,6 @@
 package nl.hauntedmc.dungeons.bootstrap;
 
+import java.util.Locale;
 import nl.hauntedmc.dungeons.runtime.PluginEnvironment;
 import nl.hauntedmc.dungeons.world.generator.SolidBlockChunkGenerator;
 import nl.hauntedmc.dungeons.world.generator.VoidGenerator;
@@ -30,7 +31,7 @@ final class WorldGeneratorResolver {
             return null;
         }
 
-        if (id.toLowerCase().startsWith("block") && id.contains(".")) {
+        if (id.toLowerCase(Locale.ROOT).startsWith("block") && id.contains(".")) {
             String[] split = id.split("\\.", 2);
             Material material = Material.STONE;
 

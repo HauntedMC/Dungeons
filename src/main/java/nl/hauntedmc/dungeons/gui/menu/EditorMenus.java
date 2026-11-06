@@ -1,5 +1,6 @@
 package nl.hauntedmc.dungeons.gui.menu;
 
+import java.util.Locale;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.Map;
@@ -128,7 +129,7 @@ public class EditorMenus {
                 });
 
         for (FunctionCategory category : FunctionCategory.values()) {
-            String catName = category.name().toLowerCase();
+            String catName = category.name().toLowerCase(Locale.ROOT);
             GuiWindow gui =
                                         new GuiWindow(
                             "functions_" + catName, 27, "&8" + TextUtils.humanize(catName) + " Functions");
@@ -357,7 +358,7 @@ public class EditorMenus {
                 });
 
         for (TriggerCategory category : TriggerCategory.values()) {
-            String catName = category.name().toLowerCase();
+            String catName = category.name().toLowerCase(Locale.ROOT);
             GuiWindow gui =
                                         new GuiWindow(
                             "triggers_" + catName, 27, "&8" + TextUtils.humanize(catName) + " Triggers");

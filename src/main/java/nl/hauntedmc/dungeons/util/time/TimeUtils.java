@@ -1,5 +1,6 @@
 package nl.hauntedmc.dungeons.util.time;
 
+import java.util.Locale;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -29,7 +30,7 @@ public final class TimeUtils {
             int duration = Integer.parseInt(length);
             String timeFrame = matcher.group(3);
             int multiplier = 1;
-            String normalizedTimeFrame = timeFrame.toLowerCase();
+            String normalizedTimeFrame = timeFrame.toLowerCase(Locale.ROOT);
             multiplier =
                     switch (normalizedTimeFrame) {
                         case "m" -> 60;
