@@ -35,8 +35,8 @@ public final class ItemUtils {
     /** Gives an item to a player inventory or drops it naturally if full. */
     public static void giveOrDrop(Player player, ItemStack item) {
         if (item != null && item.getType() != Material.AIR) {
-            if (!player.getInventory().addItem(item).isEmpty()) {
-                player.getWorld().dropItemNaturally(player.getLocation(), item);
+            for (ItemStack remainder : player.getInventory().addItem(item).values()) {
+                player.getWorld().dropItemNaturally(player.getLocation(), remainder);
             }
         }
     }
@@ -51,8 +51,8 @@ public final class ItemUtils {
     /** Gives an item or drops overflow without additional messaging. */
     public static void giveOrDropSilently(Player player, ItemStack item) {
         if (item != null && item.getType() != Material.AIR) {
-            if (!player.getInventory().addItem(item).isEmpty()) {
-                player.getWorld().dropItemNaturally(player.getLocation(), item);
+            for (ItemStack remainder : player.getInventory().addItem(item).values()) {
+                player.getWorld().dropItemNaturally(player.getLocation(), remainder);
             }
         }
     }
