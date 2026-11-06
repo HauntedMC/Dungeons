@@ -118,4 +118,30 @@ class GameplayRulesContractTest {
         }
     }
 
+    @Test
+    void commandRulesMatchCaseInsensitiveCommandBoundariesAndRespectTheAdminBypass() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            var state=new PlayerState(); state.location=new Location(f.world,0,70,0);
+            var listener=(PlayListener)f.run.getListener();
+            f.run.getConfig().set("rules.commands.allow_all",true);
+            f.run.getConfig().set("rules.commands.deny_list",List.of("kill"));
+            for(String message:List.of("/kill","/KILL someone","/killall")) {
+                var event=TestEvents.cancellable(PlayerCommandPreprocessEvent.class);
+                when(event.getPlayer()).thenReturn(state.player); when(event.getMessage()).thenReturn(message);
+                listener.onCommand(event); assertEquals(!message.equals("/killall"),event.isCancelled(),message);
+            }
+            f.run.getConfig().set("rules.commands.allow_all",false);
+            f.run.getConfig().set("rules.commands.allow_list",List.of("help"));
+            for(String message:List.of("/help","/HELP page","/helpful")) {
+                var event=TestEvents.cancellable(PlayerCommandPreprocessEvent.class);
+                when(event.getPlayer()).thenReturn(state.player); when(event.getMessage()).thenReturn(message);
+                listener.onCommand(event); assertEquals(message.equals("/helpful"),event.isCancelled(),message);
+            }
+            when(state.player.hasPermission("dungeons.admin")).thenReturn(true);
+            var bypass=TestEvents.cancellable(PlayerCommandPreprocessEvent.class);
+            when(bypass.getPlayer()).thenReturn(state.player); when(bypass.getMessage()).thenReturn("/blocked");
+            listener.onCommand(bypass); assertFalse(bypass.isCancelled());
+        }
+    }
+
 }

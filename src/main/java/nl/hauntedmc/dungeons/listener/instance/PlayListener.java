@@ -3,6 +3,7 @@ package nl.hauntedmc.dungeons.listener.instance;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import net.kyori.adventure.text.Component;
 import nl.hauntedmc.dungeons.content.function.AllowBlockFunction;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
@@ -720,12 +721,17 @@ public class PlayListener extends InstanceListener {
     public void onCommand(PlayerCommandPreprocessEvent event) {
         Player player = event.getPlayer();
         if (player.getWorld() == this.instance.getInstanceWorld()) {
+            String command = event.getMessage();
+            if (command.startsWith("/")) {
+                command = command.substring(1);
+            }
+            String trimmed = command.toLowerCase(Locale.ROOT);
             boolean commandAllowed = false;
             if (!this.instance.getConfig().getBoolean("rules.commands.allow_all")) {
                 for (String cmd :
                         this.instance.getConfig().getStringList("rules.commands.allow_list")) {
-                    String trimmed = event.getMessage().replace("/", "");
-                    if (trimmed.equals(cmd) || trimmed.startsWith(cmd + " ")) {
+                    String normalized = cmd.toLowerCase(Locale.ROOT);
+                    if (trimmed.equals(normalized) || trimmed.startsWith(normalized + " ")) {
                         commandAllowed = true;
                         break;
                     }
@@ -735,8 +741,8 @@ public class PlayListener extends InstanceListener {
 
                 for (String deniedCommand :
                         this.instance.getConfig().getStringList("rules.commands.deny_list")) {
-                    String trimmed = event.getMessage().replace("/", "");
-                    if (trimmed.equals(deniedCommand) || trimmed.startsWith(deniedCommand + " ")) {
+                    String normalized = deniedCommand.toLowerCase(Locale.ROOT);
+                    if (trimmed.equals(normalized) || trimmed.startsWith(normalized + " ")) {
                         commandAllowed = false;
                         break;
                     }
