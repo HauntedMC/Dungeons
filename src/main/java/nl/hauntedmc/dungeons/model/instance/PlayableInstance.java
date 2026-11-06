@@ -277,8 +277,9 @@ public abstract class PlayableInstance extends DungeonInstance {
                 continue;
             }
 
+            DungeonFunction newFunction = null;
             try {
-                DungeonFunction newFunction = oldFunction.clone();
+                newFunction = oldFunction.clone();
                 if (newFunction == null) {
                     this.logger()
                             .warn(
@@ -306,6 +307,13 @@ public abstract class PlayableInstance extends DungeonInstance {
                     this.rewardFunctions.put(newFunction.getLocation(), rewardFunction);
                 }
             } catch (Throwable throwable) {
+                if (newFunction != null && newFunction.getInstance() == this) {
+                    try {
+                        newFunction.disable();
+                    } catch (Exception cleanupFailure) {
+                        throwable.addSuppressed(cleanupFailure);
+                    }
+                }
                 Throwable root = throwable.getCause() == null ? throwable : throwable.getCause();
                 Location loc = oldFunction.getLocation();
                 this.logger()
