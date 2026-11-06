@@ -237,4 +237,38 @@ class GameplayRulesContractTest {
             assertFalse(bypass.isCancelled());
         }
     }
+
+    @Test
+    void placementRulesTrackOnlyAcceptedPlacementsForTheBreakPlacedBlocksException()
+            throws Exception {
+        var settings = new YamlConfiguration();
+        settings.set("rules.building.place_blocks", false);
+        settings.set("rules.building.break_blocks", false);
+        settings.set("rules.building.break_placed_blocks", true);
+        try (var f = new RunFixture(directory, settings)) {
+            var listener = (PlayListener) f.run.getListener();
+            var state = new PlayerState();
+            var block = block(f);
+            var denied = TestEvents.cancellable(BlockPlaceEvent.class);
+            when(denied.getBlock()).thenReturn(block);
+            listener.onPlaceBlock(denied);
+            assertTrue(denied.isCancelled());
+            assertTrue(listener.placedBlocks.isEmpty());
+            f.dungeon.getPlaceWhitelist().add(Material.STONE);
+            var accepted = TestEvents.cancellable(BlockPlaceEvent.class);
+            when(accepted.getBlock()).thenReturn(block);
+            listener.onPlaceBlock(accepted);
+            assertFalse(accepted.isCancelled());
+            assertEquals(List.of(block.getLocation()), listener.placedBlocks);
+            var breaking = new BlockBreakEvent(block, state.player);
+            listener.onBreakBlock(breaking);
+            assertFalse(breaking.isCancelled());
+            f.dungeon.getPlaceBlacklist().add(Material.STONE);
+            var blacklisted = TestEvents.cancellable(BlockPlaceEvent.class);
+            when(blacklisted.getBlock()).thenReturn(block);
+            listener.onPlaceBlock(blacklisted);
+            assertTrue(blacklisted.isCancelled());
+            assertTrue(listener.placedBlocks.isEmpty());
+        }
+    }
 }
