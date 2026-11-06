@@ -1,6 +1,5 @@
 package nl.hauntedmc.dungeons.registry;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -59,10 +58,8 @@ public final class TriggerRegistry {
             this.triggers.put(triggerId, triggerClass);
             this.triggerIds.put(triggerClass, triggerId);
 
-            Method menuButtonMethod = triggerClass.getDeclaredMethod("buildMenuButton");
-            menuButtonMethod.setAccessible(true);
             DungeonTrigger trigger = triggerClass.getDeclaredConstructor().newInstance();
-            MenuButton button = (MenuButton) menuButtonMethod.invoke(trigger);
+            MenuButton button = trigger.buildMenuButton();
             if (button == null) {
                 this.plugin
                         .getSLF4JLogger()
@@ -73,9 +70,7 @@ public final class TriggerRegistry {
             }
 
             this.triggerButtons.put(triggerId, button);
-            Field categoryField = triggerClass.getField("category");
-            categoryField.setAccessible(true);
-            TriggerCategory category = (TriggerCategory) categoryField.get(trigger);
+            TriggerCategory category = trigger.getCategory();
             if (category != null) {
                 this.buttonsByCategory.get(category).put(triggerId, button);
             }
@@ -138,20 +133,15 @@ public final class TriggerRegistry {
         } catch (NoSuchMethodException
                 | InvocationTargetException
                 | InstantiationException
-                | IllegalAccessException exception) {
+                | IllegalAccessException
+                | RuntimeException exception) {
             this.plugin
                     .getSLF4JLogger()
                     .error(
-                            "Trigger '{}' has an invalid buildMenuButton declaration.",
+                            "Failed to register trigger '{}'.",
                             triggerClass.getSimpleName(),
                             exception);
-        } catch (NoSuchFieldException exception) {
-            this.plugin
-                    .getSLF4JLogger()
-                    .error(
-                            "Trigger '{}' is missing the required 'category' field.",
-                            triggerClass.getSimpleName(),
-                            exception);
+
         }
     }
 

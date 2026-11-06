@@ -1,7 +1,6 @@
 package nl.hauntedmc.dungeons.registry;
 
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -34,12 +33,8 @@ public final class ConditionRegistry {
             this.conditions.put(conditionId, conditionClass);
             this.conditionIds.put(conditionClass, conditionId);
 
-            Method menuButtonMethod = conditionClass.getDeclaredMethod("buildMenuButton");
-            menuButtonMethod.setAccessible(true);
-            MenuButton button =
-                    (MenuButton)
-                            menuButtonMethod.invoke(
-                                    conditionClass.getDeclaredConstructor().newInstance());
+            TriggerCondition condition = conditionClass.getDeclaredConstructor().newInstance();
+            MenuButton button = condition.buildMenuButton();
             if (button == null) {
                 this.plugin
                         .getSLF4JLogger()
@@ -53,11 +48,12 @@ public final class ConditionRegistry {
         } catch (NoSuchMethodException
                 | InvocationTargetException
                 | InstantiationException
-                | IllegalAccessException exception) {
+                | IllegalAccessException
+                | RuntimeException exception) {
             this.plugin
                     .getSLF4JLogger()
                     .error(
-                            "Condition '{}' has an invalid buildMenuButton declaration.",
+                            "Failed to register condition '{}'.",
                             conditionClass.getSimpleName(),
                             exception);
         }

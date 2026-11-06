@@ -1,6 +1,5 @@
 package nl.hauntedmc.dungeons.registry;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -60,10 +59,8 @@ public final class FunctionRegistry {
             this.functions.put(functionId, functionClass);
             this.functionIds.put(functionClass, functionId);
 
-            Method menuButtonMethod = functionClass.getDeclaredMethod("buildMenuButton");
-            menuButtonMethod.setAccessible(true);
             DungeonFunction function = functionClass.getDeclaredConstructor().newInstance();
-            MenuButton button = (MenuButton) menuButtonMethod.invoke(function);
+            MenuButton button = function.buildMenuButton();
             if (button == null) {
                 this.plugin
                         .getSLF4JLogger()
@@ -74,9 +71,7 @@ public final class FunctionRegistry {
             }
 
             this.functionButtons.put(functionId, button);
-            Field categoryField = functionClass.getField("category");
-            categoryField.setAccessible(true);
-            FunctionCategory category = (FunctionCategory) categoryField.get(function);
+            FunctionCategory category = function.getCategory();
             if (category != null) {
                 this.buttonsByCategory.get(category).put(functionId, button);
             }
@@ -139,20 +134,15 @@ public final class FunctionRegistry {
         } catch (NoSuchMethodException
                 | InvocationTargetException
                 | InstantiationException
-                | IllegalAccessException exception) {
+                | IllegalAccessException
+                | RuntimeException exception) {
             this.plugin
                     .getSLF4JLogger()
                     .error(
-                            "Function '{}' has an invalid buildMenuButton declaration.",
+                            "Failed to register function '{}'.",
                             functionClass.getSimpleName(),
                             exception);
-        } catch (NoSuchFieldException exception) {
-            this.plugin
-                    .getSLF4JLogger()
-                    .error(
-                            "Function '{}' is missing the required 'category' field.",
-                            functionClass.getSimpleName(),
-                            exception);
+
         }
     }
 
