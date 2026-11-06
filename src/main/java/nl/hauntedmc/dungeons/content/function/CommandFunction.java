@@ -439,8 +439,11 @@ public class CommandFunction extends DungeonFunction {
         }
 
         World world = anchor.getWorld();
+        // Startup triggers can fire before any player has loaded the function's chunk.
+        world.getChunkAt(anchor);
+        this.loadSummonChunk(commandToRun, anchor);
         String worldKey = world.getKey().asString();
-        return "execute in "
+        return "minecraft:execute in "
                 + worldKey
                 + " positioned "
                 + this.formatCoordinate(anchor.getX())
@@ -450,6 +453,29 @@ public class CommandFunction extends DungeonFunction {
                 + this.formatCoordinate(anchor.getZ())
                 + " run "
                 + commandToRun;
+    }
+
+    /** Loads the destination of a direct summon, including absolute coordinates in a different chunk. */
+    private void loadSummonChunk(String command, Location anchor) {
+        String[] parts = command.split("\\s+", 6);
+        if (parts.length < 5 || !(parts[0].equals("summon") || parts[0].equals("minecraft:summon")))
+            return;
+        try {
+            double x = resolveCoordinate(parts[2], anchor.getX());
+            double z = resolveCoordinate(parts[4], anchor.getZ());
+            if (Double.isFinite(x) && Double.isFinite(z)) {
+                anchor.getWorld().getChunkAt((int) Math.floor(x) >> 4, (int) Math.floor(z) >> 4);
+            }
+        } catch (NumberFormatException ignored) {
+            // Let the command dispatcher report invalid or local-coordinate syntax.
+        }
+    }
+
+    private static double resolveCoordinate(String value, double origin) {
+        if (value.equals("~")) return origin;
+        return value.startsWith("~")
+                ? origin + Double.parseDouble(value.substring(1))
+                : Double.parseDouble(value);
     }
 
     /**

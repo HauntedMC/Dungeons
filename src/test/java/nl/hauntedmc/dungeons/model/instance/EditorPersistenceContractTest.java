@@ -38,6 +38,52 @@ class EditorPersistenceContractTest {
     @TempDir Path directory;
 
     @Test
+    void modernEditorSaveReplacesLegacyAndDeletedWorldDataWhilePreservingDungeonFiles()
+            throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            Path template = f.dungeon.getFolder().toPath();
+            Files.createDirectories(template.resolve("DIM1/region"));
+            Files.writeString(template.resolve("DIM1/region/obsolete.mca"), "legacy");
+            Files.writeString(template.resolve("level.dat"), "legacy metadata");
+            Files.createDirectories(template.resolve("entities"));
+            Files.writeString(template.resolve("entities/deleted.mca"), "removed entities");
+            Files.writeString(template.resolve("config.yml"), "dungeon settings");
+            Files.createDirectories(template.resolve("rooms"));
+            Files.writeString(template.resolve("rooms/keep.yml"), "room");
+            Path live =
+                    Files.createDirectories(directory.resolve("live/data/minecraft"))
+                            .getParent()
+                            .getParent();
+            Files.writeString(
+                    live.resolve("data/minecraft/world_gen_settings.dat"), "modern settings");
+            Files.createDirectories(live.resolve("region"));
+            Files.writeString(live.resolve("region/current.mca"), "edited terrain");
+            when(f.world.getWorldFolder()).thenReturn(live.toFile());
+            assertTrue(new Editor(f).saveWorldAsync(null).get(1, TimeUnit.SECONDS));
+            assertFalse(Files.exists(template.resolve("level.dat")));
+            assertFalse(Files.exists(template.resolve("DIM1")));
+            assertFalse(Files.exists(template.resolve("entities/deleted.mca")));
+            assertEquals(
+                    "edited terrain", Files.readString(template.resolve("region/current.mca")));
+            assertEquals("dungeon settings", Files.readString(template.resolve("config.yml")));
+            assertEquals("room", Files.readString(template.resolve("rooms/keep.yml")));
+        }
+    }
+
+    @Test
+    void failedSnapshotCopyLeavesOriginalWorldAndConfigIntact() throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            Path template = f.dungeon.getFolder().toPath();
+            Files.writeString(template.resolve("level.dat"), "original world");
+            Files.writeString(template.resolve("config.yml"), "original config");
+            when(f.world.getWorldFolder()).thenReturn(directory.resolve("absent").toFile());
+            assertFalse(new Editor(f).saveWorldAsync(null).get(1, TimeUnit.SECONDS));
+            assertEquals("original world", Files.readString(template.resolve("level.dat")));
+            assertEquals("original config", Files.readString(template.resolve("config.yml")));
+        }
+    }
+
+    @Test
     void editorSaveCopiesTheWorldAndFunctionsWithoutReplacingRoomTemplatesOrWorldIdentity()
             throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {

@@ -504,6 +504,8 @@ class PlayerRunContractTest {
                 List.of(
                         " /say {player}",
                         "///give %player% minecraft:stone",
+                        "god {player} disable",
+                        "fly {player} disable",
                         " / ",
                         "fail",
                         "say {uuid}"));
@@ -523,11 +525,13 @@ class PlayerRunContractTest {
                     () ->
                             Bukkit.dispatchCommand(
                                     org.mockito.Mockito.eq(console), commands.capture()),
-                    times(4));
+                    times(6));
             assertEquals(
                     List.of(
                             "say Explorer",
                             "give Explorer minecraft:stone",
+                            "essentials:god Explorer off",
+                            "essentials:fly Explorer off",
                             "fail",
                             "say " + state.player.getUniqueId()),
                     commands.getAllValues());

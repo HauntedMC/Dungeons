@@ -245,8 +245,8 @@ public final class DungeonConfigRegistry {
                         DungeonConfigValueType.STRING_LIST,
                         suggestions(
                                 List.of(
-                                        "god {player} disable",
-                                        "fly {player} disable",
+                                        "essentials:god {player} off",
+                                        "essentials:fly {player} off",
                                         "speed walk 1 {player}"))));
         register(
                 main(

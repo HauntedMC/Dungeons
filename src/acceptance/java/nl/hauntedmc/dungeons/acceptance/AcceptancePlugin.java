@@ -61,6 +61,9 @@ public final class AcceptancePlugin extends JavaPlugin {
                                 new Scenario(
                                         "copied-world-lifecycle", () -> WorldLifecycle.run(this)),
                                 new Scenario(
+                                        "world-format-and-environment-matrix",
+                                        () -> WorldFormatMatrix.run(this)),
+                                new Scenario(
                                         "native-gameplay-mechanics",
                                         () -> NativeMechanics.run(this)),
                                 new Scenario(

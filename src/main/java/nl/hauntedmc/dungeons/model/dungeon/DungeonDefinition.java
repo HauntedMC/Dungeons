@@ -786,12 +786,27 @@ public abstract class DungeonDefinition {
     }
 
     protected void cleanDeadInstances() {
-        File[] worlds = Bukkit.getWorldContainer().listFiles();
+        File[] worlds =
+                java.util.stream.Stream.of(
+                                Bukkit.getWorldContainer(),
+                                nl.hauntedmc.dungeons.util.world.WorldUtils.dimensionRoot())
+                        .flatMap(
+                                root -> {
+                                    File[] children = root.listFiles();
+                                    return children == null
+                                            ? java.util.stream.Stream.<File>empty()
+                                            : java.util.Arrays.stream(children);
+                                })
+                        .toArray(File[]::new);
         if (worlds != null) {
             for (File world : worlds) {
                 if (world.isDirectory()
                         && this.isOwnedInstanceWorldFolder(world)
-                        && Bukkit.getWorld(world.getName()) == null) {
+                        && Bukkit.getWorlds().stream()
+                                .noneMatch(
+                                        loaded ->
+                                                loaded.getName()
+                                                        .equalsIgnoreCase(world.getName()))) {
                     try {
                         FileUtils.deleteDirectory(world);
                     } catch (IOException exception) {
@@ -809,7 +824,9 @@ public abstract class DungeonDefinition {
     private boolean isOwnedInstanceWorldFolder(File worldFolder) {
         String worldName = worldFolder.getName();
         String prefix = this.folder.getName() + "_";
-        if (!worldName.startsWith(prefix)) {
+        if (!worldName
+                .toLowerCase(java.util.Locale.ROOT)
+                .startsWith(prefix.toLowerCase(java.util.Locale.ROOT))) {
             return false;
         }
 

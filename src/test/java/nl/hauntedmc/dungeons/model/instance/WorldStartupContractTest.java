@@ -19,6 +19,79 @@ class WorldStartupContractTest {
     @TempDir Path directory;
 
     @Test
+    void allocatingMultipleRunsReservesDistinctFoldersEvenBeforeWorldCreation() throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var unsafe = mock(UnsafeValues.class);
+            when(unsafe.getMainLevelName()).thenReturn("plots");
+            f.paper.bukkit.when(Bukkit::getUnsafe).thenReturn(unsafe);
+            var first = f.run.reserveWorldFolder(false);
+            var second = new RunFixture.Run(f.dungeon, f.world).reserveWorldFolder(false);
+            assertTrue(first.isDirectory());
+            assertTrue(second.isDirectory());
+            assertNotEquals(first, second);
+            assertEquals("crypt_0", first.getName());
+            assertEquals("crypt_1", second.getName());
+        }
+    }
+
+    @Test
+    void disposalRemovesBothLegacyAndMigratedFoldersButKeepsTheTemplate() throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var unsafe = mock(UnsafeValues.class);
+            when(unsafe.getMainLevelName()).thenReturn("plots");
+            f.paper.bukkit.when(Bukkit::getUnsafe).thenReturn(unsafe);
+            Path legacy = Files.createDirectories(directory.resolve("crypt_0/DIM1/region"));
+            Files.writeString(legacy.resolve("old.mca"), "legacy");
+            Path migrated =
+                    Files.createDirectories(
+                            directory.resolve("plots/dimensions/minecraft/crypt_0"));
+            Files.writeString(migrated.resolve("current.mca"), "modern");
+            Path template = f.dungeon.getFolder().toPath();
+            Files.writeString(template.resolve("keep.mca"), "template");
+            f.run.cleanWorldFiles(
+                    new java.util.concurrent.CountDownLatch(0), migrated.toFile(), "crypt_0");
+            assertFalse(Files.exists(directory.resolve("crypt_0")));
+            assertFalse(Files.exists(migrated));
+            assertEquals("template", Files.readString(template.resolve("keep.mca")));
+        }
+    }
+
+    @Test
+    void modernTemplateDoesNotReimportStaleLegacyDimensionsAndMigratesPotionLimits()
+            throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var unsafe = mock(UnsafeValues.class);
+            when(unsafe.getMainLevelName()).thenReturn("plots");
+            f.paper.bukkit.when(Bukkit::getUnsafe).thenReturn(unsafe);
+            Path source = f.dungeon.getFolder().toPath();
+            Files.createDirectories(source.resolve("data/minecraft"));
+            Files.writeString(source.resolve("data/minecraft/world_gen_settings.dat"), "modern");
+            Files.writeString(source.resolve("level.dat"), "obsolete");
+            Files.createDirectories(source.resolve("DIM1/region"));
+            Files.writeString(source.resolve("DIM1/region/old.mca"), "obsolete");
+            Files.createDirectories(source.resolve("region"));
+            Files.writeString(source.resolve("region/current.mca"), "current");
+            Files.writeString(
+                    source.resolve("paper-world.yml"),
+                    "chunks:\n"
+                            + "  entity-per-chunk-save-limit:\n"
+                            + "    potion: 12\n"
+                            + "    splash_potion: 20\n");
+            f.run.initialize();
+            Path copy = directory.resolve("plots/dimensions/minecraft/crypt_0");
+            assertEquals("current", Files.readString(copy.resolve("region/current.mca")));
+            assertFalse(Files.exists(copy.resolve("level.dat")));
+            assertFalse(Files.exists(copy.resolve("DIM1")));
+            var yaml =
+                    YamlConfiguration.loadConfiguration(copy.resolve("paper-world.yml").toFile());
+            assertFalse(yaml.contains("chunks.entity-per-chunk-save-limit.potion"));
+            assertEquals(20, yaml.getInt("chunks.entity-per-chunk-save-limit.splash_potion"));
+            assertEquals(12, yaml.getInt("chunks.entity-per-chunk-save-limit.lingering_potion"));
+            assertTrue(Files.exists(source.resolve("DIM1/region/old.mca")));
+        }
+    }
+
+    @Test
     void animalAndMonsterSpawningRulesApplyIndependently() throws Exception {
         for (boolean animals : new boolean[] {false, true}) {
             for (boolean monsters : new boolean[] {false, true}) {

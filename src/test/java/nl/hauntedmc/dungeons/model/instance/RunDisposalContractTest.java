@@ -36,6 +36,21 @@ class RunDisposalContractTest {
     @TempDir Path directory;
 
     @Test
+    void failedCreationCanBeDisposedWithoutDereferencingANullWorld() throws Exception {
+        try (var paper = new PaperBoundary()) {
+            var run = run(paper);
+            var creator = mock(WorldCreator.class);
+            run.initializeWith(creator);
+            assertTrue(run.hasLoadFailed());
+            assertNull(run.getInstanceWorld());
+            assertDoesNotThrow(run::dispose);
+            assertDoesNotThrow(run::dispose);
+            assertEquals(1, run.hooks);
+            assertTrue(paper.runtime.activeInstances().getActiveInstances().isEmpty());
+        }
+    }
+
+    @Test
     void disposalIsIdempotentAndAHookFailureCannotPreventWorldUnloadAndFileCleanup()
             throws Exception {
         try (var paper = new PaperBoundary()) {
