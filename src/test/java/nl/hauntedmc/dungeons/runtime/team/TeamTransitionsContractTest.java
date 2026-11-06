@@ -62,4 +62,25 @@ class TeamTransitionsContractTest {
         }
     }
 
+    @Test
+    void startedLeaderDisbandRemovesMembershipIndexesAndClosesRemainingPlayersAtTheDeadline() throws Exception {
+        var settings=new YamlConfiguration(); settings.set("team.disband_shutdown_delay_seconds",2);
+        try(var f=new RunFixture(directory,settings)) {
+            var service=service(f); var leader=player(f); var member=player(f);
+            service.handleCreateTeam(leader.player); service.handleInvite(leader.player,member.player); service.handleAcceptInvite(member.player);
+            var leaderSession=f.paper.runtime.playerSessions().get(leader.player);
+            var memberSession=f.paper.runtime.playerSessions().get(member.player);
+            f.run.addPlayer(leaderSession); f.run.addPlayer(memberSession);
+            var team=service.getTeam(leader.player.getUniqueId()); service.markStarted(team.getTeamId(),f.run);
+            service.handleDeleteTeam(leader.player);
+            assertNull(leaderSession.getInstance()); assertSame(f.run,memberSession.getInstance());
+            f.scheduler.immediate.getFirst().run();
+            assertNull(service.getTeam(leader.player.getUniqueId())); assertNull(service.getTeam(member.player.getUniqueId()));
+            assertNull(service.getTeamById(team.getTeamId()));
+            var countdown=f.scheduler.jobs.stream().filter(j -> j.period==20).findFirst().orElseThrow();
+            countdown.run(); assertSame(f.run,memberSession.getInstance());
+            countdown.run(); assertNull(memberSession.getInstance()); assertTrue(f.run.getPlayers().isEmpty()); assertTrue(countdown.cancelled);
+        }
+    }
+
 }
