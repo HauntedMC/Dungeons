@@ -22,8 +22,15 @@ public final class InputUtils {
 
     /** Parses decimal input and reports localization-backed validation failure. */
     public static Optional<Double> readDoubleInput(Player player, String string) {
+        if (string == null) {
+            LangUtils.sendMessage(player, "input.invalid-decimal");
+            return Optional.empty();
+        }
         try {
             double value = Double.parseDouble(string);
+            if (!Double.isFinite(value)) {
+                throw new NumberFormatException("A finite decimal is required.");
+            }
             return Optional.of(value);
         } catch (NumberFormatException exception) {
             LangUtils.sendMessage(player, "input.invalid-decimal");
