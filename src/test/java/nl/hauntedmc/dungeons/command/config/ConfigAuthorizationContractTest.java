@@ -85,4 +85,68 @@ class ConfigAuthorizationContractTest {
             verify(dungeon, never()).reloadGenerationSettings();
         }
     }
+
+    @Test
+    void typedConfigurationCommandsPersistBooleansNumbersEnumsListsAndWorldIndependentLocations()
+            throws Exception {
+        try (var f =
+                new nl.hauntedmc.dungeons.support.RunFixture(directory, new YamlConfiguration())) {
+            var catalog = mock(DungeonRepository.class);
+            when(catalog.get("crypt")).thenReturn(f.dungeon);
+            when(catalog.getLoadedDungeons()).thenReturn(List.of(f.dungeon));
+            f.paper.runtime.setDungeonCatalog(catalog);
+            var state = new nl.hauntedmc.dungeons.support.PlayerState();
+            when(state.player.hasPermission("dungeons.edit.crypt")).thenReturn(true);
+            var commands =
+                    new DungeonConfigCommandHandler(
+                            catalog,
+                            f.paper.runtime.playerSessions(),
+                            f.paper.runtime.activeInstances());
+            var cases =
+                    List.of(
+                            List.of("enabled", "false", "dungeon.enabled", false),
+                            List.of("max-team-size", "3", "team.max_size", 3),
+                            List.of("gamemode", "creative", "players.gamemode", "CREATIVE"),
+                            List.of("dimension", "nether", "dungeon.environment", "NETHER"),
+                            List.of(
+                                    "join-commands",
+                                    "say hello,give {player} minecraft:stone",
+                                    "players.join_commands",
+                                    List.of("say hello", "give {player} minecraft:stone")),
+                            List.of(
+                                    "block-break-whitelist",
+                                    "STONE,DIRT",
+                                    "rules.building.break_whitelist",
+                                    List.of("STONE", "DIRT")));
+            for (var row : cases) {
+                commands.handleCommand(
+                        state.player,
+                        new String[] {"config", "crypt", (String) row.get(0), (String) row.get(1)});
+                assertEquals(
+                        row.get(3), f.dungeon.getConfig().get((String) row.get(2)), row.toString());
+            }
+            commands.handleCommand(
+                    state.player, new String[] {"config", "crypt", "max-team-size", "3.5"});
+            commands.handleCommand(
+                    state.player, new String[] {"config", "crypt", "gamemode", "invalid"});
+            commands.handleCommand(
+                    state.player,
+                    new String[] {
+                        "config", "crypt", "block-break-whitelist", "STONE,NO_SUCH_BLOCK"
+                    });
+            var file = new YamlConfiguration();
+            file.load(directory.resolve("crypt/config.yml").toFile());
+            for (var row : cases) assertEquals(row.get(3), file.get((String) row.get(2)));
+            commands.handleCommand(
+                    state.player, new String[] {"config", "crypt", "start-location", "here"});
+            file.load(directory.resolve("crypt/config.yml").toFile());
+            var reloaded = f.paper.dungeon(directory.resolve("crypt"), file);
+            org.junit.jupiter.api.Assertions.assertNull(reloaded.getStartSpawn().getWorld());
+            org.junit.jupiter.api.Assertions.assertFalse(file.contains("locations.start.world"));
+            assertEquals(state.location.getX(), f.dungeon.getStartSpawn().getX());
+            assertEquals(state.location.getYaw(), f.dungeon.getStartSpawn().getYaw());
+            org.junit.jupiter.api.Assertions.assertSame(
+                    state.originWorld, state.location.getWorld());
+        }
+    }
 }
