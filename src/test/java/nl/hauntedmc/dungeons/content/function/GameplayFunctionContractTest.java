@@ -91,4 +91,17 @@ class GameplayFunctionContractTest {
         }
     }
 
+    @Test
+    void difficultyMechanicsResolveKnownPresetsAndLeaveTheCurrentDifficultyOnInvalidInput() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            var difficulty=mock(nl.hauntedmc.dungeons.model.dungeon.DungeonDifficulty.class);
+            when(difficulty.getNamespace()).thenReturn("hard"); f.dungeon.getDifficultyLevels().put("hard",difficulty);
+            bind(new SetDifficultyFunction(Map.of("difficulty","hard")),f).runFunction(null,List.of());
+            assertSame(difficulty,f.run.getDifficulty());
+            bind(new SetDifficultyFunction(Map.of("difficulty","missing")),f).runFunction(null,List.of());
+            bind(new SetDifficultyFunction(Map.of("difficulty","")),f).runFunction(null,List.of());
+            assertSame(difficulty,f.run.getDifficulty());
+        }
+    }
+
 }
