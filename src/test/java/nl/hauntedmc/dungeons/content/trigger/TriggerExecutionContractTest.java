@@ -78,4 +78,24 @@ class TriggerExecutionContractTest {
         }
     }
 
+    @Test
+    void redstoneTriggersRequireARisingEdgeAndRespectTheirRateLimitAndDisableCleanup() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            var trigger=bind(new RedstoneTrigger(),f);
+            var block=mock(Block.class); when(block.getWorld()).thenReturn(f.world);
+            when(block.getLocation()).thenReturn(trigger.getLocation());
+            trigger.onRedstoneSignal(new BlockRedstoneEvent(block,0,15));
+            trigger.onRedstoneSignal(new BlockRedstoneEvent(block,15,15));
+            trigger.onRedstoneSignal(new BlockRedstoneEvent(block,15,0));
+            trigger.onRedstoneSignal(new BlockRedstoneEvent(block,0,15));
+            assertEquals(1,f.scheduler.immediate.size());
+            assertEquals(2,f.scheduler.jobs.getFirst().delay);
+            f.scheduler.jobs.getFirst().run();
+            trigger.onRedstoneSignal(new BlockRedstoneEvent(block,15,0));
+            trigger.onRedstoneSignal(new BlockRedstoneEvent(block,0,15));
+            assertEquals(2,f.scheduler.immediate.size());
+            trigger.onDisable(); assertTrue(f.scheduler.jobs.getLast().cancelled);
+        }
+    }
+
 }
