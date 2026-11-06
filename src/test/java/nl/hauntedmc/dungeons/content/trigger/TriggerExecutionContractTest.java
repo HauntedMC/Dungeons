@@ -98,4 +98,29 @@ class TriggerExecutionContractTest {
         }
     }
 
+    @Test
+    void interactionTriggersIgnoreOffhandSpectatorsDeniedActionsAndDifferentBlocks() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            var state=new PlayerState(); source(f,state);
+            var trigger=bind(new InteractTrigger(),f);
+            var block=mock(Block.class); when(block.getLocation()).thenReturn(trigger.getLocation());
+            var event=mock(PlayerInteractEvent.class);
+            when(event.getPlayer()).thenReturn(state.player); when(event.getClickedBlock()).thenReturn(block);
+            when(event.getAction()).thenReturn(Action.RIGHT_CLICK_BLOCK);
+            when(event.getHand()).thenReturn(EquipmentSlot.OFF_HAND);
+            trigger.onInteract(event); assertTrue(f.scheduler.immediate.isEmpty());
+            when(event.getHand()).thenReturn(EquipmentSlot.HAND);
+            state.gameMode=GameMode.SPECTATOR; trigger.onInteract(event); assertTrue(f.scheduler.immediate.isEmpty());
+            state.gameMode=GameMode.SURVIVAL;
+            when(event.useInteractedBlock()).thenReturn(org.bukkit.event.Event.Result.DENY);
+            trigger.onInteract(event); assertTrue(f.scheduler.immediate.isEmpty());
+            when(event.useInteractedBlock()).thenReturn(org.bukkit.event.Event.Result.DEFAULT);
+            when(block.getLocation()).thenReturn(new Location(f.world,1,70,0));
+            trigger.onInteract(event); assertTrue(f.scheduler.immediate.isEmpty());
+            when(block.getLocation()).thenReturn(trigger.getLocation());
+            trigger.onInteract(event); assertEquals(1,f.scheduler.immediate.size());
+            verify(event).setCancelled(true);
+        }
+    }
+
 }
