@@ -148,6 +148,40 @@ class CommandContractTest {
         }
     }
 
+    @Test
+    void consoleCommandsRouteReloadScopesAndCanSendAnOnlinePlayerWithoutPlayerOnlyEditorActions()
+            throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var command = new CommandFixture(f);
+            var console = mock(org.bukkit.command.ConsoleCommandSender.class);
+            when(console.hasPermission(anyString())).thenReturn(true);
+            for (var args :
+                    List.of(
+                            new String[] {"reload"},
+                            new String[] {"reload", "all"},
+                            new String[] {"reload", "crypt"})) {
+                assertTrue(command.root.onCommand(console, mock(Command.class), "dungeon", args));
+            }
+            verify(command.lifecycle).reloadConfigs();
+            verify(command.lifecycle).reloadAllDungeons();
+            verify(command.lifecycle).reloadDungeon(f.dungeon);
+            f.paper
+                    .bukkit
+                    .when(() -> Bukkit.getPlayer("Explorer"))
+                    .thenReturn(command.caller.player);
+            assertTrue(
+                    command.root.onCommand(
+                            console,
+                            mock(Command.class),
+                            "dungeon",
+                            new String[] {"play", "crypt", "Explorer"}));
+            verify(command.coordinator).sendToDungeon(command.caller.player, "crypt", "");
+            command.root.onCommand(
+                    console, mock(Command.class), "dungeon", new String[] {"edit", "crypt"});
+            assertTrue(f.scheduler.asynchronous.isEmpty());
+        }
+    }
+
     static final class CommandFixture {
         final PlayerState caller = new PlayerState();
         final Set<String> permissions = new HashSet<>(Set.of("dungeons.core"));
