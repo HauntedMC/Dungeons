@@ -215,8 +215,8 @@ public final class DungeonPlayerSession {
      */
     public void saveEditInventory() {
         this.ensureEditModeTools();
-        this.savedEditInventory = this.player.getInventory().getContents();
-        this.savedEditArmor = this.player.getInventory().getArmorContents();
+        this.savedEditInventory = copyItems(this.player.getInventory().getContents());
+        this.savedEditArmor = copyItems(this.player.getInventory().getArmorContents());
     }
 
     /**
@@ -227,11 +227,11 @@ public final class DungeonPlayerSession {
         Runnable task =
                 () -> {
                     if (this.savedEditInventory != null) {
-                        this.player.getInventory().setContents(this.savedEditInventory);
+                        this.player.getInventory().setContents(copyItems(this.savedEditInventory));
                     }
 
                     if (this.savedEditArmor != null) {
-                        this.player.getInventory().setArmorContents(this.savedEditArmor);
+                        this.player.getInventory().setArmorContents(copyItems(this.savedEditArmor));
                     }
 
                     this.ensureEditModeTools();

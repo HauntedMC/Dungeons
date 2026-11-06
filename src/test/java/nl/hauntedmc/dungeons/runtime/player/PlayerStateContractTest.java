@@ -82,4 +82,31 @@ class PlayerStateContractTest {
         snapshot.applyTo(state.inventory);
         assertEquals(5, state.contents[3].getAmount());
     }
+
+    @Test
+    void editorInventoryRestorationDoesNotShareMutableStacksWithTheSavedSnapshot() {
+        try (var paper = new PaperBoundary()) {
+            when(paper.plugin.getDataFolder()).thenReturn(directory.toFile());
+            var scheduler = new CapturedScheduler(paper);
+            when(paper.plugin.isEnabled()).thenReturn(true);
+            var state = new PlayerState();
+            state.contents[0] = PlayerState.stack(8);
+            state.contents[40] = PlayerState.stack(3);
+            state.armor[0] = PlayerState.stack(1);
+            var session = new DungeonPlayerSession(paper.plugin, state.player);
+            session.saveEditInventory();
+            state.contents[0].setAmount(1);
+            state.contents[40].setAmount(1);
+            state.armor[0].setAmount(0);
+            session.loadEditInventory();
+            scheduler.jobs.getLast().run();
+            assertEquals(8, state.contents[0].getAmount());
+            assertEquals(3, state.contents[40].getAmount());
+            assertEquals(1, state.armor[0].getAmount());
+            state.contents[0].setAmount(4);
+            session.loadEditInventory();
+            scheduler.jobs.getLast().run();
+            assertEquals(8, state.contents[0].getAmount());
+        }
+    }
 }
