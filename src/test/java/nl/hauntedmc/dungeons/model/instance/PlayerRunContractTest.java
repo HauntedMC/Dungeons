@@ -109,4 +109,25 @@ class PlayerRunContractTest {
         }
     }
 
+    @Test
+    void timeLimitExpiresAtTheBoundaryAndRemovesEveryParticipantExactlyOnce() throws Exception {
+        var settings=settings(); settings.set("runs.time_limit_minutes",1);
+        try(var fixture=new RunFixture(directory,settings)) {
+            var first=fixture.session(new PlayerState()); var second=fixture.session(new PlayerState());
+            fixture.run.addPlayer(first); fixture.run.addPlayer(second);
+            fixture.run.startGame();
+            var timer=fixture.scheduler.jobs.stream().filter(j -> j.period==20).findFirst().orElseThrow();
+            for(int i=0;i<59;i++) timer.run();
+            assertEquals(2,fixture.run.getPlayers().size());
+            assertEquals(1,fixture.run.getTimeLeft());
+            timer.run();
+            assertEquals(0,fixture.run.getTimeLeft());
+            assertTrue(timer.cancelled);
+            assertTrue(fixture.run.getPlayers().isEmpty());
+            assertNull(first.getInstance()); assertNull(second.getInstance());
+            timer.run(); assertEquals(60,fixture.run.getTimeElapsed());
+            verify(org.bukkit.Bukkit.getPluginManager(),times(1)).callEvent(any(nl.hauntedmc.dungeons.event.DungeonEndEvent.class));
+        }
+    }
+
 }
