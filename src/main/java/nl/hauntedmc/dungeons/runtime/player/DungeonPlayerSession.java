@@ -125,8 +125,7 @@ public final class DungeonPlayerSession {
             }
 
             this.playerData.load(this.playerDataFile);
-            this.completedDungeons =
-                    (List<String>) this.playerData.getList("CompletedDungeons", new ArrayList<>());
+            this.completedDungeons = this.playerData.getStringList("CompletedDungeons");
         } catch (IOException exception) {
             this.plugin
                     .getSLF4JLogger()
