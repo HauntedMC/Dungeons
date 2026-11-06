@@ -251,7 +251,7 @@ public abstract class Layout implements Cloneable {
         }
 
         int timeout = PluginConfigView.getLayoutGenerationTimeoutSeconds(this.runtime().config());
-        long startTime = System.currentTimeMillis();
+        long startTime = System.nanoTime();
 
         ExecutorService executor = Executors.newSingleThreadExecutor();
         Future<GenerationResult> future =
@@ -268,7 +268,9 @@ public abstract class Layout implements Cloneable {
                                 }
 
                                 if (generationResult.isPassed()) {
-                                    long runTime = System.currentTimeMillis() - startTime;
+                                    long runTime =
+                                            TimeUnit.NANOSECONDS.toMillis(
+                                                    System.nanoTime() - startTime);
                                     this.logger()
                                             .info(
                                                     "Generated layout for dungeon '{}' in {}ms after {} attempts.",
@@ -279,7 +281,8 @@ public abstract class Layout implements Cloneable {
                                 }
 
                                 tries++;
-                            } while (System.currentTimeMillis() - startTime <= timeout * 1000L
+                            } while (System.nanoTime() - startTime
+                                            <= TimeUnit.SECONDS.toNanos(timeout)
                                     && !this.cancelled);
 
                             if (this.cancelled) {

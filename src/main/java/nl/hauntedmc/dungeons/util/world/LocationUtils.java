@@ -1,5 +1,6 @@
 package nl.hauntedmc.dungeons.util.world;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ExecutionException;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.util.config.PluginConfigView;
@@ -109,9 +110,9 @@ public final class LocationUtils {
     /** Main-thread implementation for safe spawn search in a bounding box. */
     private static Location findSafeLocationInBoxSync(World world, BoundingBox box) {
         int timeout = PluginConfigView.getSafeSpawnSearchTimeoutSeconds(RuntimeContext.config());
-        long startTime = System.currentTimeMillis();
+        long startTime = System.nanoTime();
 
-        while (System.currentTimeMillis() - startTime <= timeout * 1000L) {
+        while (System.nanoTime() - startTime <= TimeUnit.SECONDS.toNanos(timeout)) {
             double x = selectCoordinate(box.getMinX(), box.getMaxX());
             double z = selectCoordinate(box.getMinZ(), box.getMaxZ());
             int chunkX = ((int) Math.floor(x)) >> 4;
@@ -126,7 +127,7 @@ public final class LocationUtils {
                         .debug(
                                 "Safe spawn search for world '{}' completed in {}ms.",
                                 world.getName(),
-                                System.currentTimeMillis() - startTime);
+                                TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime));
                 return target;
             }
         }

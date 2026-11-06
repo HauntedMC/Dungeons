@@ -1,5 +1,6 @@
 package nl.hauntedmc.dungeons.util.text;
 
+import java.util.concurrent.TimeUnit;
 import java.util.Locale;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 
@@ -34,9 +35,12 @@ public final class TextUtils {
 
     /** Runs a task and logs elapsed milliseconds. */
     public static void runTimed(String taskName, Runnable task) {
-        long start = System.currentTimeMillis();
+        long start = System.nanoTime();
         task.run();
         RuntimeContext.logger()
-                .info("Completed '{}' in {}ms.", taskName, System.currentTimeMillis() - start);
+                .info(
+                        "Completed '{}' in {}ms.",
+                        taskName,
+                        TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
     }
 }
