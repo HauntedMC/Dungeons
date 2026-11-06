@@ -158,8 +158,8 @@ public final class DungeonPlayerSession {
      * flow overwrites them.
      */
     public void saveInventory() {
-        this.savedInventory = this.player.getInventory().getContents();
-        this.savedArmor = this.player.getInventory().getArmorContents();
+        this.savedInventory = copyItems(this.player.getInventory().getContents());
+        this.savedArmor = copyItems(this.player.getInventory().getArmorContents());
         this.savedHealth = this.player.getHealth();
         this.savedFood = this.player.getFoodLevel();
     }
@@ -167,16 +167,22 @@ public final class DungeonPlayerSession {
     /**
      * Restores the previously captured inventory snapshot.
      */
+    private static ItemStack[] copyItems(ItemStack[] items) {
+        return items == null ? null : Arrays.stream(items)
+                .map(item -> item == null ? null : item.clone())
+                .toArray(ItemStack[]::new);
+    }
+
     public void restoreInventory() {
         if (this.plugin.isEnabled()) {
-            this.player.getInventory().setContents(this.savedInventory);
-            this.player.getInventory().setArmorContents(this.savedArmor);
+            this.player.getInventory().setContents(copyItems(this.savedInventory));
+            this.player.getInventory().setArmorContents(copyItems(this.savedArmor));
             this.player.setHealth(
                     Math.min(this.savedHealth, EntityUtils.getMaxHealth(this.player)));
             this.player.setFoodLevel(this.savedFood);
         } else {
-            this.player.getInventory().setContents(this.savedInventory);
-            this.player.getInventory().setArmorContents(this.savedArmor);
+            this.player.getInventory().setContents(copyItems(this.savedInventory));
+            this.player.getInventory().setArmorContents(copyItems(this.savedArmor));
         }
     }
 
