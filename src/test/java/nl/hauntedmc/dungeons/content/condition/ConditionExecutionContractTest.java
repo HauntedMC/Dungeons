@@ -69,4 +69,18 @@ class ConditionExecutionContractTest {
         }
     }
 
+    @Test
+    void mobConditionsCountOnlyTheConfiguredLivingTypeAndFallbackSafelyForUnknownTypes() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            var skeleton=mock(LivingEntity.class); when(skeleton.getType()).thenReturn(EntityType.SKELETON);
+            var zombie=mock(LivingEntity.class); when(zombie.getType()).thenReturn(EntityType.ZOMBIE);
+            when(f.world.getNearbyEntities(any(Location.class),anyDouble(),anyDouble(),anyDouble()))
+                .thenReturn(List.of(skeleton,zombie,mock(Entity.class)));
+            assertTrue(bind(new MobWithinCondition(Map.of("entityName","skeleton","count",1,"mobsExact",true)),f).check(null));
+            assertFalse(bind(new MobWithinCondition(Map.of("entityName","skeleton","count",2)),f).check(null));
+            assertTrue(bind(new MobWithinCondition(Map.of("entityName","not-a-mob","count",1)),f).check(null));
+            var missing=bind(new MobWithinCondition(),f); missing.setLocation(null); assertFalse(missing.check(null));
+        }
+    }
+
 }
