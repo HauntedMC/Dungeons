@@ -31,6 +31,25 @@ class PreparationContractTest {
         }
     }
 
+
+    @Test @Timeout(15)
+    void disconnectedPlayersAndFailedOrMissingWorldsLeaveNoPendingAdmissionOrActiveInstance() throws Exception {
+        for(String failure:List.of("disconnect","failed","absent")) {
+            try(var f=new RunFixture(directory,new YamlConfiguration())) {
+                var dungeon=new PreparedDungeon(f,directory.resolve(failure));
+                dungeon.fail=failure.equals("failed"); dungeon.absent=failure.equals("absent");
+                var state=new PlayerState(); var session=f.session(state); session.setAwaitingDungeon(true);
+                assertTrue(dungeon.prepareInstance(state.player,"DEFAULT",1,null));
+                finishPreparation(f);
+                if(failure.equals("disconnect")) state.online=false;
+                f.scheduler.readyImmediate.remove().run();
+                assertNull(session.getInstance()); assertFalse(session.isAwaitingDungeon());
+                assertTrue(dungeon.getInstances().isEmpty());
+                assertTrue(f.paper.runtime.activeInstances().getActiveInstances().isEmpty());
+            }
+        }
+    }
+
     static void finishPreparation(RunFixture f) throws Exception {
         try(var executor=Executors.newSingleThreadExecutor()) {
             Future<?> loading=executor.submit(() -> {
@@ -48,10 +67,12 @@ class PreparationContractTest {
         final RunFixture fixture;
         RunFixture.Run created;
         boolean fail;
+        boolean absent;
         PreparedDungeon(RunFixture f,Path folder) throws Exception {
             super(f.paper.runtime,Files.createDirectories(folder).toFile(),new YamlConfiguration()); fixture=f;
         }
         @Override public PlayableInstance createPlaySession(CountDownLatch latch,UUID leader) {
+            if (absent) return null;
             created=new RunFixture.Run(this,fixture.world,latch);
             created.completeInitialization(fail); return created;
         }
