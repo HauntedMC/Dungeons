@@ -28,6 +28,7 @@ This keeps operator files aligned with code changes while preserving local custo
 
 Key sections:
 
+- `global_rules`: default gameplay rules inherited by every dungeon.
 - `instances`: global active-run caps and startup trigger timing.
 - `commands`: command output pagination and destructive-action confirmation windows.
 - `editor`: editor timeout/autosave/tool materials, targeting reach, and preview behavior.
@@ -47,8 +48,46 @@ The default dungeon template controls behavior for newly created or synced dunge
 - `rewards`: finish delivery and cooldown policy.
 - `access`: key consumption and access cooldown policy.
 - `difficulty`: named difficulty presets and scaling.
-- `rules`: spawning, building, movement, world, combat, commands, items, entities.
+- `rules`: optional overrides for global spawning, building, movement, world, combat, commands, items, and entity rules.
 - `map`: floor-depth controls for map rendering.
+
+### Global Rules and Dungeon Overrides
+
+Set shared rules under `global_rules` in `plugins/Dungeons/config.yml`. Each dungeon
+inherits every omitted setting. Only explicit values under its own `rules` section override
+the corresponding global value; nested sections merge per setting, and lists replace the
+global list. Explicit `false` and `[]` are valid overrides.
+
+For example, to override only PVP for one dungeon, put this in its `config.yml`:
+
+```yaml
+rules:
+  combat:
+    pvp: true
+```
+
+All other rules still inherit globally. Remove an override to restore inheritance, or use
+`/dungeon config <dungeon> <setting> inherit`. For example:
+
+```text
+/dungeon config crypt allowed-commands inherit
+```
+
+Config listings mark inherited values with `(globaal)`. Using `clear` on a list still creates
+an explicit empty list; use `inherit` to use the global list again.
+
+To allow a command across inheriting dungeons, add it once to
+`global_rules.commands.allow_list` in the main config, then run `/dungeon reload`.
+This reload refreshes shared command rules and cached dungeon rules without reloading
+each map. World settings applied during instance creation take effect in new instances.
+An explicit dungeon command list replaces the entire global list, so that dungeon will
+keep its own commands until its override is removed.
+New maps have commented rule examples and inherit all global rules. Dungeon config
+synchronization and saves do not fill in omitted rules, including when an older
+`config_default.yml` still contains active rules.
+
+Existing maps keep their explicit rule values. Remove or comment out their `rules`
+section (or individual settings) to adopt global defaults.
 
 ### Access Keys
 
