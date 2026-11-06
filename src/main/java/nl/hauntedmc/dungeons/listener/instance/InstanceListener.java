@@ -182,7 +182,7 @@ public class InstanceListener {
 
             if (DungeonConfigView.isWeaponDurabilityLossPrevented(this.instance.getConfig())
                     && (mat.name().contains("SWORD")
-                            || mat.name().contains("AXE")
+                            || mat.name().endsWith("_AXE")
                             || mat.name().contains("BOW")
                             || mat.name().contains("CROSSBOW")
                             || mat.name().contains("TRIDENT")

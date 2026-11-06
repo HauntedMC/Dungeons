@@ -96,4 +96,26 @@ class GameplayRulesContractTest {
         }
     }
 
+    @Test
+    void durabilityProtectionKeepsArmorWeaponAndToolCategoriesIndependent() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            var state=new PlayerState(); state.location=new Location(f.world,0,70,0);
+            var listener=f.run.getListener();
+            for(String category:List.of("armor","weapons","tools")) {
+                for(String key:List.of("armor","weapons","tools")) f.run.getConfig().set("rules.combat.prevent_durability_loss."+key,key.equals(category));
+                for(var material:List.of(Material.DIAMOND_BOOTS,Material.DIAMOND_SWORD,Material.DIAMOND_PICKAXE,Material.DIAMOND_AXE,Material.STICK)) {
+                    var item=mock(org.bukkit.inventory.ItemStack.class); when(item.getType()).thenReturn(material);
+                    var event=TestEvents.cancellable(PlayerItemDamageEvent.class); when(event.getPlayer()).thenReturn(state.player); when(event.getItem()).thenReturn(item);
+                    listener.onDurabilityDamage(event);
+                    boolean protectedItem=switch(category) {
+                        case "armor" -> material==Material.DIAMOND_BOOTS;
+                        case "weapons" -> material==Material.DIAMOND_SWORD||material==Material.DIAMOND_AXE;
+                        default -> material==Material.DIAMOND_PICKAXE||material==Material.DIAMOND_AXE;
+                    };
+                    assertEquals(protectedItem,event.isCancelled(),category+" "+material);
+                }
+            }
+        }
+    }
+
 }
