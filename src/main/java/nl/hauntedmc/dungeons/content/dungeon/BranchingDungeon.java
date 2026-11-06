@@ -1,14 +1,5 @@
 package nl.hauntedmc.dungeons.content.dungeon;
 
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import nl.hauntedmc.dungeons.content.instance.edit.BranchingEditableInstance;
 import nl.hauntedmc.dungeons.content.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.generation.layout.Layout;
@@ -24,6 +15,7 @@ import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.text.TextUtils;
+
 import org.apache.commons.io.FilenameUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Difficulty;
@@ -35,6 +27,16 @@ import org.bukkit.entity.Player;
 import org.bukkit.util.BoundingBox;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Dungeon implementation that generates each run from a branching layout and room definitions.
@@ -296,6 +298,19 @@ public class BranchingDungeon extends DungeonDefinition {
                                                                             .runTaskLater(
                                                                                     this.plugin(),
                                                                                     () -> {
+                                                                                        if (!player
+                                                                                                .isOnline()) {
+                                                                                            this
+                                                                                                    .refundReservedAccessKey(
+                                                                                                            playerSession);
+                                                                                            playerSession
+                                                                                                    .setAwaitingDungeon(
+                                                                                                            false);
+                                                                                            this
+                                                                                                    .discardInstance(
+                                                                                                            instance);
+                                                                                            return;
+                                                                                        }
                                                                                         instance
                                                                                                 .addPlayer(
                                                                                                         playerSession);

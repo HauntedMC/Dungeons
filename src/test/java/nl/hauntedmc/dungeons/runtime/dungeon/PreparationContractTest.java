@@ -95,6 +95,93 @@ class PreparationContractTest {
         }
     }
 
+    @Test
+    @Timeout(20)
+    void branchingPreparationRevalidatesMembershipAndConnectivityAtTheFinalAdmissionTick()
+            throws Exception {
+        for (String outcome : List.of("ready", "disconnect", "moved")) {
+            try (var layouts =
+                            new StaticMapSnapshot(
+                                    nl.hauntedmc.dungeons.registry.LayoutRegistry.class,
+                                    "layouts");
+                    var f = new RunFixture(directory.resolve(outcome), new YamlConfiguration());
+                    var menus = new HeadlessMenus();
+                    var rooms = mockStatic(nl.hauntedmc.dungeons.gui.menu.RoomMenus.class)) {
+                nl.hauntedmc.dungeons.registry.LayoutRegistry.register(
+                        nl.hauntedmc.dungeons.generation.layout.BranchingLayout.class, "branching");
+                var settings = new YamlConfiguration();
+                settings.set("generator.seal_open_connectors_with", "AIR");
+                var dungeon =
+                        new PreparedBranch(
+                                f, directory.resolve(outcome).resolve("branch"), settings);
+                var block = mock(org.bukkit.block.Block.class);
+                when(f.world.getBlockAt(org.mockito.Mockito.any(Location.class))).thenReturn(block);
+                var state = new PlayerState();
+                var session = f.session(state);
+                session.setAwaitingDungeon(true);
+                assertTrue(dungeon.prepareInstance(state.player, "DEFAULT", 1, null));
+                finishPreparation(f);
+                f.scheduler.readyImmediate.remove().run();
+                var join = f.scheduler.jobs.getLast();
+                assertNull(session.getInstance());
+                if (outcome.equals("disconnect")) state.online = false;
+                if (outcome.equals("moved")) f.run.addPlayer(session);
+                join.run();
+                assertFalse(session.isAwaitingDungeon());
+                if (outcome.equals("ready")) {
+                    assertSame(dungeon.created, session.getInstance());
+                    assertEquals(new Location(f.world, 2, 70, 3), dungeon.created.getStartLoc());
+                } else {
+                    if (outcome.equals("disconnect")) assertNull(session.getInstance());
+                    else assertSame(f.run, session.getInstance());
+                    assertTrue(dungeon.getInstances().isEmpty());
+                    assertTrue(f.paper.runtime.activeInstances().getActiveInstances().isEmpty());
+                }
+            }
+        }
+    }
+
+    static final class PreparedBranch
+            extends nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon {
+        final RunFixture fixture;
+        BranchRun created;
+
+        PreparedBranch(RunFixture f, Path folder, YamlConfiguration settings) throws Exception {
+            super(f.paper.runtime, Files.createDirectories(folder).toFile(), settings);
+            fixture = f;
+        }
+
+        @Override
+        public PlayableInstance createPlaySession(CountDownLatch latch, UUID leader) {
+            try {
+                created = new BranchRun(this, fixture.world, latch);
+                return created;
+            } catch (ReflectiveOperationException exception) {
+                throw new AssertionError(exception);
+            }
+        }
+    }
+
+    static final class BranchRun
+            extends nl.hauntedmc.dungeons.content.instance.play.BranchingInstance {
+        BranchRun(PreparedBranch dungeon, World world, CountDownLatch latch)
+                throws ReflectiveOperationException {
+            super(dungeon, latch);
+            instanceWorld = world;
+            ready = true;
+            var layout = mock(nl.hauntedmc.dungeons.generation.layout.Layout.class);
+            var first = mock(nl.hauntedmc.dungeons.generation.room.InstanceRoom.class);
+            when(first.getSpawn()).thenReturn(new Location(null, 2, 70, 3));
+            when(layout.getFirst()).thenReturn(first);
+            var field =
+                    nl.hauntedmc.dungeons.content.instance.play.BranchingInstance.class
+                            .getDeclaredField("builder");
+            field.setAccessible(true);
+            field.set(this, layout);
+            signalInitializationComplete();
+        }
+    }
+
     static void finishPreparation(RunFixture f) throws Exception {
         try (var executor = Executors.newSingleThreadExecutor()) {
             Future<?> loading =
