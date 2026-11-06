@@ -104,4 +104,48 @@ class PlayerEffectContractTest {
             assertEquals(GameMode.SPECTATOR, dead.gameMode);
         }
     }
+
+    @Test
+    void itemAndKeyDispensersGiveIndependentTaggedStacksToEveryTargetAndCanDropAtTheirLocation()
+            throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration());
+                var gui = new HeadlessInventoryMenus()) {
+            var first = new PlayerState();
+            var second = new PlayerState();
+            var left = f.session(first);
+            var right = f.session(second);
+            var tags = new HashMap<NamespacedKey, Object>();
+            tags.put(new NamespacedKey("dungeons", "dungeonkey"), 1);
+            tags.put(new NamespacedKey("dungeons", "dungeonitem"), 1);
+            var template = TaggedItems.stack(Material.TRIPWIRE_HOOK, 3, tags);
+            var config = Map.<String, Object>of("item", template, "notify", false);
+            for (var function :
+                    List.of(new GiveItemFunction(config), new GiveKeyFunction(config))) {
+                GameplayFunctionContractTest.bind(function, f)
+                        .runFunction(null, List.of(left, right));
+                org.mockito.ArgumentCaptor<org.bukkit.inventory.ItemStack> delivered =
+                        org.mockito.ArgumentCaptor.captor();
+                verify(first.inventory).addItem(delivered.capture());
+                var firstItem = delivered.getValue();
+                verify(second.inventory).addItem(delivered.capture());
+                var secondItem = delivered.getValue();
+                assertNotSame(template, firstItem);
+                assertNotSame(firstItem, secondItem);
+                assertTrue(nl.hauntedmc.dungeons.util.item.ItemUtils.verifyKeyItem(firstItem));
+                assertTrue(nl.hauntedmc.dungeons.util.item.ItemUtils.verifyDungeonItem(secondItem));
+                firstItem.setAmount(1);
+                assertEquals(3, secondItem.getAmount());
+                assertEquals(3, template.getAmount());
+                clearInvocations(first.inventory, second.inventory);
+            }
+            GameplayFunctionContractTest.bind(
+                            new GiveItemFunction(Map.of("item", template, "drop", true)), f)
+                    .runFunction(null, List.of(left));
+            verify(f.world)
+                    .dropItem(
+                            eq(new Location(f.world, 0, 70, 0)),
+                            any(org.bukkit.inventory.ItemStack.class));
+            verify(first.inventory, never()).addItem(any(org.bukkit.inventory.ItemStack.class));
+        }
+    }
 }
