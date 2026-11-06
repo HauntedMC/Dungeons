@@ -6,6 +6,8 @@ import java.util.concurrent.ThreadLocalRandom;
  * Numeric utility helpers for randomization and sign-aware arithmetic.
  */
 public final class MathUtils {
+    private MathUtils() {}
+
     /** Rounds a decimal value to the requested number of places. */
     public static double round(double value, int places) {
         double scale = Math.pow(10.0, places);
@@ -21,14 +23,13 @@ public final class MathUtils {
     public static int getRandomNumberInRange(int min, int max) {
         if (min >= max) {
             return min;
-        } else {
-            return ThreadLocalRandom.current().nextInt(max - min + 1) + min;
         }
+        return (int) ThreadLocalRandom.current().nextLong(min, (long) max + 1);
     }
 
     /** Returns true with the provided probability in range {@code [0.0, 1.0]}. */
     public static boolean getRandomBoolean(double chance) {
-        return Math.random() < chance;
+        return ThreadLocalRandom.current().nextDouble() < chance;
     }
 
     /** Returns whether the double value is represented with a negative sign bit. */

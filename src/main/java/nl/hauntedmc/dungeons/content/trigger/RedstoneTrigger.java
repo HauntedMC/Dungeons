@@ -102,7 +102,7 @@ public class RedstoneTrigger extends DungeonTrigger {
     private void rateLimit() {
         this.rateLimited = true;
         this.rateLimiter =
-                                new BukkitRunnable() {
+                new BukkitRunnable() {
                     /**
                      * Performs run.
                      */
@@ -119,7 +119,7 @@ public class RedstoneTrigger extends DungeonTrigger {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     /**
                      * Builds button.
                      */

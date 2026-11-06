@@ -265,7 +265,9 @@ public class DungeonListener implements Listener {
                 player.getTargetBlockExact(
                         PluginConfigView.getEditorTargetBlockRangeBlocks(this.plugin.getConfig()));
         Location pos =
-                targetBlock == null ? player.getLocation().toBlockLocation() : targetBlock.getLocation();
+                targetBlock == null
+                        ? player.getLocation().toBlockLocation()
+                        : targetBlock.getLocation();
         BranchingRoomDefinition room = dungeon.getRoom(pos);
         if (room != null) {
             this.clearRoomNamePromptState(playerSession);
@@ -347,7 +349,9 @@ public class DungeonListener implements Listener {
                 player.getTargetBlockExact(
                         PluginConfigView.getEditorTargetBlockRangeBlocks(this.plugin.getConfig()));
         Location pos =
-                targetBlock == null ? player.getLocation().toBlockLocation() : targetBlock.getLocation();
+                targetBlock == null
+                        ? player.getLocation().toBlockLocation()
+                        : targetBlock.getLocation();
         playerSession.setPos1(pos);
         LangUtils.sendMessage(player, "editor.session.room-select-1");
 
@@ -595,7 +599,8 @@ public class DungeonListener implements Listener {
         double closestDistance = Double.MAX_VALUE;
 
         for (DungeonFunction function : instance.getDungeon().getFunctions().values()) {
-            Location labelLocation = this.getFunctionLabelLocation(function, displayLocation.getWorld());
+            Location labelLocation =
+                    this.getFunctionLabelLocation(function, displayLocation.getWorld());
             double labelDistance = this.distanceSquared(labelLocation, displayLocation);
             if (labelDistance >= 0.0D
                     && labelDistance <= MAX_FUNCTION_DISPLAY_DISTANCE_SQUARED
@@ -612,7 +617,8 @@ public class DungeonListener implements Listener {
                         actualHologramLoc.setWorld(displayLocation.getWorld());
                     }
 
-                    double hologramDistance = this.distanceSquared(actualHologramLoc, displayLocation);
+                    double hologramDistance =
+                            this.distanceSquared(actualHologramLoc, displayLocation);
                     if (hologramDistance >= 0.0D
                             && hologramDistance <= MAX_FUNCTION_DISPLAY_DISTANCE_SQUARED
                             && hologramDistance < closestDistance) {
@@ -689,7 +695,8 @@ public class DungeonListener implements Listener {
             // Room creation mutates player session and world-bound state, so the final handler
             // always runs on the Bukkit main thread.
             return Bukkit.getScheduler()
-                    .callSyncMethod(this.plugin, () -> this.handleRoomNameInputSync(playerId, message))
+                    .callSyncMethod(
+                            this.plugin, () -> this.handleRoomNameInputSync(playerId, message))
                     .get();
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
@@ -698,7 +705,10 @@ public class DungeonListener implements Listener {
             Throwable root = exception.getCause() == null ? exception : exception.getCause();
             this.plugin
                     .getSLF4JLogger()
-                    .error("Failed to process room-name chat input for player '{}'.", playerId, root);
+                    .error(
+                            "Failed to process room-name chat input for player '{}'.",
+                            playerId,
+                            root);
             return false;
         }
     }
@@ -715,7 +725,8 @@ public class DungeonListener implements Listener {
         DungeonPlayerSession playerSession = this.playerManager.get(playerId);
         if (playerSession == null
                 || !playerSession.isAwaitingRoomName()
-                || !(playerSession.getInstance() instanceof BranchingEditableInstance branchingEdit)) {
+                || !(playerSession.getInstance()
+                        instanceof BranchingEditableInstance branchingEdit)) {
             return false;
         }
 
@@ -743,7 +754,8 @@ public class DungeonListener implements Listener {
                 return true;
             }
             BoundingBox bounds =
-                    LocationUtils.captureBoundingBox(playerSession.getPos1(), playerSession.getPos2());
+                    LocationUtils.captureBoundingBox(
+                            playerSession.getPos1(), playerSession.getPos2());
             BranchingRoomDefinition room = dungeon.defineRoom(normalizedMessage, bounds);
             if (room == null) {
                 LangUtils.sendMessage(player, "editor.session.room-exists");

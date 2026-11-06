@@ -47,21 +47,20 @@ public class TimeElapsedCondition extends TriggerCondition {
         PlayableInstance instance = this.instance.asPlayInstance();
         if (instance == null) {
             return false;
-        } else {
-            int requiredTime = Math.max(0, this.time);
-            if (requiredTime != this.time && !this.invalidTimeLogged) {
-                this.invalidTimeLogged = true;
-                this.logger()
-                        .warn(
-                                "TimeElapsedCondition in dungeon '{}' at {} had invalid time {}. Clamping to 0.",
-                                this.dungeonNameForLogs(),
-                                this.locationForLogs(),
-                                this.time);
-            }
-
-            int timeElapsed = instance.getTimeElapsed();
-            return timeElapsed >= requiredTime;
         }
+        int requiredTime = Math.max(0, this.time);
+        if (requiredTime != this.time && !this.invalidTimeLogged) {
+            this.invalidTimeLogged = true;
+            this.logger()
+                    .warn(
+                            "TimeElapsedCondition in dungeon '{}' at {} had invalid time {}. Clamping to 0.",
+                            this.dungeonNameForLogs(),
+                            this.locationForLogs(),
+                            this.time);
+        }
+
+        int timeElapsed = instance.getTimeElapsed();
+        return timeElapsed >= requiredTime;
     }
 
     /**
@@ -83,7 +82,7 @@ public class TimeElapsedCondition extends TriggerCondition {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -91,7 +90,9 @@ public class TimeElapsedCondition extends TriggerCondition {
                     public void buildButton() {
                         this.button = new MenuButton(Material.CLOCK);
                         this.button.setDisplayName(
-                                TimeElapsedCondition.this.inverted ? "&d&lMinimum Time" : "&d&lMaximum Time");
+                                TimeElapsedCondition.this.inverted
+                                        ? "&d&lMinimum Time"
+                                        : "&d&lMaximum Time");
                     }
 
                     /**
@@ -109,7 +110,9 @@ public class TimeElapsedCondition extends TriggerCondition {
                                 player,
                                 "editor.condition.time-elapsed.current-time",
                                 LangUtils.placeholder(
-                                        "time", TimeUtils.formatDuration(TimeElapsedCondition.this.time * 1000L)));
+                                        "time",
+                                        TimeUtils.formatDuration(
+                                                TimeElapsedCondition.this.time * 1000L)));
                     }
 
                     /**
@@ -118,20 +121,25 @@ public class TimeElapsedCondition extends TriggerCondition {
                     @Override
                     public void onInput(Player player, String message) {
                         Optional<Integer> count = InputUtils.readIntegerInput(player, message);
-                        TimeElapsedCondition.this.time = count.orElse(TimeElapsedCondition.this.time);
+                        TimeElapsedCondition.this.time =
+                                count.orElse(TimeElapsedCondition.this.time);
                         if (count.isPresent()) {
                             if (!TimeElapsedCondition.this.inverted) {
                                 LangUtils.sendMessage(
                                         player,
                                         "editor.condition.time-elapsed.min-set",
                                         LangUtils.placeholder(
-                                                "time", TimeUtils.formatDuration(TimeElapsedCondition.this.time * 1000L)));
+                                                "time",
+                                                TimeUtils.formatDuration(
+                                                        TimeElapsedCondition.this.time * 1000L)));
                             } else {
                                 LangUtils.sendMessage(
                                         player,
                                         "editor.condition.time-elapsed.max-set",
                                         LangUtils.placeholder(
-                                                "time", TimeUtils.formatDuration(TimeElapsedCondition.this.time * 1000L)));
+                                                "time",
+                                                TimeUtils.formatDuration(
+                                                        TimeElapsedCondition.this.time * 1000L)));
                             }
                         }
                     }

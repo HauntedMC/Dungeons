@@ -72,7 +72,8 @@ public class DungeonMapRenderer extends MapRenderer {
                     if (block.isEmpty()) {
                         canvas.setPixelColor(mx, mz, new Color(217, 184, 134));
                     } else {
-                        canvas.setPixelColor(mx, mz, new Color(block.getBlockData().getMapColor().asRGB()));
+                        canvas.setPixelColor(
+                                mx, mz, new Color(block.getBlockData().getMapColor().asRGB()));
                     }
                 }
             }

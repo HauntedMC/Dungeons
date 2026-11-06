@@ -82,7 +82,8 @@ public class PlaySoundFunction extends DungeonFunction {
                 if (!this.playAtLocation) {
                     loc = player.getLocation();
                 }
-                player.playSound(loc, this.sound, category, (float) this.volume, (float) this.pitch);
+                player.playSound(
+                        loc, this.sound, category, (float) this.volume, (float) this.pitch);
             }
         }
     }
@@ -104,7 +105,7 @@ public class PlaySoundFunction extends DungeonFunction {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -139,7 +140,7 @@ public class PlaySoundFunction extends DungeonFunction {
                     }
                 });
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -158,7 +159,9 @@ public class PlaySoundFunction extends DungeonFunction {
                         LangUtils.sendMessage(
                                 player,
                                 "editor.function.play-sound.current-category",
-                                LangUtils.placeholder("category", PlaySoundFunction.this.soundCategory.toString()));
+                                LangUtils.placeholder(
+                                        "category",
+                                        PlaySoundFunction.this.soundCategory.toString()));
                     }
 
                     /**
@@ -173,18 +176,21 @@ public class PlaySoundFunction extends DungeonFunction {
                                     player,
                                     "editor.function.play-sound.category-set",
                                     LangUtils.placeholder(
-                                            "category", PlaySoundFunction.this.soundCategory.toString()));
+                                            "category",
+                                            PlaySoundFunction.this.soundCategory.toString()));
                         } catch (IllegalArgumentException exception) {
-                            LangUtils.sendMessage(player, "editor.function.play-sound.invalid-category");
+                            LangUtils.sendMessage(
+                                    player, "editor.function.play-sound.invalid-category");
                             LangUtils.sendMessage(
                                     player,
                                     "editor.function.play-sound.valid-categories",
-                                    LangUtils.placeholder("categories", Arrays.toString(SoundCategory.values())));
+                                    LangUtils.placeholder(
+                                            "categories", Arrays.toString(SoundCategory.values())));
                         }
                     }
                 });
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -203,7 +209,8 @@ public class PlaySoundFunction extends DungeonFunction {
                         LangUtils.sendMessage(
                                 player,
                                 "editor.function.play-sound.current-pitch",
-                                LangUtils.placeholder("pitch", String.valueOf(PlaySoundFunction.this.pitch)));
+                                LangUtils.placeholder(
+                                        "pitch", String.valueOf(PlaySoundFunction.this.pitch)));
                     }
 
                     /**
@@ -216,11 +223,12 @@ public class PlaySoundFunction extends DungeonFunction {
                         LangUtils.sendMessage(
                                 player,
                                 "editor.function.play-sound.pitch-set",
-                                LangUtils.placeholder("pitch", String.valueOf(PlaySoundFunction.this.pitch)));
+                                LangUtils.placeholder(
+                                        "pitch", String.valueOf(PlaySoundFunction.this.pitch)));
                     }
                 });
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -239,7 +247,8 @@ public class PlaySoundFunction extends DungeonFunction {
                         LangUtils.sendMessage(
                                 player,
                                 "editor.function.play-sound.current-volume",
-                                LangUtils.placeholder("volume", String.valueOf(PlaySoundFunction.this.volume)));
+                                LangUtils.placeholder(
+                                        "volume", String.valueOf(PlaySoundFunction.this.volume)));
                     }
 
                     /**
@@ -252,11 +261,12 @@ public class PlaySoundFunction extends DungeonFunction {
                         LangUtils.sendMessage(
                                 player,
                                 "editor.function.play-sound.volume-set",
-                                LangUtils.placeholder("volume", String.valueOf(PlaySoundFunction.this.volume)));
+                                LangUtils.placeholder(
+                                        "volume", String.valueOf(PlaySoundFunction.this.volume)));
                     }
                 });
         this.menu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -273,12 +283,15 @@ public class PlaySoundFunction extends DungeonFunction {
                     @Override
                     public void onSelect(Player player) {
                         if (!PlaySoundFunction.this.playAtLocation) {
-                            LangUtils.sendMessage(player, "editor.function.play-sound.location-function");
+                            LangUtils.sendMessage(
+                                    player, "editor.function.play-sound.location-function");
                         } else {
-                            LangUtils.sendMessage(player, "editor.function.play-sound.location-player");
+                            LangUtils.sendMessage(
+                                    player, "editor.function.play-sound.location-player");
                         }
 
-                        PlaySoundFunction.this.playAtLocation = !PlaySoundFunction.this.playAtLocation;
+                        PlaySoundFunction.this.playAtLocation =
+                                !PlaySoundFunction.this.playAtLocation;
                     }
                 });
     }

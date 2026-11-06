@@ -44,7 +44,8 @@ public class DungeonDifficulty {
             }
 
             meta.displayName(
-                    ComponentUtils.component(config.getString("icon.display_name", this.namespace)));
+                    ComponentUtils.component(
+                            config.getString("icon.display_name", this.namespace)));
             List<String> lore = new ArrayList<>(config.getStringList("icon.lore"));
             meta.lore(ComponentUtils.components(lore));
             this.icon.setItemMeta(meta);

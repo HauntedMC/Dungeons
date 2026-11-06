@@ -60,7 +60,8 @@ public class RotatedRoom {
                     // each supported directional subtype must be rotated explicitly.
                     if (data instanceof Directional ori) {
                         if (ori.getFacing() != BlockFace.UP && ori.getFacing() != BlockFace.DOWN) {
-                            BlockFace direction = DirectionUtils.rotateFace(ori.getFacing(), this.rotation);
+                            BlockFace direction =
+                                    DirectionUtils.rotateFace(ori.getFacing(), this.rotation);
                             ori.setFacing(direction);
                         }
                     }
@@ -68,7 +69,8 @@ public class RotatedRoom {
                     if (data instanceof Rotatable ori) {
                         BlockFace face =
                                 DirectionUtils.yawToFullFace(
-                                        DirectionUtils.faceToYaw(ori.getRotation()) + this.rotation);
+                                        DirectionUtils.faceToYaw(ori.getRotation())
+                                                + this.rotation);
                         if (this.rotation != 180) {
                             face = face.getOppositeFace();
                         }
@@ -107,7 +109,9 @@ public class RotatedRoom {
 
                     if (data instanceof Wall ori) {
                         BlockFace[] directions =
-                                new BlockFace[] {BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST};
+                                new BlockFace[] {
+                                    BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST
+                                };
                         Map<BlockFace, Height> faces = new HashMap<>();
 
                         for (BlockFace face : directions) {
@@ -126,7 +130,9 @@ public class RotatedRoom {
 
                     if (data instanceof RedstoneWire ori) {
                         BlockFace[] directions =
-                                new BlockFace[] {BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST};
+                                new BlockFace[] {
+                                    BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST
+                                };
                         Map<BlockFace, Connection> faces = new HashMap<>();
 
                         for (BlockFace face : directions) {
@@ -153,7 +159,7 @@ public class RotatedRoom {
         return this.schematic.get();
     }
 
-        private org.slf4j.Logger logger() {
+    private org.slf4j.Logger logger() {
         return this.origin.getDungeon().getEnvironment().logger();
     }
 
@@ -165,8 +171,10 @@ public class RotatedRoom {
         this.rotation = rotation;
         BoundingBox originBounds = this.origin.getBounds();
         SimpleLocation size =
-                                new SimpleLocation(
-                        originBounds.getWidthX(), originBounds.getHeight(), originBounds.getWidthZ());
+                new SimpleLocation(
+                        originBounds.getWidthX(),
+                        originBounds.getHeight(),
+                        originBounds.getWidthZ());
         this.setRotationOffset(rotation, size);
         if (origin.getSpawn() != null) {
             SimpleLocation simpleSpawn =
@@ -198,7 +206,9 @@ public class RotatedRoom {
                                 this.origin.getNamespace(),
                                 this.origin.getDungeon().getWorldName(),
                                 this.rotation,
-                                root.getMessage() == null ? root.getClass().getSimpleName() : root.getMessage(),
+                                root.getMessage() == null
+                                        ? root.getClass().getSimpleName()
+                                        : root.getMessage(),
                                 root);
             }
         }
@@ -213,7 +223,7 @@ public class RotatedRoom {
         SimpleLocation rotatedMax =
                 rotateLocation(SimpleLocation.from(originBounds.getMax()), rotation, size);
         this.bounds =
-                                new BoundingBox(
+                new BoundingBox(
                         rotatedMin.getX(),
                         rotatedMin.getY(),
                         rotatedMin.getZ(),
@@ -222,7 +232,7 @@ public class RotatedRoom {
                         rotatedMax.getZ());
     }
 
-        private void tryRotateFunction(Entry<Location, DungeonFunction> entry, SimpleLocation size) {
+    private void tryRotateFunction(Entry<Location, DungeonFunction> entry, SimpleLocation size) {
         Location originalLocation = entry.getKey();
         DungeonFunction originalFunction = entry.getValue();
         if (originalFunction == null) {
@@ -281,7 +291,9 @@ public class RotatedRoom {
                             originalLocation == null ? -1 : originalLocation.getBlockX(),
                             originalLocation == null ? -1 : originalLocation.getBlockY(),
                             originalLocation == null ? -1 : originalLocation.getBlockZ(),
-                            root.getMessage() == null ? root.getClass().getSimpleName() : root.getMessage(),
+                            root.getMessage() == null
+                                    ? root.getClass().getSimpleName()
+                                    : root.getMessage(),
                             root);
         }
     }
@@ -302,15 +314,18 @@ public class RotatedRoom {
         int y = originalLocus.asVector().getBlockY();
         int z = originalLocus.asVector().getBlockZ();
 
-                return switch (rotationDegrees) {
+        return switch (rotationDegrees) {
             case -90, 270 ->
-                                        new SimpleLocation(
+                    new SimpleLocation(
                             size.getZ() - z, y, x, originalLocus.getDirection().getNextClockwise());
             case 90 ->
-                                        new SimpleLocation(
-                            z, y, size.getX() - x, originalLocus.getDirection().getNextCounterClockwise());
+                    new SimpleLocation(
+                            z,
+                            y,
+                            size.getX() - x,
+                            originalLocus.getDirection().getNextCounterClockwise());
             case 180 ->
-                                        new SimpleLocation(
+                    new SimpleLocation(
                             size.getX() - x,
                             y,
                             size.getZ() - z,
@@ -328,15 +343,18 @@ public class RotatedRoom {
         int y = originalLocus.asVector().getBlockY();
         int z = originalLocus.asVector().getBlockZ() - min.getBlockZ();
 
-                return switch (rotationDegrees) {
+        return switch (rotationDegrees) {
             case -90, 270 ->
-                                        new SimpleLocation(
+                    new SimpleLocation(
                             size.getZ() - z, y, x, originalLocus.getDirection().getNextClockwise());
             case 90 ->
-                                        new SimpleLocation(
-                            z, y, size.getX() - x, originalLocus.getDirection().getNextCounterClockwise());
+                    new SimpleLocation(
+                            z,
+                            y,
+                            size.getX() - x,
+                            originalLocus.getDirection().getNextCounterClockwise());
             case 180 ->
-                                        new SimpleLocation(
+                    new SimpleLocation(
                             size.getX() - x,
                             y,
                             size.getZ() - z,

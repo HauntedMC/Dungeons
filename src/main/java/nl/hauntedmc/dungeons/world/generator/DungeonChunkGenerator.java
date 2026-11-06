@@ -56,18 +56,24 @@ public class DungeonChunkGenerator extends SolidBlockChunkGenerator {
                 for (double y = trimmed.getMinY(); y <= trimmed.getMaxY(); y++) {
                     for (double z = trimmed.getMinZ(); z <= trimmed.getMaxZ(); z++) {
                         boolean lessThanMax =
-                                x < trimmed.getMaxX() && y < trimmed.getMaxY() && z < trimmed.getMaxZ();
+                                x < trimmed.getMaxX()
+                                        && y < trimmed.getMaxY()
+                                        && z < trimmed.getMaxZ();
                         boolean greaterThanMin =
-                                x > trimmed.getMinX() && y > trimmed.getMinY() && z > trimmed.getMinZ();
+                                x > trimmed.getMinX()
+                                        && y > trimmed.getMinY()
+                                        && z > trimmed.getMinZ();
                         List<Vector3i> chunkBlocks;
                         if (lessThanMax && greaterThanMin) {
                             chunkBlocks =
                                     roomBlocksByChunk.computeIfAbsent(
-                                            new Vector2i((int) x >> 4, (int) z >> 4), k -> new ArrayList<>());
+                                            new Vector2i((int) x >> 4, (int) z >> 4),
+                                            k -> new ArrayList<>());
                         } else {
                             chunkBlocks =
                                     outlinesByChunk.computeIfAbsent(
-                                            new Vector2i((int) x >> 4, (int) z >> 4), k -> new ArrayList<>());
+                                            new Vector2i((int) x >> 4, (int) z >> 4),
+                                            k -> new ArrayList<>());
                         }
 
                         chunkBlocks.add(new Vector3i((int) x, (int) y, (int) z));
@@ -127,7 +133,8 @@ public class DungeonChunkGenerator extends SolidBlockChunkGenerator {
 
                     String weTag = holder.getBlockNbt();
                     if (weTag != null) {
-                        this.scheduleTileNbtApply(worldInfo.getName(), bTarget.x, bTarget.y, bTarget.z, weTag);
+                        this.scheduleTileNbtApply(
+                                worldInfo.getName(), bTarget.x, bTarget.y, bTarget.z, weTag);
                     }
                 }
             }
@@ -144,7 +151,9 @@ public class DungeonChunkGenerator extends SolidBlockChunkGenerator {
             Map<Vector2i, List<Vector3i>> source) {
         ConcurrentMap<Vector2i, List<Vector3i>> frozen = new ConcurrentHashMap<>();
         for (Map.Entry<Vector2i, List<Vector3i>> entry : source.entrySet()) {
-            frozen.put(entry.getKey(), Collections.unmodifiableList(new ArrayList<>(entry.getValue())));
+            frozen.put(
+                    entry.getKey(),
+                    Collections.unmodifiableList(new ArrayList<>(entry.getValue())));
         }
         return frozen;
     }

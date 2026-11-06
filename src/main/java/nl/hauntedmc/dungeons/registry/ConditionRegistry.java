@@ -1,7 +1,6 @@
 package nl.hauntedmc.dungeons.registry;
 
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -16,7 +15,8 @@ import nl.hauntedmc.dungeons.util.metadata.TypeMetadataSupport;
 public final class ConditionRegistry {
     private final DungeonsPlugin plugin;
     private final Map<String, Class<? extends TriggerCondition>> conditions = new LinkedHashMap<>();
-    private final Map<Class<? extends TriggerCondition>, String> conditionIds = new LinkedHashMap<>();
+    private final Map<Class<? extends TriggerCondition>, String> conditionIds =
+            new LinkedHashMap<>();
     private final Map<String, MenuButton> conditionButtons = new LinkedHashMap<>();
 
     /** Creates a condition registry bound to the plugin logger and editor metadata lookup. */
@@ -33,22 +33,29 @@ public final class ConditionRegistry {
             this.conditions.put(conditionId, conditionClass);
             this.conditionIds.put(conditionClass, conditionId);
 
-            Method menuButtonMethod = conditionClass.getDeclaredMethod("buildMenuButton");
-            menuButtonMethod.setAccessible(true);
-            MenuButton button = (MenuButton) menuButtonMethod
-                    .invoke(conditionClass.getDeclaredConstructor().newInstance());
+            TriggerCondition condition = conditionClass.getDeclaredConstructor().newInstance();
+            MenuButton button = condition.buildMenuButton();
             if (button == null) {
-                this.plugin.getSLF4JLogger().warn(
-                        "Condition '{}' does not expose a menu button and will not appear in the editor.",
-                        conditionClass.getSimpleName());
+                this.plugin
+                        .getSLF4JLogger()
+                        .warn(
+                                "Condition '{}' does not expose a menu button and will not appear in the editor.",
+                                conditionClass.getSimpleName());
                 return;
             }
 
             this.conditionButtons.put(conditionId, button);
-        } catch (NoSuchMethodException | InvocationTargetException | InstantiationException
-                | IllegalAccessException exception) {
-            this.plugin.getSLF4JLogger().error("Condition '{}' has an invalid buildMenuButton declaration.",
-                    conditionClass.getSimpleName(), exception);
+        } catch (NoSuchMethodException
+                | InvocationTargetException
+                | InstantiationException
+                | IllegalAccessException
+                | RuntimeException exception) {
+            this.plugin
+                    .getSLF4JLogger()
+                    .error(
+                            "Failed to register condition '{}'.",
+                            conditionClass.getSimpleName(),
+                            exception);
         }
     }
 

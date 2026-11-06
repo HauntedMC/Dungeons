@@ -30,7 +30,10 @@ public final class DungeonRuleConfiguration extends YamlConfiguration {
             return value;
         }
         if (path.startsWith("rules.")) {
-            Object globalValue = this.globalConfig.get().get("global_rules." + path.substring("rules.".length()));
+            Object globalValue =
+                    this.globalConfig
+                            .get()
+                            .get("global_rules." + path.substring("rules.".length()));
             // Never expose global sections: creating a local override must create local sections.
             if (globalValue != null && !(globalValue instanceof ConfigurationSection)) {
                 return globalValue instanceof List<?> list ? new ArrayList<>(list) : globalValue;

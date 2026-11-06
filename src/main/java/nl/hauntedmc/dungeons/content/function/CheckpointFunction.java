@@ -108,7 +108,7 @@ public class CheckpointFunction extends DungeonFunction {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     /**
                      * Builds button.
                      */
@@ -129,17 +129,19 @@ public class CheckpointFunction extends DungeonFunction {
                         LangUtils.sendMessage(
                                 player,
                                 "editor.function.checkpoint.direction-set",
-                                LangUtils.placeholder("yaw", String.valueOf(CheckpointFunction.this.yaw)));
+                                LangUtils.placeholder(
+                                        "yaw", String.valueOf(CheckpointFunction.this.yaw)));
                     }
                 });
         this.menu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     /**
                      * Builds button.
                      */
                     @Override
                     public void buildButton() {
-                        if (CheckpointFunction.this.instance.as(BranchingEditableInstance.class) != null) {
+                        if (CheckpointFunction.this.instance.as(BranchingEditableInstance.class)
+                                != null) {
                             this.button = null;
                         } else {
                             this.button = new MenuButton(Material.LIME_BANNER);

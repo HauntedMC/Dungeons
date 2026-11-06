@@ -47,7 +47,8 @@ public abstract class DungeonEvent extends Event {
      *
      * @return handler list
      */
-    @NotNull public HandlerList getHandlers() {
+    @NotNull
+    public HandlerList getHandlers() {
         return HANDLERS_LIST;
     }
 

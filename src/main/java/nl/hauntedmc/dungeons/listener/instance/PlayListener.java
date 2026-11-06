@@ -99,7 +99,8 @@ public class PlayListener extends InstanceListener {
         }
 
         if (this.instance.getConfig().getBoolean("players.offline_kick.enabled", true)) {
-            BukkitRunnable tracker = this.instance.getOfflineTrackers().remove(player.getUniqueId());
+            BukkitRunnable tracker =
+                    this.instance.getOfflineTrackers().remove(player.getUniqueId());
             if (tracker != null) {
                 tracker.cancel();
                 if (!CommandUtils.hasPermissionSilent(player, "dungeons.vanish")) {
@@ -128,7 +129,9 @@ public class PlayListener extends InstanceListener {
                 DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
                 if (!playerSession.isDead()) {
                     playerSession.setDead(true);
-                    if (this.instance.getConfig().getBoolean("rules.combat.hide_death_messages", false)) {
+                    if (this.instance
+                            .getConfig()
+                            .getBoolean("rules.combat.hide_death_messages", false)) {
                         event.deathMessage(Component.empty());
                     }
 
@@ -156,15 +159,21 @@ public class PlayListener extends InstanceListener {
                                 boolean foundKeys = false;
                                 boolean foundDungeonItems = false;
 
-                                // Keys and dungeon items are moved to a surviving player instead of dropping on the
-                                // ground so progression-critical items cannot be lost to despawn or griefing.
+                                // Keys and dungeon items are moved to a surviving player instead of
+                                // dropping on the
+                                // ground so progression-critical items cannot be lost to despawn or
+                                // griefing.
                                 for (ItemStack item : inv) {
                                     if (ItemUtils.verifyKeyItem(item)) {
                                         inv.remove(item);
                                         event.getDrops().remove(item);
                                         if (!this.instance.getLivingPlayers().isEmpty()) {
                                             foundKeys = true;
-                                            target = this.instance.getLivingPlayers().getFirst().getPlayer();
+                                            target =
+                                                    this.instance
+                                                            .getLivingPlayers()
+                                                            .getFirst()
+                                                            .getPlayer();
                                             ItemUtils.giveOrDrop(target, item);
                                         }
                                     }
@@ -174,7 +183,11 @@ public class PlayListener extends InstanceListener {
                                         event.getDrops().remove(item);
                                         if (!this.instance.getLivingPlayers().isEmpty()) {
                                             foundDungeonItems = true;
-                                            target = this.instance.getLivingPlayers().getFirst().getPlayer();
+                                            target =
+                                                    this.instance
+                                                            .getLivingPlayers()
+                                                            .getFirst()
+                                                            .getPlayer();
                                             ItemUtils.giveOrDrop(target, item);
                                         }
                                     }
@@ -186,7 +199,11 @@ public class PlayListener extends InstanceListener {
                                     event.getDrops().remove(offhand);
                                     if (!this.instance.getLivingPlayers().isEmpty()) {
                                         foundKeys = true;
-                                        target = this.instance.getLivingPlayers().getFirst().getPlayer();
+                                        target =
+                                                this.instance
+                                                        .getLivingPlayers()
+                                                        .getFirst()
+                                                        .getPlayer();
                                         ItemUtils.giveOrDrop(target, offhand);
                                     }
                                 }
@@ -196,7 +213,11 @@ public class PlayListener extends InstanceListener {
                                     event.getDrops().remove(offhand);
                                     if (!this.instance.getLivingPlayers().isEmpty()) {
                                         foundDungeonItems = true;
-                                        target = this.instance.getLivingPlayers().getFirst().getPlayer();
+                                        target =
+                                                this.instance
+                                                        .getLivingPlayers()
+                                                        .getFirst()
+                                                        .getPlayer();
                                         ItemUtils.giveOrDrop(target, offhand);
                                     }
                                 }
@@ -206,14 +227,16 @@ public class PlayListener extends InstanceListener {
                                         this.instance.messagePlayers(
                                                 LangUtils.getMessage(
                                                         "instance.play.events.key-inheritance",
-                                                        LangUtils.placeholder("player", target.getName())));
+                                                        LangUtils.placeholder(
+                                                                "player", target.getName())));
                                     }
 
                                     if (foundDungeonItems) {
                                         this.instance.messagePlayers(
                                                 LangUtils.getMessage(
                                                         "instance.play.events.dungeon-item-inheritance",
-                                                        LangUtils.placeholder("player", target.getName())));
+                                                        LangUtils.placeholder(
+                                                                "player", target.getName())));
                                     }
                                 }
                             }
@@ -221,7 +244,8 @@ public class PlayListener extends InstanceListener {
                             if (this.instance.getDungeon().isCooldownOnLoseLives()
                                     && this.instance
                                             .getDungeon()
-                                            .shouldApplyAccessCooldown(this.instance, player.getUniqueId())) {
+                                            .shouldApplyAccessCooldown(
+                                                    this.instance, player.getUniqueId())) {
                                 this.instance.getDungeon().addAccessCooldown(player);
                             }
 
@@ -277,13 +301,15 @@ public class PlayListener extends InstanceListener {
                                                 RuntimeContext.plugin(),
                                                 () -> {
                                                     List<DungeonPlayerSession> players =
-                                                            new ArrayList<>(this.instance.getPlayers());
+                                                            new ArrayList<>(
+                                                                    this.instance.getPlayers());
                                                     players.forEach(this.instance::removePlayer);
                                                 },
                                                 1L);
                             } else {
                                 this.instance.messagePlayers(
-                                        LangUtils.getMessage("instance.play.events.all-lives-lost-and-spectating"));
+                                        LangUtils.getMessage(
+                                                "instance.play.events.all-lives-lost-and-spectating"));
                             }
                         }
                     } else {
@@ -507,7 +533,9 @@ public class PlayListener extends InstanceListener {
             }
 
             if (event.getCause() == TeleportCause.CONSUMABLE_EFFECT
-                    && !this.instance.getConfig().getBoolean("rules.movement.chorus_fruit", false)) {
+                    && !this.instance
+                            .getConfig()
+                            .getBoolean("rules.movement.chorus_fruit", false)) {
                 event.setCancelled(true);
                 LangUtils.sendMessage(player, "instance.play.events.chorus-fruit-deny");
             }
@@ -527,7 +555,9 @@ public class PlayListener extends InstanceListener {
 
             Location blockLoc = event.getBlock().getLocation();
             DungeonFunction function = this.instance.getFunctions().get(blockLoc);
-            if (function instanceof AllowBlockFunction func && func.isActive() && func.isAllowBucket()) {
+            if (function instanceof AllowBlockFunction func
+                    && func.isActive()
+                    && func.isAllowBucket()) {
                 event.setCancelled(!func.isAllowPlace());
             }
 
@@ -550,7 +580,9 @@ public class PlayListener extends InstanceListener {
 
             Location blockLoc = event.getBlock().getLocation();
             DungeonFunction function = this.instance.getFunctions().get(blockLoc);
-            if (function instanceof AllowBlockFunction func && func.isActive() && func.isAllowBucket()) {
+            if (function instanceof AllowBlockFunction func
+                    && func.isActive()
+                    && func.isAllowBucket()) {
                 event.setCancelled(!func.isAllowBreak());
             }
 
@@ -568,7 +600,9 @@ public class PlayListener extends InstanceListener {
         Location loc = event.getInventory().getLocation();
         if (loc != null) {
             if (loc.getWorld() == this.instance.getInstanceWorld()) {
-                if (!this.instance.getConfig().getBoolean("rules.items.allow_craft_banned", false)) {
+                if (!this.instance
+                        .getConfig()
+                        .getBoolean("rules.items.allow_craft_banned", false)) {
                     ItemStack resultItem = event.getRecipe().getResult();
                     if (ItemUtils.isItemBanned(this.instance.getDungeon(), resultItem)) {
                         event.setCancelled(true);
@@ -589,7 +623,9 @@ public class PlayListener extends InstanceListener {
     public void onPickupBannedItem(EntityPickupItemEvent event) {
         if (event.getEntity().getWorld() == this.instance.getInstanceWorld()) {
             if (event.getEntity() instanceof Player player) {
-                if (!this.instance.getConfig().getBoolean("rules.items.allow_pickup_banned", false)) {
+                if (!this.instance
+                        .getConfig()
+                        .getBoolean("rules.items.allow_pickup_banned", false)) {
                     ItemStack item = event.getItem().getItemStack();
                     if (ItemUtils.isItemBanned(this.instance.getDungeon(), item)) {
                         event.setCancelled(true);
@@ -653,7 +689,8 @@ public class PlayListener extends InstanceListener {
         if (event.getEntity() instanceof Player player) {
             if (event.getDamager() instanceof Player) {
                 if (player.getWorld() == this.instance.getInstanceWorld()) {
-                    event.setCancelled(!this.instance.getConfig().getBoolean("rules.combat.pvp", false));
+                    event.setCancelled(
+                            !this.instance.getConfig().getBoolean("rules.combat.pvp", false));
                 }
             }
         }
@@ -668,7 +705,8 @@ public class PlayListener extends InstanceListener {
             if (event.getDamager() instanceof Projectile projectile) {
                 if (projectile.getShooter() instanceof Player) {
                     if (player.getWorld() == this.instance.getInstanceWorld()) {
-                        event.setCancelled(!this.instance.getConfig().getBoolean("rules.combat.pvp", false));
+                        event.setCancelled(
+                                !this.instance.getConfig().getBoolean("rules.combat.pvp", false));
                     }
                 }
             }
@@ -684,7 +722,8 @@ public class PlayListener extends InstanceListener {
         if (player.getWorld() == this.instance.getInstanceWorld()) {
             boolean commandAllowed = false;
             if (!this.instance.getConfig().getBoolean("rules.commands.allow_all")) {
-                for (String cmd : this.instance.getConfig().getStringList("rules.commands.allow_list")) {
+                for (String cmd :
+                        this.instance.getConfig().getStringList("rules.commands.allow_list")) {
                     String trimmed = event.getMessage().replace("/", "");
                     if (trimmed.equals(cmd) || trimmed.startsWith(cmd + " ")) {
                         commandAllowed = true;
@@ -694,7 +733,8 @@ public class PlayListener extends InstanceListener {
             } else {
                 commandAllowed = true;
 
-                for (String deniedCommand : this.instance.getConfig().getStringList("rules.commands.deny_list")) {
+                for (String deniedCommand :
+                        this.instance.getConfig().getStringList("rules.commands.deny_list")) {
                     String trimmed = event.getMessage().replace("/", "");
                     if (trimmed.equals(deniedCommand) || trimmed.startsWith(deniedCommand + " ")) {
                         commandAllowed = false;

@@ -61,15 +61,15 @@ public class BranchingRoomDefinition {
     private final List<Connector> connectors = new ArrayList<>();
     private final Map<Location, DungeonFunction> functionsMapRelative = new HashMap<>();
 
-        private DungeonsRuntime runtime() {
+    private DungeonsRuntime runtime() {
         return this.dungeon.getRuntime();
     }
 
-        private DungeonsPlugin plugin() {
+    private DungeonsPlugin plugin() {
         return this.dungeon.getEnvironment().plugin();
     }
 
-        private org.slf4j.Logger logger() {
+    private org.slf4j.Logger logger() {
         return this.dungeon.getEnvironment().logger();
     }
 
@@ -104,7 +104,8 @@ public class BranchingRoomDefinition {
         if (editSession != null && editSession.getInstanceWorld() != null) {
             Bukkit.getScheduler()
                     .runTask(
-                            this.plugin(), () -> this.captureSchematic(editSession.getInstanceWorld(), true));
+                            this.plugin(),
+                            () -> this.captureSchematic(editSession.getInstanceWorld(), true));
         }
 
         RoomMenus.initializeRoomWhitelistMenu(dungeon, this);
@@ -208,24 +209,23 @@ public class BranchingRoomDefinition {
         return this.saveRoomAsync();
     }
 
-    @SuppressWarnings("unchecked")
-        public void loadFunctions() {
-        List<DungeonFunction> functions = (List<DungeonFunction>) this.roomConfig.getList("Functions");
+    public void loadFunctions() {
+        List<?> functions = this.roomConfig.getList("Functions");
         if (functions == null || functions.isEmpty()) {
             return;
         }
 
         int index = 0;
-        for (DungeonFunction function : functions) {
+        for (Object function : functions) {
             this.loadFunctionSafely(function, index++);
         }
     }
 
-        private void loadFunctionSafely(DungeonFunction function, int index) {
-        if (function == null) {
+    private void loadFunctionSafely(Object entry, int index) {
+        if (!(entry instanceof DungeonFunction function)) {
             this.logger()
                     .warn(
-                            "Skipping null function entry at index {} in room '{}' of dungeon '{}'.",
+                            "Skipping invalid or null function entry at index {} in room '{}' of dungeon '{}'.",
                             index,
                             this.namespace,
                             this.dungeon.getWorldName());
@@ -276,8 +276,14 @@ public class BranchingRoomDefinition {
                             this.dungeon.getWorldName(),
                             loc == null
                                     ? "<no-location>"
-                                    : (loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ()),
-                            root.getMessage() == null ? root.getClass().getSimpleName() : root.getMessage(),
+                                    : (loc.getBlockX()
+                                            + ","
+                                            + loc.getBlockY()
+                                            + ","
+                                            + loc.getBlockZ()),
+                            root.getMessage() == null
+                                    ? root.getClass().getSimpleName()
+                                    : root.getMessage(),
                             root);
         }
     }
@@ -467,11 +473,13 @@ public class BranchingRoomDefinition {
     public void loadRoom(File file) throws InvalidConfigurationException {
         this.roomConfig.load(file);
         Location firstCorner =
-                LocationUtils.readLocation(this.roomConfig.getConfigurationSection("Bounds.Corner1"));
+                LocationUtils.readLocation(
+                        this.roomConfig.getConfigurationSection("Bounds.Corner1"));
         Location secondCorner =
-                LocationUtils.readLocation(this.roomConfig.getConfigurationSection("Bounds.Corner2"));
+                LocationUtils.readLocation(
+                        this.roomConfig.getConfigurationSection("Bounds.Corner2"));
         if (firstCorner == null || secondCorner == null) {
-                        throw new InvalidConfigurationException(
+            throw new InvalidConfigurationException(
                     "Config for room " + this.namespace + " has invalid selection area!");
         }
 
@@ -502,7 +510,8 @@ public class BranchingRoomDefinition {
 
         this.weight = this.roomConfig.getDouble("Config.Weight", 1.0);
         this.spawn =
-                LocationUtils.readLocation(this.roomConfig.getConfigurationSection("Config.SpawnPoint"));
+                LocationUtils.readLocation(
+                        this.roomConfig.getConfigurationSection("Config.SpawnPoint"));
         if (this.spawn != null) {
             this.spawn.setWorld(null);
         }
@@ -519,7 +528,8 @@ public class BranchingRoomDefinition {
         }
         this.roomWhitelist.forEach(v -> v.setDungeon(this.dungeon));
 
-        ConfigurationSection connectorSection = this.roomConfig.getConfigurationSection("Connectors");
+        ConfigurationSection connectorSection =
+                this.roomConfig.getConfigurationSection("Connectors");
         if (connectorSection != null) {
             for (String path : connectorSection.getKeys(false)) {
                 Connector connector = this.roomConfig.get(Connector.class, "Connectors." + path);
@@ -538,7 +548,9 @@ public class BranchingRoomDefinition {
                     connector.setDoor(new ConnectorDoor(connector));
                 } else if (connector.getDoor().getNamespace() == null
                         || connector.getDoor().getNamespace().isBlank()) {
-                    connector.getDoor().setNamespace(ConnectorDoor.defaultNamespace(connector.getLocation()));
+                    connector
+                            .getDoor()
+                            .setNamespace(ConnectorDoor.defaultNamespace(connector.getLocation()));
                 }
                 this.connectors.add(connector);
             }
@@ -561,11 +573,13 @@ public class BranchingRoomDefinition {
         LocationUtils.writeLocation(
                 "Bounds.Corner1",
                 this.roomConfig,
-                                new Location(null, this.bounds.getMinX(), this.bounds.getMinY(), this.bounds.getMinZ()));
+                new Location(
+                        null, this.bounds.getMinX(), this.bounds.getMinY(), this.bounds.getMinZ()));
         LocationUtils.writeLocation(
                 "Bounds.Corner2",
                 this.roomConfig,
-                                new Location(null, this.bounds.getMaxX(), this.bounds.getMaxY(), this.bounds.getMaxZ()));
+                new Location(
+                        null, this.bounds.getMaxX(), this.bounds.getMaxY(), this.bounds.getMaxZ()));
         this.roomConfig.set("Config.Occurrences", this.occurrencesString);
         this.roomConfig.set("Config.Depth", this.depthString);
         this.roomConfig.set("Config.Weight", this.weight);
@@ -663,7 +677,7 @@ public class BranchingRoomDefinition {
         return result;
     }
 
-        private StructurePiece captureStructurePiece(World world) {
+    private StructurePiece captureStructurePiece(World world) {
         StructurePiece capturedSchematic = new StructurePiece();
 
         for (double x = this.bounds.getMinX(); x < this.bounds.getMaxX() + 1.0; x++) {
@@ -680,7 +694,7 @@ public class BranchingRoomDefinition {
         return capturedSchematic;
     }
 
-        private CompletableFuture<Boolean> writeSchematicAsync(StructurePiece capturedSchematic) {
+    private CompletableFuture<Boolean> writeSchematicAsync(StructurePiece capturedSchematic) {
         CompletableFuture<Boolean> result = new CompletableFuture<>();
         Runnable write =
                 () -> {
@@ -689,10 +703,13 @@ public class BranchingRoomDefinition {
                     try {
                         TextUtils.runTimed(
                                 "Saving structure " + this.namespace,
-                                () -> SchematicUtils.saveStructurePiece(this.schemFile, capturedSchematic));
+                                () ->
+                                        SchematicUtils.saveStructurePiece(
+                                                this.schemFile, capturedSchematic));
                     } catch (RuntimeException exception) {
                         success = false;
-                        Throwable cause = exception.getCause() == null ? exception : exception.getCause();
+                        Throwable cause =
+                                exception.getCause() == null ? exception : exception.getCause();
                         this.logger()
                                 .error(
                                         "Failed to save schematic '{}' for room '{}' in dungeon '{}'.",
@@ -714,7 +731,7 @@ public class BranchingRoomDefinition {
         return result;
     }
 
-        private void logCaptureFailure(String worldName, Throwable throwable) {
+    private void logCaptureFailure(String worldName, Throwable throwable) {
         Throwable root = throwable.getCause() == null ? throwable : throwable.getCause();
         this.logger()
                 .error(

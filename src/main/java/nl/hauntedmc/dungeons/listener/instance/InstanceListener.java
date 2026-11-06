@@ -62,7 +62,8 @@ public class InstanceListener {
             if (this.isTrackedInstancePresence(playerSession) && !playerSession.isDisconnecting()) {
                 this.instance.removePlayer(playerSession);
                 Bukkit.getScheduler()
-                        .runTaskLater(RuntimeContext.plugin(), this.instance::scheduleEmptyCleanup, 1L);
+                        .runTaskLater(
+                                RuntimeContext.plugin(), this.instance::scheduleEmptyCleanup, 1L);
             }
         }
     }
@@ -123,11 +124,13 @@ public class InstanceListener {
                             new BukkitRunnable() {
                                 public void run() {
                                     if (!player.isOnline()) {
-                                        if (!CommandUtils.hasPermissionSilent(player, "dungeons.vanish")) {
+                                        if (!CommandUtils.hasPermissionSilent(
+                                                player, "dungeons.vanish")) {
                                             InstanceListener.this.instance.messagePlayers(
                                                     LangUtils.getMessage(
                                                             "instance.play.events.player-kicked",
-                                                            LangUtils.placeholder("player", player.getName())));
+                                                            LangUtils.placeholder(
+                                                                    "player", player.getName())));
                                         }
 
                                         InstanceListener.this.instance.removePlayer(playerSession);
@@ -140,7 +143,8 @@ public class InstanceListener {
                     }
                     runnable.runTaskLater(
                             RuntimeContext.plugin(),
-                            DungeonConfigView.getOfflineKickDelaySeconds(this.instance.getConfig()) * 20L);
+                            DungeonConfigView.getOfflineKickDelaySeconds(this.instance.getConfig())
+                                    * 20L);
                 }
 
                 playerSession.setDisconnecting(false);
@@ -412,7 +416,8 @@ public class InstanceListener {
         }
 
         Location respawnLocation = player.getRespawnLocation();
-        if (respawnLocation != null && respawnLocation.getWorld() != this.instance.getInstanceWorld()) {
+        if (respawnLocation != null
+                && respawnLocation.getWorld() != this.instance.getInstanceWorld()) {
             return respawnLocation.clone();
         }
 

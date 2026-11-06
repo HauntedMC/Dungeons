@@ -66,12 +66,14 @@ public final class GeneratorConfigMigration {
     private static ConfigurationSection requireSection(FileConfiguration config, String path)
             throws InvalidConfigurationException {
         if (config.contains(path) && !config.isConfigurationSection(path)) {
-            throw new InvalidConfigurationException("Expected a configuration section at '" + path + "'.");
+            throw new InvalidConfigurationException(
+                    "Expected a configuration section at '" + path + "'.");
         }
         return config.getConfigurationSection(path);
     }
 
-    private static void copyMissing(ConfigurationSection source, FileConfiguration target, String prefix) {
+    private static void copyMissing(
+            ConfigurationSection source, FileConfiguration target, String prefix) {
         if (source == null) {
             return;
         }

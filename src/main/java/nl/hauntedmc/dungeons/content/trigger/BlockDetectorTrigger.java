@@ -128,7 +128,7 @@ public class BlockDetectorTrigger extends DungeonTrigger {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -154,7 +154,7 @@ public class BlockDetectorTrigger extends DungeonTrigger {
                     }
                 });
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -201,7 +201,7 @@ public class BlockDetectorTrigger extends DungeonTrigger {
 
                             Material mat = Material.valueOf(matString);
                             if (!mat.isBlock()) {
-                                                                throw new IllegalArgumentException("Invalid block");
+                                throw new IllegalArgumentException("Invalid block");
                             }
 
                             BlockDetectorTrigger.this.material = matString;
@@ -210,13 +210,16 @@ public class BlockDetectorTrigger extends DungeonTrigger {
                             LangUtils.sendMessage(
                                     player,
                                     "editor.trigger.block-detector.block-set",
-                                    LangUtils.placeholder("block", BlockDetectorTrigger.this.material));
+                                    LangUtils.placeholder(
+                                            "block", BlockDetectorTrigger.this.material));
                         } catch (IllegalArgumentException exception) {
-                            LangUtils.sendMessage(player, "editor.trigger.block-detector.invalid-material");
+                            LangUtils.sendMessage(
+                                    player, "editor.trigger.block-detector.invalid-material");
                             MessageUtils.sendClickableLink(
                                     player,
                                     RuntimeContext.logPrefix()
-                                            + ColorUtils.colorize("&bClick here to view a list of valid materials."),
+                                            + ColorUtils.colorize(
+                                                    "&bClick here to view a list of valid materials."),
                                     "https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Material.html");
                         }
                     }
@@ -230,7 +233,7 @@ public class BlockDetectorTrigger extends DungeonTrigger {
         try {
             Material configured = Material.valueOf(this.material.toUpperCase(Locale.ROOT));
             if (!configured.isBlock()) {
-                                throw new IllegalArgumentException("Configured material is not a block");
+                throw new IllegalArgumentException("Configured material is not a block");
             }
 
             return configured;

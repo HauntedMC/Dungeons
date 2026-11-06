@@ -93,31 +93,31 @@ public abstract class DungeonInstance {
         this.hologramManager = new HologramManager();
     }
 
-        public final DungeonsRuntime getRuntime() {
+    public final DungeonsRuntime getRuntime() {
         return this.dungeon.getRuntime();
     }
 
-        protected final DungeonsRuntime runtime() {
+    protected final DungeonsRuntime runtime() {
         return this.dungeon.getRuntime();
     }
 
-        public final PluginEnvironment getEnvironment() {
+    public final PluginEnvironment getEnvironment() {
         return this.dungeon.getEnvironment();
     }
 
-        protected final DungeonsPlugin plugin() {
+    protected final DungeonsPlugin plugin() {
         return this.getEnvironment().plugin();
     }
 
-        protected final org.slf4j.Logger logger() {
+    protected final org.slf4j.Logger logger() {
         return this.getEnvironment().logger();
     }
 
-        protected final PlayerSessionRegistry playerSessions() {
+    protected final PlayerSessionRegistry playerSessions() {
         return this.getRuntime().playerSessions();
     }
 
-        protected final ActiveInstanceRegistry activeInstances() {
+    protected final ActiveInstanceRegistry activeInstances() {
         return this.getRuntime().activeInstances();
     }
 
@@ -155,19 +155,18 @@ public abstract class DungeonInstance {
         this.id = this.dungeon.getInstances().size();
         File instFolder = this.getUniqueWorldName();
         FileUtils.copyDirectory(this.getDungeon().getFolder(), instFolder);
-                new File(instFolder, "config.yml").delete();
-                new File(instFolder, "uid.dat").delete();
+        new File(instFolder, "config.yml").delete();
+        new File(instFolder, "uid.dat").delete();
     }
 
-        protected File getUniqueWorldName() {
+    protected File getUniqueWorldName() {
         this.instanceWorldName = this.getDungeon().getWorldName() + "_" + this.id;
         File instFolder = new File(Bukkit.getWorldContainer(), this.instanceWorldName);
         if (!instFolder.exists()) {
             return instFolder;
-        } else {
-            this.id++;
-            return this.getUniqueWorldName();
         }
+        this.id++;
+        return this.getUniqueWorldName();
     }
 
     /**
@@ -234,7 +233,8 @@ public abstract class DungeonInstance {
 
             this.applyWorldRules();
             this.clearTaggedHologramsOnStart();
-            // Game data is only loaded after the world exists and its baseline rules are configured so
+            // Game data is only loaded after the world exists and its baseline rules are configured
+            // so
             // functions, triggers, and entities see the final runtime environment.
             this.loadGame();
         } catch (Throwable throwable) {
@@ -285,9 +285,9 @@ public abstract class DungeonInstance {
         this.onApplyWorldRules();
     }
 
-        protected void onApplyWorldRules() {}
+    protected void onApplyWorldRules() {}
 
-        protected void loadGame() {
+    protected void loadGame() {
         this.startLocation = this.dungeon.getStartSpawn();
         if (this.startLocation == null) {
             this.startLocation = this.instanceWorld.getSpawnLocation();
@@ -302,15 +302,15 @@ public abstract class DungeonInstance {
         this.signalInitializationComplete();
     }
 
-        protected void onLoadGame() {}
+    protected void onLoadGame() {}
 
-        protected void onInstanceReady() {}
+    protected void onInstanceReady() {}
 
-        protected final void signalInitializationComplete() {
+    protected final void signalInitializationComplete() {
         this.latch.countDown();
     }
 
-        public void dispose() {
+    public void dispose() {
         if (!this.disposing) {
             if (this.players.isEmpty()) {
                 if (this.instanceWorld.getPlayerCount() <= 0) {
@@ -344,31 +344,48 @@ public abstract class DungeonInstance {
                                                 this.plugin(),
                                                 () -> {
                                                     try {
-                                                        CountDownLatch latch = new CountDownLatch(1);
-                                                        File worldFolder = this.instanceWorld.getWorldFolder();
-                                                        String worldName = this.instanceWorld.getName();
+                                                        CountDownLatch latch =
+                                                                new CountDownLatch(1);
+                                                        File worldFolder =
+                                                                this.instanceWorld.getWorldFolder();
+                                                        String worldName =
+                                                                this.instanceWorld.getName();
                                                         this.saveWorld(latch);
                                                         TextUtils.runTimed(
-                                                                "Unloading dungeon world " + worldName,
-                                                                () -> Bukkit.unloadWorld(this.instanceWorld, false));
+                                                                "Unloading dungeon world "
+                                                                        + worldName,
+                                                                () ->
+                                                                        Bukkit.unloadWorld(
+                                                                                this.instanceWorld,
+                                                                                false));
                                                         if (this.plugin().isEnabled()) {
                                                             Bukkit.getScheduler()
                                                                     .runTaskLaterAsynchronously(
                                                                             this.plugin(),
-                                                                            () -> this.cleanWorldFiles(latch, worldFolder, worldName),
+                                                                            () ->
+                                                                                    this
+                                                                                            .cleanWorldFiles(
+                                                                                                    latch,
+                                                                                                    worldFolder,
+                                                                                                    worldName),
                                                                             100L);
                                                         } else {
-                                                            this.cleanWorldFiles(latch, worldFolder, worldName);
+                                                            this.cleanWorldFiles(
+                                                                    latch, worldFolder, worldName);
                                                         }
                                                     } catch (Exception exception) {
-                                                        if (Bukkit.getWorld(this.instanceWorld.getName()) == null) {
+                                                        if (Bukkit.getWorld(
+                                                                        this.instanceWorld
+                                                                                .getName())
+                                                                == null) {
                                                             return;
                                                         }
 
                                                         this.logger()
                                                                 .error(
                                                                         "Failed to unload instance world '{}' for dungeon '{}'. The world is still loaded after disposal.",
-                                                                        this.instanceWorld.getName(),
+                                                                        this.instanceWorld
+                                                                                .getName(),
                                                                         this.dungeon.getWorldName(),
                                                                         exception);
                                                     }
@@ -388,13 +405,13 @@ public abstract class DungeonInstance {
         }
     }
 
-        public abstract void onDispose();
+    public abstract void onDispose();
 
-        protected int resolveCleanupDelayTicks() {
+    protected int resolveCleanupDelayTicks() {
         return Math.max(0, this.dungeon.getConfig().getInt("runs.cleanup_delay_ticks", 0));
     }
 
-        protected void cleanWorldFiles(CountDownLatch latch, File worldFolder, String worldName) {
+    protected void cleanWorldFiles(CountDownLatch latch, File worldFolder, String worldName) {
         try {
             if (this.isEditInstance()) {
                 latch.await();
@@ -419,7 +436,7 @@ public abstract class DungeonInstance {
         this.instanceWorld = null;
     }
 
-        public void addPlayer(DungeonPlayerSession playerSession) {
+    public void addPlayer(DungeonPlayerSession playerSession) {
         if (!this.players.contains(playerSession)) {
             Player player = playerSession.getPlayer();
             this.players.add(playerSession);
@@ -433,11 +450,13 @@ public abstract class DungeonInstance {
                     .runTaskLater(
                             this.plugin(),
                             () -> {
-                                if (!this.config.getBoolean("players.keep_on_entry.inventory", true)) {
+                                if (!this.config.getBoolean(
+                                        "players.keep_on_entry.inventory", true)) {
                                     player.getInventory().clear();
                                 }
 
-                                if (!this.config.getBoolean("players.keep_on_entry.health", false)) {
+                                if (!this.config.getBoolean(
+                                        "players.keep_on_entry.health", false)) {
                                     player.setHealth(EntityUtils.getMaxHealth(player));
                                 }
 
@@ -445,13 +464,15 @@ public abstract class DungeonInstance {
                                     player.setFoodLevel(30);
                                 }
 
-                                if (!DungeonConfigView.shouldKeepPotionEffectsOnEntry(this.config)) {
+                                if (!DungeonConfigView.shouldKeepPotionEffectsOnEntry(
+                                        this.config)) {
                                     for (PotionEffect effect : player.getActivePotionEffects()) {
                                         player.removePotionEffect(effect.getType());
                                     }
                                 }
 
-                                if (!this.config.getBoolean("players.keep_on_entry.experience", true)) {
+                                if (!this.config.getBoolean(
+                                        "players.keep_on_entry.experience", true)) {
                                     player.setExp(0.0F);
                                     player.setLevel(0);
                                 }
@@ -460,11 +481,11 @@ public abstract class DungeonInstance {
         }
     }
 
-        public void removePlayer(DungeonPlayerSession playerSession) {
+    public void removePlayer(DungeonPlayerSession playerSession) {
         this.removePlayer(playerSession, true);
     }
 
-        public void removePlayer(DungeonPlayerSession playerSession, boolean force) {
+    public void removePlayer(DungeonPlayerSession playerSession, boolean force) {
         Player player = playerSession.getPlayer();
         if (!this.players.contains(playerSession)) {
             if (playerSession.getInstance() == this
@@ -513,7 +534,9 @@ public abstract class DungeonInstance {
                     if (ItemUtils.verifyDungeonItem(item)) {
                         inv.remove(item);
                         if (!this.players.isEmpty()
-                                && this.dungeon.getConfig().getBoolean("players.transfer_dungeon_items", true)) {
+                                && this.dungeon
+                                        .getConfig()
+                                        .getBoolean("players.transfer_dungeon_items", true)) {
                             foundDungeonItems = true;
                             target = this.players.getFirst().getPlayer();
                             ItemUtils.giveOrDrop(target, item);
@@ -534,7 +557,9 @@ public abstract class DungeonInstance {
                 if (ItemUtils.verifyDungeonItem(offhand)) {
                     inv.setItemInOffHand(null);
                     if (!this.players.isEmpty()
-                            && this.dungeon.getConfig().getBoolean("players.transfer_dungeon_items", true)) {
+                            && this.dungeon
+                                    .getConfig()
+                                    .getBoolean("players.transfer_dungeon_items", true)) {
                         foundDungeonItems = true;
                         target = this.players.getFirst().getPlayer();
                         ItemUtils.giveOrDrop(target, offhand);
@@ -571,43 +596,43 @@ public abstract class DungeonInstance {
         }
     }
 
-        public void messagePlayers(String message) {
+    public void messagePlayers(String message) {
         for (DungeonPlayerSession playerSession : this.players) {
             playerSession.getPlayer().sendMessage(message);
         }
     }
 
-        public void updateHologram(Location loc, float range, String text, boolean isLabel) {
+    public void updateHologram(Location loc, float range, String text, boolean isLabel) {
         if (this.hologramManager != null) {
             this.hologramManager.updateHologram(loc, range, text, isLabel);
         }
     }
 
-        public void removeHologram(Location loc) {
+    public void removeHologram(Location loc) {
         if (this.hologramManager != null) {
             this.hologramManager.removeHologram(loc);
         }
     }
 
-        public void showHologram(Location loc, float range) {
+    public void showHologram(Location loc, float range) {
         if (this.hologramManager != null) {
             this.hologramManager.showHologram(loc, range);
         }
     }
 
-        public void hideHologram(Location loc) {
+    public void hideHologram(Location loc) {
         if (this.hologramManager != null) {
             this.hologramManager.hideHologram(loc);
         }
     }
 
-        public void clearHolograms() {
+    public void clearHolograms() {
         if (this.hologramManager != null) {
             this.hologramManager.clearAllHolograms();
         }
     }
 
-        public void clearTaggedHologramsOnStart() {
+    public void clearTaggedHologramsOnStart() {
         if (this.instanceWorld == null) {
             return;
         }
@@ -623,27 +648,30 @@ public abstract class DungeonInstance {
         }
     }
 
-        public boolean isPlayInstance() {
+    public boolean isPlayInstance() {
         return this instanceof PlayableInstance;
     }
 
-        public boolean isEditInstance() {
+    public boolean isEditInstance() {
         return this instanceof EditableInstance;
     }
 
-    @Nullable public PlayableInstance asPlayInstance() {
+    @Nullable
+    public PlayableInstance asPlayInstance() {
         return this.isPlayInstance() ? (PlayableInstance) this : null;
     }
 
-    @Nullable public EditableInstance asEditInstance() {
+    @Nullable
+    public EditableInstance asEditInstance() {
         return this.isEditInstance() ? (EditableInstance) this : null;
     }
 
-    @Nullable public <T extends DungeonInstance> T as(Class<T> clazz) {
-        return (T) (clazz.isInstance(this) ? this : null);
+    @Nullable
+    public <T extends DungeonInstance> T as(Class<T> clazz) {
+        return clazz.isInstance(this) ? clazz.cast(this) : null;
     }
 
-        public void scheduleEmptyCleanup() {
+    public void scheduleEmptyCleanup() {
         if (!this.players.isEmpty()) {
             return;
         }
@@ -655,112 +683,115 @@ public abstract class DungeonInstance {
         }
     }
 
-        public void saveWorld() {}
+    public void saveWorld() {}
 
-        public void saveWorld(@Nullable CountDownLatch latch) {}
+    public void saveWorld(@Nullable CountDownLatch latch) {}
 
-        public void registerTriggerListener(DungeonTrigger element) {
+    public void registerTriggerListener(DungeonTrigger element) {
         Class<? extends DungeonTrigger> elementClazz = element.getClass();
         List<DungeonTrigger> elements =
                 this.triggerListeners.computeIfAbsent(elementClazz, k -> new ArrayList<>());
         elements.add(element);
     }
 
-        public void unregisterTriggerListener(DungeonTrigger element) {
+    public void unregisterTriggerListener(DungeonTrigger element) {
         List<DungeonTrigger> elements = this.triggerListeners.get(element.getClass());
         if (elements != null) {
             elements.remove(element);
         }
     }
 
-    @Nullable public List<DungeonTrigger> getTriggerListeners(Class<? extends DungeonTrigger> type) {
+    @Nullable
+    public List<DungeonTrigger> getTriggerListeners(Class<? extends DungeonTrigger> type) {
         return this.triggerListeners.get(type);
     }
 
-        public void registerFunctionListener(DungeonFunction element) {
+    public void registerFunctionListener(DungeonFunction element) {
         Class<? extends DungeonFunction> elementClazz = element.getClass();
         List<DungeonFunction> elements =
                 this.functionListeners.computeIfAbsent(elementClazz, k -> new ArrayList<>());
         elements.add(element);
     }
 
-        public void unregisterFunctionListener(DungeonFunction element) {
+    public void unregisterFunctionListener(DungeonFunction element) {
         List<DungeonFunction> elements = this.functionListeners.get(element.getClass());
         if (elements != null) {
             elements.remove(element);
         }
     }
 
-    @Nullable public List<DungeonFunction> getFunctionListeners(Class<? extends DungeonFunction> type) {
+    @Nullable
+    public List<DungeonFunction> getFunctionListeners(Class<? extends DungeonFunction> type) {
         return this.functionListeners.get(type);
     }
 
-        public FileConfiguration getConfig() {
+    public FileConfiguration getConfig() {
         return this.config;
     }
 
-        public DungeonDefinition getDungeon() {
+    public DungeonDefinition getDungeon() {
         return this.dungeon;
     }
 
-    @Nullable public UUID getStartedTeamLeaderId() {
+    @Nullable
+    public UUID getStartedTeamLeaderId() {
         return this.startedTeamLeaderId;
     }
 
-        public void setStartedTeamLeaderId(@Nullable UUID startedTeamLeaderId) {
+    public void setStartedTeamLeaderId(@Nullable UUID startedTeamLeaderId) {
         this.startedTeamLeaderId = startedTeamLeaderId;
     }
 
-        public World getInstanceWorld() {
+    public World getInstanceWorld() {
         return this.instanceWorld;
     }
 
-        public InstanceListener getListener() {
+    public InstanceListener getListener() {
         return this.listener;
     }
 
-        public Map<Location, DungeonFunction> getFunctions() {
+    public Map<Location, DungeonFunction> getFunctions() {
         return this.functions;
     }
 
-        public Map<Location, RewardFunction> getRewardFunctions() {
+    public Map<Location, RewardFunction> getRewardFunctions() {
         return this.rewardFunctions;
     }
 
-        public HologramManager getHologramManager() {
+    public HologramManager getHologramManager() {
         return this.hologramManager;
     }
 
-        public Map<Class<? extends DungeonTrigger>, List<DungeonTrigger>> getTriggerListeners() {
+    public Map<Class<? extends DungeonTrigger>, List<DungeonTrigger>> getTriggerListeners() {
         return this.triggerListeners;
     }
 
-        public Map<Class<? extends DungeonFunction>, List<DungeonFunction>> getFunctionListeners() {
+    public Map<Class<? extends DungeonFunction>, List<DungeonFunction>> getFunctionListeners() {
         return this.functionListeners;
     }
 
-        public List<DungeonPlayerSession> getPlayers() {
+    public List<DungeonPlayerSession> getPlayers() {
         return this.players;
     }
 
-        public Location getStartLoc() {
+    public Location getStartLoc() {
         return this.startLocation;
     }
 
-        public boolean awaitInitialization(long timeout, java.util.concurrent.TimeUnit unit)
+    public boolean awaitInitialization(long timeout, java.util.concurrent.TimeUnit unit)
             throws InterruptedException {
         return this.latch.await(timeout, unit);
     }
 
-        public boolean isReady() {
+    public boolean isReady() {
         return this.ready;
     }
 
-        public boolean hasLoadFailed() {
+    public boolean hasLoadFailed() {
         return this.loadFailed;
     }
 
-        public void cleanupPendingWorldFolder() {
+    public void cleanupPendingWorldFolder() {
         if (this.instanceWorld != null
                 || this.instanceWorldName == null
                 || this.instanceWorldName.isBlank()) {

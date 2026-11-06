@@ -1,6 +1,8 @@
 package nl.hauntedmc.dungeons.content.function.meta;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
@@ -107,7 +109,8 @@ public class RepeaterFunction extends CompositeFunction {
      * Performs run function.
      */
     @Override
-    public void runFunction(final TriggerFireEvent triggerEvent, List<DungeonPlayerSession> targets) {
+    public void runFunction(
+            final TriggerFireEvent triggerEvent, List<DungeonPlayerSession> targets) {
         if (this.function == null) {
             RuntimeContext.plugin()
                     .getSLF4JLogger()
@@ -137,7 +140,7 @@ public class RepeaterFunction extends CompositeFunction {
                 this.resolveNestedFunctionTargets(this.function, triggerEvent, targets);
 
         this.repeater =
-                                new BukkitRunnable() {
+                new BukkitRunnable() {
                     /**
                      * Performs run.
                      */
@@ -146,7 +149,8 @@ public class RepeaterFunction extends CompositeFunction {
                             RepeaterFunction.this.executeNestedFunction(
                                     RepeaterFunction.this.function, triggerEvent, functionTargets);
                         } else {
-                            if (RepeaterFunction.this.repeatCount >= RepeaterFunction.this.maxRepeats) {
+                            if (RepeaterFunction.this.repeatCount
+                                    >= RepeaterFunction.this.maxRepeats) {
                                 this.cancel();
                                 if (RepeaterFunction.this.trigger != null
                                         && RepeaterFunction.this.trigger.isAllowRetrigger()) {
@@ -183,7 +187,7 @@ public class RepeaterFunction extends CompositeFunction {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     /**
                      * Builds button.
                      */
@@ -203,7 +207,7 @@ public class RepeaterFunction extends CompositeFunction {
                     }
                 });
         this.menu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     /**
                      * Builds button.
                      */
@@ -219,7 +223,8 @@ public class RepeaterFunction extends CompositeFunction {
                     @Override
                     public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
-                        DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                        DungeonPlayerSession playerSession =
+                                RuntimeContext.playerSessions().get(player);
                         if (RepeaterFunction.this.function != null) {
                             playerSession.showHotbar(RepeaterFunction.this.function.getMenu());
                         } else {
@@ -228,7 +233,7 @@ public class RepeaterFunction extends CompositeFunction {
                     }
                 });
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -258,12 +263,13 @@ public class RepeaterFunction extends CompositeFunction {
                             LangUtils.sendMessage(
                                     player,
                                     "editor.function.repeater.delay-set",
-                                    LangUtils.placeholder("delay", String.valueOf(RepeaterFunction.this.delay)));
+                                    LangUtils.placeholder(
+                                            "delay", String.valueOf(RepeaterFunction.this.delay)));
                         }
                     }
                 });
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -288,18 +294,20 @@ public class RepeaterFunction extends CompositeFunction {
                     @Override
                     public void onInput(Player player, String message) {
                         Optional<Integer> value = InputUtils.readIntegerInput(player, message);
-                        RepeaterFunction.this.interval = value.orElse(RepeaterFunction.this.interval);
+                        RepeaterFunction.this.interval =
+                                value.orElse(RepeaterFunction.this.interval);
                         if (value.isPresent()) {
                             LangUtils.sendMessage(
                                     player,
                                     "editor.function.repeater.interval-set",
                                     LangUtils.placeholder(
-                                            "interval", String.valueOf(RepeaterFunction.this.interval)));
+                                            "interval",
+                                            String.valueOf(RepeaterFunction.this.interval)));
                         }
                     }
                 });
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -324,13 +332,15 @@ public class RepeaterFunction extends CompositeFunction {
                     @Override
                     public void onInput(Player player, String message) {
                         Optional<Integer> value = InputUtils.readIntegerInput(player, message);
-                        RepeaterFunction.this.maxRepeats = value.orElse(RepeaterFunction.this.maxRepeats);
+                        RepeaterFunction.this.maxRepeats =
+                                value.orElse(RepeaterFunction.this.maxRepeats);
                         if (value.isPresent()) {
                             LangUtils.sendMessage(
                                     player,
                                     "editor.function.repeater.max-repeats-set",
                                     LangUtils.placeholder(
-                                            "max_repeats", String.valueOf(RepeaterFunction.this.maxRepeats)));
+                                            "max_repeats",
+                                            String.valueOf(RepeaterFunction.this.maxRepeats)));
                         }
                     }
                 });

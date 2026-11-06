@@ -1,5 +1,6 @@
 package nl.hauntedmc.dungeons.gui.menu;
 
+import java.util.Locale;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.Map;
@@ -42,7 +43,7 @@ public class EditorMenus {
     public static void initializeFunctionMenu() {
         GuiWindow gui = new GuiWindow("functionmenu", 27, "&8Select a Function");
         Button catButton =
-                                new Button("category_dungeon", Material.MOSSY_COBBLESTONE, "&6Dungeon Functions");
+                new Button("category_dungeon", Material.MOSSY_COBBLESTONE, "&6Dungeon Functions");
         catButton.addLore(ColorUtils.colorize("&eFunctions relating to general"));
         catButton.addLore(ColorUtils.colorize("&edungeon behaviour."));
         catButton.addLore(ColorUtils.colorize(""));
@@ -100,10 +101,12 @@ public class EditorMenus {
                 "click",
                 event -> {
                     Player player = (Player) event.getWhoClicked();
-                    DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                    DungeonPlayerSession playerSession =
+                            RuntimeContext.playerSessions().get(player);
                     DungeonInstance instance = playerSession.getInstance();
                     if (instance != null) {
-                        BranchingEditableInstance branchingEdit = instance.as(BranchingEditableInstance.class);
+                        BranchingEditableInstance branchingEdit =
+                                instance.as(BranchingEditableInstance.class);
                         if (branchingEdit == null) {
                             LangUtils.sendMessage(player, "menus.functions.branching-only");
                         } else {
@@ -128,10 +131,12 @@ public class EditorMenus {
                 });
 
         for (FunctionCategory category : FunctionCategory.values()) {
-            String catName = category.name().toLowerCase();
+            String catName = category.name().toLowerCase(Locale.ROOT);
             GuiWindow gui =
-                                        new GuiWindow(
-                            "functions_" + catName, 27, "&8" + TextUtils.humanize(catName) + " Functions");
+                    new GuiWindow(
+                            "functions_" + catName,
+                            27,
+                            "&8" + TextUtils.humanize(catName) + " Functions");
             gui.addButton(0, backButton);
             int i = 1;
 
@@ -145,7 +150,8 @@ public class EditorMenus {
                             Player player = (Player) event.getWhoClicked();
                             DungeonPlayerSession playerSession =
                                     RuntimeContext.playerSessions().get(player);
-                            EditableInstance instance = playerSession.getInstance().asEditInstance();
+                            EditableInstance instance =
+                                    playerSession.getInstance().asEditInstance();
                             if (instance != null) {
                                 try {
                                     if (playerSession.getTargetLocation() == null
@@ -164,7 +170,8 @@ public class EditorMenus {
                                         player.closeInventory();
                                         playerSession.setTargetLocation(null);
                                         if (playerSession.getSavedHotbar() == null) {
-                                            playerSession.captureAndShowHotbar(newFunction.getMenu());
+                                            playerSession.captureAndShowHotbar(
+                                                    newFunction.getMenu());
                                         } else {
                                             playerSession.showHotbar(newFunction.getMenu());
                                         }
@@ -179,7 +186,8 @@ public class EditorMenus {
                                                     .newInstance();
                                     playerSession.setActiveFunction(function);
                                     DungeonDefinition dungeon = instance.getDungeon();
-                                    dungeon.addFunction(playerSession.getTargetLocation(), function);
+                                    dungeon.addFunction(
+                                            playerSession.getTargetLocation(), function);
                                     instance.trackEditorFunction(function);
                                     instance.addFunctionLabel(function);
                                     function.setInstance(instance);
@@ -214,7 +222,8 @@ public class EditorMenus {
                 "click",
                 clickEvent -> {
                     Player player = (Player) clickEvent.getWhoClicked();
-                    DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                    DungeonPlayerSession playerSession =
+                            RuntimeContext.playerSessions().get(player);
                     DungeonFunction function = playerSession.getActiveFunction();
                     if (function == null) {
                         player.closeInventory();
@@ -226,7 +235,8 @@ public class EditorMenus {
                         function.setTrigger(null);
                     } else if (function.isRequiresTrigger()) {
                         LangUtils.sendMessage(player, "menus.functions.requires-trigger");
-                        player.playSound(player.getLocation(), "entity.enderman.teleport", 0.5F, 0.5F);
+                        player.playSound(
+                                player.getLocation(), "entity.enderman.teleport", 0.5F, 0.5F);
                         return;
                     }
 
@@ -303,10 +313,12 @@ public class EditorMenus {
                 "click",
                 event -> {
                     Player player = (Player) event.getWhoClicked();
-                    DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                    DungeonPlayerSession playerSession =
+                            RuntimeContext.playerSessions().get(player);
                     DungeonInstance instance = playerSession.getInstance();
                     if (instance != null) {
-                        BranchingEditableInstance branchingEdit = instance.as(BranchingEditableInstance.class);
+                        BranchingEditableInstance branchingEdit =
+                                instance.as(BranchingEditableInstance.class);
                         if (branchingEdit == null) {
                             LangUtils.sendMessage(player, "menus.triggers.branching-only");
                         } else {
@@ -320,7 +332,8 @@ public class EditorMenus {
                 "checktrig",
                 event -> {
                     Player player = (Player) event.getPlayer();
-                    DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                    DungeonPlayerSession playerSession =
+                            RuntimeContext.playerSessions().get(player);
                     DungeonFunction function = playerSession.getActiveFunction();
                     if (function == null) {
                         return;
@@ -357,10 +370,12 @@ public class EditorMenus {
                 });
 
         for (TriggerCategory category : TriggerCategory.values()) {
-            String catName = category.name().toLowerCase();
+            String catName = category.name().toLowerCase(Locale.ROOT);
             GuiWindow gui =
-                                        new GuiWindow(
-                            "triggers_" + catName, 27, "&8" + TextUtils.humanize(catName) + " Triggers");
+                    new GuiWindow(
+                            "triggers_" + catName,
+                            27,
+                            "&8" + TextUtils.humanize(catName) + " Triggers");
             gui.addButton(0, backButton);
             int i = 1;
 
@@ -374,7 +389,8 @@ public class EditorMenus {
                             Player player = (Player) event.getWhoClicked();
                             DungeonPlayerSession playerSession =
                                     RuntimeContext.playerSessions().get(player);
-                            EditableInstance instance = playerSession.getInstance().asEditInstance();
+                            EditableInstance instance =
+                                    playerSession.getInstance().asEditInstance();
                             if (instance != null) {
                                 try {
                                     DungeonTrigger parentTrigger = playerSession.getActiveTrigger();
@@ -461,7 +477,8 @@ public class EditorMenus {
                 "populate",
                 event -> {
                     Player player = (Player) event.getPlayer();
-                    DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                    DungeonPlayerSession playerSession =
+                            RuntimeContext.playerSessions().get(player);
                     if (playerSession.getActiveTrigger() instanceof KeyItemTrigger trigger) {
                         Inventory inv = event.getInventory();
                         inv.setItem(4, trigger.getItem());
@@ -471,7 +488,8 @@ public class EditorMenus {
                 "save",
                 event -> {
                     Player player = (Player) event.getPlayer();
-                    DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                    DungeonPlayerSession playerSession =
+                            RuntimeContext.playerSessions().get(player);
                     if (playerSession.getActiveTrigger() instanceof KeyItemTrigger trigger) {
                         Inventory inv = event.getInventory();
                         ItemStack savedItem = inv.getItem(4);
@@ -498,7 +516,8 @@ public class EditorMenus {
                 "populate",
                 event -> {
                     Player player = (Player) event.getPlayer();
-                    DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                    DungeonPlayerSession playerSession =
+                            RuntimeContext.playerSessions().get(player);
                     if (playerSession.getActiveFunction() instanceof GiveItemFunction function) {
                         Inventory inv = event.getInventory();
                         inv.setItem(4, function.getItem());
@@ -508,7 +527,8 @@ public class EditorMenus {
                 "save",
                 event -> {
                     Player player = (Player) event.getPlayer();
-                    DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                    DungeonPlayerSession playerSession =
+                            RuntimeContext.playerSessions().get(player);
                     if (playerSession.getActiveFunction() instanceof GiveItemFunction function) {
                         Inventory inv = event.getInventory();
                         ItemStack savedItem = inv.getItem(4);
@@ -539,7 +559,8 @@ public class EditorMenus {
                     "click",
                     event -> {
                         Player player = (Player) event.getWhoClicked();
-                        DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                        DungeonPlayerSession playerSession =
+                                RuntimeContext.playerSessions().get(player);
 
                         try {
                             DungeonTrigger trigger = playerSession.getActiveTrigger();
@@ -583,7 +604,8 @@ public class EditorMenus {
                 "populate",
                 event -> {
                     Player player = (Player) event.getPlayer();
-                    DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                    DungeonPlayerSession playerSession =
+                            RuntimeContext.playerSessions().get(player);
                     DungeonTrigger trigger = playerSession.getActiveTrigger();
                     GuiInventory guiInv = gui.getInventoryFor(player);
 
@@ -595,7 +617,8 @@ public class EditorMenus {
 
                     for (TriggerCondition condition : trigger.getConditions()) {
                         MenuButton menuButton =
-                                RuntimeContext.conditionRegistry().getConditionButton(condition.getClass());
+                                RuntimeContext.conditionRegistry()
+                                        .getConditionButton(condition.getClass());
                         if (menuButton != null) {
                             Button button = new Button("condition_" + slot, menuButton.getItem());
                             button.addLore("");
@@ -682,7 +705,8 @@ public class EditorMenus {
                     "click",
                     event -> {
                         Player player = (Player) event.getWhoClicked();
-                        DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                        DungeonPlayerSession playerSession =
+                                RuntimeContext.playerSessions().get(player);
 
                         try {
                             if (!(playerSession.getActiveTrigger() instanceof GateTrigger gate)) {
@@ -728,7 +752,8 @@ public class EditorMenus {
                 "populate",
                 event -> {
                     Player player = (Player) event.getPlayer();
-                    DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                    DungeonPlayerSession playerSession =
+                            RuntimeContext.playerSessions().get(player);
                     if (playerSession.getActiveTrigger() instanceof GateTrigger gate) {
                         GuiInventory guiInv = gui.getInventoryFor(player);
 
@@ -740,7 +765,8 @@ public class EditorMenus {
 
                         for (DungeonTrigger trigger : gate.getTriggers()) {
                             MenuButton menuButton =
-                                    RuntimeContext.triggerRegistry().getTriggerButton(trigger.getClass());
+                                    RuntimeContext.triggerRegistry()
+                                            .getTriggerButton(trigger.getClass());
                             if (menuButton != null) {
                                 Button button = new Button("trigger_" + slot, menuButton.getItem());
                                 button.addLore("");
@@ -751,16 +777,20 @@ public class EditorMenus {
                                     button.addLore(ColorUtils.colorize(" &eTriggers:"));
 
                                     for (DungeonTrigger subTrig : subGate.getTriggers()) {
-                                        button.addLore(ColorUtils.colorize(" &e- &7" + subTrig.getDisplayName()));
+                                        button.addLore(
+                                                ColorUtils.colorize(
+                                                        " &e- &7" + subTrig.getDisplayName()));
                                     }
                                 }
 
                                 button.addAction(
                                         "click",
                                         clickEvent -> {
-                                            Player clickPlayer = (Player) clickEvent.getWhoClicked();
+                                            Player clickPlayer =
+                                                    (Player) clickEvent.getWhoClicked();
                                             DungeonPlayerSession clickAPlayer =
-                                                    RuntimeContext.playerSessions().get(clickPlayer);
+                                                    RuntimeContext.playerSessions()
+                                                            .get(clickPlayer);
                                             clickPlayer.closeInventory();
                                             clickAPlayer.showHotbar(trigger.getMenu());
                                         });
@@ -830,7 +860,8 @@ public class EditorMenus {
                 "populate",
                 event -> {
                     Player player = (Player) event.getPlayer();
-                    DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                    DungeonPlayerSession playerSession =
+                            RuntimeContext.playerSessions().get(player);
                     if (playerSession.getActiveFunction() instanceof CompositeFunction function) {
                         GuiInventory guiInv = gui.getInventoryFor(player);
 
@@ -845,7 +876,8 @@ public class EditorMenus {
                                     RuntimeContext.functionRegistry()
                                             .getFunctionButton(targetFunction.getClass());
                             if (menuButton != null) {
-                                Button button = new Button("function_" + slot, menuButton.getItem());
+                                Button button =
+                                        new Button("function_" + slot, menuButton.getItem());
                                 button.addLore("");
                                 button.addLore(ColorUtils.colorize("&6Options:"));
                                 addPersistedFieldLore(button, targetFunction, true, "function");
@@ -854,16 +886,20 @@ public class EditorMenus {
                                     button.addLore(ColorUtils.colorize(" &eFunctions:"));
 
                                     for (DungeonFunction subFunction : subMulti.getFunctions()) {
-                                        button.addLore(ColorUtils.colorize("  &e- &7" + subFunction.getDisplayName()));
+                                        button.addLore(
+                                                ColorUtils.colorize(
+                                                        "  &e- &7" + subFunction.getDisplayName()));
                                     }
                                 }
 
                                 button.addAction(
                                         "click",
                                         clickEvent -> {
-                                            Player clickPlayer = (Player) clickEvent.getWhoClicked();
+                                            Player clickPlayer =
+                                                    (Player) clickEvent.getWhoClicked();
                                             DungeonPlayerSession clickAPlayer =
-                                                    RuntimeContext.playerSessions().get(clickPlayer);
+                                                    RuntimeContext.playerSessions()
+                                                            .get(clickPlayer);
                                             clickPlayer.closeInventory();
                                             clickAPlayer.showHotbar(targetFunction.getMenu());
                                         });
@@ -879,7 +915,8 @@ public class EditorMenus {
     private static void initializeCompositeFunctionRemover() {
         GuiWindow gui = new GuiWindow("removemultifunction", 54, "&8Remove a Function");
         gui.addOpenAction(
-                "populate", event -> reloadCompositeFunctionRemovalGui(gui, (Player) event.getPlayer()));
+                "populate",
+                event -> reloadCompositeFunctionRemovalGui(gui, (Player) event.getPlayer()));
     }
 
     /** Reloads composite-function removal buttons for the active player's function. */
@@ -896,7 +933,8 @@ public class EditorMenus {
 
             for (DungeonFunction targetFunction : function.getFunctions()) {
                 MenuButton menuButton =
-                        RuntimeContext.functionRegistry().getFunctionButton(targetFunction.getClass());
+                        RuntimeContext.functionRegistry()
+                                .getFunctionButton(targetFunction.getClass());
                 if (menuButton != null) {
                     Button button = new Button("function_" + slot, menuButton.getItem());
                     button.addAction(
@@ -926,7 +964,8 @@ public class EditorMenus {
                 "populate",
                 event -> {
                     Player player = (Player) event.getPlayer();
-                    DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                    DungeonPlayerSession playerSession =
+                            RuntimeContext.playerSessions().get(player);
                     if (playerSession.getActiveFunction() instanceof CompositeFunction function) {
                         GuiInventory guiInv = gui.getInventoryFor(player);
 
@@ -941,27 +980,34 @@ public class EditorMenus {
                                     RuntimeContext.functionRegistry()
                                             .getFunctionButton(targetFunction.getClass());
                             if (menuButton != null) {
-                                Button button = new Button("function_" + slot, menuButton.getItem());
+                                Button button =
+                                        new Button("function_" + slot, menuButton.getItem());
                                 button.addLore("");
                                 button.addLore(ColorUtils.colorize("&6Options:"));
-                                addPersistedFieldLore(button, targetFunction, true, "function trigger");
+                                addPersistedFieldLore(
+                                        button, targetFunction, true, "function trigger");
 
                                 if (targetFunction instanceof CompositeFunction subMulti) {
                                     button.addLore(ColorUtils.colorize(" &eFunctions:"));
 
                                     for (DungeonFunction subFunction : subMulti.getFunctions()) {
-                                        button.addLore(ColorUtils.colorize("  &e- &7" + subFunction.getDisplayName()));
+                                        button.addLore(
+                                                ColorUtils.colorize(
+                                                        "  &e- &7" + subFunction.getDisplayName()));
                                     }
                                 }
 
                                 button.addAction(
                                         "click",
                                         clickEvent -> {
-                                            Player clickPlayer = (Player) clickEvent.getWhoClicked();
+                                            Player clickPlayer =
+                                                    (Player) clickEvent.getWhoClicked();
                                             DungeonPlayerSession clickAPlayer =
-                                                    RuntimeContext.playerSessions().get(clickPlayer);
+                                                    RuntimeContext.playerSessions()
+                                                            .get(clickPlayer);
                                             clickAPlayer.setActiveFunction(targetFunction);
-                                            RuntimeContext.guiService().openGui(clickPlayer, "triggermenu");
+                                            RuntimeContext.guiService()
+                                                    .openGui(clickPlayer, "triggermenu");
                                         });
                                 guiInv.setButton(slot, button);
                                 slot++;
@@ -978,12 +1024,13 @@ public class EditorMenus {
                 PersistedFieldSupport.editorVisibleFields(target.getClass())) {
             try {
                 Object value = metadata.field().get(target);
-                if (value == null || value instanceof Collection) {
+                if (value == null || value instanceof Collection<?>) {
                     continue;
                 }
 
                 if (formatTriggerValues && value instanceof DungeonTrigger trigger) {
-                    button.addLore(ColorUtils.colorize(" &eTrigger: &7" + trigger.getDisplayName()));
+                    button.addLore(
+                            ColorUtils.colorize(" &eTrigger: &7" + trigger.getDisplayName()));
                 } else {
                     button.addLore(ColorUtils.colorize(" &e" + metadata.name() + ": &7" + value));
                 }

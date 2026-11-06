@@ -10,11 +10,11 @@ import java.util.Date;
  * no explicit override is supplied.
  */
 public enum CooldownPeriod {
-    TIMER(12),
-    HOURLY(10),
-    DAILY(5),
-    WEEKLY(5, 7),
-    MONTHLY(2);
+    TIMER(Calendar.MINUTE),
+    HOURLY(Calendar.HOUR),
+    DAILY(Calendar.DATE),
+    WEEKLY(Calendar.DATE, 7),
+    MONTHLY(Calendar.MONTH);
 
     public final int period;
     public final int amount;
@@ -65,7 +65,7 @@ public enum CooldownPeriod {
      * Creates a value from index.
      */
     public static CooldownPeriod fromIndex(int index) {
-                return switch (index) {
+        return switch (index) {
             case 1 -> HOURLY;
             case 2 -> DAILY;
             case 3 -> WEEKLY;

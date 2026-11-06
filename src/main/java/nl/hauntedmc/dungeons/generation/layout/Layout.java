@@ -81,7 +81,7 @@ public abstract class Layout implements Cloneable {
     protected List<BoundingBox> queuedRoomAreas;
     protected Map<SimpleLocation, InstanceRoom> queuedRoomAnchors;
     protected InstanceRoom generationCheckpoint;
-    protected final ConcurrentMap<GenerationFailureReason, Integer> failureReasons =
+    protected ConcurrentMap<GenerationFailureReason, Integer> failureReasons =
             new ConcurrentHashMap<>();
 
     protected int getEditorTargetBlockRange() {
@@ -97,11 +97,14 @@ public abstract class Layout implements Cloneable {
         this.initializeConnectorEditMenu();
 
         try {
-            String configuredMaterial = config.getString("generator.seal_open_connectors_with", "STONE");
+            String configuredMaterial =
+                    config.getString("generator.seal_open_connectors_with", "STONE");
             this.closedConnectorBlock = Material.matchMaterial(configuredMaterial);
             if (this.closedConnectorBlock == null
-                    || (this.closedConnectorBlock != Material.AIR && !this.closedConnectorBlock.isBlock())) {
-                                throw new IllegalArgumentException("The provided connector fill material is invalid.");
+                    || (this.closedConnectorBlock != Material.AIR
+                            && !this.closedConnectorBlock.isBlock())) {
+                throw new IllegalArgumentException(
+                        "The provided connector fill material is invalid.");
             }
         } catch (IllegalArgumentException exception) {
             this.logger()
@@ -118,45 +121,43 @@ public abstract class Layout implements Cloneable {
         this.strictRooms = config.getBoolean("generator.room_target.enforce_minimum", true);
     }
 
-        protected final DungeonsRuntime runtime() {
+    protected final DungeonsRuntime runtime() {
         return this.dungeon.getRuntime();
     }
 
-        protected final org.slf4j.Logger logger() {
+    protected final org.slf4j.Logger logger() {
         return this.dungeon.getEnvironment().logger();
     }
 
-        protected final DungeonPlayerSession playerSession(Player player) {
+    protected final DungeonPlayerSession playerSession(Player player) {
         return this.runtime().playerSessions().get(player);
     }
 
-        protected abstract boolean tryConnectors(InstanceRoom room);
+    protected abstract boolean tryConnectors(InstanceRoom room);
 
-        protected abstract RandomCollection<BranchingRoomDefinition> filterRooms(
+    protected abstract RandomCollection<BranchingRoomDefinition> filterRooms(
             Connector connector, InstanceRoom from);
 
-        protected boolean tryConnector(Connector connector, InstanceRoom from) {
+    protected boolean tryConnector(Connector connector, InstanceRoom from) {
         RandomCollection<BranchingRoomDefinition> weightedRooms = this.filterRooms(connector, from);
         if (weightedRooms.size() <= 0) {
             this.recordFailure(GenerationFailureReason.NO_VALID_CANDIDATE_ROOMS);
             return false;
-        } else {
-            SimpleLocation adjusted = connector.getLocation().clone();
-            adjusted.shift(1.0);
-            InstanceRoom roomInst =
-                    this.findRoom(from.getSource().getOrigin(), connector, adjusted, weightedRooms);
-            if (roomInst == null) {
-                this.recordFailure(GenerationFailureReason.NO_VALID_ORIENTATION);
-                return false;
-            } else {
-                roomInst.setDepth(from.getDepth() + 1);
-                this.queueRoom(roomInst);
-                return true;
-            }
         }
+        SimpleLocation adjusted = connector.getLocation().clone();
+        adjusted.shift(1.0);
+        InstanceRoom roomInst =
+                this.findRoom(from.getSource().getOrigin(), connector, adjusted, weightedRooms);
+        if (roomInst == null) {
+            this.recordFailure(GenerationFailureReason.NO_VALID_ORIENTATION);
+            return false;
+        }
+        roomInst.setDepth(from.getDepth() + 1);
+        this.queueRoom(roomInst);
+        return true;
     }
 
-        protected boolean verifyLayout() {
+    protected boolean verifyLayout() {
         boolean valid = true;
         for (BranchingRoomDefinition room : this.dungeon.getUniqueRooms().values()) {
             if (this.countsByRoom.getOrDefault(room, 0) < room.getOccurrences().getMin()) {
@@ -230,7 +231,7 @@ public abstract class Layout implements Cloneable {
         return report;
     }
 
-        protected boolean requiresGlobalRoomTargetValidation() {
+    protected boolean requiresGlobalRoomTargetValidation() {
         return false;
     }
 
@@ -248,7 +249,7 @@ public abstract class Layout implements Cloneable {
         }
 
         int timeout = PluginConfigView.getLayoutGenerationTimeoutSeconds(this.runtime().config());
-        long startTime = System.currentTimeMillis();
+        long startTime = System.nanoTime();
 
         ExecutorService executor = Executors.newSingleThreadExecutor();
         Future<GenerationResult> future =
@@ -265,7 +266,9 @@ public abstract class Layout implements Cloneable {
                                 }
 
                                 if (generationResult.isPassed()) {
-                                    long runTime = System.currentTimeMillis() - startTime;
+                                    long runTime =
+                                            TimeUnit.NANOSECONDS.toMillis(
+                                                    System.nanoTime() - startTime);
                                     this.logger()
                                             .info(
                                                     "Generated layout for dungeon '{}' in {}ms after {} attempts.",
@@ -276,7 +279,8 @@ public abstract class Layout implements Cloneable {
                                 }
 
                                 tries++;
-                            } while (System.currentTimeMillis() - startTime <= timeout * 1000L
+                            } while (System.nanoTime() - startTime
+                                            <= TimeUnit.SECONDS.toNanos(timeout)
                                     && !this.cancelled);
 
                             if (this.cancelled) {
@@ -322,82 +326,81 @@ public abstract class Layout implements Cloneable {
             this.cancelled = true;
             this.logger()
                     .error(
-                            "Layout generation failed for dungeon '{}'.", this.dungeon.getWorldName(), exception);
+                            "Layout generation failed for dungeon '{}'.",
+                            this.dungeon.getWorldName(),
+                            exception);
         }
 
         executor.shutdownNow();
         return result;
     }
 
-        protected GenerationResult tryLayout() {
+    protected GenerationResult tryLayout() {
         this.logger().info("Generating new layout for dungeon '{}'.", this.dungeon.getWorldName());
         this.resetGenerationState();
 
         if (!this.selectFirstRoom()) {
             this.recordFailure(GenerationFailureReason.INVALID_CONFIGURATION);
             return GenerationResult.NO_START_ROOM;
-        } else {
-            GenerationResult queueResult = this.processQueue();
-            if (!queueResult.isPassed()) {
-                return queueResult;
-            }
-
-            for (InstanceRoom room : this.roomsToAdd) {
-                this.addRoom(room);
-            }
-
-            if (!this.verifyLayout()) {
-                return GenerationResult.BAD_LAYOUT;
-            } else {
-                this.logger()
-                        .info(
-                                "Validated generated layout for dungeon '{}': {} total rooms.",
-                                this.dungeon.getWorldName(),
-                                this.totalRooms);
-                return GenerationResult.SUCCESS;
-            }
         }
+        GenerationResult queueResult = this.processQueue();
+        if (!queueResult.isPassed()) {
+            return queueResult;
+        }
+
+        for (InstanceRoom room : this.roomsToAdd) {
+            this.addRoom(room);
+        }
+
+        if (!this.verifyLayout()) {
+            return GenerationResult.BAD_LAYOUT;
+        }
+        this.logger()
+                .info(
+                        "Validated generated layout for dungeon '{}': {} total rooms.",
+                        this.dungeon.getWorldName(),
+                        this.totalRooms);
+        return GenerationResult.SUCCESS;
     }
 
-        protected boolean selectFirstRoom() {
+    protected boolean selectFirstRoom() {
         if (this.dungeon.getUniqueRooms().isEmpty()) {
-            this.logger().error("Dungeon '{}' has no rooms configured.", this.dungeon.getWorldName());
+            this.logger()
+                    .error("Dungeon '{}' has no rooms configured.", this.dungeon.getWorldName());
             return false;
-        } else {
-            List<BranchingRoomDefinition> possibleRooms =
-                    new ArrayList<>(this.dungeon.getStartRooms().values());
-            if (possibleRooms.isEmpty()) {
-                possibleRooms = new ArrayList<>(this.dungeon.getUniqueRooms().values());
-            }
+        }
+        List<BranchingRoomDefinition> possibleRooms =
+                new ArrayList<>(this.dungeon.getStartRooms().values());
+        if (possibleRooms.isEmpty()) {
+            possibleRooms = new ArrayList<>(this.dungeon.getUniqueRooms().values());
+        }
 
-            if (!this.roomWhitelist.isEmpty()) {
-                possibleRooms.removeIf(roomCandidate -> !this.roomWhitelist.contains(roomCandidate));
-            }
+        if (!this.roomWhitelist.isEmpty()) {
+            possibleRooms.removeIf(roomCandidate -> !this.roomWhitelist.contains(roomCandidate));
+        }
 
-            RandomCollection<BranchingRoomDefinition> weightedRooms = new RandomCollection<>();
+        RandomCollection<BranchingRoomDefinition> weightedRooms = new RandomCollection<>();
 
-            for (BranchingRoomDefinition room : possibleRooms) {
-                if (!(room.getDepth().getMin() > 0.0)) {
-                    weightedRooms.add(room.getWeight() * (room.getOccurrences().getMin() + 1.0), room);
-                }
-            }
-
-            BranchingRoomDefinition first = weightedRooms.next();
-            if (first == null) {
-                return false;
-            } else {
-                this.addRoom(new SimpleLocation(0.0, 128.0, 0.0), first.getRandomOrientation());
-                this.logger()
-                        .info(
-                                "Selected '{}' as the first room for dungeon '{}'.",
-                                first.getNamespace(),
-                                this.dungeon.getWorldName());
-                return true;
+        for (BranchingRoomDefinition room : possibleRooms) {
+            if (!(room.getDepth().getMin() > 0.0)) {
+                weightedRooms.add(room.getWeight() * (room.getOccurrences().getMin() + 1.0), room);
             }
         }
+
+        BranchingRoomDefinition first = weightedRooms.next();
+        if (first == null) {
+            return false;
+        }
+        this.addRoom(new SimpleLocation(0.0, 128.0, 0.0), first.getRandomOrientation());
+        this.logger()
+                .info(
+                        "Selected '{}' as the first room for dungeon '{}'.",
+                        first.getNamespace(),
+                        this.dungeon.getWorldName());
+        return true;
     }
 
-        protected GenerationResult processQueue() {
+    protected GenerationResult processQueue() {
         this.roomsToAdd = new ArrayList<>();
         this.queuedRoomCount = this.roomCount;
         this.queuedCountsByRoom = new HashMap<>(this.countsByRoom);
@@ -406,7 +409,7 @@ public abstract class Layout implements Cloneable {
         return this.processQueue(0);
     }
 
-        protected GenerationResult processQueue(int checkpointDepth) {
+    protected GenerationResult processQueue(int checkpointDepth) {
         this.generationCheckpoint = null;
         int timeout = PluginConfigView.getLayoutGenerationTimeoutSeconds(this.runtime().config());
         ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -424,7 +427,8 @@ public abstract class Layout implements Cloneable {
                                         continue;
                                     }
 
-                                    if (!this.getAllRooms().contains(room) && !this.roomsToAdd.contains(room)) {
+                                    if (!this.getAllRooms().contains(room)
+                                            && !this.roomsToAdd.contains(room)) {
                                         this.roomsToAdd.add(room);
                                     }
 
@@ -476,7 +480,8 @@ public abstract class Layout implements Cloneable {
         return GenerationResult.SUCCESS;
     }
 
-    @Nullable protected InstanceRoom findRoom(
+    @Nullable
+    protected InstanceRoom findRoom(
             BranchingRoomDefinition from,
             Connector connector,
             SimpleLocation position,
@@ -513,7 +518,9 @@ public abstract class Layout implements Cloneable {
                                         .isOpposite(nextConnector.getLocation().getDirection())
                                 && nextConnector.canGenerate(from)) {
                             foundConnector = true;
-                            validConnectors.computeIfAbsent(room, k -> new ArrayList<>()).add(nextConnector);
+                            validConnectors
+                                    .computeIfAbsent(room, k -> new ArrayList<>())
+                                    .add(nextConnector);
                         }
                     }
 
@@ -533,7 +540,8 @@ public abstract class Layout implements Cloneable {
             }
 
             RotatedRoom to =
-                    orientations.remove(MathUtils.getRandomNumberInRange(0, orientations.size() - 1));
+                    orientations.remove(
+                            MathUtils.getRandomNumberInRange(0, orientations.size() - 1));
             List<Connector> connectors = validConnectors.get(to);
             if (connectors == null) {
                 continue;
@@ -552,7 +560,7 @@ public abstract class Layout implements Cloneable {
         return null;
     }
 
-        protected InstanceRoom addRoom(SimpleLocation anchor, RotatedRoom room) {
+    protected InstanceRoom addRoom(SimpleLocation anchor, RotatedRoom room) {
         SimpleLocation offset = new SimpleLocation(0.0, 0.0, 0.0);
         offset.shift(room.getBounds().getMin());
         InstanceRoom instance = new InstanceRoom(room, anchor, offset);
@@ -569,7 +577,7 @@ public abstract class Layout implements Cloneable {
         return instance;
     }
 
-        protected void addRoom(InstanceRoom room) {
+    protected void addRoom(InstanceRoom room) {
         if (this.roomAnchors.isEmpty()) {
             this.first = room;
         }
@@ -581,7 +589,7 @@ public abstract class Layout implements Cloneable {
         this.totalRooms++;
     }
 
-        protected void queueRoom(InstanceRoom room) {
+    protected void queueRoom(InstanceRoom room) {
         this.queue.add(room);
         this.queuedCountsByRoom.merge(room.getSource().getOrigin(), 1, Integer::sum);
         this.queuedRoomAnchors.put(room.getAnchor(), room);
@@ -589,7 +597,7 @@ public abstract class Layout implements Cloneable {
         this.queuedRoomCount++;
     }
 
-        protected int getRoomCount(BranchingRoomDefinition room) {
+    protected int getRoomCount(BranchingRoomDefinition room) {
         return this.queuedCountsByRoom.getOrDefault(room, 0);
     }
 
@@ -599,11 +607,10 @@ public abstract class Layout implements Cloneable {
     public boolean isRoomMaxedOut(BranchingRoomDefinition room) {
         if (room.getOccurrences().getMax() == 0.0) {
             return false;
-        } else {
-            int count = this.getRoomCount(room);
-            int max = (int) room.getOccurrences().getMax();
-            return count >= (max == -1 ? Integer.MAX_VALUE : max);
         }
+        int count = this.getRoomCount(room);
+        int max = (int) room.getOccurrences().getMax();
+        return count >= (max == -1 ? Integer.MAX_VALUE : max);
     }
 
     /**
@@ -636,15 +643,17 @@ public abstract class Layout implements Cloneable {
         return this.roomAnchors.values();
     }
 
-        protected boolean isConfiguredStartRoom(BranchingRoomDefinition room) {
+    protected boolean isConfiguredStartRoom(BranchingRoomDefinition room) {
         return room != null && this.dungeon.getStartRooms().containsKey(room.getNamespace());
     }
 
-        protected boolean isAutomaticEndRoomCandidate(BranchingRoomDefinition room) {
-        return room != null && room.getConnectors().size() == 1 && !this.isConfiguredStartRoom(room);
+    protected boolean isAutomaticEndRoomCandidate(BranchingRoomDefinition room) {
+        return room != null
+                && room.getConnectors().size() == 1
+                && !this.isConfiguredStartRoom(room);
     }
 
-        protected boolean isValidEndRoomCandidate(BranchingRoomDefinition room) {
+    protected boolean isValidEndRoomCandidate(BranchingRoomDefinition room) {
         if (room == null) {
             return false;
         }
@@ -656,11 +665,11 @@ public abstract class Layout implements Cloneable {
         return this.isAutomaticEndRoomCandidate(room);
     }
 
-        protected void recordFailure(GenerationFailureReason reason) {
+    protected void recordFailure(GenerationFailureReason reason) {
         this.failureReasons.merge(reason, 1, Integer::sum);
     }
 
-        protected void logFailureSummary() {
+    protected void logFailureSummary() {
         if (this.failureReasons.isEmpty()) {
             return;
         }
@@ -682,7 +691,7 @@ public abstract class Layout implements Cloneable {
                         builder);
     }
 
-        protected void resetGenerationState() {
+    protected void resetGenerationState() {
         this.roomCount = 0;
         this.totalRooms = 0;
         this.countsByRoom.clear();
@@ -699,7 +708,8 @@ public abstract class Layout implements Cloneable {
         this.generationCheckpoint = null;
     }
 
-    @Nullable private BranchingRoomDefinition nextWeightedRoom(
+    @Nullable
+    private BranchingRoomDefinition nextWeightedRoom(
             RandomCollection<BranchingRoomDefinition> weightedRooms,
             List<BranchingRoomDefinition> invalidRooms) {
         int attempts = Math.max(1, weightedRooms.size() * 10);
@@ -724,15 +734,15 @@ public abstract class Layout implements Cloneable {
     public void initializeConnectorEditMenu() {
         this.connectorEditMenu = PlayerHotbarMenu.createMenu();
         this.connectorEditMenu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     @Override
-                                        public void buildButton() {
+                    public void buildButton() {
                         this.button = new MenuButton(Material.RED_STAINED_GLASS_PANE);
                         this.button.setDisplayName("&c&lBACK");
                     }
 
                     @Override
-                                        public void onSelect(PlayerEvent event) {
+                    public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
                         DungeonPlayerSession playerSession = Layout.this.playerSession(player);
                         playerSession.setActiveConnector(null);
@@ -741,31 +751,32 @@ public abstract class Layout implements Cloneable {
                     }
                 });
         this.connectorEditMenu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     @Override
-                                        public void buildButton() {
+                    public void buildButton() {
                         this.button = new MenuButton(Material.OAK_DOOR);
                         this.button.setDisplayName("&e&lEdit Door");
                     }
 
                     @Override
-                                        public void onSelect(PlayerEvent event) {
+                    public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
                         DungeonPlayerSession playerSession = Layout.this.playerSession(player);
                         BranchingRoomDefinition room = playerSession.getActiveRoom();
                         Connector connector = playerSession.getActiveConnector();
                         if (room != null && connector != null) {
                             ConnectorDoor door = connector.getDoor();
-                            LangUtils.sendMessage(player, "editor.layout.connector-door.open-menu-info");
+                            LangUtils.sendMessage(
+                                    player, "editor.layout.connector-door.open-menu-info");
                             playerSession.showHotbar(Layout.this.connectorDoorMenu, true);
                             playerSession.setActiveDoor(door);
                         }
                     }
                 });
         this.connectorEditMenu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     @Override
-                                        public void buildButton() {
+                    public void buildButton() {
                         this.button = new MenuButton(Material.JIGSAW);
                         this.button.setDisplayName("&e&lEdit Allowed Rooms");
                         this.button.addLore("&eOpens a menu for customizing");
@@ -774,15 +785,15 @@ public abstract class Layout implements Cloneable {
                     }
 
                     @Override
-                                        public void onSelect(PlayerEvent event) {
+                    public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
                         Layout.this.runtime().guiService().openGui(player, "connector_whitelist");
                     }
                 });
         this.connectorEditMenu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     @Override
-                                        public void buildButton() {
+                    public void buildButton() {
                         this.button = new MenuButton(Material.BOOK);
                         this.button.setDisplayName("&3&lCopy Connector");
                     }
@@ -801,9 +812,9 @@ public abstract class Layout implements Cloneable {
                     }
                 });
         this.connectorEditMenu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     @Override
-                                        public void buildButton() {
+                    public void buildButton() {
                         this.button = new MenuButton(Material.SHEARS);
                         this.button.setDisplayName("&3&lCut Connector");
                     }
@@ -822,32 +833,41 @@ public abstract class Layout implements Cloneable {
                     }
                 });
         this.connectorEditMenu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     @Override
-                                        public void buildButton() {
+                    public void buildButton() {
                         this.button = new MenuButton(Material.GLOBE_BANNER_PATTERN);
                         this.button.setDisplayName("&3&lPaste Connector");
                     }
 
                     @Override
-                                        public void onSelect(PlayerEvent event) {
+                    public void onSelect(PlayerEvent event) {
                         if (event instanceof PlayerInteractEvent interactEvent) {
                             if (interactEvent.getAction() == Action.RIGHT_CLICK_BLOCK) {
                                 Player player = event.getPlayer();
-                                DungeonPlayerSession playerSession = Layout.this.playerSession(player);
+                                DungeonPlayerSession playerSession =
+                                        Layout.this.playerSession(player);
                                 EditableInstance instance =
-                                        playerSession.getInstance().as(BranchingEditableInstance.class);
+                                        playerSession
+                                                .getInstance()
+                                                .as(BranchingEditableInstance.class);
                                 if (instance != null) {
-                                    Location targetLocation = interactEvent.getClickedBlock().getLocation();
-                                    DungeonDefinition dungeon = instance.getDungeon().as(BranchingDungeon.class);
+                                    Location targetLocation =
+                                            interactEvent.getClickedBlock().getLocation();
+                                    DungeonDefinition dungeon =
+                                            instance.getDungeon().as(BranchingDungeon.class);
                                     BranchingRoomDefinition room = playerSession.getActiveRoom();
                                     if (dungeon != null && room != null) {
-                                        SimpleLocation simpleLoc = SimpleLocation.from(targetLocation);
+                                        SimpleLocation simpleLoc =
+                                                SimpleLocation.from(targetLocation);
                                         if (playerSession.isConnectorCopying()) {
                                             if (room.getConnector(simpleLoc) != null) {
-                                                LangUtils.sendMessage(player, "editor.layout.connector.already-here");
+                                                LangUtils.sendMessage(
+                                                        player,
+                                                        "editor.layout.connector.already-here");
                                             } else {
-                                                Connector connector = playerSession.getCopiedConnector();
+                                                Connector connector =
+                                                        playerSession.getCopiedConnector();
                                                 if (connector == null) {
                                                     playerSession.clearConnectorClipboard();
                                                     LangUtils.sendMessage(
@@ -857,9 +877,12 @@ public abstract class Layout implements Cloneable {
                                                 }
 
                                                 if (!room.applyDirectionAtEdge(simpleLoc)) {
-                                                    LangUtils.sendMessage(player, "editor.layout.connector.must-be-on-edge");
+                                                    LangUtils.sendMessage(
+                                                            player,
+                                                            "editor.layout.connector.must-be-on-edge");
                                                 } else {
-                                                    Connector copiedConnector = connector.copy(simpleLoc);
+                                                    Connector copiedConnector =
+                                                            connector.copy(simpleLoc);
                                                     if (copiedConnector == null) {
                                                         LangUtils.sendMessage(
                                                                 player,
@@ -868,41 +891,61 @@ public abstract class Layout implements Cloneable {
                                                     }
 
                                                     room.addConnector(copiedConnector);
-                                                    SimpleLocation.Direction oldDir = connector.getLocation().getDirection();
-                                                    SimpleLocation.Direction newDir = simpleLoc.getDirection();
-                                                    int rotation = newDir.getDegrees() - oldDir.getDegrees();
-                                                    Vector origin = connector.getLocation().asVector();
+                                                    SimpleLocation.Direction oldDir =
+                                                            connector.getLocation().getDirection();
+                                                    SimpleLocation.Direction newDir =
+                                                            simpleLoc.getDirection();
+                                                    int rotation =
+                                                            newDir.getDegrees()
+                                                                    - oldDir.getDegrees();
+                                                    Vector origin =
+                                                            connector.getLocation().asVector();
                                                     Vector dest = simpleLoc.asVector();
                                                     Vector offset = dest.subtract(origin);
                                                     copiedConnector.setDoor(
-                                                            copiedConnector.getDoor().copy(offset, origin, rotation));
-                                                    playerSession.setActiveConnector(copiedConnector);
-                                                    LangUtils.sendMessage(player, "editor.layout.connector.pasted");
+                                                            copiedConnector
+                                                                    .getDoor()
+                                                                    .copy(
+                                                                            offset, origin,
+                                                                            rotation));
+                                                    playerSession.setActiveConnector(
+                                                            copiedConnector);
+                                                    LangUtils.sendMessage(
+                                                            player,
+                                                            "editor.layout.connector.pasted");
                                                 }
                                             }
                                         } else if (playerSession.isConnectorCutting()) {
                                             if (room.getConnector(simpleLoc) != null) {
-                                                LangUtils.sendMessage(player, "editor.layout.connector.already-here");
+                                                LangUtils.sendMessage(
+                                                        player,
+                                                        "editor.layout.connector.already-here");
                                                 return;
                                             }
 
-                                            Connector connector = playerSession.getCopiedConnector();
+                                            Connector connector =
+                                                    playerSession.getCopiedConnector();
                                             if (connector == null) {
                                                 playerSession.clearConnectorClipboard();
                                                 LangUtils.sendMessage(
-                                                        player, "editor.layout.connector.no-selection");
+                                                        player,
+                                                        "editor.layout.connector.no-selection");
                                                 return;
                                             }
 
                                             if (!room.applyDirectionAtEdge(simpleLoc)) {
                                                 LangUtils.sendMessage(
-                                                        player, "editor.layout.connector.must-be-on-edge");
+                                                        player,
+                                                        "editor.layout.connector.must-be-on-edge");
                                                 return;
                                             }
 
-                                            SimpleLocation.Direction oldDir = connector.getLocation().getDirection();
-                                            SimpleLocation.Direction newDir = simpleLoc.getDirection();
-                                            int rotation = newDir.getDegrees() - oldDir.getDegrees();
+                                            SimpleLocation.Direction oldDir =
+                                                    connector.getLocation().getDirection();
+                                            SimpleLocation.Direction newDir =
+                                                    simpleLoc.getDirection();
+                                            int rotation =
+                                                    newDir.getDegrees() - oldDir.getDegrees();
                                             Vector origin = connector.getLocation().asVector();
                                             Vector dest = simpleLoc.asVector();
                                             Vector offset = dest.subtract(origin);
@@ -910,9 +953,14 @@ public abstract class Layout implements Cloneable {
                                             connector.setDoor(
                                                     connector.getDoor() == null
                                                             ? new ConnectorDoor(connector)
-                                                            : connector.getDoor().copy(offset, origin, rotation));
+                                                            : connector
+                                                                    .getDoor()
+                                                                    .copy(
+                                                                            offset, origin,
+                                                                            rotation));
                                             playerSession.setActiveConnector(connector);
-                                            LangUtils.sendMessage(player, "editor.layout.connector.cut-pasted");
+                                            LangUtils.sendMessage(
+                                                    player, "editor.layout.connector.cut-pasted");
                                             playerSession.clearConnectorClipboard();
                                         }
                                     }
@@ -922,15 +970,15 @@ public abstract class Layout implements Cloneable {
                     }
                 });
         this.connectorEditMenu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     @Override
-                                        public void buildButton() {
+                    public void buildButton() {
                         this.button = new MenuButton(Material.BARRIER);
                         this.button.setDisplayName("&c&lDelete Connector");
                     }
 
                     @Override
-                                        public void onSelect(PlayerEvent event) {
+                    public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
                         DungeonPlayerSession playerSession = Layout.this.playerSession(player);
                         BranchingRoomDefinition room = playerSession.getActiveRoom();
@@ -939,7 +987,8 @@ public abstract class Layout implements Cloneable {
                             if ((!connector.getRoomBlacklist().isEmpty()
                                             || !connector.getRoomWhitelist().isEmpty())
                                     && !playerSession.isConfirmRoomAction()) {
-                                LangUtils.sendMessage(player, "editor.layout.connector.delete-confirm");
+                                LangUtils.sendMessage(
+                                        player, "editor.layout.connector.delete-confirm");
                                 playerSession.setConfirmRoomAction(true);
                             } else {
                                 playerSession.setConfirmRoomAction(false);
@@ -965,15 +1014,15 @@ public abstract class Layout implements Cloneable {
     public void initializeConnectorDoorMenu() {
         this.connectorDoorMenu = PlayerHotbarMenu.createMenu();
         this.connectorDoorMenu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     @Override
-                                        public void buildButton() {
+                    public void buildButton() {
                         this.button = new MenuButton(Material.RED_STAINED_GLASS_PANE);
                         this.button.setDisplayName("&c&lBACK");
                     }
 
                     @Override
-                                        public void onSelect(PlayerEvent event) {
+                    public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
                         DungeonPlayerSession playerSession = Layout.this.playerSession(player);
                         playerSession.setActiveDoor(null);
@@ -981,15 +1030,15 @@ public abstract class Layout implements Cloneable {
                     }
                 });
         this.connectorDoorMenu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     @Override
-                                        public void buildButton() {
+                    public void buildButton() {
                         this.button = new MenuButton(Material.NAME_TAG);
                         this.button.setDisplayName("&d&lSet Door Name");
                     }
 
                     @Override
-                                        public void onSelect(Player player) {
+                    public void onSelect(Player player) {
                         DungeonPlayerSession playerSession = Layout.this.playerSession(player);
                         BranchingRoomDefinition room = playerSession.getActiveRoom();
                         ConnectorDoor door = playerSession.getActiveDoor();
@@ -1003,7 +1052,7 @@ public abstract class Layout implements Cloneable {
                     }
 
                     @Override
-                                        public void onInput(Player player, String message) {
+                    public void onInput(Player player, String message) {
                         DungeonPlayerSession playerSession = Layout.this.playerSession(player);
                         BranchingRoomDefinition room = playerSession.getActiveRoom();
                         Connector connector = playerSession.getActiveConnector();
@@ -1024,17 +1073,18 @@ public abstract class Layout implements Cloneable {
                     }
                 });
         this.connectorDoorMenu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     @Override
-                                        public void buildButton() {
+                    public void buildButton() {
                         this.button = new MenuButton(Material.EMERALD);
                         this.button.setDisplayName("&d&lAdd/Remove Block");
                     }
 
                     @Override
-                                        public void onSelect(PlayerEvent event) {
+                    public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
-                        Block block = player.getTargetBlockExact(Layout.this.getEditorTargetBlockRange());
+                        Block block =
+                                player.getTargetBlockExact(Layout.this.getEditorTargetBlockRange());
                         if (block != null && !block.isEmpty()) {
                             DungeonPlayerSession playerSession = Layout.this.playerSession(player);
                             BranchingRoomDefinition room = playerSession.getActiveRoom();
@@ -1049,25 +1099,27 @@ public abstract class Layout implements Cloneable {
                                 SimpleLocation target = SimpleLocation.from(block);
                                 if (door.getLocations().contains(target)) {
                                     door.removeLocation(target);
-                                    LangUtils.sendMessage(player, "editor.layout.connector-door.block-removed");
+                                    LangUtils.sendMessage(
+                                            player, "editor.layout.connector-door.block-removed");
                                 } else {
                                     door.addLocation(target);
-                                    LangUtils.sendMessage(player, "editor.layout.connector-door.block-added");
+                                    LangUtils.sendMessage(
+                                            player, "editor.layout.connector-door.block-added");
                                 }
                             }
                         }
                     }
                 });
         this.connectorDoorMenu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     @Override
-                                        public void buildButton() {
+                    public void buildButton() {
                         this.button = new MenuButton(Material.IRON_DOOR);
                         this.button.setDisplayName("&d&lToggle Start Open");
                     }
 
                     @Override
-                                        public void onSelect(Player player) {
+                    public void onSelect(Player player) {
                         DungeonPlayerSession playerSession = Layout.this.playerSession(player);
                         BranchingRoomDefinition room = playerSession.getActiveRoom();
                         Connector connector = playerSession.getActiveConnector();
@@ -1079,9 +1131,11 @@ public abstract class Layout implements Cloneable {
                             }
 
                             if (!door.isStartOpen()) {
-                                LangUtils.sendMessage(player, "editor.layout.connector-door.start-open");
+                                LangUtils.sendMessage(
+                                        player, "editor.layout.connector-door.start-open");
                             } else {
-                                LangUtils.sendMessage(player, "editor.layout.connector-door.start-closed");
+                                LangUtils.sendMessage(
+                                        player, "editor.layout.connector-door.start-closed");
                             }
 
                             door.setStartOpen(!door.isStartOpen());
@@ -1089,15 +1143,15 @@ public abstract class Layout implements Cloneable {
                     }
                 });
         this.connectorDoorMenu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     @Override
-                                        public void buildButton() {
+                    public void buildButton() {
                         this.button = new MenuButton(Material.NOTE_BLOCK);
                         this.button.setDisplayName("&d&lToggle Sound");
                     }
 
                     @Override
-                                        public void onSelect(Player player) {
+                    public void onSelect(Player player) {
                         DungeonPlayerSession playerSession = Layout.this.playerSession(player);
                         BranchingRoomDefinition room = playerSession.getActiveRoom();
                         Connector connector = playerSession.getActiveConnector();
@@ -1109,9 +1163,11 @@ public abstract class Layout implements Cloneable {
                             }
 
                             if (door.isDisableSound()) {
-                                LangUtils.sendMessage(player, "editor.layout.connector-door.sound-enabled");
+                                LangUtils.sendMessage(
+                                        player, "editor.layout.connector-door.sound-enabled");
                             } else {
-                                LangUtils.sendMessage(player, "editor.layout.connector-door.sound-disabled");
+                                LangUtils.sendMessage(
+                                        player, "editor.layout.connector-door.sound-disabled");
                             }
 
                             door.setDisableSound(!door.isDisableSound());
@@ -1121,7 +1177,7 @@ public abstract class Layout implements Cloneable {
     }
 
     @Override
-        public Layout clone() {
+    public Layout clone() {
         try {
             Layout clone = (Layout) super.clone();
             clone.roomWhitelist = new ArrayList<>(this.roomWhitelist);
@@ -1138,10 +1194,13 @@ public abstract class Layout implements Cloneable {
             clone.first = null;
             clone.generationCheckpoint = null;
             clone.cancelled = false;
-            clone.failureReasons.clear();
+            clone.failureReasons = new ConcurrentHashMap<>();
+            clone.roomCount = 0;
+            clone.totalRooms = 0;
+            clone.queuedRoomCount = 0;
             return clone;
         } catch (CloneNotSupportedException exception) {
-                        throw new AssertionError();
+            throw new AssertionError(exception);
         }
     }
 

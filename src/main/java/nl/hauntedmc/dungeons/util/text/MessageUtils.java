@@ -7,6 +7,7 @@ import org.bukkit.entity.Player;
 
 /** Title and clickable-message helpers for player messaging. */
 public final class MessageUtils {
+    private MessageUtils() {}
 
     /** Shows a title/subtitle with fade timings in ticks. */
     public static void showTitle(
@@ -17,7 +18,8 @@ public final class MessageUtils {
                         Duration.ofMillis(stay * 50L),
                         Duration.ofMillis(fadeOut * 50L));
         Title adventureTitle =
-                Title.title(ComponentUtils.component(title), ComponentUtils.component(subtitle), times);
+                Title.title(
+                        ComponentUtils.component(title), ComponentUtils.component(subtitle), times);
         player.showTitle(adventureTitle);
     }
 

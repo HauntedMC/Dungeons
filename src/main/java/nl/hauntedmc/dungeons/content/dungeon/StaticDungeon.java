@@ -99,17 +99,23 @@ public class StaticDungeon extends DungeonDefinition {
                                         "Loading Dungeon " + this.getWorldName(),
                                         () -> {
                                             CountDownLatch latch = new CountDownLatch(1);
-                                            AtomicReference<PlayableInstance> instanceRef = new AtomicReference<>();
+                                            AtomicReference<PlayableInstance> instanceRef =
+                                                    new AtomicReference<>();
 
                                             Bukkit.getScheduler()
                                                     .runTask(
                                                             this.plugin(),
                                                             () -> {
-                                                                // Instance creation has to happen on the
-                                                                // server thread because world operations and
-                                                                // Bukkit object wiring are not thread-safe.
+                                                                // Instance creation has to happen
+                                                                // on the
+                                                                // server thread because world
+                                                                // operations and
+                                                                // Bukkit object wiring are not
+                                                                // thread-safe.
                                                                 PlayableInstance created =
-                                                                        this.createPlaySession(latch, startedTeamLeaderId);
+                                                                        this.createPlaySession(
+                                                                                latch,
+                                                                                startedTeamLeaderId);
                                                                 instanceRef.set(created);
 
                                                                 if (created == null) {
@@ -119,7 +125,9 @@ public class StaticDungeon extends DungeonDefinition {
 
                                                                 created.setDifficulty(difficulty);
                                                                 this.instances.add(created);
-                                                                this.activeInstances().registerActiveInstance(created);
+                                                                this.activeInstances()
+                                                                        .registerActiveInstance(
+                                                                                created);
                                                             });
 
                                             try {
@@ -128,13 +136,20 @@ public class StaticDungeon extends DungeonDefinition {
 
                                                 if (!loaded || instance == null) {
                                                     this.schedulePrepareFailure(
-                                                            player, playerSession, instance, "instance.lifecycle.load-timeout");
+                                                            player,
+                                                            playerSession,
+                                                            instance,
+                                                            "instance.lifecycle.load-timeout");
                                                     return;
                                                 }
 
-                                                if (instance.hasLoadFailed() || !instance.isReady()) {
+                                                if (instance.hasLoadFailed()
+                                                        || !instance.isReady()) {
                                                     this.schedulePrepareFailure(
-                                                            player, playerSession, instance, "instance.lifecycle.load-failed");
+                                                            player,
+                                                            playerSession,
+                                                            instance,
+                                                            "instance.lifecycle.load-failed");
                                                     return;
                                                 }
 
@@ -142,37 +157,68 @@ public class StaticDungeon extends DungeonDefinition {
                                                         .runTask(
                                                                 this.plugin(),
                                                                 () -> {
-                                                                    // The player may disconnect while the
-                                                                    // world is still being prepared, so the
-                                                                    // reservation has to be revalidated here.
+                                                                    // The player may disconnect
+                                                                    // while the
+                                                                    // world is still being
+                                                                    // prepared, so the
+                                                                    // reservation has to be
+                                                                    // revalidated here.
                                                                     if (!player.isOnline()) {
-                                                                        this.refundReservedAccessKey(playerSession);
-                                                                        playerSession.setAwaitingDungeon(false);
-                                                                        this.discardInstance(instance);
+                                                                        this
+                                                                                .refundReservedAccessKey(
+                                                                                        playerSession);
+                                                                        playerSession
+                                                                                .setAwaitingDungeon(
+                                                                                        false);
+                                                                        this.discardInstance(
+                                                                                instance);
                                                                         this.logger()
                                                                                 .warn(
                                                                                         "Aborted loading static instance '{}' because player '{}' disconnected before join.",
-                                                                                        this.getWorldName(),
-                                                                                        player.getName());
+                                                                                        this
+                                                                                                .getWorldName(),
+                                                                                        player
+                                                                                                .getName());
                                                                         return;
                                                                     }
 
-                                                                    instance.addPlayer(playerSession);
-                                                                    if (playerSession.getInstance() == instance) {
-                                                                        this.completeReservedAccessKey(playerSession);
-                                                                        nl.hauntedmc.dungeons.util.lang.LangUtils.sendMessage(
-                                                                                player,
-                                                                                "instance.lifecycle.entered",
-                                                                                LangUtils.placeholder("dungeon", this.getDisplayName()));
+                                                                    instance.addPlayer(
+                                                                            playerSession);
+                                                                    if (playerSession.getInstance()
+                                                                            == instance) {
+                                                                        this
+                                                                                .completeReservedAccessKey(
+                                                                                        playerSession);
+                                                                        nl.hauntedmc.dungeons.util
+                                                                                .lang.LangUtils
+                                                                                .sendMessage(
+                                                                                        player,
+                                                                                        "instance.lifecycle.entered",
+                                                                                        LangUtils
+                                                                                                .placeholder(
+                                                                                                        "dungeon",
+                                                                                                        this
+                                                                                                                .getDisplayName()));
                                                                     } else {
-                                                                        this.refundReservedAccessKey(playerSession);
-                                                                        this.discardInstance(instance);
-                                                                        nl.hauntedmc.dungeons.util.lang.LangUtils.sendMessage(
-                                                                                player,
-                                                                                "instance.lifecycle.load-failed",
-                                                                                LangUtils.placeholder("dungeon", this.getDisplayName()));
+                                                                        this
+                                                                                .refundReservedAccessKey(
+                                                                                        playerSession);
+                                                                        this.discardInstance(
+                                                                                instance);
+                                                                        nl.hauntedmc.dungeons.util
+                                                                                .lang.LangUtils
+                                                                                .sendMessage(
+                                                                                        player,
+                                                                                        "instance.lifecycle.load-failed",
+                                                                                        LangUtils
+                                                                                                .placeholder(
+                                                                                                        "dungeon",
+                                                                                                        this
+                                                                                                                .getDisplayName()));
                                                                     }
-                                                                    playerSession.setAwaitingDungeon(false);
+                                                                    playerSession
+                                                                            .setAwaitingDungeon(
+                                                                                    false);
                                                                 });
                                             } catch (InterruptedException exception) {
                                                 Thread.currentThread().interrupt();
@@ -180,7 +226,10 @@ public class StaticDungeon extends DungeonDefinition {
 
                                                 if (instance != null) {
                                                     this.schedulePrepareFailure(
-                                                            player, playerSession, instance, "instance.lifecycle.load-failed");
+                                                            player,
+                                                            playerSession,
+                                                            instance,
+                                                            "instance.lifecycle.load-failed");
                                                     this.logger()
                                                             .error(
                                                                     "Interrupted while waiting for static instance '{}' to initialize.",
@@ -190,7 +239,10 @@ public class StaticDungeon extends DungeonDefinition {
                                                 }
 
                                                 this.schedulePrepareFailure(
-                                                        player, playerSession, null, "instance.lifecycle.load-failed");
+                                                        player,
+                                                        playerSession,
+                                                        null,
+                                                        "instance.lifecycle.load-failed");
                                                 this.logger()
                                                         .error(
                                                                 "Interrupted while waiting for static instance '{}' to initialize.",
@@ -224,7 +276,9 @@ public class StaticDungeon extends DungeonDefinition {
                             }
 
                             LangUtils.sendMessage(
-                                    player, messageKey, LangUtils.placeholder("dungeon", this.getDisplayName()));
+                                    player,
+                                    messageKey,
+                                    LangUtils.placeholder("dungeon", this.getDisplayName()));
                         });
     }
 
@@ -307,33 +361,33 @@ public class StaticDungeon extends DungeonDefinition {
 
         try {
             functionsYaml.load(loadFile);
-            List<DungeonFunction> functions = (List<DungeonFunction>) functionsYaml.getList("Functions");
+            List<?> functions = functionsYaml.getList("Functions");
             if (functions == null || functions.isEmpty()) {
                 return;
             }
 
             int index = 0;
-            for (DungeonFunction function : functions) {
+            for (Object function : functions) {
                 this.loadFunctionSafely(function, index++);
             }
         } catch (IOException exception) {
-                        throw new DungeonLoadException(
+            throw new DungeonLoadException(
                     "Access of functions.yml file failed!",
                     false,
                     "There may be another process accessing the file, or we may not have permission.");
         } catch (InvalidConfigurationException | YAMLException exception) {
-                        throw getDungeonLoadException(exception);
+            throw getDungeonLoadException(exception);
         }
     }
 
     /**
      * Loads function safely.
      */
-    private void loadFunctionSafely(DungeonFunction function, int index) {
-        if (function == null) {
+    private void loadFunctionSafely(Object entry, int index) {
+        if (!(entry instanceof DungeonFunction function)) {
             this.logger()
                     .warn(
-                            "Skipping null function entry at index {} in static dungeon '{}'.",
+                            "Skipping invalid or null function entry at index {} in static dungeon '{}'.",
                             index,
                             this.getWorldName());
             return;
@@ -353,7 +407,8 @@ public class StaticDungeon extends DungeonDefinition {
 
             this.addFunction(loc, function);
         } catch (Throwable throwable) {
-            // Content loading is intentionally defensive here so one broken serialized function does
+            // Content loading is intentionally defensive here so one broken serialized function
+            // does
             // not prevent the rest of the dungeon from staying usable.
             Throwable root = throwable.getCause() == null ? throwable : throwable.getCause();
             Location loc = function.getLocation();
@@ -364,8 +419,14 @@ public class StaticDungeon extends DungeonDefinition {
                             this.getWorldName(),
                             loc == null
                                     ? "<no-location>"
-                                    : (loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ()),
-                            root.getMessage() == null ? root.getClass().getSimpleName() : root.getMessage(),
+                                    : (loc.getBlockX()
+                                            + ","
+                                            + loc.getBlockY()
+                                            + ","
+                                            + loc.getBlockZ()),
+                            root.getMessage() == null
+                                    ? root.getClass().getSimpleName()
+                                    : root.getMessage(),
                             root);
         }
     }
@@ -375,7 +436,7 @@ public class StaticDungeon extends DungeonDefinition {
      */
     private static @NotNull DungeonLoadException getDungeonLoadException(Exception exception) {
         DungeonLoadException ex =
-                                new DungeonLoadException(
+                new DungeonLoadException(
                         "Functions list has invalid YAML! See error below...",
                         false,
                         "Contains an unsupported element! (Function, trigger, or condition!)",

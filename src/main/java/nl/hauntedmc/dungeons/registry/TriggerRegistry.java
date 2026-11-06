@@ -1,6 +1,5 @@
 package nl.hauntedmc.dungeons.registry;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -34,10 +33,13 @@ public final class TriggerRegistry {
     private final Map<String, Class<? extends DungeonTrigger>> triggers = new LinkedHashMap<>();
     private final Map<Class<? extends DungeonTrigger>, String> triggerIds = new LinkedHashMap<>();
     private final Map<String, MenuButton> triggerButtons = new LinkedHashMap<>();
-    private final Map<TriggerCategory, Map<String, MenuButton>> buttonsByCategory = new LinkedHashMap<>();
+    private final Map<TriggerCategory, Map<String, MenuButton>> buttonsByCategory =
+            new LinkedHashMap<>();
 
     /** Creates a trigger registry bound to plugin/runtime event dispatch infrastructure. */
-    public TriggerRegistry(DungeonsPlugin plugin, ActiveInstanceRegistry activeInstanceManager,
+    public TriggerRegistry(
+            DungeonsPlugin plugin,
+            ActiveInstanceRegistry activeInstanceManager,
             EventRelayListener elementEventHandler) {
         this.plugin = plugin;
         this.activeInstanceManager = activeInstanceManager;
@@ -56,66 +58,89 @@ public final class TriggerRegistry {
             this.triggers.put(triggerId, triggerClass);
             this.triggerIds.put(triggerClass, triggerId);
 
-            Method menuButtonMethod = triggerClass.getDeclaredMethod("buildMenuButton");
-            menuButtonMethod.setAccessible(true);
             DungeonTrigger trigger = triggerClass.getDeclaredConstructor().newInstance();
-            MenuButton button = (MenuButton) menuButtonMethod.invoke(trigger);
+            MenuButton button = trigger.buildMenuButton();
             if (button == null) {
-                this.plugin.getSLF4JLogger().warn(
-                        "Trigger '{}' does not expose a menu button and will not appear in the editor.",
-                        triggerClass.getSimpleName());
+                this.plugin
+                        .getSLF4JLogger()
+                        .warn(
+                                "Trigger '{}' does not expose a menu button and will not appear in the editor.",
+                                triggerClass.getSimpleName());
                 return;
             }
 
             this.triggerButtons.put(triggerId, button);
-            Field categoryField = triggerClass.getField("category");
-            categoryField.setAccessible(true);
-            TriggerCategory category = (TriggerCategory) categoryField.get(trigger);
+            TriggerCategory category = trigger.getCategory();
             if (category != null) {
                 this.buttonsByCategory.get(category).put(triggerId, button);
             }
 
-            List<Method> eventMethods = MethodUtils.getMethodsListWithAnnotation(triggerClass, EventHandler.class);
+            List<Method> eventMethods =
+                    MethodUtils.getMethodsListWithAnnotation(triggerClass, EventHandler.class);
             for (Method method : eventMethods) {
                 EventHandler handler = method.getAnnotation(EventHandler.class);
                 Class<?> rawEvent = method.getParameterTypes()[0];
                 if (Event.class.isAssignableFrom(rawEvent)) {
                     Class<? extends Event> eventClass = rawEvent.asSubclass(Event.class);
-                    Bukkit.getPluginManager().registerEvent(eventClass, this.elementEventHandler, handler.priority(),
-                            (listener, event) -> {
-                                for (DungeonInstance instance : this.activeInstanceManager.getActiveInstances()) {
-                                    List<DungeonTrigger> elements = instance.getTriggerListeners(triggerClass);
-                                    if (elements != null) {
-                                        for (DungeonTrigger element : new ArrayList<>(elements)) {
-                                            if (eventClass.isAssignableFrom(event.getClass())) {
-                                                try {
-                                                    method.invoke(element, event);
-                                                } catch (Exception exception) {
-                                                    Throwable cause = exception.getCause() == null
-                                                            ? exception
-                                                            : exception.getCause();
-                                                    String instanceName = instance.getInstanceWorld() == null
-                                                            ? "<unloaded>"
-                                                            : instance.getInstanceWorld().getName();
-                                                    this.plugin.getSLF4JLogger().error(
-                                                            "Trigger listener '{}#{}' failed for event '{}' in instance '{}'.",
-                                                            triggerClass.getSimpleName(), method.getName(),
-                                                            eventClass.getSimpleName(), instanceName, cause);
+                    Bukkit.getPluginManager()
+                            .registerEvent(
+                                    eventClass,
+                                    this.elementEventHandler,
+                                    handler.priority(),
+                                    (listener, event) -> {
+                                        for (DungeonInstance instance :
+                                                this.activeInstanceManager.getActiveInstances()) {
+                                            List<DungeonTrigger> elements =
+                                                    instance.getTriggerListeners(triggerClass);
+                                            if (elements != null) {
+                                                for (DungeonTrigger element :
+                                                        new ArrayList<>(elements)) {
+                                                    if (eventClass.isAssignableFrom(
+                                                            event.getClass())) {
+                                                        try {
+                                                            method.invoke(element, event);
+                                                        } catch (Exception exception) {
+                                                            Throwable cause =
+                                                                    exception.getCause() == null
+                                                                            ? exception
+                                                                            : exception.getCause();
+                                                            String instanceName =
+                                                                    instance.getInstanceWorld()
+                                                                                    == null
+                                                                            ? "<unloaded>"
+                                                                            : instance.getInstanceWorld()
+                                                                                    .getName();
+                                                            this.plugin
+                                                                    .getSLF4JLogger()
+                                                                    .error(
+                                                                            "Trigger listener '{}#{}' failed for event '{}' in instance '{}'.",
+                                                                            triggerClass
+                                                                                    .getSimpleName(),
+                                                                            method.getName(),
+                                                                            eventClass
+                                                                                    .getSimpleName(),
+                                                                            instanceName,
+                                                                            cause);
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }
-                                    }
-                                }
-                            }, this.plugin);
+                                    },
+                                    this.plugin);
                 }
             }
-        } catch (NoSuchMethodException | InvocationTargetException | InstantiationException
-                | IllegalAccessException exception) {
-            this.plugin.getSLF4JLogger().error("Trigger '{}' has an invalid buildMenuButton declaration.",
-                    triggerClass.getSimpleName(), exception);
-        } catch (NoSuchFieldException exception) {
-            this.plugin.getSLF4JLogger().error("Trigger '{}' is missing the required 'category' field.",
-                    triggerClass.getSimpleName(), exception);
+        } catch (NoSuchMethodException
+                | InvocationTargetException
+                | InstantiationException
+                | IllegalAccessException
+                | RuntimeException exception) {
+            this.plugin
+                    .getSLF4JLogger()
+                    .error(
+                            "Failed to register trigger '{}'.",
+                            triggerClass.getSimpleName(),
+                            exception);
         }
     }
 

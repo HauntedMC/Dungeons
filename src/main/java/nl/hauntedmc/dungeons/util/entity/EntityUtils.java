@@ -10,6 +10,7 @@ import org.bukkit.event.player.PlayerTeleportEvent;
 
 /** Entity attribute and teleport helper utilities. */
 public final class EntityUtils {
+    private EntityUtils() {}
 
     /** Returns effective max health for damageable entities. */
     public static double getMaxHealth(Damageable entity) {

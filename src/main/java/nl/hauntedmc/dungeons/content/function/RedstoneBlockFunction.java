@@ -14,6 +14,7 @@ import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.configuration.serialization.SerializableAs;
@@ -78,25 +79,26 @@ public class RedstoneBlockFunction extends DungeonFunction {
         final int effectiveCount = Math.max(1, this.count);
         final int effectiveRate = Math.max(1, this.rate);
         this.repeater =
-                                new BukkitRunnable() {
+                new BukkitRunnable() {
                     /**
                      * Performs run.
                      */
                     public void run() {
-                        world.getBlockAt(RedstoneBlockFunction.this.location).setType(Material.REDSTONE_BLOCK);
+                        world.getBlockAt(RedstoneBlockFunction.this.location)
+                                .setType(Material.REDSTONE_BLOCK);
                         RedstoneBlockFunction.this.status++;
                         if (RedstoneBlockFunction.this.status >= effectiveCount) {
                             this.cancel();
                         } else {
-                            (new BukkitRunnable() {
-                                        /**
-                                         * Performs run.
-                                         */
-                                        public void run() {
-                                            world.getBlockAt(RedstoneBlockFunction.this.location).setType(Material.AIR);
-                                        }
-                                    })
-                                    .runTaskLater(RuntimeContext.plugin(), effectiveRate - 1L);
+                            Bukkit.getScheduler()
+                                    .runTaskLater(
+                                            RuntimeContext.plugin(),
+                                            () ->
+                                                    world.getBlockAt(
+                                                                    RedstoneBlockFunction.this
+                                                                            .location)
+                                                            .setType(Material.AIR),
+                                            effectiveRate - 1L);
                         }
                     }
                 };
@@ -121,7 +123,7 @@ public class RedstoneBlockFunction extends DungeonFunction {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -146,17 +148,20 @@ public class RedstoneBlockFunction extends DungeonFunction {
                     @Override
                     public void onInput(Player player, String message) {
                         Optional<Integer> value = InputUtils.readIntegerInput(player, message);
-                        RedstoneBlockFunction.this.delay = value.orElse(RedstoneBlockFunction.this.delay);
+                        RedstoneBlockFunction.this.delay =
+                                value.orElse(RedstoneBlockFunction.this.delay);
                         if (value.isPresent()) {
                             LangUtils.sendMessage(
                                     player,
                                     "editor.function.redstone-block.delay-set",
-                                    LangUtils.placeholder("delay", String.valueOf(RedstoneBlockFunction.this.delay)));
+                                    LangUtils.placeholder(
+                                            "delay",
+                                            String.valueOf(RedstoneBlockFunction.this.delay)));
                         }
                     }
                 });
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -181,17 +186,20 @@ public class RedstoneBlockFunction extends DungeonFunction {
                     @Override
                     public void onInput(Player player, String message) {
                         Optional<Integer> value = InputUtils.readIntegerInput(player, message);
-                        RedstoneBlockFunction.this.count = value.orElse(RedstoneBlockFunction.this.count);
+                        RedstoneBlockFunction.this.count =
+                                value.orElse(RedstoneBlockFunction.this.count);
                         if (value.isPresent()) {
                             LangUtils.sendMessage(
                                     player,
                                     "editor.function.redstone-block.count-set",
-                                    LangUtils.placeholder("count", String.valueOf(RedstoneBlockFunction.this.count)));
+                                    LangUtils.placeholder(
+                                            "count",
+                                            String.valueOf(RedstoneBlockFunction.this.count)));
                         }
                     }
                 });
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -216,12 +224,15 @@ public class RedstoneBlockFunction extends DungeonFunction {
                     @Override
                     public void onInput(Player player, String message) {
                         Optional<Integer> value = InputUtils.readIntegerInput(player, message);
-                        RedstoneBlockFunction.this.rate = value.orElse(RedstoneBlockFunction.this.rate);
+                        RedstoneBlockFunction.this.rate =
+                                value.orElse(RedstoneBlockFunction.this.rate);
                         if (value.isPresent()) {
                             LangUtils.sendMessage(
                                     player,
                                     "editor.function.redstone-block.rate-set",
-                                    LangUtils.placeholder("rate", String.valueOf(RedstoneBlockFunction.this.rate)));
+                                    LangUtils.placeholder(
+                                            "rate",
+                                            String.valueOf(RedstoneBlockFunction.this.rate)));
                         }
                     }
                 });

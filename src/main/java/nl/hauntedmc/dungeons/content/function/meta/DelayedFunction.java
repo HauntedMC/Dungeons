@@ -1,6 +1,8 @@
 package nl.hauntedmc.dungeons.content.function.meta;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
@@ -102,13 +104,14 @@ public class DelayedFunction extends CompositeFunction {
      * Performs run function.
      */
     @Override
-    public void runFunction(final TriggerFireEvent triggerEvent, List<DungeonPlayerSession> targets) {
+    public void runFunction(
+            final TriggerFireEvent triggerEvent, List<DungeonPlayerSession> targets) {
         if (this.function != null) {
             final List<DungeonPlayerSession> functionTargets =
                     this.resolveNestedFunctionTargets(this.function, triggerEvent, targets);
 
             this.task =
-                                        new BukkitRunnable() {
+                    new BukkitRunnable() {
                         /**
                          * Performs run.
                          */
@@ -148,7 +151,7 @@ public class DelayedFunction extends CompositeFunction {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     /**
                      * Builds button.
                      */
@@ -168,7 +171,7 @@ public class DelayedFunction extends CompositeFunction {
                     }
                 });
         this.menu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     /**
                      * Builds button.
                      */
@@ -184,7 +187,8 @@ public class DelayedFunction extends CompositeFunction {
                     @Override
                     public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
-                        DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                        DungeonPlayerSession playerSession =
+                                RuntimeContext.playerSessions().get(player);
                         if (DelayedFunction.this.function != null) {
                             playerSession.showHotbar(DelayedFunction.this.function.getMenu());
                         } else {
@@ -193,7 +197,7 @@ public class DelayedFunction extends CompositeFunction {
                     }
                 });
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -223,7 +227,8 @@ public class DelayedFunction extends CompositeFunction {
                             LangUtils.sendMessage(
                                     player,
                                     "editor.function.delayed.delay-set",
-                                    LangUtils.placeholder("delay", String.valueOf(DelayedFunction.this.delay)));
+                                    LangUtils.placeholder(
+                                            "delay", String.valueOf(DelayedFunction.this.delay)));
                         }
                     }
                 });

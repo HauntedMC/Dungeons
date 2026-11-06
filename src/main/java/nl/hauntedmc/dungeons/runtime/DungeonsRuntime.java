@@ -242,6 +242,9 @@ public final class DungeonsRuntime {
     private <T> T requireInitialized(T value, String componentName) {
         return Objects.requireNonNull(
                 value,
-                () -> "Dungeons runtime component '" + componentName + "' has not been initialized yet.");
+                () ->
+                        "Dungeons runtime component '"
+                                + componentName
+                                + "' has not been initialized yet.");
     }
 }

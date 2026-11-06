@@ -27,7 +27,8 @@ public abstract class MenuItem {
                 @Override
                 public void onSelect(PlayerEvent event) {
                     Player player = event.getPlayer();
-                    DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                    DungeonPlayerSession playerSession =
+                            RuntimeContext.playerSessions().get(player);
                     playerSession.setActiveTrigger(null);
                     playerSession.restorePreviousHotbar(true);
                 }
@@ -46,7 +47,8 @@ public abstract class MenuItem {
                 @Override
                 public void onSelect(PlayerEvent event) {
                     Player player = event.getPlayer();
-                    DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                    DungeonPlayerSession playerSession =
+                            RuntimeContext.playerSessions().get(player);
                     playerSession.setActiveTrigger(null);
                     playerSession.restoreCapturedHotbar();
                 }

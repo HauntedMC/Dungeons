@@ -1,5 +1,6 @@
 package nl.hauntedmc.dungeons.util.world;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ExecutionException;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.util.config.PluginConfigView;
@@ -14,20 +15,20 @@ import org.bukkit.util.BoundingBox;
  * Location and bounding-box helpers used by dungeon generation and runtime flows.
  */
 public final class LocationUtils {
+    private LocationUtils() {}
 
     /** Reads a location from config section coordinates with null world. */
     public static Location readLocation(ConfigurationSection config) {
         if (config == null) {
             return null;
-        } else {
-            return new Location(
-                    null,
-                    config.getDouble("x"),
-                    config.getDouble("y"),
-                    config.getDouble("z"),
-                    (float) config.getDouble("yaw"),
-                    (float) config.getDouble("pitch"));
         }
+        return new Location(
+                null,
+                config.getDouble("x"),
+                config.getDouble("y"),
+                config.getDouble("z"),
+                (float) config.getDouble("yaw"),
+                (float) config.getDouble("pitch"));
     }
 
     /** Reads a location or returns a fallback default when absent. */
@@ -79,7 +80,8 @@ public final class LocationUtils {
             try {
                 return Bukkit.getScheduler()
                         .callSyncMethod(
-                                RuntimeContext.plugin(), () -> findSafeLocationInBoxSync(world, box))
+                                RuntimeContext.plugin(),
+                                () -> findSafeLocationInBoxSync(world, box))
                         .get();
             } catch (InterruptedException exception) {
                 Thread.currentThread().interrupt();
@@ -108,9 +110,9 @@ public final class LocationUtils {
     /** Main-thread implementation for safe spawn search in a bounding box. */
     private static Location findSafeLocationInBoxSync(World world, BoundingBox box) {
         int timeout = PluginConfigView.getSafeSpawnSearchTimeoutSeconds(RuntimeContext.config());
-        long startTime = System.currentTimeMillis();
+        long startTime = System.nanoTime();
 
-        while (System.currentTimeMillis() - startTime <= timeout * 1000L) {
+        while (System.nanoTime() - startTime <= TimeUnit.SECONDS.toNanos(timeout)) {
             double x = selectCoordinate(box.getMinX(), box.getMaxX());
             double z = selectCoordinate(box.getMinZ(), box.getMaxZ());
             int chunkX = ((int) Math.floor(x)) >> 4;
@@ -125,7 +127,7 @@ public final class LocationUtils {
                         .debug(
                                 "Safe spawn search for world '{}' completed in {}ms.",
                                 world.getName(),
-                                System.currentTimeMillis() - startTime);
+                                TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime));
                 return target;
             }
         }
@@ -162,7 +164,8 @@ public final class LocationUtils {
                 continue;
             }
 
-            BoundingBox groundBox = new BoundingBox(x - 0.4D, y - 1.0D, z - 0.4D, x + 0.4D, y, z + 0.4D);
+            BoundingBox groundBox =
+                    new BoundingBox(x - 0.4D, y - 1.0D, z - 0.4D, x + 0.4D, y, z + 0.4D);
             if (!world.hasCollisionsIn(groundBox)) {
                 continue;
             }

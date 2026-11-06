@@ -33,7 +33,7 @@ public enum FunctionTargetType implements ConfigurationSerializable {
      * Resolves the target type by its editor index value.
      */
     public static FunctionTargetType intToTargetType(int index) {
-                return switch (index) {
+        return switch (index) {
             case 1 -> PLAYER;
             case 2 -> TEAM;
             case 3 -> ROOM;
@@ -54,7 +54,7 @@ public enum FunctionTargetType implements ConfigurationSerializable {
      * Restores a target type from serialized enum data.
      */
     public static FunctionTargetType deserialize(Map<String, Object> map) {
-                return valueOf(String.valueOf(map.get("value")));
+        return valueOf(String.valueOf(map.get("value")));
     }
 
     /**

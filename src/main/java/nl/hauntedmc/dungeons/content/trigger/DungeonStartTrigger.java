@@ -57,7 +57,9 @@ public class DungeonStartTrigger extends DungeonTrigger {
         if (event.getInstance() == this.instance) {
             int delay = PluginConfigView.getDungeonStartTriggerDelayTicks(RuntimeContext.config());
             if (this.instance.getDungeon().isLobbyEnabled()) {
-                delay = PluginConfigView.getDungeonStartTriggerLobbyDelayTicks(RuntimeContext.config());
+                delay =
+                        PluginConfigView.getDungeonStartTriggerLobbyDelayTicks(
+                                RuntimeContext.config());
             }
 
             Bukkit.getScheduler()

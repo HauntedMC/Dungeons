@@ -38,61 +38,57 @@ public class HologramManager {
 
         if (display == null) {
             return null;
-        } else {
-            display.text(ComponentUtils.component(text.replace("\\n", "\n")));
-            display.setViewRange(viewRange / 64.0F);
-            return display;
         }
+        display.text(ComponentUtils.component(text.replace("\\n", "\n")));
+        display.setViewRange(viewRange / 64.0F);
+        return display;
     }
 
     /** Creates a fresh hologram at location, replacing any existing managed hologram there. */
     public TextDisplay createHologram(Location loc, float viewRange, String text, boolean isLabel) {
         if (loc == null || loc.getWorld() == null) {
             return null;
-        } else {
-            Location key = this.normalizeKey(loc);
-            this.removeExistingHologram(key);
-
-            TextDisplay display = loc.getWorld().spawn(loc, TextDisplay.class);
-            display.setAlignment(TextAlignment.CENTER);
-            display.setBillboard(Billboard.CENTER);
-            display.text(ComponentUtils.component(text.replace("\\n", "\n")));
-            display.setViewRange(viewRange / 64.0F);
-            if (isLabel) {
-                display
-                        .getPersistentDataContainer()
-                        .set(this.getDungeonHologramKey(), PersistentDataType.BOOLEAN, true);
-            }
-
-            this.textHolograms.put(key, display);
-            return display;
         }
+        Location key = this.normalizeKey(loc);
+        this.removeExistingHologram(key);
+
+        TextDisplay display = loc.getWorld().spawn(loc, TextDisplay.class);
+        display.setAlignment(TextAlignment.CENTER);
+        display.setBillboard(Billboard.CENTER);
+        display.text(ComponentUtils.component(text.replace("\\n", "\n")));
+        display.setViewRange(viewRange / 64.0F);
+        if (isLabel) {
+            display.getPersistentDataContainer()
+                    .set(this.getDungeonHologramKey(), PersistentDataType.BOOLEAN, true);
+        }
+
+        this.textHolograms.put(key, display);
+        return display;
     }
 
     /** Clones an existing display's visible properties into a managed hologram at location. */
     public TextDisplay cloneHologramAt(Location loc, TextDisplay display) {
         if (loc == null || loc.getWorld() == null || display == null) {
             return null;
-        } else {
-            Location key = this.normalizeKey(loc);
-            this.removeExistingHologram(key);
-
-            TextDisplay newDisplay = loc.getWorld().spawn(loc, TextDisplay.class);
-            newDisplay.setAlignment(TextAlignment.CENTER);
-            newDisplay.setBillboard(Billboard.CENTER);
-            newDisplay.text(display.text());
-            newDisplay.setViewRange(display.getViewRange());
-
-            PersistentDataContainer sourceData = display.getPersistentDataContainer();
-            if (sourceData.has(this.getDungeonHologramKey(), PersistentDataType.BOOLEAN)) {
-                newDisplay
-                        .getPersistentDataContainer()
-                        .set(this.getDungeonHologramKey(), PersistentDataType.BOOLEAN, true);
-            }
-
-            this.textHolograms.put(key, newDisplay);
-            return newDisplay;
         }
+        Location key = this.normalizeKey(loc);
+        this.removeExistingHologram(key);
+
+        TextDisplay newDisplay = loc.getWorld().spawn(loc, TextDisplay.class);
+        newDisplay.setAlignment(TextAlignment.CENTER);
+        newDisplay.setBillboard(Billboard.CENTER);
+        newDisplay.text(display.text());
+        newDisplay.setViewRange(display.getViewRange());
+
+        PersistentDataContainer sourceData = display.getPersistentDataContainer();
+        if (sourceData.has(this.getDungeonHologramKey(), PersistentDataType.BOOLEAN)) {
+            newDisplay
+                    .getPersistentDataContainer()
+                    .set(this.getDungeonHologramKey(), PersistentDataType.BOOLEAN, true);
+        }
+
+        this.textHolograms.put(key, newDisplay);
+        return newDisplay;
     }
 
     /** Hides a managed hologram at location by setting view range to zero. */
@@ -199,7 +195,8 @@ public class HologramManager {
         }
 
         for (TextDisplay display : key.getWorld().getEntitiesByClass(TextDisplay.class)) {
-            if (this.isTaggedDungeonHologram(display) && this.samePosition(display.getLocation(), key)) {
+            if (this.isTaggedDungeonHologram(display)
+                    && this.samePosition(display.getLocation(), key)) {
                 display.remove();
             }
         }
@@ -207,8 +204,7 @@ public class HologramManager {
 
     /** Returns whether a display carries the dungeon hologram persistent tag. */
     private boolean isTaggedDungeonHologram(TextDisplay display) {
-        return display
-                .getPersistentDataContainer()
+        return display.getPersistentDataContainer()
                 .has(this.getDungeonHologramKey(), PersistentDataType.BOOLEAN);
     }
 

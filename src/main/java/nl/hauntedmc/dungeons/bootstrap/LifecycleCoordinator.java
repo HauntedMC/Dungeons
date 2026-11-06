@@ -194,7 +194,9 @@ public final class LifecycleCoordinator {
 
             String reservedDungeonName = playerSession.getReservedAccessKeyDungeon();
             DungeonDefinition reservedDungeon =
-                    reservedDungeonName == null ? null : this.runtime.dungeonCatalog().get(reservedDungeonName);
+                    reservedDungeonName == null
+                            ? null
+                            : this.runtime.dungeonCatalog().get(reservedDungeonName);
             if (reservedDungeon != null) {
                 reservedDungeon.refundReservedAccessKey(playerSession);
             } else {

@@ -127,7 +127,7 @@ public class PlayerDeathTrigger extends DungeonTrigger {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -159,12 +159,14 @@ public class PlayerDeathTrigger extends DungeonTrigger {
                                     player,
                                     "editor.trigger.player-death.count-set",
                                     LangUtils.placeholder(
-                                            "count", String.valueOf(PlayerDeathTrigger.this.deathsRequired)));
+                                            "count",
+                                            String.valueOf(
+                                                    PlayerDeathTrigger.this.deathsRequired)));
                         }
                     }
                 });
         this.menu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -181,16 +183,18 @@ public class PlayerDeathTrigger extends DungeonTrigger {
                     @Override
                     public void onSelect(Player player) {
                         if (!PlayerDeathTrigger.this.oneDeathPerPlayer) {
-                            LangUtils.sendMessage(player, "editor.trigger.player-death.count-one-per-player");
+                            LangUtils.sendMessage(
+                                    player, "editor.trigger.player-death.count-one-per-player");
                         } else {
                             LangUtils.sendMessage(player, "editor.trigger.player-death.count-all");
                         }
 
-                        PlayerDeathTrigger.this.oneDeathPerPlayer = !PlayerDeathTrigger.this.oneDeathPerPlayer;
+                        PlayerDeathTrigger.this.oneDeathPerPlayer =
+                                !PlayerDeathTrigger.this.oneDeathPerPlayer;
                     }
                 });
         this.menu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -207,12 +211,15 @@ public class PlayerDeathTrigger extends DungeonTrigger {
                     @Override
                     public void onSelect(Player player) {
                         if (!PlayerDeathTrigger.this.allowRetrigger) {
-                            LangUtils.sendMessage(player, "editor.trigger.player-death.allow-repeat");
+                            LangUtils.sendMessage(
+                                    player, "editor.trigger.player-death.allow-repeat");
                         } else {
-                            LangUtils.sendMessage(player, "editor.trigger.player-death.prevent-repeat");
+                            LangUtils.sendMessage(
+                                    player, "editor.trigger.player-death.prevent-repeat");
                         }
 
-                        PlayerDeathTrigger.this.allowRetrigger = !PlayerDeathTrigger.this.allowRetrigger;
+                        PlayerDeathTrigger.this.allowRetrigger =
+                                !PlayerDeathTrigger.this.allowRetrigger;
                     }
                 });
         this.addRoomLimitToggleButton();

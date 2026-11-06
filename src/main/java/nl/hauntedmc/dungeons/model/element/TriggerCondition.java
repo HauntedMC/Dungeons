@@ -107,31 +107,32 @@ public abstract class TriggerCondition extends DungeonElement
     protected final void initializeMenu() {
         this.menu = PlayerHotbarMenu.createMenu();
         this.menu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     @Override
-                                        public void buildButton() {
+                    public void buildButton() {
                         this.button = new MenuButton(Material.RED_STAINED_GLASS_PANE);
                         this.button.setDisplayName("&c&lBACK");
                     }
 
                     @Override
-                                        public void onSelect(PlayerEvent event) {
+                    public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
-                        DungeonPlayerSession playerSession = TriggerCondition.this.playerSession(player);
+                        DungeonPlayerSession playerSession =
+                                TriggerCondition.this.playerSession(player);
                         playerSession.restorePreviousHotbar();
                     }
                 });
         this.menu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     @Override
-                                        public void buildButton() {
+                    public void buildButton() {
                         this.button = new MenuButton(Material.REDSTONE_TORCH);
                         this.button.setDisplayName("&d&lToggle Condition Requirement");
                         this.button.setEnchanted(!TriggerCondition.this.inverted);
                     }
 
                     @Override
-                                        public void onSelect(Player player) {
+                    public void onSelect(Player player) {
                         if (!TriggerCondition.this.inverted) {
                             LangUtils.sendMessage(player, "editor.condition.negated");
                         } else {

@@ -118,7 +118,7 @@ public class ChunkLoadFunction extends DungeonFunction {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Performs on select.
                      */
@@ -138,7 +138,8 @@ public class ChunkLoadFunction extends DungeonFunction {
                         LangUtils.sendMessage(
                                 player,
                                 "editor.function.chunk-load.radius-set",
-                                LangUtils.placeholder("radius", String.valueOf(ChunkLoadFunction.this.radius)));
+                                LangUtils.placeholder(
+                                        "radius", String.valueOf(ChunkLoadFunction.this.radius)));
                     }
 
                     /**

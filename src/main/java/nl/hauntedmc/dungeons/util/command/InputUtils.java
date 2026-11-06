@@ -7,6 +7,7 @@ import org.bukkit.entity.Player;
 
 /** Typed command-input parsing helpers with localized validation errors. */
 public final class InputUtils {
+    private InputUtils() {}
 
     /** Parses integer input and reports localization-backed validation failure. */
     public static Optional<Integer> readIntegerInput(CommandSender sender, String string) {

@@ -7,6 +7,7 @@ import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 /** Adventure component conversion helpers used across chat and UI rendering. */
 public final class ComponentUtils {
+    private ComponentUtils() {}
 
     private static final LegacyComponentSerializer LEGACY_COMPONENT_SERIALIZER =
             LegacyComponentSerializer.builder()

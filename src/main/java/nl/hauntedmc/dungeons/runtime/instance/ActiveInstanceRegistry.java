@@ -75,7 +75,9 @@ public final class ActiveInstanceRegistry {
 
     /** Returns whether the dungeon can start now for players and optional difficulty. */
     public boolean canStartDungeonNow(
-            @Nullable DungeonDefinition dungeon, int requestedPlayers, @Nullable String difficultyName) {
+            @Nullable DungeonDefinition dungeon,
+            int requestedPlayers,
+            @Nullable String difficultyName) {
         if (dungeon == null) {
             return false;
         }

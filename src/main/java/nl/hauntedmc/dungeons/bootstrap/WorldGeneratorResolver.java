@@ -1,5 +1,6 @@
 package nl.hauntedmc.dungeons.bootstrap;
 
+import java.util.Locale;
 import nl.hauntedmc.dungeons.runtime.PluginEnvironment;
 import nl.hauntedmc.dungeons.world.generator.SolidBlockChunkGenerator;
 import nl.hauntedmc.dungeons.world.generator.VoidGenerator;
@@ -25,12 +26,13 @@ final class WorldGeneratorResolver {
      * Returns the generator for the provided id or {@code null} when Bukkit should use its default
      * world generation behavior.
      */
-    @Nullable ChunkGenerator resolve(@NotNull String worldName, @Nullable String id) {
+    @Nullable
+    ChunkGenerator resolve(@NotNull String worldName, @Nullable String id) {
         if (id == null) {
             return null;
         }
 
-        if (id.toLowerCase().startsWith("block") && id.contains(".")) {
+        if (id.toLowerCase(Locale.ROOT).startsWith("block") && id.contains(".")) {
             String[] split = id.split("\\.", 2);
             Material material = Material.STONE;
 

@@ -68,7 +68,7 @@ public class RemoteTriggerFunction extends DungeonFunction {
             RemoteTrigger remoteTrig = new RemoteTrigger();
             remoteTrig.setTriggerName(this.triggerName);
             RemoteTriggerEvent event =
-                                        new RemoteTriggerEvent(
+                    new RemoteTriggerEvent(
                             remoteTrig.getTriggerName(),
                             remoteTrig,
                             instance,
@@ -97,7 +97,7 @@ public class RemoteTriggerFunction extends DungeonFunction {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -116,7 +116,8 @@ public class RemoteTriggerFunction extends DungeonFunction {
                         LangUtils.sendMessage(
                                 player,
                                 "editor.function.remote-trigger.current-signal",
-                                LangUtils.placeholder("signal", RemoteTriggerFunction.this.triggerName));
+                                LangUtils.placeholder(
+                                        "signal", RemoteTriggerFunction.this.triggerName));
                     }
 
                     /**
@@ -134,7 +135,7 @@ public class RemoteTriggerFunction extends DungeonFunction {
                     }
                 });
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -142,7 +143,8 @@ public class RemoteTriggerFunction extends DungeonFunction {
                     public void buildButton() {
                         this.button = new MenuButton(Material.REPEATER);
                         this.button.setDisplayName("&d&lSignal Range");
-                        this.button.setAmount((int) MathUtils.round(RemoteTriggerFunction.this.range, 0));
+                        this.button.setAmount(
+                                (int) MathUtils.round(RemoteTriggerFunction.this.range, 0));
                     }
 
                     /**
@@ -154,7 +156,8 @@ public class RemoteTriggerFunction extends DungeonFunction {
                         LangUtils.sendMessage(
                                 player,
                                 "editor.function.remote-trigger.current-range",
-                                LangUtils.placeholder("range", String.valueOf(RemoteTriggerFunction.this.range)));
+                                LangUtils.placeholder(
+                                        "range", String.valueOf(RemoteTriggerFunction.this.range)));
                     }
 
                     /**
@@ -163,12 +166,15 @@ public class RemoteTriggerFunction extends DungeonFunction {
                     @Override
                     public void onInput(Player player, String message) {
                         Optional<Double> value = InputUtils.readDoubleInput(player, message);
-                        RemoteTriggerFunction.this.range = value.orElse(RemoteTriggerFunction.this.range);
+                        RemoteTriggerFunction.this.range =
+                                value.orElse(RemoteTriggerFunction.this.range);
                         if (value.isPresent()) {
                             LangUtils.sendMessage(
                                     player,
                                     "editor.function.remote-trigger.range-set",
-                                    LangUtils.placeholder("range", String.valueOf(RemoteTriggerFunction.this.range)));
+                                    LangUtils.placeholder(
+                                            "range",
+                                            String.valueOf(RemoteTriggerFunction.this.range)));
                         }
                     }
                 });

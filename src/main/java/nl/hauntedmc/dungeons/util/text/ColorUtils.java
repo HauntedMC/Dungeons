@@ -6,6 +6,7 @@ import java.util.regex.Pattern;
 
 /** Legacy and hex color translation helpers. */
 public final class ColorUtils {
+    private ColorUtils() {}
 
     private static final char SECTION_CHAR = '§';
     private static final String LEGACY_COLOR_CODES = "0123456789AaBbCcDdEeFfKkLlMmNnOoRrXx";
@@ -54,7 +55,8 @@ public final class ColorUtils {
         Matcher matcher = pattern.matcher(input);
         StringBuilder output = new StringBuilder();
         while (matcher.find()) {
-            matcher.appendReplacement(output, Matcher.quoteReplacement(toLegacyHex(matcher.group(1))));
+            matcher.appendReplacement(
+                    output, Matcher.quoteReplacement(toLegacyHex(matcher.group(1))));
         }
 
         matcher.appendTail(output);
@@ -70,7 +72,8 @@ public final class ColorUtils {
         Matcher matcher = BRACE_HEX_PATTERN.matcher(input);
         StringBuilder output = new StringBuilder();
         while (matcher.find()) {
-            matcher.appendReplacement(output, Matcher.quoteReplacement("<" + matcher.group(1) + ">"));
+            matcher.appendReplacement(
+                    output, Matcher.quoteReplacement("<" + matcher.group(1) + ">"));
         }
 
         matcher.appendTail(output);

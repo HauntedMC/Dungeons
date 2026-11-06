@@ -26,7 +26,8 @@ import org.bukkit.entity.Player;
  */
 public final class LangUtils {
     private static final String MESSAGES_FILE_NAME = "messages.yml";
-    private static final Pattern NAMED_PLACEHOLDER_PATTERN = Pattern.compile("\\{([a-zA-Z0-9_.-]+)}");
+    private static final Pattern NAMED_PLACEHOLDER_PATTERN =
+            Pattern.compile("\\{([a-zA-Z0-9_.-]+)}");
     private static FileConfiguration messagesYaml;
     private static FileConfiguration jarMessages;
 
@@ -47,7 +48,9 @@ public final class LangUtils {
                 }
             } else {
                 RuntimeContext.logger()
-                        .warn("Bundled {} resource was not found in the plugin jar.", MESSAGES_FILE_NAME);
+                        .warn(
+                                "Bundled {} resource was not found in the plugin jar.",
+                                MESSAGES_FILE_NAME);
             }
         } catch (IOException exception) {
             RuntimeContext.logger()
@@ -62,7 +65,10 @@ public final class LangUtils {
             messagesYaml.load(messagesFile);
         } catch (InvalidConfigurationException | IOException exception) {
             RuntimeContext.logger()
-                    .error("Failed to load messages file '{}'.", messagesFile.getAbsolutePath(), exception);
+                    .error(
+                            "Failed to load messages file '{}'.",
+                            messagesFile.getAbsolutePath(),
+                            exception);
         }
     }
 
@@ -174,7 +180,8 @@ public final class LangUtils {
     }
 
     /** Returns a localized message list with placeholder substitution. */
-    public static List<String> getMessageList(String langNamespace, LangPlaceholder... placeholders) {
+    public static List<String> getMessageList(
+            String langNamespace, LangPlaceholder... placeholders) {
         return getMessageList(langNamespace, toPlaceholderMap(placeholders));
     }
 
@@ -205,7 +212,8 @@ public final class LangUtils {
     public static void saveMissingValues() {
         if (messagesYaml == null || jarMessages == null) {
             RuntimeContext.logger()
-                    .warn("Message resources were not initialized before saveMissingValues() was called.");
+                    .warn(
+                            "Message resources were not initialized before saveMissingValues() was called.");
             return;
         }
 
@@ -216,7 +224,10 @@ public final class LangUtils {
             messagesYaml.save(langFile);
         } catch (IOException exception) {
             RuntimeContext.logger()
-                    .error("Failed to save messages file '{}'.", langFile.getAbsolutePath(), exception);
+                    .error(
+                            "Failed to save messages file '{}'.",
+                            langFile.getAbsolutePath(),
+                            exception);
         }
     }
 
@@ -258,7 +269,10 @@ public final class LangUtils {
 
     /** Replaces `{name}` tokens in a message with provided placeholder values. */
     private static String applyNamedPlaceholders(String message, Map<String, ?> placeholders) {
-        if (message == null || message.isEmpty() || placeholders == null || placeholders.isEmpty()) {
+        if (message == null
+                || message.isEmpty()
+                || placeholders == null
+                || placeholders.isEmpty()) {
             return message == null ? "" : message;
         }
 

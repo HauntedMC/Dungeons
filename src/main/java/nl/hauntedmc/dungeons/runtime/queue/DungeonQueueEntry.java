@@ -123,12 +123,14 @@ public class DungeonQueueEntry {
      * Schedules a short retry loop that joins team members once the leader's instance is ready.
      */
     public void scheduleTeamJoin(
-            DungeonsPlugin plugin, DungeonTeamService teamManager, PlayerSessionRegistry playerManager) {
-                new BukkitRunnable() {
+            DungeonsPlugin plugin,
+            DungeonTeamService teamManager,
+            PlayerSessionRegistry playerManager) {
+        new BukkitRunnable() {
             private int attempts;
 
             @Override
-                        public void run() {
+            public void run() {
                 UUID reservationId = DungeonQueueEntry.this.leaderId;
                 if (DungeonQueueEntry.this.teamId == null) {
                     DungeonQueueEntry.this.refundReservedAccessKeys(playerManager);
@@ -171,7 +173,9 @@ public class DungeonQueueEntry {
                         continue;
                     }
 
-                    if (member == null || member.getPlayer() == null || !member.getPlayer().isOnline()) {
+                    if (member == null
+                            || member.getPlayer() == null
+                            || !member.getPlayer().isOnline()) {
                         continue;
                     }
 

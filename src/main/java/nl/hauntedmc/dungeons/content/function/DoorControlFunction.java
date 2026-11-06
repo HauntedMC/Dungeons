@@ -71,18 +71,22 @@ public class DoorControlFunction extends DungeonFunction {
     public void setLocked(boolean locked) {
         this.locked = locked;
         if (locked) {
-            this.instance.messagePlayers(LangUtils.getMessage("instance.play.functions.doors.lock"));
+            this.instance.messagePlayers(
+                    LangUtils.getMessage("instance.play.functions.doors.lock"));
             this.instance
                     .getInstanceWorld()
-                    .playSound(this.getLocation(), "minecraft:block.iron_trapdoor.close", 5.0F, 0.7F);
+                    .playSound(
+                            this.getLocation(), "minecraft:block.iron_trapdoor.close", 5.0F, 0.7F);
             if (this.openOnUnlock) {
                 this.closeDoor();
             }
         } else {
-            this.instance.messagePlayers(LangUtils.getMessage("instance.play.functions.doors.unlock"));
+            this.instance.messagePlayers(
+                    LangUtils.getMessage("instance.play.functions.doors.unlock"));
             this.instance
                     .getInstanceWorld()
-                    .playSound(this.getLocation(), "minecraft:block.iron_trapdoor.open", 5.0F, 0.7F);
+                    .playSound(
+                            this.getLocation(), "minecraft:block.iron_trapdoor.open", 5.0F, 0.7F);
             if (this.openOnUnlock) {
                 this.openDoor();
             }
@@ -134,9 +138,11 @@ public class DoorControlFunction extends DungeonFunction {
                                     LangUtils.sendMessage(
                                             player,
                                             "instance.play.functions.doors.locked-key",
-                                            LangUtils.placeholder("key", ItemUtils.getItemDisplayName(keyItem)));
+                                            LangUtils.placeholder(
+                                                    "key", ItemUtils.getItemDisplayName(keyItem)));
                                 } else {
-                                    LangUtils.sendMessage(player, "instance.play.functions.doors.locked");
+                                    LangUtils.sendMessage(
+                                            player, "instance.play.functions.doors.locked");
                                 }
                             }
                         }
@@ -172,7 +178,7 @@ public class DoorControlFunction extends DungeonFunction {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -189,16 +195,19 @@ public class DoorControlFunction extends DungeonFunction {
                     @Override
                     public void onSelect(Player player) {
                         if (!DoorControlFunction.this.lockedByDefault) {
-                            LangUtils.sendMessage(player, "editor.function.door-control.locked-default");
+                            LangUtils.sendMessage(
+                                    player, "editor.function.door-control.locked-default");
                         } else {
-                            LangUtils.sendMessage(player, "editor.function.door-control.unlocked-default");
+                            LangUtils.sendMessage(
+                                    player, "editor.function.door-control.unlocked-default");
                         }
 
-                        DoorControlFunction.this.lockedByDefault = !DoorControlFunction.this.lockedByDefault;
+                        DoorControlFunction.this.lockedByDefault =
+                                !DoorControlFunction.this.lockedByDefault;
                     }
                 });
         this.menu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -220,7 +229,8 @@ public class DoorControlFunction extends DungeonFunction {
                             LangUtils.sendMessage(player, "editor.function.door-control.manual");
                         }
 
-                        DoorControlFunction.this.openOnUnlock = !DoorControlFunction.this.openOnUnlock;
+                        DoorControlFunction.this.openOnUnlock =
+                                !DoorControlFunction.this.openOnUnlock;
                     }
                 });
     }

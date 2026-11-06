@@ -56,7 +56,7 @@ public class GiveKeyFunction extends GiveItemFunction {
                         if (preMeta != null) {
                             PersistentDataContainer data = preMeta.getPersistentDataContainer();
                             data.set(
-                                                                        new NamespacedKey(RuntimeContext.plugin(), "DungeonItem"),
+                                    new NamespacedKey(RuntimeContext.plugin(), "DungeonItem"),
                                     PersistentDataType.INTEGER,
                                     1);
                             key.setItemMeta(preMeta);

@@ -62,7 +62,8 @@ public class TitleFunction extends DungeonFunction {
 
                 title = InstanceUtils.parseVars(instance, title);
                 subtitle = InstanceUtils.parseVars(instance, subtitle);
-                MessageUtils.showTitle(player, title, subtitle, this.fadeIn, this.stay, this.fadeOut);
+                MessageUtils.showTitle(
+                        player, title, subtitle, this.fadeIn, this.stay, this.fadeOut);
             }
         }
     }
@@ -85,7 +86,7 @@ public class TitleFunction extends DungeonFunction {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -114,11 +115,13 @@ public class TitleFunction extends DungeonFunction {
                     public void onInput(Player player, String message) {
                         TitleFunction.this.title = message;
                         LangUtils.sendMessage(
-                                player, "editor.function.title.title-set", LangUtils.placeholder("title", message));
+                                player,
+                                "editor.function.title.title-set",
+                                LangUtils.placeholder("title", message));
                     }
                 });
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -153,7 +156,7 @@ public class TitleFunction extends DungeonFunction {
                     }
                 });
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -183,12 +186,13 @@ public class TitleFunction extends DungeonFunction {
                             LangUtils.sendMessage(
                                     player,
                                     "editor.function.title.stay-set",
-                                    LangUtils.placeholder("stay", String.valueOf(TitleFunction.this.stay)));
+                                    LangUtils.placeholder(
+                                            "stay", String.valueOf(TitleFunction.this.stay)));
                         }
                     }
                 });
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -218,12 +222,13 @@ public class TitleFunction extends DungeonFunction {
                             LangUtils.sendMessage(
                                     player,
                                     "editor.function.title.fade-in-set",
-                                    LangUtils.placeholder("fade_in", String.valueOf(TitleFunction.this.fadeIn)));
+                                    LangUtils.placeholder(
+                                            "fade_in", String.valueOf(TitleFunction.this.fadeIn)));
                         }
                     }
                 });
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -253,7 +258,9 @@ public class TitleFunction extends DungeonFunction {
                             LangUtils.sendMessage(
                                     player,
                                     "editor.function.title.fade-out-set",
-                                    LangUtils.placeholder("fade_out", String.valueOf(TitleFunction.this.fadeOut)));
+                                    LangUtils.placeholder(
+                                            "fade_out",
+                                            String.valueOf(TitleFunction.this.fadeOut)));
                         }
                     }
                 });

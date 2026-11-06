@@ -36,7 +36,8 @@ public final class PersistedFieldSupport {
     }
 
     /** Populates persisted fields on a target object using decoder-provided coercion. */
-    public static void populate(Object target, Map<String, Object> values, FieldValueDecoder decoder)
+    public static void populate(
+            Object target, Map<String, Object> values, FieldValueDecoder decoder)
             throws IllegalAccessException {
         for (FieldMetadata metadata : persistedFields(target.getClass())) {
             Object rawValue = resolveConfiguredValue(values, metadata);
@@ -68,12 +69,12 @@ public final class PersistedFieldSupport {
     }
 
     /** Resolves a raw configured value for one field metadata entry. */
-    public static Object resolveConfiguredValue(Map<String, Object> values, FieldMetadata metadata) {
+    public static Object resolveConfiguredValue(
+            Map<String, Object> values, FieldMetadata metadata) {
         return values.get(metadata.name());
     }
 
     /** Attempts common scalar coercions for persisted field assignment. */
-    @SuppressWarnings({"rawtypes", "unchecked"})
     public static Object coerceSimpleValue(FieldMetadata metadata, Object rawValue) {
         if (rawValue == null) {
             return null;
@@ -87,11 +88,12 @@ public final class PersistedFieldSupport {
         }
 
         if (fieldType.isEnum() && rawValue instanceof String enumName) {
-            try {
-                return Enum.valueOf((Class<Enum>) fieldType, enumName);
-            } catch (IllegalArgumentException ignored) {
-                return SKIP;
+            for (Object constant : fieldType.getEnumConstants()) {
+                if (((Enum<?>) constant).name().equals(enumName)) {
+                    return constant;
+                }
             }
+            return SKIP;
         }
 
         if (boxedFieldType == String.class) {

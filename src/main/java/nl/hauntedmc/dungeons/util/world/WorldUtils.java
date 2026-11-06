@@ -5,6 +5,7 @@ import org.bukkit.World;
 
 /** World-level helpers for dungeon runtime world tuning. */
 public final class WorldUtils {
+    private WorldUtils() {}
 
     /** Releases forced loading on the world spawn chunk. */
     public static void releaseSpawnChunk(World world) {

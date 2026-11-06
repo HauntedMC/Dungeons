@@ -79,7 +79,7 @@ public class LeaveDungeonTrigger extends DungeonTrigger {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -96,16 +96,19 @@ public class LeaveDungeonTrigger extends DungeonTrigger {
                     @Override
                     public void onSelect(Player player) {
                         if (!LeaveDungeonTrigger.this.preventLeaving) {
-                            LangUtils.sendMessage(player, "editor.trigger.leave-dungeon.block-leave");
+                            LangUtils.sendMessage(
+                                    player, "editor.trigger.leave-dungeon.block-leave");
                         } else {
-                            LangUtils.sendMessage(player, "editor.trigger.leave-dungeon.allow-leave");
+                            LangUtils.sendMessage(
+                                    player, "editor.trigger.leave-dungeon.allow-leave");
                         }
 
-                        LeaveDungeonTrigger.this.preventLeaving = !LeaveDungeonTrigger.this.preventLeaving;
+                        LeaveDungeonTrigger.this.preventLeaving =
+                                !LeaveDungeonTrigger.this.preventLeaving;
                     }
                 });
         this.menu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -122,12 +125,15 @@ public class LeaveDungeonTrigger extends DungeonTrigger {
                     @Override
                     public void onSelect(Player player) {
                         if (!LeaveDungeonTrigger.this.allowRetrigger) {
-                            LangUtils.sendMessage(player, "editor.trigger.leave-dungeon.allow-repeat");
+                            LangUtils.sendMessage(
+                                    player, "editor.trigger.leave-dungeon.allow-repeat");
                         } else {
-                            LangUtils.sendMessage(player, "editor.trigger.leave-dungeon.prevent-repeat");
+                            LangUtils.sendMessage(
+                                    player, "editor.trigger.leave-dungeon.prevent-repeat");
                         }
 
-                        LeaveDungeonTrigger.this.allowRetrigger = !LeaveDungeonTrigger.this.allowRetrigger;
+                        LeaveDungeonTrigger.this.allowRetrigger =
+                                !LeaveDungeonTrigger.this.allowRetrigger;
                     }
                 });
     }

@@ -72,7 +72,8 @@ public class RevivePlayerFunction extends DungeonFunction {
                     LangUtils.sendMessage(
                             player,
                             "instance.play.functions.reviver.uses-remaining",
-                            LangUtils.placeholder("uses", String.valueOf(this.maxRevives - this.currentRevives)));
+                            LangUtils.placeholder(
+                                    "uses", String.valueOf(this.maxRevives - this.currentRevives)));
                 }
 
                 playerSession.setActiveFunction(this);
@@ -89,11 +90,13 @@ public class RevivePlayerFunction extends DungeonFunction {
             LangUtils.sendMessage(reviver.getPlayer(), "instance.play.functions.reviver.no-uses");
         } else {
             Player player = playerSession.getPlayer();
-            if (playerSession.getInstance() != null && playerSession.getInstance() == this.instance) {
+            if (playerSession.getInstance() != null
+                    && playerSession.getInstance() == this.instance) {
                 PlayableInstance instance = this.instance.asPlayInstance();
                 if (instance != null) {
                     if (instance.getLivingPlayers().contains(playerSession)) {
-                        LangUtils.sendMessage(reviver.getPlayer(), "instance.play.functions.reviver.not-dead");
+                        LangUtils.sendMessage(
+                                reviver.getPlayer(), "instance.play.functions.reviver.not-dead");
                     } else {
                         EntityUtils.forceTeleport(player, reviver.getPlayer().getLocation());
 
@@ -101,8 +104,7 @@ public class RevivePlayerFunction extends DungeonFunction {
                         try {
                             gamemode =
                                     GameMode.valueOf(
-                                            instance
-                                                    .getDungeon()
+                                            instance.getDungeon()
                                                     .getConfig()
                                                     .getString("players.gamemode", "ADVENTURE")
                                                     .toUpperCase(Locale.ROOT));
@@ -126,8 +128,10 @@ public class RevivePlayerFunction extends DungeonFunction {
                                     reviver.getPlayer(),
                                     "instance.play.functions.reviver.revived",
                                     LangUtils.placeholder("player", player.getName()));
-                            targetPlayer.playSound(this.location, "block.beacon.activate", 1.0F, 1.0F);
-                            targetPlayer.playSound(this.location, "entity.player.levelup", 0.5F, 1.5F);
+                            targetPlayer.playSound(
+                                    this.location, "block.beacon.activate", 1.0F, 1.0F);
+                            targetPlayer.playSound(
+                                    this.location, "entity.player.levelup", 0.5F, 1.5F);
                         }
                     }
                 }
@@ -158,7 +162,7 @@ public class RevivePlayerFunction extends DungeonFunction {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -174,7 +178,8 @@ public class RevivePlayerFunction extends DungeonFunction {
                      */
                     @Override
                     public void onSelect(Player player) {
-                        LangUtils.sendMessage(player, "editor.function.revive-player.ask-max-revives");
+                        LangUtils.sendMessage(
+                                player, "editor.function.revive-player.ask-max-revives");
                     }
 
                     /**
@@ -188,11 +193,12 @@ public class RevivePlayerFunction extends DungeonFunction {
                                 player,
                                 "editor.function.revive-player.max-revives-set",
                                 LangUtils.placeholder(
-                                        "max_revives", String.valueOf(RevivePlayerFunction.this.maxRevives)));
+                                        "max_revives",
+                                        String.valueOf(RevivePlayerFunction.this.maxRevives)));
                     }
                 });
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -208,7 +214,8 @@ public class RevivePlayerFunction extends DungeonFunction {
                      */
                     @Override
                     public void onSelect(Player player) {
-                        LangUtils.sendMessage(player, "editor.function.revive-player.ask-lives-after");
+                        LangUtils.sendMessage(
+                                player, "editor.function.revive-player.ask-lives-after");
                     }
 
                     /**
@@ -222,7 +229,9 @@ public class RevivePlayerFunction extends DungeonFunction {
                                 player,
                                 "editor.function.revive-player.lives-after-set",
                                 LangUtils.placeholder(
-                                        "lives", String.valueOf(RevivePlayerFunction.this.livesAfterRevival)));
+                                        "lives",
+                                        String.valueOf(
+                                                RevivePlayerFunction.this.livesAfterRevival)));
                     }
                 });
     }

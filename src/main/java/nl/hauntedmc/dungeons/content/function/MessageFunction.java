@@ -85,7 +85,7 @@ public class MessageFunction extends DungeonFunction {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     /**
                      * Builds button.
                      */
@@ -114,7 +114,7 @@ public class MessageFunction extends DungeonFunction {
                     }
                 });
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -172,7 +172,7 @@ public class MessageFunction extends DungeonFunction {
          * Performs int to type.
          */
         public static MessageType intToType(int index) {
-                        return switch (index) {
+            return switch (index) {
                 case 1 -> ACTION_BAR;
                 default -> CHAT;
             };

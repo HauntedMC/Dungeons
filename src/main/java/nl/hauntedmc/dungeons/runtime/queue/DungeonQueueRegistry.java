@@ -112,10 +112,14 @@ public final class DungeonQueueRegistry implements Listener {
         for (UUID playerId : new ArrayList<>(queue.getPlayers())) {
             this.queueEntriesByPlayer.remove(playerId);
             DungeonPlayerSession dungeonPlayer = this.playerManager.get(playerId);
-            if (resetAwaitingDungeon && dungeonPlayer != null && dungeonPlayer.getInstance() == null) {
+            if (resetAwaitingDungeon
+                    && dungeonPlayer != null
+                    && dungeonPlayer.getInstance() == null) {
                 queue.getDungeon().refundReservedAccessKey(dungeonPlayer);
             }
-            if (resetAwaitingDungeon && dungeonPlayer != null && dungeonPlayer.getInstance() == null) {
+            if (resetAwaitingDungeon
+                    && dungeonPlayer != null
+                    && dungeonPlayer.getInstance() == null) {
                 dungeonPlayer.setAwaitingDungeon(false);
             }
         }
@@ -175,7 +179,8 @@ public final class DungeonQueueRegistry implements Listener {
     /**
      * Returns the next queue at or after the supplied index that can still be started.
      */
-    @Nullable public DungeonQueueEntry getNextInLine(int index) {
+    @Nullable
+    public DungeonQueueEntry getNextInLine(int index) {
         synchronized (this.queueEntries) {
             for (int i = index; i < this.queueEntries.size(); i++) {
                 DungeonQueueEntry queue = this.queueEntries.get(i);

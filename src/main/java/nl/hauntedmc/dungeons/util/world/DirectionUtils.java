@@ -7,6 +7,8 @@ import org.bukkit.entity.Entity;
  * Direction conversion helpers between yaw, faces, and plugin direction models.
  */
 public final class DirectionUtils {
+    private DirectionUtils() {}
+
     public static final BlockFace[] axis =
             new BlockFace[] {BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST};
     public static final BlockFace[] full =

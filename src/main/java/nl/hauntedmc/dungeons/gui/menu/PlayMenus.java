@@ -39,7 +39,7 @@ public class PlayMenus {
             }
 
             GuiWindow gui =
-                                        new GuiWindow(
+                    new GuiWindow(
                             "difficulty_" + dungeon.getWorldName(),
                             guiSize,
                             LangUtils.getMessage("menus.difficulty-select.title", false));
@@ -47,14 +47,18 @@ public class PlayMenus {
                 for (int i = 0; i < difficulties.size(); i++) {
                     DungeonDifficulty difficulty = difficulties.get(i);
                     Button button =
-                                                        new Button(
-                                    dungeon.getWorldName() + "_" + difficulty.getNamespace(), difficulty.getIcon());
+                            new Button(
+                                    dungeon.getWorldName() + "_" + difficulty.getNamespace(),
+                                    difficulty.getIcon());
                     button.addAction(
                             "click",
                             click -> {
                                 Player player = (Player) click.getWhoClicked();
                                 RuntimeContext.dungeonQueueCoordinator()
-                                        .sendToDungeon(player, dungeon.getWorldName(), difficulty.getNamespace());
+                                        .sendToDungeon(
+                                                player,
+                                                dungeon.getWorldName(),
+                                                difficulty.getNamespace());
                                 player.closeInventory();
                             });
                     gui.addButton(i, button);
@@ -71,15 +75,17 @@ public class PlayMenus {
                 "populate",
                 event -> {
                     Player player = (Player) event.getPlayer();
-                    DungeonPlayerSession dungeonPlayer = RuntimeContext.playerSessions().get(player);
+                    DungeonPlayerSession dungeonPlayer =
+                            RuntimeContext.playerSessions().get(player);
                     GuiInventory guiInv = gui.getInventoryFor(player);
                     rewardPages.putIfAbsent(player.getUniqueId(), 0);
                     List<ItemStack> rewards = dungeonPlayer.getRewardItems();
                     List<List<ItemStack>> pages = Lists.partition(rewards, 45);
                     Button button =
-                                                        new Button(
+                            new Button(
                                     "page_back",
-                                    ItemUtils.skullFromName(new ItemStack(Material.PLAYER_HEAD), "MHF_arrowleft"));
+                                    ItemUtils.skullFromName(
+                                            new ItemStack(Material.PLAYER_HEAD), "MHF_arrowleft"));
                     button.setDisplayName("&e&lPrevious Page");
                     button.addAction(
                             "click",
@@ -93,9 +99,10 @@ public class PlayMenus {
                             });
                     guiInv.setButton(45, button);
                     button =
-                                                        new Button(
+                            new Button(
                                     "page_forward",
-                                    ItemUtils.skullFromName(new ItemStack(Material.PLAYER_HEAD), "MHF_arrowright"));
+                                    ItemUtils.skullFromName(
+                                            new ItemStack(Material.PLAYER_HEAD), "MHF_arrowright"));
                     button.setDisplayName("&e&lNext Page");
                     button.addAction(
                             "click",
@@ -111,7 +118,8 @@ public class PlayMenus {
 
                     for (int slot = 46; slot < 53; slot++) {
                         guiInv.setButton(
-                                                                slot, new Button("empty_" + slot, Material.BLACK_STAINED_GLASS_PANE, ""));
+                                slot,
+                                new Button("empty_" + slot, Material.BLACK_STAINED_GLASS_PANE, ""));
                     }
 
                     loadRewardPage(gui, player, rewardPages.get(player.getUniqueId()));
@@ -164,11 +172,13 @@ public class PlayMenus {
                 "populate",
                 event -> {
                     Player player = (Player) event.getPlayer();
-                    DungeonPlayerSession dungeonPlayer = RuntimeContext.playerSessions().get(player);
+                    DungeonPlayerSession dungeonPlayer =
+                            RuntimeContext.playerSessions().get(player);
                     PlayableInstance instance = dungeonPlayer.getInstance().asPlayInstance();
                     if (instance == null) {
                         event.setCancelled(true);
-                    } else if (!(dungeonPlayer.getActiveFunction() instanceof RevivePlayerFunction reviver)) {
+                    } else if (!(dungeonPlayer.getActiveFunction()
+                            instanceof RevivePlayerFunction reviver)) {
                         event.setCancelled(true);
                     } else {
                         GuiInventory inv = gui.getInventoryFor(player);
@@ -189,7 +199,8 @@ public class PlayMenus {
 
                                 meta.setOwningPlayer(instancePlayer);
                                 skull.setItemMeta(meta);
-                                Button button = new Button("revive_" + instancePlayer.getName(), skull);
+                                Button button =
+                                        new Button("revive_" + instancePlayer.getName(), skull);
                                 button.setDisplayName("&3&lRevive " + instancePlayer.getName());
                                 button.addAction(
                                         "revive",
@@ -207,7 +218,8 @@ public class PlayMenus {
                 "close",
                 event -> {
                     Player player = (Player) event.getPlayer();
-                    DungeonPlayerSession dungeonPlayer = RuntimeContext.playerSessions().get(player);
+                    DungeonPlayerSession dungeonPlayer =
+                            RuntimeContext.playerSessions().get(player);
                     dungeonPlayer.setActiveFunction(null);
                 });
     }

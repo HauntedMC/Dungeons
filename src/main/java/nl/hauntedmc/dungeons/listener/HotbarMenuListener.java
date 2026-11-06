@@ -212,7 +212,10 @@ public final class HotbarMenuListener implements Listener {
         }
 
         if (this.touchesProtectedEditTool(
-                event.getSlot(), event.getHotbarButton(), event.getCurrentItem(), event.getCursor())) {
+                event.getSlot(),
+                event.getHotbarButton(),
+                event.getCurrentItem(),
+                event.getCursor())) {
             event.setCancelled(true);
             Bukkit.getScheduler().runTask(this.plugin, playerSession::ensureEditModeTools);
         }
@@ -250,7 +253,10 @@ public final class HotbarMenuListener implements Listener {
         }
 
         if (this.touchesProtectedEditTool(
-                event.getSlot(), event.getHotbarButton(), event.getCurrentItem(), event.getCursor())) {
+                event.getSlot(),
+                event.getHotbarButton(),
+                event.getCurrentItem(),
+                event.getCursor())) {
             event.setCancelled(true);
             Bukkit.getScheduler().runTask(this.plugin, playerSession::ensureEditModeTools);
         }
@@ -347,7 +353,8 @@ public final class HotbarMenuListener implements Listener {
             return;
         }
 
-        if (this.isEditorTool(event.getMainHandItem()) || this.isEditorTool(event.getOffHandItem())) {
+        if (this.isEditorTool(event.getMainHandItem())
+                || this.isEditorTool(event.getOffHandItem())) {
             event.setCancelled(true);
             Bukkit.getScheduler().runTask(this.plugin, playerSession::ensureEditModeTools);
         }
@@ -468,7 +475,8 @@ public final class HotbarMenuListener implements Listener {
         try {
             if (playerSession.isChatListening()) {
                 menuItem.runChatActions(player, message);
-                player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.5F, 1.2F);
+                player.playSound(
+                        player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.5F, 1.2F);
             }
         } finally {
             playerSession.setChatListening(false);

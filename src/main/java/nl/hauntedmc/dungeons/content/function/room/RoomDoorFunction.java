@@ -109,7 +109,7 @@ public class RoomDoorFunction extends DungeonFunction {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -137,7 +137,8 @@ public class RoomDoorFunction extends DungeonFunction {
                      */
                     @Override
                     public void onInput(Player player, String message) {
-                        DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                        DungeonPlayerSession playerSession =
+                                RuntimeContext.playerSessions().get(player);
                         RoomDoorFunction.this.doorName = message;
                         LangUtils.sendMessage(
                                 player,
@@ -150,12 +151,15 @@ public class RoomDoorFunction extends DungeonFunction {
                                     instance.getDungeon().getRoom(RoomDoorFunction.this.location);
                             if (room != null && !RoomDoorFunction.this.controlsAllDoors()) {
                                 for (Connector conn : room.getConnectors()) {
-                                    if (conn.getDoor().getNamespace().equals(RoomDoorFunction.this.doorName)) {
+                                    if (conn.getDoor()
+                                            .getNamespace()
+                                            .equals(RoomDoorFunction.this.doorName)) {
                                         return;
                                     }
                                 }
 
-                                LangUtils.sendMessage(player, "editor.function.room-door.warning-door-not-found");
+                                LangUtils.sendMessage(
+                                        player, "editor.function.room-door.warning-door-not-found");
                             }
 
                             this.menu.openFor(playerSession);
@@ -163,7 +167,7 @@ public class RoomDoorFunction extends DungeonFunction {
                     }
                 });
         this.menu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     /**
                      * Builds button.
                      */
@@ -173,7 +177,8 @@ public class RoomDoorFunction extends DungeonFunction {
                         RoomDoorFunction.this.action =
                                 Math.floorMod(RoomDoorFunction.this.action, actions.length);
                         this.button = new MenuButton(Material.DIAMOND);
-                        this.button.setDisplayName("&d&lAction: " + actions[RoomDoorFunction.this.action]);
+                        this.button.setDisplayName(
+                                "&d&lAction: " + actions[RoomDoorFunction.this.action]);
                     }
 
                     /**
@@ -182,7 +187,8 @@ public class RoomDoorFunction extends DungeonFunction {
                     @Override
                     public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
-                        DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                        DungeonPlayerSession playerSession =
+                                RuntimeContext.playerSessions().get(player);
                         RoomDoorFunction.this.action++;
                         if (RoomDoorFunction.this.action >= DoorAction.values().length) {
                             RoomDoorFunction.this.action = 0;
@@ -190,7 +196,9 @@ public class RoomDoorFunction extends DungeonFunction {
 
                         DoorAction[] actions = DoorAction.values();
                         DoorAction action =
-                                actions[Math.floorMod(RoomDoorFunction.this.action, actions.length)];
+                                actions[
+                                        Math.floorMod(
+                                                RoomDoorFunction.this.action, actions.length)];
                         this.menu.openFor(playerSession);
                         LangUtils.sendMessage(
                                 player,
@@ -199,7 +207,7 @@ public class RoomDoorFunction extends DungeonFunction {
                     }
                 });
         this.menu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -222,12 +230,15 @@ public class RoomDoorFunction extends DungeonFunction {
                     @Override
                     public void onSelect(Player player) {
                         if (!RoomDoorFunction.this.keepEntranceOpen) {
-                            LangUtils.sendMessage(player, "editor.function.room-door.keep-entrance-open");
+                            LangUtils.sendMessage(
+                                    player, "editor.function.room-door.keep-entrance-open");
                         } else {
-                            LangUtils.sendMessage(player, "editor.function.room-door.do-not-keep-entrance-open");
+                            LangUtils.sendMessage(
+                                    player, "editor.function.room-door.do-not-keep-entrance-open");
                         }
 
-                        RoomDoorFunction.this.keepEntranceOpen = !RoomDoorFunction.this.keepEntranceOpen;
+                        RoomDoorFunction.this.keepEntranceOpen =
+                                !RoomDoorFunction.this.keepEntranceOpen;
                     }
                 });
     }

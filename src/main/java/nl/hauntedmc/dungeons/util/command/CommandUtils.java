@@ -19,9 +19,8 @@ public final class CommandUtils {
         if (!sender.hasPermission(node)) {
             LangUtils.sendMessage(sender, "general.errors.no-permission");
             return false;
-        } else {
-            return true;
         }
+        return true;
     }
 
     /** Checks permission without sending feedback messages. */

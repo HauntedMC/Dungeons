@@ -72,7 +72,8 @@ public class MobWithinCondition extends TriggerCondition {
         Collection<Entity> entities =
                 this.location
                         .getWorld()
-                        .getNearbyEntities(this.location, effectiveRadius, effectiveRadius, effectiveRadius);
+                        .getNearbyEntities(
+                                this.location, effectiveRadius, effectiveRadius, effectiveRadius);
         List<LivingEntity> mobs = new ArrayList<>();
         EntityType type = null;
 
@@ -128,7 +129,7 @@ public class MobWithinCondition extends TriggerCondition {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -156,7 +157,8 @@ public class MobWithinCondition extends TriggerCondition {
                             try {
                                 type = EntityType.valueOf(message.toUpperCase(Locale.ROOT));
                             } catch (IllegalArgumentException exception) {
-                                LangUtils.sendMessage(player, "editor.condition.mob-within.invalid-mob");
+                                LangUtils.sendMessage(
+                                        player, "editor.condition.mob-within.invalid-mob");
                                 return;
                             }
                         }
@@ -169,7 +171,7 @@ public class MobWithinCondition extends TriggerCondition {
                     }
                 });
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -177,7 +179,8 @@ public class MobWithinCondition extends TriggerCondition {
                     public void buildButton() {
                         this.button = new MenuButton(Material.DETECTOR_RAIL);
                         this.button.setDisplayName("&d&lDistance");
-                        this.button.setAmount((int) MathUtils.round(MobWithinCondition.this.radius, 0));
+                        this.button.setAmount(
+                                (int) MathUtils.round(MobWithinCondition.this.radius, 0));
                     }
 
                     /**
@@ -194,17 +197,20 @@ public class MobWithinCondition extends TriggerCondition {
                     @Override
                     public void onInput(Player player, String message) {
                         Optional<Double> value = InputUtils.readDoubleInput(player, message);
-                        MobWithinCondition.this.radius = value.orElse(MobWithinCondition.this.radius);
+                        MobWithinCondition.this.radius =
+                                value.orElse(MobWithinCondition.this.radius);
                         if (value.isPresent()) {
                             LangUtils.sendMessage(
                                     player,
                                     "editor.condition.mob-within.radius-set",
-                                    LangUtils.placeholder("radius", String.valueOf(MobWithinCondition.this.radius)));
+                                    LangUtils.placeholder(
+                                            "radius",
+                                            String.valueOf(MobWithinCondition.this.radius)));
                         }
                     }
                 });
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -237,12 +243,14 @@ public class MobWithinCondition extends TriggerCondition {
                             LangUtils.sendMessage(
                                     player,
                                     "editor.condition.mob-within.count-set",
-                                    LangUtils.placeholder("count", String.valueOf(MobWithinCondition.this.count)));
+                                    LangUtils.placeholder(
+                                            "count",
+                                            String.valueOf(MobWithinCondition.this.count)));
                         }
                     }
                 });
         this.menu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     /**
                      * Builds button.
                      */

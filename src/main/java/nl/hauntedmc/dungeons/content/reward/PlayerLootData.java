@@ -36,7 +36,12 @@ public class PlayerLootData implements ConfigurationSerializable {
     public PlayerLootData(Map<String, Object> config) {
         this.playerName = (String) config.get("Player");
         this.playerId = UUID.fromString((String) config.get("UUID"));
-        this.loot = (List<LootCooldown>) config.get("Loot");
+        this.loot = new ArrayList<>();
+        if (config.get("Loot") instanceof List<?> entries) {
+            for (Object entry : entries) {
+                this.loot.add(LootCooldown.class.cast(entry));
+            }
+        }
         this.lootByLocation = new HashMap<>();
 
         for (LootCooldown cooldown : this.loot) {
@@ -118,7 +123,8 @@ public class PlayerLootData implements ConfigurationSerializable {
         return this.lootByLocation.containsKey(loc);
     }
 
-    @NotNull public Map<String, Object> serialize() {
+    @NotNull
+    public Map<String, Object> serialize() {
         Map<String, Object> map = new HashMap<>();
         map.put("Player", this.playerName);
         map.put("UUID", this.playerId.toString());

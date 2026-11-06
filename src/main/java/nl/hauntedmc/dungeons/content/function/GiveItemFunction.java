@@ -87,7 +87,7 @@ public class GiveItemFunction extends DungeonFunction {
                 if (preMeta != null) {
                     PersistentDataContainer data = preMeta.getPersistentDataContainer();
                     data.set(
-                                                        new NamespacedKey(RuntimeContext.plugin(), "DungeonItem"),
+                            new NamespacedKey(RuntimeContext.plugin(), "DungeonItem"),
                             PersistentDataType.INTEGER,
                             1);
                     item.setItemMeta(preMeta);
@@ -141,7 +141,7 @@ public class GiveItemFunction extends DungeonFunction {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     /**
                      * Builds button.
                      */
@@ -161,7 +161,7 @@ public class GiveItemFunction extends DungeonFunction {
                     }
                 });
         this.menu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -178,16 +178,18 @@ public class GiveItemFunction extends DungeonFunction {
                     @Override
                     public void onSelect(Player player) {
                         if (!GiveItemFunction.this.drop) {
-                            LangUtils.sendMessage(player, "editor.function.give-item.drop-at-location");
+                            LangUtils.sendMessage(
+                                    player, "editor.function.give-item.drop-at-location");
                         } else {
-                            LangUtils.sendMessage(player, "editor.function.give-item.give-to-targets");
+                            LangUtils.sendMessage(
+                                    player, "editor.function.give-item.give-to-targets");
                         }
 
                         GiveItemFunction.this.drop = !GiveItemFunction.this.drop;
                     }
                 });
         this.menu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -206,7 +208,8 @@ public class GiveItemFunction extends DungeonFunction {
                         if (!GiveItemFunction.this.notify) {
                             LangUtils.sendMessage(player, "editor.function.give-item.notify");
                         } else {
-                            LangUtils.sendMessage(player, "editor.function.give-item.do-not-notify");
+                            LangUtils.sendMessage(
+                                    player, "editor.function.give-item.do-not-notify");
                         }
 
                         GiveItemFunction.this.notify = !GiveItemFunction.this.notify;

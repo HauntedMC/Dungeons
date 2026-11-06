@@ -29,7 +29,7 @@ public class Connector implements Cloneable, ConfigSerializableModel {
     @PersistedField private List<WhitelistEntry> roomWhitelist = new ArrayList<>();
     @PersistedField private ConnectorDoor door;
 
-        private Connector() {}
+    private Connector() {}
 
     /**
      * Creates a connector at the given local room position/direction.
@@ -40,10 +40,10 @@ public class Connector implements Cloneable, ConfigSerializableModel {
     }
 
     @Override
-        public void postDeserialize() {
+    public void postDeserialize() {
         this.roomBlacklist = this.roomBlacklist == null ? new ArrayList<>() : this.roomBlacklist;
         this.roomWhitelist = this.roomWhitelist == null ? new ArrayList<>() : this.roomWhitelist;
-        this.successChance = Math.max(0.0, Math.min(1.0, this.successChance));
+        this.successChance = Math.clamp(this.successChance, 0.0, 1.0);
 
         if (this.door == null) {
             this.door = new ConnectorDoor(this);
@@ -53,11 +53,11 @@ public class Connector implements Cloneable, ConfigSerializableModel {
     }
 
     @Override
-        public boolean isDeserializedValid() {
+    public boolean isDeserializedValid() {
         return this.location != null;
     }
 
-        public List<WhitelistEntry> getValidRooms(
+    public List<WhitelistEntry> getValidRooms(
             BranchingDungeon dungeon, BranchingRoomDefinition parent) {
         List<WhitelistEntry> rooms = new ArrayList<>();
         if (this.roomWhitelist != null && !this.roomWhitelist.isEmpty()) {
@@ -101,9 +101,8 @@ public class Connector implements Cloneable, ConfigSerializableModel {
             }
 
             return false;
-        } else {
-            return true;
         }
+        return true;
     }
 
     /**
@@ -145,7 +144,7 @@ public class Connector implements Cloneable, ConfigSerializableModel {
     }
 
     @Override
-        public Connector clone() {
+    public Connector clone() {
         try {
             Connector clone = (Connector) super.clone();
             clone.location = this.location.clone();
@@ -170,8 +169,11 @@ public class Connector implements Cloneable, ConfigSerializableModel {
         try {
             Connector clone = (Connector) super.clone();
             clone.location =
-                                        new SimpleLocation(
-                            this.location.getX(), this.location.getY(), this.location.getZ(), direction);
+                    new SimpleLocation(
+                            this.location.getX(),
+                            this.location.getY(),
+                            this.location.getZ(),
+                            direction);
             clone.roomBlacklist = copyEntries(this.roomBlacklist);
             clone.roomWhitelist = copyEntries(this.roomWhitelist);
             clone.door = this.door == null ? new ConnectorDoor(clone) : this.door.clone();
@@ -219,7 +221,7 @@ public class Connector implements Cloneable, ConfigSerializableModel {
      * Sets connector usage chance, clamped to {@code [0,1]}.
      */
     public void setSuccessChance(double successChance) {
-        this.successChance = Math.max(0.0, Math.min(1.0, successChance));
+        this.successChance = Math.clamp(successChance, 0.0, 1.0);
     }
 
     /**

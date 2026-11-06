@@ -135,39 +135,35 @@ public class MobDeathTrigger extends DungeonTrigger {
     public boolean matchesRoom(Entity ent) {
         if (!this.limitToRoom) {
             return true;
-        } else {
-            BranchingInstance instance = this.instance.as(BranchingInstance.class);
-            if (instance == null) {
-                return false;
-            } else {
-                InstanceRoom room = instance.getRoom(this.location);
-                if (room == null) {
-                    return false;
-                } else {
-                    String uuidString =
-                            ent.getPersistentDataContainer()
-                                    .get(
-                                                                                        new NamespacedKey(RuntimeContext.plugin(), "originroom"),
-                                            PersistentDataType.STRING);
-                    if (uuidString == null) {
-                        return false;
-                    } else {
-                        try {
-                            UUID uuid = UUID.fromString(uuidString);
-                            return uuid.equals(room.getUuid());
-                        } catch (IllegalArgumentException exception) {
-                            this.logger()
-                                    .warn(
-                                            "MobDeathTrigger in dungeon '{}' at {} encountered invalid origin room metadata '{}'.",
-                                            this.dungeonNameForLogs(),
-                                            this.locationForLogs(),
-                                            uuidString,
-                                            exception);
-                            return false;
-                        }
-                    }
-                }
-            }
+        }
+        BranchingInstance instance = this.instance.as(BranchingInstance.class);
+        if (instance == null) {
+            return false;
+        }
+        InstanceRoom room = instance.getRoom(this.location);
+        if (room == null) {
+            return false;
+        }
+        String uuidString =
+                ent.getPersistentDataContainer()
+                        .get(
+                                new NamespacedKey(RuntimeContext.plugin(), "originroom"),
+                                PersistentDataType.STRING);
+        if (uuidString == null) {
+            return false;
+        }
+        try {
+            UUID uuid = UUID.fromString(uuidString);
+            return uuid.equals(room.getUuid());
+        } catch (IllegalArgumentException exception) {
+            this.logger()
+                    .warn(
+                            "MobDeathTrigger in dungeon '{}' at {} encountered invalid origin room metadata '{}'.",
+                            this.dungeonNameForLogs(),
+                            this.locationForLogs(),
+                            uuidString,
+                            exception);
+            return false;
         }
     }
 
@@ -177,7 +173,7 @@ public class MobDeathTrigger extends DungeonTrigger {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -206,12 +202,14 @@ public class MobDeathTrigger extends DungeonTrigger {
                     public void onInput(Player player, String message) {
                         MobDeathTrigger.this.mob = message;
                         LangUtils.sendMessage(
-                                player, "editor.trigger.mob-death.mob-set", LangUtils.placeholder("mob", message));
+                                player,
+                                "editor.trigger.mob-death.mob-set",
+                                LangUtils.placeholder("mob", message));
                         MobDeathTrigger.this.setDisplayName(MobDeathTrigger.this.mob + " Death");
                     }
                 });
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -241,12 +239,13 @@ public class MobDeathTrigger extends DungeonTrigger {
                             LangUtils.sendMessage(
                                     player,
                                     "editor.trigger.mob-death.count-set",
-                                    LangUtils.placeholder("count", String.valueOf(MobDeathTrigger.this.count)));
+                                    LangUtils.placeholder(
+                                            "count", String.valueOf(MobDeathTrigger.this.count)));
                         }
                     }
                 });
         this.menu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -265,14 +264,15 @@ public class MobDeathTrigger extends DungeonTrigger {
                         if (!MobDeathTrigger.this.allowRetrigger) {
                             LangUtils.sendMessage(player, "editor.trigger.mob-death.allow-repeat");
                         } else {
-                            LangUtils.sendMessage(player, "editor.trigger.mob-death.prevent-repeat");
+                            LangUtils.sendMessage(
+                                    player, "editor.trigger.mob-death.prevent-repeat");
                         }
 
                         MobDeathTrigger.this.allowRetrigger = !MobDeathTrigger.this.allowRetrigger;
                     }
                 });
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -292,7 +292,8 @@ public class MobDeathTrigger extends DungeonTrigger {
                         LangUtils.sendMessage(
                                 player,
                                 "editor.trigger.mob-death.current-radius",
-                                LangUtils.placeholder("radius", String.valueOf(MobDeathTrigger.this.radius)));
+                                LangUtils.placeholder(
+                                        "radius", String.valueOf(MobDeathTrigger.this.radius)));
                     }
 
                     /**
@@ -306,7 +307,8 @@ public class MobDeathTrigger extends DungeonTrigger {
                             LangUtils.sendMessage(
                                     player,
                                     "editor.trigger.mob-death.radius-set",
-                                    LangUtils.placeholder("radius", String.valueOf(MobDeathTrigger.this.radius)));
+                                    LangUtils.placeholder(
+                                            "radius", String.valueOf(MobDeathTrigger.this.radius)));
                         }
                     }
                 });

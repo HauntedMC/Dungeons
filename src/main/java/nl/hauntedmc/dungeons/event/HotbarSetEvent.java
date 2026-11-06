@@ -67,7 +67,8 @@ public class HotbarSetEvent extends Event implements Cancellable {
      *
      * @return handler list
      */
-    @NotNull public HandlerList getHandlers() {
+    @NotNull
+    public HandlerList getHandlers() {
         return HANDLERS_LIST;
     }
 

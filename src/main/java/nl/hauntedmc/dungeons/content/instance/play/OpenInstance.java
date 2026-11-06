@@ -116,7 +116,8 @@ public class OpenInstance extends StaticInstance {
             return true;
         }
 
-        return this.getPlayers().size() + this.getReservedSlotCount() + normalizedPlayers <= maxPlayers;
+        return this.getPlayers().size() + this.getReservedSlotCount() + normalizedPlayers
+                <= maxPlayers;
     }
 
     /**

@@ -32,7 +32,10 @@ public final class AccessKeyDefinition implements ConfigurationSerializable {
     public AccessKeyDefinition(Map<String, Object> config) {
         this.keyId = resolveKeyId(config.get("KeyId"), config.get("Item"));
         Object rawItem = config.get("Item");
-        this.item = rawItem instanceof ItemStack stack ? this.prepareConfiguredItem(stack.clone()) : null;
+        this.item =
+                rawItem instanceof ItemStack stack
+                        ? this.prepareConfiguredItem(stack.clone())
+                        : null;
         this.addedAt = parseDate(config.get("AddedAt"));
         this.addedByName = asNormalizedString(config.get("AddedByName"));
         this.addedByUniqueId = asNormalizedString(config.get("AddedByUniqueId"));
@@ -119,7 +122,9 @@ public final class AccessKeyDefinition implements ConfigurationSerializable {
 
         ItemStack configuredItem = this.createGenericItemCopy();
         ItemStack genericCandidate = this.createGenericCandidateCopy(candidate);
-        return configuredItem != null && genericCandidate != null && configuredItem.isSimilar(genericCandidate);
+        return configuredItem != null
+                && genericCandidate != null
+                && configuredItem.isSimilar(genericCandidate);
     }
 
     /**
@@ -188,7 +193,8 @@ public final class AccessKeyDefinition implements ConfigurationSerializable {
         return value instanceof String string ? normalize(string) : null;
     }
 
-    private static @NotNull String resolveKeyId(@Nullable Object rawKeyId, @Nullable Object rawItem) {
+    private static @NotNull String resolveKeyId(
+            @Nullable Object rawKeyId, @Nullable Object rawItem) {
         String storedKeyId = asNormalizedString(rawKeyId);
         if (storedKeyId != null) {
             return storedKeyId;

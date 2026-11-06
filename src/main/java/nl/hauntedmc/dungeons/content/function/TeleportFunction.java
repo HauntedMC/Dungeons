@@ -132,7 +132,7 @@ public class TeleportFunction extends DungeonFunction {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new MenuItem() {
+                new MenuItem() {
                     /**
                      * Builds button.
                      */
@@ -156,11 +156,12 @@ public class TeleportFunction extends DungeonFunction {
                                 TeleportFunction.this.particleIndicator.cancel();
                             }
 
-                            LangUtils.sendMessage(player, "editor.function.teleport.location-set-standing");
+                            LangUtils.sendMessage(
+                                    player, "editor.function.teleport.location-set-standing");
                         } else {
                             TeleportFunction.this.awaitingInput = true;
                             TeleportFunction.this.inputWaiter =
-                                                                        new BukkitRunnable() {
+                                    new BukkitRunnable() {
                                         /**
                                          * Performs run.
                                          */
@@ -171,10 +172,14 @@ public class TeleportFunction extends DungeonFunction {
                                             }
                                         }
                                     };
-                            TeleportFunction.this.inputWaiter.runTaskLater(RuntimeContext.plugin(), 200L);
+                            TeleportFunction.this.inputWaiter.runTaskLater(
+                                    RuntimeContext.plugin(), 200L);
                             if (TeleportFunction.this.teleportTarget == null) {
-                                LangUtils.sendMessage(player, "editor.function.teleport.current-location-none");
-                                LangUtils.sendMessage(player, "editor.function.teleport.click-again-set-location");
+                                LangUtils.sendMessage(
+                                        player, "editor.function.teleport.current-location-none");
+                                LangUtils.sendMessage(
+                                        player,
+                                        "editor.function.teleport.click-again-set-location");
                                 return;
                             }
 
@@ -182,13 +187,20 @@ public class TeleportFunction extends DungeonFunction {
                             targetLoc.setY(targetLoc.getY() + 0.5);
                             targetLoc.setWorld(TeleportFunction.this.location.getWorld());
                             TeleportFunction.this.particleIndicator =
-                                                                        new BukkitRunnable() {
+                                    new BukkitRunnable() {
                                         /**
                                          * Performs run.
                                          */
                                         public void run() {
                                             if (TeleportFunction.this.instance.isEditInstance()) {
-                                                player.spawnParticle(Particle.END_ROD, targetLoc, 4, 0.1, 0.1, 0.1, 0.0);
+                                                player.spawnParticle(
+                                                        Particle.END_ROD,
+                                                        targetLoc,
+                                                        4,
+                                                        0.1,
+                                                        0.1,
+                                                        0.1,
+                                                        0.0);
                                             }
                                         }
                                     };
@@ -198,8 +210,10 @@ public class TeleportFunction extends DungeonFunction {
                                     .runTaskLater(
                                             RuntimeContext.plugin(),
                                             () -> {
-                                                if (TeleportFunction.this.particleIndicator != null) {
-                                                    TeleportFunction.this.particleIndicator.cancel();
+                                                if (TeleportFunction.this.particleIndicator
+                                                        != null) {
+                                                    TeleportFunction.this.particleIndicator
+                                                            .cancel();
                                                 }
                                             },
                                             200L);
@@ -209,16 +223,26 @@ public class TeleportFunction extends DungeonFunction {
                                     LangUtils.placeholder(
                                             "x",
                                             String.valueOf(
-                                                    MathUtils.round(TeleportFunction.this.teleportTarget.getX(), 2))),
+                                                    MathUtils.round(
+                                                            TeleportFunction.this.teleportTarget
+                                                                    .getX(),
+                                                            2))),
                                     LangUtils.placeholder(
                                             "y",
                                             String.valueOf(
-                                                    MathUtils.round(TeleportFunction.this.teleportTarget.getY(), 2))),
+                                                    MathUtils.round(
+                                                            TeleportFunction.this.teleportTarget
+                                                                    .getY(),
+                                                            2))),
                                     LangUtils.placeholder(
                                             "z",
                                             String.valueOf(
-                                                    MathUtils.round(TeleportFunction.this.teleportTarget.getZ(), 2))));
-                            LangUtils.sendMessage(player, "editor.function.teleport.click-again-set-location");
+                                                    MathUtils.round(
+                                                            TeleportFunction.this.teleportTarget
+                                                                    .getZ(),
+                                                            2))));
+                            LangUtils.sendMessage(
+                                    player, "editor.function.teleport.click-again-set-location");
                         }
                     }
                 });

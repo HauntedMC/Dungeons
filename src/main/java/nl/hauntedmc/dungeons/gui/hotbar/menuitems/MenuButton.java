@@ -50,7 +50,7 @@ public class MenuButton {
 
     /** Sets visible amount on the button item. */
     public void setAmount(int amount) {
-        this.item.setAmount(Math.max(1, Math.min(amount, 99)));
+        this.item.setAmount(Math.clamp(amount, 1, 99));
         this.amount = amount;
     }
 

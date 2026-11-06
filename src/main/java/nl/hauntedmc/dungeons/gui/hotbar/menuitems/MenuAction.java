@@ -7,6 +7,7 @@ import org.bukkit.event.Event;
  *
  * @param <T> player event type handled by the callback
  */
+@FunctionalInterface
 public interface MenuAction<T extends Event> {
     /**
      * Runs the callback for the given event.

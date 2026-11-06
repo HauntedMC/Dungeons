@@ -23,6 +23,8 @@ import org.joml.Vector3i;
  * Serialization helpers for compact structure-piece storage.
  */
 public final class SchematicUtils {
+    private SchematicUtils() {}
+
     /** Saves one structure piece to a compressed custom text format. */
     public static void saveStructurePiece(File file, StructurePiece structure) {
         Map<BlockData, Integer> cachedBlocks = new HashMap<>();
@@ -63,7 +65,10 @@ public final class SchematicUtils {
             FileUtils.writeByteArrayToFile(file, bytes);
         } catch (IOException exception) {
             RuntimeContext.logger()
-                    .error("Failed to save structure piece to '{}'.", file.getAbsolutePath(), exception);
+                    .error(
+                            "Failed to save structure piece to '{}'.",
+                            file.getAbsolutePath(),
+                            exception);
         }
     }
 
@@ -94,14 +99,18 @@ public final class SchematicUtils {
                                         Integer.parseInt(posSplit[1]),
                                         Integer.parseInt(posSplit[2]));
                         BlockData blockData = data.get(blockDataPointer);
-                        String blockNbt = !nbtStr.equals("null") ? BlockNbtUtils.normalizeSnbt(nbtStr) : null;
+                        String blockNbt =
+                                !nbtStr.equals("null") ? BlockNbtUtils.normalizeSnbt(nbtStr) : null;
                         struct.add(new StructurePieceBlock(pos, blockData, blockNbt));
                     }
                 }
             }
         } catch (IOException exception) {
             RuntimeContext.logger()
-                    .error("Failed to load structure piece from '{}'.", file.getAbsolutePath(), exception);
+                    .error(
+                            "Failed to load structure piece from '{}'.",
+                            file.getAbsolutePath(),
+                            exception);
         }
 
         return struct;
@@ -123,10 +132,9 @@ public final class SchematicUtils {
     public static byte[] compress(String text) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
-        try {
-            OutputStream out = new DeflaterOutputStream(baos);
+        try (OutputStream out = new DeflaterOutputStream(baos)) {
             out.write(text.getBytes(StandardCharsets.UTF_8));
-            out.close();
+
         } catch (IOException exception) {
             throw new AssertionError(exception);
         }
@@ -138,13 +146,12 @@ public final class SchematicUtils {
     public static String decompress(byte[] bytes) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
-        try {
-            OutputStream out = new InflaterOutputStream(baos);
+        try (OutputStream out = new InflaterOutputStream(baos)) {
             out.write(bytes);
-            out.close();
-            return baos.toString(StandardCharsets.UTF_8);
+
         } catch (IOException exception) {
             throw new AssertionError(exception);
         }
+        return baos.toString(StandardCharsets.UTF_8);
     }
 }

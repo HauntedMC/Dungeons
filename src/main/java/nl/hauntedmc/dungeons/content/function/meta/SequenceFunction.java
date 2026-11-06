@@ -88,7 +88,7 @@ public class SequenceFunction extends CompositeFunction {
     public void buildHotbarMenu() {
         super.buildHotbarMenu();
         this.menu.addMenuItem(
-                                new ToggleMenuItem() {
+                new ToggleMenuItem() {
                     /**
                      * Builds button.
                      */

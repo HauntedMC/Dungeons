@@ -19,20 +19,19 @@ public class VariableStore {
         String value = this.values.get(key);
         if (value == null) {
             return null;
-        } else {
-            // Numeric values are normalized before display so editor-facing strings do not show
-            // unnecessary decimal suffixes such as "5.0".
-            Double numeric = parseDoubleOrNull(value);
-            if (numeric != null) {
-                if (numeric % 1.0 == 0.0) {
-                    value = String.valueOf(numeric.intValue());
-                } else {
-                    value = String.valueOf(numeric);
-                }
-            }
-
-            return value;
         }
+        // Numeric values are normalized before display so editor-facing strings do not show
+        // unnecessary decimal suffixes such as "5.0".
+        Double numeric = parseDoubleOrNull(value);
+        if (numeric != null) {
+            if (numeric % 1.0 == 0.0) {
+                value = String.valueOf(numeric.intValue());
+            } else {
+                value = String.valueOf(numeric);
+            }
+        }
+
+        return value;
     }
 
     /**
@@ -50,8 +49,12 @@ public class VariableStore {
      * Returns the double.
      */
     public double getDouble(String key) {
+        String value = this.values.get(key);
+        if (value == null) {
+            return 0.0;
+        }
         try {
-            return Double.parseDouble(this.values.get(key));
+            return Double.parseDouble(value);
         } catch (NumberFormatException exception) {
             return 0.0;
         }

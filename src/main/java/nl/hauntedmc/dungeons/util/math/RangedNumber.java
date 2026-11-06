@@ -90,7 +90,7 @@ public class RangedNumber {
         return (int) this.min == (int) this.max
                 ? (int) this.min
                 : MathUtils.getRandomNumberInRange(
-                        (int) this.min, (int) (this.max == -1.0 ? 2.147483647E9 : this.max));
+                        (int) this.min, this.max == -1.0 ? Integer.MAX_VALUE : (int) this.max);
     }
 
     /** Returns a normalized string representation of this range. */
@@ -98,18 +98,16 @@ public class RangedNumber {
     public String toString() {
         if (this.min == this.max) {
             return String.valueOf(this.min);
-        } else {
-            return this.max == -1.0 ? this.min + "+" : this.min + "-" + this.max;
         }
+        return this.max == -1.0 ? this.min + "+" : this.min + "-" + this.max;
     }
 
     /** Returns a normalized integer-style representation of this range. */
     public String toIntString() {
         if (this.min == this.max) {
             return String.valueOf((int) this.min);
-        } else {
-            return this.max == -1.0 ? (int) this.min + "+" : (int) this.min + "-" + (int) this.max;
         }
+        return this.max == -1.0 ? (int) this.min + "+" : (int) this.min + "-" + (int) this.max;
     }
 
     /** Returns whether a numeric value is within this range. */

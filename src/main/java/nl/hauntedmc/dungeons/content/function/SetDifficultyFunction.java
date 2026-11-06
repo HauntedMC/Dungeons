@@ -104,7 +104,7 @@ public class SetDifficultyFunction extends DungeonFunction {
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
-                                new ChatMenuItem() {
+                new ChatMenuItem() {
                     /**
                      * Builds button.
                      */
@@ -112,7 +112,8 @@ public class SetDifficultyFunction extends DungeonFunction {
                     public void buildButton() {
                         this.button = new MenuButton(Material.BLAZE_POWDER);
                         this.button.setDisplayName("&d&lSet Difficulty");
-                        this.button.addLore("&7Current difficulty: &6" + SetDifficultyFunction.this.difficulty);
+                        this.button.addLore(
+                                "&7Current difficulty: &6" + SetDifficultyFunction.this.difficulty);
                     }
 
                     /**
@@ -120,11 +121,13 @@ public class SetDifficultyFunction extends DungeonFunction {
                      */
                     @Override
                     public void onSelect(Player player) {
-                        LangUtils.sendMessage(player, "editor.function.set-difficulty.ask-difficulty");
+                        LangUtils.sendMessage(
+                                player, "editor.function.set-difficulty.ask-difficulty");
                         LangUtils.sendMessage(
                                 player,
                                 "editor.function.set-difficulty.current-difficulty",
-                                LangUtils.placeholder("difficulty", SetDifficultyFunction.this.difficulty));
+                                LangUtils.placeholder(
+                                        "difficulty", SetDifficultyFunction.this.difficulty));
                     }
 
                     /**

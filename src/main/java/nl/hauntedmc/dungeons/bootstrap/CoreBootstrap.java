@@ -82,9 +82,11 @@ final class CoreBootstrap {
         queueManager.setQueueCoordinator(queueCoordinator);
 
         this.runtime.setFunctionRegistry(
-                new FunctionRegistry(plugin, activeInstanceManager, this.runtime.elementEventHandler()));
+                new FunctionRegistry(
+                        plugin, activeInstanceManager, this.runtime.elementEventHandler()));
         this.runtime.setTriggerRegistry(
-                new TriggerRegistry(plugin, activeInstanceManager, this.runtime.elementEventHandler()));
+                new TriggerRegistry(
+                        plugin, activeInstanceManager, this.runtime.elementEventHandler()));
         this.runtime.setConditionRegistry(new ConditionRegistry(plugin));
         this.runtime.setLootTableRepository(new LootTableRepository(plugin));
     }
@@ -120,7 +122,9 @@ final class CoreBootstrap {
         this.runtime
                 .environment()
                 .logger()
-                .info("Loaded {} triggers.", this.runtime.triggerRegistry().getRegisteredTriggers().size());
+                .info(
+                        "Loaded {} triggers.",
+                        this.runtime.triggerRegistry().getRegisteredTriggers().size());
         this.runtime
                 .environment()
                 .logger()
@@ -130,7 +134,9 @@ final class CoreBootstrap {
         this.runtime
                 .environment()
                 .logger()
-                .info("Dungeons {} initialized successfully.", this.runtime.environment().version());
+                .info(
+                        "Dungeons {} initialized successfully.",
+                        this.runtime.environment().version());
     }
 
     /**
@@ -159,7 +165,8 @@ final class CoreBootstrap {
      * Ensures the plugin data folders used by dungeon and player persistence exist.
      */
     private void ensureDataDirectories() {
-        File dungeonFiles = new File(this.runtime.environment().plugin().getDataFolder(), "dungeons");
+        File dungeonFiles =
+                new File(this.runtime.environment().plugin().getDataFolder(), "dungeons");
         this.runtime.setDungeonFiles(dungeonFiles);
         this.createDirectory(dungeonFiles);
         this.createDirectory(
@@ -178,7 +185,9 @@ final class CoreBootstrap {
             this.runtime
                     .environment()
                     .logger()
-                    .error("Failed to create plugin data directory '{}'.", directory.getAbsolutePath());
+                    .error(
+                            "Failed to create plugin data directory '{}'.",
+                            directory.getAbsolutePath());
         }
     }
 
@@ -219,7 +228,8 @@ final class CoreBootstrap {
             this.runtime
                     .environment()
                     .logger()
-                    .warn("Skipping plugin config sync because the bundled config template is empty.");
+                    .warn(
+                            "Skipping plugin config sync because the bundled config template is empty.");
             return;
         }
 
