@@ -96,4 +96,6 @@ jobs:
         with:
           name: release-platform-acceptance-logs
           if-no-files-found: warn
-          path: ${{ runner.temp }}/dungeons-acceptance/paper/paper.log
+          path: |
+            ${{ runner.temp }}/dungeons-acceptance/paper/*.log
+            ${{ runner.temp }}/dungeons-acceptance/paper/plugins/DungeonsAcceptance/results-*.xml

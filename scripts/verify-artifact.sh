@@ -14,4 +14,8 @@ if grep -Eq '^de/tr7zw/changeme/nbtapi/|^org/bukkit/|^io/papermc/paper/' <<<"$en
   echo 'Plugin jar contains unrelocated NBT or provided Paper classes' >&2
   exit 1
 fi
+if grep -Eq '^nl/hauntedmc/dungeons/acceptance/|^org/junit/|^org/mockito/' <<<"$entries"; then
+  echo 'Plugin jar contains acceptance or unit-test classes' >&2
+  exit 1
+fi
 echo "Artifact audit passed: $artifact"

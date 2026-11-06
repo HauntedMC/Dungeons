@@ -158,14 +158,26 @@ public abstract class DungeonInstance {
         File instFolder = this.getUniqueWorldName();
         FileUtils.copyDirectory(this.getDungeon().getFolder(), instFolder);
         new File(instFolder, "config.yml").delete();
-        new File(instFolder, "uid.dat").delete();
+        for (String identity :
+                List.of("uid.dat", "data/paper/metadata.dat", "data/paper/metadata.dat_old")) {
+            java.nio.file.Files.deleteIfExists(new File(instFolder, identity).toPath());
+        }
     }
 
     protected File getUniqueWorldName() {
         this.instanceWorldName = this.getDungeon().getWorldName() + "_" + this.id;
-        File instFolder = new File(Bukkit.getWorldContainer(), this.instanceWorldName);
-        if (!instFolder.exists()) {
-            return instFolder;
+        File legacyFolder = new File(Bukkit.getWorldContainer(), this.instanceWorldName);
+        File dimensionFolder = WorldUtils.dimensionFolder(this.instanceWorldName);
+        if (!legacyFolder.exists()
+                && !dimensionFolder.exists()
+                && Bukkit.getWorld(this.instanceWorldName) == null) {
+            File source = this.dungeon.getFolder();
+            // Paper imports old level.dat worlds from the server root, while modern dimension
+            // templates must be copied directly into the main level's dimension directory.
+            boolean legacyTemplate =
+                    new File(source, "level.dat").isFile()
+                            && !new File(source, "data/minecraft/world_gen_settings.dat").isFile();
+            return legacyTemplate ? legacyFolder : dimensionFolder;
         }
         this.id++;
         return this.getUniqueWorldName();
@@ -293,15 +305,18 @@ public abstract class DungeonInstance {
                     this.instanceWorld.setTicksPerSpawns(cat, 0);
                 }
             }
-        } else if (!DungeonConfigView.isAnimalSpawningEnabled(this.config)) {
-            this.instanceWorld.setTicksPerSpawns(SpawnCategory.ANIMAL, 0);
-            this.instanceWorld.setTicksPerSpawns(SpawnCategory.AMBIENT, 0);
-            this.instanceWorld.setTicksPerSpawns(SpawnCategory.AXOLOTL, 0);
-            this.instanceWorld.setTicksPerSpawns(SpawnCategory.WATER_AMBIENT, 0);
-            this.instanceWorld.setTicksPerSpawns(SpawnCategory.WATER_ANIMAL, 0);
-            this.instanceWorld.setTicksPerSpawns(SpawnCategory.WATER_UNDERGROUND_CREATURE, 0);
-        } else if (!DungeonConfigView.isMonsterSpawningEnabled(this.config)) {
-            this.instanceWorld.setTicksPerSpawns(SpawnCategory.MONSTER, 0);
+        } else {
+            if (!DungeonConfigView.isAnimalSpawningEnabled(this.config)) {
+                this.instanceWorld.setTicksPerSpawns(SpawnCategory.ANIMAL, 0);
+                this.instanceWorld.setTicksPerSpawns(SpawnCategory.AMBIENT, 0);
+                this.instanceWorld.setTicksPerSpawns(SpawnCategory.AXOLOTL, 0);
+                this.instanceWorld.setTicksPerSpawns(SpawnCategory.WATER_AMBIENT, 0);
+                this.instanceWorld.setTicksPerSpawns(SpawnCategory.WATER_ANIMAL, 0);
+                this.instanceWorld.setTicksPerSpawns(SpawnCategory.WATER_UNDERGROUND_CREATURE, 0);
+            }
+            if (!DungeonConfigView.isMonsterSpawningEnabled(this.config)) {
+                this.instanceWorld.setTicksPerSpawns(SpawnCategory.MONSTER, 0);
+            }
         }
 
         if (this.config.getBoolean("rules.world.freeze_random_ticks", true)) {
@@ -365,54 +380,50 @@ public abstract class DungeonInstance {
                                 this.listener = null;
                                 this.clearHolograms();
                                 this.hologramManager = null;
-                                Bukkit.getScheduler()
-                                        .runTaskLater(
-                                                this.plugin(),
-                                                () -> {
-                                                    try {
-                                                        CountDownLatch latch =
-                                                                new CountDownLatch(1);
-                                                        File worldFolder =
-                                                                this.instanceWorld.getWorldFolder();
-                                                        String worldName =
-                                                                this.instanceWorld.getName();
-                                                        this.saveWorld(latch);
-                                                        if (!this.unloadInstanceWorld()) {
-                                                            return;
-                                                        }
-                                                        if (this.plugin().isEnabled()) {
-                                                            Bukkit.getScheduler()
-                                                                    .runTaskLaterAsynchronously(
-                                                                            this.plugin(),
-                                                                            () ->
-                                                                                    this
-                                                                                            .cleanWorldFiles(
-                                                                                                    latch,
-                                                                                                    worldFolder,
-                                                                                                    worldName),
-                                                                            100L);
-                                                        } else {
-                                                            this.cleanWorldFiles(
-                                                                    latch, worldFolder, worldName);
-                                                        }
-                                                    } catch (Exception exception) {
-                                                        if (Bukkit.getWorld(
-                                                                        this.instanceWorld
-                                                                                .getName())
-                                                                == null) {
-                                                            return;
-                                                        }
+                                Runnable unload =
+                                        () -> {
+                                            try {
+                                                CountDownLatch latch = new CountDownLatch(1);
+                                                File worldFolder =
+                                                        this.instanceWorld.getWorldFolder();
+                                                String worldName = this.instanceWorld.getName();
+                                                this.saveWorld(latch);
+                                                if (!this.unloadInstanceWorld()) {
+                                                    return;
+                                                }
+                                                if (this.plugin().isEnabled()) {
+                                                    Bukkit.getScheduler()
+                                                            .runTaskLaterAsynchronously(
+                                                                    this.plugin(),
+                                                                    () ->
+                                                                            this.cleanWorldFiles(
+                                                                                    latch,
+                                                                                    worldFolder,
+                                                                                    worldName),
+                                                                    100L);
+                                                } else {
+                                                    this.cleanWorldFiles(
+                                                            latch, worldFolder, worldName);
+                                                }
+                                            } catch (Exception exception) {
+                                                if (Bukkit.getWorld(this.instanceWorld.getName())
+                                                        == null) {
+                                                    return;
+                                                }
 
-                                                        this.logger()
-                                                                .error(
-                                                                        "Failed to unload instance world '{}' for dungeon '{}'. The world is still loaded after disposal.",
-                                                                        this.instanceWorld
-                                                                                .getName(),
-                                                                        this.dungeon.getWorldName(),
-                                                                        exception);
-                                                    }
-                                                },
-                                                1L);
+                                                this.logger()
+                                                        .error(
+                                                                "Failed to unload instance world '{}' for dungeon '{}'. The world is still loaded after disposal.",
+                                                                this.instanceWorld.getName(),
+                                                                this.dungeon.getWorldName(),
+                                                                exception);
+                                            }
+                                        };
+                                if (this.plugin().isEnabled()) {
+                                    Bukkit.getScheduler().runTaskLater(this.plugin(), unload, 1L);
+                                } else {
+                                    unload.run();
+                                }
                                 this.dungeon.removeInstance(this);
                                 Bukkit.getPluginManager().callEvent(new DungeonDisposeEvent(this));
                             };
@@ -812,19 +823,24 @@ public abstract class DungeonInstance {
             return;
         }
 
-        File worldFolder = new File(Bukkit.getWorldContainer(), this.instanceWorldName);
-        if (!worldFolder.isDirectory()) {
+        if (Bukkit.getWorld(this.instanceWorldName) != null) {
             return;
         }
 
-        try {
-            FileUtils.deleteDirectory(worldFolder);
-        } catch (IOException exception) {
-            this.logger()
-                    .warn(
-                            "Failed to delete pending world folder '{}'.",
-                            worldFolder.getAbsolutePath(),
-                            exception);
+        for (File worldFolder :
+                List.of(
+                        new File(Bukkit.getWorldContainer(), this.instanceWorldName),
+                        WorldUtils.dimensionFolder(this.instanceWorldName))) {
+            if (!worldFolder.isDirectory()) continue;
+            try {
+                FileUtils.deleteDirectory(worldFolder);
+            } catch (IOException exception) {
+                this.logger()
+                        .warn(
+                                "Failed to delete pending world folder '{}'.",
+                                worldFolder.getAbsolutePath(),
+                                exception);
+            }
         }
     }
 }

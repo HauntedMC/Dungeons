@@ -1,0 +1,12 @@
+name: DungeonsAcceptance
+version: 1.0.0
+main: nl.hauntedmc.dungeons.acceptance.AcceptancePlugin
+api-version: '26.3'
+depend: [Dungeons]
+commands:
+  dungeonsacceptance:
+    description: Runs assertions in the disposable acceptance server
+    permission: dungeons.acceptance
+permissions:
+  dungeons.acceptance:
+    default: op
