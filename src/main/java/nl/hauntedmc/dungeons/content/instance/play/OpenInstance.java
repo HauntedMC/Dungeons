@@ -61,7 +61,8 @@ public class OpenInstance extends StaticInstance {
      */
     @Override
     public synchronized void addPlayer(DungeonPlayerSession playerSession) {
-        if (this.readyRegistrationCancelled || this.disposing) {
+        if (this.readyRegistrationCancelled || this.disposing
+                || playerSession.getInstance() != null && playerSession.getInstance() != this) {
             playerSession.setAwaitingDungeon(false);
             return;
         }
@@ -81,7 +82,8 @@ public class OpenInstance extends StaticInstance {
      */
     public synchronized boolean addReservedPlayer(
             DungeonPlayerSession playerSession, UUID reservationId) {
-        if (this.readyRegistrationCancelled || this.disposing) {
+        if (this.readyRegistrationCancelled || this.disposing
+                || playerSession.getInstance() != null && playerSession.getInstance() != this) {
             return false;
         }
 
