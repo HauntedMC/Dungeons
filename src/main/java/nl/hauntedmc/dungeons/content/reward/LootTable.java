@@ -117,7 +117,7 @@ public class LootTable implements ConfigurationSerializable {
         List<LootTableItem> foundItems = new ArrayList<>();
         int i = 0;
 
-        while (i < amount && foundItems.size() < this.lootItems.size()) {
+        while (i < amount && (this.allowDuplicates || foundItems.size() < this.lootItems.size())) {
             LootTableItem lootItem = randomizer.next();
             if (lootItem == null) {
                 RuntimeContext.plugin()
