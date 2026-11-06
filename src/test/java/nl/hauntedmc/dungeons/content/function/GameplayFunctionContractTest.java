@@ -59,4 +59,21 @@ class GameplayFunctionContractTest {
         }
     }
 
+    @Test
+    void checkpointCentersTheStandingPointAndPersistsAWorldIndependentSavePoint() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            var state=new PlayerState(); var session=f.session(state); f.run.addPlayer(session);
+            var block=mock(org.bukkit.block.Block.class); when(block.isSolid()).thenReturn(true);
+            when(f.world.getBlockAt(any(Location.class))).thenReturn(block);
+            when(f.world.getBlockAt(anyInt(),anyInt(),anyInt())).thenReturn(block);
+            var checkpoint=bind(new CheckpointFunction(Map.of("savePoint",true,"yaw",90.0,"pitch",15.0)),f);
+            var location=new Location(f.world,4,70,6); checkpoint.setLocation(location);
+            checkpoint.runFunction(null,List.of(session));
+            assertEquals(new Location(f.world,4.5,71,6.5,90,15),session.getDungeonRespawn());
+            var saved=session.getDungeonSavePoint(f.dungeon.getWorldName());
+            assertNull(saved.getWorld()); assertEquals(4.5,saved.getX()); assertEquals(71,saved.getY());
+            assertEquals(70,location.getY());
+        }
+    }
+
 }
