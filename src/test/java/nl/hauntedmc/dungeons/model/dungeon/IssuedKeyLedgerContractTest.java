@@ -61,6 +61,25 @@ class IssuedKeyLedgerContractTest {
         }
     }
 
+    @Test
+    void reloadReleasesInterruptedReservationsWithoutRevivingConsumedKeys() throws Exception {
+        try (var fixture = new Fixture(directory)) {
+            var interrupted = fixture.dungeon.issueAccessKey(1);
+            var consumed = fixture.dungeon.issueAccessKey(1);
+            assertTrue(fixture.dungeon.reserveIssuedAccessKey(interrupted));
+            assertTrue(fixture.dungeon.consumeAccessKey(consumed));
+            String interruptedId = ItemUtils.getDungeonAccessKeyInstanceId(interrupted);
+            assertEquals(List.of(interruptedId), YamlConfiguration.loadConfiguration(fixture.stateFile.toFile()).getStringList("reserved_instance_ids"));
+            var restored = fixture.reload();
+            assertNotNull(restored.isValidKey(interrupted));
+            assertFalse(restored.isReservedAccessKey(interrupted));
+            assertNull(restored.isValidKey(consumed));
+            assertTrue(YamlConfiguration.loadConfiguration(fixture.stateFile.toFile()).getStringList("reserved_instance_ids").isEmpty());
+            assertTrue(restored.reserveIssuedAccessKey(interrupted));
+            assertFalse(restored.reserveIssuedAccessKey(interrupted.clone()));
+        }
+    }
+
     static final class Fixture implements AutoCloseable {
         final PaperBoundary paper = new PaperBoundary();
         final Path folder;
