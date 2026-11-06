@@ -83,4 +83,71 @@ class RewardExecutionContractTest {
             verify(state.player, times(3)).giveExp(20);
         }
     }
+
+    @Test
+    void openingRewardMenusGivesEachPlayerIndependentStacksAndClosingTransfersLeftoversOnlyOnce()
+            throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration());
+                var menus = new HeadlessMenus();
+                var gui = new HeadlessInventoryMenus()) {
+            var first = new PlayerState();
+            var second = new PlayerState();
+            var firstMenu = new PlayerState();
+            var secondMenu = new PlayerState();
+            var template = PlayerState.stack(5);
+            var reward =
+                    new RewardFunction(
+                            Map.of("rewards", List.of(template), "cooldownDisabled", true));
+            reward.initializeFields();
+            reward.setInstance(f.run);
+            reward.setLocation(new Location(f.world, 0, 70, 0));
+            reward.onEnable();
+            var window = gui.windows().getLast();
+            org.mockito.Mockito.when(window.getInventoryFor(first.player))
+                    .thenReturn(
+                            new nl.hauntedmc.dungeons.gui.framework.window.GuiInventory(
+                                    new HashMap<>(), firstMenu.inventory));
+            org.mockito.Mockito.when(window.getInventoryFor(second.player))
+                    .thenReturn(
+                            new nl.hauntedmc.dungeons.gui.framework.window.GuiInventory(
+                                    new HashMap<>(), secondMenu.inventory));
+            org.mockito.ArgumentCaptor<
+                            nl.hauntedmc.dungeons.gui.framework.actions.Action<
+                                    org.bukkit.event.inventory.InventoryOpenEvent>>
+                    open = org.mockito.ArgumentCaptor.captor();
+            org.mockito.ArgumentCaptor<
+                            nl.hauntedmc.dungeons.gui.framework.actions.Action<
+                                    org.bukkit.event.inventory.InventoryCloseEvent>>
+                    close = org.mockito.ArgumentCaptor.captor();
+            verify(window).addOpenAction(org.mockito.Mockito.eq("loaditems"), open.capture());
+            verify(window).addCloseAction(org.mockito.Mockito.eq("dropitems"), close.capture());
+            for (var player : List.of(first, second)) {
+                var event =
+                        org.mockito.Mockito.mock(
+                                org.bukkit.event.inventory.InventoryOpenEvent.class);
+                org.mockito.Mockito.when(event.getPlayer()).thenReturn(player.player);
+                open.getValue().run(event);
+            }
+            org.junit.jupiter.api.Assertions.assertNotSame(template, firstMenu.contents[0]);
+            firstMenu.contents[0].setAmount(2);
+            assertEquals(5, secondMenu.contents[0].getAmount());
+            assertEquals(5, template.getAmount());
+            var event =
+                    org.mockito.Mockito.mock(org.bukkit.event.inventory.InventoryCloseEvent.class);
+            org.mockito.Mockito.when(event.getPlayer()).thenReturn(first.player);
+            close.getValue().run(event);
+            close.getValue().run(event);
+            org.mockito.ArgumentCaptor<org.bukkit.inventory.ItemStack> delivered =
+                    org.mockito.ArgumentCaptor.captor();
+            verify(first.inventory).addItem(delivered.capture());
+            assertEquals(2, delivered.getValue().getAmount());
+            org.junit.jupiter.api.Assertions.assertTrue(
+                    Arrays.stream(firstMenu.contents).allMatch(Objects::isNull));
+            var reopen =
+                    org.mockito.Mockito.mock(org.bukkit.event.inventory.InventoryOpenEvent.class);
+            org.mockito.Mockito.when(reopen.getPlayer()).thenReturn(first.player);
+            open.getValue().run(reopen);
+            org.junit.jupiter.api.Assertions.assertNull(firstMenu.contents[0]);
+        }
+    }
 }

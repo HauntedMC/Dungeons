@@ -275,7 +275,8 @@ public class RewardFunction extends DungeonFunction {
                                 Inventory inv = guiInv.inventory();
                                 int i = 0;
 
-                                for (ItemStack item : this.rewards) {
+                                for (ItemStack template : this.rewards) {
+                                    ItemStack item = template == null ? null : template.clone();
 
                                     if (instance.getConfig()
                                             .getBoolean("rewards.deliver_on_finish", false)) {
