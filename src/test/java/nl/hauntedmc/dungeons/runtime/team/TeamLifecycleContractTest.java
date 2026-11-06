@@ -55,6 +55,19 @@ class TeamLifecycleContractTest {
         }
     }
 
+    @Test
+    void teamTargetResolutionReturnsNoPlayersWhenEveryMemberIsOutsideTheRequestedRun() {
+        try (var paper = new PaperBoundary()) {
+            paper.config.set("team.unstarted_expiry_seconds", 0);
+            var sessions = mock(PlayerSessionRegistry.class);
+            var service = new DungeonTeamService(paper.plugin, sessions, mock(DungeonQueueRegistry.class));
+            var leader = player(sessions);
+            service.handleCreateTeam(leader.getPlayer());
+            when(leader.getInstance()).thenReturn(mock(DungeonInstance.class));
+            assertTrue(service.getActiveMembers(leader, mock(DungeonInstance.class)).isEmpty());
+        }
+    }
+
     DungeonPlayerSession player(PlayerSessionRegistry sessions) {
         var player = mock(Player.class);
         var id = UUID.randomUUID();

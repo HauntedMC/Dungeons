@@ -111,10 +111,6 @@ public final class DungeonTeamService implements Listener {
             }
         }
 
-        if (members.isEmpty()) {
-            members.add(source);
-        }
-
         return new ArrayList<>(members);
     }
 
