@@ -54,11 +54,12 @@ public final class TriggerRegistry {
      */
     public <T extends DungeonTrigger> void register(Class<T> triggerClass) {
         String triggerId = TypeMetadataSupport.requiredId(triggerClass);
+        DungeonTrigger trigger = null;
         try {
             this.triggers.put(triggerId, triggerClass);
             this.triggerIds.put(triggerClass, triggerId);
 
-            DungeonTrigger trigger = triggerClass.getDeclaredConstructor().newInstance();
+            trigger = triggerClass.getDeclaredConstructor().newInstance();
             MenuButton button = trigger.buildMenuButton();
             if (button == null) {
                 this.plugin
@@ -141,6 +142,10 @@ public final class TriggerRegistry {
                             "Failed to register trigger '{}'.",
                             triggerClass.getSimpleName(),
                             exception);
+        } finally {
+            if (trigger != null) {
+                trigger.releaseEditorListener();
+            }
         }
     }
 

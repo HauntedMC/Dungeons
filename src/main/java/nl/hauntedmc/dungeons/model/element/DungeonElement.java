@@ -142,6 +142,11 @@ public abstract class DungeonElement implements ConfigurationSerializable {
      * Releases shared listeners owned by the base element implementation.
      */
     public void disable() {
+        this.releaseEditorListener();
+    }
+
+    /** Releases editor listener ownership, including for metadata-only registry prototypes. */
+    public final void releaseEditorListener() {
         HandlerList.unregisterAll(this.editListener);
     }
 

@@ -55,11 +55,12 @@ public final class FunctionRegistry {
      */
     public <T extends DungeonFunction> void register(Class<T> functionClass) {
         String functionId = TypeMetadataSupport.requiredId(functionClass);
+        DungeonFunction function = null;
         try {
             this.functions.put(functionId, functionClass);
             this.functionIds.put(functionClass, functionId);
 
-            DungeonFunction function = functionClass.getDeclaredConstructor().newInstance();
+            function = functionClass.getDeclaredConstructor().newInstance();
             MenuButton button = function.buildMenuButton();
             if (button == null) {
                 this.plugin
@@ -142,6 +143,10 @@ public final class FunctionRegistry {
                             "Failed to register function '{}'.",
                             functionClass.getSimpleName(),
                             exception);
+        } finally {
+            if (function != null) {
+                function.releaseEditorListener();
+            }
         }
     }
 
