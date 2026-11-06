@@ -65,6 +65,7 @@ public final class CapturedScheduler {
         BukkitTask task = mock(BukkitTask.class);
         when(task.getTaskId()).thenReturn(job.id);
         when(task.isCancelled()).thenAnswer(call -> job.cancelled);
+        doAnswer(call -> { job.cancelled = true; return null; }).when(task).cancel();
         return task;
     }
 

@@ -43,6 +43,23 @@ class OpenAdmissionContractTest {
         }
     }
 
+
+    @Test
+    void returningPlayersCancelTheSinglePendingOpenRunUnloadAndDuplicateJoinsDoNotCountTwice() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            var dungeon=dungeon(f); dungeon.getConfig().set("open.empty_unload_delay_ticks",5);
+            var run=new ReadyRun(dungeon,f.world);
+            when(f.paper.plugin.isEnabled()).thenReturn(true);
+            run.scheduleEmptyCleanup(); run.scheduleEmptyCleanup();
+            assertEquals(1,f.scheduler.jobs.size()); var cleanup=f.scheduler.jobs.getFirst();
+            assertEquals(5,cleanup.delay);
+            var session=f.session(new PlayerState()); run.addPlayer(session); run.addPlayer(session);
+            assertTrue(cleanup.cancelled); assertEquals(1,run.getPlayers().size());
+            cleanup.run(); assertSame(run,session.getInstance());
+            assertSame(f.world,run.getInstanceWorld());
+        }
+    }
+
     OpenDungeon dungeon(RunFixture f) throws Exception {
         var settings=new YamlConfiguration(); settings.set("open.max_players",1); settings.set("runs.max_active",1);
         var dungeon=new OpenDungeon(f.paper.runtime,Files.createDirectories(directory.resolve("open")).toFile(),settings);
