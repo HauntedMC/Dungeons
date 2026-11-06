@@ -50,4 +50,23 @@ class WorldFunctionContractTest {
         }
     }
 
+    @Test
+    void lockedDoorsDenyInteractionAndUnlockingChangesTheRealBlockState() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            var state=new PlayerState(); state.location=new Location(f.world,0,70,0);
+            var block=mock(org.bukkit.block.Block.class); when(block.getLocation()).thenReturn(state.location.clone());
+            var data=mock(org.bukkit.block.data.Openable.class); boolean[] opened={false};
+            when(data.isOpen()).thenAnswer(c -> opened[0]); doAnswer(c -> { opened[0]=c.getArgument(0); return null; }).when(data).setOpen(anyBoolean());
+            when(block.getBlockData()).thenReturn(data); when(f.world.getBlockAt(any(Location.class))).thenReturn(block);
+            var door=GameplayFunctionContractTest.bind(new DoorControlFunction(Map.of("lockedByDefault",true,"openOnUnlock",true)),f); door.onEnable();
+            var event=mock(org.bukkit.event.player.PlayerInteractEvent.class); when(event.getPlayer()).thenReturn(state.player);
+            when(event.getHand()).thenReturn(org.bukkit.inventory.EquipmentSlot.HAND); when(event.getClickedBlock()).thenReturn(block);
+            door.onInteractDoor(event); verify(event).setUseInteractedBlock(org.bukkit.event.Event.Result.DENY);
+            verify(event).setUseItemInHand(org.bukkit.event.Event.Result.DENY);
+            door.runFunction(null,List.of()); assertFalse(door.isLocked()); assertTrue(opened[0]);
+            door.runFunction(null,List.of()); assertTrue(door.isLocked()); assertFalse(opened[0]);
+            verify(block,times(2)).setBlockData(data);
+        }
+    }
+
 }
