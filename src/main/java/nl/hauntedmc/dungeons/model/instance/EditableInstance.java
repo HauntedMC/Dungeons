@@ -284,8 +284,16 @@ public class EditableInstance extends DungeonInstance {
                         this.hologramManager.restoreCapturedHolograms();
                     }
 
-                    this.commitWorldAsync(world)
-                            .whenComplete(
+                    CompletableFuture<Boolean> commit;
+                    try {
+                        commit = this.commitWorldAsync(world);
+                    } catch (RuntimeException exception) {
+                        this.logger().error("Failed to start save commit for dungeon '{}'.",
+                                this.dungeon.getWorldName(), exception);
+                        this.finishSave(latch, result, false);
+                        return;
+                    }
+                    commit.whenComplete(
                                     (success, throwable) -> {
                                         if (throwable != null) {
                                             this.logger()

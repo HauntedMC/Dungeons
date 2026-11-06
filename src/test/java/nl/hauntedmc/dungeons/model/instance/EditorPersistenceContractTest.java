@@ -62,6 +62,16 @@ class EditorPersistenceContractTest {
             }
         }
     }
+
+    @Test
+    void aSynchronousCommitExceptionStillCompletesTheSaveFutureAndReleasesItsLatch() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            var editor=new Editor(f); editor.throwCommit=true; var latch=new CountDownLatch(1);
+            var result=assertDoesNotThrow(() -> editor.saveWorldAsync(latch));
+            assertFalse(result.get(1,TimeUnit.SECONDS)); assertEquals(0,latch.getCount());
+            assertFalse(f.dungeon.isSaving());
+        }
+    }
     static class Editor extends EditableInstance {
         CompletableFuture<Boolean> pending;
         boolean throwCommit;
