@@ -54,7 +54,8 @@ public final class AcceptancePlugin extends JavaPlugin {
                                 "native-item-and-graph-persistence",
                                 () -> NativePersistence.run(this)),
                         new Scenario("copied-world-lifecycle", () -> WorldLifecycle.run(this)),
-                        new Scenario("native-gameplay-mechanics", () -> NativeMechanics.run(this)));
+                        new Scenario("native-gameplay-mechanics", () -> NativeMechanics.run(this)),
+                        new Scenario("native-tile-structure", () -> NativeStructure.run(this)));
         var results = new ArrayList<Result>();
         CompletableFuture<Void> chain = CompletableFuture.completedFuture(null);
         for (var scenario : scenarios) {
