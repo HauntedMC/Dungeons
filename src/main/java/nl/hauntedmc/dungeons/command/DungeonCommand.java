@@ -3632,7 +3632,7 @@ public final class DungeonCommand implements TabExecutor {
 
         int pageSize = PluginConfigView.getCommandListPageSize(this.plugin.getConfig());
         int totalPages = Math.max(1, (int) Math.ceil(lines.size() / (double) pageSize));
-        int page = Math.min(Math.max(requestedPage, 1), totalPages);
+        int page = Math.clamp(requestedPage, 1, totalPages);
         int startIndex = (page - 1) * pageSize;
         int endIndex = Math.min(startIndex + pageSize, lines.size());
         for (int i = startIndex; i < endIndex; i++) {

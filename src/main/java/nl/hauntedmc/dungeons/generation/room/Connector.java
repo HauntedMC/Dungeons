@@ -43,7 +43,7 @@ public class Connector implements Cloneable, ConfigSerializableModel {
     public void postDeserialize() {
         this.roomBlacklist = this.roomBlacklist == null ? new ArrayList<>() : this.roomBlacklist;
         this.roomWhitelist = this.roomWhitelist == null ? new ArrayList<>() : this.roomWhitelist;
-        this.successChance = Math.max(0.0, Math.min(1.0, this.successChance));
+        this.successChance = Math.clamp(this.successChance, 0.0, 1.0);
 
         if (this.door == null) {
             this.door = new ConnectorDoor(this);
@@ -222,7 +222,7 @@ public class Connector implements Cloneable, ConfigSerializableModel {
      * Sets connector usage chance, clamped to {@code [0,1]}.
      */
     public void setSuccessChance(double successChance) {
-        this.successChance = Math.max(0.0, Math.min(1.0, successChance));
+        this.successChance = Math.clamp(successChance, 0.0, 1.0);
     }
 
     /**

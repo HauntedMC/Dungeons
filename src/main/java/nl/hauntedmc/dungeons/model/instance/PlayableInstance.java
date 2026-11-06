@@ -747,7 +747,7 @@ public abstract class PlayableInstance extends DungeonInstance {
                             ? 200.0
                             : dragon.getAttribute(Attribute.MAX_HEALTH).getValue();
             double progress = maxHealth <= 0.0 ? 0.0 : dragon.getHealth() / maxHealth;
-            bossBar.progress((float) Math.max(0.0, Math.min(1.0, progress)));
+            bossBar.progress((float) Math.clamp(progress, 0.0, 1.0));
             Component customName = dragon.customName();
             if (customName != null && !ComponentUtils.plainText(customName).isBlank()) {
                 bossBar.name(customName);

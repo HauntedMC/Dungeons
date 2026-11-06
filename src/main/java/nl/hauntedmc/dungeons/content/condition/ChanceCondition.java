@@ -46,7 +46,7 @@ public class ChanceCondition extends TriggerCondition {
      */
     @Override
     public boolean check(TriggerFireEvent event) {
-        double normalizedChance = Math.max(0.0, Math.min(1.0, this.chance));
+        double normalizedChance = Math.clamp(this.chance, 0.0, 1.0);
         if (normalizedChance != this.chance && !this.invalidChanceLogged) {
             this.invalidChanceLogged = true;
             this.logger()

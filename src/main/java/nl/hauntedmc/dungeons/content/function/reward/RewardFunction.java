@@ -656,7 +656,7 @@ public class RewardFunction extends DungeonFunction {
             cal.set(Calendar.MILLISECOND, 0);
             if (period == CooldownPeriod.WEEKLY) {
                 int dayOfWeek =
-                        Math.min(Math.max(normalizedResetDay, Calendar.SUNDAY), Calendar.SATURDAY);
+                        Math.clamp(normalizedResetDay, Calendar.SUNDAY, Calendar.SATURDAY);
                 if (dayOfWeek != normalizedResetDay) {
                     this.logInvalidCooldownConfiguration();
                 }

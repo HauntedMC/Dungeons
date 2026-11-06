@@ -186,7 +186,7 @@ public class LootTableItem implements ConfigurationSerializable {
             return;
         }
 
-        minButton.setAmount(Math.max(1, Math.min(this.minItems, 999)));
+        minButton.setAmount(Math.clamp(this.minItems, 1, 999));
         minButton.clearLore();
         minButton.addLore(ColorUtils.colorize("&eAt least &6" + this.minItems + " &eitems"));
         minButton.addLore(ColorUtils.colorize(""));
@@ -205,7 +205,7 @@ public class LootTableItem implements ConfigurationSerializable {
             return;
         }
 
-        maxButton.setAmount(Math.max(1, Math.min(this.maxItems, 999)));
+        maxButton.setAmount(Math.clamp(this.maxItems, 1, 999));
         maxButton.clearLore();
         maxButton.addLore(ColorUtils.colorize("&eAt most &6" + this.maxItems + " &eitems"));
         maxButton.addLore(ColorUtils.colorize(""));
