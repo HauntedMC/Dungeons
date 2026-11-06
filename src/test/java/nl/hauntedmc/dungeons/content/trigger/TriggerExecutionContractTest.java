@@ -49,4 +49,18 @@ class TriggerExecutionContractTest {
             assertSame(f.run,event.getValue().getInstance());
         }
     }
+    @Test
+    void leaveTriggersCannotCancelOrExecuteForAnotherRun() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            var session=source(f,new PlayerState());
+            var trigger=bind(new LeaveDungeonTrigger(Map.of("preventLeaving",true)),f);
+            var other=new PlayerLeaveDungeonEvent(new StaticInstance(f.dungeon,null),session);
+            trigger.onPlayerLeave(other);
+            assertFalse(other.isCancelled()); assertTrue(f.scheduler.immediate.isEmpty());
+            var own=new PlayerLeaveDungeonEvent(f.run,session);
+            trigger.onPlayerLeave(own);
+            assertTrue(own.isCancelled()); assertEquals(1,f.scheduler.immediate.size());
+        }
+    }
+
 }

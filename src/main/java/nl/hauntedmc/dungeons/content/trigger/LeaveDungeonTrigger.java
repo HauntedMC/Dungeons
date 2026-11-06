@@ -49,6 +49,9 @@ public class LeaveDungeonTrigger extends DungeonTrigger {
      */
     @EventHandler(priority = EventPriority.LOW)
     public void onPlayerLeave(PlayerLeaveDungeonEvent event) {
+        if (event.getInstance() != this.instance) {
+            return;
+        }
         DungeonPlayerSession playerSession = event.getPlayerSession();
         if (this.preventLeaving) {
             event.setCancelled(true);
