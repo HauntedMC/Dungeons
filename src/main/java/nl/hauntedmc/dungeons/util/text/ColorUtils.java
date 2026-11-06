@@ -8,7 +8,6 @@ import java.util.regex.Pattern;
 public final class ColorUtils {
     private ColorUtils() {}
 
-
     private static final char SECTION_CHAR = '§';
     private static final String LEGACY_COLOR_CODES = "0123456789AaBbCcDdEeFfKkLlMmNnOoRrXx";
     private static final Pattern ANGLE_HEX_PATTERN = Pattern.compile("<(#[a-fA-F0-9]{6})>");

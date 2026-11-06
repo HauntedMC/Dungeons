@@ -17,7 +17,6 @@ import org.bukkit.util.BoundingBox;
 public final class LocationUtils {
     private LocationUtils() {}
 
-
     /** Reads a location from config section coordinates with null world. */
     public static Location readLocation(ConfigurationSection config) {
         if (config == null) {

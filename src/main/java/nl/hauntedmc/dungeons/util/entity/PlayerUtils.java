@@ -16,7 +16,6 @@ import org.bukkit.entity.Player;
 public final class PlayerUtils {
     private PlayerUtils() {}
 
-
     /** Returns serialized display name for a player, or empty string for null. */
     public static String playerDisplayName(Player player) {
         return player == null ? "" : ComponentUtils.serialize(player.displayName());

@@ -9,7 +9,6 @@ import org.bukkit.entity.Player;
 public final class InputUtils {
     private InputUtils() {}
 
-
     /** Parses integer input and reports localization-backed validation failure. */
     public static Optional<Integer> readIntegerInput(CommandSender sender, String string) {
         try {

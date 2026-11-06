@@ -12,7 +12,6 @@ import org.bukkit.event.player.PlayerTeleportEvent;
 public final class EntityUtils {
     private EntityUtils() {}
 
-
     /** Returns effective max health for damageable entities. */
     public static double getMaxHealth(Damageable entity) {
         if (entity instanceof LivingEntity living) {

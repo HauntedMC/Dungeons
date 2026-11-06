@@ -7,7 +7,6 @@ import org.bukkit.World;
 public final class WorldUtils {
     private WorldUtils() {}
 
-
     /** Releases forced loading on the world spawn chunk. */
     public static void releaseSpawnChunk(World world) {
         if (world == null) return;

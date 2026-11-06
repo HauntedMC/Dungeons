@@ -14,7 +14,9 @@ class DungeonLoadExceptionTest {
         var original = new DungeonLoadException("broken dungeon", true, "first detail");
         original.addMessage("second detail");
         var bytes = new ByteArrayOutputStream();
-        try (var output = new ObjectOutputStream(bytes)) { output.writeObject(original); }
+        try (var output = new ObjectOutputStream(bytes)) {
+            output.writeObject(original);
+        }
         try (var input = new ObjectInputStream(new ByteArrayInputStream(bytes.toByteArray()))) {
             var restored = (DungeonLoadException) input.readObject();
             assertEquals("broken dungeon", restored.getMessage());

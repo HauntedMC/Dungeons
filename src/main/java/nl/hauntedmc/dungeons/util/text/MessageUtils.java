@@ -9,7 +9,6 @@ import org.bukkit.entity.Player;
 public final class MessageUtils {
     private MessageUtils() {}
 
-
     /** Shows a title/subtitle with fade timings in ticks. */
     public static void showTitle(
             Player player, String title, String subtitle, int fadeIn, int stay, int fadeOut) {

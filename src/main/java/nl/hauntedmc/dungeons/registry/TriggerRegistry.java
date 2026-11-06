@@ -141,7 +141,6 @@ public final class TriggerRegistry {
                             "Failed to register trigger '{}'.",
                             triggerClass.getSimpleName(),
                             exception);
-
         }
     }
 

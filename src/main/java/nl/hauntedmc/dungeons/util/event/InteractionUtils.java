@@ -7,7 +7,6 @@ import org.bukkit.event.player.PlayerInteractEvent;
 public final class InteractionUtils {
     private InteractionUtils() {}
 
-
     /** Returns whether block interaction has been denied on this event. */
     public static boolean isInteractionDenied(PlayerInteractEvent event) {
         return event.useInteractedBlock() == Event.Result.DENY;

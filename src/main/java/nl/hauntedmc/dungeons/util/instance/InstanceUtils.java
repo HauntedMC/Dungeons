@@ -11,7 +11,8 @@ import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
 public final class InstanceUtils {
     private InstanceUtils() {}
 
-    private static final Pattern COMPARISON_PATTERN = Pattern.compile("([^<=>]*)(>=|<=|=+|>|<)([^<=>]*)");
+    private static final Pattern COMPARISON_PATTERN =
+            Pattern.compile("([^<=>]*)(>=|<=|=+|>|<)([^<=>]*)");
     private static final Pattern VARIABLE_PATTERN = Pattern.compile("<[^<>]*>");
 
     /**

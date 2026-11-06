@@ -8,7 +8,6 @@ import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 public final class TextUtils {
     private TextUtils() {}
 
-
     /** Converts underscore-separated identifiers to title-case words. */
     public static String humanize(String value) {
         if (value == null || value.isBlank()) {

@@ -142,7 +142,6 @@ public final class FunctionRegistry {
                             "Failed to register function '{}'.",
                             functionClass.getSimpleName(),
                             exception);
-
         }
     }
 

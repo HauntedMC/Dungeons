@@ -9,7 +9,6 @@ import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 public final class ComponentUtils {
     private ComponentUtils() {}
 
-
     private static final LegacyComponentSerializer LEGACY_COMPONENT_SERIALIZER =
             LegacyComponentSerializer.builder()
                     .character('§')
