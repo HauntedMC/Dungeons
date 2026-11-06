@@ -74,6 +74,21 @@ class CommandContractTest {
             assertTrue(f.scheduler.asynchronous.isEmpty());
         }
     }
+
+    @Test
+    void disablingPersistsTheSettingAndInvalidatesOnlyQueuesForThatDungeon() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            var command=new CommandFixture(f); command.permissions.add("dungeons.admin");
+            var ownSession=f.paper.runtime.playerSessions().get(command.caller.player);
+            var own=new DungeonQueueEntry(ownSession,f.dungeon,""); command.queues.enqueue(own);
+            var otherDungeon=f.paper.dungeon(directory.resolve("other"),new YamlConfiguration());
+            var otherSession=f.session(new PlayerState()); var other=new DungeonQueueEntry(otherSession,otherDungeon,""); command.queues.enqueue(other);
+            command.execute("dungeon","disable","crypt");
+            assertFalse(f.dungeon.isEnabled());
+            assertFalse(YamlConfiguration.loadConfiguration(new java.io.File(f.dungeon.getFolder(),"config.yml")).getBoolean("dungeon.enabled"));
+            verify(command.coordinator).discardQueue(own); verify(command.coordinator,never()).discardQueue(other);
+        }
+    }
     static final class CommandFixture {
         final PlayerState caller=new PlayerState();
         final Set<String> permissions=new HashSet<>(Set.of("dungeons.core"));
