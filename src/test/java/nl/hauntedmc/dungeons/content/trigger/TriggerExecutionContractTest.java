@@ -190,5 +190,27 @@ class TriggerExecutionContractTest {
         }
     }
 
+    @Test
+    void keyItemTriggerConsumesOnlyMatchingMainHandItemsAtTheConfiguredBlock() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration());var menus=new HeadlessMenus();var items=mockStatic(nl.hauntedmc.dungeons.util.item.ItemUtils.class)) {
+            var state=new PlayerState(); source(f,state);
+            var template=mock(org.bukkit.inventory.ItemStack.class);
+            items.when(nl.hauntedmc.dungeons.util.item.ItemUtils::getDefaultKeyItem).thenReturn(template);
+            when(template.clone()).thenReturn(template);
+            var held=PlayerState.stack(3);
+            when(template.isSimilar(held)).thenReturn(true);
+            var trigger=bind(new KeyItemTrigger(Map.of("item",template,"consumeItem",true)),f);
+            trigger.initialize(); trigger.setAllowRetrigger(true);
+            var block=mock(Block.class); when(block.getLocation()).thenReturn(trigger.getLocation());
+            var event=mock(PlayerInteractEvent.class); when(event.getPlayer()).thenReturn(state.player);
+            when(event.getClickedBlock()).thenReturn(block); when(event.getItem()).thenReturn(held);
+            when(event.getAction()).thenReturn(Action.RIGHT_CLICK_BLOCK); when(event.getHand()).thenReturn(EquipmentSlot.OFF_HAND);
+            trigger.onUseItem(event); assertEquals(3,held.getAmount());
+            when(event.getHand()).thenReturn(EquipmentSlot.HAND);
+            when(template.isSimilar(held)).thenReturn(false); trigger.onUseItem(event); assertEquals(3,held.getAmount());
+            when(template.isSimilar(held)).thenReturn(true); trigger.onUseItem(event);
+            assertEquals(2,held.getAmount()); assertEquals(1,f.scheduler.immediate.size()); verify(event).setCancelled(true);
+        }
+    }
 
 }
