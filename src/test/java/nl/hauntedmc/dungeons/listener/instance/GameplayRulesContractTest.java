@@ -77,4 +77,23 @@ class GameplayRulesContractTest {
         }
     }
 
+    @Test
+    void naturalSpawnRestrictionsDoNotCancelMechanicSpawnsAndTrackingIgnoresOtherWorlds() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            f.run.getConfig().set("rules.spawning.natural_mobs",false);
+            f.run.getConfig().set("rules.spawning.animals",false);
+            f.run.getConfig().set("rules.spawning.monsters",false);
+            var listener=(PlayListener)f.run.getListener(); var mob=mock(Monster.class); when(mob.getWorld()).thenReturn(f.world);
+            for(var reason:List.of(CreatureSpawnEvent.SpawnReason.NATURAL,CreatureSpawnEvent.SpawnReason.REINFORCEMENTS,CreatureSpawnEvent.SpawnReason.CUSTOM,CreatureSpawnEvent.SpawnReason.SPAWNER)) {
+                var event=TestEvents.cancellable(CreatureSpawnEvent.class);
+                when(event.getEntity()).thenReturn(mob); when(event.getSpawnReason()).thenReturn(reason);
+                listener.onMobSpawn(event); assertEquals(reason==CreatureSpawnEvent.SpawnReason.NATURAL||reason==CreatureSpawnEvent.SpawnReason.REINFORCEMENTS,event.isCancelled());
+            }
+            var spawn=mock(EntitySpawnEvent.class); when(spawn.getEntity()).thenReturn(mob); listener.onEntitySpawn(spawn);
+            assertTrue(f.run.getEntities().contains(mob));
+            var other=mock(Entity.class); when(spawn.getEntity()).thenReturn(other); listener.onEntitySpawn(spawn);
+            assertFalse(f.run.getEntities().contains(other));
+        }
+    }
+
 }
