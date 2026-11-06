@@ -276,4 +276,43 @@ class RoomMechanicContractTest {
             assertEquals(45, spawner.getYaw());
         }
     }
+
+    @Test
+    void oneFailedRoomMechanicCannotAbandonHealthyMechanicsOrLeaveItsPartialRegistrationBehind()
+            throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration());
+                var menus = mockStatic(RoomMenus.class);
+                var hotbars = new HeadlessMenus()) {
+            var b = new BranchingRunFixture(f);
+            var definition =
+                    new BranchingRoomDefinition(
+                            b.dungeon, "recovery", new BoundingBox(0, 0, 0, 4, 3, 4));
+            var broken = new FailedEnable();
+            broken.setLocation(new Location(null, 1, 1, 1));
+            definition.addFunction(broken.getLocation(), broken);
+            var healthy =
+                    new nl.hauntedmc.dungeons.content.function.SetStatusFunction(
+                            Map.of("status", "healthy"));
+            healthy.initializeFields();
+            healthy.setLocation(new Location(null, 2, 1, 2));
+            definition.addFunction(healthy.getLocation(), healthy);
+            var room =
+                    new InstanceRoom(
+                            new RotatedRoom(definition, 0),
+                            new SimpleLocation(0, 70, 0),
+                            new SimpleLocation(0, 0, 0));
+            assertDoesNotThrow(() -> b.add(room));
+            assertTrue(b.run.getFunctionListeners(FailedEnable.class).isEmpty());
+            assertEquals(1, b.run.getFunctions().size());
+            b.run.getFunctions().values().iterator().next().runFunction(null, List.of());
+            assertEquals("healthy", b.run.getStatus());
+        }
+    }
+
+    static class FailedEnable extends nl.hauntedmc.dungeons.content.function.SetStatusFunction {
+        @Override
+        public void onEnable() {
+            throw new IllegalStateException("cannot enable room mechanic");
+        }
+    }
 }
