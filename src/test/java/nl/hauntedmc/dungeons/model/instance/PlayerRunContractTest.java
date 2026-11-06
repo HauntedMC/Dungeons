@@ -416,4 +416,54 @@ class PlayerRunContractTest {
             assertSame(f.run, survivor.getInstance());
         }
     }
+
+    @Test
+    void
+            unlimitedLivesAllowRepeatedRespawnsWhileSpectatorRulesContainInteractionsAndSpectateTeleports()
+                    throws Exception {
+        var rules = settings();
+        rules.set("players.lives", 0);
+        try (var f = new RunFixture(directory, rules)) {
+            var state = new PlayerState();
+            var session = f.session(state);
+            f.run.addPlayer(session);
+            var listener = (PlayListener) f.run.getListener();
+            var death = mock(PlayerDeathEvent.class);
+            when(death.getEntity()).thenReturn(state.player);
+            var respawn = mock(PlayerRespawnEvent.class);
+            when(respawn.getPlayer()).thenReturn(state.player);
+            for (int count = 0; count < 2; count++) {
+                listener.onPlayerDeath(death);
+                assertTrue(session.isDead());
+                listener.onPlayerRespawn(respawn);
+                assertFalse(session.isDead());
+            }
+            assertFalse(f.run.isLivesEnabled());
+            assertTrue(f.run.getPlayerLives().isEmpty());
+            assertTrue(f.run.getLivingPlayers().contains(session));
+            assertSame(f.run, session.getInstance());
+            verify(respawn, times(2)).setRespawnLocation(f.run.getStartLoc());
+            state.gameMode = GameMode.SPECTATOR;
+            var interaction =
+                    TestEvents.cancellable(org.bukkit.event.player.PlayerInteractEvent.class);
+            when(interaction.getPlayer()).thenReturn(state.player);
+            listener.onSpectator(interaction);
+            assertTrue(interaction.isCancelled());
+            var entityInteraction =
+                    TestEvents.cancellable(org.bukkit.event.player.PlayerInteractEntityEvent.class);
+            when(entityInteraction.getPlayer()).thenReturn(state.player);
+            listener.onSpectator(entityInteraction);
+            assertTrue(entityInteraction.isCancelled());
+            for (var destination : List.of(f.world, state.originWorld)) {
+                var teleport =
+                        new org.bukkit.event.player.PlayerTeleportEvent(
+                                state.player,
+                                state.location,
+                                new Location(destination, 5, 70, 5),
+                                org.bukkit.event.player.PlayerTeleportEvent.TeleportCause.SPECTATE);
+                listener.onSpectatorTeleport(teleport);
+                assertEquals(destination != f.world, teleport.isCancelled());
+            }
+        }
+    }
 }
