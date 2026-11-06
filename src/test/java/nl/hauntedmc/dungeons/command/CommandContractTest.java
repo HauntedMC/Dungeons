@@ -59,6 +59,21 @@ class CommandContractTest {
             verify(command.catalog).remove(f.dungeon); assertEquals("keep me",Files.readString(neighbor));
         }
     }
+
+    @Test
+    void unsafeImportNamesAndEscapingSymlinksCannotLoadOrModifyWorlds() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            var command=new CommandFixture(f); command.permissions.add("dungeons.admin");
+            Path worlds=Files.createDirectories(directory.resolve("worlds")); f.paper.bukkit.when(Bukkit::getWorldContainer).thenReturn(worlds.toFile());
+            Path outside=Files.createDirectories(directory.resolve("outside")); Files.writeString(outside.resolve("level.dat"),"protected world");
+            Files.createSymbolicLink(worlds.resolve("link"),outside);
+            for(String name:List.of("../outside","/absolute","a/b","a\\b",".","..","link")) command.execute("import",name);
+            verify(command.catalog,never()).loadDungeon(any(java.io.File.class),anyString(),anyString());
+            assertEquals("protected world",Files.readString(outside.resolve("level.dat")));
+            assertTrue(Files.isDirectory(f.dungeon.getFolder().toPath()));
+            assertTrue(f.scheduler.asynchronous.isEmpty());
+        }
+    }
     static final class CommandFixture {
         final PlayerState caller=new PlayerState();
         final Set<String> permissions=new HashSet<>(Set.of("dungeons.core"));
