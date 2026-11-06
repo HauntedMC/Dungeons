@@ -1120,12 +1120,16 @@ public abstract class DungeonDefinition {
 
     public void loadCooldowns(UUID playerID) {
         FileConfiguration data = this.playerData.get(playerID);
-        if (data.get("RewardsInfo") != null) {
-            PlayerLootData playerData = (PlayerLootData) data.get("RewardsInfo");
-            if (playerData != null) {
-                this.lootCooldowns.add(playerData);
-                this.lootCooldownsByPlayer.put(playerData.getPlayerId(), playerData);
-            }
+        Object rewardRecord = data.get("RewardsInfo");
+        if (rewardRecord instanceof PlayerLootData rewards) {
+            this.lootCooldowns.add(rewards);
+            this.lootCooldownsByPlayer.put(rewards.getPlayerId(), rewards);
+        } else if (rewardRecord != null) {
+            this.logger()
+                    .warn(
+                            "Ignoring invalid reward cooldown data for player '{}' in dungeon '{}'.",
+                            playerID,
+                            this.worldName);
         }
 
         if (data.get("AccessCooldown", null) != null) {

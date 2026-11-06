@@ -86,6 +86,28 @@ class RepositoryContractTest {
         }
     }
 
+    @Test
+    void wrongRewardRecordTypeCannotDiscardOtherPlayerStateOrPreventDungeonLoading() throws Exception {
+        try (var fixture = new Fixture(directory)) {
+            Path folder = Files.createDirectory(directory.resolve("healthy"));
+            Files.writeString(folder.resolve("config.yml"), "dungeon:\n  type: static\n");
+            Path players = Files.createDirectory(folder.resolve("players"));
+            var playerId = java.util.UUID.randomUUID();
+            String saved = "RewardsInfo: invalid-legacy-record\nFinished: true\nAccessCooldown: 123456789\n";
+            Path data = players.resolve(playerId + ".yml");
+            Files.writeString(data, saved);
+            fixture.scheduler.jobs.getFirst().run();
+            var dungeon = fixture.repository.get("healthy");
+            assertNotNull(dungeon);
+            var player = mock(org.bukkit.entity.Player.class);
+            when(player.getUniqueId()).thenReturn(playerId);
+            assertTrue(dungeon.hasPlayerCompletedDungeon(player));
+            assertEquals(123456789L, dungeon.getPlayerData(playerId).getLong("AccessCooldown"));
+            assertNull(dungeon.getPlayerLootData(player));
+            assertEquals(saved, Files.readString(data));
+        }
+    }
+
     static final class Fixture implements AutoCloseable {
         final PaperBoundary paper = new PaperBoundary();
         final CapturedScheduler scheduler = new CapturedScheduler(paper);
