@@ -218,7 +218,12 @@ public abstract class PlayableInstance extends DungeonInstance {
     @Override
     public void onDispose() {
         for (DungeonFunction function : this.functions.values()) {
-            function.disable();
+            try {
+                function.disable();
+            } catch (Exception exception) {
+                this.logger().error("Failed to disable function while disposing dungeon '{}'.",
+                        this.dungeon.getWorldName(), exception);
+            }
         }
 
         for (BukkitRunnable tracker : this.offlineTrackers.values()) {

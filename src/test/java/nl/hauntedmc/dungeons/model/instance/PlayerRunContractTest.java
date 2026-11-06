@@ -130,4 +130,20 @@ class PlayerRunContractTest {
         }
     }
 
+    @Test
+    void oneBrokenFunctionCannotAbandonOtherFunctionsTickersOrTrackedEntityCleanup() throws Exception {
+        try(var fixture=new RunFixture(directory,settings())) {
+            fixture.run.startGame();
+            var broken=mock(nl.hauntedmc.dungeons.model.element.DungeonFunction.class);
+            var healthy=mock(nl.hauntedmc.dungeons.model.element.DungeonFunction.class);
+            doThrow(new IllegalStateException("broken disable")).when(broken).disable();
+            fixture.run.getFunctions().put(new org.bukkit.Location(fixture.world,0,0,0),broken);
+            fixture.run.getFunctions().put(new org.bukkit.Location(fixture.world,1,0,0),healthy);
+            var entity=mock(org.bukkit.entity.Entity.class); fixture.run.getEntities().add(entity);
+            assertDoesNotThrow(fixture.run::onDispose);
+            verify(healthy).disable(); verify(entity).remove();
+            assertTrue(fixture.scheduler.jobs.stream().allMatch(j -> j.cancelled));
+        }
+    }
+
 }
