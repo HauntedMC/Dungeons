@@ -278,4 +278,46 @@ class PlayerRunContractTest {
             assertNull(f.run.getEntities());
         }
     }
+
+    @Test
+    void deathTransfersDoublyTaggedProgressionItemsToASurvivorExactlyOnceAndRemovesTheirDrops()
+            throws Exception {
+        var rules = settings();
+        rules.set("players.lives", 1);
+        try (var f = new RunFixture(directory, rules)) {
+            var dead = new PlayerState();
+            var survivor = new PlayerState();
+            var source = f.session(dead);
+            var target = f.session(survivor);
+            f.run.addPlayer(source);
+            f.run.addPlayer(target);
+            var tags = new java.util.HashMap<org.bukkit.NamespacedKey, Object>();
+            tags.put(new org.bukkit.NamespacedKey("dungeons", "dungeonkey"), 1);
+            tags.put(new org.bukkit.NamespacedKey("dungeons", "dungeonitem"), 1);
+            var item = TaggedItems.stack(org.bukkit.Material.TRIPWIRE_HOOK, 1, tags);
+            dead.contents[0] = item;
+            var offhand = item.clone();
+            dead.contents[40] = offhand;
+            doAnswer(
+                            c -> {
+                                for (int slot = 0; slot < dead.contents.length; slot++)
+                                    if (dead.contents[slot] == c.getArgument(0))
+                                        dead.contents[slot] = null;
+                                return null;
+                            })
+                    .when(dead.inventory)
+                    .remove(any(org.bukkit.inventory.ItemStack.class));
+            var drops = new ArrayList<>(List.of(item, offhand));
+            var event = mock(PlayerDeathEvent.class);
+            when(event.getEntity()).thenReturn(dead.player);
+            when(event.getDrops()).thenReturn(drops);
+            ((PlayListener) f.run.getListener()).onPlayerDeath(event);
+            verify(survivor.inventory, times(1)).addItem(item);
+            verify(survivor.inventory, times(1)).addItem(offhand);
+            assertTrue(drops.isEmpty());
+            assertNull(dead.contents[0]);
+            assertFalse(f.run.getLivingPlayers().contains(source));
+            assertTrue(f.run.getLivingPlayers().contains(target));
+        }
+    }
 }
