@@ -19,6 +19,7 @@ import nl.hauntedmc.dungeons.content.function.SetStatusFunction;
 import nl.hauntedmc.dungeons.event.PlayerLeaveDungeonEvent;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.support.*;
+import nl.hauntedmc.dungeons.util.entity.EntityUtils;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
 
 import org.bukkit.*;
@@ -208,6 +209,40 @@ class EditorPersistenceContractTest {
             assertFalse(session.isAwaitingRoomName());
             assertEquals(GameMode.SURVIVAL, state.gameMode);
             verify(manager, times(2)).callEvent(any(PlayerLeaveDungeonEvent.class));
+        }
+    }
+
+    @Test
+    void delayedEditorInventoryCannotOverwriteTheSurvivalInventoryAfterDeparture()
+            throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration());
+                var tools = mockStatic(ItemUtils.class);
+                var entities = mockStatic(EntityUtils.class)) {
+            var functionTool = PlayerState.stack(1);
+            var roomTool = PlayerState.stack(1);
+            tools.when(ItemUtils::getFunctionTool).thenReturn(functionTool);
+            tools.when(ItemUtils::getRoomTool).thenReturn(roomTool);
+            var state = new PlayerState();
+            state.contents[0] = PlayerState.stack(7);
+            entities.when(() -> EntityUtils.getMaxHealth(state.player)).thenReturn(20.0);
+            when(f.paper.plugin.isEnabled()).thenReturn(true);
+            var session = f.session(state);
+            var editor = new Editor(f);
+            editor.addPlayer(session);
+            var pendingInventory =
+                    f.scheduler.jobs.stream()
+                            .filter(job -> job.delay == 2 && job.period == 0)
+                            .findFirst()
+                            .orElseThrow();
+            state.contents[5] = PlayerState.stack(20);
+            editor.removePlayer(session, true);
+            assertNull(session.getInstance());
+            assertFalse(session.isEditMode());
+            assertEquals(7, state.contents[0].getAmount());
+            assertNull(state.contents[5]);
+            pendingInventory.run();
+            assertEquals(7, state.contents[0].getAmount());
+            assertNull(state.contents[5]);
         }
     }
 

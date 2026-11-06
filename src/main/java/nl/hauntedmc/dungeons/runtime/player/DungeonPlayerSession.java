@@ -224,8 +224,12 @@ public final class DungeonPlayerSession {
      * bindings.
      */
     public void loadEditInventory() {
+        DungeonInstance editor = this.instance;
         Runnable task =
                 () -> {
+                    if (editor != null && (!this.editMode || this.instance != editor)) {
+                        return;
+                    }
                     if (this.savedEditInventory != null) {
                         this.player.getInventory().setContents(copyItems(this.savedEditInventory));
                     }
