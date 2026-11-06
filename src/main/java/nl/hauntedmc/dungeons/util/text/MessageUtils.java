@@ -7,6 +7,8 @@ import org.bukkit.entity.Player;
 
 /** Title and clickable-message helpers for player messaging. */
 public final class MessageUtils {
+    private MessageUtils() {}
+
 
     /** Shows a title/subtitle with fade timings in ticks. */
     public static void showTitle(

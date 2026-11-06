@@ -13,6 +13,8 @@ import org.apache.commons.lang3.time.DurationFormatUtils;
  * Time conversion and formatting helpers.
  */
 public final class TimeUtils {
+    private TimeUtils() {}
+
     private static final Pattern DURATION_PATTERN = Pattern.compile("([0-9]+)([smhdwySMHDWY])");
 
     /** Formats a date using configured plugin locale and human-friendly pattern. */

@@ -14,6 +14,8 @@ import org.bukkit.entity.Player;
 
 /** Player lookup and display helper utilities. */
 public final class PlayerUtils {
+    private PlayerUtils() {}
+
 
     /** Returns serialized display name for a player, or empty string for null. */
     public static String playerDisplayName(Player player) {

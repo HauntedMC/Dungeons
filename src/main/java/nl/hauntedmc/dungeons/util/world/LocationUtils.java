@@ -15,6 +15,8 @@ import org.bukkit.util.BoundingBox;
  * Location and bounding-box helpers used by dungeon generation and runtime flows.
  */
 public final class LocationUtils {
+    private LocationUtils() {}
+
 
     /** Reads a location from config section coordinates with null world. */
     public static Location readLocation(ConfigurationSection config) {

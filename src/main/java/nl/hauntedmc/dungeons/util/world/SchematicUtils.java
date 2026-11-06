@@ -23,6 +23,8 @@ import org.joml.Vector3i;
  * Serialization helpers for compact structure-piece storage.
  */
 public final class SchematicUtils {
+    private SchematicUtils() {}
+
     /** Saves one structure piece to a compressed custom text format. */
     public static void saveStructurePiece(File file, StructurePiece structure) {
         Map<BlockData, Integer> cachedBlocks = new HashMap<>();

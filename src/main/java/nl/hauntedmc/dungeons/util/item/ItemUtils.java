@@ -24,6 +24,8 @@ import org.bukkit.persistence.PersistentDataType;
  * Item utility helpers for editor tools, key items, and reward transfers.
  */
 public final class ItemUtils {
+    private ItemUtils() {}
+
     private static final String DUNGEON_KEY_TAG = "dungeonkey";
     private static final String DUNGEON_RUNTIME_ITEM_TAG = "DungeonItem";
     private static final String DUNGEON_ACCESS_KEY_ID_TAG = "dungeon_access_key_id";

@@ -19,6 +19,8 @@ import org.bukkit.util.Vector;
 
 /** Particle and structure-box rendering helpers used by editor previews. */
 public final class ParticleUtils {
+    private ParticleUtils() {}
+
     /** Displays one or more bounding boxes with default particle. */
     public static void displayBoundingBox(Player to, int ticks, BoundingBox... boxes) {
         displayBoundingBox(to, ticks, Particle.WAX_OFF, boxes);

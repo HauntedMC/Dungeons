@@ -6,6 +6,8 @@ import java.util.concurrent.ThreadLocalRandom;
  * Numeric utility helpers for randomization and sign-aware arithmetic.
  */
 public final class MathUtils {
+    private MathUtils() {}
+
     /** Rounds a decimal value to the requested number of places. */
     public static double round(double value, int places) {
         double scale = Math.pow(10.0, places);

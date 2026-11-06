@@ -9,6 +9,8 @@ import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
  * Helpers for parsing and evaluating instance variable placeholders.
  */
 public final class InstanceUtils {
+    private InstanceUtils() {}
+
     private static final Pattern COMPARISON_PATTERN = Pattern.compile("([^<=>]*)(>=|<=|=+|>|<)([^<=>]*)");
     private static final Pattern VARIABLE_PATTERN = Pattern.compile("<[^<>]*>");
 

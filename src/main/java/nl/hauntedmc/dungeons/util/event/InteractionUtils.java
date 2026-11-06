@@ -5,6 +5,8 @@ import org.bukkit.event.player.PlayerInteractEvent;
 
 /** Interaction-result helpers for Bukkit player interaction events. */
 public final class InteractionUtils {
+    private InteractionUtils() {}
+
 
     /** Returns whether block interaction has been denied on this event. */
     public static boolean isInteractionDenied(PlayerInteractEvent event) {

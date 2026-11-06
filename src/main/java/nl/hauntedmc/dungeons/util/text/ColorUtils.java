@@ -6,6 +6,8 @@ import java.util.regex.Pattern;
 
 /** Legacy and hex color translation helpers. */
 public final class ColorUtils {
+    private ColorUtils() {}
+
 
     private static final char SECTION_CHAR = '§';
     private static final String LEGACY_COLOR_CODES = "0123456789AaBbCcDdEeFfKkLlMmNnOoRrXx";
