@@ -58,6 +58,32 @@ class QueueContractTest {
         verify(bob, never()).setAwaitingDungeon(false);
     }
 
+    @Test
+    void fifoSelectsFirstStartableQueueAndDiscardsOfflineEntriesWithoutSkippingTheirSuccessor() {
+        DungeonPlayerSession offline = player();
+        DungeonPlayerSession waiting = player();
+        DungeonPlayerSession ready = player();
+        DungeonPlayerSession later = player();
+        when(offline.getPlayer().isOnline()).thenReturn(false);
+        DungeonQueueEntry invalid = new DungeonQueueEntry(offline, dungeon, "invalid");
+        DungeonQueueEntry blocked = new DungeonQueueEntry(waiting, dungeon, "blocked");
+        DungeonQueueEntry firstReady = new DungeonQueueEntry(ready, dungeon, "ready");
+        DungeonQueueEntry secondReady = new DungeonQueueEntry(later, dungeon, "ready");
+        when(instances.canStartDungeonNow(dungeon, 1, "ready")).thenReturn(true);
+        queues.enqueue(invalid);
+        queues.enqueue(blocked);
+        queues.enqueue(firstReady);
+        queues.enqueue(secondReady);
+
+        assertSame(firstReady, queues.getNextInLine());
+        assertNull(queues.getQueue(offline));
+        assertSame(blocked, queues.getQueue(waiting));
+        assertEquals(List.of(blocked, firstReady, secondReady), queues.snapshotQueues());
+        verify(dungeon).refundReservedAccessKey(offline);
+        queues.snapshotQueues().clear();
+        assertEquals(3, queues.snapshotQueues().size());
+    }
+
     DungeonPlayerSession player() {
         Player player = mock(Player.class);
         UUID id = UUID.randomUUID();
