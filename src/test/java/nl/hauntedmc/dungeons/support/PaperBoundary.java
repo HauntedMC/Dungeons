@@ -32,6 +32,13 @@ public final class PaperBoundary implements AutoCloseable {
         javaPlugin.when(() -> JavaPlugin.getPlugin(DungeonsPlugin.class)).thenReturn(plugin);
     }
 
+    public nl.hauntedmc.dungeons.content.dungeon.StaticDungeon dungeon(java.nio.file.Path folder, YamlConfiguration settings) throws Exception {
+        java.nio.file.Files.createDirectories(folder);
+        runtime.setDefaultDungeonConfig(new YamlConfiguration());
+        bukkit.when(Bukkit::getWorldContainer).thenReturn(folder.getParent().toFile());
+        return new nl.hauntedmc.dungeons.content.dungeon.StaticDungeon(runtime, folder.toFile(), settings);
+    }
+
     @Override public void close() {
         RuntimeContext.clear();
         javaPlugin.close();
