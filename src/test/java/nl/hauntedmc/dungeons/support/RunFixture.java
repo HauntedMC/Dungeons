@@ -31,6 +31,9 @@ public final class RunFixture implements AutoCloseable {
         paper.runtime.setPlayerSessions(new PlayerSessionRegistry(paper.plugin));
         paper.runtime.setActiveInstances(new ActiveInstanceRegistry(paper.plugin));
         when(world.getName()).thenReturn("crypt_0");
+        var worldId = java.util.UUID.randomUUID();
+        when(world.getUID()).thenReturn(worldId);
+        paper.bukkit.when(() -> Bukkit.getWorld(worldId)).thenReturn(world);
         when(world.key()).thenReturn(new NamespacedKey("dungeons", "crypt_0"));
         when(world.getEntitiesByClass(EnderDragon.class)).thenReturn(List.of());
         dungeon = paper.dungeon(folder.resolve("crypt"), settings);

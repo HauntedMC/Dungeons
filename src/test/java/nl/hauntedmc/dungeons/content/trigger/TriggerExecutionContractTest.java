@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyDouble;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -354,6 +355,24 @@ class TriggerExecutionContractTest {
             trigger.getConditions().clear(); waiting.run();
             assertTrue(waiting.cancelled);
             verify(Bukkit.getPluginManager()).callEvent(any(TriggerFireEvent.class));
+        }
+    }
+
+    @Test
+    void proximityDetectionRequiresCurrentMembersAndRetriggersOnlyAfterTheyLeaveAndReturn() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            var first=new PlayerState(); source(f,first); var outsider=new PlayerState(); outsider.location=new Location(f.world,0,70,0);
+            java.util.List<org.bukkit.entity.Player> nearby=new java.util.ArrayList<>(List.of(first.player,outsider.player));
+            f.paper.bukkit.when(Bukkit::getOnlinePlayers).thenAnswer(c -> List.copyOf(nearby));
+            f.paper.bukkit.when(() -> Bukkit.getPlayer(first.player.getUniqueId())).thenReturn(first.player);
+            when(f.world.getNearbyEntities(any(Location.class),anyDouble(),anyDouble(),anyDouble(),any())).thenAnswer(c -> List.copyOf(nearby));
+            var trigger=bind(new DistanceTrigger(Map.of("radius",3.0,"count",2)),f); trigger.onEnable(); var scan=f.scheduler.jobs.getFirst();
+            scan.run(); assertTrue(f.scheduler.immediate.isEmpty());
+            var second=new PlayerState(); source(f,second); f.paper.bukkit.when(() -> Bukkit.getPlayer(second.player.getUniqueId())).thenReturn(second.player);
+            nearby.clear(); nearby.addAll(List.of(first.player,second.player));
+            scan.run(); assertEquals(1,f.scheduler.immediate.size()); scan.run(); assertEquals(1,f.scheduler.immediate.size());
+            nearby.clear(); scan.run(); nearby.addAll(List.of(first.player,second.player)); scan.run();
+            assertEquals(2,f.scheduler.immediate.size()); trigger.onDisable(); assertTrue(scan.cancelled);
         }
     }
 

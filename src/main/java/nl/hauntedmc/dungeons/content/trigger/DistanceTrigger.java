@@ -124,10 +124,11 @@ public class DistanceTrigger extends DungeonTrigger {
                                                 effectiveRadius,
                                                 GameMode.SURVIVAL,
                                                 GameMode.ADVENTURE);
-                                players.removeIf(
-                                        candidatePlayer ->
-                                                !DistanceTrigger.this.matchesRoom(
-                                                        candidatePlayer.getLocation()));
+                                players.removeIf(candidatePlayer -> {
+                                    DungeonPlayerSession session = RuntimeContext.playerSessions().get(candidatePlayer);
+                                    return session == null || session.getInstance() != instance
+                                            || !DistanceTrigger.this.matchesRoom(candidatePlayer.getLocation());
+                                });
 
                                 // Already-triggered players are filtered out so non-retriggerable
                                 // detectors do not fire repeatedly for the same presence.
