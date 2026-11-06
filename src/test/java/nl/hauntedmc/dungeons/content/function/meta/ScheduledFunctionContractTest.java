@@ -33,4 +33,21 @@ class ScheduledFunctionContractTest {
             verify(child).runFunction(eq(event), eq(List.of(player)));
         }
     }
+    @Test
+    void disablingARetriggeredDelayCancelsEveryPendingActivation() {
+        try (var paper = new PaperBoundary()) {
+            var scheduler = new CapturedScheduler(paper);
+            var child = mock(DungeonFunction.class);
+            var delayed = new DelayedFunction();
+            delayed.addFunction(child);
+            delayed.runFunction(mock(TriggerFireEvent.class), List.of());
+            delayed.runFunction(mock(TriggerFireEvent.class), List.of());
+            delayed.onDisable();
+            assertEquals(2, scheduler.jobs.size());
+            assertTrue(scheduler.jobs.stream().allMatch(job -> job.cancelled));
+            scheduler.jobs.forEach(CapturedScheduler.Job::run);
+            verify(child, never()).runFunction(any(), anyList());
+            verify(child).disable();
+        }
+    }
 }
