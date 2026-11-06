@@ -376,4 +376,21 @@ class TriggerExecutionContractTest {
         }
     }
 
+    @Test
+    void mobDeathTriggersIgnoreCancelledWrongTypeAndOutOfRangeDeathsBeforeCountingAndResetting() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            var mob=mock(org.bukkit.entity.LivingEntity.class); when(mob.getWorld()).thenReturn(f.world);
+            when(mob.getType()).thenReturn(org.bukkit.entity.EntityType.ZOMBIE); when(mob.getLocation()).thenReturn(new Location(f.world,0,70,0));
+            var event=mock(EntityDeathEvent.class); when(event.getEntity()).thenReturn(mob);
+            var trigger=bind(new MobDeathTrigger(Map.of("mob","zombie","count",2,"radius",3.0)),f);
+            when(event.isCancelled()).thenReturn(true); trigger.onMobDeath(event);
+            when(event.isCancelled()).thenReturn(false); trigger.onMobDeath(event); assertTrue(f.scheduler.immediate.isEmpty());
+            when(mob.getType()).thenReturn(org.bukkit.entity.EntityType.SKELETON); trigger.onMobDeath(event); assertTrue(f.scheduler.immediate.isEmpty());
+            when(mob.getType()).thenReturn(org.bukkit.entity.EntityType.ZOMBIE); when(mob.getLocation()).thenReturn(new Location(f.world,4,70,0));
+            trigger.onMobDeath(event); assertTrue(f.scheduler.immediate.isEmpty());
+            when(mob.getLocation()).thenReturn(new Location(f.world,3,70,0)); trigger.onMobDeath(event); assertEquals(1,f.scheduler.immediate.size());
+            trigger.onMobDeath(event); assertEquals(1,f.scheduler.immediate.size()); trigger.onMobDeath(event); assertEquals(2,f.scheduler.immediate.size());
+        }
+    }
+
 }

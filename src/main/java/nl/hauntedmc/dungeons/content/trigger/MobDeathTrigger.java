@@ -84,6 +84,9 @@ public class MobDeathTrigger extends DungeonTrigger {
      */
     @EventHandler
     public void onMobDeath(EntityDeathEvent event) {
+        if (event.isCancelled()) {
+            return;
+        }
         if (event.getEntity().getWorld() == this.instance.getInstanceWorld()) {
             LivingEntity ent = event.getEntity();
             int requiredKills = Math.max(1, this.count);
