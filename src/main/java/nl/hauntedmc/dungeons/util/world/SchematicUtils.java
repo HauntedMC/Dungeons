@@ -79,8 +79,11 @@ public final class SchematicUtils {
         try {
             byte[] bytes = FileUtils.readFileToByteArray(file);
             String full = decompress(bytes);
-            String[] pair = full.split("\n");
+            String[] pair = full.split("\n", 2);
             String blocks = pair[0];
+            if (blocks.isEmpty()) {
+                return struct;
+            }
             List<BlockData> data = deserializeBlockDataList(blocks);
             String positions = pair[1];
             String[] entries = positions.split("!");

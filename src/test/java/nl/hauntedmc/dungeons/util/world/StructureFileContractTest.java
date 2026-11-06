@@ -33,6 +33,15 @@ class StructureFileContractTest {
         }
     }
 
+    @Test
+    void anEmptyCapturedStructureRemainsAValidEmptyStructureAfterReload() {
+        try (var paper = new PaperBoundary()) {
+            var file = directory.resolve("empty.schem").toFile();
+            SchematicUtils.saveStructurePiece(file, new StructurePiece());
+            assertEquals(0, SchematicUtils.loadStructurePiece(file).size());
+        }
+    }
+
     BlockData data(PaperBoundary paper, String state) {
         BlockData data = mock(BlockData.class);
         when(data.getAsString(true)).thenReturn(state);
