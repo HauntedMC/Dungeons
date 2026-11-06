@@ -1,0 +1,55 @@
+package nl.hauntedmc.dungeons.runtime.player;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import java.nio.file.Path;
+import java.util.UUID;
+import nl.hauntedmc.dungeons.support.PaperBoundary;
+import org.bukkit.Material;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+class AccessKeyReservationContractTest {
+    @TempDir Path directory;
+
+    @Test
+    void aReservationHasOneOwnerAndOfflineRefundIsDeliveredExactlyOnceOnReconnect() {
+        try (var paper = new PaperBoundary()) {
+            when(paper.plugin.getDataFolder()).thenReturn(directory.toFile());
+            Player player = mock(Player.class);
+            when(player.getUniqueId()).thenReturn(UUID.randomUUID());
+            var inventory = mock(PlayerInventory.class);
+            when(player.getInventory()).thenReturn(inventory);
+            var key = item();
+            var reserved = item();
+            var refund = item();
+            when(key.clone()).thenReturn(reserved);
+            when(reserved.clone()).thenReturn(refund);
+            var session = new DungeonPlayerSession(paper.plugin, player);
+            assertTrue(session.reserveAccessKey("crypt", key));
+            assertFalse(session.reserveAccessKey("other", key));
+            assertFalse(session.refundReservedAccessKey("other"));
+            assertTrue(session.hasReservedAccessKey("crypt"));
+            assertTrue(session.refundReservedAccessKey("crypt"));
+            assertFalse(session.refundReservedAccessKey("crypt"));
+            session.flushPendingAccessKeyRefund();
+            verifyNoInteractions(inventory);
+            when(player.isOnline()).thenReturn(true);
+            session.flushPendingAccessKeyRefund();
+            session.flushPendingAccessKeyRefund();
+            verify(inventory, times(1)).addItem(refund);
+            assertFalse(session.hasReservedAccessKey());
+        }
+    }
+
+    ItemStack item() {
+        var item = mock(ItemStack.class);
+        // Material registry behavior belongs to Paper; only its non-air result matters here.
+        when(item.getType()).thenReturn(mock(Material.class));
+        return item;
+    }
+}
