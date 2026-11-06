@@ -13,6 +13,7 @@ import org.apache.commons.lang3.time.DurationFormatUtils;
  * Time conversion and formatting helpers.
  */
 public final class TimeUtils {
+    private static final Pattern DURATION_PATTERN = Pattern.compile("([0-9]+)([smhdwySMHDWY])");
 
     /** Formats a date using configured plugin locale and human-friendly pattern. */
     public static String formatDate(Date date) {
@@ -23,26 +24,26 @@ public final class TimeUtils {
 
     /** Converts short duration tokens such as {@code 5m} or {@code 2h} to a future timestamp. */
     public static Date convertDurationString(String durationString) {
-        Pattern durationPattern = Pattern.compile("((^[0-9]*)([smhdwySMHDWY]))");
-        Matcher matcher = durationPattern.matcher(durationString);
-        if (matcher.find()) {
-            String length = matcher.group(2);
-            int duration = Integer.parseInt(length);
-            String timeFrame = matcher.group(3);
-            int multiplier = 1;
-            String normalizedTimeFrame = timeFrame.toLowerCase(Locale.ROOT);
-            multiplier =
-                    switch (normalizedTimeFrame) {
-                        case "m" -> 60;
-                        case "h" -> 3600;
-                        case "d" -> 86400;
-                        case "w" -> 604800;
-                        case "y" -> 31557600;
-                        default -> multiplier;
-                    };
+        if (durationString == null) {
+            return null;
+        }
+        Matcher matcher = DURATION_PATTERN.matcher(durationString);
+        if (!matcher.matches()) {
+            return null;
+        }
 
-            return getFutureTimeInSeconds(duration * multiplier);
-        } else {
+        long multiplier = switch (matcher.group(2).toLowerCase(Locale.ROOT)) {
+            case "m" -> 60;
+            case "h" -> 3600;
+            case "d" -> 86400;
+            case "w" -> 604800;
+            case "y" -> 31557600;
+            default -> 1;
+        };
+        try {
+            long seconds = Math.multiplyExact(Long.parseLong(matcher.group(1)), multiplier);
+            return getFutureTimeInSeconds(seconds);
+        } catch (NumberFormatException | ArithmeticException exception) {
             return null;
         }
     }
@@ -54,6 +55,11 @@ public final class TimeUtils {
 
     /** Returns a timestamp offset by a number of seconds from now. */
     public static Timestamp getFutureTimeInSeconds(int seconds) {
-        return new Timestamp(System.currentTimeMillis() + seconds * 1000L);
+        return getFutureTimeInSeconds((long) seconds);
+    }
+
+    /** Returns a timestamp offset by seconds, rejecting arithmetic overflow. */
+    public static Timestamp getFutureTimeInSeconds(long seconds) {
+        return new Timestamp(Math.addExact(System.currentTimeMillis(), Math.multiplyExact(seconds, 1000L)));
     }
 }
