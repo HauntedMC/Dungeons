@@ -96,4 +96,52 @@ class TeamJoinContractTest {
             verify(offline.inventory).addItem(any(org.bukkit.inventory.ItemStack.class));
         }
     }
+
+    @Test
+    void missingTeamsAndLeaderPreparationTimeoutsReleaseWaitingFlagsAndRefundEveryReservationOnce()
+            throws Exception {
+        for (boolean teamRemoved : List.of(false, true)) {
+            try (var f =
+                    new RunFixture(
+                            directory.resolve(Boolean.toString(teamRemoved)),
+                            new YamlConfiguration())) {
+                var service = teams(f);
+                var leader = player(f);
+                var member = player(f);
+                var team = team(service, leader, member);
+                var sessions = f.paper.runtime.playerSessions();
+                var source = sessions.get(leader.player);
+                var target = sessions.get(member.player);
+                for (var session : List.of(source, target)) {
+                    session.setAwaitingDungeon(true);
+                    assertTrue(
+                            session.reserveAccessKey(
+                                    f.dungeon.getWorldName(), PlayerState.stack(1)));
+                }
+                service.markQueued(team, f.dungeon.getWorldName(), "");
+                var queue =
+                        new DungeonQueueEntry(
+                                source, f.dungeon, "", team.getMemberIds(), team.getTeamId());
+                queue.scheduleTeamJoin(f.paper.plugin, service, sessions);
+                var retry = f.scheduler.jobs.getFirst();
+                if (teamRemoved) service.shutdown();
+                else {
+                    for (int tick = 0; tick < 199; tick++) retry.run();
+                    assertFalse(retry.cancelled);
+                    assertTrue(source.hasReservedAccessKey());
+                }
+                retry.run();
+                retry.run();
+                assertTrue(retry.cancelled);
+                for (var session : List.of(source, target)) {
+                    assertFalse(session.isAwaitingDungeon());
+                    assertFalse(session.hasReservedAccessKey());
+                    assertNull(session.getInstance());
+                }
+                verify(leader.inventory).addItem(any(org.bukkit.inventory.ItemStack.class));
+                verify(member.inventory).addItem(any(org.bukkit.inventory.ItemStack.class));
+                if (!teamRemoved) assertFalse(team.isQueued());
+            }
+        }
+    }
 }
