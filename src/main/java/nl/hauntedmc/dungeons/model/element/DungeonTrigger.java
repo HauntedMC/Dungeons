@@ -508,6 +508,8 @@ public abstract class DungeonTrigger extends DungeonElement
             }
 
             clone.conditions = newConditions;
+            clone.conditionWaiter = null;
+            clone.triggered = false;
             clone.playersFound = new ArrayList<>();
             clone.playersTriggered = new ArrayList<>();
             clone.initializeMenu();

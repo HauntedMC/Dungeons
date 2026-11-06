@@ -342,4 +342,19 @@ class TriggerExecutionContractTest {
         }
     }
 
+    @Test
+    void disablingAClonedTriggerCannotCancelItsSourcesConditionWaitTask() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration());var menus=new HeadlessMenus()) {
+            var trigger=bind(new RemoteTrigger(Map.of("waitForConditions",true)),f); trigger.setAllowRetrigger(false);
+            var condition=new nl.hauntedmc.dungeons.content.condition.ChanceCondition(Map.of("chance",0.0));
+            condition.initializeFields(); condition.setInstance(f.run); trigger.getConditions().add(condition);
+            trigger.trigger(); var waiting=f.scheduler.jobs.getFirst();
+            var clone=trigger.clone(); assertNotNull(clone); assertFalse(clone.isTriggered()); clone.disable();
+            assertFalse(waiting.cancelled);
+            trigger.getConditions().clear(); waiting.run();
+            assertTrue(waiting.cancelled);
+            verify(Bukkit.getPluginManager()).callEvent(any(TriggerFireEvent.class));
+        }
+    }
+
 }
