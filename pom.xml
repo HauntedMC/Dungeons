@@ -175,6 +175,20 @@
             <build>
                 <plugins>
                     <plugin>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>acceptance-classpath</id>
+                                <phase>generate-test-resources</phase>
+                                <goals><goal>build-classpath</goal></goals>
+                                <configuration>
+                                    <includeScope>test</includeScope>
+                                    <outputFile>${project.build.directory}/acceptance-classpath.txt</outputFile>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
                         <executions>
@@ -191,6 +205,7 @@
                                     </arguments>
                                     <environmentVariables>
                                         <DUNGEONS_ARTIFACT>${project.build.directory}/${project.build.finalName}.jar</DUNGEONS_ARTIFACT>
+                                        <DUNGEONS_ACCEPTANCE_CLASSPATH>${project.build.directory}/acceptance-classpath.txt</DUNGEONS_ACCEPTANCE_CLASSPATH>
                                         <DUNGEONS_PAPER_VERSION>${haunted.paper.runtime.version}</DUNGEONS_PAPER_VERSION>
                                         <DUNGEONS_PAPER_BUILD>${haunted.paper.runtime.build}</DUNGEONS_PAPER_BUILD>
                                         <DUNGEONS_PAPER_SHA256>${haunted.paper.runtime.sha256}</DUNGEONS_PAPER_SHA256>

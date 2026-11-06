@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+root_directory="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 artifact="${DUNGEONS_ARTIFACT:?Missing Dungeons artifact}"
+acceptance_classpath="$(cat "${DUNGEONS_ACCEPTANCE_CLASSPATH:?Missing classpath file}")"
 paper_version="${DUNGEONS_PAPER_VERSION:?Missing Paper runtime version}"
 paper_build="${DUNGEONS_PAPER_BUILD:?Missing Paper runtime build}"
 paper_sha256="${DUNGEONS_PAPER_SHA256:?Missing Paper runtime checksum}"
@@ -14,10 +16,10 @@ fail() { echo "Dungeons acceptance failure: $*" >&2; exit 1; }
 wait_for_log() {
   local expected=$1 deadline=$((SECONDS + 180))
   while ((SECONDS < deadline)); do
-    grep -Eq -- "$expected" "$work_directory/paper/paper.log" 2>/dev/null && return
-    if grep -Eq 'Exception in thread|Error occurred while enabling|Could not load plugin' "$work_directory/paper/paper.log" 2>/dev/null; then
+    if grep -Eq 'DUNGEONS_ACCEPTANCE_FAIL|Exception in thread|Error occurred while enabling|Could not load plugin' "$work_directory/paper/paper.log" 2>/dev/null; then
       fail "Paper reported a plugin failure while waiting for $expected"
     fi
+    grep -Eq -- "$expected" "$work_directory/paper/paper.log" 2>/dev/null && return
     sleep 1
   done
   fail "Timed out waiting for $expected"
@@ -43,11 +45,19 @@ cleanup() {
 }
 trap cleanup EXIT
 
-for command in curl sha256sum java; do command -v "$command" >/dev/null || fail "Missing $command"; done
+for command in curl sha256sum java javac jar python3; do command -v "$command" >/dev/null || fail "Missing $command"; done
 [[ -f "$artifact" ]] || fail "Missing jar: $artifact"
-mkdir -p "$work_directory/paper/plugins"
+[[ -n "$acceptance_classpath" ]] || fail 'Empty acceptance compilation classpath'
+[[ ! -e "$work_directory/paper/server.properties" ]] || fail 'Use a fresh acceptance work directory'
+mkdir -p "$work_directory/paper/plugins" "$work_directory/consumer/classes"
+"${JAVA_HOME:?Set JAVA_HOME to JDK 25}/bin/javac" --release 25 \
+  -cp "$artifact:$acceptance_classpath" -d "$work_directory/consumer/classes" \
+  "$root_directory"/src/acceptance/java/nl/hauntedmc/dungeons/acceptance/*.java
+"$JAVA_HOME/bin/jar" --create --file "$work_directory/paper/plugins/DungeonsAcceptance.jar" \
+  -C "$work_directory/consumer/classes" . -C "$root_directory/src/acceptance/resources" .
 paper_url="https://fill-data.papermc.io/v1/objects/$paper_sha256/paper-$paper_version-$paper_build.jar"
-curl --fail --silent --show-error --location --output "$work_directory/paper/paper.jar" "$paper_url"
+curl --fail --silent --show-error --location --connect-timeout 15 --max-time 180 \
+  --output "$work_directory/paper/paper.jar" "$paper_url"
 [[ "$(sha256sum "$work_directory/paper/paper.jar" | cut -d ' ' -f1)" == "$paper_sha256" ]] || fail 'Paper runtime checksum mismatch'
 cp "$artifact" "$work_directory/paper/plugins/Dungeons.jar"
 # Exercise upgrades from the legacy generator files on a real Paper server.
@@ -116,7 +126,17 @@ printf 'dungeon help\n' >&"$paper_input_fd"
 local_deadline=$((SECONDS + 45))
 while ((SECONDS < local_deadline)); do
   if tail -n "+$((before_lines + 1))" "$work_directory/paper/paper.log" | grep -Eqi '/dungeon|dungeon help|dungeons'; then
-    echo 'Dungeons Paper boot, generator migration, and config command smoke passed.'
+    printf 'dungeonsacceptance run\n' >&"$paper_input_fd"
+    wait_for_log 'DUNGEONS_ACCEPTANCE_COMPLETE phase=run '
+    python3 - "$work_directory/paper/plugins/DungeonsAcceptance/results-run.xml" <<'PYTHON'
+import sys
+import xml.etree.ElementTree as ET
+report = ET.parse(sys.argv[1]).getroot()
+assert int(report.attrib['tests']) > 0, 'No acceptance cases ran'
+assert report.attrib['failures'] == '0', 'Acceptance failures'
+assert report.attrib['skipped'] == '0', 'Acceptance cases were skipped'
+PYTHON
+    echo 'Dungeons Paper integration and acceptance passed.'
     exit 0
   fi
   sleep 1
