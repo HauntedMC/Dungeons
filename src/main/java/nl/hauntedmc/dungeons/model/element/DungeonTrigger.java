@@ -51,7 +51,7 @@ public abstract class DungeonTrigger extends DungeonElement
     protected List<UUID> playersFound;
     protected boolean triggered;
     private PlayerHotbarMenu conditionsMenu;
-    private BukkitRunnable conditionWaiter;
+    private List<BukkitRunnable> conditionWaiters = new ArrayList<>();
     protected List<UUID> playersTriggered = new ArrayList<>();
 
     /**
@@ -144,10 +144,12 @@ public abstract class DungeonTrigger extends DungeonElement
             condition.disable();
         }
 
-        if (this.conditionWaiter != null && !this.conditionWaiter.isCancelled()) {
-            this.conditionWaiter.cancel();
-            this.conditionWaiter = null;
+        for (BukkitRunnable waiter : this.conditionWaiters) {
+            if (!waiter.isCancelled()) {
+                waiter.cancel();
+            }
         }
+        this.conditionWaiters.clear();
 
         this.unregister();
         this.onDisable();
@@ -305,7 +307,8 @@ public abstract class DungeonTrigger extends DungeonElement
             }
 
             final boolean finalDisable = disable;
-            this.conditionWaiter =
+            boolean polling = !this.allowRetrigger && this.waitForConditions;
+            BukkitRunnable conditionWaiter =
                     new BukkitRunnable() {
                         public void run() {
                             try {
@@ -337,13 +340,18 @@ public abstract class DungeonTrigger extends DungeonElement
                                                 DungeonTrigger.this.dungeonNameForLogs(),
                                                 DungeonTrigger.this.locationForLogs(),
                                                 exception);
+                            } finally {
+                                if (!polling || this.isCancelled()) {
+                                    DungeonTrigger.this.conditionWaiters.remove(this);
+                                }
                             }
                         }
                     };
-            if (!this.allowRetrigger && this.waitForConditions) {
-                this.conditionWaiter.runTaskTimer(this.plugin(), 0L, 20L);
+            this.conditionWaiters.add(conditionWaiter);
+            if (polling) {
+                conditionWaiter.runTaskTimer(this.plugin(), 0L, 20L);
             } else {
-                this.conditionWaiter.runTask(this.plugin());
+                conditionWaiter.runTask(this.plugin());
             }
         }
     }
@@ -511,7 +519,7 @@ public abstract class DungeonTrigger extends DungeonElement
             }
 
             clone.conditions = newConditions;
-            clone.conditionWaiter = null;
+            clone.conditionWaiters = new ArrayList<>();
             clone.triggered = false;
             clone.playersFound = new ArrayList<>();
             clone.playersTriggered = new ArrayList<>();

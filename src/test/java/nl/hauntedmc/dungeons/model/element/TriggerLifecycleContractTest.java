@@ -111,6 +111,30 @@ class TriggerLifecycleContractTest {
         }
     }
 
+    @Test
+    void disablingATriggerCancelsEveryOverlappingConditionWaiter() {
+        try (var paper = new PaperBoundary()) {
+            var scheduler = new nl.hauntedmc.dungeons.support.CapturedScheduler(paper);
+            var run = mock(PlayableInstance.class);
+            when(run.asPlayInstance()).thenReturn(run);
+            when(run.getEnvironment()).thenReturn(paper.runtime.environment());
+            var condition = mock(TriggerCondition.class);
+            var function = mock(DungeonFunction.class);
+            var trigger = new WaitingTrigger();
+            trigger.addCondition(condition);
+            trigger.enable(function, run);
+            trigger.trigger();
+            trigger.trigger();
+            assertEquals(2, scheduler.jobs.size());
+            trigger.disable();
+            assertTrue(scheduler.jobs.stream().allMatch(job -> job.cancelled));
+            when(condition.check(any())).thenReturn(true);
+            scheduler.jobs.forEach(nl.hauntedmc.dungeons.support.CapturedScheduler.Job::run);
+            verify(function, never()).execute(any());
+            assertEquals(0, trigger.effects);
+        }
+    }
+
     static class WaitingTrigger extends DungeonTrigger {
         int effects;
 
