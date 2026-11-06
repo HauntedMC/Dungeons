@@ -62,4 +62,19 @@ class GameplayRulesContractTest {
         }
     }
 
+    @Test
+    void movementRulesBlockRestrictedPearlsAndChorusWhileAllowingPluginTeleports() throws Exception {
+        try(var f=new RunFixture(directory,new YamlConfiguration())) {
+            var state=new PlayerState(); state.location=new Location(f.world,0,70,0);
+            var listener=(PlayListener)f.run.getListener();
+            for(boolean allowed:List.of(false,true)) for(var cause:List.of(PlayerTeleportEvent.TeleportCause.ENDER_PEARL,PlayerTeleportEvent.TeleportCause.CONSUMABLE_EFFECT,PlayerTeleportEvent.TeleportCause.PLUGIN)) {
+                f.run.getConfig().set("rules.movement.ender_pearls",allowed);
+                f.run.getConfig().set("rules.movement.chorus_fruit",allowed);
+                var event=TestEvents.cancellable(PlayerTeleportEvent.class);
+                when(event.getPlayer()).thenReturn(state.player); when(event.getCause()).thenReturn(cause);
+                listener.onTeleport(event); assertEquals(!allowed&&cause!=PlayerTeleportEvent.TeleportCause.PLUGIN,event.isCancelled());
+            }
+        }
+    }
+
 }
