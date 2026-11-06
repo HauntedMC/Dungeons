@@ -472,6 +472,10 @@ public abstract class PlayableInstance extends DungeonInstance {
                 return;
             }
             Player player = playerSession.getPlayer();
+            BukkitRunnable offlineTracker = this.offlineTrackers.remove(player.getUniqueId());
+            if (offlineTracker != null && !offlineTracker.isCancelled()) {
+                offlineTracker.cancel();
+            }
             this.livingPlayers.remove(playerSession);
             this.hideCustomDragonBossBars(player);
             if (!CommandUtils.hasPermissionSilent(player, "dungeons.vanish")) {
