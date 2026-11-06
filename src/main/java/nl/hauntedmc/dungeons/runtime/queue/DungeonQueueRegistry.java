@@ -110,7 +110,11 @@ public final class DungeonQueueRegistry implements Listener {
 
         this.queueEntries.remove(queue);
         for (UUID playerId : new ArrayList<>(queue.getPlayers())) {
-            this.queueEntriesByPlayer.remove(playerId);
+            DungeonQueueEntry currentQueue = this.queueEntriesByPlayer.get(playerId);
+            if (currentQueue != null && currentQueue != queue) {
+                continue;
+            }
+            this.queueEntriesByPlayer.remove(playerId, queue);
             DungeonPlayerSession dungeonPlayer = this.playerManager.get(playerId);
             if (resetAwaitingDungeon
                     && dungeonPlayer != null

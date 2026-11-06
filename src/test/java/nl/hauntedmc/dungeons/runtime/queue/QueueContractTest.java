@@ -38,6 +38,26 @@ class QueueContractTest {
         verify(alice).setAwaitingDungeon(false);
     }
 
+    @Test
+    void staleQueueCleanupCannotRemoveOrRefundMembersOfTheirReplacementQueue() {
+        DungeonPlayerSession alice = player();
+        DungeonPlayerSession bob = player();
+        DungeonPlayerSession carol = player();
+        DungeonQueueEntry original = team(alice, bob);
+        DungeonQueueEntry replacement = team(bob, carol);
+        queues.enqueue(original);
+        queues.enqueue(replacement);
+        clearInvocations(dungeon, alice, bob, carol);
+
+        queues.unqueue(original);
+
+        assertSame(replacement, queues.getQueue(bob));
+        assertSame(replacement, queues.getQueue(carol));
+        assertEquals(List.of(replacement), queues.snapshotQueues());
+        verify(dungeon, never()).refundReservedAccessKey(bob);
+        verify(bob, never()).setAwaitingDungeon(false);
+    }
+
     DungeonPlayerSession player() {
         Player player = mock(Player.class);
         UUID id = UUID.randomUUID();
