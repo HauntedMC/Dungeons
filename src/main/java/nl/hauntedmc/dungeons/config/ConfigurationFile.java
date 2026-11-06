@@ -94,7 +94,17 @@ public class ConfigurationFile extends YamlConfiguration {
         if (!this.plugin.isEnabled()) {
             task.run();
         } else {
-            Bukkit.getScheduler().runTaskAsynchronously(this.plugin, task);
+            try {
+                Bukkit.getScheduler().runTaskAsynchronously(this.plugin, task);
+            } catch (RuntimeException exception) {
+                this.plugin
+                        .getSLF4JLogger()
+                        .error(
+                                "Failed to schedule configuration save '{}'.",
+                                normalized.getAbsolutePath(),
+                                exception);
+                result.complete(false);
+            }
         }
 
         return result;

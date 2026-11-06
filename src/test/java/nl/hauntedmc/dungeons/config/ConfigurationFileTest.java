@@ -86,6 +86,31 @@ class ConfigurationFileTest {
         assertTrue(Files.isRegularFile(destination));
     }
 
+    @Test
+    void rejectedAsyncSaveSchedulingReturnsAFailedFutureWithoutTouchingTheLastGoodFile()
+            throws Exception {
+        try (var paper = new nl.hauntedmc.dungeons.support.PaperBoundary()) {
+            var scheduler = new nl.hauntedmc.dungeons.support.CapturedScheduler(paper);
+            org.mockito.Mockito.when(paper.plugin.isEnabled()).thenReturn(true);
+            org.mockito.Mockito.doThrow(
+                            new org.bukkit.plugin.IllegalPluginAccessException(
+                                    "plugin disabled during scheduling"))
+                    .when(scheduler.scheduler)
+                    .runTaskAsynchronously(
+                            org.mockito.Mockito.eq(paper.plugin),
+                            org.mockito.Mockito.any(Runnable.class));
+            var file = directory.resolve("last-good.yml");
+            Files.writeString(file, "value: 7\n");
+            var config = new ConfigurationFile(paper.plugin);
+            config.set("value", 9);
+            var completion =
+                    org.junit.jupiter.api.Assertions.assertDoesNotThrow(
+                            () -> config.saveAsync(file.toFile()));
+            assertFalse(completion.get(1, TimeUnit.SECONDS));
+            assertEquals("value: 7\n", Files.readString(file));
+        }
+    }
+
     private static Plugin disabledPlugin() {
         return (Plugin)
                 Proxy.newProxyInstance(
