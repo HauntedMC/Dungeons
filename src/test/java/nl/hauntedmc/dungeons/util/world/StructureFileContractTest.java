@@ -42,6 +42,16 @@ class StructureFileContractTest {
         }
     }
 
+    @Test
+    void existingUnversionedStructureFilesRemainReadable() throws Exception {
+        try (var paper = new PaperBoundary()) {
+            data(paper, "minecraft:stone");
+            var file = directory.resolve("legacy.schem");
+            java.nio.file.Files.write(file, SchematicUtils.compress("minecraft:stone\n-3,5,8|0|null"));
+            assertEquals(List.of("-3,5,8|minecraft:stone|null"), snapshots(SchematicUtils.loadStructurePiece(file.toFile())));
+        }
+    }
+
     BlockData data(PaperBoundary paper, String state) {
         BlockData data = mock(BlockData.class);
         when(data.getAsString(true)).thenReturn(state);
