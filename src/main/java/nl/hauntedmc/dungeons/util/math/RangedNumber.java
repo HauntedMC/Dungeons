@@ -90,7 +90,7 @@ public class RangedNumber {
         return (int) this.min == (int) this.max
                 ? (int) this.min
                 : MathUtils.getRandomNumberInRange(
-                        (int) this.min, (int) (this.max == -1.0 ? 2.147483647E9 : this.max));
+                        (int) this.min, this.max == -1.0 ? Integer.MAX_VALUE : (int) this.max);
     }
 
     /** Returns a normalized string representation of this range. */
