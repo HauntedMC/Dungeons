@@ -21,6 +21,7 @@ public final class CapturedScheduler {
     public final List<Job> jobs = new ArrayList<>();
     public final List<Job> immediate = new ArrayList<>();
     public final List<Job> asynchronous = new ArrayList<>();
+    public final java.util.concurrent.BlockingQueue<Job> readyImmediate = new java.util.concurrent.LinkedBlockingQueue<>();
     private final List<Job> all = new ArrayList<>();
 
     public CapturedScheduler(PaperBoundary paper) {
@@ -56,10 +57,11 @@ public final class CapturedScheduler {
         return captureIn(jobs, work, delay, period);
     }
 
-    private BukkitTask captureIn(List<Job> queue, Runnable work, long delay, long period) {
+    private synchronized BukkitTask captureIn(List<Job> queue, Runnable work, long delay, long period) {
         Job job = new Job(all.size() + 1, work, delay, period);
         all.add(job);
         queue.add(job);
+        if (queue == immediate) readyImmediate.add(job);
         BukkitTask task = mock(BukkitTask.class);
         when(task.getTaskId()).thenReturn(job.id);
         when(task.isCancelled()).thenAnswer(call -> job.cancelled);

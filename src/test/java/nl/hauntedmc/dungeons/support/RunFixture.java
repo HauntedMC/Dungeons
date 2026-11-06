@@ -47,10 +47,19 @@ public final class RunFixture implements AutoCloseable {
     }
 
     public static final class Run extends StaticInstance {
-        Run(StaticDungeon dungeon, World world) {
-            super(dungeon, null);
+        public Run(StaticDungeon dungeon, World world) {
+            this(dungeon, world, null);
+        }
+        public Run(StaticDungeon dungeon, World world, java.util.concurrent.CountDownLatch latch) {
+            super(dungeon, latch);
             this.instanceWorld = world;
             this.startLocation = new Location(world, 0, 70, 0);
+        }
+
+        public void completeInitialization(boolean failed) {
+            this.loadFailed = failed;
+            this.ready = !failed;
+            this.signalInitializationComplete();
         }
 
         public void elapsed(int value) {
