@@ -36,6 +36,7 @@ class RewardMenuContractTest {
         final InventoryCloseEvent closing;
 
         Menu(RewardFunction reward, PlayerState state) {
+            contents.contents = new org.bukkit.inventory.ItemStack[54];
             when(reward.instanceGui.getInventoryFor(state.player)).thenReturn(inventory);
             ArgumentCaptor<Action<InventoryOpenEvent>> opens = ArgumentCaptor.captor();
             ArgumentCaptor<Action<InventoryCloseEvent>> closes = ArgumentCaptor.captor();
@@ -103,6 +104,52 @@ class RewardMenuContractTest {
             left.close();
             left.open();
             assertNull(left.contents.contents[0]);
+        }
+    }
+
+    @Test
+    void lootTableMenusRecoverAMissingTableAndClaimGeneratedLootOnlyOnce() throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration());
+                var menus = new HeadlessMenus();
+                var gui = new HeadlessInventoryMenus()) {
+            var repository = mock(nl.hauntedmc.dungeons.runtime.rewards.LootTableRepository.class);
+            f.paper.runtime.setLootTableRepository(repository);
+            var table =
+                    new nl.hauntedmc.dungeons.content.reward.LootTable(
+                            Map.of(
+                                    "namespace",
+                                    "cache",
+                                    "minItems",
+                                    1,
+                                    "maxItems",
+                                    1,
+                                    "lootItems",
+                                    Map.of(
+                                            9,
+                                            new nl.hauntedmc.dungeons.content.reward.LootTableItem(
+                                                    PlayerState.stack(6)))));
+            when(repository.get("cache")).thenReturn(null, table);
+            var state = new PlayerState();
+            var reward =
+                    new LootTableRewardsFunction(
+                            Map.of("loottableName", "cache", "cooldownDisabled", true));
+            enable(reward, f);
+            var menu = new Menu(reward, state);
+            menu.open();
+            assertTrue(Arrays.stream(menu.contents.contents).allMatch(Objects::isNull));
+            menu.open();
+            assertEquals(
+                    List.of(6),
+                    Arrays.stream(menu.contents.contents)
+                            .filter(Objects::nonNull)
+                            .map(org.bukkit.inventory.ItemStack::getAmount)
+                            .toList());
+            menu.close();
+            menu.close();
+            menu.open();
+            verify(state.inventory).addItem(any(org.bukkit.inventory.ItemStack.class));
+            assertTrue(Arrays.stream(menu.contents.contents).allMatch(Objects::isNull));
+            verify(repository, times(2)).get("cache");
         }
     }
 }
