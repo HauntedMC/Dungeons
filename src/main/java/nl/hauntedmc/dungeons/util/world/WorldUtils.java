@@ -18,9 +18,7 @@ public final class WorldUtils {
 
     /** Directory containing custom Minecraft dimensions. */
     public static File dimensionRoot() {
-        return Bukkit.getWorldContainer()
-                .toPath()
-                .resolve(Bukkit.getUnsafe().getMainLevelName())
+        return Bukkit.getServer().getLevelDirectory()
                 .resolve("dimensions/minecraft")
                 .toFile();
     }

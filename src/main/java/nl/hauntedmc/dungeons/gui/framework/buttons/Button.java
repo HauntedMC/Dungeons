@@ -9,7 +9,6 @@ import nl.hauntedmc.dungeons.gui.framework.actions.Action;
 import nl.hauntedmc.dungeons.gui.framework.text.GuiTextUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
@@ -86,11 +85,9 @@ public class Button {
 
     /** Toggles a hidden enchant glint highlight on this button item. */
     public final void setEnchanted(boolean enchanted) {
-        if (enchanted) {
-            this.item.addUnsafeEnchantment(Enchantment.AQUA_AFFINITY, 1);
-        } else {
-            this.item.removeEnchantment(Enchantment.AQUA_AFFINITY);
-        }
+        ItemMeta meta = this.item.getItemMeta();
+        meta.setEnchantmentGlintOverride(enchanted);
+        this.item.setItemMeta(meta);
     }
 
     /** Sets display name for this button item. */

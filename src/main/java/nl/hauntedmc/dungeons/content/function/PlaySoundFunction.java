@@ -1,5 +1,6 @@
 package nl.hauntedmc.dungeons.content.function;
 
+import java.util.Locale;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -170,7 +171,7 @@ public class PlaySoundFunction extends DungeonFunction {
                     @Override
                     public void onInput(Player player, String message) {
                         try {
-                            SoundCategory category = SoundCategory.valueOf(message.toUpperCase());
+                            SoundCategory category = SoundCategory.valueOf(message.toUpperCase(Locale.ROOT));
                             PlaySoundFunction.this.soundCategory = category.toString();
                             LangUtils.sendMessage(
                                     player,

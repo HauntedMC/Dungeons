@@ -1,5 +1,6 @@
 package nl.hauntedmc.dungeons.content.dungeon;
 
+import nl.hauntedmc.dungeons.util.world.GameRuleUtils;
 import nl.hauntedmc.dungeons.content.instance.edit.BranchingEditableInstance;
 import nl.hauntedmc.dungeons.content.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.generation.layout.Layout;
@@ -449,11 +450,8 @@ public class BranchingDungeon extends DungeonDefinition {
     /**
      * Saves gamerules from.
      */
-    @SuppressWarnings("removal")
     public void saveGamerulesFrom(World world) {
-        for (String rule : world.getGameRules()) {
-            this.ruleConfig.set("Gamerule." + rule, world.getGameRuleValue(rule));
-        }
+        GameRuleUtils.capture(world, this.ruleConfig);
 
         this.ruleConfig.set("Difficulty", world.getDifficulty().name());
         Runnable task =
@@ -478,14 +476,8 @@ public class BranchingDungeon extends DungeonDefinition {
     /**
      * Loads gamerules to.
      */
-    @SuppressWarnings("removal")
     public void loadGamerulesTo(World world) {
-        for (String rule : world.getGameRules()) {
-            String val = this.ruleConfig.getString("Gamerule." + rule);
-            if (val != null) {
-                world.setGameRuleValue(rule, val);
-            }
-        }
+        GameRuleUtils.apply(world, this.ruleConfig);
 
         world.setDifficulty(Difficulty.valueOf(this.ruleConfig.getString("Difficulty", "NORMAL")));
     }

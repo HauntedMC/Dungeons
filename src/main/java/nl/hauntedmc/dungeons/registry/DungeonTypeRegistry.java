@@ -1,5 +1,6 @@
 package nl.hauntedmc.dungeons.registry;
 
+import java.util.Locale;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -25,10 +26,10 @@ public final class DungeonTypeRegistry {
     /** Registers one dungeon type class under a primary name and optional aliases. */
     public static <T extends DungeonDefinition> void register(
             Class<T> dungeonType, String name, String... aliases) {
-        types.put(name.toLowerCase(), dungeonType);
+        types.put(name.toLowerCase(Locale.ROOT), dungeonType);
 
         for (String alias : aliases) {
-            types.put(alias.toLowerCase(), dungeonType);
+            types.put(alias.toLowerCase(Locale.ROOT), dungeonType);
         }
     }
 
@@ -66,7 +67,7 @@ public final class DungeonTypeRegistry {
                     InvocationTargetException,
                     InstantiationException,
                     IllegalAccessException {
-        Class<? extends DungeonDefinition> typeClass = types.get(type.toLowerCase());
+        Class<? extends DungeonDefinition> typeClass = types.get(type.toLowerCase(Locale.ROOT));
         return typeClass == null
                 ? null
                 : typeClass

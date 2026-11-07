@@ -191,7 +191,7 @@ public class BlockDetectorTrigger extends DungeonTrigger {
                      */
                     @Override
                     public void onInput(Player player, String message) {
-                        String matString = message.toUpperCase();
+                        String matString = message.toUpperCase(Locale.ROOT);
 
                         try {
                             if (matString.equals("ANY")) {
