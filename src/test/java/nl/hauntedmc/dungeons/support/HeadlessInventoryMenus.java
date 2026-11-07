@@ -20,6 +20,12 @@ public final class HeadlessInventoryMenus implements AutoCloseable {
             mockConstruction(
                     ItemStack.class,
                     (item, context) -> {
+                        if (!context.arguments().isEmpty()
+                                && context.arguments().getFirst()
+                                        instanceof org.bukkit.Material material) {
+                            when(item.getType()).thenReturn(material);
+                        }
+                        NativeItemBytes.support(item);
                         var meta = mock(ItemMeta.class);
                         when(meta.getPersistentDataContainer())
                                 .thenReturn(mock(PersistentDataContainer.class));

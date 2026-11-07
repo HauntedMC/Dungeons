@@ -105,7 +105,12 @@ final class CoreBootstrap {
      */
     void restoreOnlinePlayers() {
         for (Player player : Bukkit.getOnlinePlayers()) {
-            this.runtime.playerSessions().put(player);
+            try {
+                this.runtime.playerSessions().put(player).recoverPendingState();
+            } catch (RuntimeException failure) {
+                // The registry logs and disconnects an unsafe player; recover the remaining
+                // players.
+            }
         }
     }
 

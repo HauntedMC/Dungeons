@@ -65,6 +65,7 @@ public final class TaggedItems {
                             }
                             return true;
                         });
+        NativeItemBytes.support(item);
         return item;
     }
 

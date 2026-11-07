@@ -147,8 +147,7 @@ public class PlayMenus {
                                 "click",
                                 event -> {
                                     if (dungeonPlayer.getInstance() == null) {
-                                        dungeonPlayer.removeReward(reward);
-                                        ItemUtils.giveOrDrop(player, reward);
+                                        dungeonPlayer.claimReward(reward);
                                         loadRewardPage(gui, player, page);
                                     }
                                 });

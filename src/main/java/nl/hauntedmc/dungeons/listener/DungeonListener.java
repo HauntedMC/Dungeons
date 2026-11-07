@@ -1,12 +1,7 @@
 package nl.hauntedmc.dungeons.listener;
 
 import io.papermc.paper.event.player.AsyncChatEvent;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.regex.Pattern;
+
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
 import nl.hauntedmc.dungeons.content.function.HologramFunction;
 import nl.hauntedmc.dungeons.content.instance.edit.BranchingEditableInstance;
@@ -28,7 +23,6 @@ import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueEntry;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry;
 import nl.hauntedmc.dungeons.util.command.CommandUtils;
 import nl.hauntedmc.dungeons.util.config.PluginConfigView;
-import nl.hauntedmc.dungeons.util.entity.EntityUtils;
 import nl.hauntedmc.dungeons.util.entity.ParticleUtils;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
@@ -36,6 +30,7 @@ import nl.hauntedmc.dungeons.util.text.ComponentUtils;
 import nl.hauntedmc.dungeons.util.text.MessageUtils;
 import nl.hauntedmc.dungeons.util.world.LocationUtils;
 import nl.hauntedmc.dungeons.util.world.WorldUtils;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -55,11 +50,19 @@ import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.event.world.WorldInitEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.BoundingBox;
+
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.regex.Pattern;
 
 /**
  * Global listener coordinating player session recovery and editor tool interactions.
@@ -102,13 +105,7 @@ public class DungeonListener implements Listener {
         DungeonPlayerSession playerSession = this.playerManager.get(player);
         if (playerSession != null) {
             playerSession.setPlayer(player);
-            Location savedLocation = playerSession.getSavedPosition();
-            if (playerSession.getInstance() == null && savedLocation != null) {
-                EntityUtils.forceTeleport(player, savedLocation);
-                player.setGameMode(playerSession.getSavedGameMode());
-                playerSession.setSavedPosition(null);
-                playerSession.clearExitLocation();
-            }
+            if (!playerSession.recoverPendingState()) return;
 
             DungeonQueueEntry qData = this.queueManager.getQueue(playerSession);
             if (qData != null) {
@@ -119,12 +116,30 @@ public class DungeonListener implements Listener {
                 Bukkit.getScheduler().runTask(this.plugin, playerSession::ensureEditModeTools);
             }
         } else {
-            playerSession = this.playerManager.put(player);
-            Location exitLoc = playerSession.getExitLocation();
-            if (exitLoc != null) {
-                EntityUtils.forceTeleport(player, exitLoc);
-                playerSession.clearExitLocation();
+            try {
+                playerSession = this.playerManager.put(player);
+            } catch (RuntimeException failure) {
+                // The registry has logged the corrupt/unreadable record and disconnected the
+                // player.
+                return;
             }
+            playerSession.recoverPendingState();
+        }
+    }
+
+    /** Vanilla must finish respawning before a pending durable snapshot can be restored. */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onRecoveryRespawn(PlayerRespawnEvent event) {
+        Player player = event.getPlayer();
+        DungeonPlayerSession session = this.playerManager.get(player);
+        if (session != null && session.getInstance() == null) {
+            Bukkit.getScheduler()
+                    .runTask(
+                            this.plugin,
+                            () -> {
+                                if (session.getPlayer() == player && player.isOnline())
+                                    session.recoverPendingState();
+                            });
         }
     }
 

@@ -265,15 +265,14 @@ class EditorPersistenceContractTest {
     void delayedEditorInventoryCannotOverwriteTheSurvivalInventoryAfterDeparture()
             throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration());
-                var tools = mockStatic(ItemUtils.class);
-                var entities = mockStatic(EntityUtils.class)) {
+                var tools = mockStatic(ItemUtils.class)) {
             var functionTool = PlayerState.stack(1);
             var roomTool = PlayerState.stack(1);
             tools.when(ItemUtils::getFunctionTool).thenReturn(functionTool);
             tools.when(ItemUtils::getRoomTool).thenReturn(roomTool);
             var state = new PlayerState();
             state.contents[0] = PlayerState.stack(7);
-            entities.when(() -> EntityUtils.getMaxHealth(state.player)).thenReturn(20.0);
+            f.paper.entities.when(() -> EntityUtils.getMaxHealth(state.player)).thenReturn(20.0);
             when(f.paper.plugin.isEnabled()).thenReturn(true);
             var session = f.session(state);
             var editor = new Editor(f);

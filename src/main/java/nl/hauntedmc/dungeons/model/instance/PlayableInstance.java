@@ -361,9 +361,6 @@ public abstract class PlayableInstance extends DungeonInstance {
         this.livingPlayers.add(playerSession);
         this.showCustomDragonBossBars(player);
         this.executeJoinCommands(player);
-        if (!this.config.getBoolean("players.keep_on_entry.inventory", true)) {
-            playerSession.saveInventory();
-        }
 
         Location storedSavePoint = playerSession.getDungeonSavePoint(this.dungeon.getWorldName());
         Location savePoint = storedSavePoint == null ? null : storedSavePoint.clone();
@@ -529,14 +526,6 @@ public abstract class PlayableInstance extends DungeonInstance {
                                 LangUtils.placeholder("player", player.getName())));
             }
 
-            if (!this.config.getBoolean("players.keep_on_entry.inventory", true)) {
-                playerSession.restoreInventory();
-            }
-
-            if (!this.config.getBoolean("players.keep_on_entry.experience", true)) {
-                playerSession.restoreExp();
-            }
-
             if (!this.dungeon.isCooldownsPerReward()
                     && this.receivedRewards.getOrDefault(player.getUniqueId(), false)) {
                 for (RewardFunction function : this.rewardFunctions.values()) {
@@ -575,6 +564,7 @@ public abstract class PlayableInstance extends DungeonInstance {
     public void addPlayerReward(Player player, ItemStack... items) {
         this.rewardInventories.putIfAbsent(player.getUniqueId(), new ArrayList<>());
         List<ItemStack> rewards = this.rewardInventories.get(player.getUniqueId());
+        this.playerSessions().get(player).addReward(items);
         rewards.addAll(Arrays.asList(items));
     }
 
@@ -582,17 +572,8 @@ public abstract class PlayableInstance extends DungeonInstance {
      * Pushes queued rewards into the player's claimable reward list.
      */
     public void pushPlayerRewards(Player player) {
-        List<ItemStack> rewards = this.rewardInventories.get(player.getUniqueId());
-        if (rewards != null) {
-            this.rewardInventories.remove(player.getUniqueId());
-            DungeonPlayerSession playerSession = this.playerSessions().get(player);
-
-            for (ItemStack reward : rewards) {
-                if (reward != null && reward.getType() != Material.AIR) {
-                    playerSession.addReward(reward);
-                }
-            }
-        }
+        // Rewards become durable when earned, so finishing never moves or duplicates them.
+        this.rewardInventories.remove(player.getUniqueId());
     }
 
     /**

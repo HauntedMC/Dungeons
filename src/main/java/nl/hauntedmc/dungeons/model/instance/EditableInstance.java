@@ -476,8 +476,8 @@ public class EditableInstance extends DungeonInstance {
             return;
         }
         Player player = playerSession.getPlayer();
-        playerSession.saveInventory();
         super.addPlayer(playerSession);
+        if (playerSession.getInstance() != this) return;
         playerSession.setEditMode(true);
         EntityUtils.forceTeleport(player, this.startLocation);
     }

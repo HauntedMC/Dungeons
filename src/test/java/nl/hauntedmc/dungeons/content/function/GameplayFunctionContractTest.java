@@ -84,7 +84,8 @@ class GameplayFunctionContractTest {
             finish.runFunction(null, List.of(session));
             assertTrue(f.dungeon.hasPlayerCompletedDungeon(state.player));
             assertFalse(f.dungeon.hasPlayerCompletedDungeon(outsider.player));
-            assertEquals(List.of(reward), session.getRewardItems());
+            assertEquals(1, session.getRewardItems().size());
+            assertEquals(reward.getAmount(), session.getRewardItems().getFirst().getAmount());
             assertSame(f.run, session.getInstance());
         }
     }

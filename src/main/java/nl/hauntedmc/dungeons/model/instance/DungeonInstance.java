@@ -525,6 +525,7 @@ public abstract class DungeonInstance {
         }
         if (!this.players.contains(playerSession)) {
             Player player = playerSession.getPlayer();
+            if (!playerSession.prepareRecovery()) return;
             this.players.add(playerSession);
             playerSession.setInstance(this);
             playerSession.setAwaitingDungeon(false);
@@ -585,8 +586,12 @@ public abstract class DungeonInstance {
                     && player.isOnline()
                     && playerSession.getSavedPosition() != null) {
                 playerSession.setInstance(null);
-                EntityUtils.forceTeleport(player, playerSession.getSavedPosition());
-                playerSession.setSavedPosition(null);
+                playerSession.completeDeparture(
+                        this.isEditInstance()
+                                || !this.config.getBoolean("players.keep_on_entry.inventory", true),
+                        this.isEditInstance()
+                                || !this.config.getBoolean(
+                                        "players.keep_on_entry.experience", true));
             }
         } else {
             PlayerLeaveDungeonEvent leaveEvent = new PlayerLeaveDungeonEvent(this, playerSession);
@@ -605,9 +610,6 @@ public abstract class DungeonInstance {
                 player.setGameMode(playerSession.getSavedGameMode());
                 playerSession.setInstance(null);
                 playerSession.setDungeonRespawn(null);
-                if (player.isOnline()) {
-                    playerSession.clearExitLocation();
-                }
 
                 if (this.isPlayInstance()) {
                     this.transferProgressionItems(player);
@@ -615,10 +617,12 @@ public abstract class DungeonInstance {
 
                 player.updateInventory();
 
-                if (player.isOnline() && playerSession.getSavedPosition() != null) {
-                    EntityUtils.forceTeleport(player, playerSession.getSavedPosition());
-                    playerSession.setSavedPosition(null);
-                }
+                playerSession.completeDeparture(
+                        this.isEditInstance()
+                                || !this.config.getBoolean("players.keep_on_entry.inventory", true),
+                        this.isEditInstance()
+                                || !this.config.getBoolean(
+                                        "players.keep_on_entry.experience", true));
 
                 if (this.players.isEmpty()) {
                     this.scheduleEmptyCleanup();

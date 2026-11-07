@@ -59,6 +59,9 @@ public final class AcceptancePlugin extends JavaPlugin {
                                         "native-item-and-graph-persistence",
                                         () -> NativePersistence.run(this)),
                                 new Scenario(
+                                        "native-player-recovery-and-rewards",
+                                        () -> NativePlayerRecovery.run(this)),
+                                new Scenario(
                                         "copied-world-lifecycle", () -> WorldLifecycle.run(this)),
                                 new Scenario(
                                         "world-format-and-environment-matrix",

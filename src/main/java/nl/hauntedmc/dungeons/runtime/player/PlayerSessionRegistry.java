@@ -19,7 +19,27 @@ public final class PlayerSessionRegistry {
 
     /** Creates and stores a new session for the player. */
     public DungeonPlayerSession put(Player player) {
-        DungeonPlayerSession dungeonPlayer = new DungeonPlayerSession(this.plugin, player);
+        DungeonPlayerSession existing = this.players.get(player.getUniqueId());
+        if (existing != null) {
+            existing.setPlayer(player);
+            return existing;
+        }
+        DungeonPlayerSession dungeonPlayer;
+        try {
+            dungeonPlayer = new DungeonPlayerSession(this.plugin, player);
+        } catch (RuntimeException failure) {
+            this.plugin
+                    .getSLF4JLogger()
+                    .error(
+                            "Cannot load durable player state for '{}'.",
+                            player.getUniqueId(),
+                            failure);
+            player.kick(
+                    net.kyori.adventure.text.Component.text(
+                            "Your player data could not be loaded safely. Please contact an"
+                                + " administrator."));
+            throw failure;
+        }
         this.players.put(player.getUniqueId(), dungeonPlayer);
         return dungeonPlayer;
     }

@@ -15,6 +15,41 @@ class PlayerStateContractTest {
     @TempDir Path directory;
 
     @Test
+    void disabledPluginRestoresVitalStatsBeforeAcknowledgingDeparture() {
+        try (var paper = new PaperBoundary()) {
+            when(paper.plugin.getDataFolder()).thenReturn(directory.toFile());
+            var state = new PlayerState();
+            var session = new DungeonPlayerSession(paper.plugin, state.player);
+            session.saveInventory();
+            state.health = 1;
+            state.food = 0;
+            paper.entities.when(() -> EntityUtils.getMaxHealth(state.player)).thenReturn(20.0);
+            session.completeDeparture(true, true);
+            assertEquals(13, state.health);
+            assertEquals(9, state.food);
+            verify(state.player).saveData();
+        }
+    }
+
+    @Test
+    void repeatedCaptureAndInactiveEditorExitCannotOverwriteOrEraseTheOriginalInventory() {
+        try (var paper = new PaperBoundary()) {
+            when(paper.plugin.getDataFolder()).thenReturn(directory.toFile());
+            var state = new PlayerState();
+            state.contents[0] = PlayerState.stack(7);
+            var session = new DungeonPlayerSession(paper.plugin, state.player);
+            session.restoreInventory();
+            session.setEditMode(false);
+            assertEquals(7, state.contents[0].getAmount());
+            session.saveInventory();
+            state.contents[0].setAmount(1);
+            session.saveInventory();
+            session.restoreInventory();
+            assertEquals(7, state.contents[0].getAmount());
+        }
+    }
+
+    @Test
     void savedInventoryAndArmorAreIndependentOfItemsMutatedDuringTheRunAndAfterRestoration() {
         try (var paper = new PaperBoundary()) {
             when(paper.plugin.getDataFolder()).thenReturn(directory.toFile());
@@ -113,8 +148,7 @@ class PlayerStateContractTest {
 
     @Test
     void restoringVitalStatsPreservesFoodAndClampsSavedHealthToTheCurrentMaximum() {
-        try (var paper = new PaperBoundary();
-                var health = mockStatic(EntityUtils.class)) {
+        try (var paper = new PaperBoundary()) {
             when(paper.plugin.getDataFolder()).thenReturn(directory.toFile());
             when(paper.plugin.isEnabled()).thenReturn(true);
             var state = new PlayerState();
@@ -122,11 +156,11 @@ class PlayerStateContractTest {
             session.saveInventory();
             state.health = 1;
             state.food = 0;
-            health.when(() -> EntityUtils.getMaxHealth(state.player)).thenReturn(10.0);
+            paper.entities.when(() -> EntityUtils.getMaxHealth(state.player)).thenReturn(10.0);
             session.restoreInventory();
             assertEquals(10, state.health);
             assertEquals(9, state.food);
-            health.when(() -> EntityUtils.getMaxHealth(state.player)).thenReturn(20.0);
+            paper.entities.when(() -> EntityUtils.getMaxHealth(state.player)).thenReturn(20.0);
             session.restoreInventory();
             assertEquals(13, state.health);
         }

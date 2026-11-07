@@ -5,6 +5,7 @@ import static org.mockito.Mockito.anyDouble;
 import static org.mockito.Mockito.anyFloat;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -35,6 +36,30 @@ public final class PlayerState {
         when(location.getWorld().getName()).thenReturn("overworld");
         when(location.getWorld().getUID()).thenReturn(UUID.randomUUID());
         when(player.getUniqueId()).thenReturn(UUID.randomUUID());
+        var persistent = mock(org.bukkit.persistence.PersistentDataContainer.class);
+        var data = new HashMap<NamespacedKey, String>();
+        when(player.getPersistentDataContainer()).thenReturn(persistent);
+        when(persistent.get(
+                        any(NamespacedKey.class),
+                        eq(org.bukkit.persistence.PersistentDataType.STRING)))
+                .thenAnswer(c -> data.get(c.getArgument(0)));
+        doAnswer(
+                        c -> {
+                            data.put(c.getArgument(0), c.getArgument(2));
+                            return null;
+                        })
+                .when(persistent)
+                .set(
+                        any(NamespacedKey.class),
+                        eq(org.bukkit.persistence.PersistentDataType.STRING),
+                        any(String.class));
+        doAnswer(
+                        c -> {
+                            data.remove(c.getArgument(0));
+                            return null;
+                        })
+                .when(persistent)
+                .remove(any(NamespacedKey.class));
         when(player.getName()).thenReturn("Explorer");
         when(player.isOnline()).thenAnswer(c -> online);
         when(player.isDead()).thenAnswer(c -> vanillaDead);
@@ -162,6 +187,8 @@ public final class PlayerState {
                 .when(item)
                 .setAmount(anyInt());
         when(item.clone()).thenAnswer(c -> stack(count[0]));
+        when(item.isSimilar(any(ItemStack.class))).thenReturn(true);
+        NativeItemBytes.support(item);
         return item;
     }
 }

@@ -9,7 +9,6 @@ import nl.hauntedmc.dungeons.generation.room.ConnectorDoor;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
 import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
-import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.util.config.PluginConfigView;
 import nl.hauntedmc.dungeons.util.entity.EntityUtils;
@@ -54,8 +53,10 @@ public final class DungeonPlayerSession {
     private Location savedPosition;
     private float savedExp;
     private int savedLevel;
+    private int savedTotalExp;
+    private int savedHeldSlot;
     private Location dungeonRespawn;
-    private final List<ItemStack> rewardItems;
+    private final PlayerRecoveryJournal recoveryJournal;
     private boolean isDisconnecting;
     private boolean dead;
     private boolean editMode;
@@ -66,6 +67,8 @@ public final class DungeonPlayerSession {
     private ItemStack[] savedEditInventory;
     private ItemStack[] savedEditArmor;
     private PlayerHotbarSnapshot savedHotbar;
+    private long hotbarRevision;
+    private boolean hotbarRecoveryOwned;
     private DungeonFunction activeFunction;
     private DungeonTrigger activeTrigger;
     private Location targetLocation;
@@ -100,10 +103,16 @@ public final class DungeonPlayerSession {
         this.player = player;
         this.hotbarHistory = new ArrayList<>();
         this.savedGameMode = Bukkit.getDefaultGameMode();
-        this.rewardItems = new ArrayList<>();
         this.playerData = new ConfigurationFile(plugin);
         this.playerDataFile =
                 new File(plugin.getDataFolder(), "players/" + player.getUniqueId() + ".yml");
+
+        this.recoveryJournal =
+                new PlayerRecoveryJournal(
+                        new File(
+                                        plugin.getDataFolder(),
+                                        "players/" + player.getUniqueId() + ".recovery.yml")
+                                .toPath());
 
         try {
             File parent = this.playerDataFile.getParentFile();
@@ -142,6 +151,17 @@ public final class DungeonPlayerSession {
      * Toggles edit mode and swaps the player between their normal and editor inventories.
      */
     public void setEditMode(boolean editMode) {
+        if (this.editMode == editMode) return;
+        if (editMode && !this.recoveryJournal.hasRecovery() && !this.prepareRecovery()) {
+            throw new IllegalStateException("Cannot safely enter editor mode");
+        }
+        this.hotbarRevision++;
+        if (editMode) {
+            this.saveInventory();
+            this.savedHotbar = null;
+            this.currentHotbar = null;
+            this.hotbarHistory.clear();
+        }
         this.editMode = editMode;
         if (editMode) {
             this.player.getInventory().clear();
@@ -152,6 +172,7 @@ public final class DungeonPlayerSession {
             this.hotbarHistory.clear();
             this.player.getInventory().clear();
             this.restoreInventory();
+            if (this.instance == null) this.completeDeparture(true, true);
         }
     }
 
@@ -160,10 +181,23 @@ public final class DungeonPlayerSession {
      * flow overwrites them.
      */
     public void saveInventory() {
-        this.savedInventory = copyItems(this.player.getInventory().getContents());
-        this.savedArmor = copyItems(this.player.getInventory().getArmorContents());
-        this.savedHealth = this.player.getHealth();
-        this.savedFood = this.player.getFoodLevel();
+        this.hotbarRecoveryOwned = false;
+        if (!this.recoveryJournal.hasRecovery()) {
+            this.recoveryJournal.begin(this.player);
+            this.savedInventory = null;
+        }
+        if (this.savedInventory != null) return;
+        PlayerRecoverySnapshot original = this.recoveryJournal.originalSnapshot(this.player);
+        this.savedGameMode = original.gameMode();
+        this.savedExp = original.exp();
+        this.savedLevel = original.level();
+        this.savedTotalExp = original.totalExp();
+        this.savedHeldSlot = original.heldSlot();
+        this.savedPosition = original.location().clone();
+        this.savedInventory = copyItems(original.contents());
+        this.savedArmor = copyItems(original.armor());
+        this.savedHealth = original.health();
+        this.savedFood = original.food();
     }
 
     private static ItemStack[] copyItems(ItemStack[] items) {
@@ -178,16 +212,12 @@ public final class DungeonPlayerSession {
      * Restores the previously captured inventory snapshot.
      */
     public void restoreInventory() {
-        if (this.plugin.isEnabled()) {
-            this.player.getInventory().setContents(copyItems(this.savedInventory));
-            this.player.getInventory().setArmorContents(copyItems(this.savedArmor));
-            this.player.setHealth(
-                    Math.min(this.savedHealth, EntityUtils.getMaxHealth(this.player)));
-            this.player.setFoodLevel(this.savedFood);
-        } else {
-            this.player.getInventory().setContents(copyItems(this.savedInventory));
-            this.player.getInventory().setArmorContents(copyItems(this.savedArmor));
-        }
+        if (this.savedInventory == null || this.savedArmor == null || this.player.isDead()) return;
+        this.player.getInventory().setContents(copyItems(this.savedInventory));
+        this.player.getInventory().setArmorContents(copyItems(this.savedArmor));
+        this.player.getInventory().setHeldItemSlot(this.savedHeldSlot);
+        this.player.setHealth(Math.min(this.savedHealth, EntityUtils.getMaxHealth(this.player)));
+        this.player.setFoodLevel(this.savedFood);
     }
 
     /**
@@ -196,12 +226,17 @@ public final class DungeonPlayerSession {
      */
     public void restoreExp() {
         if (this.plugin.isEnabled()) {
+            Player target = this.player;
+            DungeonInstance expected = this.instance;
+            float experience = this.savedExp;
+            int level = this.savedLevel;
             Bukkit.getScheduler()
                     .runTaskLater(
                             this.plugin,
                             () -> {
-                                this.player.setExp(this.savedExp);
-                                this.player.setLevel(this.savedLevel);
+                                if (this.player != target || this.instance != expected) return;
+                                this.player.setExp(experience);
+                                this.player.setLevel(level);
                             },
                             1L);
         } else {
@@ -225,8 +260,11 @@ public final class DungeonPlayerSession {
      */
     public void loadEditInventory() {
         DungeonInstance editor = this.instance;
+        long revision = this.hotbarRevision;
+        Player target = this.player;
         Runnable task =
                 () -> {
+                    if (revision != this.hotbarRevision || target != this.player) return;
                     if (editor != null && (!this.editMode || this.instance != editor)) {
                         return;
                     }
@@ -298,45 +336,185 @@ public final class DungeonPlayerSession {
     }
 
     public List<ItemStack> getRewardItems() {
-        List<ItemStack> rewards = new ArrayList<>(this.rewardItems);
-        if (this.instance != null && this.instance instanceof PlayableInstance) {
-            List<ItemStack> instanceRewards =
-                    ((PlayableInstance) this.instance)
-                            .getRewardInventories()
-                            .get(this.player.getUniqueId());
-            if (instanceRewards != null && !instanceRewards.isEmpty()) {
-                rewards.addAll(instanceRewards);
-            }
-        }
-
-        return rewards;
+        return this.recoveryJournal.rewards();
     }
 
     public void addReward(ItemStack... items) {
-        this.rewardItems.addAll(Arrays.asList(items));
+        this.recoveryJournal.addRewards(items);
     }
 
-    public void removeReward(ItemStack item) {
-        this.rewardItems.remove(item);
+    /** Claims into available inventory space; overflow remains durable and claimable. */
+    public boolean claimReward(ItemStack item) {
+        if (this.instance != null) return false;
+        try {
+            return this.recoveryJournal.claim(this.player, item);
+        } catch (RuntimeException failure) {
+            this.blockUnsafePlayerState(failure);
+            return false;
+        }
+    }
+
+    /** Persists the complete pre-entry state before membership or entry commands can change it. */
+    public boolean prepareRecovery() {
+        try {
+            this.recoveryJournal.begin(this.player);
+            this.savedInventory = null;
+            this.savedArmor = null;
+            this.saveInventory();
+            return true;
+        } catch (RuntimeException failure) {
+            this.plugin
+                    .getSLF4JLogger()
+                    .error(
+                            "Cannot prepare player recovery for '{}'; entry rejected.",
+                            this.player.getUniqueId(),
+                            failure);
+            return false;
+        }
+    }
+
+    /** Replays unfinished operations after reconnect or plugin enable. */
+    public boolean recoverPendingState() {
+        if (this.instance != null) return true;
+        if (this.player.isDead()) return false;
+        try {
+            boolean restoring = this.recoveryJournal.hasRecovery();
+            this.hotbarRevision++;
+            this.recoveryJournal.recover(this.player);
+            Location legacy = restoring ? null : this.getExitLocation();
+            if (restoring) {
+                this.clearExitLocation();
+                this.clearRecoveredState();
+            }
+            if (legacy != null) {
+                if (!this.player.teleport(
+                        legacy, org.bukkit.event.player.PlayerTeleportEvent.TeleportCause.PLUGIN)) {
+                    throw new IllegalStateException("Return teleport rejected");
+                }
+                this.player.saveData();
+                this.clearExitLocation();
+            }
+            this.savedPosition = null;
+            this.flushPendingAccessKeyRefund();
+            return true;
+        } catch (RuntimeException failure) {
+            this.blockUnsafePlayerState(failure);
+            return false;
+        }
+    }
+
+    /** Commits configured normal-exit state before acknowledging the recovery record. */
+    public void completeDeparture(boolean restoreItems, boolean restoreExperience) {
+        this.hotbarRevision++;
+        if (!this.player.isOnline() || this.player.isDead()) return;
+        try {
+            if (this.savedPosition != null
+                    && !this.player.teleport(
+                            this.savedPosition,
+                            org.bukkit.event.player.PlayerTeleportEvent.TeleportCause.PLUGIN)) {
+                throw new IllegalStateException("Return teleport rejected");
+            }
+            if (restoreItems) this.restoreInventory();
+            if (restoreExperience) {
+                this.player.setTotalExperience(this.savedTotalExp);
+                this.player.setLevel(this.savedLevel);
+                this.player.setExp(this.savedExp);
+            }
+            this.recoveryJournal.acknowledgeDeparture(this.player);
+            this.clearExitLocation();
+            this.clearRecoveredState();
+        } catch (RuntimeException failure) {
+            this.blockUnsafePlayerState(failure);
+        }
+    }
+
+    /** Discards temporary controls only after durable recovery or normal departure completes. */
+    private void clearRecoveredState() {
+        this.hotbarRevision++;
+        this.editMode = false;
+        this.currentHotbar = null;
+        this.savedHotbar = null;
+        this.hotbarHistory.clear();
+        this.hotbarRecoveryOwned = false;
+        this.savedInventory = null;
+        this.savedArmor = null;
+        this.savedEditInventory = null;
+        this.savedEditArmor = null;
+        this.savedPosition = null;
+        this.dungeonRespawn = null;
+        this.dead = false;
+        this.chatListening = false;
+        this.activeFunction = null;
+        this.activeTrigger = null;
+        this.targetLocation = null;
+        this.copiedFunction = null;
+        this.copiedConnector = null;
+        this.isCopying = false;
+        this.isCutting = false;
+        this.clipboardType = EditorClipboardType.NONE;
+        this.pos1 = null;
+        this.pos2 = null;
+        this.awaitingRoomName = false;
+        this.activeRoom = null;
+        this.activeConnector = null;
+        this.activeDoor = null;
+        this.confirmRoomAction = false;
+        this.addingWhitelistEntry = false;
+        this.editingWhitelistEntry = false;
+        this.removingWhitelistEntry = false;
+    }
+
+    private void blockUnsafePlayerState(RuntimeException failure) {
+        this.plugin
+                .getSLF4JLogger()
+                .error(
+                        "Player state recovery/delivery failed for '{}'; record retained.",
+                        this.player.getUniqueId(),
+                        failure);
+        // Do not let gameplay change an inventory whose transaction is awaiting acknowledgement.
+        this.player.kick(
+                net.kyori.adventure.text.Component.text(
+                        "Your player data could not be safely saved. Please reconnect or contact an"
+                                + " administrator."));
     }
 
     /**
      * Captures the player's current hotbar so a temporary menu can be restored later.
      */
     public void captureHotbar() {
-        this.savedHotbar = new PlayerHotbarSnapshot(this.player);
+        if (this.instance == null) {
+            if (this.recoveryJournal.hasRecovery() && this.savedInventory == null) {
+                if (!this.recoverPendingState())
+                    throw new IllegalStateException("Player recovery is incomplete");
+            }
+            if (!this.recoveryJournal.hasRecovery()) {
+                if (!this.prepareRecovery())
+                    throw new IllegalStateException("Cannot safely replace hotbar");
+                this.hotbarRecoveryOwned = true;
+            }
+        }
+        if (this.savedHotbar == null) this.savedHotbar = new PlayerHotbarSnapshot(this.player);
     }
 
     /**
      * Restores the most recently captured hotbar snapshot and clears transient menu state.
      */
     public void restoreCapturedHotbar() {
+        this.hotbarRevision++;
         HotbarSetEvent event = new HotbarSetEvent(this.savedHotbar, this);
         Bukkit.getPluginManager().callEvent(event);
         if (!event.isCancelled()) {
             if (this.savedHotbar != null) {
                 this.savedHotbar.applyTo(this.player.getInventory(), true);
                 this.savedHotbar = null;
+                if (this.instance == null && !this.editMode && this.hotbarRecoveryOwned) {
+                    try {
+                        this.recoveryJournal.acknowledgeDeparture(this.player);
+                        this.clearRecoveredState();
+                    } catch (RuntimeException failure) {
+                        this.blockUnsafePlayerState(failure);
+                    }
+                }
                 this.player.playSound(
                         this.player.getLocation(), "minecraft:item.armor.equip_gold", 1.0F, 1.2F);
             }
@@ -367,10 +545,17 @@ public final class DungeonPlayerSession {
      * Displays a temporary hotbar snapshot and optionally restores the held slot selection.
      */
     public void showHotbar(final PlayerHotbarSnapshot hotbar, final boolean restoreHeldSlot) {
+        if (this.savedHotbar == null) this.captureHotbar();
+        long revision = this.hotbarRevision;
+        Player target = this.player;
+        DungeonInstance expected = this.instance;
         Bukkit.getScheduler()
                 .runTaskLater(
                         this.plugin,
                         () -> {
+                            if (revision != this.hotbarRevision
+                                    || target != this.player
+                                    || expected != this.instance) return;
                             HotbarSetEvent event = new HotbarSetEvent(hotbar, this);
                             Bukkit.getPluginManager().callEvent(event);
                             if (!event.isCancelled()) {
@@ -406,10 +591,13 @@ public final class DungeonPlayerSession {
      * menu remains on the stack.
      */
     public void restorePreviousHotbar(final boolean resetHand) {
+        long revision = this.hotbarRevision;
+        Player target = this.player;
         Bukkit.getScheduler()
                 .runTaskLater(
                         this.plugin,
                         () -> {
+                            if (revision != this.hotbarRevision || target != this.player) return;
                             PlayerHotbarSnapshot previousHotbar = this.getPreviousHotbar();
                             if (previousHotbar == null) {
                                 this.restoreCapturedHotbar();
@@ -539,8 +727,9 @@ public final class DungeonPlayerSession {
     }
 
     public void setPlayer(Player player) {
+        if (this.player != player) this.hotbarRevision++;
         this.player = player;
-        this.flushPendingAccessKeyRefund();
+        if (!this.recoveryJournal.hasPendingTransaction()) this.flushPendingAccessKeyRefund();
     }
 
     public DungeonInstance getInstance() {
