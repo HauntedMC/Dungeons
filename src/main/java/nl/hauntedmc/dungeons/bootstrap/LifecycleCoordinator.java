@@ -13,6 +13,7 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Coordinates runtime lifecycle operations that happen after initial bootstrap, such as shutdown
@@ -25,6 +26,8 @@ import java.util.ArrayList;
 public final class LifecycleCoordinator {
     private final DungeonsRuntime runtime;
     private final CoreBootstrap coreBootstrap;
+    private volatile boolean shuttingDown;
+    private CompletableFuture<Boolean> reloadAttempt;
 
     /**
      * Creates the lifecycle coordinator for an already-bootstrapped runtime graph.
@@ -38,6 +41,8 @@ public final class LifecycleCoordinator {
      * Releases player and instance state during plugin shutdown.
      */
     void shutdown() {
+        this.shuttingDown = true;
+        if (this.reloadAttempt != null) this.reloadAttempt.complete(false);
         try {
             this.runtime
                     .environment()
@@ -130,7 +135,7 @@ public final class LifecycleCoordinator {
             action.run();
         } catch (RuntimeException failure) {
             this.runtime.environment().logger()
-                    .error("Failed to clean up {}; continuing other shutdown stages.", stage, failure);
+                    .error("Failed to clean up {}; continuing other cleanup stages.", stage, failure);
         }
     }
 
@@ -147,15 +152,21 @@ public final class LifecycleCoordinator {
         return instances;
     }
 
-    private void disposeEmptyManagedInstances(@Nullable String dungeonName) {
+    private CompletableFuture<Boolean> disposeEmptyManagedInstances(@Nullable String dungeonName) {
+        var editors = new ArrayList<CompletableFuture<Boolean>>();
         for (DungeonInstance instance : this.managedInstances()) {
-            if (!instance.getPlayers().isEmpty()) continue;
             if (dungeonName != null
                     && (instance.getDungeon() == null
                             || !dungeonName.equals(instance.getDungeon().getWorldName()))) continue;
+            if (!instance.getPlayers().isEmpty()) {
+                if (instance.isEditInstance()) editors.add(CompletableFuture.completedFuture(false));
+                continue;
+            }
             try {
-                instance.dispose();
+                if (instance.isEditInstance()) editors.add(instance.disposeAsync());
+                else instance.dispose();
             } catch (Exception failure) {
+                if (instance.isEditInstance()) editors.add(CompletableFuture.completedFuture(false));
                 this.runtime
                         .environment()
                         .logger()
@@ -165,55 +176,115 @@ public final class LifecycleCoordinator {
                                 failure);
             }
         }
+        return CompletableFuture.allOf(editors.toArray(CompletableFuture[]::new))
+                .handle((ignored, failure) -> failure == null
+                        && editors.stream().allMatch(future -> Boolean.TRUE.equals(future.join())));
+    }
+
+    private CompletableFuture<Boolean> finishReload(CompletableFuture<Boolean> editors, Runnable replacement) {
+        var result = this.reloadAttempt;
+        editors.whenComplete((success, failure) -> {
+            Runnable finish = () -> {
+                if (this.shuttingDown || failure != null || !Boolean.TRUE.equals(success)) {
+                    this.runtime.environment().logger().error("Dungeon reload aborted: editor persistence or unload did not succeed.");
+                    result.complete(false);
+                    return;
+                }
+                try {
+                    replacement.run();
+                    result.complete(true);
+                } catch (RuntimeException reloadFailure) {
+                    this.runtime.environment().logger().error("Dungeon reload failed.", reloadFailure);
+                    result.complete(false);
+                }
+            };
+            if (this.shuttingDown) result.complete(false);
+            else if (Bukkit.isPrimaryThread()) finish.run();
+            else {
+                try {
+                    Bukkit.getScheduler().runTask(this.runtime.environment().plugin(), finish);
+                } catch (RuntimeException rejected) {
+                    result.complete(false);
+                }
+            }
+        });
+        return result.copy();
+    }
+
+    private boolean reloadUnavailable() {
+        return this.shuttingDown || this.reloadAttempt != null && !this.reloadAttempt.isDone();
     }
 
     /**
      * Reloads the dungeon catalogue while preserving the same injected manager objects.
      */
-    public void reloadAllDungeons() {
-        this.runtime.preparations().cancelDungeon(null);
-        this.discardQueuedStarts(null);
-        this.refundOutstandingReservedKeys(null);
+    public CompletableFuture<Boolean> reloadAllDungeons() {
+        if (!Bukkit.isPrimaryThread())
+            return nl.hauntedmc.dungeons.config.ConfigurationFile.onOwnerThread(
+                    this.runtime.environment().plugin(), this::reloadAllDungeons);
+        if (this.reloadUnavailable()) return CompletableFuture.completedFuture(false);
+        this.reloadAttempt = new CompletableFuture<>();
+        try {
+            this.runtime.preparations().cancelDungeon(null);
+            this.discardQueuedStarts(null);
+            this.refundOutstandingReservedKeys(null);
 
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            DungeonPlayerSession playerSession = this.runtime.playerSessions().get(player);
-            if (playerSession == null) {
-                continue;
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                DungeonPlayerSession playerSession = this.runtime.playerSessions().get(player);
+                if (playerSession == null) {
+                    continue;
+                }
+
+                playerSession.restoreCapturedHotbar();
+                DungeonInstance instance = playerSession.getInstance();
+                if (instance != null) {
+                    instance.removePlayer(playerSession);
+                    LangUtils.sendMessage(
+                            playerSession.getPlayer(), "commands.dungeon.reload.reloaded-by-admin");
+                }
             }
 
-            playerSession.restoreCapturedHotbar();
-            DungeonInstance instance = playerSession.getInstance();
-            if (instance != null) {
-                instance.removePlayer(playerSession);
-                LangUtils.sendMessage(
-                        playerSession.getPlayer(), "commands.dungeon.reload.reloaded-by-admin");
-            }
+            return this.finishReload(this.disposeEmptyManagedInstances(null),
+                    () -> TextUtils.runTimed("Reloading Dungeons", () -> this.runtime.dungeonCatalog().reloadAll()));
+        } catch (RuntimeException failure) {
+            this.runtime.environment().logger().error("Cannot prepare dungeon reload.", failure);
+            this.reloadAttempt.complete(false);
+            return this.reloadAttempt.copy();
         }
-
-        this.disposeEmptyManagedInstances(null);
-        TextUtils.runTimed("Reloading Dungeons", () -> this.runtime.dungeonCatalog().reloadAll());
     }
 
     /**
      * Reloads a single dungeon definition and its in-memory instances.
      */
-    public void reloadDungeon(DungeonDefinition dungeon) {
-        this.runtime.preparations().cancelDungeon(dungeon.getWorldName());
-        this.discardQueuedStarts(dungeon.getWorldName());
-        this.refundOutstandingReservedKeys(dungeon.getWorldName());
+    public CompletableFuture<Boolean> reloadDungeon(DungeonDefinition dungeon) {
+        if (!Bukkit.isPrimaryThread())
+            return nl.hauntedmc.dungeons.config.ConfigurationFile.onOwnerThread(
+                    this.runtime.environment().plugin(), () -> this.reloadDungeon(dungeon));
+        if (this.reloadUnavailable()) return CompletableFuture.completedFuture(false);
+        this.reloadAttempt = new CompletableFuture<>();
+        try {
+            this.runtime.preparations().cancelDungeon(dungeon.getWorldName());
+            this.discardQueuedStarts(dungeon.getWorldName());
+            this.refundOutstandingReservedKeys(dungeon.getWorldName());
 
-        for (DungeonInstance instance : new ArrayList<>(dungeon.getInstances())) {
-            for (DungeonPlayerSession playerSession : new ArrayList<>(instance.getPlayers())) {
-                playerSession.restoreCapturedHotbar();
-                instance.removePlayer(playerSession);
-                LangUtils.sendMessage(
-                        playerSession.getPlayer(), "commands.dungeon.reload.reloaded-by-admin");
+            for (DungeonInstance instance : new ArrayList<>(dungeon.getInstances())) {
+                for (DungeonPlayerSession playerSession : new ArrayList<>(instance.getPlayers())) {
+                    playerSession.restoreCapturedHotbar();
+                    instance.removePlayer(playerSession);
+                    LangUtils.sendMessage(
+                            playerSession.getPlayer(), "commands.dungeon.reload.reloaded-by-admin");
+                }
             }
-        }
 
-        this.disposeEmptyManagedInstances(dungeon.getWorldName());
-        this.runtime.dungeonCatalog().remove(dungeon);
-        this.runtime.dungeonCatalog().loadDungeon(dungeon.getFolder());
+            return this.finishReload(this.disposeEmptyManagedInstances(dungeon.getWorldName()), () -> {
+                if (this.runtime.dungeonCatalog().loadDungeon(dungeon.getFolder()) == null)
+                    throw new IllegalStateException("Replacement dungeon could not be loaded");
+            });
+        } catch (RuntimeException failure) {
+            this.runtime.environment().logger().error("Cannot prepare dungeon reload.", failure);
+            this.reloadAttempt.complete(false);
+            return this.reloadAttempt.copy();
+        }
     }
 
     /**

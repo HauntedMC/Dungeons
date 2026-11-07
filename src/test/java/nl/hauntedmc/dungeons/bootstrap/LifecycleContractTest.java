@@ -30,6 +30,38 @@ class LifecycleContractTest {
     @TempDir Path directory;
 
     @Test
+    void catalogReplacementWaitsForEditorDisposalAndKeepsOldDefinitionsOnFailure() {
+        try (var paper = new PaperBoundary()) {
+            paper.runtime.setQueueRegistry(mock(DungeonQueueRegistry.class));
+            paper.runtime.setTeamService(mock(DungeonTeamService.class));
+            paper.runtime.setPlayerSessions(mock(PlayerSessionRegistry.class));
+            var catalog = mock(DungeonRepository.class);
+            paper.runtime.setDungeonCatalog(catalog);
+            var dungeon = mock(DungeonDefinition.class);
+            var editor = mock(DungeonInstance.class);
+            when(dungeon.getInstances()).thenReturn(List.of(editor));
+            when(catalog.getLoadedDungeons()).thenReturn(List.of(dungeon));
+            when(editor.isEditInstance()).thenReturn(true);
+            var failedSave = new java.util.concurrent.CompletableFuture<Boolean>();
+            var retrySave = new java.util.concurrent.CompletableFuture<Boolean>();
+            when(editor.disposeAsync()).thenReturn(failedSave, retrySave);
+            var lifecycle = new LifecycleCoordinator(paper.runtime, mock(CoreBootstrap.class));
+            var first = lifecycle.reloadAllDungeons();
+            assertFalse(first.isDone());
+            verify(catalog, never()).reloadAll();
+            assertFalse(lifecycle.reloadAllDungeons().join());
+            failedSave.complete(false);
+            assertFalse(first.join());
+            verify(catalog, never()).reloadAll();
+            var retry = lifecycle.reloadAllDungeons();
+            assertFalse(retry.isDone());
+            retrySave.complete(true);
+            assertTrue(retry.join());
+            verify(catalog).reloadAll();
+        }
+    }
+
+    @Test
     void failedTeamShutdownCannotPreventWorldDisposalOrPlayerCheckpoints() throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
             var catalog = mock(DungeonRepository.class);
@@ -279,7 +311,7 @@ class LifecycleContractTest {
             verify(coordinator).discardQueue(own);
             verify(coordinator, never()).discardQueue(neighbor);
             verify(teams).clearQueuedStarts("crypt");
-            verify(catalog).remove(f.dungeon);
+            verify(catalog, never()).remove(f.dungeon);
             verify(catalog).loadDungeon(f.dungeon.getFolder());
         }
     }

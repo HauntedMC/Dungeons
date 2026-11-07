@@ -272,6 +272,7 @@ commands:
       success: '&aDungeon &6{dungeon}&a is verwijderd.'
     reload:
       usage: '&a/dungeon dungeon reload &b[dungeon|all] &f| &eHerlaad configs of een dungeon.'
+      failed: '&cHerladen mislukt of al bezig. De huidige dungeondata blijft behouden; controleer de console.'
       config-reloading: '&eConfigs worden herladen...'
       config-reloaded: '&aConfigs zijn herladen.'
       all-dungeons-reloading: '&eAlle dungeons worden herladen...'

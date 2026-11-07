@@ -2096,6 +2096,15 @@ public final class DungeonCommand implements TabExecutor {
     /**
      * Runs handle reload command.
      */
+    private void reportReload(CommandSender sender, java.util.concurrent.CompletableFuture<Boolean> result,
+            String successMessage, String dungeonName) {
+        result.thenAccept(success -> {
+            if (!Boolean.TRUE.equals(success)) LangUtils.sendMessage(sender, "commands.dungeon.reload.failed");
+            else if (dungeonName == null) LangUtils.sendMessage(sender, successMessage);
+            else LangUtils.sendMessage(sender, successMessage, LangUtils.placeholder("dungeon", dungeonName));
+        });
+    }
+
     private boolean handleReloadCommand(CommandSender sender, String[] args) {
         if (!CommandUtils.hasPermission(sender, "dungeons.admin")) {
             return false;
@@ -2116,8 +2125,8 @@ public final class DungeonCommand implements TabExecutor {
 
             if (args[1].equalsIgnoreCase("all")) {
                 LangUtils.sendMessage(sender, "commands.dungeon.reload.all-dungeons-reloading");
-                this.lifecycleCoordinator.reloadAllDungeons();
-                LangUtils.sendMessage(sender, "commands.dungeon.reload.all-dungeons-reloaded");
+                this.reportReload(sender, this.lifecycleCoordinator.reloadAllDungeons(),
+                        "commands.dungeon.reload.all-dungeons-reloaded", null);
                 return true;
             }
 
@@ -2134,11 +2143,8 @@ public final class DungeonCommand implements TabExecutor {
                     sender,
                     "commands.dungeon.reload.dungeon-reloading",
                     LangUtils.placeholder("dungeon", args[1]));
-            this.lifecycleCoordinator.reloadDungeon(dungeon);
-            LangUtils.sendMessage(
-                    sender,
-                    "commands.dungeon.reload.dungeon-reloaded",
-                    LangUtils.placeholder("dungeon", args[1]));
+            this.reportReload(sender, this.lifecycleCoordinator.reloadDungeon(dungeon),
+                    "commands.dungeon.reload.dungeon-reloaded", args[1]);
             return true;
         }
 
@@ -2154,9 +2160,9 @@ public final class DungeonCommand implements TabExecutor {
             if (playerSession.isReloadQueued()
                     || this.activeInstanceManager.getActiveInstances().isEmpty()) {
                 LangUtils.sendMessage(sender, "commands.dungeon.reload.all-dungeons-reloading");
-                this.lifecycleCoordinator.reloadAllDungeons();
+                this.reportReload(sender, this.lifecycleCoordinator.reloadAllDungeons(),
+                        "commands.dungeon.reload.all-dungeons-reloaded", null);
                 playerSession.unqueueReload();
-                LangUtils.sendMessage(sender, "commands.dungeon.reload.all-dungeons-reloaded");
                 return true;
             }
         } else {
@@ -2174,12 +2180,9 @@ public final class DungeonCommand implements TabExecutor {
                         sender,
                         "commands.dungeon.reload.dungeon-reloading",
                         LangUtils.placeholder("dungeon", args[1]));
-                this.lifecycleCoordinator.reloadDungeon(dungeon);
+                this.reportReload(sender, this.lifecycleCoordinator.reloadDungeon(dungeon),
+                        "commands.dungeon.reload.dungeon-reloaded", args[1]);
                 playerSession.unqueueReload();
-                LangUtils.sendMessage(
-                        sender,
-                        "commands.dungeon.reload.dungeon-reloaded",
-                        LangUtils.placeholder("dungeon", args[1]));
                 return true;
             }
         }
