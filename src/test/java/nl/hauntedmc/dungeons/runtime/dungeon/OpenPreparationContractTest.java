@@ -96,8 +96,12 @@ class OpenPreparationContractTest {
                     assertTrue(run.getPlayers().isEmpty());
                 }
                 if (outcome.equals("failed")) {
-                    assertTrue(dungeon.getInstances().isEmpty());
+                    // A failed unload still owns its capacity until an explicit retry succeeds.
+                    assertTrue(dungeon.getInstances().contains(run));
                     assertFalse(dungeon.publishReadyInstance(run));
+                    f.paper.bukkit.when(() -> Bukkit.unloadWorld(f.world, false)).thenReturn(true);
+                    assertTrue(run.disposeAsync().join());
+                    assertTrue(dungeon.getInstances().isEmpty());
                 }
             }
         }

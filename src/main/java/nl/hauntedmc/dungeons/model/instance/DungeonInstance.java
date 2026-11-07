@@ -41,10 +41,14 @@ import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
+import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -52,6 +56,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -78,7 +83,27 @@ public abstract class DungeonInstance {
     protected Location startLocation;
     protected final CountDownLatch latch;
     protected boolean initialized;
-    protected boolean disposing = false;
+    protected volatile boolean disposing = false;
+
+    public enum DisposalState {
+        ACTIVE,
+        SCHEDULED,
+        PREPARING,
+        UNLOADING,
+        RETRYABLE_FAILURE,
+        DISPOSED
+    }
+
+    private volatile DisposalState disposalState = DisposalState.ACTIVE;
+    private volatile Throwable disposalFailure;
+    private CompletableFuture<Boolean> disposalAttempt;
+    private BukkitTask disposalTask;
+    private BukkitTask disposalRetryTask;
+    private boolean disposalHookInvoked;
+    private boolean disposalStartedEnabled;
+    private int automaticDisposalRetries;
+    private static final int MAX_DISPOSAL_RETRIES = 3;
+    private static final long DISPOSAL_RETRY_TICKS = 100L;
     protected volatile boolean ready;
     protected volatile boolean loadFailed;
     private boolean pendingFolderOwned;
@@ -256,7 +281,8 @@ public abstract class DungeonInstance {
         } catch (IllegalArgumentException exception) {
             this.logger()
                     .warn(
-                            "Invalid world dimension '{}' for instance '{}' of dungeon '{}'. Falling back to default environment.",
+                            "Invalid world dimension '{}' for instance '{}' of dungeon '{}'."
+                                + " Falling back to default environment.",
                             worldDimension,
                             this.instanceWorldName,
                             this.dungeon.getWorldName(),
@@ -315,7 +341,8 @@ public abstract class DungeonInstance {
             }
             this.logger()
                     .error(
-                            "Retaining files for instance world '{}' because Bukkit refused to unload it.",
+                            "Retaining files for instance world '{}' because Bukkit refused to"
+                                + " unload it.",
                             this.instanceWorld.getName());
         } catch (Exception exception) {
             this.logger()
@@ -373,7 +400,7 @@ public abstract class DungeonInstance {
 
         this.onLoadGame();
         this.onInstanceReady();
-        this.ready = true;
+        this.ready = !this.disposing;
         this.signalInitializationComplete();
     }
 
@@ -386,100 +413,309 @@ public abstract class DungeonInstance {
     }
 
     public void dispose() {
-        if (!this.disposing && this.instanceWorld == null) {
-            this.disposing = true;
-            try {
-                this.onDispose();
-            } finally {
-                this.cleanupPendingWorldFolder();
-                this.dungeon.removeInstance(this);
-                this.onDisposalComplete();
-                this.signalInitializationComplete();
-                Bukkit.getPluginManager().callEvent(new DungeonDisposeEvent(this));
+        this.requestDisposal(false);
+    }
+
+    /**
+     * Attempts disposal. Concurrent callers share the attempt; a failed attempt returns false and
+     * may be retried by calling this method again. A disposed instance returns true immediately.
+     */
+    public CompletableFuture<Boolean> disposeAsync() {
+        // Observers may cancel or complete their future without interrupting world ownership.
+        return this.requestDisposal(false).copy();
+    }
+
+    private CompletableFuture<Boolean> requestDisposal(boolean automatic) {
+        CompletableFuture<Boolean> attempt;
+        CompletableFuture<Boolean> abandoned = null;
+        boolean delayed;
+        synchronized (this) {
+            if (this.disposalState == DisposalState.DISPOSED)
+                return CompletableFuture.completedFuture(true);
+            if (this.disposalAttempt != null
+                    && !this.disposalAttempt.isDone()
+                    && this.disposalStartedEnabled
+                    && !this.plugin().isEnabled()
+                    && this.disposalState == DisposalState.PREPARING) {
+                abandoned = this.disposalAttempt;
+                this.disposalAttempt = null;
+                this.disposalState = DisposalState.RETRYABLE_FAILURE;
             }
-            return;
+            if (this.disposalAttempt != null && !this.disposalAttempt.isDone()) {
+                // Paper cancels delayed tasks at shutdown. Drain a queued attempt inline instead.
+                if (this.plugin().isEnabled() || this.disposalState != DisposalState.SCHEDULED)
+                    return this.disposalAttempt;
+                this.cancelDisposalTask();
+                this.disposalStartedEnabled = false;
+                attempt = this.disposalAttempt;
+                delayed = false;
+            } else {
+                if (!this.players.isEmpty()) return CompletableFuture.completedFuture(false);
+                if (this.disposalRetryTask != null) {
+                    this.disposalRetryTask.cancel();
+                    this.disposalRetryTask = null;
+                }
+                if (!automatic) this.automaticDisposalRetries = 0;
+                delayed = this.disposalState == DisposalState.ACTIVE;
+                this.disposing = true;
+                this.ready = false;
+                this.disposalFailure = null;
+                this.disposalState = DisposalState.SCHEDULED;
+                attempt = new CompletableFuture<>();
+                this.disposalAttempt = attempt;
+                this.disposalStartedEnabled = this.plugin().isEnabled();
+            }
         }
-        if (!this.disposing) {
-            if (this.players.isEmpty()) {
-                if (this.instanceWorld.getPlayerCount() <= 0) {
-                    this.disposing = true;
-                    Runnable disposal =
-                            () -> {
-                                this.logger()
-                                        .info(
-                                                "Disposing instance '{}' for dungeon '{}'.",
-                                                this.instanceWorld.getName(),
-                                                this.dungeon.getWorldName());
+        if (abandoned != null) abandoned.complete(false);
+        Runnable start = () -> this.beginDisposal(attempt, delayed);
+        if (Bukkit.isPrimaryThread()) {
+            start.run();
+        } else if (this.plugin().isEnabled()) {
+            try {
+                Bukkit.getScheduler().runTask(this.plugin(), start);
+            } catch (RuntimeException failure) {
+                this.failDisposal(attempt, failure);
+            }
+        } else {
+            this.failDisposal(
+                    attempt,
+                    new IllegalStateException(
+                            "World disposal requires the server thread; retry during server-thread"
+                                    + " shutdown"));
+        }
+        return attempt;
+    }
 
-                                try {
-                                    this.onDispose();
-                                } catch (Exception exception) {
-                                    this.logger()
-                                            .error(
-                                                    "Custom disposal hook failed for instance '{}' in dungeon '{}'.",
-                                                    this.instanceWorld.getName(),
-                                                    this.dungeon.getWorldName(),
-                                                    exception);
-                                }
+    private void beginDisposal(CompletableFuture<Boolean> attempt, boolean delayed) {
+        synchronized (this) {
+            if (this.disposalAttempt != attempt
+                    || attempt.isDone()
+                    || this.disposalState != DisposalState.SCHEDULED) return;
+            int delay = delayed && !this.isEditInstance() ? this.resolveCleanupDelayTicks() : 0;
+            if (this.plugin().isEnabled() && delay > 0) {
+                try {
+                    this.disposalTask =
+                            Bukkit.getScheduler()
+                                    .runTaskLater(
+                                            this.plugin(),
+                                            () -> this.performDisposal(attempt),
+                                            delay);
+                } catch (RuntimeException failure) {
+                    this.failDisposal(attempt, failure);
+                }
+                return;
+            }
+        }
+        this.performDisposal(attempt);
+    }
 
-                                try {
-                                    this.prepareDisposal().whenComplete(this::finishDisposal);
-                                } catch (RuntimeException exception) {
-                                    this.logger().error("Unable to prepare disposal; retaining instance files.", exception);
-                                }
-                            };
-                    int delay = this.resolveCleanupDelayTicks();
-                    if (this.plugin().isEnabled() && delay > 0 && !this.isEditInstance()) {
-                        Bukkit.getScheduler().runTaskLater(this.plugin(), disposal, delay);
-                    } else {
-                        disposal.run();
-                    }
+    private void performDisposal(CompletableFuture<Boolean> attempt) {
+        synchronized (this) {
+            if (this.disposalAttempt != attempt
+                    || attempt.isDone()
+                    || this.disposalState != DisposalState.SCHEDULED) return;
+            this.disposalTask = null;
+            this.disposalState = DisposalState.PREPARING;
+        }
+        try {
+            if (!this.players.isEmpty()
+                    || (this.instanceWorld != null && this.instanceWorld.getPlayerCount() > 0)) {
+                throw new IllegalStateException(
+                        "Instance world still has players; retaining registration and world files");
+            }
+            if (this.instanceWorld != null) this.instanceWorldName = this.instanceWorld.getName();
+            if (!this.disposalHookInvoked) {
+                this.disposalHookInvoked = true;
+                try {
+                    this.onDispose();
+                } catch (Exception failure) {
+                    this.logger()
+                            .error(
+                                    "Disposal hook failed for dungeon '{}'; continuing safe"
+                                            + " unload.",
+                                    this.dungeon.getWorldName(),
+                                    failure);
                 }
             }
+            if (this.instanceWorld == null) {
+                this.cleanupPendingWorldFolder();
+                this.completeDisposal(attempt, null, null);
+                return;
+            }
+            CompletableFuture<Boolean> prepared =
+                    this.loadFailed
+                            ? CompletableFuture.completedFuture(true)
+                            : java.util.Objects.requireNonNull(this.prepareDisposal());
+            prepared.whenComplete((saved, failure) -> this.finishDisposal(attempt, saved, failure));
+        } catch (Exception failure) {
+            this.failDisposal(attempt, failure);
         }
     }
 
-    private void finishDisposal(Boolean saved, Throwable failure) {
+    private void finishDisposal(
+            CompletableFuture<Boolean> attempt, Boolean saved, Throwable failure) {
         if (failure != null || !Boolean.TRUE.equals(saved)) {
-            this.logger().error(
-                    "Final save failed for dungeon '{}'; retaining loaded world and recoverable files at '{}'.",
-                    this.dungeon.getWorldName(), this.instanceWorld.getWorldFolder(), failure);
+            this.failDisposal(
+                    attempt,
+                    failure == null
+                            ? new IllegalStateException("Final instance save failed")
+                            : failure);
             return;
         }
-        Runnable finish = () -> {
-            this.clearHolograms();
-            File folder = this.instanceWorld.getWorldFolder();
-            String name = this.instanceWorld.getName();
-            if (!this.unloadInstanceWorld()) return;
-            this.functions.clear();
-            this.rewardFunctions.clear();
-            this.listener = null;
-            this.hologramManager = null;
-            this.dungeon.removeInstance(this);
-            this.onDisposalComplete();
-            if (this.plugin().isEnabled()) {
-                try {
-                    Bukkit.getScheduler().runTaskLaterAsynchronously(
-                            this.plugin(), () -> this.cleanWorldFiles(new CountDownLatch(0), folder, name), 100L);
-                } catch (RuntimeException exception) {
-                    this.logger().error("Unable to schedule cleanup; retaining unloaded instance files at '{}'.", folder, exception);
-                }
-            } else {
-                this.cleanWorldFiles(new CountDownLatch(0), folder, name);
-            }
-            Bukkit.getPluginManager().callEvent(new DungeonDisposeEvent(this));
-        };
-        if (this.plugin().isEnabled() && !Bukkit.isPrimaryThread()) {
+        Runnable finish =
+                () -> {
+                    synchronized (this) {
+                        if (this.disposalAttempt != attempt
+                                || attempt.isDone()
+                                || this.disposalState != DisposalState.PREPARING) return;
+                        this.disposalState = DisposalState.UNLOADING;
+                    }
+                    try {
+                        if (!this.players.isEmpty() || this.instanceWorld.getPlayerCount() > 0) {
+                            throw new IllegalStateException(
+                                    "Players entered the world during disposal; unload deferred");
+                        }
+                        this.clearHolograms();
+                        File folder = this.instanceWorld.getWorldFolder();
+                        String name = this.instanceWorld.getName();
+                        if (!this.unloadInstanceWorld())
+                            throw new IllegalStateException(
+                                    "Bukkit did not unload instance world '" + name + "'");
+                        this.instanceWorld = null;
+                        this.completeDisposal(attempt, folder, name);
+                    } catch (Exception unloadFailure) {
+                        this.failDisposal(attempt, unloadFailure);
+                    }
+                };
+        if (Bukkit.isPrimaryThread()) {
+            finish.run();
+        } else if (this.plugin().isEnabled()) {
             try {
                 Bukkit.getScheduler().runTask(this.plugin(), finish);
-            } catch (RuntimeException exception) {
-                this.logger().error("Unable to finish disposal; retaining instance files.", exception);
+            } catch (RuntimeException schedulingFailure) {
+                this.failDisposal(attempt, schedulingFailure);
             }
-        } else if (Bukkit.isPrimaryThread() || !this.isEditInstance()) {
-            finish.run();
         } else {
-            this.logger().error("Disposal completed off-thread after shutdown; retaining instance files.");
+            this.failDisposal(
+                    attempt,
+                    new IllegalStateException(
+                            "Cannot finish world disposal off-thread after shutdown"));
         }
+    }
+
+    private void completeDisposal(CompletableFuture<Boolean> attempt, File folder, String name) {
+        List<Path> retired = folder == null ? List.of() : this.detachWorldFiles(folder, name);
+        this.functions.clear();
+        this.rewardFunctions.clear();
+        this.triggerListeners.clear();
+        this.functionListeners.clear();
+        this.listener = null;
+        this.hologramManager = null;
+        this.dungeon.removeInstance(this);
+        this.disposalState = DisposalState.DISPOSED;
+        this.disposalFailure = null;
+        this.signalInitializationComplete();
+        try {
+            this.onDisposalComplete();
+        } catch (Exception failure) {
+            this.logger()
+                    .error(
+                            "Post-disposal hook failed for dungeon '{}'.",
+                            this.dungeon.getWorldName(),
+                            failure);
+        }
+        if (!retired.isEmpty()) {
+            if (this.plugin().isEnabled()) {
+                try {
+                    Bukkit.getScheduler()
+                            .runTaskLaterAsynchronously(
+                                    this.plugin(),
+                                    () -> this.deleteRetiredWorldFiles(retired),
+                                    100L);
+                } catch (RuntimeException failure) {
+                    this.logger()
+                            .error(
+                                    "Unable to schedule deletion of retired world folders '{}';"
+                                        + " retaining them for restart cleanup.",
+                                    retired,
+                                    failure);
+                }
+            } else {
+                this.deleteRetiredWorldFiles(retired);
+            }
+        }
+        try {
+            Bukkit.getPluginManager().callEvent(new DungeonDisposeEvent(this));
+        } catch (Exception failure) {
+            this.logger()
+                    .error(
+                            "Disposal event failed for dungeon '{}'.",
+                            this.dungeon.getWorldName(),
+                            failure);
+        } finally {
+            attempt.complete(true);
+        }
+    }
+
+    private void failDisposal(CompletableFuture<Boolean> attempt, Throwable failure) {
+        synchronized (this) {
+            if (this.disposalAttempt != attempt
+                    || attempt.isDone()
+                    || this.disposalState == DisposalState.DISPOSED) return;
+            this.disposalState = DisposalState.RETRYABLE_FAILURE;
+            this.disposalFailure = failure;
+            this.logger()
+                    .error(
+                            "Instance disposal failed for '{}' in dungeon '{}'; retaining"
+                                    + " registration and files. Call disposeAsync() to retry.",
+                            this.instanceWorldName,
+                            this.dungeon.getWorldName(),
+                            failure);
+            if (this.plugin().isEnabled() && this.automaticDisposalRetries < MAX_DISPOSAL_RETRIES) {
+                try {
+                    this.disposalRetryTask =
+                            Bukkit.getScheduler()
+                                    .runTaskLater(
+                                            this.plugin(),
+                                            () -> {
+                                                synchronized (this) {
+                                                    if (this.disposalAttempt != attempt
+                                                            || this.disposalState
+                                                                    != DisposalState
+                                                                            .RETRYABLE_FAILURE)
+                                                        return;
+                                                    this.disposalRetryTask = null;
+                                                }
+                                                this.requestDisposal(true);
+                                            },
+                                            DISPOSAL_RETRY_TICKS);
+                    this.automaticDisposalRetries++;
+                } catch (RuntimeException schedulingFailure) {
+                    failure.addSuppressed(schedulingFailure);
+                }
+            }
+            attempt.complete(false);
+        }
+    }
+
+    private void cancelDisposalTask() {
+        if (this.disposalTask != null) {
+            this.disposalTask.cancel();
+            this.disposalTask = null;
+        }
+    }
+
+    public DisposalState getDisposalState() {
+        return this.disposalState;
+    }
+
+    @Nullable
+    public Throwable getDisposalFailure() {
+        return this.disposalFailure;
+    }
+
+    public String getInstanceWorldName() {
+        return this.instanceWorld == null ? this.instanceWorldName : this.instanceWorld.getName();
     }
 
     /** Persistence must succeed before runtime state or world files are released. */
@@ -495,31 +731,64 @@ public abstract class DungeonInstance {
         return Math.max(0, this.dungeon.getConfig().getInt("runs.cleanup_delay_ticks", 0));
     }
 
-    protected void cleanWorldFiles(CountDownLatch latch, File worldFolder, String worldName) {
-        try {
-            for (var path :
-                    java.util.stream.Stream.of(
-                                    worldFolder,
-                                    new File(Bukkit.getWorldContainer(), worldName),
-                                    WorldUtils.dimensionFolder(worldName))
-                            .map(file -> file.toPath().toAbsolutePath().normalize())
-                            .distinct()
-                            .toList()) {
-                FileUtils.deleteDirectory(path.toFile());
-            }
-            this.pendingFolderOwned = false;
-        } catch (IOException exception) {
+    /** Detaches files on the server thread before handing deletion to a worker. */
+    private List<Path> detachWorldFiles(File worldFolder, String worldName) {
+        if (!Bukkit.isPrimaryThread())
+            throw new IllegalStateException("World folders must be detached on the server thread");
+        if (Bukkit.getWorld(worldName) != null) {
             this.logger()
-                    .warn(
-                            "Failed to delete files for instance world '{}'. The world is unloaded, so this leaves temporary file clutter until restart.",
-                            worldName,
-                            exception);
+                    .warn("Retaining files for '{}' because that world name is loaded.", worldName);
+            return List.of();
         }
+        List<Path> retired = new ArrayList<>();
+        for (Path source :
+                java.util.stream.Stream.of(
+                                worldFolder,
+                                new File(Bukkit.getWorldContainer(), worldName),
+                                WorldUtils.dimensionFolder(worldName))
+                        .map(file -> file.toPath().toAbsolutePath().normalize())
+                        .distinct()
+                        .toList()) {
+            if (Files.notExists(source)) continue;
+            Path detached =
+                    source.resolveSibling(source.getFileName() + ".disposed-" + UUID.randomUUID());
+            try {
+                Files.move(source, detached, StandardCopyOption.ATOMIC_MOVE);
+                retired.add(detached);
+            } catch (IOException | RuntimeException failure) {
+                this.logger()
+                        .warn(
+                                "Cannot detach unloaded world folder '{}'; retaining it for restart"
+                                    + " cleanup.",
+                                source,
+                                failure);
+            }
+        }
+        this.pendingFolderOwned = false;
+        return retired;
+    }
 
-        this.instanceWorld = null;
+    private void deleteRetiredWorldFiles(List<Path> retired) {
+        for (Path path : retired) {
+            try {
+                FileUtils.deleteDirectory(path.toFile());
+            } catch (IOException | RuntimeException failure) {
+                this.logger()
+                        .warn(
+                                "Cannot delete retired world folder '{}'; retaining it for restart"
+                                    + " cleanup.",
+                                path,
+                                failure);
+            }
+        }
+    }
+
+    protected void cleanWorldFiles(CountDownLatch latch, File worldFolder, String worldName) {
+        this.deleteRetiredWorldFiles(this.detachWorldFiles(worldFolder, worldName));
     }
 
     public void addPlayer(DungeonPlayerSession playerSession) {
+        if (this.disposing || this.loadFailed) return;
         if (playerSession.getInstance() != null && playerSession.getInstance() != this) {
             return;
         }
@@ -756,7 +1025,16 @@ public abstract class DungeonInstance {
         }
 
         if (this.plugin().isEnabled()) {
-            Bukkit.getScheduler().runTaskLater(this.plugin(), this::dispose, 1L);
+            try {
+                Bukkit.getScheduler().runTaskLater(this.plugin(), this::dispose, 1L);
+            } catch (RuntimeException failure) {
+                this.logger()
+                        .warn(
+                                "Empty-instance cleanup scheduling failed; attempting disposal"
+                                        + " now.",
+                                failure);
+                this.dispose();
+            }
         } else {
             this.dispose();
         }

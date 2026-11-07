@@ -185,6 +185,7 @@ class PreparationContractTest {
     }
 
     static void finishPreparation(RunFixture f) throws Exception {
+        f.paper.bukkit.when(() -> Bukkit.unloadWorld(any(World.class), eq(false))).thenReturn(true);
         try (var executor = Executors.newSingleThreadExecutor()) {
             Future<?> loading =
                     executor.submit(

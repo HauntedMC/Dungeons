@@ -1,6 +1,5 @@
 package nl.hauntedmc.dungeons.bootstrap;
 
-import java.util.ArrayList;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
@@ -8,9 +7,12 @@ import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueEntry;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.text.TextUtils;
+
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.ArrayList;
 
 /**
  * Coordinates runtime lifecycle operations that happen after initial bootstrap, such as shutdown
@@ -48,7 +50,8 @@ public final class LifecycleCoordinator {
                             .environment()
                             .logger()
                             .warn(
-                                    "No DungeonPlayerSession state was available during shutdown for '{}'.",
+                                    "No DungeonPlayerSession state was available during shutdown"
+                                        + " for '{}'.",
                                     player.getName());
                     continue;
                 }
@@ -73,26 +76,50 @@ public final class LifecycleCoordinator {
             this.runtime.teamService().shutdown();
         }
 
+        for (DungeonInstance instance : this.managedInstances()) {
+            try {
+                instance.dispose();
+            } catch (Exception exception) {
+                this.runtime
+                        .environment()
+                        .logger()
+                        .error(
+                                "Failed to dispose managed instance '{}'.",
+                                instance.getInstanceWorldName(),
+                                exception);
+            }
+        }
+    }
+
+    private java.util.Set<DungeonInstance> managedInstances() {
+        var instances = new java.util.LinkedHashSet<DungeonInstance>();
         if (this.runtime.dungeonCatalog() != null) {
             for (DungeonDefinition dungeon : this.runtime.dungeonCatalog().getLoadedDungeons()) {
-                for (DungeonInstance instance : new ArrayList<>(dungeon.getInstances())) {
-                    try {
-                        instance.dispose();
-                    } catch (Exception exception) {
-                        String instanceName =
-                                instance.getInstanceWorld() == null
-                                        ? "<unloaded>"
-                                        : instance.getInstanceWorld().getName();
-                        this.runtime
-                                .environment()
-                                .logger()
-                                .error(
-                                        "Failed to dispose instance '{}' for dungeon '{}'.",
-                                        instanceName,
-                                        dungeon.getWorldName(),
-                                        exception);
-                    }
-                }
+                instances.addAll(dungeon.getInstances());
+            }
+        }
+        if (this.runtime.activeInstances() != null) {
+            instances.addAll(this.runtime.activeInstances().getActiveInstances());
+        }
+        return instances;
+    }
+
+    private void disposeEmptyManagedInstances(@Nullable String dungeonName) {
+        for (DungeonInstance instance : this.managedInstances()) {
+            if (!instance.getPlayers().isEmpty()) continue;
+            if (dungeonName != null
+                    && (instance.getDungeon() == null
+                            || !dungeonName.equals(instance.getDungeon().getWorldName()))) continue;
+            try {
+                instance.dispose();
+            } catch (Exception failure) {
+                this.runtime
+                        .environment()
+                        .logger()
+                        .error(
+                                "Cannot dispose retained instance '{}' during reload.",
+                                instance.getInstanceWorldName(),
+                                failure);
             }
         }
     }
@@ -119,6 +146,7 @@ public final class LifecycleCoordinator {
             }
         }
 
+        this.disposeEmptyManagedInstances(null);
         TextUtils.runTimed("Reloading Dungeons", () -> this.runtime.dungeonCatalog().reloadAll());
     }
 
@@ -138,6 +166,7 @@ public final class LifecycleCoordinator {
             }
         }
 
+        this.disposeEmptyManagedInstances(dungeon.getWorldName());
         this.runtime.dungeonCatalog().remove(dungeon);
         this.runtime.dungeonCatalog().loadDungeon(dungeon.getFolder());
     }

@@ -19,6 +19,31 @@ class WorldStartupContractTest {
     @TempDir Path directory;
 
     @Test
+    void startupCleansRetiredFoldersButPreservesMalformedLookalikesAndLoadedWorlds()
+            throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var retired =
+                    Files.createDirectories(
+                            directory.resolve("crypt_4.disposed-" + java.util.UUID.randomUUID()));
+            var malformed =
+                    Files.createDirectories(directory.resolve("crypt_4.disposed-not-a-uuid"));
+            var live =
+                    Files.createDirectories(
+                            directory.resolve("crypt_5.disposed-" + java.util.UUID.randomUUID()));
+            Files.writeString(retired.resolve("level.dat"), "retired");
+            Files.writeString(malformed.resolve("keep"), "unrelated");
+            Files.writeString(live.resolve("keep"), "loaded");
+            var loaded = mock(World.class);
+            when(loaded.getName()).thenReturn(live.getFileName().toString());
+            f.paper.bukkit.when(Bukkit::getWorlds).thenReturn(java.util.List.of(loaded));
+            f.paper.dungeon(directory.resolve("crypt"), new YamlConfiguration());
+            assertFalse(Files.exists(retired));
+            assertEquals("unrelated", Files.readString(malformed.resolve("keep")));
+            assertEquals("loaded", Files.readString(live.resolve("keep")));
+        }
+    }
+
+    @Test
     void allocatingMultipleRunsReservesDistinctFoldersEvenBeforeWorldCreation() throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
             when(Bukkit.getServer().getLevelDirectory()).thenReturn(directory.resolve("plots"));

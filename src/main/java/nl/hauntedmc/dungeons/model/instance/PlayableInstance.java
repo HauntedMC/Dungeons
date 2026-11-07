@@ -127,6 +127,7 @@ public abstract class PlayableInstance extends DungeonInstance {
      * Starts the playable run, teleports players, and starts the run timer.
      */
     public void startGame() {
+        if (this.disposing || this.loadFailed) return;
         if (!this.started) {
             this.started = true;
             this.initializeFunctions();
@@ -261,7 +262,8 @@ public abstract class PlayableInstance extends DungeonInstance {
                 } catch (RuntimeException exception) {
                     this.logger()
                             .error(
-                                    "Failed to remove an owned entity while disposing dungeon '{}'.",
+                                    "Failed to remove an owned entity while disposing dungeon"
+                                        + " '{}'.",
                                     this.dungeon.getWorldName(),
                                     exception);
                 }
@@ -280,7 +282,8 @@ public abstract class PlayableInstance extends DungeonInstance {
             if (oldFunction == null) {
                 this.logger()
                         .warn(
-                                "Skipping null function while initializing play instance for dungeon '{}'.",
+                                "Skipping null function while initializing play instance for"
+                                    + " dungeon '{}'.",
                                 this.dungeon.getWorldName());
                 continue;
             }
@@ -291,7 +294,8 @@ public abstract class PlayableInstance extends DungeonInstance {
                 if (newFunction == null) {
                     this.logger()
                             .warn(
-                                    "Skipping function '{}' in dungeon '{}' because clone() returned null during instance initialization.",
+                                    "Skipping function '{}' in dungeon '{}' because clone()"
+                                        + " returned null during instance initialization.",
                                     oldFunction.getClass().getSimpleName(),
                                     this.dungeon.getWorldName());
                     continue;
@@ -301,7 +305,8 @@ public abstract class PlayableInstance extends DungeonInstance {
                 if (loc == null) {
                     this.logger()
                             .warn(
-                                    "Skipping function '{}' in dungeon '{}' because it has no location during instance initialization.",
+                                    "Skipping function '{}' in dungeon '{}' because it has no"
+                                        + " location during instance initialization.",
                                     oldFunction.getClass().getSimpleName(),
                                     this.dungeon.getWorldName());
                     continue;
@@ -326,7 +331,8 @@ public abstract class PlayableInstance extends DungeonInstance {
                 Location loc = oldFunction.getLocation();
                 this.logger()
                         .warn(
-                                "Skipping broken function '{}' in dungeon '{}' at {} during play instance initialization. Reason: {}",
+                                "Skipping broken function '{}' in dungeon '{}' at {} during play"
+                                    + " instance initialization. Reason: {}",
                                 oldFunction.getClass().getSimpleName(),
                                 this.dungeon.getWorldName(),
                                 loc == null
@@ -349,6 +355,7 @@ public abstract class PlayableInstance extends DungeonInstance {
      */
     @Override
     public void addPlayer(DungeonPlayerSession playerSession) {
+        if (this.disposing || this.loadFailed) return;
         if (this.players.contains(playerSession)) {
             return;
         }
@@ -418,7 +425,8 @@ public abstract class PlayableInstance extends DungeonInstance {
         } catch (IllegalArgumentException exception) {
             this.logger()
                     .warn(
-                            "Dungeon '{}' has invalid game mode '{}'; defaulting player '{}' to ADVENTURE.",
+                            "Dungeon '{}' has invalid game mode '{}'; defaulting player '{}' to"
+                                + " ADVENTURE.",
                             this.dungeon.getWorldName(),
                             this.config.getString("players.gamemode", "ADVENTURE"),
                             player.getName(),

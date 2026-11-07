@@ -248,7 +248,8 @@ public abstract class DungeonDefinition {
         if (defaultConfig.getKeys(true).isEmpty()) {
             this.logger()
                     .warn(
-                            "Skipping config sync for dungeon '{}' because the default dungeon config is empty.",
+                            "Skipping config sync for dungeon '{}' because the default dungeon"
+                                + " config is empty.",
                             this.worldName);
             return;
         }
@@ -311,7 +312,8 @@ public abstract class DungeonDefinition {
         if (configuredMaxTeamSize < 1) {
             this.logger()
                     .warn(
-                            "Dungeon '{}' has invalid team.max_size value '{}'. Falling back to {}.",
+                            "Dungeon '{}' has invalid team.max_size value '{}'. Falling back to"
+                                + " {}.",
                             this.worldName,
                             configuredMaxTeamSize,
                             DEFAULT_MAX_TEAM_SIZE);
@@ -348,7 +350,8 @@ public abstract class DungeonDefinition {
             this.exitLoc = null;
             this.logger()
                     .warn(
-                            "Exit location for dungeon '{}' references an unloaded world. Clearing exit location.",
+                            "Exit location for dungeon '{}' references an unloaded world. Clearing"
+                                + " exit location.",
                             this.worldName);
         }
 
@@ -418,7 +421,8 @@ public abstract class DungeonDefinition {
             } else {
                 this.logger()
                         .warn(
-                                "Skipping unsupported or invalid access key entry while loading dungeon '{}'.",
+                                "Skipping unsupported or invalid access key entry while loading"
+                                    + " dungeon '{}'.",
                                 this.worldName);
             }
         }
@@ -483,7 +487,8 @@ public abstract class DungeonDefinition {
             throw new DungeonLoadException(
                     "Access of access_keys.yml file failed!",
                     false,
-                    "There may be another process accessing the file, or we may not have permission.");
+                    "There may be another process accessing the file, or we may not have"
+                        + " permission.");
         } catch (InvalidConfigurationException
                 | IllegalArgumentException
                 | YAMLException exception) {
@@ -638,7 +643,8 @@ public abstract class DungeonDefinition {
         } catch (DungeonLoadException exception) {
             this.logger()
                     .error(
-                            "Failed to load access key state for dungeon '{}' while unique validation was enabled.",
+                            "Failed to load access key state for dungeon '{}' while unique"
+                                + " validation was enabled.",
                             this.worldName,
                             exception);
         }
@@ -749,7 +755,17 @@ public abstract class DungeonDefinition {
     }
 
     protected int getTrackedInstanceCount() {
-        return this.instances.size();
+        // Reloading a definition must not hide retained worlds owned by its previous object.
+        var tracked = new java.util.HashSet<>(this.instances);
+        if (this.activeInstances() != null) {
+            for (DungeonInstance instance : this.activeInstances().getActiveInstances()) {
+                if (instance.getDungeon() != null
+                        && this.worldName.equals(instance.getDungeon().getWorldName())) {
+                    tracked.add(instance);
+                }
+            }
+        }
+        return tracked.size();
     }
 
     public boolean canAcceptStartNow(
@@ -831,6 +847,17 @@ public abstract class DungeonDefinition {
         }
 
         String suffix = worldName.substring(prefix.length());
+        int retired = suffix.indexOf(".disposed-");
+        if (retired >= 0) {
+            String token = suffix.substring(retired + ".disposed-".length());
+            try {
+                if (token.length() != 36) return false;
+                UUID.fromString(token);
+            } catch (IllegalArgumentException invalid) {
+                return false;
+            }
+            suffix = suffix.substring(0, retired);
+        }
         if (suffix.isEmpty()) {
             return false;
         }
@@ -986,7 +1013,8 @@ public abstract class DungeonDefinition {
                             });
             this.logger()
                     .error(
-                            "Interrupted while waiting for edit session of dungeon '{}' to initialize.",
+                            "Interrupted while waiting for edit session of dungeon '{}' to"
+                                + " initialize.",
                             this.worldName,
                             exception);
         }
@@ -1026,12 +1054,7 @@ public abstract class DungeonDefinition {
             return;
         }
 
-        this.removeInstance(instance);
-        if (instance.getInstanceWorld() != null) {
-            instance.dispose();
-        } else {
-            instance.cleanupPendingWorldFolder();
-        }
+        instance.dispose();
     }
 
     public void timeout(DungeonInstance instance, DungeonPlayerSession playerSession) {
@@ -1044,7 +1067,7 @@ public abstract class DungeonDefinition {
     }
 
     public void cancelInstance(DungeonInstance instance, DungeonPlayerSession playerSession) {
-        this.removeInstance(instance);
+        this.discardInstance(instance);
         playerSession.setAwaitingDungeon(false);
     }
 
@@ -1146,7 +1169,8 @@ public abstract class DungeonDefinition {
         } else if (rewardRecord != null) {
             this.logger()
                     .warn(
-                            "Ignoring invalid reward cooldown data for player '{}' in dungeon '{}'.",
+                            "Ignoring invalid reward cooldown data for player '{}' in dungeon"
+                                + " '{}'.",
                             playerID,
                             this.worldName);
         }
@@ -1522,7 +1546,8 @@ public abstract class DungeonDefinition {
             Player reservedKeyOwner = playerSession.getPlayer();
             this.logger()
                     .warn(
-                            "Reserved access key for dungeon '{}' could not be recovered for player '{}'.",
+                            "Reserved access key for dungeon '{}' could not be recovered for player"
+                                + " '{}'.",
                             this.worldName,
                             reservedKeyOwner == null ? "unknown" : reservedKeyOwner.getName());
             return false;
@@ -1537,7 +1562,8 @@ public abstract class DungeonDefinition {
             Player reservedKeyOwner = playerSession.getPlayer();
             this.logger()
                     .warn(
-                            "Failed to finalize reserved access key usage for player '{}' in dungeon '{}'.",
+                            "Failed to finalize reserved access key usage for player '{}' in"
+                                + " dungeon '{}'.",
                             reservedKeyOwner == null ? "unknown" : reservedKeyOwner.getName(),
                             this.worldName);
             return false;

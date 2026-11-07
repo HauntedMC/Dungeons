@@ -1,12 +1,5 @@
 package nl.hauntedmc.dungeons.content.dungeon;
 
-import java.io.File;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import nl.hauntedmc.dungeons.content.instance.play.OpenInstance;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDifficulty;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonLoadException;
@@ -16,11 +9,20 @@ import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.text.TextUtils;
+
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.File;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Static-style dungeon that keeps reusable instances warm for faster joins.
@@ -149,7 +151,8 @@ public class OpenDungeon extends StaticDungeon {
                                 Thread.currentThread().interrupt();
                                 this.logger()
                                         .error(
-                                                "Interrupted while watching preloaded open instance '{}' for dungeon '{}'.",
+                                                "Interrupted while watching preloaded open instance"
+                                                    + " '{}' for dungeon '{}'.",
                                                 instance,
                                                 this.getWorldName(),
                                                 exception);
@@ -407,7 +410,9 @@ public class OpenDungeon extends StaticDungeon {
                                                                 });
                                                 this.logger()
                                                         .error(
-                                                                "Interrupted while waiting for open instance '{}' to initialize.",
+                                                                "Interrupted while waiting for open"
+                                                                    + " instance '{}' to"
+                                                                    + " initialize.",
                                                                 this.getWorldName(),
                                                                 exception);
                                             }
@@ -429,7 +434,8 @@ public class OpenDungeon extends StaticDungeon {
             this.releaseReservation(instance, reservationId, keepWarmIfEmpty);
             this.logger()
                     .warn(
-                            "Aborted loading open instance '{}' because player '{}' disconnected before join.",
+                            "Aborted loading open instance '{}' because player '{}' disconnected"
+                                + " before join.",
                             this.getWorldName(),
                             player.getName());
             return false;
@@ -480,12 +486,7 @@ public class OpenDungeon extends StaticDungeon {
      */
     private void cancelUnusedInstance(OpenInstance instance) {
         instance.cancelReadyRegistration();
-        this.removeInstance(instance);
-        if (instance.getInstanceWorld() != null) {
-            instance.dispose();
-        } else {
-            instance.cleanupPendingWorldFolder();
-        }
+        instance.dispose();
     }
 
     @Nullable

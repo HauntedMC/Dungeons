@@ -719,7 +719,8 @@ public final class DungeonTeamService implements Listener {
         this.plugin
                 .getSLF4JLogger()
                 .info(
-                        "Scheduled shutdown of instance '{}' in {} seconds because its team was disbanded.",
+                        "Scheduled shutdown of instance '{}' in {} seconds because its team was"
+                            + " disbanded.",
                         instanceWorldName,
                         delaySeconds);
     }
@@ -928,7 +929,7 @@ public final class DungeonTeamService implements Listener {
         }
 
         if (!Objects.equals(
-                team.getInstanceWorldName(), event.getInstance().getInstanceWorld().getName())) {
+                team.getInstanceWorldName(), event.getInstance().getInstanceWorldName())) {
             return;
         }
 
@@ -953,7 +954,8 @@ public final class DungeonTeamService implements Listener {
     /** Dissolves teams once their started instance disposes. */
     @EventHandler
     public void onDungeonDispose(DungeonDisposeEvent event) {
-        String instanceWorldName = event.getInstance().getInstanceWorld().getName();
+        String instanceWorldName = event.getInstance().getInstanceWorldName();
+        if (instanceWorldName == null) return;
         BukkitTask disbandShutdownTask =
                 this.disbandShutdownTasksByInstanceWorld.remove(instanceWorldName);
         if (disbandShutdownTask != null) {

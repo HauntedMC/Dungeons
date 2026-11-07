@@ -53,6 +53,8 @@ public final class PaperBoundary implements AutoCloseable {
         when(plugin.getConfig()).thenReturn(config);
         when(plugin.getSLF4JLogger()).thenReturn(LoggerFactory.getLogger("CoreContractTests"));
         runtime.setConfig(config);
+        runtime.setActiveInstances(
+                new nl.hauntedmc.dungeons.runtime.instance.ActiveInstanceRegistry(plugin));
         RuntimeContext.initialize(runtime);
         bukkit.when(Bukkit::getPluginManager).thenReturn(mock(PluginManager.class));
         bukkit.when(Bukkit::getOnlinePlayers).thenReturn(List.of());

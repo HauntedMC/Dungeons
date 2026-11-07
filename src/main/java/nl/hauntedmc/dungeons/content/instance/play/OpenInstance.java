@@ -47,12 +47,7 @@ public class OpenInstance extends StaticInstance {
                 .runTask(
                         RuntimeContext.plugin(),
                         () -> {
-                            this.dungeon.removeInstance(this);
-                            if (this.getInstanceWorld() != null) {
-                                this.dispose();
-                            } else {
-                                this.cleanupPendingWorldFolder();
-                            }
+                            this.dispose();
                         });
     }
 
@@ -181,6 +176,10 @@ public class OpenInstance extends StaticInstance {
         this.cancelPendingEmptyUnload();
         this.reservedSlotsByOwner.clear();
         super.onDispose();
+    }
+
+    @Override
+    protected void onDisposalComplete() {
         this.dungeon.onOpenInstanceDisposed(this);
     }
 
@@ -218,6 +217,10 @@ public class OpenInstance extends StaticInstance {
             return;
         }
 
+        if (this.disposing) {
+            if (this.getDisposalState() == DisposalState.RETRYABLE_FAILURE) this.dispose();
+            return;
+        }
         if (this.pendingEmptyUnloadTask != null) {
             return;
         }
@@ -228,23 +231,32 @@ public class OpenInstance extends StaticInstance {
             return;
         }
 
-        this.pendingEmptyUnloadTask =
-                Bukkit.getScheduler()
-                        .runTaskLater(
-                                this.plugin(),
-                                () -> {
-                                    synchronized (OpenInstance.this) {
-                                        OpenInstance.this.pendingEmptyUnloadTask = null;
-                                        if (!OpenInstance.this.getPlayers().isEmpty()
-                                                || OpenInstance.this.hasOutstandingReservations()
-                                                || OpenInstance.this.disposing) {
-                                            return;
+        try {
+            this.pendingEmptyUnloadTask =
+                    Bukkit.getScheduler()
+                            .runTaskLater(
+                                    this.plugin(),
+                                    () -> {
+                                        synchronized (OpenInstance.this) {
+                                            OpenInstance.this.pendingEmptyUnloadTask = null;
+                                            if (!OpenInstance.this.getPlayers().isEmpty()
+                                                    || OpenInstance.this
+                                                            .hasOutstandingReservations()
+                                                    || OpenInstance.this.disposing) {
+                                                return;
+                                            }
                                         }
-                                    }
 
-                                    OpenInstance.this.dispose();
-                                },
-                                delayTicks);
+                                        OpenInstance.this.dispose();
+                                    },
+                                    delayTicks);
+        } catch (RuntimeException failure) {
+            this.logger()
+                    .warn(
+                            "Open-instance cleanup scheduling failed; attempting disposal now.",
+                            failure);
+            this.dispose();
+        }
     }
 
     /**

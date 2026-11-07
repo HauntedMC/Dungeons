@@ -46,6 +46,11 @@ class LifecycleContractTest {
             var dungeon = mock(DungeonDefinition.class);
             var broken = mock(DungeonInstance.class);
             var healthy = mock(DungeonInstance.class);
+            var retainedFromPreviousCatalog = mock(DungeonInstance.class);
+            var active = mock(nl.hauntedmc.dungeons.runtime.instance.ActiveInstanceRegistry.class);
+            paper.runtime.setActiveInstances(active);
+            when(active.getActiveInstances())
+                    .thenReturn(List.of(healthy, retainedFromPreviousCatalog));
             when(catalog.getLoadedDungeons()).thenReturn(List.of(dungeon));
             when(dungeon.getInstances()).thenReturn(List.of(broken, healthy));
             doThrow(new IllegalStateException("unload failed")).when(broken).dispose();
@@ -58,6 +63,8 @@ class LifecycleContractTest {
             order.verify(teams).shutdown();
             order.verify(broken).dispose();
             order.verify(healthy).dispose();
+            verify(retainedFromPreviousCatalog).dispose();
+            verify(healthy, times(1)).dispose();
         }
     }
 

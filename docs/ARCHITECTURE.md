@@ -75,6 +75,16 @@ Rewards become durable when added to a player's session, including rewards selec
 
 Journal writes use unique sibling temporary files, file flushes, and atomic replacement. Atomic replacement support and writable native player-data storage are required. Transactions run on the server thread; journal I/O is intentionally synchronous before destructive state changes. This protects plugin transitions from process loss; it does not provide a cross-player transaction for trades, protect against unrelated plugins rewriting inventory after a transition, or guarantee directory-entry durability through a hardware power failure. Acceptance uses native Paper item/NBT codecs with a controlled player/network boundary; restart fault tests cover transaction replay separately.
 
+## Recoverable Instance Disposal
+
+`DungeonInstance.disposeAsync()` reports completion of one disposal attempt. Concurrent requests observe the same underlying attempt; cancelling an observer future does not interrupt cleanup. A failed attempt returns `false` and can be retried with `dispose()` or `disposeAsync()`. `getDisposalState()` distinguishes active, scheduled, preparing, unloading, retryable failure, and disposed states; `getDisposalFailure()` exposes the most recent failure. Once disposal starts, the instance remains unavailable for new players and gameplay startup.
+
+Final persistence must succeed before unloading. Occupied worlds, failed saves, scheduler rejection, and refused or exceptional unloads retain world references, files, and dungeon/global registrations. The plugin retries failures up to three times at 100-tick intervals while enabled. Explicit retries reset that budget. Reload commands retry empty managed instances; shutdown also traverses the global registry to reach retained instances from older catalog definitions. Per-dungeon admission counts include those older registrations, so a catalog reload cannot bypass capacity limits.
+
+The disposal hook runs once to stop gameplay. Completion hooks, warm-pool replenishment, registry removal, and `DungeonDisposeEvent` occur only after successful unload (or after disposal of an instance that never acquired a world). Consumers can use `getInstanceWorldName()` after the live world reference is released. World operations run on the server thread. Shutdown drains delayed attempts or supersedes pending persistence safely; late callbacks from superseded attempts cannot unload a retained world.
+
+Temporary-file deletion remains best effort after unload. Before releasing capacity or invoking completion hooks, the server thread atomically renames owned folders to unique `<world>.disposed-<uuid>` paths. Worker tasks delete only those detached paths, so a new world can safely reuse the original name. Failed detachment or deletion retains files and logs the path; startup cleanup recognizes both ordinary instance folders and the strictly validated retired-folder names.
+
 ## Why This Matters
 
 For operators, this structure reduces surprise during reloads and restarts.

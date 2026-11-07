@@ -2,9 +2,7 @@ package nl.hauntedmc.dungeons.event;
 
 import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
 
-/**
- * Event fired when a dungeon instance is being disposed.
- */
+/** Event fired once an instance has unloaded successfully and released its registration. */
 public class DungeonDisposeEvent extends DungeonEvent {
     /**
      * Creates a dispose event for the given instance.

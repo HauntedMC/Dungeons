@@ -63,6 +63,7 @@ public final class AcceptancePlugin extends JavaPlugin {
                                         () -> NativePlayerRecovery.run(this)),
                                 new Scenario(
                                         "copied-world-lifecycle", () -> WorldLifecycle.run(this)),
+                                new Scenario("native-unload-retry", () -> NativeDisposal.run(this)),
                                 new Scenario(
                                         "world-format-and-environment-matrix",
                                         () -> WorldFormatMatrix.run(this)),
@@ -128,7 +129,8 @@ public final class AcceptancePlugin extends JavaPlugin {
                                                         if (failure == null) {
                                                             getLogger()
                                                                     .info(
-                                                                            "DUNGEONS_ACCEPTANCE_CASE_PASS name="
+                                                                            "DUNGEONS_ACCEPTANCE_CASE_PASS"
+                                                                                + " name="
                                                                                     + scenario
                                                                                             .name());
                                                             done.complete(null);

@@ -17,6 +17,24 @@ class AdmissionContractTest {
     @TempDir Path directory;
 
     @Test
+    void reloadedDefinitionStillCountsRetainedInstancesFromThePreviousDefinition()
+            throws Exception {
+        try (var paper = new PaperBoundary()) {
+            paper.runtime.setActiveInstances(new ActiveInstanceRegistry(paper.plugin));
+            var settings = new YamlConfiguration();
+            settings.set("runs.max_active", 1);
+            var previous = paper.dungeon(directory.resolve("crypt"), settings);
+            var retained = new StaticInstance(previous, null);
+            previous.getInstances().add(retained);
+            paper.runtime.activeInstances().registerActiveInstance(retained);
+            var reloaded = paper.dungeon(directory.resolve("crypt"), settings);
+            assertFalse(reloaded.hasAvailableInstances());
+            assertTrue(retained.disposeAsync().join());
+            assertTrue(reloaded.hasAvailableInstances());
+        }
+    }
+
+    @Test
     void realDungeonAdmissionHonorsIndependentGlobalTeamAndPerDungeonLimits() throws Exception {
         try (var paper = new PaperBoundary()) {
             var settings = new YamlConfiguration();

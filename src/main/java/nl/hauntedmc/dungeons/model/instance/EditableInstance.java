@@ -251,13 +251,15 @@ public class EditableInstance extends DungeonInstance {
                 this.instanceWorld.save(true);
                 return CompletableFuture.completedFuture(false);
             }
-            return this.activeSave.handle((success, failure) -> true)
+            return this.activeSave
+                    .handle((success, failure) -> true)
                     .thenCompose(ignored -> this.startSave(null, true));
         }
         return this.startSave(null, true);
     }
 
-    private CompletableFuture<Boolean> startSave(@Nullable CountDownLatch latch, boolean finalSave) {
+    private CompletableFuture<Boolean> startSave(
+            @Nullable CountDownLatch latch, boolean finalSave) {
         CompletableFuture<Boolean> result = new CompletableFuture<>();
         Runnable saveTask =
                 () -> {
@@ -399,16 +401,22 @@ public class EditableInstance extends DungeonInstance {
         if (Bukkit.isPrimaryThread()) return this.onCommitWorldAsync(world);
         if (!this.plugin().isEnabled()) return CompletableFuture.completedFuture(false);
         CompletableFuture<Boolean> result = new CompletableFuture<>();
-        Bukkit.getScheduler().runTask(this.plugin(), () -> {
-            try {
-                this.onCommitWorldAsync(world).whenComplete((success, failure) -> {
-                    if (failure != null) result.completeExceptionally(failure);
-                    else result.complete(success);
-                });
-            } catch (Throwable failure) {
-                result.completeExceptionally(failure);
-            }
-        });
+        Bukkit.getScheduler()
+                .runTask(
+                        this.plugin(),
+                        () -> {
+                            try {
+                                this.onCommitWorldAsync(world)
+                                        .whenComplete(
+                                                (success, failure) -> {
+                                                    if (failure != null)
+                                                        result.completeExceptionally(failure);
+                                                    else result.complete(success);
+                                                });
+                            } catch (Throwable failure) {
+                                result.completeExceptionally(failure);
+                            }
+                        });
         return result;
     }
 
@@ -471,6 +479,7 @@ public class EditableInstance extends DungeonInstance {
      */
     @Override
     public void addPlayer(DungeonPlayerSession playerSession) {
+        if (this.disposing || this.loadFailed) return;
         if (this.players.contains(playerSession)
                 || playerSession.getInstance() != null && playerSession.getInstance() != this) {
             return;

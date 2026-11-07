@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -398,11 +399,26 @@ class EditorPersistenceContractTest {
             Path live = Files.createDirectories(directory.resolve("live"));
             Files.writeString(live.resolve("level.dat"), "last edits");
             when(f.world.getWorldFolder()).thenReturn(live.toFile());
-            f.paper.bukkit.when(() -> Bukkit.unloadWorld(f.world, false)).thenAnswer(call -> {
-                assertEquals("last edits", Files.readString(f.dungeon.getFolder().toPath().resolve("level.dat")));
-                assertTrue(Files.exists(f.dungeon.getFolder().toPath().resolve("functions.yml")));
-                return true;
-            });
+            f.paper
+                    .bukkit
+                    .when(() -> Bukkit.unloadWorld(f.world, false))
+                    .thenAnswer(
+                            call -> {
+                                assertEquals(
+                                        "last edits",
+                                        Files.readString(
+                                                f.dungeon
+                                                        .getFolder()
+                                                        .toPath()
+                                                        .resolve("level.dat")));
+                                assertTrue(
+                                        Files.exists(
+                                                f.dungeon
+                                                        .getFolder()
+                                                        .toPath()
+                                                        .resolve("functions.yml")));
+                                return true;
+                            });
             var editor = new Editor(f);
             f.dungeon.setEditSession(editor);
             editor.dispose();
@@ -424,15 +440,25 @@ class EditorPersistenceContractTest {
                 var editor = new Editor(f);
                 f.dungeon.setEditSession(editor);
                 f.dungeon.getInstances().add(editor);
-                if (failure.equals("flush")) doThrow(new IllegalStateException("disk failure")).when(f.world).save(true);
+                if (failure.equals("flush"))
+                    doThrow(new IllegalStateException("disk failure")).when(f.world).save(true);
                 if (failure.equals("commit")) editor.throwCommit = true;
-                if (failure.equals("metadata")) editor.pending = CompletableFuture.completedFuture(false);
+                if (failure.equals("metadata"))
+                    editor.pending = CompletableFuture.completedFuture(false);
                 editor.dispose();
                 assertEquals("recover me", Files.readString(live.resolve("level.dat")));
                 assertSame(f.world, editor.getInstanceWorld());
                 assertSame(editor, f.dungeon.getEditSession());
                 assertTrue(f.dungeon.getInstances().contains(editor));
                 f.paper.bukkit.verify(() -> Bukkit.unloadWorld(f.world, false), never());
+                editor.throwCommit = false;
+                editor.pending = null;
+                doNothing().when(f.world).save(true);
+                f.paper.bukkit.when(() -> Bukkit.unloadWorld(f.world, false)).thenReturn(true);
+                assertTrue(editor.disposeAsync().join());
+                assertNull(editor.getInstanceWorld());
+                assertNull(f.dungeon.getEditSession());
+                assertFalse(f.dungeon.getInstances().contains(editor));
             }
         }
     }
@@ -460,6 +486,31 @@ class EditorPersistenceContractTest {
             f.scheduler.asynchronous.getLast().run();
             assertFalse(Files.exists(live));
             assertNull(editor.getInstanceWorld());
+        }
+    }
+
+    @Test
+    void shutdownDuringFinalSaveRetainsTheEditorAndLateMetadataCannotUnloadIt() throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            Path live = Files.createDirectories(directory.resolve("live"));
+            when(f.world.getWorldFolder()).thenReturn(live.toFile());
+            when(f.paper.plugin.isEnabled()).thenReturn(true);
+            var editor = new Editor(f);
+            f.dungeon.setEditSession(editor);
+            f.dungeon.getInstances().add(editor);
+            editor.pending = new CompletableFuture<>();
+            var first = editor.disposeAsync();
+            assertFalse(first.isDone());
+            when(f.paper.plugin.isEnabled()).thenReturn(false);
+            assertFalse(editor.disposeAsync().join());
+            assertFalse(first.join());
+            editor.pending.complete(true);
+            f.paper.bukkit.verify(() -> Bukkit.unloadWorld(f.world, false), never());
+            assertSame(editor, f.dungeon.getEditSession());
+            assertTrue(f.dungeon.getInstances().contains(editor));
+            f.paper.bukkit.when(() -> Bukkit.unloadWorld(f.world, false)).thenReturn(true);
+            assertTrue(editor.disposeAsync().join());
+            assertNull(f.dungeon.getEditSession());
         }
     }
 
@@ -508,7 +559,8 @@ class EditorPersistenceContractTest {
             when(f.paper.plugin.isEnabled()).thenReturn(true);
             doThrow(new IllegalStateException("scheduler stopped"))
                     .when(f.scheduler.scheduler)
-                    .runTaskAsynchronously(any(org.bukkit.plugin.Plugin.class), any(Runnable.class));
+                    .runTaskAsynchronously(
+                            any(org.bukkit.plugin.Plugin.class), any(Runnable.class));
             var editor = new Editor(f);
             var result = editor.saveWorldAsync();
             assertFalse(result.get(1, TimeUnit.SECONDS));

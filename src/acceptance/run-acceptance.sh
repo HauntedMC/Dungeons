@@ -171,8 +171,11 @@ while ((SECONDS < local_deadline)); do
     wait_for_log 'DUNGEONS_ACCEPTANCE_COMPLETE phase=restart '
     check_report restart
     stop_server || fail 'Restarted Paper process did not shut down cleanly'
-    if grep -Eq 'DUNGEONS_ACCEPTANCE_FAIL|Error occurred while (enabling|disabling)|Task .* for Dungeons .* generated an exception|\[Dungeons\].*(Failed|failed)' "$work_directory"/paper/*.log; then
-      fail 'Paper logged a dungeon runtime or lifecycle error'
+    # NativeDisposal deliberately cancels exactly one unload for this isolated test dungeon.
+    # Keep rejecting every other runtime error, including disposal failures for other worlds.
+    if grep -Eh 'DUNGEONS_ACCEPTANCE_FAIL|Error occurred while (enabling|disabling)|Task .* for Dungeons .* generated an exception|\[Dungeons\].*(Failed|failed)' "$work_directory"/paper/*.log \
+      | grep -Ev "\[Dungeons\] Instance disposal failed for 'acceptance_unload_retry_[0-9]+' in dungeon 'acceptance_unload_retry'; retaining registration and files\. Call disposeAsync\(\) to retry\.$"; then
+      fail 'Paper logged an unexpected dungeon runtime or lifecycle error'
     fi
     echo 'Dungeons Paper integration and acceptance passed.'
     exit 0
