@@ -879,13 +879,6 @@ public final class DungeonPlayerSession {
 
     private void queueAccessKeyRefund(@Nullable ItemStack refundedKey) {
         if (refundedKey == null || refundedKey.getType().isAir()) return;
-        if (this.player != null
-                && this.player.isOnline()
-                && this.instance == null
-                && !this.recoveryJournal.hasPendingTransaction()) {
-            ItemUtils.giveOrDrop(this.player, refundedKey);
-            return;
-        }
         this.pendingAccessKeyRefunds.add(refundedKey.clone());
         // Keep the in-memory copy if persistence fails. Expiry retries rather than dropping it.
         this.flushPendingAccessKeyRefund();

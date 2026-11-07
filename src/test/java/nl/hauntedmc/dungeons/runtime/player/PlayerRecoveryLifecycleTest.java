@@ -20,6 +20,30 @@ class PlayerRecoveryLifecycleTest {
     @TempDir Path directory;
 
     @Test
+    void onlineRefundSurvivesPlayerSaveFailureAndReconnectWithoutDuplication() throws Exception {
+        try (var f = new RunFixture(directory, new org.bukkit.configuration.file.YamlConfiguration())) {
+            var state = new PlayerState();
+            state.contents[0] = PlayerState.stack(3);
+            var session = f.session(state);
+            assertTrue(session.reserveAccessKey("crypt", PlayerState.stack(1)));
+            doThrow(new IllegalStateException("native save failed")).when(state.player).saveData();
+            assertTrue(session.refundReservedAccessKey());
+            var file = directory.resolve("players/" + state.player.getUniqueId() + ".recovery.yml");
+            assertTrue(java.nio.file.Files.exists(file));
+            var persisted = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(file.toFile());
+            assertTrue(persisted.contains("delivery"));
+            state.contents[0] = PlayerState.stack(3); // state loaded from the last native save
+            doNothing().when(state.player).saveData();
+            var restarted = new DungeonPlayerSession(f.paper.plugin, state.player);
+            assertTrue(restarted.recoverPendingState());
+            assertEquals(4, state.contents[0].getAmount());
+            assertTrue(restarted.recoverPendingState());
+            assertEquals(4, state.contents[0].getAmount());
+            assertTrue(restarted.getRewardItems().isEmpty());
+        }
+    }
+
+    @Test
     void reconstructedSessionUsesThePersistedBaselineRatherThanDungeonItemsForNormalExit()
             throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration());

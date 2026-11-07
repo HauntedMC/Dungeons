@@ -140,8 +140,10 @@ class TeamJoinContractTest {
                     assertFalse(session.hasReservedAccessKey());
                     assertNull(session.getInstance());
                 }
-                verify(leader.inventory).addItem(any(ItemStack.class));
-                verify(member.inventory).addItem(any(ItemStack.class));
+                assertEquals(1, leader.inventory.getContents()[0].getAmount());
+                assertEquals(1, member.inventory.getContents()[0].getAmount());
+                verify(leader.player).saveData();
+                verify(member.player).saveData();
                 if (!teamRemoved) assertFalse(team.isQueued());
             }
         }

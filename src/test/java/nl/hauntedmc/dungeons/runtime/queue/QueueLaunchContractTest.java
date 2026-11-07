@@ -35,8 +35,6 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
 import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 
 class QueueLaunchContractTest {
     @TempDir Path directory;
@@ -123,9 +121,7 @@ class QueueLaunchContractTest {
             assertFalse(member.isAwaitingDungeon());
             assertFalse(leader.hasReservedAccessKey());
             assertFalse(member.hasReservedAccessKey());
-            var returned = org.mockito.ArgumentCaptor.forClass(ItemStack.class);
-            verify(leaderInventory).addItem(returned.capture());
-            assertEquals(1, returned.getValue().getAmount());
+            assertEquals(2, leaderInventory.getContents()[0].getAmount());
             verify(memberInventory, never()).setItem(anyInt(), any());
             verify(f.catalog, never())
                     .createInstance(anyString(), any(), anyString(), anyInt(), any());
@@ -148,7 +144,7 @@ class QueueLaunchContractTest {
             assertNull(f.queues.getQueue(session));
             assertFalse(session.hasReservedAccessKey());
             assertFalse(session.isAwaitingDungeon());
-            verify(inventory, times(1)).addItem(any(ItemStack.class));
+            assertEquals(2, inventory.getContents()[0].getAmount());
             verify(f.catalog, never())
                     .createInstance(anyString(), any(), anyString(), anyInt(), any());
         }
@@ -175,8 +171,8 @@ class QueueLaunchContractTest {
             assertSame(queue, f.queues.getQueue(leader));
             assertTrue(leader.hasReservedAccessKey());
             assertFalse(member.hasReservedAccessKey());
-            verify(memberInventory, times(1)).addItem(any(ItemStack.class));
-            verify(leaderInventory, never()).addItem(any(ItemStack.class));
+            assertEquals(2, memberInventory.getContents()[0].getAmount());
+            assertEquals(1, leaderInventory.getContents()[0].getAmount());
             verify(f.catalog)
                     .createInstance("crypt", leader.getPlayer(), "hard", 2, team.getLeaderId());
         }
@@ -193,6 +189,7 @@ class QueueLaunchContractTest {
         final DungeonQueueCoordinator coordinator =
                 new DungeonQueueCoordinator(paper.plugin, sessions, capacity, queues, teams);
         final YamlConfiguration settings = new YamlConfiguration();
+        final java.util.Map<Player, nl.hauntedmc.dungeons.support.PlayerState> states = new java.util.IdentityHashMap<>();
 
         Fixture(Path directory) {
             when(paper.plugin.getDataFolder()).thenReturn(directory.toFile());
@@ -207,11 +204,11 @@ class QueueLaunchContractTest {
         }
 
         PlayerInventory giveKey(DungeonPlayerSession session) {
-            var inventory = mock(PlayerInventory.class);
+            var state = states.get(session.getPlayer());
+            var inventory = state.inventory;
             var held = item(2);
             var template = item(1);
-            when(session.getPlayer().getInventory()).thenReturn(inventory);
-            when(inventory.getContents()).thenReturn(new ItemStack[] {held});
+            state.contents[0] = held;
             when(dungeon.getValidKeys()).thenReturn(List.of(template));
             when(dungeon.isValidKey(held)).thenReturn(template);
             when(dungeon.getFirstKeyAmount(session.getPlayer())).thenReturn(1);
@@ -225,26 +222,13 @@ class QueueLaunchContractTest {
         }
 
         static ItemStack item(int amount) {
-            var item = mock(ItemStack.class);
-            var quantity = new AtomicInteger(amount);
-            when(item.getType()).thenReturn(mock(Material.class));
-            when(item.getAmount()).thenAnswer(call -> quantity.get());
-            doAnswer(
-                            call -> {
-                                quantity.set(call.getArgument(0));
-                                return null;
-                            })
-                    .when(item)
-                    .setAmount(anyInt());
-            when(item.clone()).thenAnswer(call -> item(quantity.get()));
-            return item;
+            return nl.hauntedmc.dungeons.support.TaggedItems.stack(mock(Material.class), amount, java.util.Map.of());
         }
 
         DungeonPlayerSession player() {
-            Player player = mock(Player.class);
-            when(player.getUniqueId()).thenReturn(UUID.randomUUID());
-            when(player.isOnline()).thenReturn(true);
-            return sessions.put(player);
+            var state = new nl.hauntedmc.dungeons.support.PlayerState();
+            states.put(state.player, state);
+            return sessions.put(state.player);
         }
 
         @Override
