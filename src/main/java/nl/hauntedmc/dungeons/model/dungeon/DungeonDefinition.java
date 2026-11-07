@@ -965,7 +965,6 @@ public abstract class DungeonDefinition {
                                 () -> {
                                     if (this.editSession != null) {
                                         this.discardInstance(this.editSession);
-                                        this.editSession = null;
                                     }
                                 });
                 this.scheduleEditMessage(playerId, "instance.editor.open-timeout");
@@ -979,7 +978,6 @@ public abstract class DungeonDefinition {
                                 () -> {
                                     if (this.editSession == session) {
                                         this.discardInstance(session);
-                                        this.editSession = null;
                                     }
                                 });
                 this.scheduleEditMessage(playerId, "instance.editor.open-failed");
@@ -1004,7 +1002,6 @@ public abstract class DungeonDefinition {
                             () -> {
                                 if (this.editSession != null) {
                                     this.discardInstance(this.editSession);
-                                    this.editSession = null;
                                 }
                             });
             this.logger()
