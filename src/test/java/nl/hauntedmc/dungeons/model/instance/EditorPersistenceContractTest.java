@@ -329,14 +329,14 @@ class EditorPersistenceContractTest {
                 editor.removePlayer(session, true);
                 editor.onDispose();
                 assertTrue(ticker.cancelled);
-                assertNull(f.dungeon.getEditSession());
+                assertSame(editor, f.dungeon.getEditSession());
                 editor.pending.complete(success);
                 assertFalse(f.dungeon.isSaving());
                 assertTrue(
                         f.scheduler.immediate.isEmpty(),
                         "Completing a save after shutdown must not enqueue player feedback");
                 ticker.run();
-                verify(f.world, times(1)).save(true);
+                verify(f.world, times(2)).save(true);
             }
         }
     }
@@ -390,6 +390,133 @@ class EditorPersistenceContractTest {
             assertEquals(0, latch.getCount());
             assertFalse(f.dungeon.isSaving());
             verify(f.world, never()).save(true);
+        }
+    }
+
+    @Test
+    void closingEditorCommitsLastEditsBeforeUnloadingAndDeletingTheLiveWorld() throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            Path live = Files.createDirectories(directory.resolve("live"));
+            Files.writeString(live.resolve("level.dat"), "last edits");
+            when(f.world.getWorldFolder()).thenReturn(live.toFile());
+            f.paper.bukkit.when(() -> Bukkit.unloadWorld(f.world, false)).thenAnswer(call -> {
+                assertEquals("last edits", Files.readString(f.dungeon.getFolder().toPath().resolve("level.dat")));
+                assertTrue(Files.exists(f.dungeon.getFolder().toPath().resolve("functions.yml")));
+                return true;
+            });
+            var editor = new Editor(f);
+            f.dungeon.setEditSession(editor);
+            editor.dispose();
+            editor.dispose();
+            verify(f.world, times(1)).save(true);
+            assertFalse(Files.exists(live));
+            assertNull(editor.getInstanceWorld());
+            assertNull(f.dungeon.getEditSession());
+        }
+    }
+
+    @Test
+    void failedFinalSaveRetainsWorldFilesSessionAndRegistrations() throws Exception {
+        for (String failure : List.of("flush", "commit", "metadata")) {
+            try (var f = new RunFixture(directory, new YamlConfiguration())) {
+                Path live = Files.createDirectories(directory.resolve("live"));
+                Files.writeString(live.resolve("level.dat"), "recover me");
+                when(f.world.getWorldFolder()).thenReturn(live.toFile());
+                var editor = new Editor(f);
+                f.dungeon.setEditSession(editor);
+                f.dungeon.getInstances().add(editor);
+                if (failure.equals("flush")) doThrow(new IllegalStateException("disk failure")).when(f.world).save(true);
+                if (failure.equals("commit")) editor.throwCommit = true;
+                if (failure.equals("metadata")) editor.pending = CompletableFuture.completedFuture(false);
+                editor.dispose();
+                assertEquals("recover me", Files.readString(live.resolve("level.dat")));
+                assertSame(f.world, editor.getInstanceWorld());
+                assertSame(editor, f.dungeon.getEditSession());
+                assertTrue(f.dungeon.getInstances().contains(editor));
+                f.paper.bukkit.verify(() -> Bukkit.unloadWorld(f.world, false), never());
+            }
+        }
+    }
+
+    @Test
+    void closingWaitsForEarlierSaveThenTakesAFreshSnapshotBeforeUnload() throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            Path live = Files.createDirectories(directory.resolve("live"));
+            when(f.world.getWorldFolder()).thenReturn(live.toFile());
+            when(f.paper.plugin.isEnabled()).thenReturn(true);
+            var editor = new Editor(f);
+            var earlier = new CompletableFuture<Boolean>();
+            editor.pending = earlier;
+            editor.saveWorldAsync();
+            editor.dispose();
+            verify(f.world, times(1)).save(true);
+            f.paper.bukkit.verify(() -> Bukkit.unloadWorld(f.world, false), never());
+            var last = new CompletableFuture<Boolean>();
+            editor.pending = last;
+            earlier.complete(true);
+            verify(f.world, times(2)).save(true);
+            f.paper.bukkit.verify(() -> Bukkit.unloadWorld(f.world, false), never());
+            f.paper.bukkit.when(() -> Bukkit.unloadWorld(f.world, false)).thenReturn(true);
+            last.complete(true);
+            f.scheduler.asynchronous.getLast().run();
+            assertFalse(Files.exists(live));
+            assertNull(editor.getInstanceWorld());
+        }
+    }
+
+    @Test
+    void shutdownWithPendingSaveFlushesRecoveryWorldWithoutWaitingOrDeleting() throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            Path live = Files.createDirectories(directory.resolve("live"));
+            when(f.world.getWorldFolder()).thenReturn(live.toFile());
+            var editor = new Editor(f);
+            editor.pending = new CompletableFuture<>();
+            editor.saveWorldAsync();
+            editor.dispose();
+            verify(f.world, times(2)).save(true);
+            assertTrue(Files.exists(live));
+            f.paper.bukkit.verify(() -> Bukkit.unloadWorld(f.world, false), never());
+        }
+    }
+
+    @Test
+    void metadataCompletionReturnsToServerThreadBeforeFinalUnload() throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            Path live = Files.createDirectories(directory.resolve("live"));
+            when(f.world.getWorldFolder()).thenReturn(live.toFile());
+            when(f.paper.plugin.isEnabled()).thenReturn(true);
+            var editor = new Editor(f);
+            editor.dispose();
+            f.paper.bukkit.verify(() -> Bukkit.unloadWorld(f.world, false), never());
+            f.paper.bukkit.when(Bukkit::isPrimaryThread).thenReturn(false);
+            f.scheduler.asynchronous.getFirst().run();
+            f.paper.bukkit.verify(() -> Bukkit.unloadWorld(f.world, false), never());
+            assertFalse(f.scheduler.immediate.isEmpty());
+            f.paper.bukkit.when(Bukkit::isPrimaryThread).thenReturn(true);
+            f.paper.bukkit.when(() -> Bukkit.unloadWorld(f.world, false)).thenReturn(true);
+            f.scheduler.immediate.getFirst().run();
+            f.paper.bukkit.verify(() -> Bukkit.unloadWorld(f.world, false), times(1));
+            f.scheduler.asynchronous.getLast().run();
+            assertFalse(Files.exists(live));
+        }
+    }
+
+    @Test
+    void rejectedMetadataSchedulingRetainsTheWorldAndCompletesTheSave() throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            Path live = Files.createDirectories(directory.resolve("live"));
+            when(f.world.getWorldFolder()).thenReturn(live.toFile());
+            when(f.paper.plugin.isEnabled()).thenReturn(true);
+            doThrow(new IllegalStateException("scheduler stopped"))
+                    .when(f.scheduler.scheduler)
+                    .runTaskAsynchronously(any(org.bukkit.plugin.Plugin.class), any(Runnable.class));
+            var editor = new Editor(f);
+            var result = editor.saveWorldAsync();
+            assertFalse(result.get(1, TimeUnit.SECONDS));
+            assertFalse(f.dungeon.isSaving());
+            editor.dispose();
+            assertTrue(Files.exists(live));
+            f.paper.bukkit.verify(() -> Bukkit.unloadWorld(f.world, false), never());
         }
     }
 

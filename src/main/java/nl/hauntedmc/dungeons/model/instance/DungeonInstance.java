@@ -393,6 +393,7 @@ public abstract class DungeonInstance {
             } finally {
                 this.cleanupPendingWorldFolder();
                 this.dungeon.removeInstance(this);
+                this.onDisposalComplete();
                 this.signalInitializationComplete();
                 Bukkit.getPluginManager().callEvent(new DungeonDisposeEvent(this));
             }
@@ -421,57 +422,11 @@ public abstract class DungeonInstance {
                                                     exception);
                                 }
 
-                                this.functions.clear();
-                                this.rewardFunctions.clear();
-                                this.listener = null;
-                                this.clearHolograms();
-                                this.hologramManager = null;
-                                Runnable unload =
-                                        () -> {
-                                            try {
-                                                CountDownLatch latch = new CountDownLatch(1);
-                                                File worldFolder =
-                                                        this.instanceWorld.getWorldFolder();
-                                                String worldName = this.instanceWorld.getName();
-                                                this.saveWorld(latch);
-                                                if (!this.unloadInstanceWorld()) {
-                                                    return;
-                                                }
-                                                if (this.plugin().isEnabled()) {
-                                                    Bukkit.getScheduler()
-                                                            .runTaskLaterAsynchronously(
-                                                                    this.plugin(),
-                                                                    () ->
-                                                                            this.cleanWorldFiles(
-                                                                                    latch,
-                                                                                    worldFolder,
-                                                                                    worldName),
-                                                                    100L);
-                                                } else {
-                                                    this.cleanWorldFiles(
-                                                            latch, worldFolder, worldName);
-                                                }
-                                            } catch (Exception exception) {
-                                                if (Bukkit.getWorld(this.instanceWorld.getName())
-                                                        == null) {
-                                                    return;
-                                                }
-
-                                                this.logger()
-                                                        .error(
-                                                                "Failed to unload instance world '{}' for dungeon '{}'. The world is still loaded after disposal.",
-                                                                this.instanceWorld.getName(),
-                                                                this.dungeon.getWorldName(),
-                                                                exception);
-                                            }
-                                        };
-                                if (this.plugin().isEnabled()) {
-                                    Bukkit.getScheduler().runTaskLater(this.plugin(), unload, 1L);
-                                } else {
-                                    unload.run();
+                                try {
+                                    this.prepareDisposal().whenComplete(this::finishDisposal);
+                                } catch (RuntimeException exception) {
+                                    this.logger().error("Unable to prepare disposal; retaining instance files.", exception);
                                 }
-                                this.dungeon.removeInstance(this);
-                                Bukkit.getPluginManager().callEvent(new DungeonDisposeEvent(this));
                             };
                     int delay = this.resolveCleanupDelayTicks();
                     if (this.plugin().isEnabled() && delay > 0 && !this.isEditInstance()) {
@@ -484,6 +439,56 @@ public abstract class DungeonInstance {
         }
     }
 
+    private void finishDisposal(Boolean saved, Throwable failure) {
+        if (failure != null || !Boolean.TRUE.equals(saved)) {
+            this.logger().error(
+                    "Final save failed for dungeon '{}'; retaining loaded world and recoverable files at '{}'.",
+                    this.dungeon.getWorldName(), this.instanceWorld.getWorldFolder(), failure);
+            return;
+        }
+        Runnable finish = () -> {
+            this.clearHolograms();
+            File folder = this.instanceWorld.getWorldFolder();
+            String name = this.instanceWorld.getName();
+            if (!this.unloadInstanceWorld()) return;
+            this.functions.clear();
+            this.rewardFunctions.clear();
+            this.listener = null;
+            this.hologramManager = null;
+            this.dungeon.removeInstance(this);
+            this.onDisposalComplete();
+            if (this.plugin().isEnabled()) {
+                try {
+                    Bukkit.getScheduler().runTaskLaterAsynchronously(
+                            this.plugin(), () -> this.cleanWorldFiles(new CountDownLatch(0), folder, name), 100L);
+                } catch (RuntimeException exception) {
+                    this.logger().error("Unable to schedule cleanup; retaining unloaded instance files at '{}'.", folder, exception);
+                }
+            } else {
+                this.cleanWorldFiles(new CountDownLatch(0), folder, name);
+            }
+            Bukkit.getPluginManager().callEvent(new DungeonDisposeEvent(this));
+        };
+        if (this.plugin().isEnabled() && !Bukkit.isPrimaryThread()) {
+            try {
+                Bukkit.getScheduler().runTask(this.plugin(), finish);
+            } catch (RuntimeException exception) {
+                this.logger().error("Unable to finish disposal; retaining instance files.", exception);
+            }
+        } else if (Bukkit.isPrimaryThread() || !this.isEditInstance()) {
+            finish.run();
+        } else {
+            this.logger().error("Disposal completed off-thread after shutdown; retaining instance files.");
+        }
+    }
+
+    /** Persistence must succeed before runtime state or world files are released. */
+    protected java.util.concurrent.CompletableFuture<Boolean> prepareDisposal() {
+        return java.util.concurrent.CompletableFuture.completedFuture(true);
+    }
+
+    protected void onDisposalComplete() {}
+
     public abstract void onDispose();
 
     protected int resolveCleanupDelayTicks() {
@@ -492,10 +497,6 @@ public abstract class DungeonInstance {
 
     protected void cleanWorldFiles(CountDownLatch latch, File worldFolder, String worldName) {
         try {
-            if (this.isEditInstance()) {
-                latch.await();
-            }
-
             for (var path :
                     java.util.stream.Stream.of(
                                     worldFolder,
@@ -507,13 +508,6 @@ public abstract class DungeonInstance {
                 FileUtils.deleteDirectory(path.toFile());
             }
             this.pendingFolderOwned = false;
-        } catch (InterruptedException exception) {
-            Thread.currentThread().interrupt();
-            this.logger()
-                    .error(
-                            "Interrupted while waiting to clean files for instance world '{}'.",
-                            worldName,
-                            exception);
         } catch (IOException exception) {
             this.logger()
                     .warn(

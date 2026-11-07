@@ -42,6 +42,8 @@ import java.util.concurrent.CountDownLatch;
  * edits back into the source dungeon folder.</p>
  */
 public class EditableInstance extends DungeonInstance {
+    private CompletableFuture<Boolean> activeSave;
+
     protected BukkitRunnable autosaveTicker;
     protected BukkitRunnable functionParticles;
     protected BukkitRunnable roomPreviewTicker;
@@ -149,7 +151,11 @@ public class EditableInstance extends DungeonInstance {
             this.roomPreviewTicker.cancel();
         }
         this.roomPreviewTicker = null;
-        this.dungeon.setEditSession(null);
+    }
+
+    @Override
+    protected void onDisposalComplete() {
+        if (this.dungeon.getEditSession() == this) this.dungeon.setEditSession(null);
     }
 
     /**
@@ -232,11 +238,31 @@ public class EditableInstance extends DungeonInstance {
      * Saves the editor world and metadata asynchronously.
      */
     public CompletableFuture<Boolean> saveWorldAsync(@Nullable CountDownLatch latch) {
+        return this.startSave(latch, false);
+    }
+
+    @Override
+    protected CompletableFuture<Boolean> prepareDisposal() {
+        // A previous save may represent an older snapshot. Always flush once more after it.
+        if (this.activeSave != null && !this.activeSave.isDone()) {
+            if (!this.plugin().isEnabled()) {
+                // Paper may cancel queued persistence tasks during disable. Do not wait for
+                // them on the server thread, and flush the latest blocks for recovery.
+                this.instanceWorld.save(true);
+                return CompletableFuture.completedFuture(false);
+            }
+            return this.activeSave.handle((success, failure) -> true)
+                    .thenCompose(ignored -> this.startSave(null, true));
+        }
+        return this.startSave(null, true);
+    }
+
+    private CompletableFuture<Boolean> startSave(@Nullable CountDownLatch latch, boolean finalSave) {
         CompletableFuture<Boolean> result = new CompletableFuture<>();
         Runnable saveTask =
                 () -> {
                     World world = this.instanceWorld;
-                    if (this.disposing || world == null) {
+                    if ((!finalSave && this.disposing) || world == null) {
                         if (latch != null) {
                             latch.countDown();
                         }
@@ -252,6 +278,7 @@ public class EditableInstance extends DungeonInstance {
                         return;
                     }
 
+                    this.activeSave = result;
                     this.dungeon.setSaving(true);
 
                     try {
@@ -259,20 +286,20 @@ public class EditableInstance extends DungeonInstance {
                             this.hologramManager.captureAndClearHolograms();
                         }
 
-                        TextUtils.runTimed(
-                                "Saving of " + this.dungeon.getWorldName(),
-                                () -> {
-                                    // Paper writes chunk data asynchronously by default; wait for
-                                    // the writer so the
-                                    // folder copy is consistent.
-                                    world.save(true);
-                                    this.beforeCommitWorldSave(world);
-                                });
-                    } catch (Throwable throwable) {
-                        if (this.hologramManager != null) {
-                            this.hologramManager.restoreCapturedHolograms();
+                        try {
+                            TextUtils.runTimed(
+                                    "Saving of " + this.dungeon.getWorldName(),
+                                    () -> {
+                                        // Flush Paper's chunk writer before copying the world.
+                                        world.save(true);
+                                        this.beforeCommitWorldSave(world);
+                                    });
+                        } finally {
+                            if (this.hologramManager != null) {
+                                this.hologramManager.restoreCapturedHolograms();
+                            }
                         }
-
+                    } catch (Throwable throwable) {
                         this.finishSave(latch, result, false);
                         this.logger()
                                 .error(
@@ -281,10 +308,6 @@ public class EditableInstance extends DungeonInstance {
                                         this.dungeon.getWorldName(),
                                         throwable);
                         return;
-                    }
-
-                    if (this.hologramManager != null) {
-                        this.hologramManager.restoreCapturedHolograms();
                     }
 
                     CompletableFuture<Boolean> commit;
@@ -315,7 +338,10 @@ public class EditableInstance extends DungeonInstance {
                             });
                 };
 
-        if (this.plugin().isEnabled() && !Bukkit.isPrimaryThread()) {
+        if (!this.plugin().isEnabled() && !Bukkit.isPrimaryThread()) {
+            if (latch != null) latch.countDown();
+            result.complete(false);
+        } else if (!Bukkit.isPrimaryThread()) {
             try {
                 Bukkit.getScheduler().runTask(this.plugin(), saveTask);
             } catch (RuntimeException exception) {
@@ -365,8 +391,25 @@ public class EditableInstance extends DungeonInstance {
                                 return CompletableFuture.completedFuture(false);
                             }
 
-                            return this.onCommitWorldAsync(world);
+                            return this.finishWorldCommitOnMainThread(world);
                         });
+    }
+
+    private CompletableFuture<Boolean> finishWorldCommitOnMainThread(World world) {
+        if (Bukkit.isPrimaryThread()) return this.onCommitWorldAsync(world);
+        if (!this.plugin().isEnabled()) return CompletableFuture.completedFuture(false);
+        CompletableFuture<Boolean> result = new CompletableFuture<>();
+        Bukkit.getScheduler().runTask(this.plugin(), () -> {
+            try {
+                this.onCommitWorldAsync(world).whenComplete((success, failure) -> {
+                    if (failure != null) result.completeExceptionally(failure);
+                    else result.complete(success);
+                });
+            } catch (Throwable failure) {
+                result.completeExceptionally(failure);
+            }
+        });
+        return result;
     }
 
     /**
