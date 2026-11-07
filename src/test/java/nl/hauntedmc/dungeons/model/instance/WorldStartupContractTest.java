@@ -19,6 +19,25 @@ class WorldStartupContractTest {
     @TempDir Path directory;
 
     @Test
+    void restartPreservesBothFoldersOfAnUncommittedEditorButCleansOrdinaryRuns()
+            throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var legacy = Files.createDirectories(directory.resolve("crypt_7"));
+            var modern = Files.createDirectories(directory.resolve("world/dimensions/minecraft/crypt_7"));
+            var stale = Files.createDirectories(directory.resolve("crypt_8"));
+            Files.writeString(legacy.resolve(".dungeons-editor-recovery"), "recover");
+            Files.writeString(modern.resolve("edits"), "last edits");
+            f.paper.dungeon(directory.resolve("crypt"), new YamlConfiguration());
+            assertTrue(Files.exists(legacy));
+            assertEquals("last edits", Files.readString(modern.resolve("edits")));
+            assertFalse(Files.exists(stale));
+            var editor = new EditableInstance(f.dungeon, new java.util.concurrent.CountDownLatch(1));
+            var reserved = editor.reserveWorldFolder(false).toPath();
+            assertTrue(Files.exists(reserved.resolve(".dungeons-editor-recovery")));
+        }
+    }
+
+    @Test
     void startupCleansRetiredFoldersButPreservesMalformedLookalikesAndLoadedWorlds()
             throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
@@ -31,6 +50,7 @@ class WorldStartupContractTest {
                     Files.createDirectories(
                             directory.resolve("crypt_5.disposed-" + java.util.UUID.randomUUID()));
             Files.writeString(retired.resolve("level.dat"), "retired");
+            Files.writeString(retired.resolve(".dungeons-editor-recovery"), "committed editor");
             Files.writeString(malformed.resolve("keep"), "unrelated");
             Files.writeString(live.resolve("keep"), "loaded");
             var loaded = mock(World.class);

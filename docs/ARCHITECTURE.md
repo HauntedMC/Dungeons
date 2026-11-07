@@ -114,3 +114,12 @@ The command refactor is incremental. `DungeonCommand` retains Bukkit registratio
 The regression baseline was run before these extractions: command routing and permission checks, room write failures/dirty revisions, immutable ordered configuration snapshots, editor final saves and shutdown draining, preparation timeout cancellation and retryable unload failures. Additional tests cover protected progression records, atomic save retry, editor leases across navigation/reload/quit and window retirement. Run `./mvnw -Pplatform-acceptance verify` for the complete unit, contract, style and native Paper acceptance checks.
 
 Further extractions can use the same boundaries: move the remaining root command branches one at a time, separate the access-key ledger from dungeon definitions, and split `EditorMenus` by editor workflow. Preserve public gameplay entry points and failure-boundary tests while migrating those slices; moving every method at once would obscure lifecycle changes during review.
+
+## Retained Editor Recovery Files
+
+Editor world reservations contain `.dungeons-editor-recovery` before they can accept edits.
+If a final save fails or the process exits unexpectedly, startup cleanup preserves that world
+and its companion legacy/dimension folder. These files require manual recovery: back them up
+before copying recovered world data into a template. Normal successful disposal removes them;
+retired `.disposed-<uuid>` folders have already passed final persistence and remain eligible
+for startup deletion. Recovery markers never enter templates through the editor save path.

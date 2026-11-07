@@ -770,6 +770,7 @@ public abstract class DungeonDefinition {
             for (File world : worlds) {
                 if (world.isDirectory()
                         && this.isOwnedInstanceWorldFolder(world)
+                        && !this.hasEditorRecovery(world.getName())
                         && Bukkit.getWorlds().stream()
                                 .noneMatch(
                                         loaded ->
@@ -787,6 +788,21 @@ public abstract class DungeonDefinition {
                 }
             }
         }
+    }
+
+    private boolean hasEditorRecovery(String worldName) {
+        // Retired folders were detached only after a successful final save and unload.
+        if (worldName.contains(".disposed-")) return false;
+        return java.util.stream.Stream.of(
+                        new File(Bukkit.getWorldContainer(), worldName),
+                        nl.hauntedmc.dungeons.util.world.WorldUtils.dimensionFolder(worldName))
+                .anyMatch(
+                        folder ->
+                                new File(
+                                                folder,
+                                                nl.hauntedmc.dungeons.util.world.WorldUtils
+                                                        .EDITOR_RECOVERY_MARKER)
+                                        .exists());
     }
 
     private boolean isOwnedInstanceWorldFolder(File worldFolder) {

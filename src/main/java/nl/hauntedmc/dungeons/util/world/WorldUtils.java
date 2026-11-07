@@ -15,6 +15,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /** World-level helpers for dungeon runtime world tuning. */
 public final class WorldUtils {
+    /** Present throughout an editor lifetime so restart cleanup cannot erase unsaved edits. */
+    public static final String EDITOR_RECOVERY_MARKER = ".dungeons-editor-recovery";
+
     private WorldUtils() {}
 
     /** Resolves the storage used by Paper 26.1+ for a legacy-named custom world. */

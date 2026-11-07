@@ -232,6 +232,11 @@ public abstract class DungeonInstance {
                     java.nio.file.Files.createDirectories(destination.toPath().getParent());
                     try {
                         java.nio.file.Files.createDirectory(destination.toPath());
+                        if (this.isEditInstance()) {
+                            Files.writeString(
+                                    destination.toPath().resolve(WorldUtils.EDITOR_RECOVERY_MARKER),
+                                    "Uncommitted editor world; preserve for manual recovery.\n");
+                        }
                         this.instanceWorldName = name;
                         this.pendingFolderOwned = true;
                         return destination;
