@@ -202,6 +202,37 @@ class LootRepositoryContractTest {
         }
     }
 
+    @Test
+    void replacementNotificationsFollowCommitAndObserverFailureCannotFalsifySuccess()
+            throws Exception {
+        try (var f = new Fixture(directory, null)) {
+            var accepted = new java.util.concurrent.atomic.AtomicInteger();
+            Runnable unsubscribe =
+                    f.repository.onTableReplacement(
+                            () -> {
+                                assertNotNull(f.repository.get("first"));
+                                assertDoesNotThrow(
+                                        () ->
+                                                assertTrue(
+                                                        Files.readString(f.file)
+                                                                .contains("first")));
+                                throw new IllegalStateException("broken observer");
+                            });
+            f.repository.onTableReplacement(accepted::incrementAndGet);
+            assertTrue(f.repository.put(new LootTable("first")));
+            assertEquals(1, accepted.get());
+            assertTrue(f.repository.saveTablesConfig());
+            assertEquals(1, accepted.get(), "Saving unchanged models does not invalidate menus");
+            Files.writeString(f.file, "Tables: [broken");
+            assertFalse(f.repository.reload());
+            assertEquals(1, accepted.get(), "Failed reloads retain the current editor generation");
+            unsubscribe.run();
+            Files.writeString(f.file, "Tables: {}\n");
+            assertTrue(f.repository.reload());
+            assertEquals(2, accepted.get());
+        }
+    }
+
     @org.bukkit.configuration.serialization.SerializableAs("dungeons.reward.loot_table")
     static final class CountingTable extends LootTable {
         final AtomicInteger count = new AtomicInteger();
@@ -227,14 +258,20 @@ class LootRepositoryContractTest {
             var old = new LootTable("boss.cache");
             assertTrue(f.repository.put(old));
             assertEquals(0, f.menus.windows().size());
-            old.initializeMenu();
+            var editor =
+                    new nl.hauntedmc.dungeons.gui.loot.LootTableEditor(
+                            f.repository,
+                            org.mockito.Mockito.mock(
+                                    nl.hauntedmc.dungeons.gui.framework.GuiService.class));
+            editor.initialize(old);
             assertEquals(1, f.menus.windows().size());
             assertTrue(f.repository.reload());
             var current = f.repository.get("boss.cache");
             assertNotNull(current);
             assertNotSame(old, current);
             assertEquals(
-                    1, f.menus.windows().size(), "Reloading must not replace live GUI windows");
+                    1, f.menus.windows().size(), "Reloading must not construct new GUI windows");
+            org.mockito.Mockito.verify(f.menus.windows().getFirst()).unregister();
             String good = Files.readString(f.file);
             assertFalse(f.repository.saveTablesConfig(old));
             assertEquals(good, Files.readString(f.file));

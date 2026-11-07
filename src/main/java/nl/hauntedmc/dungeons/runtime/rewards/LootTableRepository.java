@@ -22,6 +22,7 @@ public final class LootTableRepository {
     private final File file;
     private volatile State state;
     private volatile boolean writable;
+    private final java.util.List<Runnable> replacementListeners = new java.util.ArrayList<>();
 
     private record State(Map<String, LootTable> tables, String document) {}
 
@@ -64,8 +65,8 @@ public final class LootTableRepository {
             }
             State loaded =
                     new State(Collections.unmodifiableMap(replacement), candidate.saveToString());
-            this.state = loaded;
             this.writable = true;
+            publish(loaded);
             return true;
         } catch (IOException | InvalidConfigurationException | RuntimeException failure) {
             this.writable = false;
@@ -132,6 +133,39 @@ public final class LootTableRepository {
         return this.saveTablesConfig();
     }
 
+    /** Subscribes to successful membership/model replacements; returns an unsubscribe action. */
+    public Runnable onTableReplacement(Runnable listener) {
+        requireOwnerThread();
+        java.util.Objects.requireNonNull(listener);
+        this.replacementListeners.add(listener);
+        return () -> {
+            requireOwnerThread();
+            this.replacementListeners.remove(listener);
+        };
+    }
+
+    private void publish(State replacement) {
+        State previous = this.state;
+        this.state = replacement;
+        if (previous != null
+                && previous.tables().size() == replacement.tables().size()
+                && previous.tables().entrySet().stream()
+                        .allMatch(
+                                entry ->
+                                        replacement.tables().get(entry.getKey())
+                                                == entry.getValue())) return;
+        for (Runnable listener : List.copyOf(this.replacementListeners)) {
+            try {
+                listener.run();
+            } catch (RuntimeException failure) {
+                // The write has already committed; an observer must not falsify its outcome.
+                this.plugin
+                        .getSLF4JLogger()
+                        .error("Loot table replacement observer failed", failure);
+            }
+        }
+    }
+
     private boolean persist(Map<String, LootTable> replacement) {
         try {
             for (var entry : replacement.entrySet()) validate(entry.getKey(), entry.getValue());
@@ -146,7 +180,7 @@ public final class LootTableRepository {
                             Collections.unmodifiableMap(new LinkedHashMap<>(replacement)),
                             document);
             ConfigurationFile.saveSnapshot(this.plugin, this.file, document);
-            this.state = saved;
+            publish(saved);
             return true;
         } catch (InvalidConfigurationException | RuntimeException failure) {
             this.plugin

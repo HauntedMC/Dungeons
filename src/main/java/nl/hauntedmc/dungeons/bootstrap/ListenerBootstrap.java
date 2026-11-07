@@ -41,5 +41,6 @@ final class ListenerBootstrap {
                         new HotbarMenuListener(plugin, this.runtime.playerSessions()), plugin);
         Bukkit.getPluginManager().registerEvents(this.runtime.queueRegistry(), plugin);
         Bukkit.getPluginManager().registerEvents(this.runtime.teamService(), plugin);
+        Bukkit.getPluginManager().registerEvents(this.runtime.lootTableEditor(), plugin);
     }
 }

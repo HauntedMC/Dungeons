@@ -138,6 +138,7 @@ public class GuiWindow implements Listener {
 
     /** Unregisters this window listener from Bukkit. */
     public final void unregister() {
+        GuiWindowRegistry.unregister(this);
         HandlerList.unregisterAll(this);
         this.inventories.clear();
         this.closing.clear();

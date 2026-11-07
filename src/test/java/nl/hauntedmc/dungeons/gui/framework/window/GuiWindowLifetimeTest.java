@@ -76,6 +76,20 @@ class GuiWindowLifetimeTest {
             window.open(player);
             window.unregister();
             assertNull(window.getInventoryFor(player));
+            assertNull(GuiWindowRegistry.getWindow("reentrant"));
+        }
+    }
+
+    @Test
+    void unregisteringAnOldWindowCannotRemoveItsReplacement() throws Exception {
+        try (var windows = new StaticMapSnapshot(GuiWindowRegistry.class, "windows");
+                var paper = new PaperBoundary()) {
+            var old = new GuiWindow("same", 9, "Old");
+            var replacement = new GuiWindow("same", 9, "Replacement");
+            old.unregister();
+            assertSame(replacement, GuiWindowRegistry.getWindow("same"));
+            replacement.unregister();
+            assertNull(GuiWindowRegistry.getWindow("same"));
         }
     }
 }

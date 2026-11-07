@@ -157,7 +157,32 @@ final class NativePlayerRecovery {
         Object grace = test.runtime().config().get("sessions.offline_retention_seconds");
         test.runtime().config().set("sessions.offline_retention_seconds", 1);
         registry.disconnected(player);
+        long disconnectedAt = System.nanoTime();
         return test.afterTicks(25)
+                .thenCompose(
+                        ignored -> {
+                            registry.expireOfflineSessions();
+                            if (!first.isExpired()) {
+                                test.getLogger()
+                                        .info(
+                                                "Session expiry pending after 25 ticks; elapsed="
+                                                        + java.util.concurrent.TimeUnit.NANOSECONDS
+                                                                .toMillis(
+                                                                        System.nanoTime()
+                                                                                - disconnectedAt)
+                                                        + "ms");
+                            }
+                            // The retention policy uses monotonic time. Catch-up ticks during
+                            // startup
+                            // can execute faster than wall time, so a fixed tick delay is not a
+                            // deadline.
+                            return test.await(
+                                    "offline session expiry",
+                                    () -> {
+                                        registry.expireOfflineSessions();
+                                        return first.isExpired() && registry.get(id) == null;
+                                    });
+                        })
                 .thenRun(
                         () -> {
                             try {
@@ -220,7 +245,7 @@ final class NativePlayerRecovery {
                                                         .sum()
                                                 == 2,
                                         "Offline key refund was lost or duplicated during"
-                                            + " expiry/recovery");
+                                                + " expiry/recovery");
                             } finally {
                                 test.runtime()
                                         .config()

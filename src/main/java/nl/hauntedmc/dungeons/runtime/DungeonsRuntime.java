@@ -1,8 +1,7 @@
 package nl.hauntedmc.dungeons.runtime;
 
-import java.io.File;
-import java.util.Objects;
 import nl.hauntedmc.dungeons.gui.framework.GuiService;
+import nl.hauntedmc.dungeons.gui.loot.LootTableEditor;
 import nl.hauntedmc.dungeons.listener.EventRelayListener;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.registry.ConditionRegistry;
@@ -16,8 +15,12 @@ import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueCoordinator;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry;
 import nl.hauntedmc.dungeons.runtime.rewards.LootTableRepository;
 import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
+
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
+
+import java.io.File;
+import java.util.Objects;
 
 /**
  * Mutable runtime state assembled by bootstrap and then shared across the application.
@@ -49,6 +52,7 @@ public final class DungeonsRuntime {
     private DungeonQueueRegistry queueRegistry;
     private DungeonTeamService teamService;
     private LootTableRepository lootTableRepository;
+    private LootTableEditor lootTableEditor;
 
     /** Creates runtime state for one plugin lifecycle. */
     public DungeonsRuntime(DungeonsPlugin plugin) {
@@ -228,6 +232,14 @@ public final class DungeonsRuntime {
     /** Bootstrap-only mutator for the team domain service. */
     public void setTeamService(DungeonTeamService teamService) {
         this.teamService = teamService;
+    }
+
+    public LootTableEditor lootTableEditor() {
+        return this.lootTableEditor;
+    }
+
+    public void setLootTableEditor(LootTableEditor editor) {
+        this.lootTableEditor = editor;
     }
 
     /** Returns the loot-table repository. */

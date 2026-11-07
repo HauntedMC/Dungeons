@@ -1,10 +1,7 @@
 package nl.hauntedmc.dungeons.bootstrap;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import nl.hauntedmc.dungeons.gui.framework.GuiService;
+import nl.hauntedmc.dungeons.gui.loot.LootTableEditor;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.registry.ConditionRegistry;
 import nl.hauntedmc.dungeons.registry.FunctionRegistry;
@@ -21,11 +18,17 @@ import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
 import nl.hauntedmc.dungeons.util.config.ConfigSyncUtils;
 import nl.hauntedmc.dungeons.util.config.PluginConfigView;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 
 /**
  * Initializes the concrete runtime state that is required before the plugin can register Bukkit
@@ -91,6 +94,8 @@ final class CoreBootstrap {
                         plugin, activeInstanceManager, this.runtime.elementEventHandler()));
         this.runtime.setConditionRegistry(new ConditionRegistry(plugin));
         this.runtime.setLootTableRepository(new LootTableRepository(plugin));
+        this.runtime.setLootTableEditor(
+                new LootTableEditor(this.runtime.lootTableRepository(), this.runtime.guiService()));
     }
 
     /**

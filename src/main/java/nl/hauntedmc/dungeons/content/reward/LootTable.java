@@ -1,24 +1,12 @@
 package nl.hauntedmc.dungeons.content.reward;
 
 import nl.hauntedmc.dungeons.annotation.TypeKey;
-import nl.hauntedmc.dungeons.gui.framework.buttons.Button;
-import nl.hauntedmc.dungeons.gui.framework.window.GuiInventory;
-import nl.hauntedmc.dungeons.gui.framework.window.GuiWindow;
-import nl.hauntedmc.dungeons.runtime.RuntimeContext;
-import nl.hauntedmc.dungeons.util.item.ItemUtils;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.math.MathUtils;
 import nl.hauntedmc.dungeons.util.math.RandomCollection;
-import nl.hauntedmc.dungeons.util.text.ColorUtils;
-import nl.hauntedmc.dungeons.util.text.ComponentUtils;
 
-import org.bukkit.Material;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.SerializableAs;
-import org.bukkit.entity.Player;
-import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -26,12 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Weighted loot table with an in-game editor UI.
- *
- * <p>A loot table chooses a randomized subset of configured {@link LootTableItem} entries and also
- * owns the GUI used to edit those entries from inside the plugin.
- */
+/** Validated, serializable weighted loot data. Editor ownership and rendering live in gui.loot. */
 @TypeKey(id = "dungeons.reward.loot_table")
 @SerializableAs("dungeons.reward.loot_table")
 public class LootTable implements ConfigurationSerializable {
@@ -40,9 +23,6 @@ public class LootTable implements ConfigurationSerializable {
     private int maxItems = 3;
     private boolean allowDuplicates = true;
     private final Map<Integer, LootTableItem> lootItems;
-    private Player editor;
-    private ItemStack openSlotItem;
-    private GuiWindow tableMenu;
 
     /**
      * Creates a new LootTable instance.
@@ -100,8 +80,7 @@ public class LootTable implements ConfigurationSerializable {
         }
 
         if (randomizer.isEmpty()) {
-            RuntimeContext.plugin()
-                    .getSLF4JLogger()
+            org.slf4j.LoggerFactory.getLogger(LootTable.class)
                     .warn(
                             "Loot table '{}' has no valid weighted items to randomize.",
                             this.namespace);
@@ -136,305 +115,6 @@ public class LootTable implements ConfigurationSerializable {
         }
 
         return items;
-    }
-
-    /**
-     * Initializes open slot item.
-     */
-    private void initializeOpenSlotItem() {
-        this.openSlotItem = new ItemStack(Material.LIGHT_GRAY_STAINED_GLASS_PANE);
-        ItemMeta meta = this.openSlotItem.getItemMeta();
-
-        assert meta != null;
-
-        meta.displayName(
-                ComponentUtils.component(LangUtils.getMessage("menus.common.empty-slot", false)));
-        this.openSlotItem.setItemMeta(meta);
-    }
-
-    /**
-     * Initializes menu.
-     */
-    public void initializeMenu() {
-        this.initializeOpenSlotItem();
-        this.tableMenu = new GuiWindow("loottable_" + this.namespace, 54, "&8Edit Loot");
-        this.tableMenu.setCancelClick(false);
-        this.tableMenu.addCloseAction(
-                "save",
-                event -> {
-                    try {
-                        if (!RuntimeContext.lootTableRepository().saveTablesConfig(this)) {
-                            LangUtils.sendMessage(
-                                    (Player) event.getPlayer(), "commands.loot.save-failed");
-                        }
-                    } finally {
-                        this.setEditor(null);
-                    }
-                });
-        this.tableMenu.addOpenAction(
-                "load",
-                event -> {
-                    Player player = (Player) event.getPlayer();
-
-                    for (int slotIndex = 9; slotIndex < 54; slotIndex++) {
-                        LootTableItem lootItem = this.lootItems.get(slotIndex);
-                        Button button = this.getLiveButton(player, slotIndex);
-                        if (button == null) {
-                            continue;
-                        }
-
-                        button.clearLore();
-                        if (lootItem != null) {
-                            button.clearLore();
-                            button.addLore(
-                                    ColorUtils.colorize(
-                                            "&6"
-                                                    + lootItem.getMinItems()
-                                                    + "-"
-                                                    + lootItem.getMaxItems()
-                                                    + " &eitems"));
-                            button.addLore(
-                                    ColorUtils.colorize("&eWeight of &6" + lootItem.getWeight()));
-                            button.addLore(ColorUtils.colorize(""));
-                            button.addLore(ColorUtils.colorize("&8Click to edit."));
-                            button.addLore(ColorUtils.colorize("&8Shift-Click to remove."));
-                        }
-                    }
-
-                    this.tableMenu.updateButtons(player);
-                });
-        ItemStack blockedSlot = ItemUtils.getBlockedMenuItem();
-        this.tableMenu.addButton(0, new Button("blocked_0", blockedSlot));
-        this.tableMenu.addButton(1, new Button("blocked_1", blockedSlot));
-        this.tableMenu.addButton(2, new Button("blocked_2", blockedSlot));
-        this.tableMenu.addButton(6, new Button("blocked_6", blockedSlot));
-        this.tableMenu.addButton(7, new Button("blocked_7", blockedSlot));
-        this.tableMenu.addButton(8, new Button("blocked_8", blockedSlot));
-        Button minButton = new Button("min", Material.COAL, "&aMinimum Items");
-        this.updateMinButton(minButton);
-        minButton.addAction(
-                "left_click",
-                event -> {
-                    event.setCancelled(true);
-                    if (event.getClick() == ClickType.LEFT) {
-                        Player player = (Player) event.getWhoClicked();
-                        player.playSound(
-                                player.getLocation(), "entity.experience_orb.pickup", 1.0F, 1.2F);
-                        this.minItems = Math.min(this.maxItems, this.minItems + 1);
-                        this.updateMinButton(this.getLiveButton(player, 3));
-                        this.tableMenu.updateButtons(player);
-                    }
-                });
-        minButton.addAction(
-                "right_click",
-                event -> {
-                    event.setCancelled(true);
-                    if (event.getClick() == ClickType.RIGHT) {
-                        Player player = (Player) event.getWhoClicked();
-                        player.playSound(
-                                player.getLocation(), "entity.experience_orb.pickup", 1.0F, 0.8F);
-                        this.minItems = Math.max(0, this.minItems - 1);
-                        this.updateMinButton(this.getLiveButton(player, 3));
-                        this.tableMenu.updateButtons(player);
-                    }
-                });
-        this.tableMenu.addButton(3, minButton);
-        Button maxButton = new Button("max", Material.GOLD_INGOT, "&aMaximum Items");
-        this.updateMaxButton(maxButton);
-        maxButton.addAction(
-                "left_click",
-                event -> {
-                    event.setCancelled(true);
-                    if (event.getClick() == ClickType.LEFT) {
-                        Player player = (Player) event.getWhoClicked();
-                        player.playSound(
-                                player.getLocation(), "entity.experience_orb.pickup", 1.0F, 1.2F);
-                        this.maxItems++;
-                        this.updateMaxButton(this.getLiveButton(player, 4));
-                        this.tableMenu.updateButtons(player);
-                    }
-                });
-        maxButton.addAction(
-                "right_click",
-                event -> {
-                    event.setCancelled(true);
-                    if (event.getClick() == ClickType.RIGHT) {
-                        Player player = (Player) event.getWhoClicked();
-                        player.playSound(
-                                player.getLocation(), "entity.experience_orb.pickup", 1.0F, 0.8F);
-                        this.maxItems = Math.max(this.minItems, this.maxItems - 1);
-                        this.updateMaxButton(this.getLiveButton(player, 4));
-                        this.tableMenu.updateButtons(player);
-                    }
-                });
-        this.tableMenu.addButton(4, maxButton);
-        Button allowDupesButton = new Button("dupes", Material.DIAMOND, "&aDuplicate Items");
-        this.updateAllowDuplicatesButton(allowDupesButton);
-        allowDupesButton.addAction(
-                "click",
-                event -> {
-                    event.setCancelled(true);
-                    Player player = (Player) event.getWhoClicked();
-                    this.allowDuplicates = !this.allowDuplicates;
-                    if (this.allowDuplicates) {
-                        player.playSound(
-                                player.getLocation(), "entity.experience_orb.pickup", 1.0F, 1.2F);
-                    } else {
-                        player.playSound(
-                                player.getLocation(), "entity.experience_orb.pickup", 1.0F, 0.8F);
-                    }
-
-                    this.updateAllowDuplicatesButton(this.getLiveButton(player, 5));
-                    this.tableMenu.updateButtons(player);
-                });
-        this.tableMenu.addButton(5, allowDupesButton);
-
-        for (int slot = 9; slot < 54; slot++) {
-            ItemStack item = this.openSlotItem.clone();
-            LootTableItem tableItem = this.lootItems.get(slot);
-            if (tableItem != null) {
-                item = tableItem.getItem().clone();
-            }
-
-            Button button = new Button("item_" + slot, item);
-            int finalSlot = slot;
-            button.addAction(
-                    "click",
-                    event -> {
-                        event.setCancelled(true);
-                        ClickType clickType = event.getClick();
-                        if (clickType == ClickType.LEFT
-                                || clickType == ClickType.RIGHT
-                                || clickType == ClickType.SHIFT_LEFT
-                                || clickType == ClickType.SHIFT_RIGHT) {
-                            LootTableItem lootData = this.lootItems.get(finalSlot);
-                            Player player = (Player) event.getWhoClicked();
-                            Button liveButton = this.getLiveButton(player, finalSlot);
-                            ItemStack cursorItem = event.getCursor();
-                            if (lootData != null) {
-                                if (clickType == ClickType.SHIFT_LEFT
-                                        || clickType == ClickType.SHIFT_RIGHT) {
-                                    if (liveButton != null) {
-                                        liveButton.setItem(this.openSlotItem);
-                                        liveButton.clearLore();
-                                    }
-                                    ItemUtils.giveOrDrop(player, lootData.getItem());
-                                    this.lootItems.remove(finalSlot);
-                                    this.tableMenu.updateButtons(player);
-                                    return;
-                                }
-
-                                this.editLootItem(lootData, player);
-                            }
-
-                            if (cursorItem.getType() != Material.AIR) {
-                                LootTableItem lootItem = new LootTableItem(cursorItem.clone());
-                                this.lootItems.put(finalSlot, lootItem);
-                                ItemStack buttonItem = cursorItem.clone();
-                                if (liveButton != null) {
-                                    liveButton.setItem(buttonItem);
-                                    liveButton.clearLore();
-                                }
-                                cursorItem.setAmount(0);
-                                if (liveButton != null) {
-                                    liveButton.addLore(
-                                            ColorUtils.colorize(
-                                                    "&6"
-                                                            + lootItem.getMinItems()
-                                                            + "-"
-                                                            + lootItem.getMaxItems()
-                                                            + " &eitems"));
-                                    liveButton.addLore(
-                                            ColorUtils.colorize(
-                                                    "&eWeight of &6" + lootItem.getWeight()));
-                                    liveButton.addLore(ColorUtils.colorize(""));
-                                    liveButton.addLore(ColorUtils.colorize("&8Click to edit."));
-                                    liveButton.addLore(
-                                            ColorUtils.colorize("&8Shift-Click to remove."));
-                                }
-                                this.tableMenu.updateButtons(player);
-                            }
-                        }
-                    });
-            this.tableMenu.addButton(slot, button);
-        }
-    }
-
-    /**
-     * Performs edit loot item.
-     */
-    private void editLootItem(LootTableItem lootItem, Player player) {
-        lootItem.initializeEditorMenu(this);
-        RuntimeContext.guiService().openGui(player, "loottable_" + this.namespace + "_item");
-    }
-
-    /**
-     * Updates min button.
-     */
-    private void updateMinButton(Button minButton) {
-        if (minButton == null) {
-            return;
-        }
-
-        minButton.clearLore();
-        minButton.setAmount(Math.max(1, this.minItems));
-        minButton.addLore(ColorUtils.colorize("&eAt least &6" + this.minItems + " &eitems"));
-        minButton.addLore(ColorUtils.colorize(""));
-        minButton.addLore(ColorUtils.colorize("&7Determines the minimum amount of"));
-        minButton.addLore(ColorUtils.colorize("&7the below items this loot table can"));
-        minButton.addLore(ColorUtils.colorize("&7generate."));
-        minButton.addLore(ColorUtils.colorize(""));
-        minButton.addLore(ColorUtils.colorize("&8Left click increases."));
-        minButton.addLore(ColorUtils.colorize("&8Right click decreases."));
-    }
-
-    /**
-     * Updates max button.
-     */
-    private void updateMaxButton(Button maxButton) {
-        if (maxButton == null) {
-            return;
-        }
-
-        maxButton.clearLore();
-        maxButton.setAmount(Math.max(1, this.maxItems));
-        maxButton.addLore(ColorUtils.colorize("&eAt most &6" + this.maxItems + " &eitems"));
-        maxButton.addLore(ColorUtils.colorize(""));
-        maxButton.addLore(ColorUtils.colorize("&7Determines the maximum amount of"));
-        maxButton.addLore(ColorUtils.colorize("&7the below items this loot table can"));
-        maxButton.addLore(ColorUtils.colorize("&7generate."));
-        maxButton.addLore(ColorUtils.colorize(""));
-        maxButton.addLore(ColorUtils.colorize("&8Left click increases."));
-        maxButton.addLore(ColorUtils.colorize("&8Right click decreases."));
-    }
-
-    /**
-     * Updates allow duplicates button.
-     */
-    private void updateAllowDuplicatesButton(Button allowDuplicatesButton) {
-        if (allowDuplicatesButton == null) {
-            return;
-        }
-
-        String dupeInfo =
-                this.allowDuplicates ? "&aAllow duplicate items" : "&cDo not allow duplicate items";
-        String dupeLabel = this.allowDuplicates ? "&aDuplicate Items" : "&cDuplicate Items";
-        allowDuplicatesButton.setDisplayName(dupeLabel);
-        allowDuplicatesButton.clearLore();
-        allowDuplicatesButton.addLore(ColorUtils.colorize(dupeInfo));
-        allowDuplicatesButton.addLore("");
-        allowDuplicatesButton.addLore(ColorUtils.colorize("&7Toggles whether or not multiple"));
-        allowDuplicatesButton.addLore(ColorUtils.colorize("&7of the same item can generate in"));
-        allowDuplicatesButton.addLore(ColorUtils.colorize("&7a loot table."));
-    }
-
-    private Button getLiveButton(Player player, int slot) {
-        if (player == null) {
-            return null;
-        }
-
-        GuiInventory gui = this.tableMenu.getInventoryFor(player);
-        return gui == null ? this.tableMenu.getButtons().get(slot) : gui.buttons().get(slot);
     }
 
     @NotNull
@@ -476,18 +156,34 @@ public class LootTable implements ConfigurationSerializable {
         return this.allowDuplicates;
     }
 
-    /**
-     * Returns the editor.
-     */
-    public Player getEditor() {
-        return this.editor;
+    public Map<Integer, LootTableItem> getItems() {
+        return java.util.Collections.unmodifiableMap(this.lootItems);
     }
 
-    /**
-     * Sets the editor.
-     */
-    public void setEditor(Player editor) {
-        this.editor = editor;
+    public void putItem(int slot, LootTableItem item) {
+        if (slot < 9 || slot >= 54) throw new IllegalArgumentException("Invalid loot slot");
+        java.util.Objects.requireNonNull(item).validate();
+        this.lootItems.put(slot, item);
+    }
+
+    public LootTableItem removeItem(int slot) {
+        return this.lootItems.remove(slot);
+    }
+
+    public void setMinimumItems(int minimum) {
+        if (minimum < 0 || minimum > this.maxItems)
+            throw new IllegalArgumentException("Invalid minimum loot count");
+        this.minItems = minimum;
+    }
+
+    public void setMaximumItems(int maximum) {
+        if (maximum < this.minItems || maximum == Integer.MAX_VALUE)
+            throw new IllegalArgumentException("Invalid maximum loot count");
+        this.maxItems = maximum;
+    }
+
+    public void setAllowDuplicates(boolean allowDuplicates) {
+        this.allowDuplicates = allowDuplicates;
     }
 
     /** Validates persisted model data without constructing or replacing editor windows. */

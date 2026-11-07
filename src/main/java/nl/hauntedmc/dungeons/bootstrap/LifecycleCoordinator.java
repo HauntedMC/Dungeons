@@ -43,6 +43,16 @@ public final class LifecycleCoordinator {
                     .environment()
                     .logger()
                     .info("Cleaning up active dungeons and player state.");
+            if (this.runtime.lootTableEditor() != null) {
+                try {
+                    this.runtime.lootTableEditor().close();
+                } catch (RuntimeException failure) {
+                    this.runtime
+                            .environment()
+                            .logger()
+                            .error("Failed to close loot editors", failure);
+                }
+            }
             this.runtime.preparations().shutdown();
             this.discardQueuedStarts(null);
             this.refundOutstandingReservedKeys(null);

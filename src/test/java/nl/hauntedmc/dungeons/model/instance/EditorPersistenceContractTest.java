@@ -81,7 +81,9 @@ class EditorPersistenceContractTest {
                     };
             when(f.paper.plugin.isEnabled()).thenReturn(true);
             var latch = new CountDownLatch(2);
+            assertEquals(EditorSaveCoordinator.State.IDLE, editor.getSaveState());
             var saved = editor.saveWorldAsync(latch);
+            assertEquals(EditorSaveCoordinator.State.WRITING, editor.getSaveState());
             // Drive metadata independently of the deliberately blocked filesystem worker.
             f.scheduler.asynchronous.getFirst().run();
             var worker = executor.submit(f.scheduler.asynchronous.getLast()::run);
@@ -98,6 +100,7 @@ class EditorPersistenceContractTest {
                 release.countDown();
                 worker.get(3, TimeUnit.SECONDS);
                 assertFalse(f.dungeon.isSaving());
+                assertEquals(EditorSaveCoordinator.State.IDLE, editor.getSaveState());
                 assertEquals(1, latch.getCount());
                 assertEquals("newer metadata", Files.readString(metadata));
                 assertEquals(
@@ -554,6 +557,7 @@ class EditorPersistenceContractTest {
                 assertSame(f.world, editor.getInstanceWorld());
                 assertSame(editor, f.dungeon.getEditSession());
                 assertTrue(f.dungeon.getInstances().contains(editor));
+                assertEquals(EditorSaveCoordinator.State.IDLE, editor.getSaveState());
                 f.paper.bukkit.verify(() -> Bukkit.unloadWorld(f.world, false), never());
                 editor.throwCommit = false;
                 editor.pending = null;
@@ -672,6 +676,50 @@ class EditorPersistenceContractTest {
             editor.dispose();
             assertTrue(Files.exists(live));
             f.paper.bukkit.verify(() -> Bukkit.unloadWorld(f.world, false), never());
+        }
+    }
+
+    @Test
+    void capturePhaseIsVisibleDuringOwnerOperationsAndExceptionalCompletionAllowsRetry()
+            throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var editor = new Editor(f);
+            editor.pending = new CompletableFuture<>();
+            doAnswer(
+                            call -> {
+                                assertEquals(
+                                        EditorSaveCoordinator.State.CAPTURING,
+                                        editor.getSaveState());
+                                assertTrue(f.dungeon.isSaving());
+                                return null;
+                            })
+                    .when(f.world)
+                    .save(true);
+            var first = editor.saveWorldAsync();
+            assertEquals(EditorSaveCoordinator.State.WRITING, editor.getSaveState());
+            editor.pending.completeExceptionally(new IllegalStateException("disk failure"));
+            assertFalse(first.join());
+            assertEquals(EditorSaveCoordinator.State.IDLE, editor.getSaveState());
+            editor.pending = CompletableFuture.completedFuture(true);
+            assertTrue(editor.saveWorldAsync().join());
+            assertEquals(EditorSaveCoordinator.State.IDLE, editor.getSaveState());
+        }
+    }
+
+    @Test
+    void partialHologramCaptureFailureRestoresEditorDisplaysAndReleasesSaveOwnership()
+            throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var editor = new Editor(f);
+            editor.hologramManager = mock(nl.hauntedmc.dungeons.util.entity.HologramManager.class);
+            doThrow(new IllegalStateException("partial display removal"))
+                    .when(editor.hologramManager)
+                    .captureAndClearHolograms();
+            assertFalse(editor.saveWorldAsync().join());
+            verify(editor.hologramManager).restoreCapturedHolograms();
+            verify(f.world, never()).save(true);
+            assertFalse(f.dungeon.isSaving());
+            assertEquals(EditorSaveCoordinator.State.IDLE, editor.getSaveState());
         }
     }
 

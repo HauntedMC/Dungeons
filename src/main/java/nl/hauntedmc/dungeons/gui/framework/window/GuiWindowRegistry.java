@@ -16,6 +16,11 @@ public final class GuiWindowRegistry {
         return windows.get(namespace);
     }
 
+    /** Removes this exact registration without affecting a newer replacement. */
+    static void unregister(GuiWindow window) {
+        windows.remove(window.getNamespace(), window);
+    }
+
     /** Registers or replaces a GUI window for its namespace. */
     static void register(GuiWindow window) {
         windows.put(window.getNamespace(), window);

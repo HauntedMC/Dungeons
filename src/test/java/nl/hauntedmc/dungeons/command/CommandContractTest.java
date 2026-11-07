@@ -285,6 +285,38 @@ class CommandContractTest {
         }
     }
 
+    @Test
+    void extractedDebugCommandsAndLegacyAliasesReachTheSameInstanceActions() throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var command = new CommandFixture(f);
+            command.permissions.add("dungeons.admin");
+            var instance =
+                    mock(nl.hauntedmc.dungeons.content.instance.play.BranchingInstance.class);
+            var room = mock(nl.hauntedmc.dungeons.generation.room.InstanceRoom.class);
+            when(instance.as(nl.hauntedmc.dungeons.content.instance.play.BranchingInstance.class))
+                    .thenReturn(instance);
+            when(instance.as(nl.hauntedmc.dungeons.model.instance.PlayableInstance.class))
+                    .thenReturn(instance);
+            when(instance.getRoom(any(Location.class))).thenReturn(room);
+            var session = f.paper.runtime.playerSessions().get(command.caller.player);
+            session.setInstance(instance);
+            command.execute("testdoor", "north");
+            command.execute("debug", "doors", "test", "north");
+            command.execute("testalldoors");
+            command.execute("debug", "doors", "test-all");
+            command.execute("getmap");
+            command.execute("instance", "map");
+            verify(room, org.mockito.Mockito.times(2)).toggleDoor("north");
+            verify(room, org.mockito.Mockito.times(2)).toggleValidDoors(true);
+            verify(instance, org.mockito.Mockito.times(2)).giveDungeonMap(command.caller.player);
+            command.permissions.remove("dungeons.admin");
+            clearInvocations(room, instance);
+            command.execute("debug", "doors", "test-all");
+            command.execute("getmap");
+            verifyNoInteractions(room, instance);
+        }
+    }
+
     static final class CommandFixture {
         final PlayerState caller = new PlayerState();
         final Set<String> permissions = new HashSet<>(Set.of("dungeons.core"));
@@ -320,6 +352,7 @@ class CommandContractTest {
                             queues,
                             teams,
                             loot,
+                            new nl.hauntedmc.dungeons.gui.loot.LootTableEditor(loot, gui),
                             mock(FunctionRegistry.class),
                             lifecycle,
                             gui,

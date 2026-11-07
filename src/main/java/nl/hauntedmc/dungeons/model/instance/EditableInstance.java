@@ -42,7 +42,7 @@ import java.util.concurrent.CountDownLatch;
  * edits back into the source dungeon folder.</p>
  */
 public class EditableInstance extends DungeonInstance {
-    private volatile CompletableFuture<Boolean> activeSave;
+    private final EditorSaveCoordinator saves;
 
     protected BukkitRunnable autosaveTicker;
     protected BukkitRunnable functionParticles;
@@ -54,6 +54,50 @@ public class EditableInstance extends DungeonInstance {
     public EditableInstance(DungeonDefinition dungeon, CountDownLatch latch) {
         super(dungeon, latch);
         this.listener = new EditListener(this);
+        this.saves =
+                new EditorSaveCoordinator(
+                        this.plugin(),
+                        dungeon.getWorldName(),
+                        new EditorSaveCoordinator.Target() {
+                            private World snapshotWorld;
+
+                            @Override
+                            public boolean canSave(boolean closing) {
+                                return (closing || !EditableInstance.this.disposing)
+                                        && EditableInstance.this.instanceWorld != null;
+                            }
+
+                            @Override
+                            public boolean isSaving() {
+                                return dungeon.isSaving();
+                            }
+
+                            @Override
+                            public void markSaving(boolean saving) {
+                                dungeon.setSaving(saving);
+                            }
+
+                            @Override
+                            public void captureSnapshot() {
+                                World world = EditableInstance.this.instanceWorld;
+                                EditableInstance.this.captureWorldSnapshot(world);
+                                this.snapshotWorld = world;
+                            }
+
+                            @Override
+                            public CompletableFuture<Boolean> persistSnapshot() {
+                                World world = this.snapshotWorld;
+                                this.snapshotWorld = null;
+                                return EditableInstance.this.commitWorldAsync(world);
+                            }
+
+                            @Override
+                            public void flushRecoverySnapshot() {
+                                if (EditableInstance.this.instanceWorld != null)
+                                    EditableInstance.this.instanceWorld.save(true);
+                            }
+                        });
+
         long autosaveTime =
                 PluginConfigView.getEditAutosaveIntervalSeconds(this.plugin().getConfig()) * 20L;
         if (autosaveTime > 0L) {
@@ -238,125 +282,32 @@ public class EditableInstance extends DungeonInstance {
      * Saves the editor world and metadata asynchronously.
      */
     public CompletableFuture<Boolean> saveWorldAsync(@Nullable CountDownLatch latch) {
-        return this.startSave(latch, false);
+        return this.saves.save(latch);
     }
 
     @Override
     protected CompletableFuture<Boolean> prepareDisposal() {
-        // A previous save may represent an older snapshot. Always flush once more after it.
-        if (this.activeSave != null && !this.activeSave.isDone()) {
-            if (!this.plugin().isEnabled()) {
-                // Drain admitted filesystem work before another flush or unload can touch its
-                // source. The worker never needs a server-thread callback to finish.
-                nl.hauntedmc.dungeons.config.ConfigurationFile.flushPendingSaves();
-                if (!this.activeSave.isDone()) {
-                    this.instanceWorld.save(true);
-                    return CompletableFuture.completedFuture(false);
-                }
-                return this.startSave(null, true);
-            }
-            return this.activeSave
-                    .handle((success, failure) -> true)
-                    .thenCompose(
-                            ignored ->
-                                    this.plugin().isEnabled()
-                                            ? this.startSave(null, true)
-                                            : CompletableFuture.completedFuture(false));
-        }
-        return this.startSave(null, true);
+        return this.saves.prepareDisposal();
     }
 
-    private CompletableFuture<Boolean> startSave(
-            @Nullable CountDownLatch latch, boolean finalSave) {
-        CompletableFuture<Boolean> result = new CompletableFuture<>();
-        Runnable saveTask =
-                () -> {
-                    World world = this.instanceWorld;
-                    if ((!finalSave && this.disposing) || world == null) {
-                        result.complete(false);
-                        return;
-                    }
+    public EditorSaveCoordinator.State getSaveState() {
+        return this.saves.state();
+    }
 
-                    if (this.dungeon.isSaving()) {
-                        result.complete(false);
-                        return;
-                    }
-
-                    this.activeSave = result;
-                    this.dungeon.setSaving(true);
-
-                    try {
-                        if (this.hologramManager != null) {
-                            this.hologramManager.captureAndClearHolograms();
-                        }
-
-                        try {
-                            TextUtils.runTimed(
-                                    "Saving of " + this.dungeon.getWorldName(),
-                                    () -> {
-                                        // Keep the disk snapshot stable until copying finishes.
-                                        // Instance worlds have automatic saves disabled.
-                                        world.setAutoSave(false);
-                                        world.save(true);
-                                        this.beforeCommitWorldSave(world);
-                                    });
-                        } finally {
-                            if (this.hologramManager != null) {
-                                this.hologramManager.restoreCapturedHolograms();
-                            }
-                        }
-                    } catch (Throwable throwable) {
-                        this.finishSave(result, false);
-                        this.logger()
-                                .error(
-                                        "Failed to save edited world '{}' for dungeon '{}'.",
-                                        world.getName(),
-                                        this.dungeon.getWorldName(),
-                                        throwable);
-                        return;
-                    }
-
-                    CompletableFuture<Boolean> commit;
-                    try {
-                        commit = java.util.Objects.requireNonNull(this.commitWorldAsync(world));
-                    } catch (Throwable exception) {
-                        this.logger()
-                                .error(
-                                        "Failed to start save commit for dungeon '{}'.",
-                                        this.dungeon.getWorldName(),
-                                        exception);
-                        this.finishSave(result, false);
-                        return;
-                    }
-                    commit.whenComplete(
-                            (success, throwable) -> {
-                                if (throwable != null) {
-                                    this.logger()
-                                            .error(
-                                                    "Failed to finish save for dungeon '{}'.",
-                                                    this.dungeon.getWorldName(),
-                                                    throwable);
-                                    this.finishSave(result, false);
-                                    return;
-                                }
-
-                                this.finishSave(result, Boolean.TRUE.equals(success));
-                            });
-                };
-
-        // This request is also drained during shutdown if Paper cancels its scheduled task.
-        CompletableFuture<Boolean> observed =
-                nl.hauntedmc.dungeons.config.ConfigurationFile.onOwnerThread(
-                        this.plugin(),
-                        () -> {
-                            saveTask.run();
-                            return result;
-                        });
-        observed.whenComplete(
-                (success, failure) -> {
-                    if (latch != null) latch.countDown();
-                });
-        return observed.copy();
+    /** Captures only Bukkit-owned world state; filesystem work belongs to the commit phase. */
+    private void captureWorldSnapshot(World world) {
+        try {
+            if (this.hologramManager != null) this.hologramManager.captureAndClearHolograms();
+            TextUtils.runTimed(
+                    "Saving of " + this.dungeon.getWorldName(),
+                    () -> {
+                        world.setAutoSave(false);
+                        world.save(true);
+                        this.beforeCommitWorldSave(world);
+                    });
+        } finally {
+            if (this.hologramManager != null) this.hologramManager.restoreCapturedHolograms();
+        }
     }
 
     /**
@@ -407,14 +358,6 @@ public class EditableInstance extends DungeonInstance {
     /** Captures additional persistence on the server thread before filesystem copying begins. */
     protected CompletableFuture<Boolean> onCommitWorldAsync(World world) {
         return CompletableFuture.completedFuture(true);
-    }
-
-    /**
-     * Finalizes save-state bookkeeping and completes waiting callbacks.
-     */
-    private void finishSave(CompletableFuture<Boolean> result, boolean success) {
-        this.dungeon.setSaving(false);
-        result.complete(success);
     }
 
     /**

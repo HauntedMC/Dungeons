@@ -14,6 +14,7 @@ import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import nl.hauntedmc.dungeons.runtime.PluginEnvironment;
+import nl.hauntedmc.dungeons.runtime.dungeon.DungeonPlayerDataStore;
 import nl.hauntedmc.dungeons.runtime.instance.ActiveInstanceRegistry;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
@@ -30,7 +31,6 @@ import nl.hauntedmc.dungeons.util.text.ColorUtils;
 import nl.hauntedmc.dungeons.util.world.LocationUtils;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -51,7 +51,6 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -77,7 +76,6 @@ public abstract class DungeonDefinition {
     protected final FileConfiguration config;
     protected final File accessKeyStateFile;
     protected final FileConfiguration accessKeyStateConfig;
-    protected FileConfiguration lootConfig;
     protected boolean enabled;
     protected String displayName;
     protected int maxTeamSize;
@@ -109,15 +107,12 @@ public abstract class DungeonDefinition {
     protected List<EntityType> interactProtectedEntities;
     protected boolean accessCooldownEnabled;
     protected boolean onlyLeaderNeedsCooldown;
-    protected Map<UUID, Date> accessCooldownsByPlayer;
     protected boolean cooldownOnFinish;
     protected boolean cooldownOnLeave;
     protected boolean cooldownOnLoseLives;
     protected boolean cooldownOnStart;
-    protected Map<UUID, FileConfiguration> playerData;
     protected boolean cooldownsPerReward;
-    protected List<PlayerLootData> lootCooldowns;
-    protected Map<UUID, PlayerLootData> lootCooldownsByPlayer;
+    private final DungeonPlayerDataStore playerDataStore;
     protected List<DungeonInstance> instances;
     protected EditableInstance editSession;
     protected volatile boolean saving;
@@ -190,52 +185,7 @@ public abstract class DungeonDefinition {
             this.loadAccessKeyState();
             this.pruneAccessKeyState();
         }
-        this.accessCooldownsByPlayer = new HashMap<>();
-        this.lootConfig = new YamlConfiguration();
-        this.lootCooldowns = new ArrayList<>();
-        this.lootCooldownsByPlayer = new HashMap<>();
-        this.playerData = new HashMap<>();
-        File playersFolder = new File(folder, "players");
-        if (!playersFolder.isDirectory()) {
-            playersFolder.mkdir();
-        }
-
-        File[] playerFiles = playersFolder.listFiles();
-        if (playerFiles != null) {
-            for (File playerFile : playerFiles) {
-                if (!playerFile.isFile()
-                        || !FilenameUtils.getExtension(playerFile.getName()).equals("yml")) {
-                    continue;
-                }
-
-                UUID playerUUID;
-                try {
-                    playerUUID = UUID.fromString(FilenameUtils.getBaseName(playerFile.getName()));
-                } catch (IllegalArgumentException exception) {
-                    this.logger()
-                            .warn(
-                                    "Ignoring player data with an invalid UUID filename '{}'.",
-                                    playerFile);
-                    continue;
-                }
-
-                FileConfiguration data = new YamlConfiguration();
-                try {
-                    data.load(playerFile);
-                } catch (InvalidConfigurationException | IOException exception) {
-                    this.logger()
-                            .error(
-                                    "Failed to load player data '{}' for dungeon '{}'.",
-                                    playerFile.getAbsolutePath(),
-                                    this.worldName,
-                                    exception);
-                    continue;
-                }
-
-                this.playerData.put(playerUUID, data);
-                this.loadCooldowns(playerUUID);
-            }
-        }
+        this.playerDataStore = new DungeonPlayerDataStore(this.plugin(), folder);
 
         this.instances = new ArrayList<>();
         this.cleanDeadInstances();
@@ -1114,7 +1064,7 @@ public abstract class DungeonDefinition {
     }
 
     public void addAccessCooldown(Player player, Date resetTime) {
-        this.accessCooldownsByPlayer.put(player.getUniqueId(), resetTime);
+        this.playerDataStore.setAccessCooldown(player.getUniqueId(), resetTime);
     }
 
     public boolean clearAccessCooldown(Player player) {
@@ -1122,7 +1072,7 @@ public abstract class DungeonDefinition {
     }
 
     public boolean clearAccessCooldown(UUID playerId) {
-        return this.accessCooldownsByPlayer.remove(playerId) != null;
+        return this.playerDataStore.clearAccessCooldown(playerId);
     }
 
     public boolean shouldApplyAccessCooldown(@Nullable DungeonInstance instance, UUID playerId) {
@@ -1137,21 +1087,11 @@ public abstract class DungeonDefinition {
     }
 
     public boolean hasAccessCooldown(Player player) {
-        Date cooldown = this.accessCooldownsByPlayer.get(player.getUniqueId());
-        if (cooldown == null) {
-            return false;
-        } else if (new Date(System.currentTimeMillis()).after(cooldown)) {
-            this.accessCooldownsByPlayer.remove(player.getUniqueId());
-            return false;
-        } else {
-            return true;
-        }
+        return this.playerDataStore.hasAccessCooldown(player.getUniqueId());
     }
 
     public Date getAccessCooldown(Player player) {
-        return !this.hasAccessCooldown(player)
-                ? null
-                : this.accessCooldownsByPlayer.get(player.getUniqueId());
+        return this.playerDataStore.getAccessCooldown(player.getUniqueId());
     }
 
     public void addLootCooldown(Player player, RewardFunction reward) {
@@ -1159,101 +1099,42 @@ public abstract class DungeonDefinition {
     }
 
     public void addLootCooldown(Player player, RewardFunction reward, Date resetTime) {
-        PlayerLootData playerCooldown = this.lootCooldownsByPlayer.get(player.getUniqueId());
-        if (playerCooldown == null) {
-            playerCooldown = new PlayerLootData(player);
-            this.lootCooldowns.add(playerCooldown);
-            this.lootCooldownsByPlayer.put(player.getUniqueId(), playerCooldown);
-        }
-
-        playerCooldown.addLootCooldown(reward, resetTime);
+        this.playerDataStore.addLootCooldown(player, reward, resetTime);
     }
 
     public boolean hasLootCooldown(Player player, RewardFunction reward) {
-        PlayerLootData playerCooldown = this.lootCooldownsByPlayer.get(player.getUniqueId());
-        if (playerCooldown == null) {
-            playerCooldown = new PlayerLootData(player);
-            this.lootCooldowns.add(playerCooldown);
-            this.lootCooldownsByPlayer.put(player.getUniqueId(), playerCooldown);
-        }
-
-        return playerCooldown.hasLootOnCooldown(reward);
+        return this.playerDataStore.hasLootCooldown(player, reward);
     }
 
     public Date getLootUnlockTime(Player player, RewardFunction function) {
         PlayerLootData lootData = this.getPlayerLootData(player);
-        LootCooldown cd = lootData.getLootCooldown(function);
+        LootCooldown cd = lootData == null ? null : lootData.getLootCooldown(function);
         return cd == null ? null : cd.getResetTime();
     }
 
     public PlayerLootData getPlayerLootData(Player player) {
-        return this.lootCooldownsByPlayer.get(player.getUniqueId());
+        return this.playerDataStore.getRewards(player.getUniqueId());
     }
 
     public void loadCooldowns(UUID playerID) {
-        FileConfiguration data = this.playerData.get(playerID);
-        Object rewardRecord = data.get("RewardsInfo");
-        if (rewardRecord instanceof PlayerLootData rewards) {
-            this.lootCooldowns.add(rewards);
-            this.lootCooldownsByPlayer.put(rewards.getPlayerId(), rewards);
-        } else if (rewardRecord != null) {
-            this.logger()
-                    .warn(
-                            "Ignoring invalid reward cooldown data for player '{}' in dungeon"
-                                + " '{}'.",
-                            playerID,
-                            this.worldName);
-        }
-
-        if (data.get("AccessCooldown", null) != null) {
-            this.accessCooldownsByPlayer.put(playerID, new Date(data.getLong("AccessCooldown")));
-        }
+        this.playerDataStore.loadCooldowns(playerID);
     }
 
     public void saveCooldowns(Player player) {
-        UUID playerID = player.getUniqueId();
-        PlayerLootData playerData = this.lootCooldownsByPlayer.get(player.getUniqueId());
-        if (playerData == null) {
-            playerData = new PlayerLootData(player);
-            this.lootCooldowns.add(playerData);
-            this.lootCooldownsByPlayer.put(player.getUniqueId(), playerData);
-        }
-
-        FileConfiguration data = this.playerData.getOrDefault(playerID, new YamlConfiguration());
-        this.playerData.putIfAbsent(playerID, data);
-        data.set("RewardsInfo", playerData);
-        Date cooldown = this.accessCooldownsByPlayer.get(playerID);
-        data.set("AccessCooldown", cooldown == null ? null : cooldown.getTime());
+        this.playerDataStore.stageCooldowns(player);
     }
 
     public void savePlayerData(Player player) {
-        File playersFolder = new File(this.folder, "players");
-        UUID playerID = player.getUniqueId();
-        FileConfiguration data = this.playerData.getOrDefault(playerID, new YamlConfiguration());
-        this.playerData.putIfAbsent(playerID, data);
-
-        try {
-            File targetFile = new File(playersFolder, playerID + ".yml");
-            data.save(targetFile);
-        } catch (IOException exception) {
-            this.logger()
-                    .error(
-                            "Failed to save player data for '{}' in dungeon '{}'.",
-                            playerID,
-                            this.worldName,
-                            exception);
-        }
+        this.playerDataStore.save(player);
     }
 
     @Nullable
     public FileConfiguration getPlayerData(UUID playerID) {
-        return this.playerData.get(playerID);
+        return this.playerDataStore.getRecord(playerID);
     }
 
     public boolean hasPlayerCompletedDungeon(Player player) {
-        UUID playerID = player.getUniqueId();
-        FileConfiguration data = this.playerData.get(playerID);
-        return data != null && data.getBoolean("Finished", false);
+        return this.playerDataStore.isCompleted(player.getUniqueId());
     }
 
     public void setPlayerCompletedDungeon(Player player) {
@@ -1261,10 +1142,7 @@ public abstract class DungeonDefinition {
     }
 
     public void setPlayerCompletedDungeon(Player player, boolean complete) {
-        UUID playerID = player.getUniqueId();
-        FileConfiguration data = this.playerData.getOrDefault(playerID, new YamlConfiguration());
-        this.playerData.putIfAbsent(playerID, data);
-        data.set("Finished", complete);
+        this.playerDataStore.setCompleted(player.getUniqueId(), complete);
     }
 
     public void banItem(ItemStack item) {
@@ -1892,7 +1770,7 @@ public abstract class DungeonDefinition {
     }
 
     public List<PlayerLootData> getLootCooldowns() {
-        return this.lootCooldowns;
+        return this.playerDataStore.getLootCooldowns();
     }
 
     public List<DungeonInstance> getInstances() {
