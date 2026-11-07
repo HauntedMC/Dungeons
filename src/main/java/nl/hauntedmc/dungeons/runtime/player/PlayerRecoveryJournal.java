@@ -91,22 +91,59 @@ final class PlayerRecoveryJournal {
     }
 
     List<ItemStack> rewards() {
-        if (state.contains("rewards") && !state.isList("rewards")) {
-            throw new IllegalArgumentException("Invalid pending rewards list");
+        var result = items("rewards");
+        result.addAll(items("refunds"));
+        return result;
+    }
+
+    private List<ItemStack> items(String path) {
+        if (state.contains(path) && !state.isList(path)) {
+            throw new IllegalArgumentException("Invalid pending item list: " + path);
         }
-        var list = state.getList("rewards", List.of());
-        var rewards = new ArrayList<>(Arrays.asList(PlayerRecoverySnapshot.decode(list)));
-        if (rewards.stream()
+        var list = state.getList(path, List.of());
+        var items = new ArrayList<>(Arrays.asList(PlayerRecoverySnapshot.decode(list)));
+        if (items.stream()
                 .anyMatch(
                         item -> item == null || item.getType().isAir() || item.getAmount() <= 0)) {
-            throw new IllegalArgumentException("Invalid pending reward");
+            throw new IllegalArgumentException("Invalid pending item in " + path);
         }
-        return rewards;
+        return items;
+    }
+
+    /** Reconfirms durability before the owning session releases its in-memory journal. */
+    void checkpoint() {
+        requireServerThread();
+        if (!state.getKeys(false).isEmpty()) commit(next -> {});
+    }
+
+    void release() {
+        state = new YamlConfiguration();
+    }
+
+    void addRefunds(ItemStack... incoming) {
+        requireServerThread();
+        var refunds = items("refunds");
+        for (ItemStack item : incoming) {
+            if (item != null && !item.getType().isAir() && item.getAmount() > 0)
+                refunds.add(item.clone());
+        }
+        commit(
+                next ->
+                        next.set(
+                                "refunds",
+                                PlayerRecoverySnapshot.encode(refunds.toArray(ItemStack[]::new))));
+    }
+
+    /** Automatically returns reserved keys; overflow remains durably claimable as a reward. */
+    void deliverRefunds(Player player) {
+        requireServerThread();
+        if (hasPendingTransaction()) return;
+        for (ItemStack refund : items("refunds")) claim(player, refund, "refunds");
     }
 
     void addRewards(ItemStack... items) {
         requireServerThread();
-        List<ItemStack> rewards = rewards();
+        List<ItemStack> rewards = items("rewards");
         for (ItemStack item : items)
             if (item != null && !item.getType().isAir() && item.getAmount() > 0)
                 rewards.add(item.clone());
@@ -148,10 +185,15 @@ final class PlayerRecoveryJournal {
     }
 
     boolean claim(Player player, ItemStack requested) {
+        if (claim(player, requested, "rewards")) return true;
+        return claim(player, requested, "refunds");
+    }
+
+    private boolean claim(Player player, ItemStack requested, String source) {
         requireServerThread();
         if (hasRecovery()) return false;
         finishDelivery(player);
-        List<ItemStack> rewards = rewards();
+        List<ItemStack> rewards = items(source);
         int index = -1;
         for (int i = 0; i < rewards.size(); i++) {
             ItemStack reward = rewards.get(i);
@@ -189,7 +231,7 @@ final class PlayerRecoveryJournal {
         commit(
                 next -> {
                     next.set(
-                            "rewards",
+                            source,
                             PlayerRecoverySnapshot.encode(rewards.toArray(ItemStack[]::new)));
                     next.set("delivery.id", UUID.randomUUID().toString());
                     next.set("delivery.contents", PlayerRecoverySnapshot.encode(contents));

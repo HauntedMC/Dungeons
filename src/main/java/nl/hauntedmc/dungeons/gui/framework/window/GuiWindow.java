@@ -1,11 +1,10 @@
 package nl.hauntedmc.dungeons.gui.framework.window;
 
-import java.util.HashMap;
-import java.util.Map.Entry;
 import nl.hauntedmc.dungeons.gui.framework.GuiService;
 import nl.hauntedmc.dungeons.gui.framework.actions.Action;
 import nl.hauntedmc.dungeons.gui.framework.buttons.Button;
 import nl.hauntedmc.dungeons.gui.framework.text.GuiTextUtils;
+
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -20,6 +19,11 @@ import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.PlayerInventory;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map.Entry;
+import java.util.Set;
+
 /**
  * Registered inventory window with per-player state and click/open/close callbacks.
  */
@@ -29,6 +33,7 @@ public class GuiWindow implements Listener {
     private final String display;
     private boolean cancelClick = true;
     private final HashMap<Player, GuiInventory> inventories;
+    private final Set<Player> closing = new HashSet<>();
     private final HashMap<Integer, Button> buttons;
     private final HashMap<String, Action<InventoryOpenEvent>> openActions;
     private final HashMap<String, Action<InventoryCloseEvent>> closeActions;
@@ -108,7 +113,7 @@ public class GuiWindow implements Listener {
     /** Opens this window for a player, creating a player snapshot when needed. */
     public final void open(Player player) {
         GuiInventory gui;
-        if (this.inventories.containsKey(player)) {
+        if (this.inventories.containsKey(player) && !this.closing.contains(player)) {
             gui = this.inventories.get(player);
             this.resetButtons(gui);
         } else {
@@ -134,6 +139,15 @@ public class GuiWindow implements Listener {
     /** Unregisters this window listener from Bukkit. */
     public final void unregister() {
         HandlerList.unregisterAll(this);
+        this.inventories.clear();
+        this.closing.clear();
+    }
+
+    /** A quit must release cached views even if another plugin suppressed normal close handling. */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerQuit(org.bukkit.event.player.PlayerQuitEvent event) {
+        this.inventories.remove(event.getPlayer());
+        this.closing.remove(event.getPlayer());
     }
 
     private void resetButtons(GuiInventory gui) {
@@ -235,13 +249,15 @@ public class GuiWindow implements Listener {
     protected void onClose(InventoryCloseEvent event) {
         Player player = (Player) event.getPlayer();
         GuiInventory gui = this.inventories.get(player);
-        if (gui != null) {
-            if (event.getInventory() == gui.inventory()) {
-
-                for (Action<InventoryCloseEvent> action : this.closeActions.values()) {
-                    action.run(event);
-                }
-            }
+        if (gui == null || event.getInventory() != gui.inventory() || !this.closing.add(player))
+            return;
+        try {
+            // Save callbacks may inspect the view until they finish. Reentrant opens receive a
+            // fresh view so the old close cannot remove a newly opened inventory.
+            for (Action<InventoryCloseEvent> action : this.closeActions.values()) action.run(event);
+        } finally {
+            this.inventories.remove(player, gui);
+            this.closing.remove(player);
         }
     }
 }

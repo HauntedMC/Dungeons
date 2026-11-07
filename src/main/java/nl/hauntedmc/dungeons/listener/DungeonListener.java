@@ -102,28 +102,18 @@ public class DungeonListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        DungeonPlayerSession playerSession = this.playerManager.get(player);
-        if (playerSession != null) {
-            playerSession.setPlayer(player);
-            if (!playerSession.recoverPendingState()) return;
-
-            DungeonQueueEntry qData = this.queueManager.getQueue(playerSession);
-            if (qData != null) {
-                playerSession.setAwaitingDungeon(true);
-            }
-
-            if (playerSession.isEditMode()) {
-                Bukkit.getScheduler().runTask(this.plugin, playerSession::ensureEditModeTools);
-            }
-        } else {
-            try {
-                playerSession = this.playerManager.put(player);
-            } catch (RuntimeException failure) {
-                // The registry has logged the corrupt/unreadable record and disconnected the
-                // player.
-                return;
-            }
-            playerSession.recoverPendingState();
+        DungeonPlayerSession playerSession;
+        try {
+            playerSession = this.playerManager.put(player);
+        } catch (RuntimeException failure) {
+            // The registry logged the failure and disconnected the unsafe player.
+            return;
+        }
+        if (!playerSession.recoverPendingState()) return;
+        DungeonQueueEntry queue = this.queueManager.getQueue(playerSession);
+        if (queue != null) playerSession.setAwaitingDungeon(true);
+        if (playerSession.isEditMode()) {
+            Bukkit.getScheduler().runTask(this.plugin, playerSession::ensureEditModeTools);
         }
     }
 

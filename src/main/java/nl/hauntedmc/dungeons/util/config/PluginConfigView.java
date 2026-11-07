@@ -1,9 +1,10 @@
 package nl.hauntedmc.dungeons.util.config;
 
+import org.bukkit.configuration.file.FileConfiguration;
+
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import org.bukkit.configuration.file.FileConfiguration;
 
 /**
  * Typed view helpers for plugin-level configuration values with sane defaults.
@@ -11,6 +12,11 @@ import org.bukkit.configuration.file.FileConfiguration;
 public final class PluginConfigView {
     /** Utility class. */
     private PluginConfigView() {}
+
+    /** Minimum offline age before an unowned player session may expire. */
+    public static int getOfflineSessionRetentionSeconds(FileConfiguration config) {
+        return Math.max(1, getInt(config, "sessions.offline_retention_seconds", 300));
+    }
 
     /** Returns maximum number of active instances allowed globally. */
     public static int getMaxActiveInstances(FileConfiguration config) {

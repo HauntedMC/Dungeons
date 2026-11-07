@@ -27,16 +27,10 @@ class AccessKeyReservationContractTest {
     void aReservationHasOneOwnerAndOfflineRefundIsDeliveredExactlyOnceOnReconnect() {
         try (var paper = new PaperBoundary()) {
             when(paper.plugin.getDataFolder()).thenReturn(directory.toFile());
-            Player player = mock(Player.class);
-            when(player.getUniqueId()).thenReturn(UUID.randomUUID());
-            var inventory = mock(PlayerInventory.class);
-            when(player.getInventory()).thenReturn(inventory);
-            var key = item();
-            var reserved = item();
-            var refund = item();
-            when(key.clone()).thenReturn(reserved);
-            when(reserved.clone()).thenReturn(refund);
-            var session = new DungeonPlayerSession(paper.plugin, player);
+            var state = new nl.hauntedmc.dungeons.support.PlayerState();
+            state.online = false;
+            var key = nl.hauntedmc.dungeons.support.PlayerState.stack(1);
+            var session = new DungeonPlayerSession(paper.plugin, state.player);
             assertTrue(session.reserveAccessKey("crypt", key));
             assertFalse(session.reserveAccessKey("other", key));
             assertFalse(session.refundReservedAccessKey("other"));
@@ -44,12 +38,16 @@ class AccessKeyReservationContractTest {
             assertTrue(session.refundReservedAccessKey("crypt"));
             assertFalse(session.refundReservedAccessKey("crypt"));
             session.flushPendingAccessKeyRefund();
-            verifyNoInteractions(inventory);
-            when(player.isOnline()).thenReturn(true);
-            session.flushPendingAccessKeyRefund();
-            session.flushPendingAccessKeyRefund();
-            verify(inventory, times(1)).addItem(refund);
-            assertFalse(session.hasReservedAccessKey());
+            org.junit.jupiter.api.Assertions.assertNull(state.contents[0]);
+            // The old session is deliberately abandoned: offline refunds must survive recreation.
+            var reloaded = new DungeonPlayerSession(paper.plugin, state.player);
+            state.online = true;
+            reloaded.flushPendingAccessKeyRefund();
+            reloaded.flushPendingAccessKeyRefund();
+            org.junit.jupiter.api.Assertions.assertEquals(1, state.contents[0].getAmount());
+            assertTrue(reloaded.getRewardItems().isEmpty());
+            assertFalse(reloaded.hasReservedAccessKey());
+            verify(state.player, times(1)).saveData();
         }
     }
 

@@ -4,6 +4,7 @@ import nl.hauntedmc.dungeons.listener.DungeonListener;
 import nl.hauntedmc.dungeons.listener.HotbarMenuListener;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
+
 import org.bukkit.Bukkit;
 
 /**
@@ -24,6 +25,8 @@ final class ListenerBootstrap {
      */
     void registerCoreListeners() {
         DungeonsPlugin plugin = this.runtime.environment().plugin();
+        Bukkit.getPluginManager().registerEvents(this.runtime.playerSessions(), plugin);
+        this.runtime.playerSessions().start(this.runtime);
         Bukkit.getPluginManager()
                 .registerEvents(
                         new DungeonListener(

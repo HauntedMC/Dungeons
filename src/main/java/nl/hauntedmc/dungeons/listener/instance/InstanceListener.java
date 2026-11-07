@@ -124,7 +124,11 @@ public class InstanceListener {
                     BukkitRunnable runnable =
                             new BukkitRunnable() {
                                 public void run() {
-                                    if (!player.isOnline()) {
+                                    if (!playerSession.isExpired()
+                                            && playerSession.getPlayer() == player
+                                            && playerSession.getInstance()
+                                                    == InstanceListener.this.instance
+                                            && !playerSession.getPlayer().isOnline()) {
                                         if (!CommandUtils.hasPermissionSilent(
                                                 player, "dungeons.vanish")) {
                                             InstanceListener.this.instance.messagePlayers(

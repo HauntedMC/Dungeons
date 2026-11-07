@@ -44,6 +44,7 @@ public final class DungeonPlayerSession {
 
     private final DungeonsPlugin plugin;
     private Player player;
+    private boolean expired;
     private DungeonInstance instance;
     private boolean awaitingDungeon;
     @Nullable private final File playerDataFile;
@@ -93,7 +94,7 @@ public final class DungeonPlayerSession {
     private boolean reloadQueued;
     private String reservedAccessKeyDungeon;
     private ItemStack reservedAccessKey;
-    private ItemStack pendingAccessKeyRefund;
+    private final List<ItemStack> pendingAccessKeyRefunds = new ArrayList<>();
 
     /**
      * Creates a session for an online player and loads their global persisted data.
@@ -115,42 +116,57 @@ public final class DungeonPlayerSession {
                                 .toPath());
 
         try {
-            File parent = this.playerDataFile.getParentFile();
-            if (parent != null && !parent.exists() && !parent.mkdirs()) {
-                this.plugin
-                        .getSLF4JLogger()
-                        .error(
-                                "Failed to create player data directory '{}'.",
-                                parent.getAbsolutePath());
+            java.nio.file.Files.createDirectories(this.playerDataFile.toPath().getParent());
+            try {
+                ConfigurationFile.loadSnapshot(this.playerData, this.playerDataFile);
+            } catch (java.nio.file.NoSuchFileException absent) {
+                // A new player has no global data yet. Never replace an unreadable existing file.
             }
-
-            if (!this.playerDataFile.exists()) {
-                if (!this.playerDataFile.createNewFile()) {
-                    this.plugin
-                            .getSLF4JLogger()
-                            .error(
-                                    "Failed to create player data file '{}'.",
-                                    this.playerDataFile.getAbsolutePath());
-                }
-            }
-
-            this.playerData.load(this.playerDataFile);
             this.completedDungeons = this.playerData.getStringList("CompletedDungeons");
-        } catch (IOException exception) {
-            this.plugin
-                    .getSLF4JLogger()
-                    .error(
-                            "Failed to initialize player data for '{}' at '{}'.",
-                            player.getName(),
-                            this.playerDataFile.getAbsolutePath(),
-                            exception);
+        } catch (IOException | org.bukkit.configuration.InvalidConfigurationException failure) {
+            throw new IllegalStateException(
+                    "Cannot load player data " + this.playerDataFile, failure);
         }
+    }
+
+    public boolean isExpired() {
+        return this.expired;
+    }
+
+    private void requireActiveSession() {
+        if (this.expired) throw new IllegalStateException("Player session has expired");
+    }
+
+    /** Called by the registry only after run, queue and reservation ownership has ended. */
+    boolean expire(boolean shutdown) {
+        if (this.expired) return true;
+        if ((!shutdown && this.player.isOnline())
+                || this.instance != null
+                || this.awaitingDungeon
+                || this.isDisconnecting
+                || this.hasReservedAccessKey()) return false;
+        this.persistPendingAccessKeyRefunds();
+        this.recoveryJournal.checkpoint();
+        this.playerData.set("CompletedDungeons", new ArrayList<>(this.completedDungeons));
+        this.playerData.save(this.playerDataFile);
+        // Recovery and rewards remain in the journal; none are acknowledged or delivered here.
+        this.expired = true;
+        this.clearRecoveredState();
+        this.reloadQueued = false;
+        this.completedDungeons.clear();
+        this.pendingAccessKeyRefunds.clear();
+        for (String key : new ArrayList<>(this.playerData.getKeys(false)))
+            this.playerData.set(key, null);
+        this.recoveryJournal.release();
+        this.player = null;
+        return true;
     }
 
     /**
      * Toggles edit mode and swaps the player between their normal and editor inventories.
      */
     public void setEditMode(boolean editMode) {
+        this.requireActiveSession();
         if (this.editMode == editMode) return;
         if (editMode && !this.recoveryJournal.hasRecovery() && !this.prepareRecovery()) {
             throw new IllegalStateException("Cannot safely enter editor mode");
@@ -225,6 +241,7 @@ public final class DungeonPlayerSession {
      * enabled so Bukkit has finished its own respawn updates first.
      */
     public void restoreExp() {
+        if (this.expired) return;
         if (this.plugin.isEnabled()) {
             Player target = this.player;
             DungeonInstance expected = this.instance;
@@ -336,15 +353,17 @@ public final class DungeonPlayerSession {
     }
 
     public List<ItemStack> getRewardItems() {
-        return this.recoveryJournal.rewards();
+        return this.expired ? List.of() : this.recoveryJournal.rewards();
     }
 
     public void addReward(ItemStack... items) {
+        this.requireActiveSession();
         this.recoveryJournal.addRewards(items);
     }
 
     /** Claims into available inventory space; overflow remains durable and claimable. */
     public boolean claimReward(ItemStack item) {
+        if (this.expired) return false;
         if (this.instance != null) return false;
         try {
             return this.recoveryJournal.claim(this.player, item);
@@ -356,6 +375,7 @@ public final class DungeonPlayerSession {
 
     /** Persists the complete pre-entry state before membership or entry commands can change it. */
     public boolean prepareRecovery() {
+        this.requireActiveSession();
         try {
             this.recoveryJournal.begin(this.player);
             this.savedInventory = null;
@@ -375,6 +395,7 @@ public final class DungeonPlayerSession {
 
     /** Replays unfinished operations after reconnect or plugin enable. */
     public boolean recoverPendingState() {
+        this.requireActiveSession();
         if (this.instance != null) return true;
         if (this.player.isDead()) return false;
         try {
@@ -423,6 +444,7 @@ public final class DungeonPlayerSession {
             this.recoveryJournal.acknowledgeDeparture(this.player);
             this.clearExitLocation();
             this.clearRecoveredState();
+            this.flushPendingAccessKeyRefund();
         } catch (RuntimeException failure) {
             this.blockUnsafePlayerState(failure);
         }
@@ -482,6 +504,7 @@ public final class DungeonPlayerSession {
      * Captures the player's current hotbar so a temporary menu can be restored later.
      */
     public void captureHotbar() {
+        this.requireActiveSession();
         if (this.instance == null) {
             if (this.recoveryJournal.hasRecovery() && this.savedInventory == null) {
                 if (!this.recoverPendingState())
@@ -500,6 +523,7 @@ public final class DungeonPlayerSession {
      * Restores the most recently captured hotbar snapshot and clears transient menu state.
      */
     public void restoreCapturedHotbar() {
+        if (this.expired) return;
         this.hotbarRevision++;
         HotbarSetEvent event = new HotbarSetEvent(this.savedHotbar, this);
         Bukkit.getPluginManager().callEvent(event);
@@ -625,11 +649,13 @@ public final class DungeonPlayerSession {
     }
 
     public void setSavedPosition(Location loc) {
+        this.requireActiveSession();
         this.savedPosition = loc;
         this.saveExitLocation();
     }
 
     public void saveExitLocation() {
+        this.requireActiveSession();
         if (this.instance != null) {
             this.playerData.set("DungeonReturnLocation", this.savedPosition);
             this.playerData.save(this.playerDataFile);
@@ -642,11 +668,13 @@ public final class DungeonPlayerSession {
     }
 
     public void clearExitLocation() {
+        this.requireActiveSession();
         this.playerData.set("DungeonReturnLocation", null);
         this.playerData.save(this.playerDataFile);
     }
 
     public void setDungeonFinished(StaticDungeon dungeon) {
+        this.requireActiveSession();
         if (!this.completedDungeons.contains(dungeon.getWorldName())) {
             this.completedDungeons.add(dungeon.getWorldName());
         }
@@ -656,12 +684,14 @@ public final class DungeonPlayerSession {
     }
 
     public void setDungeonUnfinished(StaticDungeon dungeon) {
+        this.requireActiveSession();
         this.completedDungeons.remove(dungeon.getWorldName());
         this.playerData.set("CompletedDungeons", this.completedDungeons);
         this.playerData.save(this.playerDataFile);
     }
 
     public void setDungeonSavePoint(Location loc, String dungeon) {
+        this.requireActiveSession();
         loc = loc.clone();
         loc.setWorld(null);
         this.playerData.set("SavePoints." + dungeon, loc);
@@ -674,11 +704,13 @@ public final class DungeonPlayerSession {
     }
 
     public void clearDungeonSavePoint(String dungeon) {
+        this.requireActiveSession();
         this.playerData.set("SavePoints." + dungeon, null);
         this.playerData.save(this.playerDataFile);
     }
 
     public void queueReload() {
+        this.requireActiveSession();
         this.reloadQueued = true;
         Bukkit.getScheduler()
                 .runTaskLater(
@@ -723,10 +755,12 @@ public final class DungeonPlayerSession {
     }
 
     public Player getPlayer() {
+        this.requireActiveSession();
         return this.player;
     }
 
     public void setPlayer(Player player) {
+        this.requireActiveSession();
         if (this.player != player) this.hotbarRevision++;
         this.player = player;
         if (!this.recoveryJournal.hasPendingTransaction()) this.flushPendingAccessKeyRefund();
@@ -737,6 +771,7 @@ public final class DungeonPlayerSession {
     }
 
     public void setInstance(DungeonInstance instance) {
+        this.requireActiveSession();
         this.instance = instance;
     }
 
@@ -764,6 +799,7 @@ public final class DungeonPlayerSession {
     }
 
     public boolean reserveAccessKey(String dungeonName, ItemStack reservedKey) {
+        this.requireActiveSession();
         if (reservedKey == null || reservedKey.getType().isAir()) {
             return false;
         }
@@ -787,6 +823,7 @@ public final class DungeonPlayerSession {
 
     public boolean completeReservedAccessKey(
             String dungeonName, @Nullable ItemStack replacementKey) {
+        this.requireActiveSession();
         if (!this.hasReservedAccessKey(dungeonName)) {
             return false;
         }
@@ -808,6 +845,7 @@ public final class DungeonPlayerSession {
     }
 
     public boolean refundReservedAccessKey() {
+        this.requireActiveSession();
         if (!this.hasReservedAccessKey()) {
             return false;
         }
@@ -820,28 +858,37 @@ public final class DungeonPlayerSession {
     }
 
     public void flushPendingAccessKeyRefund() {
-        if (this.pendingAccessKeyRefund == null
-                || this.pendingAccessKeyRefund.getType().isAir()
-                || this.player == null
-                || !this.player.isOnline()) {
-            return;
+        this.requireActiveSession();
+        this.persistPendingAccessKeyRefunds();
+        if (this.player == null
+                || !this.player.isOnline()
+                || this.instance != null
+                || this.recoveryJournal.hasPendingTransaction()) return;
+        try {
+            this.recoveryJournal.deliverRefunds(this.player);
+        } catch (RuntimeException failure) {
+            this.blockUnsafePlayerState(failure);
         }
+    }
 
-        ItemUtils.giveOrDrop(this.player, this.pendingAccessKeyRefund);
-        this.pendingAccessKeyRefund = null;
+    private void persistPendingAccessKeyRefunds() {
+        if (this.pendingAccessKeyRefunds.isEmpty()) return;
+        this.recoveryJournal.addRefunds(this.pendingAccessKeyRefunds.toArray(ItemStack[]::new));
+        this.pendingAccessKeyRefunds.clear();
     }
 
     private void queueAccessKeyRefund(@Nullable ItemStack refundedKey) {
-        if (refundedKey == null || refundedKey.getType().isAir()) {
-            return;
-        }
-
-        if (this.player != null && this.player.isOnline()) {
+        if (refundedKey == null || refundedKey.getType().isAir()) return;
+        if (this.player != null
+                && this.player.isOnline()
+                && this.instance == null
+                && !this.recoveryJournal.hasPendingTransaction()) {
             ItemUtils.giveOrDrop(this.player, refundedKey);
             return;
         }
-
-        this.pendingAccessKeyRefund = refundedKey.clone();
+        this.pendingAccessKeyRefunds.add(refundedKey.clone());
+        // Keep the in-memory copy if persistence fails. Expiry retries rather than dropping it.
+        this.flushPendingAccessKeyRefund();
     }
 
     public GameMode getSavedGameMode() {

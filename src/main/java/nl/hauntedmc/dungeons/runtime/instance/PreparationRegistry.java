@@ -24,6 +24,10 @@ public final class PreparationRegistry {
         return !closed && pending.putIfAbsent(session, attempt) == null;
     }
 
+    public boolean contains(DungeonPlayerSession session) {
+        return pending.containsKey(session);
+    }
+
     public boolean owns(DungeonPlayerSession session, Pending attempt) {
         return pending.get(session) == attempt;
     }

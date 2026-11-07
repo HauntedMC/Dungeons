@@ -1,3 +1,8 @@
+sessions:
+  # int. Reconnect grace in seconds for inactive, disconnected player sessions. Use a positive integer.
+  # Active runs and reservations remain retained; recovery and rewards are checkpointed before expiry.
+  offline_retention_seconds: 300
+
 instances:
   # int. Maximum dungeon instances allowed across the whole server. Set 0 for no global limit.
   max_active: 10

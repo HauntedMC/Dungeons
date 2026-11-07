@@ -15,7 +15,6 @@ import org.bukkit.persistence.PersistentDataType;
 
 import java.lang.reflect.Proxy;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -25,6 +24,7 @@ final class NativePlayerRecovery {
     private NativePlayerRecovery() {}
 
     static CompletionStage<Void> run(AcceptancePlugin test) {
+        boolean[] online = {true};
         ItemStack[][] contents = {new ItemStack[41]};
         ItemStack[][] armor = {new ItemStack[4]};
         var inventory =
@@ -84,7 +84,8 @@ final class NativePlayerRecovery {
                                 case "getLocation" -> location[0].clone();
                                 case "getAttribute" -> attribute;
                                 case "getActivePotionEffects" -> List.of();
-                                case "isOnline", "addPotionEffects" -> true;
+                                case "isOnline" -> online[0];
+                                case "addPotionEffects" -> true;
                                 case "isDead", "isFlying", "getAllowFlight" -> false;
                                 case "teleport" -> {
                                     location[0] = ((Location) args[0]).clone();
@@ -140,35 +141,92 @@ final class NativePlayerRecovery {
         contents[0][0] = original.clone();
         contents[0][40] = new ItemStack(Material.SHIELD);
         armor[0][0] = new ItemStack(Material.DIAMOND_BOOTS);
-        var first = new DungeonPlayerSession(test.runtime().environment().plugin(), player);
+        var registry = test.runtime().playerSessions();
+        var first = registry.put(player);
         require(first.prepareRecovery(), "Native recovery record could not be prepared");
         first.addReward(new ItemStack(Material.EMERALD, 5));
         contents[0] = new ItemStack[41];
         armor[0] = new ItemStack[4];
         values.put("GameMode", GameMode.CREATIVE);
         values.put("Exp", 0f);
-        var restarted = new DungeonPlayerSession(test.runtime().environment().plugin(), player);
-        require(restarted.recoverPendingState(), "Native player recovery failed");
-        require(contents[0][0].equals(original), "Native recovery lost original item components");
-        require(contents[0][40].getType() == Material.SHIELD, "Native recovery lost offhand");
-        require(armor[0][0].getType() == Material.DIAMOND_BOOTS, "Native recovery lost armor");
+        online[0] = false;
         require(
-                player.getGameMode() == GameMode.SURVIVAL && player.getExp() == .6f,
-                "Native recovery lost game mode or XP");
-        require(
-                restarted.getRewardItems().size() == 1,
-                "Native reward did not survive session recreation");
-        require(
-                restarted.claimReward(restarted.getRewardItems().getFirst()),
-                "Native reward delivery failed");
-        require(
-                contents[0][1].getType() == Material.EMERALD && contents[0][1].getAmount() == 5,
-                "Native reward delivery lost items");
-        var again = new DungeonPlayerSession(test.runtime().environment().plugin(), player);
-        require(
-                again.recoverPendingState() && again.getRewardItems().isEmpty(),
-                "Native delivery was not acknowledged");
-        return CompletableFuture.completedFuture(null);
+                first.reserveAccessKey("native-refund", new ItemStack(Material.TRIPWIRE_HOOK, 2)),
+                "Could not reserve native refund fixture");
+        require(first.refundReservedAccessKey(), "Could not persist native offline refund");
+        Object grace = test.runtime().config().get("sessions.offline_retention_seconds");
+        test.runtime().config().set("sessions.offline_retention_seconds", 1);
+        registry.disconnected(player);
+        return test.afterTicks(25)
+                .thenRun(
+                        () -> {
+                            try {
+                                registry.expireOfflineSessions();
+                                require(
+                                        first.isExpired() && registry.get(id) == null,
+                                        "Offline session did not expire");
+                                online[0] = true;
+                                var restarted = registry.put(player);
+                                require(
+                                        restarted.recoverPendingState(),
+                                        "Native player recovery failed");
+                                require(
+                                        contents[0][0].equals(original),
+                                        "Native recovery lost original item components");
+                                require(
+                                        contents[0][40].getType() == Material.SHIELD,
+                                        "Native recovery lost offhand");
+                                require(
+                                        armor[0][0].getType() == Material.DIAMOND_BOOTS,
+                                        "Native recovery lost armor");
+                                require(
+                                        player.getGameMode() == GameMode.SURVIVAL
+                                                && player.getExp() == .6f,
+                                        "Native recovery lost game mode or XP");
+                                require(
+                                        restarted.getRewardItems().size() == 1,
+                                        "Native reward did not survive session recreation");
+                                require(
+                                        restarted.claimReward(
+                                                restarted.getRewardItems().getFirst()),
+                                        "Native reward delivery failed");
+                                require(
+                                        Arrays.stream(contents[0])
+                                                        .filter(Objects::nonNull)
+                                                        .filter(
+                                                                stack ->
+                                                                        stack.getType()
+                                                                                == Material.EMERALD)
+                                                        .mapToInt(ItemStack::getAmount)
+                                                        .sum()
+                                                == 5,
+                                        "Native reward delivery lost items");
+                                var again =
+                                        new DungeonPlayerSession(
+                                                test.runtime().environment().plugin(), player);
+                                require(
+                                        again.recoverPendingState()
+                                                && again.getRewardItems().isEmpty(),
+                                        "Native delivery was not acknowledged");
+                                require(
+                                        Arrays.stream(contents[0])
+                                                        .filter(Objects::nonNull)
+                                                        .filter(
+                                                                stack ->
+                                                                        stack.getType()
+                                                                                == Material
+                                                                                        .TRIPWIRE_HOOK)
+                                                        .mapToInt(ItemStack::getAmount)
+                                                        .sum()
+                                                == 2,
+                                        "Offline key refund was lost or duplicated during"
+                                            + " expiry/recovery");
+                            } finally {
+                                test.runtime()
+                                        .config()
+                                        .set("sessions.offline_retention_seconds", grace);
+                            }
+                        });
     }
 
     private interface Calls {

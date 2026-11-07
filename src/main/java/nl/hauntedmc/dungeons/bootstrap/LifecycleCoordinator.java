@@ -83,6 +83,10 @@ public final class LifecycleCoordinator {
 
             for (DungeonInstance instance : this.managedInstances()) {
                 try {
+                    for (DungeonPlayerSession participant :
+                            new ArrayList<>(instance.getPlayers())) {
+                        instance.removePlayer(participant, true);
+                    }
                     instance.dispose();
                 } catch (Exception exception) {
                     this.runtime
@@ -95,8 +99,19 @@ public final class LifecycleCoordinator {
                 }
             }
         } finally {
-            // This also executes owner-thread captures cancelled by Paper during disable.
-            nl.hauntedmc.dungeons.config.ConfigurationFile.flushPendingSaves();
+            try {
+                this.runtime.playerSessions().shutdown();
+            } catch (RuntimeException failure) {
+                this.runtime
+                        .environment()
+                        .logger()
+                        .error(
+                                "Failed to checkpoint remaining player sessions during shutdown.",
+                                failure);
+            } finally {
+                // This also executes owner-thread captures cancelled by Paper during disable.
+                nl.hauntedmc.dungeons.config.ConfigurationFile.flushPendingSaves();
+            }
         }
     }
 

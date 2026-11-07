@@ -94,7 +94,8 @@ class TeamJoinContractTest {
             offline.online = true;
             sessions.get(offline.player).flushPendingAccessKeyRefund();
             sessions.get(offline.player).flushPendingAccessKeyRefund();
-            verify(offline.inventory).addItem(any(ItemStack.class));
+            assertEquals(1, offline.contents[0].getAmount());
+            assertTrue(sessions.get(offline.player).getRewardItems().isEmpty());
         }
     }
 
