@@ -36,6 +36,9 @@ uses actual Paper inventory/equipment containers, including body, saddle, armor
 and offhand slots. The platform acceptance profile also exercises world lifecycle,
 formats, unload retry, generation, warm pools and cold restart persistence.
 
+The reviewed revision passed 420 unit/contract tests, Checkstyle, native Paper
+acceptance and cold-restart checks.
+
 Run `./mvnw -Pplatform-acceptance verify`. These checks do not represent a load test
 or an end-to-end simulation of every plugin installed on the production server.
 
