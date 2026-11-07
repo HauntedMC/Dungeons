@@ -46,7 +46,13 @@ public final class PreparationRegistry {
     public void cancelDungeon(@Nullable String worldName) {
         for (Pending attempt : pending.values()) {
             if (worldName == null || attempt.dungeon().getWorldName().equals(worldName)) {
-                attempt.cancel();
+                try {
+                    attempt.cancel();
+                } catch (RuntimeException failure) {
+                    // Keep failed ownership for retry while allowing unrelated players to settle.
+                    attempt.dungeon().getEnvironment().logger()
+                            .error("Failed to cancel a dungeon preparation; retaining it for retry.", failure);
+                }
             }
         }
     }

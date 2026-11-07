@@ -53,9 +53,9 @@ public final class LifecycleCoordinator {
                             .error("Failed to close loot editors", failure);
                 }
             }
-            this.runtime.preparations().shutdown();
-            this.discardQueuedStarts(null);
-            this.refundOutstandingReservedKeys(null);
+            this.runCleanup("pending admissions", () -> this.runtime.preparations().shutdown());
+            this.runCleanup("queued starts", () -> this.discardQueuedStarts(null));
+            this.runCleanup("reserved access keys", () -> this.refundOutstandingReservedKeys(null));
 
             for (Player player : Bukkit.getOnlinePlayers()) {
                 try {
@@ -88,14 +88,14 @@ public final class LifecycleCoordinator {
             }
 
             if (this.runtime.teamService() != null) {
-                this.runtime.teamService().shutdown();
+                this.runCleanup("team service", () -> this.runtime.teamService().shutdown());
             }
 
             for (DungeonInstance instance : this.managedInstances()) {
                 try {
                     for (DungeonPlayerSession participant :
                             new ArrayList<>(instance.getPlayers())) {
-                        instance.removePlayer(participant, true);
+                        this.runCleanup("instance participant", () -> instance.removePlayer(participant, true));
                     }
                     instance.dispose();
                 } catch (Exception exception) {
@@ -122,6 +122,15 @@ public final class LifecycleCoordinator {
                 // This also executes owner-thread captures cancelled by Paper during disable.
                 nl.hauntedmc.dungeons.config.ConfigurationFile.flushPendingSaves();
             }
+        }
+    }
+
+    private void runCleanup(String stage, Runnable action) {
+        try {
+            action.run();
+        } catch (RuntimeException failure) {
+            this.runtime.environment().logger()
+                    .error("Failed to clean up {}; continuing other shutdown stages.", stage, failure);
         }
     }
 
@@ -233,7 +242,7 @@ public final class LifecycleCoordinator {
                 continue;
             }
 
-            this.runtime.dungeonQueueCoordinator().discardQueue(queue);
+            this.runCleanup("queue", () -> this.runtime.dungeonQueueCoordinator().discardQueue(queue));
         }
     }
 
@@ -241,7 +250,7 @@ public final class LifecycleCoordinator {
      * Refunds any reserved access keys for players who are waiting to start a dungeon.
      */
     private void refundOutstandingReservedKeys(@Nullable String dungeonName) {
-        this.runtime.teamService().clearQueuedStarts(dungeonName);
+        this.runCleanup("team queued starts", () -> this.runtime.teamService().clearQueuedStarts(dungeonName));
 
         for (Player player : Bukkit.getOnlinePlayers()) {
             DungeonPlayerSession playerSession = this.runtime.playerSessions().get(player);

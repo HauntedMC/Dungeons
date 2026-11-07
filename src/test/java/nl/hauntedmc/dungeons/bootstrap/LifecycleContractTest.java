@@ -30,6 +30,44 @@ class LifecycleContractTest {
     @TempDir Path directory;
 
     @Test
+    void failedTeamShutdownCannotPreventWorldDisposalOrPlayerCheckpoints() throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var catalog = mock(DungeonRepository.class);
+            f.paper.runtime.setDungeonCatalog(catalog);
+            when(catalog.getLoadedDungeons()).thenReturn(List.of(f.dungeon));
+            f.paper.runtime.setQueueRegistry(mock(DungeonQueueRegistry.class));
+            var teams = mock(DungeonTeamService.class);
+            f.paper.runtime.setTeamService(teams);
+            doThrow(new IllegalStateException("team shutdown failed")).when(teams).shutdown();
+            f.dungeon.getInstances().add(f.run);
+            f.paper.runtime.activeInstances().registerActiveInstance(f.run);
+            f.paper.bukkit.when(() -> Bukkit.unloadWorld(f.world, false)).thenReturn(true);
+            assertDoesNotThrow(() -> new LifecycleCoordinator(f.paper.runtime, mock(CoreBootstrap.class)).shutdown());
+            assertNull(f.run.getInstanceWorld());
+            assertTrue(f.paper.runtime.activeInstances().getActiveInstances().isEmpty());
+        }
+    }
+
+    @Test
+    void oneFailedPreparationCancellationCannotAbandonTheOthers() throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var registry = f.paper.runtime.preparations();
+            var broken = mock(nl.hauntedmc.dungeons.runtime.instance.PreparationRegistry.Pending.class);
+            var healthy = mock(nl.hauntedmc.dungeons.runtime.instance.PreparationRegistry.Pending.class);
+            when(broken.dungeon()).thenReturn(f.dungeon);
+            when(healthy.dungeon()).thenReturn(f.dungeon);
+            doThrow(new IllegalStateException("refund storage unavailable")).when(broken).cancel();
+            var one = f.session(new PlayerState());
+            var two = f.session(new PlayerState());
+            assertTrue(registry.register(one, broken));
+            assertTrue(registry.register(two, healthy));
+            assertDoesNotThrow(registry::shutdown);
+            verify(healthy).cancel();
+            assertTrue(registry.owns(one, broken));
+        }
+    }
+
+    @Test
     void shutdownSettlesOfflineRunMembersBeforeDisposalAndReleasesDurableSessions()
             throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
@@ -83,8 +121,9 @@ class LifecycleContractTest {
             var teams = mock(DungeonTeamService.class);
             paper.runtime.setTeamService(teams);
             doThrow(new IllegalStateException("shutdown hook failed")).when(teams).shutdown();
-            assertThrows(
-                    IllegalStateException.class,
+            paper.runtime.setDungeonCatalog(mock(DungeonRepository.class));
+            paper.runtime.setPlayerSessions(mock(PlayerSessionRegistry.class));
+            assertDoesNotThrow(
                     () ->
                             new LifecycleCoordinator(paper.runtime, mock(CoreBootstrap.class))
                                     .shutdown());
