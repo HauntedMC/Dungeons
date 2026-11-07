@@ -18,6 +18,73 @@ class PlayerRecoveryJournalTest {
     @TempDir Path directory;
 
     @Test
+    void invalidCapturesDoNotLeaveARecoveryRecordThatBlocksTheNextAttempt() {
+        try (var paper = new PaperBoundary()) {
+            var player = new PlayerState();
+            var path = directory.resolve("invalid.yml");
+            var journal = new PlayerRecoveryJournal(path);
+            player.contents = new org.bukkit.inventory.ItemStack[36];
+            assertThrows(IllegalArgumentException.class, () -> journal.begin(player.player));
+            assertFalse(journal.hasRecovery());
+            assertFalse(Files.exists(path));
+            player.contents = new org.bukkit.inventory.ItemStack[43];
+            journal.begin(player.player);
+            assertTrue(new PlayerRecoveryJournal(path).hasRecovery());
+        }
+    }
+
+    @Test
+    void legacySnapshotsExpandToModernSlotsAndPopulatedExtraSlotsAreNeverTruncated() {
+        try (var paper = new PaperBoundary()) {
+            var player = new PlayerState();
+            player.contents = new org.bukkit.inventory.ItemStack[41];
+            player.contents[40] = PlayerState.stack(2);
+            var path = directory.resolve("legacy.yml");
+            new PlayerRecoveryJournal(path).begin(player.player);
+            player.contents = new org.bukkit.inventory.ItemStack[43];
+            paper.bukkit.when(() -> Bukkit.getWorld(player.originWorld.getUID()))
+                    .thenReturn(player.originWorld);
+            assertTrue(new PlayerRecoveryJournal(path).recover(player.player));
+            assertEquals(43, player.contents.length);
+            assertEquals(2, player.contents[40].getAmount());
+            assertNull(player.contents[42]);
+            var extended = new org.bukkit.inventory.ItemStack[43];
+            extended[42] = PlayerState.stack(1);
+            player.contents = new org.bukkit.inventory.ItemStack[41];
+            assertThrows(IllegalStateException.class,
+                    () -> PlayerRecoverySnapshot.restoreContents(player.inventory, extended));
+            assertEquals(41, player.contents.length);
+        }
+    }
+
+    @Test
+    void modernPlayerInventoryCanEnterRecoverAndDeliverRewardsWithoutLosingExtraEquipment() {
+        try (var paper = new PaperBoundary()) {
+            var player = new PlayerState();
+            player.contents = Arrays.copyOf(player.contents, 43);
+            player.contents[41] = PlayerState.stack(2);
+            player.contents[42] = PlayerState.stack(3);
+            paper.bukkit.when(() -> Bukkit.getWorld(player.originWorld.getUID()))
+                    .thenReturn(player.originWorld);
+            var path = directory.resolve("modern.yml");
+            var journal = new PlayerRecoveryJournal(path);
+            journal.begin(player.player);
+            assertEquals(43, journal.originalSnapshot(player.player).contents().length);
+            player.inventory.clear();
+            var restarted = new PlayerRecoveryJournal(path);
+            assertTrue(restarted.recover(player.player));
+            assertEquals(2, player.contents[41].getAmount());
+            assertEquals(3, player.contents[42].getAmount());
+            var reward = PlayerState.stack(7);
+            restarted.addRewards(reward);
+            assertTrue(restarted.claim(player.player, reward));
+            assertEquals(7, player.contents[0].getAmount());
+            assertEquals(3, player.contents[42].getAmount());
+            assertTrue(new PlayerRecoveryJournal(path).rewards().isEmpty());
+        }
+    }
+
+    @Test
     void deadOrOfflineClaimsLeaveRewardsDurableUntilThePlayerCanReceiveThem() {
         try (var paper = new PaperBoundary()) {
             var player = new PlayerState();

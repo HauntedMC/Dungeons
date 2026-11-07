@@ -123,3 +123,11 @@ and its companion legacy/dimension folder. These files require manual recovery: 
 before copying recovered world data into a template. Normal successful disposal removes them;
 retired `.disposed-<uuid>` folders have already passed final persistence and remain eligible
 for startup deletion. Recovery markers never enter templates through the editor save path.
+
+Player recovery accepts legacy 41-slot inventories and modern Paper inventories with body and
+saddle equipment slots (43 slots on Paper 26.3). Restoration pads older snapshots to the live
+inventory size and refuses to truncate populated equipment slots. Snapshot validation happens
+before the write-ahead record is committed. Existing 1.2.16 records with 43 slots remain valid
+and recover through the normal online-player/reconnect lifecycle; do not delete those records.
+The native acceptance fixture uses Paper's actual inventory/equipment containers so slot-layout
+changes cannot be hidden behind a fixed-size inventory array.

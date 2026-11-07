@@ -7,6 +7,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.potion.PotionEffect;
 
 import java.util.*;
@@ -195,8 +196,8 @@ record PlayerRecoverySnapshot(
                         (float) data.getDouble("pitch"));
         var contents = decode(Objects.requireNonNull(data.getList("contents")));
         var armor = decode(Objects.requireNonNull(data.getList("armor")));
-        if (contents.length != 41
-                || armor.length != 4
+        validateInventoryContents(contents);
+        if (armor.length != 4
                 || data.getInt("held") < 0
                 || data.getInt("held") > 8
                 || !Double.isFinite(data.getDouble("health"))
@@ -236,6 +237,26 @@ record PlayerRecoverySnapshot(
                 effects);
     }
 
+    static void validateInventoryContents(ItemStack[] contents) {
+        // Paper adds body and saddle equipment slots after the legacy offhand slot.
+        // Keep existing 41-slot journals readable, including those written before an upgrade.
+        if (contents.length < 41 || contents.length > 43)
+            throw new IllegalArgumentException("Invalid player inventory slot count: " + contents.length);
+    }
+
+    static void restoreContents(PlayerInventory inventory, ItemStack[] contents) {
+        validateInventoryContents(contents);
+        int size = inventory.getSize();
+        if (size < 41 || size > 43)
+            throw new IllegalArgumentException("Unsupported live player inventory size: " + size);
+        // Never silently truncate populated equipment slots when restoring on an older server.
+        for (int slot = size; slot < contents.length; slot++) {
+            if (contents[slot] != null && !contents[slot].getType().isAir())
+                throw new IllegalStateException("Cannot restore occupied player equipment slot " + slot);
+        }
+        inventory.setContents(Arrays.copyOf(copy(contents), size));
+    }
+
     void apply(Player player, World world) {
         Location target = location.clone();
         target.setWorld(Objects.requireNonNull(world, "Recovery world is unavailable"));
@@ -243,7 +264,7 @@ record PlayerRecoverySnapshot(
         if (player.getVehicle() != null) player.getVehicle().removePassenger(player);
         if (!player.teleport(target, PlayerTeleportEvent.TeleportCause.PLUGIN))
             throw new IllegalStateException("Recovery teleport was rejected");
-        player.getInventory().setContents(copy(contents));
+        restoreContents(player.getInventory(), contents);
         player.getInventory().setArmorContents(copy(armor));
         player.getInventory().setHeldItemSlot(heldSlot);
         this.restoreMovement(player);

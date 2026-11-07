@@ -23,28 +23,10 @@ import java.util.concurrent.CompletionStage;
 final class NativePlayerRecovery {
     private NativePlayerRecovery() {}
 
-    static CompletionStage<Void> run(AcceptancePlugin test) {
+    static CompletionStage<Void> run(AcceptancePlugin test) throws Exception {
         boolean[] online = {true};
-        ItemStack[][] contents = {new ItemStack[41]};
-        ItemStack[][] armor = {new ItemStack[4]};
-        var inventory =
-                proxy(
-                        PlayerInventory.class,
-                        (method, args) ->
-                                switch (method) {
-                                    case "getContents" -> contents[0].clone();
-                                    case "getArmorContents" -> armor[0].clone();
-                                    case "getHeldItemSlot" -> 2;
-                                    case "setContents" -> {
-                                        contents[0] = ((ItemStack[]) args[0]).clone();
-                                        yield null;
-                                    }
-                                    case "setArmorContents" -> {
-                                        armor[0] = ((ItemStack[]) args[0]).clone();
-                                        yield null;
-                                    }
-                                    default -> null;
-                                });
+        PlayerInventory inventory = nativeInventory();
+        test.getLogger().info("Native player inventory slots: " + inventory.getSize());
         var pdc = new ItemStack(Material.STONE).getItemMeta().getPersistentDataContainer();
         var attribute =
                 proxy(
@@ -138,15 +120,18 @@ final class NativePlayerRecovery {
                     meta.getPersistentDataContainer()
                             .set(token, PersistentDataType.STRING, "preserved");
                 });
-        contents[0][0] = original.clone();
-        contents[0][40] = new ItemStack(Material.SHIELD);
-        armor[0][0] = new ItemStack(Material.DIAMOND_BOOTS);
+        var initial = inventory.getContents();
+        initial[0] = original.clone();
+        initial[40] = new ItemStack(Material.SHIELD);
+        initial[41] = new ItemStack(Material.LEATHER_HORSE_ARMOR);
+        initial[42] = new ItemStack(Material.SADDLE);
+        inventory.setContents(initial);
+        inventory.setArmorContents(new ItemStack[] {new ItemStack(Material.DIAMOND_BOOTS), null, null, null});
         var registry = test.runtime().playerSessions();
         var first = registry.put(player);
         require(first.prepareRecovery(), "Native recovery record could not be prepared");
         first.addReward(new ItemStack(Material.EMERALD, 5));
-        contents[0] = new ItemStack[41];
-        armor[0] = new ItemStack[4];
+        inventory.clear();
         values.put("GameMode", GameMode.CREATIVE);
         values.put("Exp", 0f);
         online[0] = false;
@@ -196,13 +181,17 @@ final class NativePlayerRecovery {
                                         restarted.recoverPendingState(),
                                         "Native player recovery failed");
                                 require(
-                                        contents[0][0].equals(original),
+                                        inventory.getContents()[0].equals(original),
                                         "Native recovery lost original item components");
                                 require(
-                                        contents[0][40].getType() == Material.SHIELD,
+                                        inventory.getContents()[40].getType() == Material.SHIELD,
                                         "Native recovery lost offhand");
+                                require(inventory.getContents()[41].getType() == Material.LEATHER_HORSE_ARMOR,
+                                        "Native recovery lost body equipment");
+                                require(inventory.getContents()[42].getType() == Material.SADDLE,
+                                        "Native recovery lost saddle equipment");
                                 require(
-                                        armor[0][0].getType() == Material.DIAMOND_BOOTS,
+                                        inventory.getArmorContents()[0].getType() == Material.DIAMOND_BOOTS,
                                         "Native recovery lost armor");
                                 require(
                                         player.getGameMode() == GameMode.SURVIVAL
@@ -216,7 +205,7 @@ final class NativePlayerRecovery {
                                                 restarted.getRewardItems().getFirst()),
                                         "Native reward delivery failed");
                                 require(
-                                        Arrays.stream(contents[0])
+                                        Arrays.stream(inventory.getContents())
                                                         .filter(Objects::nonNull)
                                                         .filter(
                                                                 stack ->
@@ -234,7 +223,7 @@ final class NativePlayerRecovery {
                                                 && again.getRewardItems().isEmpty(),
                                         "Native delivery was not acknowledged");
                                 require(
-                                        Arrays.stream(contents[0])
+                                        Arrays.stream(inventory.getContents())
                                                         .filter(Objects::nonNull)
                                                         .filter(
                                                                 stack ->
@@ -252,6 +241,47 @@ final class NativePlayerRecovery {
                                         .set("sessions.offline_retention_seconds", grace);
                             }
                         });
+    }
+
+    /** Uses Paper's real inventory and item/equipment containers, excluding network notifications. */
+    private static PlayerInventory nativeInventory() throws Exception {
+        Class<?> playerType = Class.forName("net.minecraft.world.entity.player.Player");
+        Class<?> equipmentType = Class.forName("net.minecraft.world.entity.EntityEquipment");
+        Class<?> inventoryType = Class.forName("net.minecraft.world.entity.player.Inventory");
+        Class<?> itemType = Class.forName("net.minecraft.world.item.ItemStack");
+        Object handle = inventoryType.getConstructor(playerType, equipmentType)
+                .newInstance(null, equipmentType.getConstructor().newInstance());
+        PlayerInventory nativeView = (PlayerInventory) Class.forName(
+                "org.bukkit.craftbukkit.inventory.CraftInventoryPlayer")
+                .getConstructor(inventoryType).newInstance(handle);
+        var set = inventoryType.getMethod("setItem", int.class, itemType);
+        var convert = Class.forName("org.bukkit.craftbukkit.inventory.CraftItemStack")
+                .getMethod("asNMSCopy", ItemStack.class);
+        return proxy(PlayerInventory.class, (method, args) -> {
+            try {
+                return switch (method) {
+                    case "getSize" -> nativeView.getSize();
+                    case "getContents" -> nativeView.getContents();
+                    case "getArmorContents" -> nativeView.getArmorContents();
+                    case "getHeldItemSlot" -> nativeView.getHeldItemSlot();
+                    case "setHeldItemSlot" -> {
+                        inventoryType.getMethod("setSelectedSlot", int.class).invoke(handle, args[0]);
+                        yield null;
+                    }
+                    case "setContents", "setArmorContents", "clear" -> {
+                        int offset = method.equals("setArmorContents") ? 36 : 0;
+                        ItemStack[] items = method.equals("clear")
+                                ? new ItemStack[nativeView.getSize()] : (ItemStack[]) args[0];
+                        for (int slot = 0; slot < items.length; slot++)
+                            set.invoke(handle, offset + slot, convert.invoke(null, items[slot]));
+                        yield null;
+                    }
+                    default -> throw new IllegalArgumentException("Unexpected inventory call: " + method);
+                };
+            } catch (ReflectiveOperationException failure) {
+                throw new IllegalStateException(failure);
+            }
+        });
     }
 
     private interface Calls {

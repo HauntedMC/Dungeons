@@ -40,13 +40,9 @@ final class PlayerRecoveryJournal {
                 if (state.contains("recovery")) UUID.fromString(state.getString("recovery.id"));
                 if (state.contains("delivery")) {
                     UUID.fromString(state.getString("delivery.id"));
-                    if (PlayerRecoverySnapshot.decode(
-                                            Objects.requireNonNull(
-                                                    state.getList("delivery.contents")))
-                                    .length
-                            != 41) {
-                        throw new IllegalArgumentException("Invalid delivery inventory size");
-                    }
+                    PlayerRecoverySnapshot.validateInventoryContents(
+                            PlayerRecoverySnapshot.decode(
+                                    Objects.requireNonNull(state.getList("delivery.contents"))));
                 }
             } catch (Exception failure) {
                 throw new IllegalStateException(
@@ -75,6 +71,8 @@ final class PlayerRecoveryJournal {
                 next -> {
                     next.set("recovery.id", UUID.randomUUID().toString());
                     snapshot.write(next.createSection("recovery.snapshot"));
+                    // Validate before publishing a record that could block every later admission.
+                    PlayerRecoverySnapshot.read(next.getConfigurationSection("recovery.snapshot"));
                 });
     }
 
@@ -247,10 +245,10 @@ final class PlayerRecoveryJournal {
         if (!state.contains("delivery")) return;
         String id = Objects.requireNonNull(state.getString("delivery.id"));
         if (!applied(player, id)) {
-            player.getInventory()
-                    .setContents(
-                            PlayerRecoverySnapshot.decode(
-                                    Objects.requireNonNull(state.getList("delivery.contents"))));
+            PlayerRecoverySnapshot.restoreContents(
+                    player.getInventory(),
+                    PlayerRecoverySnapshot.decode(
+                            Objects.requireNonNull(state.getList("delivery.contents"))));
             markAndSave(player, id);
         }
         commit(next -> next.set("delivery", null));

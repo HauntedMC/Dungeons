@@ -20,7 +20,7 @@ import java.util.*;
 public final class PlayerState {
     public final Player player = mock(Player.class);
     public final PlayerInventory inventory = mock(PlayerInventory.class);
-    public ItemStack[] contents = new ItemStack[41];
+    public ItemStack[] contents = new ItemStack[43];
     public ItemStack[] armor = new ItemStack[4];
     public double health = 13;
     public int food = 9, level = 17, heldSlot = 2;
