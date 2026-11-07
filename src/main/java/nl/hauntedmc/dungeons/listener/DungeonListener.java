@@ -154,6 +154,7 @@ public class DungeonListener implements Listener {
             return;
         }
 
+        this.dungeonManager.cancelPreparation(playerSession);
         playerSession.setAwaitingDungeon(false);
         if (playerSession.isEditMode()) {
             playerSession.restoreCapturedHotbar();

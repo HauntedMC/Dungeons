@@ -5,20 +5,15 @@ import nl.hauntedmc.dungeons.content.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.generation.layout.Layout;
 import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
-import nl.hauntedmc.dungeons.model.dungeon.DungeonDifficulty;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonLoadException;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.instance.EditableInstance;
 import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.registry.LayoutRegistry;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
-import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-import nl.hauntedmc.dungeons.util.text.TextUtils;
 import nl.hauntedmc.dungeons.util.world.GameRuleUtils;
 
 import org.apache.commons.io.FilenameUtils;
-import org.bukkit.Bukkit;
 import org.bukkit.Difficulty;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -36,8 +31,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Dungeon implementation that generates each run from a branching layout and room definitions.
@@ -177,254 +170,21 @@ public class BranchingDungeon extends DungeonDefinition {
             String difficultyName,
             int requestedPlayers,
             @Nullable UUID startedTeamLeaderId) {
-        DungeonPlayerSession playerSession = this.playerSessions().get(player);
-        LangUtils.sendMessage(
+        return this.prepareIsolatedInstance(
                 player,
-                "instance.lifecycle.loading",
-                LangUtils.placeholder("dungeon", this.getDisplayName()));
-        DungeonDifficulty difficulty = this.difficultyLevels.get(difficultyName);
-
-        Bukkit.getScheduler()
-                .runTaskAsynchronously(
-                        this.plugin(),
-                        () ->
-                                TextUtils.runTimed(
-                                        "Loading Dungeon " + this.getWorldName(),
-                                        () -> {
-                                            CountDownLatch latch = new CountDownLatch(1);
-                                            // Initialization may finish before creation returns.
-                                            CountDownLatch creationComplete = new CountDownLatch(1);
-                                            AtomicReference<BranchingInstance> instanceRef =
-                                                    new AtomicReference<>();
-
-                                            Bukkit.getScheduler()
-                                                    .runTask(
-                                                            this.plugin(),
-                                                            () -> {
-                                                                // Layout cloning and world
-                                                                // bootstrapping still
-                                                                // touch Bukkit state, so the actual
-                                                                // instance
-                                                                // creation is deferred to the
-                                                                // server thread.
-                                                                PlayableInstance raw =
-                                                                        this.createPlaySession(
-                                                                                latch,
-                                                                                startedTeamLeaderId);
-                                                                BranchingInstance instance =
-                                                                        raw == null
-                                                                                ? null
-                                                                                : raw.as(
-                                                                                        BranchingInstance
-                                                                                                .class);
-                                                                instanceRef.set(instance);
-                                                                creationComplete.countDown();
-
-                                                                if (instance == null) {
-                                                                    latch.countDown();
-                                                                }
-                                                            });
-
-                                            try {
-                                                long deadline =
-                                                        System.nanoTime()
-                                                                + TimeUnit.SECONDS.toNanos(5L);
-                                                boolean published =
-                                                        creationComplete.await(
-                                                                5L, TimeUnit.SECONDS);
-                                                boolean loaded =
-                                                        published
-                                                                && latch.await(
-                                                                        Math.max(
-                                                                                0L,
-                                                                                deadline
-                                                                                        - System
-                                                                                                .nanoTime()),
-                                                                        TimeUnit.NANOSECONDS);
-                                                BranchingInstance instance = instanceRef.get();
-
-                                                if (!loaded || instance == null) {
-                                                    this.schedulePrepareFailure(
-                                                            player,
-                                                            playerSession,
-                                                            instance,
-                                                            "instance.lifecycle.load-failed");
-                                                    return;
-                                                }
-
-                                                if (instance.hasLoadFailed()
-                                                        || !instance.isReady()) {
-                                                    this.schedulePrepareFailure(
-                                                            player,
-                                                            playerSession,
-                                                            instance,
-                                                            "instance.lifecycle.load-failed");
-                                                    return;
-                                                }
-
-                                                Bukkit.getScheduler()
-                                                        .runTask(
-                                                                this.plugin(),
-                                                                () -> {
-                                                                    // Start-point resolution
-                                                                    // depends on the
-                                                                    // generated world being ready,
-                                                                    // so the player
-                                                                    // is only admitted after the
-                                                                    // spawn has been
-                                                                    // validated here.
-                                                                    if (!player.isOnline()) {
-                                                                        this
-                                                                                .refundReservedAccessKey(
-                                                                                        playerSession);
-                                                                        playerSession
-                                                                                .setAwaitingDungeon(
-                                                                                        false);
-                                                                        this.discardInstance(
-                                                                                instance);
-                                                                        this.logger()
-                                                                                .warn(
-                                                                                        "Aborted loading branching instance '{}' because player '{}' disconnected before join.",
-                                                                                        this
-                                                                                                .getWorldName(),
-                                                                                        player
-                                                                                                .getName());
-                                                                        return;
-                                                                    }
-
-                                                                    instance.setDifficulty(
-                                                                            difficulty);
-                                                                    this.instances.add(instance);
-                                                                    this.activeInstances()
-                                                                            .registerActiveInstance(
-                                                                                    instance);
-                                                                    instance
-                                                                            .prepareValidStartPoint();
-
-                                                                    if (instance.getStartLoc()
-                                                                            == null) {
-                                                                        this
-                                                                                .refundReservedAccessKey(
-                                                                                        playerSession);
-                                                                        this.timeout(
-                                                                                instance,
-                                                                                playerSession);
-                                                                        instance.dispose();
-                                                                        return;
-                                                                    }
-
-                                                                    Bukkit.getScheduler()
-                                                                            .runTaskLater(
-                                                                                    this.plugin(),
-                                                                                    () -> {
-                                                                                        if (!player
-                                                                                                .isOnline()) {
-                                                                                            this
-                                                                                                    .refundReservedAccessKey(
-                                                                                                            playerSession);
-                                                                                            playerSession
-                                                                                                    .setAwaitingDungeon(
-                                                                                                            false);
-                                                                                            this
-                                                                                                    .discardInstance(
-                                                                                                            instance);
-                                                                                            return;
-                                                                                        }
-                                                                                        instance
-                                                                                                .addPlayer(
-                                                                                                        playerSession);
-                                                                                        if (playerSession
-                                                                                                        .getInstance()
-                                                                                                == instance) {
-                                                                                            this
-                                                                                                    .completeReservedAccessKey(
-                                                                                                            playerSession);
-                                                                                            nl
-                                                                                                    .hauntedmc
-                                                                                                    .dungeons
-                                                                                                    .util
-                                                                                                    .lang
-                                                                                                    .LangUtils
-                                                                                                    .sendMessage(
-                                                                                                            player,
-                                                                                                            "instance.lifecycle.entered",
-                                                                                                            LangUtils
-                                                                                                                    .placeholder(
-                                                                                                                            "dungeon",
-                                                                                                                            this
-                                                                                                                                    .getDisplayName()));
-                                                                                        } else {
-                                                                                            this
-                                                                                                    .refundReservedAccessKey(
-                                                                                                            playerSession);
-                                                                                            this
-                                                                                                    .discardInstance(
-                                                                                                            instance);
-                                                                                            nl
-                                                                                                    .hauntedmc
-                                                                                                    .dungeons
-                                                                                                    .util
-                                                                                                    .lang
-                                                                                                    .LangUtils
-                                                                                                    .sendMessage(
-                                                                                                            player,
-                                                                                                            "instance.lifecycle.load-failed",
-                                                                                                            LangUtils
-                                                                                                                    .placeholder(
-                                                                                                                            "dungeon",
-                                                                                                                            this
-                                                                                                                                    .getDisplayName()));
-                                                                                        }
-                                                                                        playerSession
-                                                                                                .setAwaitingDungeon(
-                                                                                                        false);
-                                                                                    },
-                                                                                    1L);
-                                                                });
-                                            } catch (InterruptedException exception) {
-                                                Thread.currentThread().interrupt();
-                                                this.schedulePrepareFailure(
-                                                        player,
-                                                        playerSession,
-                                                        null,
-                                                        "instance.lifecycle.load-failed");
-                                                this.logger()
-                                                        .error(
-                                                                "Interrupted while waiting for branching instance '{}' to initialize.",
-                                                                this.getWorldName(),
-                                                                exception);
-                                            }
-                                        }));
-
-        return true;
-    }
-
-    /**
-     * Performs schedule prepare failure.
-     */
-    private void schedulePrepareFailure(
-            Player player,
-            @Nullable DungeonPlayerSession playerSession,
-            @Nullable BranchingInstance instance,
-            String messageKey) {
-        Bukkit.getScheduler()
-                .runTask(
-                        this.plugin(),
-                        () -> {
-                            if (instance != null) {
-                                this.discardInstance(instance);
-                            }
-
-                            if (playerSession != null) {
-                                this.refundReservedAccessKey(playerSession);
-                                playerSession.setAwaitingDungeon(false);
-                            }
-
-                            LangUtils.sendMessage(
-                                    player,
-                                    messageKey,
-                                    LangUtils.placeholder("dungeon", this.getDisplayName()));
-                        });
+                difficultyName,
+                startedTeamLeaderId,
+                raw -> {
+                    if (!(raw instanceof BranchingInstance instance)) {
+                        throw new IllegalStateException("Expected a branching instance");
+                    }
+                    instance.prepareValidStartPoint();
+                    if (instance.getStartLoc() == null) {
+                        throw new IllegalStateException(
+                                "Generated instance has no safe start point");
+                    }
+                },
+                1L);
     }
 
     /**
@@ -435,7 +195,16 @@ public class BranchingDungeon extends DungeonDefinition {
             CountDownLatch latch, @Nullable UUID startedTeamLeaderId) {
         BranchingInstance instance = new BranchingInstance(this, latch);
         instance.setStartedTeamLeaderId(startedTeamLeaderId);
-        return instance.initialize() == null ? null : instance;
+        try {
+            return instance.initialize() == null ? null : instance;
+        } catch (RuntimeException | Error failure) {
+            // Initialization can throw after reserving files or scheduling world creation. Keep
+            // the partially created run managed until its cleanup has actually succeeded.
+            if (!this.instances.contains(instance)) this.instances.add(instance);
+            this.activeInstances().registerActiveInstance(instance);
+            this.discardInstance(instance);
+            throw failure;
+        }
     }
 
     /**

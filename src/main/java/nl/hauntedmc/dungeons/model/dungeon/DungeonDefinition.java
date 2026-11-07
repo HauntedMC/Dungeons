@@ -48,6 +48,7 @@ import org.yaml.snakeyaml.error.YAMLException;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -60,6 +61,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 /**
  * Base model for a dungeon definition loaded from disk.
@@ -918,6 +920,34 @@ public abstract class DungeonDefinition {
             String difficultyName,
             int requestedPlayers,
             @Nullable UUID startedTeamLeaderId);
+
+    /** Shared cancellation/publication lifecycle for static and generated isolated runs. */
+    protected final boolean prepareIsolatedInstance(
+            Player player,
+            String difficultyName,
+            @Nullable UUID startedTeamLeaderId,
+            Consumer<PlayableInstance> prepareAdmission,
+            long admissionDelay) {
+        DungeonPlayerSession session = this.playerSessions().get(player);
+        if (session == null) return false;
+        return new InstancePreparation(
+                        this,
+                        player,
+                        session,
+                        this.difficultyLevels.get(difficultyName),
+                        startedTeamLeaderId,
+                        this.preparationTimeout(),
+                        prepareAdmission,
+                        admissionDelay)
+                .start();
+    }
+
+    /**
+     * A wall-clock deadline covers scheduler delay, creation, initialization and final admission.
+     */
+    protected Duration preparationTimeout() {
+        return Duration.ofSeconds(5L);
+    }
 
     public void edit(UUID playerId) {
         if (this.editSession != null) {

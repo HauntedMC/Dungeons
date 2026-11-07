@@ -10,6 +10,7 @@ import nl.hauntedmc.dungeons.registry.FunctionRegistry;
 import nl.hauntedmc.dungeons.registry.TriggerRegistry;
 import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
 import nl.hauntedmc.dungeons.runtime.instance.ActiveInstanceRegistry;
+import nl.hauntedmc.dungeons.runtime.instance.PreparationRegistry;
 import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueCoordinator;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry;
@@ -27,6 +28,7 @@ import org.bukkit.configuration.file.FileConfiguration;
  */
 public final class DungeonsRuntime {
     private final PluginEnvironment environment;
+    private PreparationRegistry preparations = new PreparationRegistry();
     private final EventRelayListener elementEventHandler = new EventRelayListener();
     private final EventRelayListener instanceEventHandler = new EventRelayListener();
 
@@ -51,6 +53,16 @@ public final class DungeonsRuntime {
     /** Creates runtime state for one plugin lifecycle. */
     public DungeonsRuntime(DungeonsPlugin plugin) {
         this.environment = new PluginEnvironment(plugin);
+    }
+
+    /** Pending admissions belong to this runtime and are cancelled before shutdown/reload. */
+    public PreparationRegistry preparations() {
+        return this.preparations;
+    }
+
+    /** Bootstrap-only replacement for a fresh plugin start. */
+    public void setPreparations(PreparationRegistry preparations) {
+        this.preparations = Objects.requireNonNull(preparations, "preparations");
     }
 
     /** Returns the stable wrapper around plugin-specific APIs. */

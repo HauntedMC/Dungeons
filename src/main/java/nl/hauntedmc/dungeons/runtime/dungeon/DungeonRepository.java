@@ -14,6 +14,7 @@ import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonLoadException;
 import nl.hauntedmc.dungeons.registry.DungeonTypeRegistry;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
+import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.config.GeneratorConfigMigration;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import org.bukkit.Bukkit;
@@ -211,6 +212,11 @@ public final class DungeonRepository {
     /** Returns all loaded dungeons currently tracked in memory. */
     public Collection<DungeonDefinition> getLoadedDungeons() {
         return this.dungeons.values();
+    }
+
+    /** Cancels an isolated run before a departing player's state can be reused. */
+    public void cancelPreparation(DungeonPlayerSession session) {
+        this.runtime.preparations().cancel(session);
     }
 
     /** Creates a dungeon instance for one player with default requested player count. */

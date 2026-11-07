@@ -17,9 +17,12 @@ import nl.hauntedmc.dungeons.generation.layout.Layout;
 import nl.hauntedmc.dungeons.generation.room.InstanceRoom;
 import nl.hauntedmc.dungeons.gui.menu.RoomMenus;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
+import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
 import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.registry.LayoutRegistry;
+import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.support.*;
+import nl.hauntedmc.dungeons.util.world.WorldUtils;
 
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -30,11 +33,341 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.*;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 
 class PreparationContractTest {
     @TempDir Path directory;
+
+    static Future<?> runWaiter(RunFixture fixture, ExecutorService executor) {
+        var waiter = fixture.scheduler.asynchronous.getLast();
+        return executor.submit(
+                () -> {
+                    try (var bukkit = mockStatic(Bukkit.class)) {
+                        bukkit.when(Bukkit::getScheduler).thenReturn(fixture.scheduler.scheduler);
+                        waiter.run();
+                    }
+                });
+    }
+
+    @Test
+    @Timeout(10)
+    void aSchedulerFailureAfterPlayerAttachmentRollsBackThePartialAdmissionBeforeDisposal()
+            throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var dungeon = new PreparedDungeon(f, directory.resolve("partial-admission"));
+            var state = new PlayerState();
+            state.contents[0] = PlayerState.stack(7);
+            var session = f.session(state);
+            assertTrue(dungeon.prepareInstance(state.player, "DEFAULT", 1, null));
+            finishPreparation(f);
+            doThrow(new IllegalStateException("entry task rejected"))
+                    .when(f.scheduler.scheduler)
+                    .runTaskLater(
+                            any(org.bukkit.plugin.Plugin.class), any(Runnable.class), anyLong());
+            var manager = Bukkit.getPluginManager();
+            doAnswer(
+                            call -> {
+                                if (call.getArgument(0)
+                                        instanceof
+                                        nl.hauntedmc.dungeons.event.PlayerLeaveDungeonEvent) {
+                                    // Player restoration invokes plugin events; cancellation may be
+                                    // reentrant.
+                                    f.paper.runtime.preparations().cancel(session);
+                                }
+                                return null;
+                            })
+                    .when(manager)
+                    .callEvent(any(org.bukkit.event.Event.class));
+            f.scheduler.readyImmediate.remove().run();
+            assertNull(session.getInstance());
+            assertFalse(session.isAwaitingDungeon());
+            assertTrue(dungeon.created.getPlayers().isEmpty());
+            assertTrue(dungeon.getInstances().isEmpty());
+            assertTrue(f.paper.runtime.activeInstances().getActiveInstances().isEmpty());
+            assertEquals(1, dungeon.refunds);
+            assertEquals(GameMode.SURVIVAL, state.gameMode);
+            assertEquals(7, state.contents[0].getAmount());
+        }
+    }
+
+    @Test
+    @Timeout(10)
+    void aBranchingCreatorThatReturnsAfterCancellationDisposesItsGeneratedRun() throws Exception {
+        try (var layouts = new StaticMapSnapshot(LayoutRegistry.class, "layouts");
+                var f = new RunFixture(directory, new YamlConfiguration());
+                var menus = new HeadlessMenus();
+                var rooms = mockStatic(RoomMenus.class);
+                var executor = Executors.newSingleThreadExecutor()) {
+            LayoutRegistry.register(BranchingLayout.class, "branching");
+            var settings = new YamlConfiguration();
+            settings.set("generator.seal_open_connectors_with", "AIR");
+            var dungeon = new PreparedBranch(f, directory.resolve("late-branch"), settings);
+            dungeon.timeout = Duration.ofSeconds(1);
+            var session = f.session(new PlayerState());
+            f.paper.bukkit.when(() -> Bukkit.unloadWorld(f.world, false)).thenReturn(true);
+            assertTrue(dungeon.prepareInstance(session.getPlayer(), "DEFAULT", 1, null));
+            var waiting = runWaiter(f, executor);
+            var creation = f.scheduler.readyImmediate.poll(2, TimeUnit.SECONDS);
+            assertNotNull(creation);
+            dungeon.beforeReturn =
+                    () -> {
+                        try {
+                            waiting.get(2, TimeUnit.SECONDS);
+                        } catch (Exception failure) {
+                            throw new AssertionError(failure);
+                        }
+                    };
+            creation.run();
+            f.scheduler.readyImmediate.remove().run();
+            assertNull(session.getInstance());
+            assertFalse(session.isAwaitingDungeon());
+            assertTrue(dungeon.getInstances().isEmpty());
+            assertTrue(f.paper.runtime.activeInstances().getActiveInstances().isEmpty());
+            assertNull(dungeon.created.getInstanceWorld());
+        }
+    }
+
+    @Test
+    void realStaticFactoryCleansItsReservedFolderIfWorldSchedulingThrowsBeforeReturning()
+            throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            doThrow(new IllegalStateException("world initialization rejected"))
+                    .when(f.scheduler.scheduler)
+                    .runTask(any(org.bukkit.plugin.Plugin.class), any(Runnable.class));
+            assertThrows(
+                    IllegalStateException.class,
+                    () -> f.dungeon.createPlaySession(new CountDownLatch(1), null));
+            assertTrue(f.dungeon.getInstances().isEmpty());
+            assertTrue(f.paper.runtime.activeInstances().getActiveInstances().isEmpty());
+            assertFalse(Files.exists(WorldUtils.dimensionFolder("crypt_0").toPath()));
+        }
+    }
+
+    @Test
+    @Timeout(10)
+    void timeoutCancelsAQueuedCreatorAndLateCallbacksCannotAffectTheNextAdmission()
+            throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration());
+                var executor = Executors.newSingleThreadExecutor()) {
+            var dungeon = new PreparedDungeon(f, directory.resolve("timeout"));
+            dungeon.timeout = Duration.ofSeconds(1);
+            var state = new PlayerState();
+            var session = f.session(state);
+            assertTrue(dungeon.prepareInstance(state.player, "DEFAULT", 1, null));
+            var waiting = runWaiter(f, executor);
+            var creation = f.scheduler.readyImmediate.poll(2, TimeUnit.SECONDS);
+            assertNotNull(creation);
+            waiting.get(2, TimeUnit.SECONDS);
+            var cleanup = f.scheduler.readyImmediate.remove();
+            assertTrue(creation.cancelled);
+            cleanup.run();
+            assertEquals(1, dungeon.refunds);
+            assertFalse(session.isAwaitingDungeon());
+            assertNull(dungeon.created);
+            assertTrue(dungeon.getInstances().isEmpty());
+            assertTrue(f.paper.runtime.activeInstances().getActiveInstances().isEmpty());
+
+            dungeon.timeout = Duration.ofSeconds(5);
+            assertTrue(dungeon.prepareInstance(state.player, "DEFAULT", 1, null));
+            // Simulate the scheduler already having dequeued a cancelled callback, then replay
+            // stale failure cleanup after the newer attempt has acquired this session.
+            creation.cancelled = false;
+            creation.run();
+            cleanup.run();
+            assertNull(dungeon.created);
+            assertTrue(session.isAwaitingDungeon());
+            assertEquals(1, dungeon.refunds);
+            var next = runWaiter(f, executor);
+            f.scheduler.readyImmediate.poll(2, TimeUnit.SECONDS).run();
+            next.get(2, TimeUnit.SECONDS);
+            f.scheduler.readyImmediate.remove().run();
+            assertSame(dungeon.created, session.getInstance());
+            assertFalse(session.isAwaitingDungeon());
+        }
+    }
+
+    @Test
+    @Timeout(10)
+    void timeoutDuringCreationDisposesTheLatePublishedInstanceAndRetainsFailedUnloads()
+            throws Exception {
+        for (boolean unload : List.of(true, false)) {
+            try (var f =
+                            new RunFixture(
+                                    directory.resolve("late-" + unload), new YamlConfiguration());
+                    var executor = Executors.newSingleThreadExecutor()) {
+                var dungeon = new PreparedDungeon(f, directory.resolve("late-dungeon-" + unload));
+                dungeon.timeout = Duration.ofSeconds(1);
+                var state = new PlayerState();
+                var session = f.session(state);
+                f.paper
+                        .bukkit
+                        .when(() -> Bukkit.unloadWorld(any(World.class), eq(false)))
+                        .thenReturn(unload);
+                assertTrue(dungeon.prepareInstance(state.player, "DEFAULT", 1, null));
+                var waiting = runWaiter(f, executor);
+                var creation = f.scheduler.readyImmediate.poll(2, TimeUnit.SECONDS);
+                assertNotNull(creation);
+                dungeon.beforeReturn =
+                        () -> {
+                            try {
+                                waiting.get(2, TimeUnit.SECONDS);
+                            } catch (Exception failure) {
+                                throw new AssertionError(failure);
+                            }
+                        };
+                creation.run();
+                assertNotNull(dungeon.created);
+                assertNull(session.getInstance());
+                assertFalse(session.isAwaitingDungeon());
+                assertEquals(1, dungeon.refunds);
+                f.scheduler.readyImmediate.remove().run();
+                assertEquals(1, dungeon.refunds);
+                assertEquals(unload, dungeon.getInstances().isEmpty());
+                assertEquals(
+                        unload, f.paper.runtime.activeInstances().getActiveInstances().isEmpty());
+                if (!unload) {
+                    assertEquals(
+                            DungeonInstance.DisposalState.RETRYABLE_FAILURE,
+                            dungeon.created.getDisposalState());
+                    f.paper
+                            .bukkit
+                            .when(() -> Bukkit.unloadWorld(any(World.class), eq(false)))
+                            .thenReturn(true);
+                    assertTrue(dungeon.created.disposeAsync().join());
+                    assertTrue(dungeon.getInstances().isEmpty());
+                }
+            }
+        }
+    }
+
+    @Test
+    @Timeout(10)
+    void interruptionCancelsCreationBeforeTheWaiterReturnsAndDrainsAdmissionState()
+            throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration());
+                var executor = Executors.newSingleThreadExecutor()) {
+            var dungeon = new PreparedDungeon(f, directory.resolve("interrupted"));
+            var session = f.session(new PlayerState());
+            var thread = new java.util.concurrent.atomic.AtomicReference<Thread>();
+            assertTrue(dungeon.prepareInstance(session.getPlayer(), "DEFAULT", 1, null));
+            var waiting =
+                    executor.submit(
+                            () -> {
+                                thread.set(Thread.currentThread());
+                                try (var bukkit = mockStatic(Bukkit.class)) {
+                                    bukkit.when(Bukkit::getScheduler)
+                                            .thenReturn(f.scheduler.scheduler);
+                                    f.scheduler.asynchronous.getLast().run();
+                                    assertTrue(Thread.currentThread().isInterrupted());
+                                }
+                            });
+            var creation = f.scheduler.readyImmediate.poll(2, TimeUnit.SECONDS);
+            assertNotNull(creation);
+            thread.get().interrupt();
+            waiting.get(2, TimeUnit.SECONDS);
+            f.scheduler.readyImmediate.remove().run();
+            creation.cancelled = false;
+            creation.run();
+            assertNull(dungeon.created);
+            assertFalse(session.isAwaitingDungeon());
+            assertEquals(1, dungeon.refunds);
+        }
+    }
+
+    @Test
+    @Timeout(10)
+    void creationExceptionsAndAsyncSchedulingRejectionCompleteFailureAndRefundOnlyOnce()
+            throws Exception {
+        for (boolean rejected : List.of(false, true)) {
+            try (var f =
+                    new RunFixture(
+                            directory.resolve("error-" + rejected), new YamlConfiguration())) {
+                var dungeon = new PreparedDungeon(f, directory.resolve("errors-" + rejected));
+                dungeon.throwCreation = !rejected;
+                var session = f.session(new PlayerState());
+                if (rejected)
+                    doThrow(new IllegalStateException("scheduler stopped"))
+                            .when(f.scheduler.scheduler)
+                            .runTaskAsynchronously(
+                                    any(org.bukkit.plugin.Plugin.class), any(Runnable.class));
+                assertEquals(
+                        !rejected,
+                        dungeon.prepareInstance(session.getPlayer(), "DEFAULT", 1, null));
+                if (!rejected) {
+                    finishPreparation(f);
+                    f.scheduler.readyImmediate.remove().run();
+                }
+                assertFalse(session.isAwaitingDungeon());
+                assertEquals(1, dungeon.refunds);
+                assertTrue(dungeon.getInstances().isEmpty());
+                f.paper.runtime.preparations().cancel(session);
+                assertEquals(1, dungeon.refunds);
+            }
+        }
+    }
+
+    @Test
+    @Timeout(10)
+    void shutdownDrainsCleanupRejectedByTheSchedulerAndPreventsLateAdmission() throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration());
+                var executor = Executors.newSingleThreadExecutor()) {
+            var dungeon = new PreparedDungeon(f, directory.resolve("shutdown"));
+            var session = f.session(new PlayerState());
+            f.paper
+                    .bukkit
+                    .when(() -> Bukkit.unloadWorld(any(World.class), eq(false)))
+                    .thenReturn(true);
+            assertTrue(dungeon.prepareInstance(session.getPlayer(), "DEFAULT", 1, null));
+            var waiting = runWaiter(f, executor);
+            var creation = f.scheduler.readyImmediate.poll(2, TimeUnit.SECONDS);
+            assertNotNull(creation);
+            dungeon.beforeReturn =
+                    () ->
+                            doThrow(new IllegalStateException("scheduler stopped"))
+                                    .when(f.scheduler.scheduler)
+                                    .runTask(
+                                            any(org.bukkit.plugin.Plugin.class),
+                                            any(Runnable.class));
+            creation.run();
+            waiting.get(2, TimeUnit.SECONDS);
+            assertTrue(
+                    session.isAwaitingDungeon(), "Worker cannot mutate owner-thread player state");
+            assertEquals(1, dungeon.getInstances().size());
+            f.paper.runtime.preparations().shutdown();
+            assertFalse(session.isAwaitingDungeon());
+            assertTrue(dungeon.getInstances().isEmpty());
+            assertTrue(f.paper.runtime.activeInstances().getActiveInstances().isEmpty());
+            assertEquals(1, dungeon.refunds);
+            assertFalse(dungeon.prepareInstance(session.getPlayer(), "DEFAULT", 1, null));
+        }
+    }
+
+    @Test
+    @Timeout(10)
+    void disconnectAndReloadCancelPublishedRunsBeforeAlreadyQueuedAdmissionCanRun()
+            throws Exception {
+        for (boolean reload : List.of(false, true)) {
+            try (var f =
+                    new RunFixture(
+                            directory.resolve("cancel-" + reload), new YamlConfiguration())) {
+                var dungeon = new PreparedDungeon(f, directory.resolve("cancel-dungeon-" + reload));
+                var state = new PlayerState();
+                var session = f.session(state);
+                assertTrue(dungeon.prepareInstance(state.player, "DEFAULT", 1, null));
+                finishPreparation(f);
+                if (reload) f.paper.runtime.preparations().cancelDungeon(dungeon.getWorldName());
+                else f.paper.runtime.preparations().cancel(session);
+                assertFalse(session.isAwaitingDungeon());
+                f.scheduler.readyImmediate.remove().run();
+                assertNull(session.getInstance());
+                assertTrue(dungeon.getInstances().isEmpty());
+                assertTrue(f.paper.runtime.activeInstances().getActiveInstances().isEmpty());
+                assertEquals(1, dungeon.refunds);
+            }
+        }
+    }
 
     @Test
     @Timeout(10)
@@ -148,11 +481,17 @@ class PreparationContractTest {
     static final class PreparedBranch extends BranchingDungeon {
         final RunFixture fixture;
         BranchRun created;
+        Duration timeout = Duration.ofSeconds(5);
         Runnable beforeReturn = () -> {};
 
         PreparedBranch(RunFixture f, Path folder, YamlConfiguration settings) throws Exception {
             super(f.paper.runtime, Files.createDirectories(folder).toFile(), settings);
             fixture = f;
+        }
+
+        @Override
+        protected Duration preparationTimeout() {
+            return timeout;
         }
 
         @Override
@@ -208,6 +547,9 @@ class PreparationContractTest {
         RunFixture.Run created;
         boolean fail;
         boolean absent;
+        boolean throwCreation;
+        int refunds;
+        Duration timeout = Duration.ofSeconds(5);
         Runnable beforeReturn = () -> {};
 
         PreparedDungeon(RunFixture f, Path folder) throws Exception {
@@ -219,8 +561,20 @@ class PreparationContractTest {
         }
 
         @Override
+        protected Duration preparationTimeout() {
+            return timeout;
+        }
+
+        @Override
+        public boolean refundReservedAccessKey(DungeonPlayerSession session) {
+            refunds++;
+            return super.refundReservedAccessKey(session);
+        }
+
+        @Override
         public PlayableInstance createPlaySession(CountDownLatch latch, UUID leader) {
             if (absent) return null;
+            if (throwCreation) throw new IllegalStateException("creation failed");
             World world = mock(World.class);
             when(world.getName()).thenReturn(getWorldName() + "_0");
             when(world.key()).thenReturn(new NamespacedKey("dungeons", getWorldName() + "_0"));

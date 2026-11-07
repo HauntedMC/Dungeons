@@ -12,6 +12,7 @@ import nl.hauntedmc.dungeons.registry.TriggerRegistry;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
 import nl.hauntedmc.dungeons.runtime.instance.ActiveInstanceRegistry;
+import nl.hauntedmc.dungeons.runtime.instance.PreparationRegistry;
 import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueCoordinator;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry;
@@ -55,6 +56,7 @@ final class CoreBootstrap {
      */
     void initializeManagers() {
         DungeonsPlugin plugin = this.runtime.environment().plugin();
+        this.runtime.setPreparations(new PreparationRegistry());
         this.runtime.setGuiService(new GuiService(plugin));
         this.runtime.setPlayerSessions(new PlayerSessionRegistry(plugin));
 

@@ -2,17 +2,12 @@ package nl.hauntedmc.dungeons.content.dungeon;
 
 import nl.hauntedmc.dungeons.content.instance.play.StaticInstance;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
-import nl.hauntedmc.dungeons.model.dungeon.DungeonDifficulty;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonLoadException;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.instance.EditableInstance;
 import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
-import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-import nl.hauntedmc.dungeons.util.text.TextUtils;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -29,8 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Standard dungeon implementation backed by a copied world and a flat function map.
@@ -63,8 +56,17 @@ public class StaticDungeon extends DungeonDefinition {
             CountDownLatch latch, @Nullable UUID startedTeamLeaderId) {
         PlayableInstance instance = new StaticInstance(this, latch);
         instance.setStartedTeamLeaderId(startedTeamLeaderId);
-        instance.initialize();
-        return instance;
+        try {
+            instance.initialize();
+            return instance;
+        } catch (RuntimeException | Error failure) {
+            // Initialization can throw after reserving files or scheduling world creation. Keep
+            // the partially created run managed until its cleanup has actually succeeded.
+            if (!this.instances.contains(instance)) this.instances.add(instance);
+            this.activeInstances().registerActiveInstance(instance);
+            this.discardInstance(instance);
+            throw failure;
+        }
     }
 
     /**
@@ -86,220 +88,8 @@ public class StaticDungeon extends DungeonDefinition {
             String difficultyName,
             int requestedPlayers,
             @Nullable UUID startedTeamLeaderId) {
-        DungeonPlayerSession playerSession = this.playerSessions().get(player);
-        LangUtils.sendMessage(
-                player,
-                "instance.lifecycle.loading",
-                LangUtils.placeholder("dungeon", this.getDisplayName()));
-        DungeonDifficulty difficulty = this.difficultyLevels.get(difficultyName);
-
-        Bukkit.getScheduler()
-                .runTaskAsynchronously(
-                        this.plugin(),
-                        () ->
-                                TextUtils.runTimed(
-                                        "Loading Dungeon " + this.getWorldName(),
-                                        () -> {
-                                            CountDownLatch latch = new CountDownLatch(1);
-                                            // Initialization may finish before creation returns.
-                                            CountDownLatch creationComplete = new CountDownLatch(1);
-                                            AtomicReference<PlayableInstance> instanceRef =
-                                                    new AtomicReference<>();
-
-                                            Bukkit.getScheduler()
-                                                    .runTask(
-                                                            this.plugin(),
-                                                            () -> {
-                                                                // Instance creation has to happen
-                                                                // on the
-                                                                // server thread because world
-                                                                // operations and
-                                                                // Bukkit object wiring are not
-                                                                // thread-safe.
-                                                                PlayableInstance created =
-                                                                        this.createPlaySession(
-                                                                                latch,
-                                                                                startedTeamLeaderId);
-                                                                instanceRef.set(created);
-
-                                                                if (created == null) {
-                                                                    creationComplete.countDown();
-                                                                    latch.countDown();
-                                                                    return;
-                                                                }
-
-                                                                created.setDifficulty(difficulty);
-                                                                this.instances.add(created);
-                                                                this.activeInstances()
-                                                                        .registerActiveInstance(
-                                                                                created);
-                                                                creationComplete.countDown();
-                                                            });
-
-                                            try {
-                                                long deadline =
-                                                        System.nanoTime()
-                                                                + TimeUnit.SECONDS.toNanos(5L);
-                                                boolean published =
-                                                        creationComplete.await(
-                                                                5L, TimeUnit.SECONDS);
-                                                boolean loaded =
-                                                        published
-                                                                && latch.await(
-                                                                        Math.max(
-                                                                                0L,
-                                                                                deadline
-                                                                                        - System
-                                                                                                .nanoTime()),
-                                                                        TimeUnit.NANOSECONDS);
-                                                PlayableInstance instance = instanceRef.get();
-
-                                                if (!loaded || instance == null) {
-                                                    this.schedulePrepareFailure(
-                                                            player,
-                                                            playerSession,
-                                                            instance,
-                                                            "instance.lifecycle.load-timeout");
-                                                    return;
-                                                }
-
-                                                if (instance.hasLoadFailed()
-                                                        || !instance.isReady()) {
-                                                    this.schedulePrepareFailure(
-                                                            player,
-                                                            playerSession,
-                                                            instance,
-                                                            "instance.lifecycle.load-failed");
-                                                    return;
-                                                }
-
-                                                Bukkit.getScheduler()
-                                                        .runTask(
-                                                                this.plugin(),
-                                                                () -> {
-                                                                    // The player may disconnect
-                                                                    // while the
-                                                                    // world is still being
-                                                                    // prepared, so the
-                                                                    // reservation has to be
-                                                                    // revalidated here.
-                                                                    if (!player.isOnline()) {
-                                                                        this
-                                                                                .refundReservedAccessKey(
-                                                                                        playerSession);
-                                                                        playerSession
-                                                                                .setAwaitingDungeon(
-                                                                                        false);
-                                                                        this.discardInstance(
-                                                                                instance);
-                                                                        this.logger()
-                                                                                .warn(
-                                                                                        "Aborted loading static instance '{}' because player '{}' disconnected before join.",
-                                                                                        this
-                                                                                                .getWorldName(),
-                                                                                        player
-                                                                                                .getName());
-                                                                        return;
-                                                                    }
-
-                                                                    instance.addPlayer(
-                                                                            playerSession);
-                                                                    if (playerSession.getInstance()
-                                                                            == instance) {
-                                                                        this
-                                                                                .completeReservedAccessKey(
-                                                                                        playerSession);
-                                                                        nl.hauntedmc.dungeons.util
-                                                                                .lang.LangUtils
-                                                                                .sendMessage(
-                                                                                        player,
-                                                                                        "instance.lifecycle.entered",
-                                                                                        LangUtils
-                                                                                                .placeholder(
-                                                                                                        "dungeon",
-                                                                                                        this
-                                                                                                                .getDisplayName()));
-                                                                    } else {
-                                                                        this
-                                                                                .refundReservedAccessKey(
-                                                                                        playerSession);
-                                                                        this.discardInstance(
-                                                                                instance);
-                                                                        nl.hauntedmc.dungeons.util
-                                                                                .lang.LangUtils
-                                                                                .sendMessage(
-                                                                                        player,
-                                                                                        "instance.lifecycle.load-failed",
-                                                                                        LangUtils
-                                                                                                .placeholder(
-                                                                                                        "dungeon",
-                                                                                                        this
-                                                                                                                .getDisplayName()));
-                                                                    }
-                                                                    playerSession
-                                                                            .setAwaitingDungeon(
-                                                                                    false);
-                                                                });
-                                            } catch (InterruptedException exception) {
-                                                Thread.currentThread().interrupt();
-                                                PlayableInstance instance = instanceRef.get();
-
-                                                if (instance != null) {
-                                                    this.schedulePrepareFailure(
-                                                            player,
-                                                            playerSession,
-                                                            instance,
-                                                            "instance.lifecycle.load-failed");
-                                                    this.logger()
-                                                            .error(
-                                                                    "Interrupted while waiting for static instance '{}' to initialize.",
-                                                                    this.getWorldName(),
-                                                                    exception);
-                                                    return;
-                                                }
-
-                                                this.schedulePrepareFailure(
-                                                        player,
-                                                        playerSession,
-                                                        null,
-                                                        "instance.lifecycle.load-failed");
-                                                this.logger()
-                                                        .error(
-                                                                "Interrupted while waiting for static instance '{}' to initialize.",
-                                                                this.getWorldName(),
-                                                                exception);
-                                            }
-                                        }));
-
-        return true;
-    }
-
-    /**
-     * Performs schedule prepare failure.
-     */
-    private void schedulePrepareFailure(
-            Player player,
-            @Nullable DungeonPlayerSession playerSession,
-            @Nullable PlayableInstance instance,
-            String messageKey) {
-        Bukkit.getScheduler()
-                .runTask(
-                        this.plugin(),
-                        () -> {
-                            if (instance != null) {
-                                this.discardInstance(instance);
-                            }
-
-                            if (playerSession != null) {
-                                this.refundReservedAccessKey(playerSession);
-                                playerSession.setAwaitingDungeon(false);
-                            }
-
-                            LangUtils.sendMessage(
-                                    player,
-                                    messageKey,
-                                    LangUtils.placeholder("dungeon", this.getDisplayName()));
-                        });
+        return this.prepareIsolatedInstance(
+                player, difficultyName, startedTeamLeaderId, instance -> {}, 0L);
     }
 
     /**

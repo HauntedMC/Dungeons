@@ -43,6 +43,7 @@ public final class LifecycleCoordinator {
                     .environment()
                     .logger()
                     .info("Cleaning up active dungeons and player state.");
+            this.runtime.preparations().shutdown();
             this.discardQueuedStarts(null);
             this.refundOutstandingReservedKeys(null);
 
@@ -136,6 +137,7 @@ public final class LifecycleCoordinator {
      * Reloads the dungeon catalogue while preserving the same injected manager objects.
      */
     public void reloadAllDungeons() {
+        this.runtime.preparations().cancelDungeon(null);
         this.discardQueuedStarts(null);
         this.refundOutstandingReservedKeys(null);
 
@@ -162,6 +164,7 @@ public final class LifecycleCoordinator {
      * Reloads a single dungeon definition and its in-memory instances.
      */
     public void reloadDungeon(DungeonDefinition dungeon) {
+        this.runtime.preparations().cancelDungeon(dungeon.getWorldName());
         this.discardQueuedStarts(dungeon.getWorldName());
         this.refundOutstandingReservedKeys(dungeon.getWorldName());
 
