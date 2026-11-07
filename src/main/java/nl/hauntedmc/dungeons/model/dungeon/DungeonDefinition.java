@@ -92,6 +92,9 @@ public abstract class DungeonDefinition {
     protected List<AccessKeyDefinition> accessKeys;
     protected List<ItemStack> validKeys;
     protected Map<String, String> issuedAccessKeyInstances;
+    private Map<String, String> durableIssuedKeys = Map.of();
+    private Set<String> durableReservedKeys = Set.of();
+    private Set<String> durableInvalidatedKeys = Set.of();
     protected Set<String> reservedAccessKeyInstances;
     protected Set<String> invalidatedAccessKeyInstances;
     protected boolean accessKeyStateLoaded;
@@ -431,6 +434,7 @@ public abstract class DungeonDefinition {
             this.invalidatedAccessKeyInstances.addAll(
                     this.accessKeyStateConfig.getStringList("invalidated_instance_ids"));
             this.accessKeyStateLoaded = true;
+            this.rememberKeyLedger();
             if (hadPersistedReservations) {
                 this.saveAccessKeyState();
             }
@@ -448,25 +452,31 @@ public abstract class DungeonDefinition {
         }
     }
 
-    private void saveAccessKeyState() {
-        if (!this.usesUniqueAccessKeyValidation()) {
-            return;
-        }
+    private void rememberKeyLedger() {
+        this.durableIssuedKeys = new LinkedHashMap<>(this.issuedAccessKeyInstances);
+        this.durableReservedKeys = new LinkedHashSet<>(this.reservedAccessKeyInstances);
+        this.durableInvalidatedKeys = new LinkedHashSet<>(this.invalidatedAccessKeyInstances);
+    }
 
-        this.accessKeyStateConfig.set(
-                "issued_instances", new LinkedHashMap<>(this.issuedAccessKeyInstances));
-        this.accessKeyStateConfig.set(
-                "reserved_instance_ids", new ArrayList<>(this.reservedAccessKeyInstances));
-        this.accessKeyStateConfig.set(
-                "invalidated_instance_ids", new ArrayList<>(this.invalidatedAccessKeyInstances));
+    private void saveAccessKeyState() {
+        if (!this.usesUniqueAccessKeyValidation()) return;
+        var candidate = new YamlConfiguration();
         try {
-            this.accessKeyStateConfig.save(this.accessKeyStateFile);
-        } catch (IOException exception) {
-            this.logger()
-                    .error(
-                            "Failed to save access key state while updating dungeon '{}'.",
-                            this.worldName,
-                            exception);
+            candidate.loadFromString(this.accessKeyStateConfig.saveToString());
+            candidate.set("issued_instances", new LinkedHashMap<>(this.issuedAccessKeyInstances));
+            candidate.set("reserved_instance_ids", new ArrayList<>(this.reservedAccessKeyInstances));
+            candidate.set("invalidated_instance_ids", new ArrayList<>(this.invalidatedAccessKeyInstances));
+            nl.hauntedmc.dungeons.config.ConfigurationFile.saveSnapshot(
+                    this.plugin(), this.accessKeyStateFile, candidate.saveToString());
+            this.rememberKeyLedger();
+        } catch (InvalidConfigurationException | RuntimeException failure) {
+            this.issuedAccessKeyInstances.clear();
+            this.issuedAccessKeyInstances.putAll(this.durableIssuedKeys);
+            this.reservedAccessKeyInstances.clear();
+            this.reservedAccessKeyInstances.addAll(this.durableReservedKeys);
+            this.invalidatedAccessKeyInstances.clear();
+            this.invalidatedAccessKeyInstances.addAll(this.durableInvalidatedKeys);
+            throw new IllegalStateException("Cannot durably update access key ledger for " + this.worldName, failure);
         }
     }
 

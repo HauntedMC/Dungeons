@@ -40,6 +40,26 @@ class IssuedKeyLedgerContractTest {
     @TempDir Path directory;
 
     @Test
+    void failedLedgerReplacementCannotReportConsumptionOrChangeTheWorkingLedger() throws Exception {
+        try (var fixture = new Fixture(directory)) {
+            var key = fixture.dungeon.issueAccessKey(1);
+            String document = Files.readString(fixture.stateFile);
+            Files.delete(fixture.stateFile);
+            Files.createDirectory(fixture.stateFile);
+            Files.writeString(fixture.stateFile.resolve("obstacle"), "keep");
+            org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class,
+                    () -> fixture.dungeon.consumeAccessKey(key));
+            assertNotNull(fixture.dungeon.isValidKey(key));
+            Files.delete(fixture.stateFile.resolve("obstacle"));
+            Files.delete(fixture.stateFile);
+            Files.writeString(fixture.stateFile, document);
+            assertNotNull(fixture.reload().isValidKey(key));
+            assertTrue(fixture.dungeon.consumeAccessKey(key));
+            assertNull(fixture.reload().isValidKey(key));
+        }
+    }
+
+    @Test
     void issuedKeysReserveOnceReleaseForRetryAndCannotBeReplayedAfterConsumptionOrReload()
             throws Exception {
         try (var fixture = new Fixture(directory)) {
