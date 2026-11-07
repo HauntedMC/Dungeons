@@ -41,7 +41,6 @@ public final class DungeonRepository {
 
     /** Reloads the on-disk dungeon catalogue into this stable manager instance. */
     public void reloadAll() {
-        this.dungeons.clear();
         this.loadDefaultDungeonConfig();
         this.scheduleDungeonDiscovery();
     }
@@ -103,11 +102,15 @@ public final class DungeonRepository {
                         () -> {
                             File[] files = this.runtime.dungeonFiles().listFiles();
                             if (files != null) {
+                                var present = new java.util.HashSet<String>();
                                 for (File file : files) {
                                     if (file.isDirectory()) {
+                                        present.add(file.getName());
                                         this.loadDungeon(file);
                                     }
                                 }
+                                // Failed replacement files retain their last working definitions.
+                                this.dungeons.keySet().removeIf(name -> !present.contains(name));
                             }
                         },
                         1L);
@@ -170,10 +173,10 @@ public final class DungeonRepository {
                 return null;
             }
             dungeon.setGenerator(generator);
-            this.put(dungeon);
             if (dungeon.isUseDifficultyLevels()) {
                 PlayMenus.initializeDifficultySelector(dungeon);
             }
+            this.put(dungeon);
 
             this.runtime
                     .environment()

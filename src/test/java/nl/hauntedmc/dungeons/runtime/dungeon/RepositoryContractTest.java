@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.any;
@@ -33,6 +34,24 @@ import java.util.UUID;
 
 class RepositoryContractTest {
     @TempDir Path directory;
+
+    @Test
+    void malformedDungeonReloadRetainsTheWorkingDefinitionUntilAReplacementLoads() throws Exception {
+        try (var fixture = new Fixture(directory)) {
+            Path folder = Files.createDirectory(directory.resolve("healthy"));
+            Path file = folder.resolve("config.yml");
+            Files.writeString(file, "dungeon:\n  type: static\n");
+            fixture.scheduler.jobs.getFirst().run();
+            var working = fixture.repository.get("healthy");
+            assertNotNull(working);
+            Files.writeString(file, "dungeon: [unfinished");
+            fixture.repository.reloadAll();
+            assertSame(working, fixture.repository.get("healthy"));
+            fixture.scheduler.jobs.getLast().run();
+            assertSame(working, fixture.repository.get("healthy"));
+            assertEquals("dungeon: [unfinished", Files.readString(file));
+        }
+    }
 
     @Test
     void discoveryLoadsHealthyNeighborsWithoutOverwritingMalformedOrUnknownDungeonConfigs()
