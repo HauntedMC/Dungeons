@@ -66,6 +66,56 @@ class OpenPreparationContractTest {
     }
 
     @Test
+    void cancelledOpenCallbackCannotClearOrRefundANewerAdmission() throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var settings = new YamlConfiguration();
+            settings.set("open.max_players", 1);
+            settings.set("runs.max_active", 3);
+            var dungeon = new PreparedOpen(f, directory.resolve("open"), settings);
+            var state = new PlayerState();
+            var session = f.session(state);
+            assertTrue(dungeon.prepareInstance(state.player, "DEFAULT", 1, null));
+            var old = dungeon.created.getFirst();
+            f.paper.runtime.preparations().cancel(session);
+            assertFalse(old.hasOutstandingReservations());
+            assertTrue(dungeon.prepareInstance(state.player, "DEFAULT", 1, null));
+            var current = dungeon.created.getLast();
+            old.complete(true);
+            f.scheduler.asynchronous.getFirst().run();
+            f.scheduler.readyImmediate.remove().run();
+            assertTrue(session.isAwaitingDungeon());
+            assertTrue(f.paper.runtime.preparations().contains(session));
+            assertTrue(current.hasOutstandingReservations());
+            assertNull(session.getInstance());
+            current.complete(false);
+            f.scheduler.asynchronous.get(1).run();
+            f.scheduler.readyImmediate.remove().run();
+            assertSame(current, session.getInstance());
+            assertFalse(f.paper.runtime.preparations().contains(session));
+        }
+    }
+
+    @Test
+    void rejectedWorkerSchedulingAndShutdownReleaseOpenAdmissionOwnership() throws Exception {
+        for (boolean reject : List.of(true, false)) {
+            try (var f = new RunFixture(directory.resolve("case-" + reject), new YamlConfiguration())) {
+                var dungeon = new PreparedOpen(f, directory.resolve("case-" + reject).resolve("open"),
+                        new YamlConfiguration());
+                var state = new PlayerState();
+                var session = f.session(state);
+                if (reject) when(f.scheduler.scheduler.runTaskAsynchronously(eq(f.paper.plugin), any(Runnable.class)))
+                        .thenThrow(new IllegalStateException("scheduler unavailable"));
+                assertEquals(!reject, dungeon.prepareInstance(state.player, "DEFAULT", 1, null));
+                if (!reject) f.paper.runtime.preparations().shutdown();
+                assertFalse(f.paper.runtime.preparations().contains(session));
+                assertFalse(session.isAwaitingDungeon());
+                assertFalse(dungeon.created.getFirst().hasOutstandingReservations());
+                assertNull(session.getInstance());
+            }
+        }
+    }
+
+    @Test
     void loadingOpenRunsReserveCapacityUntilReadyAndReleaseReservationsAfterFailedOrAbandonedJoins()
             throws Exception {
         for (String outcome : List.of("ready", "disconnect", "failed")) {
