@@ -1,7 +1,5 @@
 package nl.hauntedmc.dungeons.content.reward;
 
-import java.util.HashMap;
-import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.TypeKey;
 import nl.hauntedmc.dungeons.gui.framework.buttons.Button;
 import nl.hauntedmc.dungeons.gui.framework.window.GuiInventory;
@@ -9,6 +7,7 @@ import nl.hauntedmc.dungeons.gui.framework.window.GuiWindow;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.util.math.MathUtils;
 import nl.hauntedmc.dungeons.util.text.ColorUtils;
+
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.SerializableAs;
@@ -16,6 +15,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * One weighted entry inside a {@link LootTable}.
@@ -36,12 +38,14 @@ public class LootTableItem implements ConfigurationSerializable {
      * Creates a new LootTableItem instance.
      */
     public LootTableItem(Map<String, Object> config) {
-        this.item =
-                (ItemStack)
-                        config.getOrDefault("item", new ItemStack(Material.RED_STAINED_GLASS_PANE));
+        if (!(config.get("item") instanceof ItemStack stack)) {
+            throw new IllegalArgumentException("Loot item requires an ItemStack");
+        }
+        this.item = stack;
         this.weight = (Integer) config.getOrDefault("weight", 1);
         this.minItems = (Integer) config.getOrDefault("minItems", 1);
         this.maxItems = (Integer) config.getOrDefault("maxItems", 1);
+        this.validate();
     }
 
     /**
@@ -49,6 +53,7 @@ public class LootTableItem implements ConfigurationSerializable {
      */
     public LootTableItem(ItemStack item) {
         this.item = item;
+        this.validate();
     }
 
     /**
@@ -71,8 +76,14 @@ public class LootTableItem implements ConfigurationSerializable {
         this.itemMenu.addCloseAction(
                 "save",
                 event -> {
-                    RuntimeContext.lootTableRepository().saveTablesConfig();
-                    table.setEditor(null);
+                    try {
+                        if (!RuntimeContext.lootTableRepository().saveTablesConfig(table)) {
+                            nl.hauntedmc.dungeons.util.lang.LangUtils.sendMessage(
+                                    (Player) event.getPlayer(), "commands.loot.save-failed");
+                        }
+                    } finally {
+                        table.setEditor(null);
+                    }
                 });
         Button backButton = new Button("back", Material.RED_STAINED_GLASS_PANE, "&cBack");
         backButton.addAction(
@@ -243,6 +254,20 @@ public class LootTableItem implements ConfigurationSerializable {
 
         GuiInventory gui = this.itemMenu.getInventoryFor(player);
         return gui == null ? this.itemMenu.getButtons().get(slot) : gui.buttons().get(slot);
+    }
+
+    /** Rejects malformed entries before a repository generation can become active. */
+    public final void validate() {
+        if (this.item == null || this.item.getType().isAir() || this.item.getAmount() <= 0) {
+            throw new IllegalArgumentException("Loot item must contain a nonempty stack");
+        }
+        if (this.weight < 0
+                || this.minItems < 0
+                || this.maxItems < this.minItems
+                || this.maxItems == Integer.MAX_VALUE
+                || (long) this.item.getAmount() * this.maxItems > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("Invalid loot item weight or amount range");
+        }
     }
 
     @NotNull

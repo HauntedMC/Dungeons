@@ -165,15 +165,19 @@ public class ConfigurationFile extends YamlConfiguration {
      */
     @Override
     public void save(@NotNull File file) {
+        requireOwnerThread();
+        saveSnapshot(this.plugin, file, this.saveToString());
+    }
+
+    /** Atomically writes already captured text in the same per-destination order as other saves. */
+    public static void saveSnapshot(Plugin plugin, File file, String snapshot) {
         try {
-            requireOwnerThread();
-            String snapshot = this.saveToString();
             ConfigurationIoQueue.writeNow(ConfigurationIoQueue.destination(file), snapshot);
         } catch (IOException failure) {
-            logFailure(this.plugin, file, failure);
+            logFailure(plugin, file, failure);
             throw new UncheckedIOException(failure);
         } catch (CompletionException failure) {
-            logFailure(this.plugin, file, failure);
+            logFailure(plugin, file, failure);
             if (failure.getCause() instanceof IOException io) throw new UncheckedIOException(io);
             throw failure;
         }
@@ -196,14 +200,17 @@ public class ConfigurationFile extends YamlConfiguration {
     public static void loadSnapshot(YamlConfiguration configuration, File file)
             throws IOException, InvalidConfigurationException {
         requireOwnerThread();
-        String snapshot;
+        configuration.loadFromString(readSnapshot(file));
+    }
+
+    /** Reads immutable UTF-8 text after all earlier writes to the same destination. */
+    public static String readSnapshot(File file) throws IOException {
         try {
-            snapshot = ConfigurationIoQueue.readNow(ConfigurationIoQueue.destination(file));
+            return ConfigurationIoQueue.readNow(ConfigurationIoQueue.destination(file));
         } catch (CompletionException failure) {
             if (failure.getCause() instanceof IOException io) throw io;
             throw failure;
         }
-        configuration.loadFromString(snapshot);
     }
 
     private static void requireOwnerThread() {

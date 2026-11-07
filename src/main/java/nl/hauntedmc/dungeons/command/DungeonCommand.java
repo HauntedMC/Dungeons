@@ -2831,7 +2831,13 @@ public final class DungeonCommand implements TabExecutor {
             return true;
         }
 
-        this.lootTableManager.put(new LootTable(args[2]));
+        LootTable created = new LootTable(args[2]);
+        if (!this.lootTableManager.put(created)) {
+            LangUtils.sendMessage(player, "commands.loot.save-failed");
+            return true;
+        }
+        created.initializeMenu();
+        created.setEditor(player);
         LangUtils.sendMessage(
                 player,
                 "commands.loot.create.success",
@@ -2849,7 +2855,10 @@ public final class DungeonCommand implements TabExecutor {
             return true;
         }
 
-        this.lootTableManager.remove(args[2]);
+        if (!this.lootTableManager.remove(args[2])) {
+            LangUtils.sendMessage(player, "commands.loot.save-failed");
+            return true;
+        }
         LangUtils.sendMessage(
                 player,
                 "commands.loot.remove.success",
@@ -2880,6 +2889,11 @@ public final class DungeonCommand implements TabExecutor {
             return true;
         }
 
+        if (!this.lootTableManager.isWritable()) {
+            LangUtils.sendMessage(player, "commands.loot.save-failed");
+            return true;
+        }
+        table.initializeMenu();
         table.setEditor(player);
         this.guiService.openGui(player, "loottable_" + args[2]);
         return true;

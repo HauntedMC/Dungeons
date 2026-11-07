@@ -39,6 +39,28 @@ class CommandContractTest {
     @TempDir Path directory;
 
     @Test
+    void failedLootWritesAndReadOnlyEditorsReportFailureWithoutOpeningAMenu() throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration());
+                var lang =
+                        org.mockito.Mockito.mockStatic(
+                                nl.hauntedmc.dungeons.util.lang.LangUtils.class)) {
+            var command = new CommandFixture(f);
+            command.permissions.add("dungeons.loottables");
+            when(command.loot.get("keep"))
+                    .thenReturn(new nl.hauntedmc.dungeons.content.reward.LootTable("keep"));
+            command.execute("loot", "create", "new");
+            command.execute("loot", "remove", "keep");
+            command.execute("loot", "edit", "keep");
+            lang.verify(
+                    () ->
+                            nl.hauntedmc.dungeons.util.lang.LangUtils.sendMessage(
+                                    command.caller.player, "commands.loot.save-failed"),
+                    org.mockito.Mockito.times(3));
+            verifyNoInteractions(command.gui);
+        }
+    }
+
+    @Test
     void rootPermissionDenialPreventsGameplayAndDestructiveCommandDispatch() throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
             var command = new CommandFixture(f);
@@ -271,6 +293,8 @@ class CommandContractTest {
         final LifecycleCoordinator lifecycle = mock(LifecycleCoordinator.class);
         final DungeonQueueRegistry queues;
         final DungeonCommand root;
+        final LootTableRepository loot = mock(LootTableRepository.class);
+        final GuiService gui = mock(GuiService.class);
 
         CommandFixture(RunFixture f) {
             f.session(caller);
@@ -295,10 +319,10 @@ class CommandContractTest {
                             coordinator,
                             queues,
                             teams,
-                            mock(LootTableRepository.class),
+                            loot,
                             mock(FunctionRegistry.class),
                             lifecycle,
-                            mock(GuiService.class),
+                            gui,
                             "dungeon");
         }
 

@@ -189,6 +189,7 @@ commands:
     deleted-leader-left-dungeon: '&cHet team is verwijderd omdat de leider de dungeon heeft verlaten.'
     deleted-dungeon-ended: '&7Je tijdelijke dungeon team is verwijderd omdat de dungeon is geëindigd.'
   loot:
+    save-failed: '&cLoot tables konden niet worden opgeslagen. Controleer de console, herstel loottables.yml en laad opnieuw.'
     usage: '&a/dungeon loot &6<create|edit|remove|list> &f| &eBeheer loot tables.'
     create:
       usage: '&a/dungeon loot create &6<name> &f| &eMaak een nieuwe loot table.'

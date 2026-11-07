@@ -53,15 +53,14 @@ public class LootTable implements ConfigurationSerializable {
         this.maxItems = (Integer) config.getOrDefault("maxItems", 3);
         this.allowDuplicates = (Boolean) config.getOrDefault("allowDuplicates", true);
         this.lootItems = new HashMap<>();
-        if (config.get("lootItems") instanceof Map<?, ?> entries) {
-            for (Map.Entry<?, ?> entry : entries.entrySet()) {
-                this.lootItems.put(
-                        Integer.class.cast(entry.getKey()),
-                        LootTableItem.class.cast(entry.getValue()));
-            }
+        if (!(config.getOrDefault("lootItems", Map.of()) instanceof Map<?, ?> entries)) {
+            throw new IllegalArgumentException("lootItems must be a mapping");
         }
-        this.initializeOpenSlotItem();
-        this.initializeMenu();
+        for (Map.Entry<?, ?> entry : entries.entrySet()) {
+            this.lootItems.put(
+                    Integer.class.cast(entry.getKey()), LootTableItem.class.cast(entry.getValue()));
+        }
+        this.validate();
     }
 
     /**
@@ -70,8 +69,7 @@ public class LootTable implements ConfigurationSerializable {
     public LootTable(String namespace) {
         this.namespace = namespace;
         this.lootItems = new HashMap<>();
-        this.initializeOpenSlotItem();
-        this.initializeMenu();
+        this.validate();
     }
 
     /**
@@ -158,13 +156,20 @@ public class LootTable implements ConfigurationSerializable {
      * Initializes menu.
      */
     public void initializeMenu() {
+        this.initializeOpenSlotItem();
         this.tableMenu = new GuiWindow("loottable_" + this.namespace, 54, "&8Edit Loot");
         this.tableMenu.setCancelClick(false);
         this.tableMenu.addCloseAction(
                 "save",
                 event -> {
-                    RuntimeContext.lootTableRepository().saveTablesConfig();
-                    this.setEditor(null);
+                    try {
+                        if (!RuntimeContext.lootTableRepository().saveTablesConfig(this)) {
+                            LangUtils.sendMessage(
+                                    (Player) event.getPlayer(), "commands.loot.save-failed");
+                        }
+                    } finally {
+                        this.setEditor(null);
+                    }
                 });
         this.tableMenu.addOpenAction(
                 "load",
@@ -483,6 +488,29 @@ public class LootTable implements ConfigurationSerializable {
      */
     public void setEditor(Player editor) {
         this.editor = editor;
+    }
+
+    /** Validates persisted model data without constructing or replacing editor windows. */
+    public final void validate() {
+        if (this.namespace == null || this.namespace.isBlank()) {
+            throw new IllegalArgumentException("Loot table namespace must not be blank");
+        }
+        if (this.minItems < 0
+                || this.maxItems < this.minItems
+                || this.maxItems == Integer.MAX_VALUE) {
+            throw new IllegalArgumentException(
+                    "Invalid loot count range in table " + this.namespace);
+        }
+        for (var entry : this.lootItems.entrySet()) {
+            if (entry.getKey() == null
+                    || entry.getKey() < 9
+                    || entry.getKey() >= 54
+                    || entry.getValue() == null) {
+                throw new IllegalArgumentException(
+                        "Invalid loot item slot in table " + this.namespace);
+            }
+            entry.getValue().validate();
+        }
     }
 
     RandomCollection<LootTableItem> createRandomizer() {
