@@ -1,12 +1,5 @@
 package nl.hauntedmc.dungeons.generation.room;
 
-import java.io.File;
-import java.lang.ref.WeakReference;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import nl.hauntedmc.dungeons.config.ConfigurationFile;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
 import nl.hauntedmc.dungeons.generation.structure.StructurePiece;
@@ -21,6 +14,7 @@ import nl.hauntedmc.dungeons.util.math.RangedNumber;
 import nl.hauntedmc.dungeons.util.world.LocationUtils;
 import nl.hauntedmc.dungeons.util.world.SchematicUtils;
 import nl.hauntedmc.dungeons.util.world.SimpleLocation;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -31,6 +25,14 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.entity.Player;
 import org.bukkit.util.BoundingBox;
+
+import java.io.File;
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Persistent definition of one branching room template.
@@ -206,8 +208,12 @@ public class BranchingRoomDefinition {
      * Persists room functions and returns completion state.
      */
     public CompletableFuture<Boolean> saveFunctionsAsync() {
-        this.roomConfig.set("Functions", new ArrayList<>(this.functionsMapRelative.values()));
-        return this.saveRoomAsync();
+        return this.saveOnOwnerThread(
+                () -> {
+                    this.roomConfig.set(
+                            "Functions", new ArrayList<>(this.functionsMapRelative.values()));
+                    return this.captureRoomSave();
+                });
     }
 
     public void loadFunctions() {
@@ -574,7 +580,16 @@ public class BranchingRoomDefinition {
     /**
      * Saves room metadata and returns completion state.
      */
-    public synchronized CompletableFuture<Boolean> saveRoomAsync() {
+    public CompletableFuture<Boolean> saveRoomAsync() {
+        return this.saveOnOwnerThread(this::captureRoomSave);
+    }
+
+    private CompletableFuture<Boolean> saveOnOwnerThread(
+            java.util.function.Supplier<CompletableFuture<Boolean>> capture) {
+        return nl.hauntedmc.dungeons.config.ConfigurationFile.onOwnerThread(this.plugin(), capture);
+    }
+
+    private synchronized CompletableFuture<Boolean> captureRoomSave() {
         LocationUtils.writeLocation(
                 "Bounds.Corner1",
                 this.roomConfig,

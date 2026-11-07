@@ -10,23 +10,25 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 
 /**
  * Project-specific YAML configuration wrapper.
  *
- * <p>Besides delegating to Bukkit's {@link YamlConfiguration}, this type serializes
- * {@link ConfigSerializableModel} values automatically, synchronizes file access per target file,
- * and provides typed helpers for restoring persisted model graphs.
+ * <p>Besides delegating to Bukkit's {@link YamlConfiguration}, this type serializes {@link
+ * ConfigSerializableModel} values automatically, captures owner-thread snapshots, orders disk
+ * operations globally per canonical destination, and restores persisted model graphs.
  */
 public class ConfigurationFile extends YamlConfiguration {
     private final Plugin plugin;
-    private final Map<File, Object> fileMonitors;
 
     /**
      * Creates a configuration wrapper for the given plugin.
@@ -35,122 +37,177 @@ public class ConfigurationFile extends YamlConfiguration {
      */
     public ConfigurationFile(Plugin plugin) {
         this.plugin = plugin;
-        this.fileMonitors = new HashMap<>();
     }
 
     /**
-     * Normalizes file keys so logically identical paths share the same monitor.
-     *
-     * @param file file supplied by the caller
-     * @return absolute file reference used as the synchronization key
-     */
-    private File normalize(@NotNull File file) {
-        return file.getAbsoluteFile();
-    }
-
-    /**
-     * Returns the monitor object guarding reads and writes for a single configuration file.
-     *
-     * @param file file whose monitor should be returned
-     * @return shared monitor object for the normalized file path
-     */
-    private Object getMonitor(@NotNull File file) {
-        File normalized = this.normalize(file);
-        synchronized (this.fileMonitors) {
-            return this.fileMonitors.computeIfAbsent(normalized, ignored -> new Object());
-        }
-    }
-
-    /**
-     * Saves this configuration asynchronously when the plugin is running.
-     *
-     * <p>If the plugin is already disabled, the save runs inline because Bukkit's scheduler is no
-     * longer available.
-     *
-     * @param file destination file
-     * @return future completed with {@code true} on success, otherwise {@code false}
+     * Captures YAML on the server thread, then queues immutable text for ordered disk replacement.
+     * Off-thread callers are marshalled to the server thread before any serialization occurs.
      */
     public CompletableFuture<Boolean> saveAsync(@NotNull File file) {
-        File normalized = this.normalize(file);
-        CompletableFuture<Boolean> result = new CompletableFuture<>();
-        Runnable task =
-                () -> {
-                    synchronized (this.getMonitor(normalized)) {
-                        try {
-                            super.save(normalized);
-                            result.complete(true);
-                        } catch (IOException | RuntimeException exception) {
-                            this.plugin
-                                    .getSLF4JLogger()
-                                    .error(
-                                            "Failed to asynchronously save configuration '{}'.",
-                                            normalized.getAbsolutePath(),
-                                            exception);
-                            result.complete(false);
-                        }
-                    }
-                };
+        return saveAsync(this.plugin, this, file);
+    }
 
-        if (!this.plugin.isEnabled()) {
-            task.run();
-        } else {
+    private static final java.util.Set<SnapshotRequest> PENDING_CAPTURES =
+            java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    /** Uses the same snapshot protocol for ordinary Bukkit YAML configurations. */
+    public static CompletableFuture<Boolean> saveAsync(
+            Plugin plugin, YamlConfiguration configuration, File file) {
+        return onOwnerThread(
+                plugin,
+                () -> {
+                    try {
+                        String snapshot = configuration.saveToString();
+                        Path target = ConfigurationIoQueue.destination(file);
+                        return ConfigurationIoQueue.writeAsync(target, snapshot, plugin)
+                                .handle(
+                                        (ignored, failure) -> {
+                                            if (failure != null) logFailure(plugin, file, failure);
+                                            return failure == null;
+                                        });
+                    } catch (RuntimeException | IOException failure) {
+                        logFailure(plugin, file, failure);
+                        return CompletableFuture.completedFuture(false);
+                    }
+                });
+    }
+
+    /** Executes configuration/model capture on the owner thread, including shutdown draining. */
+    public static CompletableFuture<Boolean> onOwnerThread(
+            Plugin plugin, java.util.function.Supplier<CompletableFuture<Boolean>> capture) {
+        var request = new SnapshotRequest(plugin, capture);
+        try {
+            if (plugin.isEnabled() && !Bukkit.isPrimaryThread()) {
+                PENDING_CAPTURES.add(request);
+                Bukkit.getScheduler().runTask(plugin, request::capture);
+            } else {
+                request.capture();
+            }
+        } catch (RuntimeException failure) {
+            request.reject(failure);
+        }
+        return request.result;
+    }
+
+    /** Captures pending owner-thread requests and drains disk queues before shutdown completes. */
+    public static void flushPendingSaves() {
+        requireOwnerThread();
+        for (SnapshotRequest pending : PENDING_CAPTURES.toArray(SnapshotRequest[]::new)) {
+            pending.capture();
+        }
+        ConfigurationIoQueue.flush();
+    }
+
+    private static final class SnapshotRequest {
+        final Plugin plugin;
+        final java.util.function.Supplier<CompletableFuture<Boolean>> action;
+        final CompletableFuture<Boolean> result = new CompletableFuture<>();
+        final java.util.concurrent.atomic.AtomicBoolean claimed =
+                new java.util.concurrent.atomic.AtomicBoolean();
+
+        SnapshotRequest(
+                Plugin plugin, java.util.function.Supplier<CompletableFuture<Boolean>> action) {
+            this.plugin = plugin;
+            this.action = action;
+        }
+
+        void capture() {
+            if (!claimed.compareAndSet(false, true)) return;
+            PENDING_CAPTURES.remove(this);
             try {
-                Bukkit.getScheduler().runTaskAsynchronously(this.plugin, task);
-            } catch (RuntimeException exception) {
-                this.plugin
-                        .getSLF4JLogger()
-                        .error(
-                                "Failed to schedule configuration save '{}'.",
-                                normalized.getAbsolutePath(),
-                                exception);
+                requireOwnerThread();
+                action.get()
+                        .whenComplete(
+                                (success, failure) -> {
+                                    if (failure != null)
+                                        plugin.getSLF4JLogger()
+                                                .error(
+                                                        "Owner-thread configuration capture"
+                                                                + " failed.",
+                                                        failure);
+                                    result.complete(
+                                            failure == null && Boolean.TRUE.equals(success));
+                                });
+            } catch (Throwable failure) {
+                plugin.getSLF4JLogger()
+                        .error("Owner-thread configuration capture failed.", failure);
                 result.complete(false);
             }
         }
 
-        return result;
+        void reject(RuntimeException failure) {
+            if (!claimed.compareAndSet(false, true)) return;
+            PENDING_CAPTURES.remove(this);
+            plugin.getSLF4JLogger()
+                    .error("Failed to schedule owner-thread configuration capture.", failure);
+            result.complete(false);
+        }
     }
 
     /**
-     * Saves this configuration to disk while serializing access per target file.
-     *
-     * @param file destination file
+     * Synchronously saves a captured snapshot after earlier operations for this destination.
+     * Storage failures are reported to the caller rather than logged as apparent success.
      */
     @Override
     public void save(@NotNull File file) {
-        File normalized = this.normalize(file);
-        synchronized (this.getMonitor(normalized)) {
-            try {
-                super.save(normalized);
-            } catch (IOException exception) {
-                this.plugin
-                        .getSLF4JLogger()
-                        .error(
-                                "Failed to save configuration '{}'.",
-                                normalized.getAbsolutePath(),
-                                exception);
-            }
+        try {
+            requireOwnerThread();
+            String snapshot = this.saveToString();
+            ConfigurationIoQueue.writeNow(ConfigurationIoQueue.destination(file), snapshot);
+        } catch (IOException failure) {
+            logFailure(this.plugin, file, failure);
+            throw new UncheckedIOException(failure);
+        } catch (CompletionException failure) {
+            logFailure(this.plugin, file, failure);
+            if (failure.getCause() instanceof IOException io) throw new UncheckedIOException(io);
+            throw failure;
         }
     }
 
-    /**
-     * Loads this configuration from disk while serializing access per target file.
-     *
-     * @param file source file
-     */
+    /** Reads after earlier queued writes, then applies YAML on the owning thread. */
+    @Override
     public void load(@NotNull File file) {
-        File normalized = this.normalize(file);
-        synchronized (this.getMonitor(normalized)) {
-            try {
-                super.load(normalized);
-            } catch (InvalidConfigurationException | IOException exception) {
-                this.plugin
-                        .getSLF4JLogger()
-                        .error(
-                                "Failed to load configuration '{}'.",
-                                normalized.getAbsolutePath(),
-                                exception);
-            }
+        requireOwnerThread();
+        try {
+            loadSnapshot(this, file);
+        } catch (InvalidConfigurationException | IOException | CompletionException failure) {
+            this.plugin
+                    .getSLF4JLogger()
+                    .error("Failed to load configuration '{}'.", file.getAbsolutePath(), failure);
         }
+    }
+
+    /** Reads ordinary YAML through the same destination barrier before owner-thread parsing. */
+    public static void loadSnapshot(YamlConfiguration configuration, File file)
+            throws IOException, InvalidConfigurationException {
+        requireOwnerThread();
+        String snapshot;
+        try {
+            snapshot = ConfigurationIoQueue.readNow(ConfigurationIoQueue.destination(file));
+        } catch (CompletionException failure) {
+            if (failure.getCause() instanceof IOException io) throw io;
+            throw failure;
+        }
+        configuration.loadFromString(snapshot);
+    }
+
+    private static void requireOwnerThread() {
+        // Standalone configurations (e.g. migration tools) have no Bukkit server. While a server
+        // exists, mutable YAML and model serialization must stay on its primary thread, even at
+        // disable.
+        if (Bukkit.getServer() != null && !Bukkit.isPrimaryThread()) {
+            throw new IllegalStateException(
+                    "Configuration snapshots require the server thread; use saveAsync");
+        }
+    }
+
+    private static void logFailure(Plugin plugin, File file, Throwable failure) {
+        Throwable cause =
+                failure instanceof CompletionException && failure.getCause() != null
+                        ? failure.getCause()
+                        : failure;
+        plugin.getSLF4JLogger()
+                .error("Failed to save configuration '{}'.", file.getAbsolutePath(), cause);
     }
 
     /**

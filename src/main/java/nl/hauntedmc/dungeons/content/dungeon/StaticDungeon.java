@@ -335,38 +335,14 @@ public class StaticDungeon extends DungeonDefinition {
      */
     @Override
     public void saveFunctions() {
-        YamlConfiguration functionsYaml = new YamlConfiguration();
-        File saveFile = new File(this.folder, "functions.yml");
-        List<DungeonFunction> functions = new ArrayList<>(this.functions.values());
-        functionsYaml.set("Functions", functions);
-        if (this.plugin().isEnabled()) {
-            Bukkit.getScheduler()
-                    .runTaskAsynchronously(
-                            this.plugin(),
-                            () -> {
-                                try {
-                                    functionsYaml.save(saveFile);
-                                } catch (IOException exception) {
-                                    this.logger()
-                                            .error(
-                                                    "Failed to asynchronously save functions for dungeon '{}' to '{}'.",
-                                                    this.getWorldName(),
-                                                    saveFile.getAbsolutePath(),
-                                                    exception);
-                                }
-                            });
-        } else {
-            try {
-                functionsYaml.save(saveFile);
-            } catch (IOException exception) {
-                this.logger()
-                        .error(
-                                "Failed to save functions for dungeon '{}' to '{}'.",
-                                this.getWorldName(),
-                                saveFile.getAbsolutePath(),
-                                exception);
-            }
-        }
+        nl.hauntedmc.dungeons.config.ConfigurationFile.onOwnerThread(
+                this.plugin(),
+                () -> {
+                    YamlConfiguration functionsYaml = new YamlConfiguration();
+                    functionsYaml.set("Functions", new ArrayList<>(this.functions.values()));
+                    return nl.hauntedmc.dungeons.config.ConfigurationFile.saveAsync(
+                            this.plugin(), functionsYaml, new File(this.folder, "functions.yml"));
+                });
     }
 
     /**
@@ -375,12 +351,8 @@ public class StaticDungeon extends DungeonDefinition {
     public void loadFunctions() throws DungeonLoadException {
         YamlConfiguration functionsYaml = new YamlConfiguration();
         File loadFile = new File(this.folder, "functions.yml");
-        if (!loadFile.exists()) {
-            return;
-        }
-
         try {
-            functionsYaml.load(loadFile);
+            nl.hauntedmc.dungeons.config.ConfigurationFile.loadSnapshot(functionsYaml, loadFile);
             List<?> functions = functionsYaml.getList("Functions");
             if (functions == null || functions.isEmpty()) {
                 return;
@@ -390,6 +362,8 @@ public class StaticDungeon extends DungeonDefinition {
             for (Object function : functions) {
                 this.loadFunctionSafely(function, index++);
             }
+        } catch (java.nio.file.NoSuchFileException absent) {
+            return;
         } catch (IOException exception) {
             throw new DungeonLoadException(
                     "Access of functions.yml file failed!",

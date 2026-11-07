@@ -1,17 +1,9 @@
 package nl.hauntedmc.dungeons.content.instance.edit;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map.Entry;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import nl.hauntedmc.dungeons.util.world.GameRuleUtils;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
+import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
 import nl.hauntedmc.dungeons.generation.room.Connector;
 import nl.hauntedmc.dungeons.generation.room.ConnectorDoor;
-import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
 import nl.hauntedmc.dungeons.model.instance.EditableInstance;
@@ -21,9 +13,10 @@ import nl.hauntedmc.dungeons.util.config.PluginConfigView;
 import nl.hauntedmc.dungeons.util.entity.ParticleUtils;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import nl.hauntedmc.dungeons.util.text.ColorUtils;
+import nl.hauntedmc.dungeons.util.world.GameRuleUtils;
 import nl.hauntedmc.dungeons.util.world.LocationUtils;
+
 import org.apache.commons.io.FileUtils;
-import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Particle;
@@ -33,6 +26,14 @@ import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * Branching editor instance that visualizes rooms, connectors, and room-scoped functions.
@@ -214,30 +215,10 @@ public class BranchingEditableInstance extends EditableInstance {
      * Saves gamerules async.
      */
     private CompletableFuture<Boolean> saveGamerulesAsync() {
-        CompletableFuture<Boolean> result = new CompletableFuture<>();
-        File saveFile = new File(this.dungeon.getFolder(), "gamerules.yml");
-        Runnable task =
-                () -> {
-                    try {
-                        this.dungeon.getRuleConfig().save(saveFile);
-                        result.complete(true);
-                    } catch (IOException exception) {
-                        RuntimeContext.logger()
-                                .error(
-                                        "Failed to save gamerules for dungeon '{}'.",
-                                        this.dungeon.getWorldName(),
-                                        exception);
-                        result.complete(false);
-                    }
-                };
-
-        if (RuntimeContext.plugin().isEnabled()) {
-            Bukkit.getScheduler().runTaskAsynchronously(RuntimeContext.plugin(), task);
-        } else {
-            task.run();
-        }
-
-        return result;
+        return nl.hauntedmc.dungeons.config.ConfigurationFile.saveAsync(
+                this.plugin(),
+                this.dungeon.getRuleConfig(),
+                new File(this.dungeon.getFolder(), "gamerules.yml"));
     }
 
     /**

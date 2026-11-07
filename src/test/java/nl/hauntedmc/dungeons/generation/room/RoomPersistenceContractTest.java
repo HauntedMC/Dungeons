@@ -24,6 +24,47 @@ class RoomPersistenceContractTest {
     @TempDir Path directory;
 
     @Test
+    void roomSnapshotsMarshalBeforeReadingModelsAndRemainOrderedWhileEditingContinues()
+            throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration());
+                var menus = mockStatic(RoomMenus.class);
+                var hotbars = new HeadlessMenus()) {
+            var branch = new BranchingRunFixture(f);
+            var room =
+                    new BranchingRoomDefinition(
+                            branch.dungeon, "ordered", new BoundingBox(0, 0, 0, 2, 2, 2));
+            when(f.paper.plugin.isEnabled()).thenReturn(true);
+            room.setOccurrencesString("2-4");
+            f.paper.bukkit.when(Bukkit::isPrimaryThread).thenReturn(false);
+            var first = room.saveRoomAsync();
+            assertTrue(f.scheduler.asynchronous.isEmpty());
+            f.paper.bukkit.when(Bukkit::isPrimaryThread).thenReturn(true);
+            f.scheduler.immediate.getFirst().run();
+            var file = f.dungeon.getFolder().toPath().resolve("rooms/ordered.yml");
+            var observed = new ArrayList<String>();
+            first.thenRun(
+                    () ->
+                            observed.add(
+                                    YamlConfiguration.loadConfiguration(file.toFile())
+                                            .getString("Config.Occurrences")));
+            room.setOccurrencesString("5-7");
+            var second = room.saveRoomAsync();
+            second.thenRun(
+                    () ->
+                            observed.add(
+                                    YamlConfiguration.loadConfiguration(file.toFile())
+                                            .getString("Config.Occurrences")));
+            room.setOccurrencesString("9");
+            assertEquals(1, f.scheduler.asynchronous.size());
+            f.scheduler.asynchronous.getFirst().run();
+            assertTrue(first.join());
+            assertTrue(second.join());
+            assertEquals(List.of("2-4", "5-7"), observed);
+            assertEquals("9", room.getOccurrencesString());
+        }
+    }
+
+    @Test
     void
             savedRoomMetadataConnectorsAndFunctionsReloadWhileMalformedAndOutOfBoundsFunctionsAreSkipped()
                     throws Exception {

@@ -85,6 +85,16 @@ The disposal hook runs once to stop gameplay. Completion hooks, warm-pool replen
 
 Temporary-file deletion remains best effort after unload. Before releasing capacity or invoking completion hooks, the server thread atomically renames owned folders to unique `<world>.disposed-<uuid>` paths. Worker tasks delete only those detached paths, so a new world can safely reuse the original name. Failed detachment or deletion retains files and logs the path; startup cleanup recognizes both ordinary instance folders and the strictly validated retired-folder names.
 
+## Configuration Snapshots and Ordered Writes
+
+Mutable Bukkit configurations and model graphs belong to the server thread. `ConfigurationFile.saveAsync` captures the complete YAML string there before admitting a disk write. Calls from other threads first marshal capture to the server thread; their snapshot reflects state when that capture executes. `ConfigurationFile.onOwnerThread` applies the same rule before rooms build metadata and before static dungeons gather function graphs. Editor function and gamerule saves also use this snapshot path. Continuing to edit a model after capture cannot change its queued YAML.
+
+All wrappers share a FIFO disk lane per canonical destination, including existing symbolic-link aliases. Workers receive immutable text, write and flush a sibling temporary file, then atomically replace the destination. Separate destinations progress independently. Failed serialization never admits a write; disk failures complete that save as `false` and do not poison later snapshots. Rejected worker scheduling completes the queued batch as failed. Cancelling an observer future does not cancel an admitted snapshot.
+
+Synchronous `save` and `load` use the same destination lane and drain earlier admitted operations, so an old asynchronous write cannot overwrite a newer synchronous save. Loading reads bytes through the lane and applies YAML on the owner thread. Synchronous storage failures throw `UncheckedIOException`; callers no longer receive apparent success after a failed write. Live configuration mutation outside its owning thread remains unsupported, including mutation through nested collections or model references.
+
+Shutdown captures pending owner-thread requests and drains disk lanes in a `finally` block, even when Paper has cancelled their scheduled tasks. No disk worker needs a Bukkit callback to finish its file operation. Atomic replacement support is required; failed replacements preserve the last good file. Ordering covers callers using this persistence path, rather than unrelated plugins or direct filesystem writes.
+
 ## Why This Matters
 
 For operators, this structure reduces surprise during reloads and restarts.

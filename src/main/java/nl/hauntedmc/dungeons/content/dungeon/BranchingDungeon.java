@@ -1,6 +1,5 @@
 package nl.hauntedmc.dungeons.content.dungeon;
 
-import nl.hauntedmc.dungeons.util.world.GameRuleUtils;
 import nl.hauntedmc.dungeons.content.instance.edit.BranchingEditableInstance;
 import nl.hauntedmc.dungeons.content.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.generation.layout.Layout;
@@ -16,6 +15,7 @@ import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.text.TextUtils;
+import nl.hauntedmc.dungeons.util.world.GameRuleUtils;
 
 import org.apache.commons.io.FilenameUtils;
 import org.bukkit.Bukkit;
@@ -84,9 +84,10 @@ public class BranchingDungeon extends DungeonDefinition {
 
         try {
             File configFile = new File(folder, "gamerules.yml");
-            if (configFile.exists()) {
-                this.ruleConfig.load(configFile);
-            }
+            nl.hauntedmc.dungeons.config.ConfigurationFile.loadSnapshot(
+                    this.ruleConfig, configFile);
+        } catch (java.nio.file.NoSuchFileException absent) {
+            // New dungeons have no persisted rule overrides yet.
         } catch (IOException exception) {
             throw new DungeonLoadException(
                     "Access of gamerules.yml file failed!",
@@ -451,26 +452,14 @@ public class BranchingDungeon extends DungeonDefinition {
      * Saves gamerules from.
      */
     public void saveGamerulesFrom(World world) {
-        GameRuleUtils.capture(world, this.ruleConfig);
-
-        this.ruleConfig.set("Difficulty", world.getDifficulty().name());
-        Runnable task =
+        nl.hauntedmc.dungeons.config.ConfigurationFile.onOwnerThread(
+                this.plugin(),
                 () -> {
-                    try {
-                        this.ruleConfig.save(new File(this.folder, "gamerules.yml"));
-                    } catch (IOException exception) {
-                        this.logger()
-                                .error(
-                                        "Failed to save gamerules for dungeon '{}'.",
-                                        this.worldName,
-                                        exception);
-                    }
-                };
-        if (this.plugin().isEnabled()) {
-            Bukkit.getScheduler().runTaskAsynchronously(this.plugin(), task);
-        } else {
-            task.run();
-        }
+                    GameRuleUtils.capture(world, this.ruleConfig);
+                    this.ruleConfig.set("Difficulty", world.getDifficulty().name());
+                    return nl.hauntedmc.dungeons.config.ConfigurationFile.saveAsync(
+                            this.plugin(), this.ruleConfig, new File(this.folder, "gamerules.yml"));
+                });
     }
 
     /**

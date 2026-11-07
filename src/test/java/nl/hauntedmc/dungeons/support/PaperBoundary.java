@@ -78,6 +78,8 @@ public final class PaperBoundary implements AutoCloseable {
 
     @Override
     public void close() {
+        bukkit.when(Bukkit::isPrimaryThread).thenReturn(true);
+        nl.hauntedmc.dungeons.config.ConfigurationFile.flushPendingSaves();
         RuntimeContext.clear();
         entities.close();
         checkpoints.close();

@@ -12,6 +12,7 @@ import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueCoordinator;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueEntry;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry;
 import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
+import nl.hauntedmc.dungeons.support.CapturedScheduler;
 import nl.hauntedmc.dungeons.support.PaperBoundary;
 import nl.hauntedmc.dungeons.support.PlayerState;
 import nl.hauntedmc.dungeons.support.RunFixture;
@@ -27,6 +28,31 @@ import java.util.List;
 
 class LifecycleContractTest {
     @TempDir Path directory;
+
+    @Test
+    void shutdownFailureStillFlushesAlreadyCapturedConfigurationSnapshots() throws Exception {
+        try (var paper = new PaperBoundary()) {
+            var scheduler = new CapturedScheduler(paper);
+            when(paper.plugin.isEnabled()).thenReturn(true);
+            var config = new nl.hauntedmc.dungeons.config.ConfigurationFile(paper.plugin);
+            config.set("value", "durable");
+            var file = directory.resolve("shutdown.yml");
+            var saved = config.saveAsync(file.toFile());
+            assertFalse(saved.isDone());
+            paper.runtime.setQueueRegistry(mock(DungeonQueueRegistry.class));
+            var teams = mock(DungeonTeamService.class);
+            paper.runtime.setTeamService(teams);
+            doThrow(new IllegalStateException("shutdown hook failed")).when(teams).shutdown();
+            assertThrows(
+                    IllegalStateException.class,
+                    () ->
+                            new LifecycleCoordinator(paper.runtime, mock(CoreBootstrap.class))
+                                    .shutdown());
+            assertTrue(saved.get(1, java.util.concurrent.TimeUnit.SECONDS));
+            assertEquals("value: durable\n", java.nio.file.Files.readString(file));
+            scheduler.asynchronous.getFirst().run();
+        }
+    }
 
     @Test
     void shutdownClearsPendingStartsBeforeDisposalAndOneBrokenRunCannotAbandonOthers() {

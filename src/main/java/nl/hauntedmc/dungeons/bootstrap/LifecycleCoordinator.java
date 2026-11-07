@@ -38,56 +38,64 @@ public final class LifecycleCoordinator {
      * Releases player and instance state during plugin shutdown.
      */
     void shutdown() {
-        this.runtime.environment().logger().info("Cleaning up active dungeons and player state.");
-        this.discardQueuedStarts(null);
-        this.refundOutstandingReservedKeys(null);
+        try {
+            this.runtime
+                    .environment()
+                    .logger()
+                    .info("Cleaning up active dungeons and player state.");
+            this.discardQueuedStarts(null);
+            this.refundOutstandingReservedKeys(null);
 
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            try {
-                DungeonPlayerSession playerSession = this.runtime.playerSessions().get(player);
-                if (playerSession == null) {
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                try {
+                    DungeonPlayerSession playerSession = this.runtime.playerSessions().get(player);
+                    if (playerSession == null) {
+                        this.runtime
+                                .environment()
+                                .logger()
+                                .warn(
+                                        "No DungeonPlayerSession state was available during"
+                                                + " shutdown for '{}'.",
+                                        player.getName());
+                        continue;
+                    }
+
+                    playerSession.restoreCapturedHotbar();
+                    DungeonInstance instance = playerSession.getInstance();
+                    if (instance != null) {
+                        instance.removePlayer(playerSession);
+                    }
+                } catch (Exception exception) {
                     this.runtime
                             .environment()
                             .logger()
-                            .warn(
-                                    "No DungeonPlayerSession state was available during shutdown"
-                                        + " for '{}'.",
-                                    player.getName());
-                    continue;
+                            .error(
+                                    "Failed to clean up player '{}' during plugin shutdown.",
+                                    player.getName(),
+                                    exception);
                 }
+            }
 
-                playerSession.restoreCapturedHotbar();
-                DungeonInstance instance = playerSession.getInstance();
-                if (instance != null) {
-                    instance.removePlayer(playerSession);
+            if (this.runtime.teamService() != null) {
+                this.runtime.teamService().shutdown();
+            }
+
+            for (DungeonInstance instance : this.managedInstances()) {
+                try {
+                    instance.dispose();
+                } catch (Exception exception) {
+                    this.runtime
+                            .environment()
+                            .logger()
+                            .error(
+                                    "Failed to dispose managed instance '{}'.",
+                                    instance.getInstanceWorldName(),
+                                    exception);
                 }
-            } catch (Exception exception) {
-                this.runtime
-                        .environment()
-                        .logger()
-                        .error(
-                                "Failed to clean up player '{}' during plugin shutdown.",
-                                player.getName(),
-                                exception);
             }
-        }
-
-        if (this.runtime.teamService() != null) {
-            this.runtime.teamService().shutdown();
-        }
-
-        for (DungeonInstance instance : this.managedInstances()) {
-            try {
-                instance.dispose();
-            } catch (Exception exception) {
-                this.runtime
-                        .environment()
-                        .logger()
-                        .error(
-                                "Failed to dispose managed instance '{}'.",
-                                instance.getInstanceWorldName(),
-                                exception);
-            }
+        } finally {
+            // This also executes owner-thread captures cancelled by Paper during disable.
+            nl.hauntedmc.dungeons.config.ConfigurationFile.flushPendingSaves();
         }
     }
 

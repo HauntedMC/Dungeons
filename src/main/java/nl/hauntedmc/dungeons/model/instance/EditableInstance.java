@@ -426,33 +426,9 @@ public class EditableInstance extends DungeonInstance {
     protected CompletableFuture<Boolean> saveEditorMetadataAsync() {
         YamlConfiguration functionsYaml = new YamlConfiguration();
         File saveFile = new File(this.dungeon.getFolder(), "functions.yml");
-        List<DungeonFunction> functions = new ArrayList<>(this.dungeon.getFunctions().values());
-        functionsYaml.set("Functions", functions);
-
-        CompletableFuture<Boolean> result = new CompletableFuture<>();
-        Runnable saveTask =
-                () -> {
-                    try {
-                        functionsYaml.save(saveFile);
-                        result.complete(true);
-                    } catch (IOException | RuntimeException exception) {
-                        this.logger()
-                                .error(
-                                        "Failed to save functions for dungeon '{}' to '{}'.",
-                                        this.dungeon.getWorldName(),
-                                        saveFile.getAbsolutePath(),
-                                        exception);
-                        result.complete(false);
-                    }
-                };
-
-        if (this.plugin().isEnabled()) {
-            Bukkit.getScheduler().runTaskAsynchronously(this.plugin(), saveTask);
-        } else {
-            saveTask.run();
-        }
-
-        return result;
+        functionsYaml.set("Functions", new ArrayList<>(this.dungeon.getFunctions().values()));
+        return nl.hauntedmc.dungeons.config.ConfigurationFile.saveAsync(
+                this.plugin(), functionsYaml, saveFile);
     }
 
     /**

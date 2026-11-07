@@ -73,6 +73,11 @@ final class NativePersistence {
                                         .toPath()
                                         .resolve("native-state.yml")
                                         .toFile()));
+        // Editing continues immediately after the call; native item/model serialization must
+        // already be frozen even if the disk worker has not run yet.
+        item.setAmount(19);
+        item.editMeta(meta -> meta.displayName(Component.text("Edited after save request")));
+        graph.getLocation().setX(200);
         return saved.thenRun(
                 () -> {
                     try {

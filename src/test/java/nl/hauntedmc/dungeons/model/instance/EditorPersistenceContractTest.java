@@ -171,7 +171,7 @@ class EditorPersistenceContractTest {
     }
 
     @Test
-    void asynchronousSerializationFailureCompletesTheEditorSaveWithoutLeavingAnUnresolvedFuture()
+    void ownerThreadSerializationFailureCompletesTheEditorSaveWithoutQueueingDiskWork()
             throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
             Path source = Files.createDirectories(directory.resolve("live"));
@@ -183,9 +183,8 @@ class EditorPersistenceContractTest {
             when(f.paper.plugin.isEnabled()).thenReturn(true);
             var latch = new CountDownLatch(1);
             var result = editor.saveWorldAsync(latch);
-            assertFalse(result.isDone());
-            assertTrue(f.dungeon.isSaving());
-            assertDoesNotThrow(() -> f.scheduler.asynchronous.getFirst().run());
+            assertTrue(result.isDone());
+            assertTrue(f.scheduler.asynchronous.isEmpty());
             assertFalse(result.get(1, TimeUnit.SECONDS));
             assertEquals(0, latch.getCount());
             assertFalse(f.dungeon.isSaving());
