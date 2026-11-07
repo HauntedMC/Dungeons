@@ -17,6 +17,23 @@ class EditorPreparationTest {
     @TempDir Path directory;
 
     @Test
+    void anEditorCannotStealASessionThatIsQueuedForAPlayAdmission() throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var state = new PlayerState();
+            var session = f.session(state);
+            session.setAwaitingDungeon(true);
+            var dungeon = spy(f.dungeon);
+            var catalog = mock(nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository.class);
+            when(catalog.get(dungeon.getWorldName())).thenReturn(dungeon);
+            f.paper.runtime.setDungeonCatalog(catalog);
+            new EditorPreparation(dungeon, state.player.getUniqueId(), 30).start();
+            verify(dungeon, never()).createEditSession(any());
+            assertTrue(session.isAwaitingDungeon());
+            assertFalse(f.paper.runtime.preparations().contains(session));
+        }
+    }
+
+    @Test
     void waitingForAnExistingEditorUsesItsInitializationAndReleasesAdmissionOwnership()
             throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {

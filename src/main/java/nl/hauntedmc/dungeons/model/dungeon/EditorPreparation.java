@@ -38,7 +38,7 @@ final class EditorPreparation implements PreparationRegistry.Pending {
         session = dungeon.playerSessions().get(playerId);
         if (session == null || session.isExpired()) return;
         player = session.getPlayer();
-        if (!player.isOnline() || session.getInstance() != null) return;
+        if (!player.isOnline() || session.getInstance() != null || session.isAwaitingDungeon()) return;
         if (!dungeon.runtime().preparations().register(session, this)) return;
         session.setAwaitingDungeon(true);
         try {

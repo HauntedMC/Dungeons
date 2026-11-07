@@ -364,6 +364,10 @@ public abstract class PlayableInstance extends DungeonInstance {
         if (playerSession.getInstance() != this) {
             return;
         }
+        // Commit access policy before join commands can grant money/items or change other services.
+        if (playerSession.hasReservedAccessKey(this.dungeon.getWorldName())
+                && !this.dungeon.completeReservedAccessKey(playerSession))
+            throw new IllegalStateException("Could not commit dungeon access key usage");
         Player player = playerSession.getPlayer();
         this.livingPlayers.add(playerSession);
         this.showCustomDragonBossBars(player);

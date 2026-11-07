@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 import nl.hauntedmc.dungeons.event.DungeonEndEvent;
@@ -51,6 +52,23 @@ class PlayerRunContractTest {
         settings.set("players.keep_on_entry.health", true);
         settings.set("players.keep_on_entry.food", true);
         return settings;
+    }
+
+    @Test
+    void accessKeyFinalizationMustSucceedBeforeJoinCommandsCanReachOtherServices() throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var dungeon = spy(f.dungeon);
+            doReturn(false).when(dungeon).completeReservedAccessKey(any());
+            doReturn(List.of("eco give {player} 100")).when(dungeon).getJoinCommands();
+            var run = new RunFixture.Run(dungeon, f.world);
+            var state = new PlayerState();
+            var session = f.session(state);
+            assertTrue(session.reserveAccessKey(dungeon.getWorldName(), PlayerState.stack(1)));
+            assertThrows(IllegalStateException.class, () -> run.addPlayer(session));
+            f.paper.bukkit.verify(() -> Bukkit.dispatchCommand(any(), anyString()), never());
+            run.removePlayer(session, true);
+            assertNull(session.getInstance());
+        }
     }
 
     @Test
