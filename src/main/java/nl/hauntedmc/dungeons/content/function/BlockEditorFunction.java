@@ -206,7 +206,7 @@ public class BlockEditorFunction extends DungeonFunction {
                      */
                     @Override
                     public void onInput(Player player, String message) {
-                        String matString = message.toUpperCase();
+                        String matString = message.toUpperCase(Locale.ROOT);
 
                         try {
                             if (BlockEditorFunction.this.remove && matString.equals("ANY")) {
@@ -333,7 +333,7 @@ public class BlockEditorFunction extends DungeonFunction {
                      */
                     @Override
                     public void onInput(Player player, String message) {
-                        String directionString = message.toUpperCase();
+                        String directionString = message.toUpperCase(Locale.ROOT);
                         Material mat = BlockEditorFunction.this.resolveConfiguredMaterial(true);
                         if (mat == null) {
                             LangUtils.sendMessage(

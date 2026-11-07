@@ -1,5 +1,6 @@
 package nl.hauntedmc.dungeons.registry;
 
+import java.util.Locale;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
@@ -16,10 +17,10 @@ public final class LayoutRegistry {
     /** Registers one layout type class under a primary name and optional aliases. */
     public static <T extends Layout> void register(
             Class<T> layoutType, String name, String... aliases) {
-        layouts.put(name.toLowerCase(), layoutType);
+        layouts.put(name.toLowerCase(Locale.ROOT), layoutType);
 
         for (String alias : aliases) {
-            layouts.put(alias.toLowerCase(), layoutType);
+            layouts.put(alias.toLowerCase(Locale.ROOT), layoutType);
         }
     }
 
@@ -35,7 +36,7 @@ public final class LayoutRegistry {
                     InvocationTargetException,
                     InstantiationException,
                     IllegalAccessException {
-        Class<? extends Layout> typeClass = layouts.get(type.toLowerCase());
+        Class<? extends Layout> typeClass = layouts.get(type.toLowerCase(Locale.ROOT));
         return typeClass == null
                 ? null
                 : typeClass

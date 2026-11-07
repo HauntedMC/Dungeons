@@ -1,28 +1,30 @@
 package nl.hauntedmc.dungeons.content.reward;
 
-import java.util.Calendar;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
 /**
  * Named cooldown cadences used by reward functions.
  *
- * <p>Each constant stores the {@link Calendar} field it advances and the default amount used when
+ * <p>Each constant stores the {@link ChronoUnit} unit it advances and the default amount used when
  * no explicit override is supplied.
  */
 public enum CooldownPeriod {
-    TIMER(Calendar.MINUTE),
-    HOURLY(Calendar.HOUR),
-    DAILY(Calendar.DATE),
-    WEEKLY(Calendar.DATE, 7),
-    MONTHLY(Calendar.MONTH);
+    TIMER(ChronoUnit.MINUTES),
+    HOURLY(ChronoUnit.HOURS),
+    DAILY(ChronoUnit.DAYS),
+    WEEKLY(ChronoUnit.DAYS, 7),
+    MONTHLY(ChronoUnit.MONTHS);
 
-    public final int period;
+    public final ChronoUnit period;
     public final int amount;
 
     /**
      * Creates a new cooldown period instance.
      */
-    CooldownPeriod(int period) {
+    CooldownPeriod(ChronoUnit period) {
         this.period = period;
         this.amount = 1;
     }
@@ -30,7 +32,7 @@ public enum CooldownPeriod {
     /**
      * Creates a new cooldown period instance.
      */
-    CooldownPeriod(int period, int amount) {
+    CooldownPeriod(ChronoUnit period, int amount) {
         this.period = period;
         this.amount = amount;
     }
@@ -39,9 +41,7 @@ public enum CooldownPeriod {
      * Creates a value from now.
      */
     public Date fromNow(int amount) {
-        Calendar cal = Calendar.getInstance();
-        cal.add(this.period, amount);
-        return cal.getTime();
+        return Date.from(ZonedDateTime.now().plus(amount, this.period).toInstant());
     }
 
     /**
@@ -55,10 +55,8 @@ public enum CooldownPeriod {
      * Creates a value from date.
      */
     public Date fromDate(Date date, int amount) {
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(date);
-        cal.add(this.period, amount);
-        return cal.getTime();
+        return Date.from(
+                date.toInstant().atZone(ZoneId.systemDefault()).plus(amount, this.period).toInstant());
     }
 
     /**

@@ -48,6 +48,7 @@ final class WorldLifecycle {
                                                                                     GameRules
                                                                                             .RANDOM_TICK_SPEED)),
                                                             "Native world game rule was not applied");
+                                                    verifyGameRulePersistence(world);
                                                     require(
                                                             !world.isAutoSave(),
                                                             "Runtime world unexpectedly autosaves");
@@ -66,6 +67,39 @@ final class WorldLifecycle {
                                                                                     test, first,
                                                                                     second));
                                                 }));
+    }
+
+    private static void verifyGameRulePersistence(org.bukkit.World world) {
+        var saved = new org.bukkit.configuration.file.YamlConfiguration();
+        nl.hauntedmc.dungeons.util.world.GameRuleUtils.capture(world, saved);
+        var mobRule = GameRules.SPAWN_MOBS;
+        var tickRule = GameRules.RANDOM_TICK_SPEED;
+        boolean originalMobs = world.getGameRuleValue(mobRule);
+        int originalTicks = world.getGameRuleValue(tickRule);
+        try {
+            world.setGameRule(mobRule, !originalMobs);
+            world.setGameRule(tickRule, originalTicks + 1);
+            var loaded = new org.bukkit.configuration.file.YamlConfiguration();
+            loaded.loadFromString(saved.saveToString());
+            nl.hauntedmc.dungeons.util.world.GameRuleUtils.apply(world, loaded);
+            require(world.getGameRuleValue(mobRule) == originalMobs,
+                    "Boolean gamerule did not survive YAML persistence");
+            require(world.getGameRuleValue(tickRule) == originalTicks,
+                    "Integer gamerule did not survive YAML persistence");
+            // Older plugin saves wrote every value as a string.
+            for (String path : saved.getKeys(true)) {
+                if (!saved.isConfigurationSection(path)) saved.set(path, saved.getString(path));
+            }
+            world.setGameRule(mobRule, !originalMobs);
+            nl.hauntedmc.dungeons.util.world.GameRuleUtils.apply(world, saved);
+            require(world.getGameRuleValue(mobRule) == originalMobs,
+                    "String gamerule saves are no longer compatible");
+        } catch (org.bukkit.configuration.InvalidConfigurationException exception) {
+            throw new IllegalStateException(exception);
+        } finally {
+            world.setGameRule(mobRule, originalMobs);
+            world.setGameRule(tickRule, originalTicks);
+        }
     }
 
     private static CompletionStage<Void> verifyConsoleSummons(

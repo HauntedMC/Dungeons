@@ -1,5 +1,6 @@
 package nl.hauntedmc.dungeons.content.function.reward;
 
+import nl.hauntedmc.dungeons.util.time.TimeUtils;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.gui.framework.buttons.Button;
@@ -20,7 +21,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -99,13 +99,11 @@ public class RandomRewardFunction extends RewardFunction {
                                 Date unlockTime =
                                         instance.getDungeon().getLootUnlockTime(player, this);
                                 if (unlockTime != null) {
-                                    SimpleDateFormat format =
-                                            new SimpleDateFormat("EEE, MMM d, hh:mm aaa z");
                                     LangUtils.sendMessage(
                                             player,
                                             "instance.play.rewards.cooldown-time",
                                             LangUtils.placeholder(
-                                                    "time", format.format(unlockTime)));
+                                                    "time", TimeUtils.formatDate(unlockTime)));
                                 }
 
                                 event.setCancelled(true);

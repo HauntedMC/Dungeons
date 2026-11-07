@@ -10,6 +10,7 @@ import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Server;
 import org.bukkit.UnsafeValues;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.PluginManager;
@@ -37,9 +38,13 @@ public final class PaperBoundary implements AutoCloseable {
         RuntimeContext.initialize(runtime);
         bukkit.when(Bukkit::getPluginManager).thenReturn(mock(PluginManager.class));
         bukkit.when(Bukkit::getOnlinePlayers).thenReturn(List.of());
+        // WorldCreator still consults this Paper implementation boundary internally.
         var unsafe = mock(UnsafeValues.class);
         when(unsafe.getMainLevelName()).thenReturn("world");
         bukkit.when(Bukkit::getUnsafe).thenReturn(unsafe);
+        var server = mock(Server.class);
+        when(server.getLevelDirectory()).thenAnswer(call -> Bukkit.getWorldContainer().toPath().resolve("world"));
+        bukkit.when(Bukkit::getServer).thenReturn(server);
         javaPlugin.when(() -> JavaPlugin.getPlugin(DungeonsPlugin.class)).thenReturn(plugin);
     }
 

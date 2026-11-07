@@ -21,9 +21,7 @@ class WorldStartupContractTest {
     @Test
     void allocatingMultipleRunsReservesDistinctFoldersEvenBeforeWorldCreation() throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
-            var unsafe = mock(UnsafeValues.class);
-            when(unsafe.getMainLevelName()).thenReturn("plots");
-            f.paper.bukkit.when(Bukkit::getUnsafe).thenReturn(unsafe);
+            when(Bukkit.getServer().getLevelDirectory()).thenReturn(directory.resolve("plots"));
             var first = f.run.reserveWorldFolder(false);
             var second = new RunFixture.Run(f.dungeon, f.world).reserveWorldFolder(false);
             assertTrue(first.isDirectory());
@@ -37,9 +35,7 @@ class WorldStartupContractTest {
     @Test
     void disposalRemovesBothLegacyAndMigratedFoldersButKeepsTheTemplate() throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
-            var unsafe = mock(UnsafeValues.class);
-            when(unsafe.getMainLevelName()).thenReturn("plots");
-            f.paper.bukkit.when(Bukkit::getUnsafe).thenReturn(unsafe);
+            when(Bukkit.getServer().getLevelDirectory()).thenReturn(directory.resolve("plots"));
             Path legacy = Files.createDirectories(directory.resolve("crypt_0/DIM1/region"));
             Files.writeString(legacy.resolve("old.mca"), "legacy");
             Path migrated =
@@ -60,9 +56,7 @@ class WorldStartupContractTest {
     void modernTemplateDoesNotReimportStaleLegacyDimensionsAndMigratesPotionLimits()
             throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
-            var unsafe = mock(UnsafeValues.class);
-            when(unsafe.getMainLevelName()).thenReturn("plots");
-            f.paper.bukkit.when(Bukkit::getUnsafe).thenReturn(unsafe);
+            when(Bukkit.getServer().getLevelDirectory()).thenReturn(directory.resolve("plots"));
             Path source = f.dungeon.getFolder().toPath();
             Files.createDirectories(source.resolve("data/minecraft"));
             Files.writeString(source.resolve("data/minecraft/world_gen_settings.dat"), "modern");
@@ -127,9 +121,7 @@ class WorldStartupContractTest {
             Files.writeString(source.resolve("level.dat"), "template world");
             Files.writeString(source.resolve("uid.dat"), "template identity");
             Files.writeString(source.resolve("config.yml"), "template settings");
-            var unsafe = mock(UnsafeValues.class);
-            when(unsafe.getMainLevelName()).thenReturn("world");
-            f.paper.bukkit.when(Bukkit::getUnsafe).thenReturn(unsafe);
+            when(Bukkit.getServer().getLevelDirectory()).thenReturn(directory.resolve("world"));
             f.paper
                     .bukkit
                     .when(() -> Bukkit.createWorld(any(WorldCreator.class)))

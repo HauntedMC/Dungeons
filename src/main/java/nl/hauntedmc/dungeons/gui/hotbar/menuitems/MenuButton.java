@@ -5,7 +5,6 @@ import java.util.List;
 import nl.hauntedmc.dungeons.util.text.ColorUtils;
 import nl.hauntedmc.dungeons.util.text.ComponentUtils;
 import org.bukkit.Material;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
@@ -56,11 +55,9 @@ public class MenuButton {
 
     /** Toggles enchantment glint on the button item. */
     public void setEnchanted(boolean enchanted) {
-        if (enchanted) {
-            this.item.addUnsafeEnchantment(Enchantment.AQUA_AFFINITY, 1);
-        } else {
-            this.item.removeEnchantment(Enchantment.AQUA_AFFINITY);
-        }
+        ItemMeta meta = this.item.getItemMeta();
+        meta.setEnchantmentGlintOverride(enchanted);
+        this.item.setItemMeta(meta);
     }
 
     /** Returns the rendered item for this button. */

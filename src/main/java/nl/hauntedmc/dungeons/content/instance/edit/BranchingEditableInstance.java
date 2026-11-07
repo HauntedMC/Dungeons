@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import nl.hauntedmc.dungeons.util.world.GameRuleUtils;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
 import nl.hauntedmc.dungeons.generation.room.Connector;
 import nl.hauntedmc.dungeons.generation.room.ConnectorDoor;
@@ -175,9 +176,7 @@ public class BranchingEditableInstance extends EditableInstance {
      */
     @Override
     protected void beforeCommitWorldSave(World world) {
-        for (String rule : world.getGameRules()) {
-            this.dungeon.getRuleConfig().set("Gamerule." + rule, world.getGameRuleValue(rule));
-        }
+        GameRuleUtils.capture(world, this.dungeon.getRuleConfig());
 
         this.dungeon.getRuleConfig().set("Difficulty", world.getDifficulty().name());
     }

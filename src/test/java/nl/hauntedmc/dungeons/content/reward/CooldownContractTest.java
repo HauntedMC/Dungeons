@@ -22,6 +22,24 @@ class CooldownContractTest {
     @TempDir Path directory;
 
     @Test
+    void relativeCooldownsPreserveCalendarDaysAndClampMonthEnds() {
+        var previousZone = java.util.TimeZone.getDefault();
+        try {
+            java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("Europe/Amsterdam"));
+            var beforeDst = ZonedDateTime.parse("2026-03-28T12:00+01:00[Europe/Amsterdam]");
+            var nextDay = CooldownPeriod.DAILY.fromDate(java.util.Date.from(beforeDst.toInstant()));
+            assertEquals(beforeDst.plusDays(1).toInstant(), nextDay.toInstant());
+            var monthEnd = ZonedDateTime.parse("2028-01-31T12:00+01:00[Europe/Amsterdam]");
+            assertEquals(monthEnd.plusMonths(1).toInstant(),
+                    CooldownPeriod.MONTHLY.fromDate(java.util.Date.from(monthEnd.toInstant())).toInstant());
+            assertEquals(beforeDst.plusDays(7).toInstant(),
+                    CooldownPeriod.WEEKLY.fromDate(java.util.Date.from(beforeDst.toInstant())).toInstant());
+        } finally {
+            java.util.TimeZone.setDefault(previousZone);
+        }
+    }
+
+    @Test
     void resetSchedulesHandleExactBoundariesMonthEndsLeapYearsAndDst() {
         record Case(CooldownPeriod period, int value, int day, String now, String expected) {}
         var cases =

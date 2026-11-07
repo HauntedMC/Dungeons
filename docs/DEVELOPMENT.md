@@ -27,6 +27,11 @@ mvn -B package
 
 ## Engineering Guidelines
 
+- Use typed, registry-backed Paper APIs for gamerules and Adventure components for player-facing text.
+- Use persistent data containers for plugin-owned tags and glint overrides for menu highlights.
+- Normalize identifiers with `Locale.ROOT`; reserve the configured locale for display text.
+- Use `java.time` for date arithmetic and formatting. Existing `Date` return types remain compatibility boundaries.
+- Resolve modern world storage from `Server#getLevelDirectory()`.
 - Keep composition and ordering logic in the bootstrap package.
 - Keep runtime state changes in runtime services, not scattered across commands/listeners.
 - Prefer explicit validation and actionable operator-facing messages.

@@ -14,6 +14,7 @@ import nl.hauntedmc.dungeons.registry.LayoutRegistry;
 import nl.hauntedmc.dungeons.support.*;
 import nl.hauntedmc.dungeons.util.metadata.TypeMetadataSupport;
 
+import nl.hauntedmc.dungeons.util.world.GameRuleUtils;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -36,7 +37,8 @@ class BranchingEditorPersistenceContractTest {
                 var layouts = new StaticMapSnapshot(LayoutRegistry.class, "layouts");
                 var f = new RunFixture(directory, new YamlConfiguration());
                 var menus = mockStatic(RoomMenus.class);
-                var hotbars = new HeadlessMenus()) {
+                var hotbars = new HeadlessMenus();
+                var gamerules = mockStatic(GameRuleUtils.class)) {
             LayoutRegistry.register(BranchingLayout.class, "branching");
             TypeMetadataSupport.registerConfigurationSerializable(SetStatusFunction.class);
             TypeMetadataSupport.registerConfigurationSerializable(FunctionTargetType.class);
@@ -54,8 +56,11 @@ class BranchingEditorPersistenceContractTest {
             var source = Files.createDirectories(directory.resolve("live-branch"));
             Files.writeString(source.resolve("level.dat"), "edited branching world");
             when(f.world.getWorldFolder()).thenReturn(source.toFile());
-            when(f.world.getGameRules()).thenReturn(new String[] {"doMobSpawning"});
-            when(f.world.getGameRuleValue("doMobSpawning")).thenReturn("false");
+            gamerules.when(() -> GameRuleUtils.capture(f.world, dungeon.getRuleConfig()))
+                    .thenAnswer(call -> {
+                        dungeon.getRuleConfig().set("Gamerule.spawn_mobs", false);
+                        return null;
+                    });
             when(f.world.getDifficulty()).thenReturn(Difficulty.HARD);
             var air = mock(Block.class);
             when(air.getType()).thenReturn(Material.AIR);
@@ -70,7 +75,7 @@ class BranchingEditorPersistenceContractTest {
             var rules =
                     YamlConfiguration.loadConfiguration(folder.resolve("gamerules.yml").toFile());
             assertEquals("HARD", rules.getString("Difficulty"));
-            assertEquals("false", rules.getString("Gamerule.doMobSpawning"));
+            assertEquals("false", rules.getString("Gamerule.spawn_mobs"));
             var loaded =
                     new BranchingRoomDefinition(dungeon, folder.resolve("rooms/hall.yml").toFile());
             assertEquals(1, loaded.getFunctionsMapRelative().size());

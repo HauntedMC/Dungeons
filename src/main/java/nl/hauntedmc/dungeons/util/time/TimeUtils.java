@@ -2,7 +2,8 @@ package nl.hauntedmc.dungeons.util.time;
 
 import java.util.Locale;
 import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -19,9 +20,9 @@ public final class TimeUtils {
 
     /** Formats a date using configured plugin locale and human-friendly pattern. */
     public static String formatDate(Date date) {
-        SimpleDateFormat format =
-                new SimpleDateFormat("EEE, MMM d, hh:mm aaa z", LangUtils.getLocale());
-        return format.format(date);
+        return DateTimeFormatter.ofPattern("EEE, MMM d, hh:mm a z", LangUtils.getLocale())
+                .withZone(ZoneId.systemDefault())
+                .format(date.toInstant());
     }
 
     /** Converts short duration tokens such as {@code 5m} or {@code 2h} to a future timestamp. */
