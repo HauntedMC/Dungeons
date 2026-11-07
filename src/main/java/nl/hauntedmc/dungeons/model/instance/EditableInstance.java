@@ -42,7 +42,7 @@ import java.util.concurrent.CountDownLatch;
  * edits back into the source dungeon folder.</p>
  */
 public class EditableInstance extends DungeonInstance {
-    private CompletableFuture<Boolean> activeSave;
+    private volatile CompletableFuture<Boolean> activeSave;
 
     protected BukkitRunnable autosaveTicker;
     protected BukkitRunnable functionParticles;
@@ -246,14 +246,22 @@ public class EditableInstance extends DungeonInstance {
         // A previous save may represent an older snapshot. Always flush once more after it.
         if (this.activeSave != null && !this.activeSave.isDone()) {
             if (!this.plugin().isEnabled()) {
-                // Paper may cancel queued persistence tasks during disable. Do not wait for
-                // them on the server thread, and flush the latest blocks for recovery.
-                this.instanceWorld.save(true);
-                return CompletableFuture.completedFuture(false);
+                // Drain admitted filesystem work before another flush or unload can touch its
+                // source. The worker never needs a server-thread callback to finish.
+                nl.hauntedmc.dungeons.config.ConfigurationFile.flushPendingSaves();
+                if (!this.activeSave.isDone()) {
+                    this.instanceWorld.save(true);
+                    return CompletableFuture.completedFuture(false);
+                }
+                return this.startSave(null, true);
             }
             return this.activeSave
                     .handle((success, failure) -> true)
-                    .thenCompose(ignored -> this.startSave(null, true));
+                    .thenCompose(
+                            ignored ->
+                                    this.plugin().isEnabled()
+                                            ? this.startSave(null, true)
+                                            : CompletableFuture.completedFuture(false));
         }
         return this.startSave(null, true);
     }
@@ -265,17 +273,11 @@ public class EditableInstance extends DungeonInstance {
                 () -> {
                     World world = this.instanceWorld;
                     if ((!finalSave && this.disposing) || world == null) {
-                        if (latch != null) {
-                            latch.countDown();
-                        }
                         result.complete(false);
                         return;
                     }
 
                     if (this.dungeon.isSaving()) {
-                        if (latch != null) {
-                            latch.countDown();
-                        }
                         result.complete(false);
                         return;
                     }
@@ -292,7 +294,9 @@ public class EditableInstance extends DungeonInstance {
                             TextUtils.runTimed(
                                     "Saving of " + this.dungeon.getWorldName(),
                                     () -> {
-                                        // Flush Paper's chunk writer before copying the world.
+                                        // Keep the disk snapshot stable until copying finishes.
+                                        // Instance worlds have automatic saves disabled.
+                                        world.setAutoSave(false);
                                         world.save(true);
                                         this.beforeCommitWorldSave(world);
                                     });
@@ -302,7 +306,7 @@ public class EditableInstance extends DungeonInstance {
                             }
                         }
                     } catch (Throwable throwable) {
-                        this.finishSave(latch, result, false);
+                        this.finishSave(result, false);
                         this.logger()
                                 .error(
                                         "Failed to save edited world '{}' for dungeon '{}'.",
@@ -314,14 +318,14 @@ public class EditableInstance extends DungeonInstance {
 
                     CompletableFuture<Boolean> commit;
                     try {
-                        commit = this.commitWorldAsync(world);
-                    } catch (RuntimeException exception) {
+                        commit = java.util.Objects.requireNonNull(this.commitWorldAsync(world));
+                    } catch (Throwable exception) {
                         this.logger()
                                 .error(
                                         "Failed to start save commit for dungeon '{}'.",
                                         this.dungeon.getWorldName(),
                                         exception);
-                        this.finishSave(latch, result, false);
+                        this.finishSave(result, false);
                         return;
                     }
                     commit.whenComplete(
@@ -332,36 +336,27 @@ public class EditableInstance extends DungeonInstance {
                                                     "Failed to finish save for dungeon '{}'.",
                                                     this.dungeon.getWorldName(),
                                                     throwable);
-                                    this.finishSave(latch, result, false);
+                                    this.finishSave(result, false);
                                     return;
                                 }
 
-                                this.finishSave(latch, result, Boolean.TRUE.equals(success));
+                                this.finishSave(result, Boolean.TRUE.equals(success));
                             });
                 };
 
-        if (!this.plugin().isEnabled() && !Bukkit.isPrimaryThread()) {
-            if (latch != null) latch.countDown();
-            result.complete(false);
-        } else if (!Bukkit.isPrimaryThread()) {
-            try {
-                Bukkit.getScheduler().runTask(this.plugin(), saveTask);
-            } catch (RuntimeException exception) {
-                if (latch != null) {
-                    latch.countDown();
-                }
-                result.complete(false);
-                this.logger()
-                        .error(
-                                "Failed to schedule editor save for dungeon '{}'.",
-                                this.dungeon.getWorldName(),
-                                exception);
-            }
-        } else {
-            saveTask.run();
-        }
-
-        return result;
+        // This request is also drained during shutdown if Paper cancels its scheduled task.
+        CompletableFuture<Boolean> observed =
+                nl.hauntedmc.dungeons.config.ConfigurationFile.onOwnerThread(
+                        this.plugin(),
+                        () -> {
+                            saveTask.run();
+                            return result;
+                        });
+        observed.whenComplete(
+                (success, failure) -> {
+                    if (latch != null) latch.countDown();
+                });
+        return observed.copy();
     }
 
     /**
@@ -369,55 +364,33 @@ public class EditableInstance extends DungeonInstance {
      */
     protected void beforeCommitWorldSave(World world) {}
 
-    /**
-     * Commits the live world folder back into the source dungeon directory.
-     */
+    /** Captures metadata on the server thread, then commits world files on a worker. */
     protected CompletableFuture<Boolean> commitWorldAsync(World world) {
-        try {
-            nl.hauntedmc.dungeons.util.world.WorldUtils.saveTemplate(
-                    world.getWorldFolder(), this.dungeon.getFolder());
-        } catch (IOException exception) {
-            this.logger()
-                    .error(
-                            "Failed to commit edited world '{}' back to dungeon folder '{}'.",
-                            world.getName(),
-                            this.dungeon.getFolder().getAbsolutePath(),
-                            exception);
-            return CompletableFuture.completedFuture(false);
-        }
-
-        return this.saveEditorMetadataAsync()
-                .thenCompose(
-                        metadataSaved -> {
-                            if (!Boolean.TRUE.equals(metadataSaved)) {
-                                return CompletableFuture.completedFuture(false);
-                            }
-
-                            return this.finishWorldCommitOnMainThread(world);
+        File source = world.getWorldFolder();
+        File target = this.dungeon.getFolder();
+        // Both hooks capture mutable editor/world state now, before any asynchronous continuation.
+        CompletableFuture<Boolean> metadata = this.saveEditorMetadataAsync();
+        if (metadata.isDone() && !Boolean.TRUE.equals(metadata.join())) return metadata;
+        CompletableFuture<Boolean> additional = this.onCommitWorldAsync(world);
+        CompletableFuture<Boolean> files =
+                nl.hauntedmc.dungeons.config.ConfigurationFile.filesystemAsync(
+                        this.plugin(),
+                        target,
+                        () -> {
+                            this.saveWorldFiles(source, target);
+                            return true;
                         });
+        return CompletableFuture.allOf(metadata, additional, files)
+                .thenApply(
+                        ignored ->
+                                Boolean.TRUE.equals(metadata.join())
+                                        && Boolean.TRUE.equals(additional.join())
+                                        && Boolean.TRUE.equals(files.join()));
     }
 
-    private CompletableFuture<Boolean> finishWorldCommitOnMainThread(World world) {
-        if (Bukkit.isPrimaryThread()) return this.onCommitWorldAsync(world);
-        if (!this.plugin().isEnabled()) return CompletableFuture.completedFuture(false);
-        CompletableFuture<Boolean> result = new CompletableFuture<>();
-        Bukkit.getScheduler()
-                .runTask(
-                        this.plugin(),
-                        () -> {
-                            try {
-                                this.onCommitWorldAsync(world)
-                                        .whenComplete(
-                                                (success, failure) -> {
-                                                    if (failure != null)
-                                                        result.completeExceptionally(failure);
-                                                    else result.complete(success);
-                                                });
-                            } catch (Throwable failure) {
-                                result.completeExceptionally(failure);
-                            }
-                        });
-        return result;
+    /** Filesystem phase. Runs on a worker and must not access Bukkit or mutable editor state. */
+    protected void saveWorldFiles(File source, File target) throws IOException {
+        nl.hauntedmc.dungeons.util.world.WorldUtils.saveTemplate(source, target);
     }
 
     /**
@@ -431,9 +404,7 @@ public class EditableInstance extends DungeonInstance {
                 this.plugin(), functionsYaml, saveFile);
     }
 
-    /**
-     * Extension hook for subclasses that need post-commit persistence.
-     */
+    /** Captures additional persistence on the server thread before filesystem copying begins. */
     protected CompletableFuture<Boolean> onCommitWorldAsync(World world) {
         return CompletableFuture.completedFuture(true);
     }
@@ -441,12 +412,8 @@ public class EditableInstance extends DungeonInstance {
     /**
      * Finalizes save-state bookkeeping and completes waiting callbacks.
      */
-    private void finishSave(
-            @Nullable CountDownLatch latch, CompletableFuture<Boolean> result, boolean success) {
+    private void finishSave(CompletableFuture<Boolean> result, boolean success) {
         this.dungeon.setSaving(false);
-        if (latch != null) {
-            latch.countDown();
-        }
         result.complete(success);
     }
 

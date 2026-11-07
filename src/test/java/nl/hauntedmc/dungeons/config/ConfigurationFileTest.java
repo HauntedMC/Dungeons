@@ -22,6 +22,47 @@ class ConfigurationFileTest {
     @TempDir Path directory;
 
     @Test
+    @org.junit.jupiter.api.Timeout(10)
+    void filesystemOperationsShareCanonicalOrderAndShutdownNeverRunsTheirActionsOnTheOwner()
+            throws Exception {
+        Thread owner = Thread.currentThread();
+        try (var paper = new PaperBoundary()) {
+            var scheduler = new CapturedScheduler(paper);
+            when(paper.plugin.isEnabled()).thenReturn(true);
+            Path template = Files.createDirectory(directory.resolve("template"));
+            var order = new java.util.concurrent.CopyOnWriteArrayList<Integer>();
+            var first =
+                    ConfigurationFile.filesystemAsync(
+                            paper.plugin,
+                            template.toFile(),
+                            () -> {
+                                assertNotSame(owner, Thread.currentThread());
+                                order.add(1);
+                                return true;
+                            });
+            var second =
+                    ConfigurationFile.filesystemAsync(
+                            paper.plugin,
+                            template.resolve("../template").toFile(),
+                            () -> {
+                                assertNotSame(owner, Thread.currentThread());
+                                order.add(2);
+                                return true;
+                            });
+            assertEquals(1, scheduler.asynchronous.size());
+            assertFalse(first.isDone());
+            assertFalse(second.isDone());
+            when(paper.plugin.isEnabled()).thenReturn(false);
+            ConfigurationFile.flushPendingSaves();
+            assertTrue(first.join());
+            assertTrue(second.join());
+            assertEquals(java.util.List.of(1, 2), order);
+            scheduler.asynchronous.getFirst().run();
+            assertEquals(java.util.List.of(1, 2), order);
+        }
+    }
+
+    @Test
     void serializerErrorsCompleteTheRequestWithoutLeavingPendingWork() throws Exception {
         try (var paper = new PaperBoundary()) {
             var scheduler = new CapturedScheduler(paper);

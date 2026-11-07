@@ -5,7 +5,13 @@ import org.bukkit.Location;
 import org.bukkit.World;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /** World-level helpers for dungeon runtime world tuning. */
 public final class WorldUtils {
@@ -18,90 +24,165 @@ public final class WorldUtils {
 
     /** Directory containing custom Minecraft dimensions. */
     public static File dimensionRoot() {
-        return Bukkit.getServer().getLevelDirectory()
-                .resolve("dimensions/minecraft")
-                .toFile();
+        return Bukkit.getServer().getLevelDirectory().resolve("dimensions/minecraft").toFile();
     }
 
-    /** Commits a complete world snapshot without retaining deleted or legacy world data. */
-    public static void saveTemplate(File worldFolder, File template) throws java.io.IOException {
-        var target = template.toPath().toAbsolutePath();
-        var staging =
-                java.nio.file.Files.createTempDirectory(
-                        target.getParent().getParent(), ".dungeons-save-");
+    private static final ReentrantReadWriteLock[] TEMPLATE_LOCKS = new ReentrantReadWriteLock[64];
+
+    static {
+        Arrays.setAll(TEMPLATE_LOCKS, ignored -> new ReentrantReadWriteLock(true));
+    }
+
+    private static ReentrantReadWriteLock templateLock(File template) throws IOException {
+        int hash = template.getCanonicalPath().hashCode();
+        return TEMPLATE_LOCKS[Math.floorMod(hash, TEMPLATE_LOCKS.length)];
+    }
+
+    /** Filesystem reader for a stable template generation. */
+    @FunctionalInterface
+    public interface TemplateReader {
+        void read() throws IOException;
+    }
+
+    /** Prevents template readers from observing an incomplete publication or rollback. */
+    public static void readTemplate(File template, TemplateReader reader) throws IOException {
+        var lock = templateLock(template).readLock();
+        lock.lock();
+        try {
+            reader.read();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    // Publish only world-owned paths. Moving the template root would race independent writes to
+    // functions.yml, gamerules.yml and rooms, or restore stale metadata from the live world.
+    private static final List<String> WORLD_ENTRIES =
+            List.of(
+                    "region",
+                    "entities",
+                    "poi",
+                    "data",
+                    "DIM1",
+                    "DIM-1",
+                    "dimensions",
+                    "players",
+                    "playerdata",
+                    "stats",
+                    "advancements",
+                    "datapacks",
+                    "level.dat",
+                    "level.dat_old",
+                    "paper-world.yml",
+                    "resources.zip",
+                    "icon.png",
+                    "uid.dat",
+                    "session.lock");
+
+    /**
+     * Stages world data without copying the old template, then replaces its world-owned paths.
+     * Callers must serialize commits per template and keep the flushed source loaded with autosave
+     * disabled until this method finishes. No Bukkit/model state is accessed here.
+     */
+    public static void saveTemplate(File worldFolder, File template) throws IOException {
+        var source = worldFolder.getCanonicalFile().toPath();
+        var target = template.getCanonicalFile().toPath();
+        if (!Files.isDirectory(source)
+                || !Files.isDirectory(target)
+                || source.startsWith(target)
+                || target.startsWith(source)) {
+            throw new IOException(
+                    "Invalid world/template directories: " + source + " -> " + target);
+        }
+        var publication = templateLock(template).writeLock();
+        var staging = Files.createTempDirectory(target.getParent().getParent(), ".dungeons-save-");
         var snapshot = staging.resolve("snapshot");
         var previous = staging.resolve("previous");
-        boolean committed = false;
+        boolean publishing = false;
+        var backedUp = new ArrayList<String>();
+        var installed = new ArrayList<String>();
+        boolean retainBackup = false;
+        Throwable primaryFailure = null;
         try {
-            org.apache.commons.io.FileUtils.copyDirectory(template, snapshot.toFile());
-            // Dungeon configuration, functions and room templates remain in the staged template.
-            for (String entry :
-                    java.util.List.of(
-                            "region",
-                            "entities",
-                            "poi",
-                            "data",
-                            "DIM1",
-                            "DIM-1",
-                            "dimensions",
-                            "players",
-                            "playerdata",
-                            "stats",
-                            "advancements",
-                            "level.dat",
-                            "level.dat_old",
-                            "uid.dat",
-                            "session.lock")) {
-                File old = snapshot.resolve(entry).toFile();
-                if (old.isDirectory()) org.apache.commons.io.FileUtils.deleteDirectory(old);
-                else java.nio.file.Files.deleteIfExists(old.toPath());
-            }
-            org.apache.commons.io.FileUtils.copyDirectory(
-                    worldFolder,
-                    snapshot.toFile(),
-                    file ->
-                            !file.getName().equals("rooms")
-                                    && !file.getName().equals("session.lock"));
-            java.nio.file.Files.deleteIfExists(snapshot.resolve("uid.dat"));
-            java.nio.file.Files.move(target, previous);
-            try {
-                java.nio.file.Files.move(snapshot, target);
-            } catch (java.io.IOException failure) {
-                try {
-                    java.nio.file.Files.move(previous, target);
-                } catch (java.io.IOException rollback) {
-                    failure.addSuppressed(rollback);
-                    throw new java.io.IOException(
-                            "Template backup retained at " + previous, failure);
+            Files.createDirectory(snapshot);
+            Files.createDirectory(previous);
+            for (String entry : WORLD_ENTRIES) {
+                if (entry.equals("uid.dat") || entry.equals("session.lock")) continue;
+                var from = source.resolve(entry);
+                var to = snapshot.resolve(entry);
+                if (Files.isDirectory(from)) {
+                    org.apache.commons.io.FileUtils.copyDirectory(from.toFile(), to.toFile());
+                } else if (Files.exists(from)) {
+                    Files.copy(from, to);
                 }
-                throw failure;
             }
-            committed = true;
+            publication.lock();
+            publishing = true;
+            // Rename old paths instead of copying a second full world. Metadata in the root stays
+            // in place throughout publication. A failed publication rolls back every touched path.
+            for (String entry : WORLD_ENTRIES) {
+                var current = target.resolve(entry);
+                if (Files.exists(current)) {
+                    Files.move(current, previous.resolve(entry));
+                    backedUp.add(entry);
+                }
+                if (Files.exists(snapshot.resolve(entry))) {
+                    Files.move(snapshot.resolve(entry), current);
+                    installed.add(entry);
+                }
+            }
+        } catch (IOException | RuntimeException | Error failure) {
+            primaryFailure = failure;
+            for (String entry : installed.reversed()) {
+                try {
+                    Files.move(target.resolve(entry), snapshot.resolve(entry));
+                } catch (IOException | RuntimeException rollback) {
+                    failure.addSuppressed(rollback);
+                    retainBackup = true;
+                }
+            }
+            for (String entry : backedUp.reversed()) {
+                try {
+                    Files.move(previous.resolve(entry), target.resolve(entry));
+                } catch (IOException | RuntimeException rollback) {
+                    failure.addSuppressed(rollback);
+                    retainBackup = true;
+                }
+            }
+            if (retainBackup) {
+                throw new IOException("Template backup retained at " + previous, failure);
+            }
+            throw failure;
         } finally {
-            // Never remove the only surviving template if restoring the original failed.
-            if (committed || !java.nio.file.Files.exists(previous)) {
-                org.apache.commons.io.FileUtils.deleteDirectory(staging.toFile());
+            if (publishing) publication.unlock();
+            if (!retainBackup) {
+                try {
+                    org.apache.commons.io.FileUtils.deleteDirectory(staging.toFile());
+                } catch (IOException cleanup) {
+                    if (primaryFailure != null) primaryFailure.addSuppressed(cleanup);
+                    else throw cleanup;
+                }
             }
         }
     }
 
     /** Updates removed registry names in copied per-world configuration before Paper loads it. */
-    public static void migratePaperWorldConfig(File file) throws java.io.IOException {
+    public static void migratePaperWorldConfig(File file) throws IOException {
         if (!file.isFile()) return;
         var yaml = new org.bukkit.configuration.file.YamlConfiguration();
         try {
             yaml.load(file);
         } catch (org.bukkit.configuration.InvalidConfigurationException exception) {
-            throw new java.io.IOException("Invalid Paper world configuration: " + file, exception);
+            throw new IOException("Invalid Paper world configuration: " + file, exception);
         }
         var limits = yaml.getConfigurationSection("chunks.entity-per-chunk-save-limit");
         if (limits == null) return;
         boolean changed = false;
-        for (String oldKey : java.util.List.of("potion", "minecraft:potion")) {
+        for (String oldKey : List.of("potion", "minecraft:potion")) {
             if (!limits.contains(oldKey)) continue;
             Object limit = limits.get(oldKey);
             String prefix = oldKey.startsWith("minecraft:") ? "minecraft:" : "";
-            for (String replacement : java.util.List.of("splash_potion", "lingering_potion")) {
+            for (String replacement : List.of("splash_potion", "lingering_potion")) {
                 if (!limits.contains(prefix + replacement)) limits.set(prefix + replacement, limit);
             }
             limits.set(oldKey, null);

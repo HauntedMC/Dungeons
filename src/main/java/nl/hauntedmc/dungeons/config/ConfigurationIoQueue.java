@@ -12,11 +12,15 @@ import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.ReentrantLock;
 
 /** Shared FIFO disk lanes. No Bukkit configuration or mutable model is accessed by a worker. */
 final class ConfigurationIoQueue {
     private static final Map<Path, Lane> LANES = new HashMap<>();
+
+    private static final Semaphore FILESYSTEM_WORKERS = new Semaphore(2);
 
     private ConfigurationIoQueue() {}
 
@@ -32,6 +36,51 @@ final class ConfigurationIoQueue {
                             writeAtomically(file, snapshot);
                             return null;
                         });
+        return enqueue(file, operation, plugin);
+    }
+
+    static <T> CompletableFuture<T> filesystemAsync(
+            Path destination, Callable<T> action, Plugin plugin) {
+        return enqueue(
+                destination,
+                new Operation<>(
+                        () -> {
+                            // Shutdown draining waits for filesystem work on a worker.
+                            // The action cannot depend on server-thread callbacks.
+                            var work =
+                                    new FutureTask<T>(
+                                            () -> {
+                                                FILESYSTEM_WORKERS.acquire();
+                                                try {
+                                                    return action.call();
+                                                } finally {
+                                                    FILESYSTEM_WORKERS.release();
+                                                }
+                                            });
+                            Thread.ofVirtual().name("Dungeons-filesystem").start(work);
+                            boolean interrupted = false;
+                            try {
+                                while (true) {
+                                    try {
+                                        return work.get();
+                                    } catch (InterruptedException ignored) {
+                                        interrupted = true;
+                                    }
+                                }
+                            } catch (java.util.concurrent.ExecutionException failure) {
+                                Throwable cause = failure.getCause();
+                                if (cause instanceof Exception exception) throw exception;
+                                if (cause instanceof Error error) throw error;
+                                throw new IllegalStateException(cause);
+                            } finally {
+                                if (interrupted) Thread.currentThread().interrupt();
+                            }
+                        }),
+                plugin);
+    }
+
+    private static <T> CompletableFuture<T> enqueue(
+            Path file, Operation<T> operation, Plugin plugin) {
         Lane lane;
         boolean schedule;
         synchronized (LANES) {

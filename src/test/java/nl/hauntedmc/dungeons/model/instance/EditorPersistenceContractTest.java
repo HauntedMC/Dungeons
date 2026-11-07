@@ -39,6 +39,111 @@ class EditorPersistenceContractTest {
     @TempDir Path directory;
 
     @Test
+    @org.junit.jupiter.api.Timeout(10)
+    void blockedFilesystemWorkDoesNotBlockTheOwnerOrAllowOverlappingSaves() throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration());
+                var executor = Executors.newSingleThreadExecutor()) {
+            Thread owner = Thread.currentThread();
+            Path live = Files.createDirectories(directory.resolve("live"));
+            Files.writeString(live.resolve("level.dat"), "snapshot");
+            // A stale copy in the live world must never replace current editor metadata.
+            Files.writeString(live.resolve("functions.yml"), "stale metadata");
+            when(f.world.getWorldFolder())
+                    .thenAnswer(
+                            call -> {
+                                assertSame(owner, Thread.currentThread());
+                                return live.toFile();
+                            });
+            doAnswer(
+                            call -> {
+                                assertSame(owner, Thread.currentThread());
+                                return null;
+                            })
+                    .when(f.world)
+                    .save(true);
+            var entered = new CountDownLatch(1);
+            var release = new CountDownLatch(1);
+            var editor =
+                    new Editor(f) {
+                        @Override
+                        protected void saveWorldFiles(java.io.File source, java.io.File target)
+                                throws java.io.IOException {
+                            assertFalse(owner == Thread.currentThread());
+                            entered.countDown();
+                            try {
+                                if (!release.await(3, TimeUnit.SECONDS))
+                                    throw new java.io.IOException("test release timed out");
+                            } catch (InterruptedException failure) {
+                                throw new java.io.IOException(failure);
+                            }
+                            super.saveWorldFiles(source, target);
+                        }
+                    };
+            when(f.paper.plugin.isEnabled()).thenReturn(true);
+            var latch = new CountDownLatch(2);
+            var saved = editor.saveWorldAsync(latch);
+            // Drive metadata independently of the deliberately blocked filesystem worker.
+            f.scheduler.asynchronous.getFirst().run();
+            var worker = executor.submit(f.scheduler.asynchronous.getLast()::run);
+            try {
+                assertTrue(entered.await(3, TimeUnit.SECONDS));
+                assertFalse(saved.isDone());
+                assertTrue(f.dungeon.isSaving());
+                assertFalse(editor.saveWorldAsync().join());
+                Path metadata = f.dungeon.getFolder().toPath().resolve("functions.yml");
+                Files.writeString(metadata, "newer metadata");
+                // Cancelling an observer must not release save ownership or lose its latch.
+                saved.cancel(false);
+                assertTrue(f.dungeon.isSaving());
+                release.countDown();
+                worker.get(3, TimeUnit.SECONDS);
+                assertFalse(f.dungeon.isSaving());
+                assertEquals(1, latch.getCount());
+                assertEquals("newer metadata", Files.readString(metadata));
+                assertEquals(
+                        "snapshot",
+                        Files.readString(f.dungeon.getFolder().toPath().resolve("level.dat")));
+                verify(f.world, times(1)).save(true);
+            } finally {
+                release.countDown();
+            }
+        }
+    }
+
+    @Test
+    void shutdownDrainsQueuedCopiesBeforeFlushingFinalEditsAndUnloading() throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            Path live = Files.createDirectories(directory.resolve("live"));
+            Files.writeString(live.resolve("level.dat"), "before shutdown");
+            when(f.world.getWorldFolder()).thenReturn(live.toFile());
+            var editor = new Editor(f);
+            when(f.paper.plugin.isEnabled()).thenReturn(true);
+            var first = editor.saveWorldAsync();
+            assertFalse(first.isDone());
+            var abandonedTasks = List.copyOf(f.scheduler.asynchronous);
+            when(f.paper.plugin.isEnabled()).thenReturn(false);
+            doAnswer(
+                            call -> {
+                                Files.writeString(live.resolve("level.dat"), "final edits");
+                                return null;
+                            })
+                    .when(f.world)
+                    .save(true);
+            f.paper.bukkit.when(() -> Bukkit.unloadWorld(f.world, false)).thenReturn(true);
+            assertTrue(editor.disposeAsync().get(3, TimeUnit.SECONDS));
+            assertTrue(first.join());
+            assertEquals(
+                    "final edits",
+                    Files.readString(f.dungeon.getFolder().toPath().resolve("level.dat")));
+            assertFalse(Files.exists(live));
+            // A cancelled scheduler task running late must not replay a copy from a deleted world.
+            abandonedTasks.forEach(CapturedScheduler.Job::run);
+            assertFalse(f.dungeon.isSaving());
+            verify(f.world, times(2)).save(true);
+        }
+    }
+
+    @Test
     void modernEditorSaveReplacesLegacyAndDeletedWorldDataWhilePreservingDungeonFiles()
             throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
@@ -538,7 +643,7 @@ class EditorPersistenceContractTest {
             editor.dispose();
             f.paper.bukkit.verify(() -> Bukkit.unloadWorld(f.world, false), never());
             f.paper.bukkit.when(Bukkit::isPrimaryThread).thenReturn(false);
-            f.scheduler.asynchronous.getFirst().run();
+            for (var task : List.copyOf(f.scheduler.asynchronous)) task.run();
             f.paper.bukkit.verify(() -> Bukkit.unloadWorld(f.world, false), never());
             assertFalse(f.scheduler.immediate.isEmpty());
             f.paper.bukkit.when(Bukkit::isPrimaryThread).thenReturn(true);

@@ -72,6 +72,21 @@ public class ConfigurationFile extends YamlConfiguration {
                 });
     }
 
+    /**
+     * Queues filesystem-only work in destination order and includes it in shutdown draining. The
+     * action must use captured values only and must never call Bukkit or wait for the owner thread.
+     * Caller cancellation cannot cancel an admitted operation.
+     */
+    public static <T> CompletableFuture<T> filesystemAsync(
+            Plugin plugin, File destination, java.util.concurrent.Callable<T> action) {
+        try {
+            return ConfigurationIoQueue.filesystemAsync(
+                    ConfigurationIoQueue.destination(destination), action, plugin);
+        } catch (IOException | RuntimeException failure) {
+            return CompletableFuture.failedFuture(failure);
+        }
+    }
+
     /** Executes configuration/model capture on the owner thread, including shutdown draining. */
     public static CompletableFuture<Boolean> onOwnerThread(
             Plugin plugin, java.util.function.Supplier<CompletableFuture<Boolean>> capture) {

@@ -180,28 +180,36 @@ public abstract class DungeonInstance {
      * must be regenerated.
      */
     protected void copyMapToWorldsFolder() throws IOException {
-        this.id = this.dungeon.getInstances().size();
-        File instFolder = this.getUniqueWorldName();
         File source = this.getDungeon().getFolder();
-        boolean modern = new File(source, "data/minecraft/world_gen_settings.dat").isFile();
-        FileUtils.copyDirectory(
+        WorldUtils.readTemplate(
                 source,
-                instFolder,
-                file ->
-                        !modern
-                                || !List.of(
-                                                "level.dat",
-                                                "level.dat_old",
-                                                "DIM1",
-                                                "DIM-1",
-                                                "session.lock")
-                                        .contains(file.getName()));
-        WorldUtils.migratePaperWorldConfig(new File(instFolder, "paper-world.yml"));
-        new File(instFolder, "config.yml").delete();
-        for (String identity :
-                List.of("uid.dat", "data/paper/metadata.dat", "data/paper/metadata.dat_old")) {
-            java.nio.file.Files.deleteIfExists(new File(instFolder, identity).toPath());
-        }
+                () -> {
+                    this.id = this.dungeon.getInstances().size();
+                    File instFolder = this.getUniqueWorldName();
+                    boolean modern =
+                            new File(source, "data/minecraft/world_gen_settings.dat").isFile();
+                    FileUtils.copyDirectory(
+                            source,
+                            instFolder,
+                            file ->
+                                    !modern
+                                            || !List.of(
+                                                            "level.dat",
+                                                            "level.dat_old",
+                                                            "DIM1",
+                                                            "DIM-1",
+                                                            "session.lock")
+                                                    .contains(file.getName()));
+                    WorldUtils.migratePaperWorldConfig(new File(instFolder, "paper-world.yml"));
+                    new File(instFolder, "config.yml").delete();
+                    for (String identity :
+                            List.of(
+                                    "uid.dat",
+                                    "data/paper/metadata.dat",
+                                    "data/paper/metadata.dat_old")) {
+                        java.nio.file.Files.deleteIfExists(new File(instFolder, identity).toPath());
+                    }
+                });
     }
 
     protected File getUniqueWorldName() throws IOException {

@@ -726,26 +726,14 @@ public class BranchingRoomDefinition {
     }
 
     private CompletableFuture<Void> writeSchematicAsync(StructurePiece capturedSchematic) {
-        CompletableFuture<Void> result = new CompletableFuture<>();
-        Runnable write =
+        File destination = this.schemFile;
+        return nl.hauntedmc.dungeons.config.ConfigurationFile.filesystemAsync(
+                this.plugin(),
+                destination,
                 () -> {
-                    try {
-                        SchematicUtils.saveStructurePiece(this.schemFile, capturedSchematic);
-                        result.complete(null);
-                    } catch (Throwable exception) {
-                        result.completeExceptionally(exception);
-                    }
-                };
-        try {
-            if (this.plugin().isEnabled()) {
-                Bukkit.getScheduler().runTaskAsynchronously(this.plugin(), write);
-            } else {
-                write.run();
-            }
-        } catch (RuntimeException exception) {
-            result.completeExceptionally(exception);
-        }
-        return result;
+                    SchematicUtils.saveStructurePiece(destination, capturedSchematic);
+                    return null;
+                });
     }
 
     /**
