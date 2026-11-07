@@ -674,7 +674,10 @@ public class BranchingRoomDefinition {
                 };
 
         try {
-            if (this.plugin().isEnabled() && !Bukkit.isPrimaryThread()) {
+            if (!Bukkit.isPrimaryThread()) {
+                if (!this.plugin().isEnabled())
+                    throw new IllegalStateException(
+                            "Cannot capture room blocks off-thread after plugin shutdown");
                 Bukkit.getScheduler().runTask(this.plugin(), captureTask);
             } else {
                 captureTask.run();

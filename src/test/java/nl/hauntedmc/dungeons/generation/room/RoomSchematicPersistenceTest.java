@@ -29,6 +29,20 @@ class RoomSchematicPersistenceTest {
     @TempDir Path directory;
 
     @Test
+    void shutdownCannotFallBackToReadingWorldBlocksOnAWorkerThread() throws Exception {
+        try (var f = new Fixture()) {
+            f.paper.bukkit.when(Bukkit::isPrimaryThread).thenReturn(false);
+            clearInvocations(f.world);
+            assertFalse(f.room.captureSchematic(f.world, true).join());
+            assertTrue(f.room.isChangedSinceLastSave());
+            verifyNoInteractions(f.world);
+            assertFalse(Files.exists(f.target));
+            f.paper.bukkit.when(Bukkit::isPrimaryThread).thenReturn(true);
+            assertTrue(f.room.captureSchematic(f.world, true).join());
+        }
+    }
+
+    @Test
     void deletionFollowsQueuedWritesAndStaleCallbacksCannotResurrectTheRoom() throws Exception {
         try (var f = new Fixture()) {
             when(f.paper.plugin.isEnabled()).thenReturn(true);
