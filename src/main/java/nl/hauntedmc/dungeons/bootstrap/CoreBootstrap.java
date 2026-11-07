@@ -48,6 +48,7 @@ final class CoreBootstrap {
      * Loads config-backed state and ensures the plugin data layout exists on disk.
      */
     void initializeCoreState() {
+        nl.hauntedmc.dungeons.runtime.player.PlayerDataCheckpoint.requireStorage();
         this.initializePluginState();
         this.ensureDataDirectories();
         this.initializeLanguageResources();

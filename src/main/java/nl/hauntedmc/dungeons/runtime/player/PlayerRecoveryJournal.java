@@ -59,6 +59,7 @@ final class PlayerRecoveryJournal {
     /** Escrows the removed key and checkpoints the post-removal inventory in one journal. */
     void reserveKey(Player player, String dungeon, ItemStack key) {
         requireServerThread();
+        PlayerDataCheckpoint.requireStorage();
         if (hasPendingTransaction() || state.contains("key-reservation"))
             throw new IllegalStateException("Player already has an unfinished state transaction");
         var contents = PlayerRecoverySnapshot.copy(player.getInventory().getContents());
@@ -101,6 +102,7 @@ final class PlayerRecoveryJournal {
 
     void begin(Player player) {
         requireServerThread();
+        PlayerDataCheckpoint.requireStorage();
         if (player.isDead() || player.getHealth() <= 0) {
             throw new IllegalStateException("Player must respawn before state replacement");
         }

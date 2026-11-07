@@ -32,11 +32,14 @@ reservation crash before native saving, session loss during escrow, rejected key
 ledger replacement, editor-save barriers and malformed dungeon reloads.
 
 The shared player fixture uses 43 slots. The native Paper acceptance recovery case
-uses actual Paper inventory/equipment containers, including body, saddle, armor
-and offhand slots. The platform acceptance profile also exercises world lifecycle,
+uses actual Paper inventory/equipment containers, the native player saver and a
+separate native player loader, including body, saddle, armor and offhand slots.
+Checkpoint verification resolves the active native storage directory; it does not
+assume a world-relative playerdata path. Storage compatibility is checked before
+new snapshots or key escrow can be admitted. The platform acceptance profile also exercises world lifecycle,
 formats, unload retry, generation, warm pools and cold restart persistence.
 
-The reviewed revision passed 420 unit/contract tests, Checkstyle, native Paper
+The reviewed revision passed 424 unit/contract tests, Checkstyle, native Paper
 acceptance and cold-restart checks.
 
 Run `./mvnw -Pplatform-acceptance verify`. These checks do not represent a load test

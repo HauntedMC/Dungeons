@@ -69,7 +69,7 @@ Each player has a versioned `players/<uuid>.recovery.yml` journal separate from 
 
 On reconnect or plugin enable, recovery restores the snapshot when no live instance owns the player. Dead players recover after respawn. Missing worlds, rejected teleports, corrupt records, and storage errors retain the journal. Unsafe restoration or delivery disconnects the player to prevent further inventory changes; operators should fix the logged storage/world problem before reconnecting the player. Corrupt journals are retained for manual recovery, rather than overwritten with an empty session. Existing return-location-only files remain supported; inventories lost before this journal existed cannot be reconstructed.
 
-Normal departures continue to follow the configured inventory/experience keep rules, including during shutdown. Reconstructed sessions derive their restoration baseline from the persisted snapshot. Hotbar closure acknowledges only a recovery record created by that hotbar; editor and explicit inventory snapshots remain protected until their own restoration completes. Successful recovery clears stale editor controls and cached snapshots before the session can resume. Before acknowledgement, the plugin saves the resulting player state and a transaction marker through Minecraft's player-data save, reads the marker back from the native `playerdata/<uuid>.dat` file, and flushes that file. Only then does it atomically remove the recovery entry. A marker already loaded from a completed transaction prevents replay after a crash between native saving and journal acknowledgement.
+Normal departures continue to follow the configured inventory/experience keep rules, including during shutdown. Reconstructed sessions derive their restoration baseline from the persisted snapshot. Hotbar closure acknowledges only a recovery record created by that hotbar; editor and explicit inventory snapshots remain protected until their own restoration completes. Successful recovery clears stale editor controls and cached snapshots before the session can resume. Before acknowledgement, the plugin saves the resulting player state and a transaction marker through Minecraft's player-data save, reads the marker back from the native player file resolved from the active `PlayerDataStorage` directory, and flushes that file. Only then does it atomically remove the recovery entry. A marker already loaded from a completed transaction prevents replay after a crash between native saving and journal acknowledgement.
 
 Rewards become durable when added to a player's session, including rewards selected during a run; `pushPlayerRewards` no longer transfers an in-memory balance on finish. Earned rewards therefore remain claimable after early departure or restart. Claiming records the exact resulting inventory and remaining rewards together before touching the live inventory. Native save verification precedes clearing that pending delivery. Available slots and stack capacity determine partial delivery; overflow stays claimable instead of being dropped into the world. Returned reward lists contain independent item copies. Callers should use `claimReward` instead of the former remove-then-give sequence.
 
@@ -131,3 +131,15 @@ before the write-ahead record is committed. Existing 1.2.16 records with 43 slot
 and recover through the normal online-player/reconnect lifecycle; do not delete those records.
 The native acceptance fixture uses Paper's actual inventory/equipment containers so slot-layout
 changes cannot be hidden behind a fixed-size inventory array.
+
+Native player checkpoint paths come from the same `PlayerDataStorage` used by
+`CraftPlayer.saveData()`, through a small Paper adapter. They are not derived from
+`getLevelDirectory()` or the player's current world: Paper 26.3 uses `players/data`,
+while other layouts can differ. Adapter resolution and directory availability are
+checked at startup and before new snapshots/key escrow. Unsupported storage stops
+new transactions before destructive state changes. Verification never creates or
+rewrites a native player file; only Paper's saver writes player state.
+
+The acceptance player uses Paper's actual saver and loader with synthetic UUIDs.
+It verifies transaction markers and every inventory/equipment slot after loading a
+separate native player. No hand-written `.dat` file substitutes for a native save.

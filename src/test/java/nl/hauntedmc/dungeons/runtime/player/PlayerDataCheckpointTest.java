@@ -6,7 +6,6 @@ import static org.mockito.Mockito.*;
 import nl.hauntedmc.dungeons.support.PaperBoundary;
 import nl.hauntedmc.dungeons.support.PlayerState;
 
-import org.bukkit.Bukkit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -17,18 +16,38 @@ class PlayerDataCheckpointTest {
     @TempDir Path directory;
 
     @Test
+    void unsupportedStorageRejectsEntryBeforeWritingRecoveryOrReplacingInventory() {
+        try (var paper = new PaperBoundary()) {
+            var player = new PlayerState();
+            player.contents[0] = PlayerState.stack(4);
+            var file = directory.resolve("recovery.yml");
+            var journal = new PlayerRecoveryJournal(file);
+            paper.checkpoints.when(PlayerDataCheckpoint::requireStorage)
+                    .thenThrow(new UncheckedIOException(new java.io.IOException("unsupported storage adapter")));
+            assertThrows(UncheckedIOException.class, () -> journal.begin(player.player));
+            assertFalse(Files.exists(file));
+            assertFalse(journal.hasRecovery());
+            assertEquals(4, player.contents[0].getAmount());
+        }
+    }
+
+    @Test
     void absentOrStaleNativePlayerSaveCannotBeAcknowledged() throws Exception {
         try (var paper = new PaperBoundary()) {
             var player = new PlayerState();
-            var server = Bukkit.getServer();
-            doReturn(directory).when(server).getLevelDirectory();
+            Path nativeDirectory = directory.resolve("players/data");
+            paper.checkpoints.when(PlayerDataCheckpoint::playerDataDirectory).thenReturn(nativeDirectory);
             paper.checkpoints
                     .when(() -> PlayerDataCheckpoint.verify(player.player, "transaction"))
                     .thenCallRealMethod();
+            Path legacy = directory.resolve("playerdata/" + player.player.getUniqueId() + ".dat");
+            Files.createDirectories(legacy.getParent());
+            Files.writeString(legacy, "stale legacy player data");
+            paper.checkpoints.when(() -> PlayerDataCheckpoint.readMarker(legacy)).thenReturn("transaction");
             assertThrows(
                     UncheckedIOException.class,
                     () -> PlayerDataCheckpoint.verify(player.player, "transaction"));
-            Path file = directory.resolve("playerdata/" + player.player.getUniqueId() + ".dat");
+            Path file = nativeDirectory.resolve(player.player.getUniqueId() + ".dat");
             Files.createDirectories(file.getParent());
             Files.writeString(file, "native file boundary");
             paper.checkpoints

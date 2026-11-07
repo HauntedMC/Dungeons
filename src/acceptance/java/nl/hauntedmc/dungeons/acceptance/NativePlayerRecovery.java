@@ -18,7 +18,7 @@ import java.util.*;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Exercises the native Paper item codec and journal; player/network I/O uses a controlled boundary.
+ * Exercises native Paper player saves, loads, inventory codecs and the journal; network actions use a controlled boundary.
  */
 final class NativePlayerRecovery {
     private NativePlayerRecovery() {}
@@ -27,12 +27,13 @@ final class NativePlayerRecovery {
         boolean[] online = {true};
         PlayerInventory inventory = nativeInventory();
         test.getLogger().info("Native player inventory slots: " + inventory.getSize());
-        var pdc = new ItemStack(Material.STONE).getItemMeta().getPersistentDataContainer();
+        UUID id = UUID.randomUUID();
+        Player nativePlayer = nativePlayer(id);
+        var pdc = nativePlayer.getPersistentDataContainer();
         var attribute =
                 proxy(
                         AttributeInstance.class,
                         (method, args) -> method.equals("getValue") ? 20.0 : null);
-        UUID id = UUID.randomUUID();
         Map<String, Object> values = new HashMap<>();
         values.put("GameMode", GameMode.SURVIVAL);
         values.put("Health", 17.0);
@@ -74,36 +75,7 @@ final class NativePlayerRecovery {
                                     yield true;
                                 }
                                 case "saveData" -> {
-                                    try {
-                                        var file =
-                                                Bukkit.getServer()
-                                                        .getLevelDirectory()
-                                                        .resolve("playerdata")
-                                                        .resolve(id + ".dat");
-                                        java.nio.file.Files.createDirectories(file.getParent());
-                                        try (var out =
-                                                new java.io.DataOutputStream(
-                                                        new java.util.zip.GZIPOutputStream(
-                                                                java.nio.file.Files.newOutputStream(
-                                                                        file)))) {
-                                            out.writeByte(10);
-                                            out.writeUTF("");
-                                            out.writeByte(10);
-                                            out.writeUTF("BukkitValues");
-                                            out.writeByte(8);
-                                            out.writeUTF("dungeons:player_transaction");
-                                            out.writeUTF(
-                                                    pdc.get(
-                                                            new NamespacedKey(
-                                                                    "dungeons",
-                                                                    "player_transaction"),
-                                                            PersistentDataType.STRING));
-                                            out.writeByte(0);
-                                            out.writeByte(0);
-                                        }
-                                    } catch (java.io.IOException failure) {
-                                        throw new java.io.UncheckedIOException(failure);
-                                    }
+                                    saveNativePlayer(nativePlayer, inventory);
                                     yield null;
                                 }
                                 case "kick" ->
@@ -235,12 +207,74 @@ final class NativePlayerRecovery {
                                                 == 2,
                                         "Offline key refund was lost or duplicated during"
                                                 + " expiry/recovery");
+                                for (int attempt = 0; attempt < 3; attempt++) {
+                                    require(again.prepareRecovery(), "Repeat entry rejected after a completed departure");
+                                    inventory.clear();
+                                    values.put("GameMode", GameMode.ADVENTURE);
+                                    again.completeDeparture(true, true);
+                                    require(inventory.getContents()[0].equals(original),
+                                            "Departure lost the original inventory");
+                                    again = new DungeonPlayerSession(test.runtime().environment().plugin(), player);
+                                    require(again.recoverPendingState(), "Reconnect failed after a completed departure");
+                                }
+                                test.getLogger().info("Native save/load and three entry/departure/reconnect cycles passed");
                             } finally {
                                 test.runtime()
                                         .config()
                                         .set("sessions.offline_retention_seconds", grace);
                             }
                         });
+    }
+
+    /** Uses the actual native player serializer, including its configured storage directory. */
+    private static Player nativePlayer(UUID id) throws Exception {
+        Object server = Bukkit.getServer().getClass().getMethod("getServer").invoke(Bukkit.getServer());
+        Object level = Bukkit.getWorlds().getFirst().getClass().getMethod("getHandle")
+                .invoke(Bukkit.getWorlds().getFirst());
+        Class<?> serverType = Class.forName("net.minecraft.server.MinecraftServer");
+        Class<?> levelType = Class.forName("net.minecraft.server.level.ServerLevel");
+        Class<?> profileType = Class.forName("com.mojang.authlib.GameProfile");
+        Class<?> informationType = Class.forName("net.minecraft.server.level.ClientInformation");
+        Object profile = profileType.getConstructor(UUID.class, String.class).newInstance(id, "RecoveryProbe");
+        Object information = informationType.getMethod("createDefault").invoke(null);
+        Object handle = Class.forName("net.minecraft.server.level.ServerPlayer")
+                .getConstructor(serverType, levelType, profileType, informationType)
+                .newInstance(server, level, profile, information);
+        return (Player) handle.getClass().getMethod("getBukkitEntity").invoke(handle);
+    }
+
+    private static void saveNativePlayer(Player player, PlayerInventory source) {
+        try {
+            Object handle = player.getClass().getMethod("getHandle").invoke(player);
+            Object inventory = handle.getClass().getMethod("getInventory").invoke(handle);
+            Class<?> itemType = Class.forName("net.minecraft.world.item.ItemStack");
+            var set = inventory.getClass().getMethod("setItem", int.class, itemType);
+            var convert = Class.forName("org.bukkit.craftbukkit.inventory.CraftItemStack")
+                    .getMethod("asNMSCopy", ItemStack.class);
+            var contents = source.getContents();
+            for (int slot = 0; slot < contents.length; slot++)
+                set.invoke(inventory, slot, convert.invoke(null, contents[slot]));
+            player.saveData();
+            // A separate native player must read the marker and items through Paper's real loader.
+            Player reloaded = nativePlayer(player.getUniqueId());
+            reloaded.loadData();
+            var transaction = new NamespacedKey("dungeons", "player_transaction");
+            require(Objects.equals(
+                    player.getPersistentDataContainer().get(transaction, PersistentDataType.STRING),
+                    reloaded.getPersistentDataContainer().get(transaction, PersistentDataType.STRING)),
+                    "Native reload did not retain the transaction marker");
+            for (int slot = 0; slot < contents.length; slot++) {
+                ItemStack expected = contents[slot];
+                ItemStack actual = reloaded.getInventory().getItem(slot);
+                require(expected == null || expected.getType().isAir()
+                                ? actual == null || actual.getType().isAir()
+                                : actual != null && expected.isSimilar(actual)
+                                        && expected.getAmount() == actual.getAmount(),
+                        "Native reload lost inventory slot " + slot);
+            }
+        } catch (Exception failure) {
+            throw new IllegalStateException("Native player serialization failed", failure);
+        }
     }
 
     /** Uses Paper's real inventory and item/equipment containers, excluding network notifications. */
