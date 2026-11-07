@@ -5,13 +5,11 @@ import static org.mockito.Mockito.*;
 
 import nl.hauntedmc.dungeons.support.*;
 
-import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
-import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 
 class EditorOpenFailureTest {
@@ -20,7 +18,13 @@ class EditorOpenFailureTest {
     @Test
     void failedEditorOpenRetainsTheEditorReferenceWhenUnloadIsRefused() throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            f.paper.runtime.setPreparations(new nl.hauntedmc.dungeons.runtime.instance.PreparationRegistry());
+            var state = new PlayerState();
+            f.session(state);
             var dungeon = spy(f.dungeon);
+            var catalog = mock(nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository.class);
+            when(catalog.get(dungeon.getWorldName())).thenReturn(dungeon);
+            f.paper.runtime.setDungeonCatalog(catalog);
             var editor = new EditableInstance(dungeon, new CountDownLatch(1));
             editor.instanceWorld = f.world;
             editor.loadFailed = true;
@@ -33,7 +37,7 @@ class EditorOpenFailureTest {
                         ((Runnable) call.getArgument(1)).run();
                         return mock(org.bukkit.scheduler.BukkitTask.class);
                     });
-            dungeon.edit(UUID.randomUUID());
+            dungeon.edit(state.player.getUniqueId());
             assertSame(editor, dungeon.getEditSession());
             assertTrue(dungeon.getInstances().contains(editor));
             assertEquals(DungeonInstance.DisposalState.RETRYABLE_FAILURE, editor.getDisposalState());

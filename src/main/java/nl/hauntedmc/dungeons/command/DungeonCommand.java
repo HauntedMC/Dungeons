@@ -1869,9 +1869,7 @@ public final class DungeonCommand implements TabExecutor {
 
         LangUtils.sendMessage(player, "commands.edit.open.loading");
         UUID playerId = player.getUniqueId();
-        Bukkit.getScheduler()
-                .runTaskAsynchronously(
-                        this.plugin, () -> this.dungeonManager.editDungeon(args[1], playerId));
+        this.dungeonManager.editDungeon(args[1], playerId);
         return true;
     }
 

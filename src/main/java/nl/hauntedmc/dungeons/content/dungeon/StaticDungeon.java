@@ -75,8 +75,16 @@ public class StaticDungeon extends DungeonDefinition {
     @Override
     public EditableInstance createEditSession(CountDownLatch latch) {
         EditableInstance instance = new EditableInstance(this, latch);
-        instance.initialize();
-        return instance;
+        try {
+            instance.initialize();
+            return instance;
+        } catch (RuntimeException | Error failure) {
+            this.setEditSession(instance);
+            if (!this.instances.contains(instance)) this.instances.add(instance);
+            this.activeInstances().registerActiveInstance(instance);
+            this.discardInstance(instance);
+            throw failure;
+        }
     }
 
     /**

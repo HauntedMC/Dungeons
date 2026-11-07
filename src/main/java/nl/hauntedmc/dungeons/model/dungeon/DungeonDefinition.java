@@ -59,7 +59,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /**
@@ -916,116 +915,12 @@ public abstract class DungeonDefinition {
     }
 
     public void edit(UUID playerId) {
-        if (this.editSession != null) {
-            Bukkit.getScheduler()
-                    .runTask(
-                            this.plugin(),
-                            () -> {
-                                DungeonPlayerSession playerSession =
-                                        this.playerSessions().get(playerId);
-                                if (this.editSession != null && playerSession != null) {
-                                    this.editSession.addPlayer(playerSession);
-                                }
-                            });
-            return;
-        }
-
-        CountDownLatch latch = new CountDownLatch(1);
-        java.util.concurrent.atomic.AtomicReference<EditableInstance> sessionRef =
-                new java.util.concurrent.atomic.AtomicReference<>();
-
-        Bukkit.getScheduler()
-                .runTask(
-                        this.plugin(),
-                        () -> {
-                            if (this.editSession == null) {
-                                EditableInstance created = this.createEditSession(latch);
-                                if (created != null) {
-                                    this.editSession = created;
-                                    this.instances.add(created);
-                                    this.activeInstances().registerActiveInstance(created);
-                                } else {
-                                    latch.countDown();
-                                }
-                            }
-
-                            sessionRef.set(this.editSession);
-                        });
-
-        try {
-            boolean loaded =
-                    latch.await(
-                            PluginConfigView.getEditOpenTimeoutSeconds(this.plugin().getConfig()),
-                            TimeUnit.SECONDS);
-            EditableInstance session = sessionRef.get();
-            if (!loaded || session == null) {
-                Bukkit.getScheduler()
-                        .runTask(
-                                this.plugin(),
-                                () -> {
-                                    if (this.editSession != null) {
-                                        this.discardInstance(this.editSession);
-                                    }
-                                });
-                this.scheduleEditMessage(playerId, "instance.editor.open-timeout");
-                return;
-            }
-
-            if (session.hasLoadFailed() || !session.isReady()) {
-                Bukkit.getScheduler()
-                        .runTask(
-                                this.plugin(),
-                                () -> {
-                                    if (this.editSession == session) {
-                                        this.discardInstance(session);
-                                    }
-                                });
-                this.scheduleEditMessage(playerId, "instance.editor.open-failed");
-                return;
-            }
-
-            Bukkit.getScheduler()
-                    .runTask(
-                            this.plugin(),
-                            () -> {
-                                DungeonPlayerSession playerSession =
-                                        this.playerSessions().get(playerId);
-                                if (playerSession != null) {
-                                    session.addPlayer(playerSession);
-                                }
-                            });
-        } catch (InterruptedException exception) {
-            Thread.currentThread().interrupt();
-            Bukkit.getScheduler()
-                    .runTask(
-                            this.plugin(),
-                            () -> {
-                                if (this.editSession != null) {
-                                    this.discardInstance(this.editSession);
-                                }
-                            });
-            this.logger()
-                    .error(
-                            "Interrupted while waiting for edit session of dungeon '{}' to"
-                                + " initialize.",
-                            this.worldName,
-                            exception);
-        }
-    }
-
-    private void scheduleEditMessage(UUID playerId, String messageKey) {
-        Bukkit.getScheduler()
-                .runTask(
-                        this.plugin(),
-                        () -> {
-                            Player player = Bukkit.getPlayer(playerId);
-                            if (player != null && player.isOnline()) {
-                                LangUtils.sendMessage(
-                                        player,
-                                        messageKey,
-                                        LangUtils.placeholder("dungeon", this.getDisplayName()));
-                            }
-                        });
+        var preparation = new EditorPreparation(
+                this,
+                playerId,
+                PluginConfigView.getEditOpenTimeoutSeconds(this.plugin().getConfig()));
+        if (Bukkit.isPrimaryThread()) preparation.start();
+        else Bukkit.getScheduler().runTask(this.plugin(), preparation::start);
     }
 
     public final PlayableInstance createPlaySession(CountDownLatch latch) {
