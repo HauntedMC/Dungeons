@@ -32,9 +32,14 @@ final class PlayerRecoveryJournal {
         if (Files.exists(file)) {
             try {
                 state.load(file.toFile());
-                if (state.getInt("version") != 1)
+                if (state.getInt("version") != 1 && state.getInt("version") != 2)
                     throw new IllegalArgumentException("Unknown recovery journal version");
                 rewards();
+                if (state.contains("key-reservation")) {
+                    if (state.getString("key-reservation.dungeon", "").isBlank()
+                            || items("key-reservation.item").size() != 1)
+                        throw new IllegalArgumentException("Invalid key reservation");
+                }
                 if (state.contains("recovery"))
                     PlayerRecoverySnapshot.read(state.getConfigurationSection("recovery.snapshot"));
                 if (state.contains("recovery")) UUID.fromString(state.getString("recovery.id"));
@@ -49,6 +54,41 @@ final class PlayerRecoveryJournal {
                         "Cannot load player recovery journal " + file, failure);
             }
         }
+    }
+
+    /** Escrows the removed key and checkpoints the post-removal inventory in one journal. */
+    void reserveKey(Player player, String dungeon, ItemStack key) {
+        requireServerThread();
+        if (hasPendingTransaction() || state.contains("key-reservation"))
+            throw new IllegalStateException("Player already has an unfinished state transaction");
+        var contents = PlayerRecoverySnapshot.copy(player.getInventory().getContents());
+        PlayerRecoverySnapshot.validateInventoryContents(contents);
+        commit(next -> {
+            next.set("key-reservation.dungeon", dungeon);
+            next.set("key-reservation.item", PlayerRecoverySnapshot.encode(new ItemStack[] {key}));
+            next.set("delivery.id", UUID.randomUUID().toString());
+            next.set("delivery.contents", PlayerRecoverySnapshot.encode(contents));
+        });
+        if (player.isOnline() && !player.isDead()) finishDelivery(player);
+    }
+
+    /** Atomically turns escrow into a refund or settles it after accepted admission. */
+    boolean settleKey(boolean refundOriginal, ItemStack replacement) {
+        requireServerThread();
+        if (!state.contains("key-reservation")) return false;
+        var refunds = items("refunds");
+        if (refundOriginal) refunds.add(PlayerRecoverySnapshot.decode(
+                Objects.requireNonNull(state.getList("key-reservation.item")))[0]);
+        else if (replacement != null) refunds.add(replacement.clone());
+        commit(next -> {
+            next.set("key-reservation", null);
+            next.set("refunds", PlayerRecoverySnapshot.encode(refunds.toArray(ItemStack[]::new)));
+        });
+        return true;
+    }
+
+    boolean hasKeyReservation() {
+        return state.contains("key-reservation");
     }
 
     boolean hasRecovery() {
@@ -154,6 +194,8 @@ final class PlayerRecoveryJournal {
 
     boolean recover(Player player) {
         requireServerThread();
+        // A crash during reservation can precede the native inventory removal checkpoint.
+        finishDelivery(player);
         if (hasRecovery()) {
             String id = Objects.requireNonNull(state.getString("recovery.id"));
             if (!applied(player, id)) {
@@ -168,7 +210,7 @@ final class PlayerRecoveryJournal {
             }
             commit(next -> next.set("recovery", null));
         }
-        finishDelivery(player);
+        settleKey(true, null);
         return true;
     }
 
@@ -283,7 +325,7 @@ final class PlayerRecoveryJournal {
         try {
             var next = new YamlConfiguration();
             next.loadFromString(state.saveToString());
-            next.set("version", 1);
+            next.set("version", 2);
             mutation.accept(next);
             byte[] bytes = next.saveToString().getBytes(StandardCharsets.UTF_8);
             Files.createDirectories(file.toAbsolutePath().getParent());

@@ -310,8 +310,29 @@ public final class DungeonQueueCoordinator {
                 return false;
             }
 
+            ItemStack[] beforeReservation = java.util.Arrays.stream(player.getInventory().getContents())
+                    .map(item -> item == null ? null : item.clone()).toArray(ItemStack[]::new);
             ItemStack reservedKey = this.reserveAccessKey(dungeon, player);
-            if (!dungeonPlayer.reserveAccessKey(dungeon.getWorldName(), reservedKey)) {
+            boolean reserved;
+            try {
+                reserved = dungeonPlayer.reserveAccessKey(dungeon.getWorldName(), reservedKey);
+            } catch (RuntimeException failure) {
+                // Durable escrow owns any replay. Never also return that key directly.
+                if (dungeonPlayer.hasReservedAccessKey(dungeon.getWorldName())) {
+                    try {
+                        dungeon.refundReservedAccessKey(dungeonPlayer);
+                    } catch (RuntimeException refundFailure) {
+                        failure.addSuppressed(refundFailure);
+                    }
+                } else {
+                    player.getInventory().setContents(beforeReservation);
+                    dungeon.releaseReservedAccessKey(reservedKey);
+                }
+                this.refundReservedAccessKeys(reservedPlayers, dungeon);
+                this.plugin.getSLF4JLogger().error("Failed to persist access key reservation; entry rejected.", failure);
+                return false;
+            }
+            if (!reserved) {
                 dungeon.releaseReservedAccessKey(reservedKey);
                 if (reservedKey != null && !reservedKey.getType().isAir()) {
                     ItemUtils.giveOrDrop(player, reservedKey);

@@ -40,6 +40,24 @@ class QueueLaunchContractTest {
     @TempDir Path directory;
 
     @Test
+    void failedEscrowWriteRollsBackThePhysicalKeyBeforePublishingAQueue() throws Exception {
+        try (var f = new Fixture(directory)) {
+            var session = f.player();
+            var inventory = f.giveKey(session);
+            when(f.dungeon.reserveIssuedAccessKey(any())).thenReturn(true);
+            var journal = java.nio.file.Files.createDirectories(directory.resolve(
+                    "players/" + session.getPlayer().getUniqueId() + ".recovery.yml"));
+            java.nio.file.Files.writeString(journal.resolve("obstacle"), "keep");
+            f.coordinator.sendToDungeon(session.getPlayer(), "crypt", "hard");
+            assertEquals(2, inventory.getContents()[0].getAmount());
+            assertFalse(session.hasReservedAccessKey());
+            assertFalse(session.isAwaitingDungeon());
+            assertTrue(f.queues.snapshotQueues().isEmpty());
+            verify(f.dungeon).releaseReservedAccessKey(any());
+        }
+    }
+
+    @Test
     void aFullDungeonQueuesARealSessionAndSuccessfulRetryRemovesTheQueueWithoutRefunding() {
         try (var f = new Fixture(directory)) {
             DungeonPlayerSession session = f.player();

@@ -18,6 +18,51 @@ class PlayerRecoveryJournalTest {
     @TempDir Path directory;
 
     @Test
+    void reservationCrashBeforeNativeSaveRestoresExactlyOneKeyFromEscrow() {
+        try (var paper = new PaperBoundary()) {
+            var before = new PlayerState();
+            var path = directory.resolve("escrow.yml");
+            var journal = new PlayerRecoveryJournal(path);
+            doThrow(new IllegalStateException("native save failed")).when(before.player).saveData();
+            assertThrows(IllegalStateException.class,
+                    () -> journal.reserveKey(before.player, "crypt", PlayerState.stack(1)));
+            var reconnected = new PlayerState();
+            reconnected.contents[0] = PlayerState.stack(1); // native data predates key removal
+            var restarted = new PlayerRecoveryJournal(path);
+            assertTrue(restarted.recover(reconnected.player));
+            restarted.deliverRefunds(reconnected.player);
+            assertEquals(1, reconnected.contents[0].getAmount());
+            assertFalse(restarted.hasKeyReservation());
+            assertTrue(restarted.rewards().isEmpty());
+            new PlayerRecoveryJournal(path).recover(reconnected.player);
+            assertEquals(1, reconnected.contents[0].getAmount());
+        }
+    }
+
+    @Test
+    void reservedKeySurvivesSessionLossButSuccessfulConsumptionDoesNotRefundIt() {
+        try (var paper = new PaperBoundary()) {
+            var player = new PlayerState();
+            var path = directory.resolve("escrow.yml");
+            var journal = new PlayerRecoveryJournal(path);
+            journal.reserveKey(player.player, "crypt", PlayerState.stack(1));
+            var restarted = new PlayerRecoveryJournal(path);
+            assertTrue(restarted.hasKeyReservation());
+            restarted.recover(player.player);
+            restarted.deliverRefunds(player.player);
+            assertEquals(1, player.contents[0].getAmount());
+            player.contents[0] = null; // the next reservation removes the key again
+            restarted.reserveKey(player.player, "crypt", PlayerState.stack(1));
+            assertTrue(restarted.settleKey(false, null));
+            var consumed = new PlayerRecoveryJournal(path);
+            consumed.recover(player.player);
+            consumed.deliverRefunds(player.player);
+            assertNull(player.contents[0]);
+            assertTrue(consumed.rewards().isEmpty());
+        }
+    }
+
+    @Test
     void invalidCapturesDoNotLeaveARecoveryRecordThatBlocksTheNextAttempt() {
         try (var paper = new PaperBoundary()) {
             var player = new PlayerState();

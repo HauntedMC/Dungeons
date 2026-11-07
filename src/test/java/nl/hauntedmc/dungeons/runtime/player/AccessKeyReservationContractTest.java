@@ -2,23 +2,16 @@ package nl.hauntedmc.dungeons.runtime.player;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import nl.hauntedmc.dungeons.support.PaperBoundary;
 
-import org.bukkit.Material;
-import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.PlayerInventory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
-import java.util.UUID;
 
 class AccessKeyReservationContractTest {
     @TempDir Path directory;
@@ -28,10 +21,10 @@ class AccessKeyReservationContractTest {
         try (var paper = new PaperBoundary()) {
             when(paper.plugin.getDataFolder()).thenReturn(directory.toFile());
             var state = new nl.hauntedmc.dungeons.support.PlayerState();
-            state.online = false;
             var key = nl.hauntedmc.dungeons.support.PlayerState.stack(1);
             var session = new DungeonPlayerSession(paper.plugin, state.player);
             assertTrue(session.reserveAccessKey("crypt", key));
+            state.online = false;
             assertFalse(session.reserveAccessKey("other", key));
             assertFalse(session.refundReservedAccessKey("other"));
             assertTrue(session.hasReservedAccessKey("crypt"));
@@ -47,7 +40,7 @@ class AccessKeyReservationContractTest {
             org.junit.jupiter.api.Assertions.assertEquals(1, state.contents[0].getAmount());
             assertTrue(reloaded.getRewardItems().isEmpty());
             assertFalse(reloaded.hasReservedAccessKey());
-            verify(state.player, times(1)).saveData();
+            verify(state.player, times(2)).saveData();
         }
     }
 
@@ -55,13 +48,10 @@ class AccessKeyReservationContractTest {
     void successfulConsumptionCannotLaterRefundTheKeyAndWrongDungeonCannotConsumeIt() {
         try (var paper = new PaperBoundary()) {
             when(paper.plugin.getDataFolder()).thenReturn(directory.toFile());
-            var player = mock(Player.class);
-            when(player.getUniqueId()).thenReturn(UUID.randomUUID());
-            var inventory = mock(PlayerInventory.class);
-            when(player.getInventory()).thenReturn(inventory);
-            var key = item();
-            var reserved = item();
-            when(key.clone()).thenReturn(reserved);
+            var state = new nl.hauntedmc.dungeons.support.PlayerState();
+            var player = state.player;
+            var inventory = state.inventory;
+            var key = nl.hauntedmc.dungeons.support.PlayerState.stack(1);
             var session = new DungeonPlayerSession(paper.plugin, player);
             assertTrue(session.reserveAccessKey("crypt", key));
             assertFalse(session.completeReservedAccessKey("other", null));
@@ -71,14 +61,8 @@ class AccessKeyReservationContractTest {
             assertFalse(session.refundReservedAccessKey());
             when(player.isOnline()).thenReturn(true);
             session.flushPendingAccessKeyRefund();
-            verifyNoInteractions(inventory);
+            org.junit.jupiter.api.Assertions.assertNull(inventory.getContents()[0]);
         }
     }
 
-    ItemStack item() {
-        var item = mock(ItemStack.class);
-        // Material registry behavior belongs to Paper; only its non-air result matters here.
-        when(item.getType()).thenReturn(mock(Material.class));
-        return item;
-    }
 }

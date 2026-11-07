@@ -142,8 +142,8 @@ class TeamJoinContractTest {
                 }
                 assertEquals(1, leader.inventory.getContents()[0].getAmount());
                 assertEquals(1, member.inventory.getContents()[0].getAmount());
-                verify(leader.player).saveData();
-                verify(member.player).saveData();
+                verify(leader.player, times(2)).saveData();
+                verify(member.player, times(2)).saveData();
                 if (!teamRemoved) assertFalse(team.isQueued());
             }
         }

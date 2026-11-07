@@ -46,8 +46,8 @@ class PlayerSessionExpiryTest {
             for (int slot = 0; slot < state.contents.length; slot++)
                 state.contents[slot] = PlayerState.stack(64);
             var session = registry.put(state.player);
-            state.online = false;
             assertTrue(session.reserveAccessKey("crypt", PlayerState.stack(1)));
+            state.online = false;
             assertTrue(session.refundReservedAccessKey());
             registry.disconnected(state.player);
             clock.set(TimeUnit.SECONDS.toNanos(2));
@@ -183,9 +183,10 @@ class PlayerSessionExpiryTest {
             var registry = registry(f, clock);
             var state = new PlayerState();
             var session = registry.put(state.player);
-            state.online = false;
             for (int count : new int[] {1, 2}) {
+                state.online = true;
                 assertTrue(session.reserveAccessKey("crypt", PlayerState.stack(count)));
+                state.online = false;
                 assertTrue(session.refundReservedAccessKey());
             }
             registry.disconnected(state.player);
@@ -290,7 +291,9 @@ class PlayerSessionExpiryTest {
             assertTrue(f.paper.runtime.preparations().register(session, preparation));
             assertEquals(0, registry.expireOfflineSessions());
             f.paper.runtime.preparations().remove(session, preparation);
+            state.online = true;
             assertTrue(session.reserveAccessKey("crypt", PlayerState.stack(1)));
+            state.online = false;
             assertEquals(0, registry.expireOfflineSessions());
             assertTrue(session.refundReservedAccessKey());
             var queue = mock(nl.hauntedmc.dungeons.runtime.queue.DungeonQueueEntry.class);

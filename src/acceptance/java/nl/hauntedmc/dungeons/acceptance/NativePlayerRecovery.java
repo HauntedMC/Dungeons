@@ -129,15 +129,15 @@ final class NativePlayerRecovery {
         inventory.setArmorContents(new ItemStack[] {new ItemStack(Material.DIAMOND_BOOTS), null, null, null});
         var registry = test.runtime().playerSessions();
         var first = registry.put(player);
+        require(
+                first.reserveAccessKey("native-refund", new ItemStack(Material.TRIPWIRE_HOOK, 2)),
+                "Could not reserve native refund fixture");
         require(first.prepareRecovery(), "Native recovery record could not be prepared");
         first.addReward(new ItemStack(Material.EMERALD, 5));
         inventory.clear();
         values.put("GameMode", GameMode.CREATIVE);
         values.put("Exp", 0f);
         online[0] = false;
-        require(
-                first.reserveAccessKey("native-refund", new ItemStack(Material.TRIPWIRE_HOOK, 2)),
-                "Could not reserve native refund fixture");
         require(first.refundReservedAccessKey(), "Could not persist native offline refund");
         Object grace = test.runtime().config().get("sessions.offline_retention_seconds");
         test.runtime().config().set("sessions.offline_retention_seconds", 1);

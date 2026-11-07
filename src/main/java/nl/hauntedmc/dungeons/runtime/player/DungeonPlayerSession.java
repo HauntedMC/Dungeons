@@ -402,6 +402,8 @@ public final class DungeonPlayerSession {
             boolean restoring = this.recoveryJournal.hasRecovery();
             this.hotbarRevision++;
             this.recoveryJournal.recover(this.player);
+            this.reservedAccessKey = null;
+            this.reservedAccessKeyDungeon = null;
             Location legacy = restoring ? null : this.getExitLocation();
             if (restoring) {
                 this.clearExitLocation();
@@ -800,17 +802,30 @@ public final class DungeonPlayerSession {
 
     public boolean reserveAccessKey(String dungeonName, ItemStack reservedKey) {
         this.requireActiveSession();
-        if (reservedKey == null || reservedKey.getType().isAir()) {
+        if (!this.player.isOnline() || this.player.isDead()
+                || dungeonName == null || dungeonName.isBlank()
+                || reservedKey == null || reservedKey.getType().isAir()) {
             return false;
         }
 
-        if (this.reservedAccessKey != null) {
+        if (this.reservedAccessKey != null || this.recoveryJournal.hasKeyReservation()
+                || this.recoveryJournal.hasPendingTransaction()) {
             return false;
         }
 
         this.reservedAccessKeyDungeon = dungeonName;
         this.reservedAccessKey = reservedKey.clone();
-        return true;
+        try {
+            this.recoveryJournal.reserveKey(this.player, dungeonName, this.reservedAccessKey);
+            return true;
+        } catch (RuntimeException failure) {
+            if (!this.recoveryJournal.hasKeyReservation()) {
+                this.reservedAccessKey = null;
+                this.reservedAccessKeyDungeon = null;
+            }
+            this.blockUnsafePlayerState(failure);
+            throw failure;
+        }
     }
 
     public @Nullable ItemStack getReservedAccessKey(String dungeonName) {
@@ -828,11 +843,12 @@ public final class DungeonPlayerSession {
             return false;
         }
 
+        boolean settled = this.recoveryJournal.settleKey(false, replacementKey);
         this.reservedAccessKeyDungeon = null;
         this.reservedAccessKey = null;
-        if (replacementKey != null && !replacementKey.getType().isAir()) {
+        if (!settled && replacementKey != null && !replacementKey.getType().isAir()) {
             this.queueAccessKeyRefund(replacementKey.clone());
-        }
+        } else if (settled) this.flushPendingAccessKeyRefund();
         return true;
     }
 
@@ -851,9 +867,11 @@ public final class DungeonPlayerSession {
         }
 
         ItemStack refundedKey = this.reservedAccessKey;
+        boolean settled = this.recoveryJournal.settleKey(true, null);
         this.reservedAccessKeyDungeon = null;
         this.reservedAccessKey = null;
-        this.queueAccessKeyRefund(refundedKey);
+        if (settled) this.flushPendingAccessKeyRefund();
+        else this.queueAccessKeyRefund(refundedKey);
         return true;
     }
 
