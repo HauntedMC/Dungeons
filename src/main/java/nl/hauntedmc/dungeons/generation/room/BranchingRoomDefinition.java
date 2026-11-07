@@ -18,7 +18,6 @@ import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.math.MathUtils;
 import nl.hauntedmc.dungeons.util.math.RangedNumber;
-import nl.hauntedmc.dungeons.util.text.TextUtils;
 import nl.hauntedmc.dungeons.util.world.LocationUtils;
 import nl.hauntedmc.dungeons.util.world.SchematicUtils;
 import nl.hauntedmc.dungeons.util.world.SimpleLocation;
@@ -48,7 +47,9 @@ public class BranchingRoomDefinition {
     private volatile WeakReference<StructurePiece> schematic;
     private final List<RotatedRoom> rooms = new ArrayList<>();
     private volatile boolean changedSinceLastSave;
-    private volatile boolean saving = false;
+    // Guard save admission, revisions, and completion with this room's monitor.
+    private boolean saving;
+    private long schematicRevision;
     private BoundingBox bounds;
     private String occurrencesString;
     private RangedNumber occurrences;
@@ -76,13 +77,13 @@ public class BranchingRoomDefinition {
     /**
      * Returns the cached schematic for this room, loading it from disk when needed.
      */
-    public StructurePiece getSchematic() {
-        if (this.schematic != null && this.schematic.get() != null) {
-            return this.schematic.get();
+    public synchronized StructurePiece getSchematic() {
+        StructurePiece cached = this.schematic == null ? null : this.schematic.get();
+        if (cached == null) {
+            cached = SchematicUtils.loadStructurePiece(this.schemFile);
+            this.schematic = new WeakReference<>(cached);
         }
-
-        this.schematic = new WeakReference<>(SchematicUtils.loadStructurePiece(this.schemFile));
-        return this.schematic.get();
+        return cached;
     }
 
     /**
@@ -147,7 +148,7 @@ public class BranchingRoomDefinition {
             }
         }
 
-        this.changedSinceLastSave = true;
+        this.setChangedSinceLastSave(true);
     }
 
     /**
@@ -163,7 +164,7 @@ public class BranchingRoomDefinition {
             }
         }
 
-        this.changedSinceLastSave = true;
+        this.setChangedSinceLastSave(true);
     }
 
     /**
@@ -225,7 +226,8 @@ public class BranchingRoomDefinition {
         if (!(entry instanceof DungeonFunction function)) {
             this.logger()
                     .warn(
-                            "Skipping invalid or null function entry at index {} in room '{}' of dungeon '{}'.",
+                            "Skipping invalid or null function entry at index {} in room '{}' of"
+                                + " dungeon '{}'.",
                             index,
                             this.namespace,
                             this.dungeon.getWorldName());
@@ -238,7 +240,8 @@ public class BranchingRoomDefinition {
             if (loc == null) {
                 this.logger()
                         .warn(
-                                "Skipping function '{}' in room '{}' of dungeon '{}' because it has no location.",
+                                "Skipping function '{}' in room '{}' of dungeon '{}' because it has"
+                                    + " no location.",
                                 function.getClass().getSimpleName(),
                                 this.namespace,
                                 this.dungeon.getWorldName());
@@ -251,7 +254,8 @@ public class BranchingRoomDefinition {
                     .contains(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ())) {
                 this.logger()
                         .warn(
-                                "Skipping function '{}' in room '{}' of dungeon '{}' because it is out of bounds at {},{},{}.",
+                                "Skipping function '{}' in room '{}' of dungeon '{}' because it is"
+                                    + " out of bounds at {},{},{}.",
                                 function.getClass().getSimpleName(),
                                 this.namespace,
                                 this.dungeon.getWorldName(),
@@ -270,7 +274,8 @@ public class BranchingRoomDefinition {
             Location loc = function.getLocation();
             this.logger()
                     .warn(
-                            "Skipping broken function '{}' in room '{}' of dungeon '{}' at {}. Reason: {}",
+                            "Skipping broken function '{}' in room '{}' of dungeon '{}' at {}."
+                                + " Reason: {}",
                             function.getClass().getSimpleName(),
                             this.namespace,
                             this.dungeon.getWorldName(),
@@ -569,7 +574,7 @@ public class BranchingRoomDefinition {
     /**
      * Saves room metadata and returns completion state.
      */
-    public CompletableFuture<Boolean> saveRoomAsync() {
+    public synchronized CompletableFuture<Boolean> saveRoomAsync() {
         LocationUtils.writeLocation(
                 "Bounds.Corner1",
                 this.roomConfig,
@@ -616,65 +621,76 @@ public class BranchingRoomDefinition {
     }
 
     /**
-     * Captures and writes the room schematic, optionally forcing write even when unchanged.
+     * Captures world blocks on the server thread and persists the snapshot asynchronously.
+     *
+     * <p>The future reports false on capture, scheduling, or write failure and when a save is
+     * already in progress. The room remains dirty until a write succeeds without intervening edits.
+     * Cancelling the returned future does not cancel an admitted save.
      */
-    public CompletableFuture<Boolean> captureSchematic(World world, boolean forceSave) {
-        if (world == null) {
+    public synchronized CompletableFuture<Boolean> captureSchematic(
+            World world, boolean forceSave) {
+        if (world == null || this.saving) {
             return CompletableFuture.completedFuture(false);
         }
-
-        if (this.saving) {
-            return CompletableFuture.completedFuture(false);
-        }
-
-        if (!forceSave && !this.changedSinceLastSave && this.schemFile.exists()) {
+        if (!forceSave && !this.changedSinceLastSave && this.schemFile.isFile()) {
             return CompletableFuture.completedFuture(true);
         }
 
-        this.changedSinceLastSave = false;
         this.saving = true;
-
+        this.changedSinceLastSave = true;
+        long revision = this.schematicRevision;
         CompletableFuture<Boolean> result = new CompletableFuture<>();
         Runnable captureTask =
                 () -> {
                     try {
-                        StructurePiece capturedSchematic = this.captureStructurePiece(world);
-                        String worldName = world.getName();
-                        this.schematic = new WeakReference<>(capturedSchematic);
-
-                        this.writeSchematicAsync(capturedSchematic)
+                        StructurePiece captured = this.captureStructurePiece(world);
+                        this.writeSchematicAsync(captured)
                                 .whenComplete(
-                                        (success, throwable) -> {
-                                            if (throwable != null) {
-                                                this.logCaptureFailure(worldName, throwable);
-                                                this.changedSinceLastSave = true;
-                                                this.saving = false;
-                                                result.complete(false);
-                                                return;
-                                            }
-
-                                            if (!Boolean.TRUE.equals(success)) {
-                                                this.changedSinceLastSave = true;
-                                            }
-
-                                            this.saving = false;
-                                            result.complete(Boolean.TRUE.equals(success));
-                                        });
-                    } catch (Throwable throwable) {
-                        this.logCaptureFailure(world.getName(), throwable);
-                        this.changedSinceLastSave = true;
-                        this.saving = false;
-                        result.complete(false);
+                                        (success, failure) ->
+                                                this.finishSchematicSave(
+                                                        result, captured, revision, failure));
+                    } catch (Throwable failure) {
+                        this.finishSchematicSave(result, null, revision, failure);
                     }
                 };
 
-        if (this.plugin().isEnabled() && !Bukkit.isPrimaryThread()) {
-            Bukkit.getScheduler().runTask(this.plugin(), captureTask);
-        } else {
-            captureTask.run();
+        try {
+            if (this.plugin().isEnabled() && !Bukkit.isPrimaryThread()) {
+                Bukkit.getScheduler().runTask(this.plugin(), captureTask);
+            } else {
+                captureTask.run();
+            }
+        } catch (RuntimeException failure) {
+            this.finishSchematicSave(result, null, revision, failure);
         }
-
         return result;
+    }
+
+    private void finishSchematicSave(
+            CompletableFuture<Boolean> result,
+            StructurePiece captured,
+            long revision,
+            Throwable failure) {
+        synchronized (this) {
+            if (failure == null) {
+                this.schematic = new WeakReference<>(captured);
+                this.rooms.forEach(RotatedRoom::invalidateSchematic);
+                this.changedSinceLastSave = this.schematicRevision != revision;
+            } else {
+                this.changedSinceLastSave = true;
+            }
+            this.saving = false;
+        }
+        if (failure != null) {
+            this.logger()
+                    .error(
+                            "Failed to save schematic '{}' for room '{}' in dungeon '{}'.",
+                            this.schemFile.getAbsolutePath(),
+                            this.namespace,
+                            this.dungeon.getWorldName(),
+                            failure);
+        }
+        result.complete(failure == null);
     }
 
     private StructurePiece captureStructurePiece(World world) {
@@ -694,52 +710,27 @@ public class BranchingRoomDefinition {
         return capturedSchematic;
     }
 
-    private CompletableFuture<Boolean> writeSchematicAsync(StructurePiece capturedSchematic) {
-        CompletableFuture<Boolean> result = new CompletableFuture<>();
+    private CompletableFuture<Void> writeSchematicAsync(StructurePiece capturedSchematic) {
+        CompletableFuture<Void> result = new CompletableFuture<>();
         Runnable write =
                 () -> {
-                    boolean success = true;
-
                     try {
-                        TextUtils.runTimed(
-                                "Saving structure " + this.namespace,
-                                () ->
-                                        SchematicUtils.saveStructurePiece(
-                                                this.schemFile, capturedSchematic));
-                    } catch (RuntimeException exception) {
-                        success = false;
-                        Throwable cause =
-                                exception.getCause() == null ? exception : exception.getCause();
-                        this.logger()
-                                .error(
-                                        "Failed to save schematic '{}' for room '{}' in dungeon '{}'.",
-                                        this.schemFile.getAbsolutePath(),
-                                        this.namespace,
-                                        this.dungeon.getWorldName(),
-                                        cause);
+                        SchematicUtils.saveStructurePiece(this.schemFile, capturedSchematic);
+                        result.complete(null);
+                    } catch (Throwable exception) {
+                        result.completeExceptionally(exception);
                     }
-
-                    result.complete(success);
                 };
-
-        if (this.plugin().isEnabled()) {
-            Bukkit.getScheduler().runTaskAsynchronously(this.plugin(), write);
-        } else {
-            write.run();
+        try {
+            if (this.plugin().isEnabled()) {
+                Bukkit.getScheduler().runTaskAsynchronously(this.plugin(), write);
+            } else {
+                write.run();
+            }
+        } catch (RuntimeException exception) {
+            result.completeExceptionally(exception);
         }
-
         return result;
-    }
-
-    private void logCaptureFailure(String worldName, Throwable throwable) {
-        Throwable root = throwable.getCause() == null ? throwable : throwable.getCause();
-        this.logger()
-                .error(
-                        "Failed to capture schematic for room '{}' in dungeon '{}' from world '{}'.",
-                        this.namespace,
-                        this.dungeon.getWorldName(),
-                        worldName,
-                        root);
     }
 
     /**
@@ -776,8 +767,12 @@ public class BranchingRoomDefinition {
     /**
      * Sets the dirty flag used by schematic save decisions.
      */
-    public void setChangedSinceLastSave(boolean changedSinceLastSave) {
-        this.changedSinceLastSave = changedSinceLastSave;
+    public synchronized void setChangedSinceLastSave(boolean changedSinceLastSave) {
+        if (changedSinceLastSave) {
+            this.schematicRevision++;
+        }
+        // An explicit clear cannot mark an in-flight snapshot as persisted.
+        this.changedSinceLastSave = changedSinceLastSave || this.saving;
     }
 
     /**

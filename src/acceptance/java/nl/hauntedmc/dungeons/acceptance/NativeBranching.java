@@ -94,7 +94,8 @@ final class NativeBranching {
                                                                 java.util.Set.of(
                                                                         Material.GOLD_BLOCK,
                                                                         Material.DIAMOND_BLOCK)),
-                                                        "Native chunk generation did not place both schematic floors: "
+                                                        "Native chunk generation did not place both"
+                                                            + " schematic floors: "
                                                                 + floorTypes);
                                                 Bukkit.getPluginManager()
                                                         .callEvent(
@@ -121,7 +122,7 @@ final class NativeBranching {
     }
 
     private static BranchingRoomDefinition room(
-            BranchingDungeon dungeon, String name, Material floor) {
+            BranchingDungeon dungeon, String name, Material floor) throws java.io.IOException {
         var room = new BranchingRoomDefinition(dungeon, name, new BoundingBox(0, 0, 0, 2, 2, 2));
         room.setOccurrencesString("1");
         room.setDepthString("0+");

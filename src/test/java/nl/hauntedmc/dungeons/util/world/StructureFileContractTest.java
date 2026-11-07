@@ -25,7 +25,7 @@ class StructureFileContractTest {
     @TempDir Path directory;
 
     @Test
-    void structureFilesRoundTripCoordinatesAndPaletteIncludingNegativePositions() {
+    void structureFilesRoundTripCoordinatesAndPaletteIncludingNegativePositions() throws Exception {
         try (var paper = new PaperBoundary()) {
             BlockData stone = data(paper, "minecraft:stone");
             BlockData air = data(paper, "minecraft:air");
@@ -40,7 +40,7 @@ class StructureFileContractTest {
     }
 
     @Test
-    void anEmptyCapturedStructureRemainsAValidEmptyStructureAfterReload() {
+    void anEmptyCapturedStructureRemainsAValidEmptyStructureAfterReload() throws Exception {
         try (var paper = new PaperBoundary()) {
             var file = directory.resolve("empty.schem").toFile();
             SchematicUtils.saveStructurePiece(file, new StructurePiece());
@@ -61,7 +61,7 @@ class StructureFileContractTest {
     }
 
     @Test
-    void tilePayloadDelimitersCannotCorruptTheStructureOrLoseNeighboringBlocks() {
+    void tilePayloadDelimitersCannotCorruptTheStructureOrLoseNeighboringBlocks() throws Exception {
         try (var paper = new PaperBoundary();
                 var nbt = mockStatic(BlockNbtUtils.class)) {
             nbt.when(() -> BlockNbtUtils.normalizeSnbt(anyString()))

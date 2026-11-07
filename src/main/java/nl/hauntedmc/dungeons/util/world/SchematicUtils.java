@@ -13,7 +13,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
@@ -30,8 +36,16 @@ public final class SchematicUtils {
 
     private SchematicUtils() {}
 
-    /** Saves one structure piece to a compressed custom text format. */
-    public static void saveStructurePiece(File file, StructurePiece structure) {
+    /**
+     * Saves a structure without exposing a truncated destination to readers.
+     *
+     * <p>The temporary file is written and flushed in the destination directory before atomic
+     * replacement. Filesystems without atomic replacement support fail the save rather than risk
+     * destroying the previous schematic.
+     *
+     * @throws IOException if writing, flushing, or replacing the schematic fails
+     */
+    public static void saveStructurePiece(File file, StructurePiece structure) throws IOException {
         Map<BlockData, Integer> cachedBlocks = new HashMap<>();
         StringBuilder blockDatas = new StringBuilder();
         StringBuilder blocksStr = new StringBuilder();
@@ -71,14 +85,29 @@ public final class SchematicUtils {
 
         byte[] bytes = compress(FORMAT_HEADER + blockDatas + "\n" + blocksStr);
 
+        Path destination = file.toPath().toAbsolutePath();
+        Files.createDirectories(destination.getParent());
+        Path temporary = Files.createTempFile(destination.getParent(), ".schematic-", ".tmp");
         try {
-            FileUtils.writeByteArrayToFile(file, bytes);
-        } catch (IOException exception) {
-            RuntimeContext.logger()
-                    .error(
-                            "Failed to save structure piece to '{}'.",
-                            file.getAbsolutePath(),
-                            exception);
+            try (FileChannel channel = FileChannel.open(temporary, StandardOpenOption.WRITE)) {
+                ByteBuffer buffer = ByteBuffer.wrap(bytes);
+                while (buffer.hasRemaining()) {
+                    channel.write(buffer);
+                }
+                channel.force(true);
+            }
+            Files.move(
+                    temporary,
+                    destination,
+                    StandardCopyOption.ATOMIC_MOVE,
+                    StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException | RuntimeException | Error failure) {
+            try {
+                Files.deleteIfExists(temporary);
+            } catch (IOException | RuntimeException cleanupFailure) {
+                failure.addSuppressed(cleanupFailure);
+            }
+            throw failure;
         }
     }
 

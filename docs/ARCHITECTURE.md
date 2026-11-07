@@ -55,6 +55,14 @@ Shutdown:
 - Active dungeon instances are disposed.
 - Team service shutdown hooks run.
 
+## Room Schematic Persistence
+
+`BranchingRoomDefinition.captureSchematic` captures world blocks on the server thread and schedules file serialization separately while the plugin is enabled. It admits one save per room at a time. Its boolean future returns `false` for capture, scheduling, or write failures and for overlapping requests. Cancelling the returned future does not cancel an admitted save.
+
+Rooms remain dirty until persistence succeeds. A revision counter keeps edits made during an in-flight save dirty for the next capture. Successful saves publish the captured schematic and invalidate rotated block caches; failed saves retain the previous cache.
+
+`SchematicUtils.saveStructurePiece` throws `IOException` on storage failure. It serializes into a unique temporary file beside the destination, flushes the file, and atomically replaces the destination. Failed writes clean up the temporary file where possible and preserve the previous destination. The filesystem must support atomic replacement; unsupported replacement fails the save. The existing versioned format and legacy read compatibility are unchanged. This guarantees replacement of an individual schematic, rather than a transaction across room metadata, schematics, and world files. A power loss can leave temporary files, and directory-entry durability depends on the filesystem.
+
 ## Why This Matters
 
 For operators, this structure reduces surprise during reloads and restarts.

@@ -12,6 +12,11 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Chest;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.util.Arrays;
 import java.util.concurrent.CompletionStage;
 
 final class NativeStructure {
@@ -34,7 +39,7 @@ final class NativeStructure {
                                             .toPath()
                                             .resolve("native-chest.struct")
                                             .toFile();
-                            SchematicUtils.saveStructurePiece(file, piece);
+                            verifySave(file, piece);
                             var restored = SchematicUtils.loadStructurePiece(file);
                             require(
                                     restored != null && restored.size() == 1,
@@ -50,12 +55,31 @@ final class NativeStructure {
                                     item != null
                                             && item.getType() == Material.DIAMOND
                                             && item.getAmount() == 5,
-                                    "Native tile inventory did not survive capture, file reload and placement");
+                                    "Native tile inventory did not survive capture, file reload and"
+                                        + " placement");
                             require(
                                     Component.text("Acceptance | chest !")
                                             .equals(chest.customName()),
-                                    "Delimiter-bearing tile name did not survive the native SNBT path");
+                                    "Delimiter-bearing tile name did not survive the native SNBT"
+                                        + " path");
                             return WorldFixtures.dispose(test, run);
                         });
+    }
+
+    private static void verifySave(File file, StructurePiece piece) {
+        try {
+            SchematicUtils.saveStructurePiece(file, piece);
+            byte[] saved = Files.readAllBytes(file.toPath());
+            try {
+                SchematicUtils.saveStructurePiece(new File(file, "invalid.struct"), piece);
+                throw new AssertionError("Invalid schematic destination reported success");
+            } catch (IOException expected) {
+                require(
+                        Arrays.equals(saved, Files.readAllBytes(file.toPath())),
+                        "Failed schematic write changed the persisted structure");
+            }
+        } catch (IOException failure) {
+            throw new UncheckedIOException(failure);
+        }
     }
 }

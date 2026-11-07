@@ -45,120 +45,131 @@ public class RotatedRoom {
     private final List<Connector> connectors = new ArrayList<>();
     private final Map<Location, DungeonFunction> functions = new HashMap<>();
 
+    /** Discards the derived block snapshot after the source schematic is persisted. */
+    void invalidateSchematic() {
+        this.schematic = null;
+    }
+
     /**
      * Returns the rotated schematic snapshot for this orientation.
      */
     public StructurePiece getSchematic() {
-        if (this.schematic == null || this.schematic.get() == null) {
-            if (this.rotation == 0) {
-                this.schematic = new WeakReference<>(this.origin.getSchematic());
-            } else {
-                StructurePiece schematic = new StructurePiece();
+        synchronized (this.origin) {
+            StructurePiece cached = this.schematic == null ? null : this.schematic.get();
+            if (cached == null) {
+                cached = this.rotateSchematic();
+                this.schematic = new WeakReference<>(cached);
+            }
+            return cached;
+        }
+    }
 
-                for (StructurePieceBlock originBlock : this.origin.getSchematic()) {
-                    StructurePieceBlock block = originBlock.clone();
-                    BlockData data = block.getBlockData().clone();
-                    // Many Bukkit block-data implementations store directional state separately, so
-                    // each supported directional subtype must be rotated explicitly.
-                    if (data instanceof Directional ori) {
-                        if (ori.getFacing() != BlockFace.UP && ori.getFacing() != BlockFace.DOWN) {
-                            BlockFace direction =
-                                    DirectionUtils.rotateFace(ori.getFacing(), this.rotation);
-                            ori.setFacing(direction);
-                        }
-                    }
+    private StructurePiece rotateSchematic() {
+        if (this.rotation == 0) {
+            return this.origin.getSchematic();
+        }
 
-                    if (data instanceof Rotatable ori) {
-                        BlockFace face =
-                                DirectionUtils.yawToFullFace(
-                                        DirectionUtils.faceToYaw(ori.getRotation())
-                                                + this.rotation);
-                        if (this.rotation != 180) {
-                            face = face.getOppositeFace();
-                        }
+        StructurePiece schematic = new StructurePiece();
 
-                        ori.setRotation(face);
-                    }
+        for (StructurePieceBlock originBlock : this.origin.getSchematic()) {
+            StructurePieceBlock block = originBlock.clone();
+            BlockData data = block.getBlockData().clone();
+            // Many Bukkit block-data implementations store directional state separately, so
+            // each supported directional subtype must be rotated explicitly.
+            if (data instanceof Directional ori) {
+                if (ori.getFacing() != BlockFace.UP && ori.getFacing() != BlockFace.DOWN) {
+                    BlockFace direction = DirectionUtils.rotateFace(ori.getFacing(), this.rotation);
+                    ori.setFacing(direction);
+                }
+            }
 
-                    if (data instanceof Orientable ori) {
-                        if (this.rotation != 180) {
-                            if (ori.getAxis() == Axis.X) {
-                                ori.setAxis(Axis.Z);
-                            } else if (ori.getAxis() == Axis.Z) {
-                                ori.setAxis(Axis.X);
-                            }
-                        }
-                    }
-
-                    if (data instanceof MultipleFacing ori) {
-                        Map<BlockFace, Boolean> faces = new HashMap<>();
-
-                        for (BlockFace face : ori.getAllowedFaces()) {
-                            if (face != BlockFace.UP && face != BlockFace.DOWN) {
-                                faces.put(face, ori.hasFace(face));
-                            }
-                        }
-
-                        for (Entry<BlockFace, Boolean> faceEntry : faces.entrySet()) {
-                            BlockFace face = faceEntry.getKey();
-                            boolean set = faceEntry.getValue();
-                            BlockFace next = DirectionUtils.rotateFace(face, this.rotation);
-                            if (!set || !faces.get(next)) {
-                                ori.setFace(next, set);
-                            }
-                        }
-                    }
-
-                    if (data instanceof Wall ori) {
-                        BlockFace[] directions =
-                                new BlockFace[] {
-                                    BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST
-                                };
-                        Map<BlockFace, Height> faces = new HashMap<>();
-
-                        for (BlockFace face : directions) {
-                            faces.put(face, ori.getHeight(face));
-                        }
-
-                        for (Entry<BlockFace, Height> faceEntry : faces.entrySet()) {
-                            BlockFace face = faceEntry.getKey();
-                            Height height = faceEntry.getValue();
-                            BlockFace next = DirectionUtils.rotateFace(face, this.rotation);
-                            if (height != faces.get(next)) {
-                                ori.setHeight(next, height);
-                            }
-                        }
-                    }
-
-                    if (data instanceof RedstoneWire ori) {
-                        BlockFace[] directions =
-                                new BlockFace[] {
-                                    BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST
-                                };
-                        Map<BlockFace, Connection> faces = new HashMap<>();
-
-                        for (BlockFace face : directions) {
-                            faces.put(face, ori.getFace(face));
-                        }
-
-                        for (Entry<BlockFace, Connection> faceEntry : faces.entrySet()) {
-                            BlockFace face = faceEntry.getKey();
-                            Connection connection = faceEntry.getValue();
-                            BlockFace next = DirectionUtils.rotateFace(face, this.rotation);
-                            if (connection != faces.get(next)) {
-                                ori.setFace(next, connection);
-                            }
-                        }
-                    }
-
-                    block.setBlockData(data);
-                    schematic.add(block);
+            if (data instanceof Rotatable ori) {
+                BlockFace face =
+                        DirectionUtils.yawToFullFace(
+                                DirectionUtils.faceToYaw(ori.getRotation()) + this.rotation);
+                if (this.rotation != 180) {
+                    face = face.getOppositeFace();
                 }
 
-                this.schematic = new WeakReference<>(schematic);
+                ori.setRotation(face);
             }
+
+            if (data instanceof Orientable ori) {
+                if (this.rotation != 180) {
+                    if (ori.getAxis() == Axis.X) {
+                        ori.setAxis(Axis.Z);
+                    } else if (ori.getAxis() == Axis.Z) {
+                        ori.setAxis(Axis.X);
+                    }
+                }
+            }
+
+            if (data instanceof MultipleFacing ori) {
+                Map<BlockFace, Boolean> faces = new HashMap<>();
+
+                for (BlockFace face : ori.getAllowedFaces()) {
+                    if (face != BlockFace.UP && face != BlockFace.DOWN) {
+                        faces.put(face, ori.hasFace(face));
+                    }
+                }
+
+                for (Entry<BlockFace, Boolean> faceEntry : faces.entrySet()) {
+                    BlockFace face = faceEntry.getKey();
+                    boolean set = faceEntry.getValue();
+                    BlockFace next = DirectionUtils.rotateFace(face, this.rotation);
+                    if (!set || !faces.get(next)) {
+                        ori.setFace(next, set);
+                    }
+                }
+            }
+
+            if (data instanceof Wall ori) {
+                BlockFace[] directions =
+                        new BlockFace[] {
+                            BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST
+                        };
+                Map<BlockFace, Height> faces = new HashMap<>();
+
+                for (BlockFace face : directions) {
+                    faces.put(face, ori.getHeight(face));
+                }
+
+                for (Entry<BlockFace, Height> faceEntry : faces.entrySet()) {
+                    BlockFace face = faceEntry.getKey();
+                    Height height = faceEntry.getValue();
+                    BlockFace next = DirectionUtils.rotateFace(face, this.rotation);
+                    if (height != faces.get(next)) {
+                        ori.setHeight(next, height);
+                    }
+                }
+            }
+
+            if (data instanceof RedstoneWire ori) {
+                BlockFace[] directions =
+                        new BlockFace[] {
+                            BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST
+                        };
+                Map<BlockFace, Connection> faces = new HashMap<>();
+
+                for (BlockFace face : directions) {
+                    faces.put(face, ori.getFace(face));
+                }
+
+                for (Entry<BlockFace, Connection> faceEntry : faces.entrySet()) {
+                    BlockFace face = faceEntry.getKey();
+                    Connection connection = faceEntry.getValue();
+                    BlockFace next = DirectionUtils.rotateFace(face, this.rotation);
+                    if (connection != faces.get(next)) {
+                        ori.setFace(next, connection);
+                    }
+                }
+            }
+
+            block.setBlockData(data);
+            schematic.add(block);
         }
-        return this.schematic.get();
+
+        return schematic;
     }
 
     private org.slf4j.Logger logger() {
@@ -204,7 +215,8 @@ public class RotatedRoom {
                 Throwable root = throwable.getCause() == null ? throwable : throwable.getCause();
                 this.logger()
                         .warn(
-                                "Skipping broken connector while rotating room '{}' in dungeon '{}'. Rotation={}, reason={}",
+                                "Skipping broken connector while rotating room '{}' in dungeon"
+                                    + " '{}'. Rotation={}, reason={}",
                                 this.origin.getNamespace(),
                                 this.origin.getDungeon().getWorldName(),
                                 this.rotation,
@@ -251,7 +263,8 @@ public class RotatedRoom {
             if (function == null) {
                 this.logger()
                         .warn(
-                                "Skipping function '{}' in room '{}' of dungeon '{}' because clone() returned null.",
+                                "Skipping function '{}' in room '{}' of dungeon '{}' because"
+                                    + " clone() returned null.",
                                 originalFunction.getClass().getSimpleName(),
                                 this.origin.getNamespace(),
                                 this.origin.getDungeon().getWorldName());
@@ -268,7 +281,9 @@ public class RotatedRoom {
                     if (this.rotation == 0) {
                         this.logger()
                                 .warn(
-                                        "Skipping teleport function in room '{}' of dungeon '{}' at {},{},{} because no teleport target was configured.",
+                                        "Skipping teleport function in room '{}' of dungeon '{}' at"
+                                            + " {},{},{} because no teleport target was"
+                                            + " configured.",
                                         this.origin.getNamespace(),
                                         this.origin.getDungeon().getWorldName(),
                                         originalLocation.getBlockX(),
@@ -289,7 +304,8 @@ public class RotatedRoom {
             Throwable root = throwable.getCause() == null ? throwable : throwable.getCause();
             this.logger()
                     .warn(
-                            "Skipping broken function '{}' while rotating room '{}' in dungeon '{}' at {},{},{}. Reason: {}",
+                            "Skipping broken function '{}' while rotating room '{}' in dungeon '{}'"
+                                + " at {},{},{}. Reason: {}",
                             originalFunction.getClass().getSimpleName(),
                             this.origin.getNamespace(),
                             this.origin.getDungeon().getWorldName(),
