@@ -18,6 +18,29 @@ class PlayerRecoveryJournalTest {
     @TempDir Path directory;
 
     @Test
+    void deadOrOfflineClaimsLeaveRewardsDurableUntilThePlayerCanReceiveThem() {
+        try (var paper = new PaperBoundary()) {
+            var player = new PlayerState();
+            var path = directory.resolve("recovery.yml");
+            var journal = new PlayerRecoveryJournal(path);
+            var reward = PlayerState.stack(7);
+            journal.addRewards(reward);
+            when(player.player.isOnline()).thenReturn(false);
+            assertFalse(journal.claim(player.player, reward));
+            when(player.player.isOnline()).thenReturn(true);
+            when(player.player.isDead()).thenReturn(true);
+            assertFalse(journal.claim(player.player, reward));
+            verify(player.player, never()).saveData();
+            assertNull(player.contents[0]);
+            assertEquals(7, new PlayerRecoveryJournal(path).rewards().getFirst().getAmount());
+            when(player.player.isDead()).thenReturn(false);
+            assertTrue(journal.claim(player.player, reward));
+            assertTrue(new PlayerRecoveryJournal(path).rewards().isEmpty());
+            assertEquals(7, player.contents[0].getAmount());
+        }
+    }
+
+    @Test
     void completeSnapshotSurvivesNewSessionAndRestoresOnce() {
         try (var paper = new PaperBoundary()) {
             var player = new PlayerState();

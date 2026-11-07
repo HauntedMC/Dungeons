@@ -191,6 +191,9 @@ final class PlayerRecoveryJournal {
 
     private boolean claim(Player player, ItemStack requested, String source) {
         requireServerThread();
+        // Offline saves may silently do nothing, and respawn can replace a dead player's inventory.
+        // Keep both the reward and any unfinished delivery journal untouched until a live claim.
+        if (!player.isOnline() || player.isDead() || player.getHealth() <= 0) return false;
         if (hasRecovery()) return false;
         finishDelivery(player);
         List<ItemStack> rewards = items(source);
