@@ -177,6 +177,9 @@ while ((SECONDS < local_deadline)); do
       | grep -Ev "\[Dungeons\] Instance disposal failed for 'acceptance_unload_retry_[0-9]+' in dungeon 'acceptance_unload_retry'; retaining registration and files\. Call disposeAsync\(\) to retry\.$"; then
       fail 'Paper logged an unexpected dungeon runtime or lifecycle error'
     fi
+    if grep -Eh '\[NBTAPI\].*(not supported|Unable to find)' "$work_directory"/paper/*.log; then
+      fail 'Bundled NBT-API reported unsupported native methods or a server-version mismatch'
+    fi
     echo 'Dungeons Paper integration and acceptance passed.'
     exit 0
   fi
