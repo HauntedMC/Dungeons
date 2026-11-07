@@ -24,6 +24,47 @@ class OpenAdmissionContractTest {
     @TempDir Path directory;
 
     @Test
+    void duplicateAdmissionCannotConsumeAnotherMembersReservedSlot() throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var dungeon = dungeon(f);
+            dungeon.getConfig().set("open.max_players", 2);
+            var run = new ReadyRun(dungeon, f.world);
+            var first = f.session(new PlayerState());
+            var second = f.session(new PlayerState());
+            UUID reservation = UUID.randomUUID();
+            assertTrue(run.reserveTeamSlots(reservation, 2));
+            assertTrue(run.addReservedPlayer(first, reservation));
+            assertTrue(run.addReservedPlayer(first, reservation));
+            assertTrue(run.hasOutstandingReservations());
+            assertTrue(run.addReservedPlayer(second, reservation));
+            assertFalse(run.hasOutstandingReservations());
+            assertEquals(2, run.getPlayers().size());
+        }
+    }
+
+    @Test
+    void rejectedRecoveryCannotReportAdmissionOrLeaveReservedCapacity() throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var dungeon = dungeon(f);
+            var run = new ReadyRun(dungeon, f.world);
+            dungeon.getInstances().add(run);
+            f.paper.runtime.activeInstances().registerActiveInstance(run);
+            assertTrue(dungeon.publishReadyInstance(run));
+            var state = new PlayerState();
+            var session = f.session(state);
+            var record = directory.resolve("players/" + state.player.getUniqueId() + ".recovery.yml");
+            Files.createDirectories(record);
+            Files.writeString(record.resolve("obstacle"), "retain");
+            session.setAwaitingDungeon(true);
+            assertFalse(dungeon.prepareInstance(state.player, "DEFAULT", 1, null));
+            assertNull(session.getInstance());
+            assertTrue(run.getPlayers().isEmpty());
+            assertFalse(run.hasOutstandingReservations());
+            assertFalse(session.isAwaitingDungeon());
+        }
+    }
+
+    @Test
     void rejectedCrossRunAdmissionCannotConsumeAnotherTeamsReservedCapacity() throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
             var state = new PlayerState();

@@ -86,14 +86,17 @@ public class OpenInstance extends StaticInstance {
 
         this.cancelPendingEmptyUnload();
 
-        if (!this.consumeReservedSlot(reservationId)
-                && !this.getPlayers().contains(playerSession)
-                && !this.hasCapacityFor(1)) {
-            return false;
+        if (this.getPlayers().contains(playerSession)) return true;
+        boolean reserved = this.consumeReservedSlot(reservationId);
+        if (!reserved && !this.hasCapacityFor(1)) return false;
+        try {
+            this.attachPlayer(playerSession);
+            return playerSession.getInstance() == this && this.getPlayers().contains(playerSession);
+        } finally {
+            // A refused recovery snapshot must not consume another member's reserved capacity.
+            if (reserved && playerSession.getInstance() != this)
+                this.reservedSlotsByOwner.merge(reservationId, 1, Integer::sum);
         }
-
-        this.attachPlayer(playerSession);
-        return true;
     }
 
     /**
