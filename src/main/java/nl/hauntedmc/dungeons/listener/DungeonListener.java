@@ -127,7 +127,7 @@ public class DungeonListener implements Listener {
                     .runTask(
                             this.plugin,
                             () -> {
-                                if (session.getPlayer() == player && player.isOnline())
+                                if (!session.isExpired() && session.getPlayer() == player && player.isOnline())
                                     session.recoverPendingState();
                             });
         }

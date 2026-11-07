@@ -108,6 +108,9 @@ class EditorPreparationTest {
             dungeon.setEditSession(original);
             new EditorPreparation(dungeon, state.player.getUniqueId(), 30).start();
             registry.cancel(session);
+            state.online = false;
+            f.paper.runtime.playerSessions().shutdown();
+            assertTrue(session.isExpired());
             var replacement = mock(EditableInstance.class);
             dungeon.setEditSession(replacement);
             f.scheduler.asynchronous.getFirst().run();

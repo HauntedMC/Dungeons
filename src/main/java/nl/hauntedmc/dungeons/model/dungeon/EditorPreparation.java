@@ -99,6 +99,7 @@ final class EditorPreparation implements PreparationRegistry.Pending {
         if (cancelled.get()
                 || remaining() == 0L
                 || dungeon.getEditSession() != editor
+                || session.isExpired()
                 || session.getPlayer() != player
                 || !player.isOnline()
                 || session.getInstance() != null
