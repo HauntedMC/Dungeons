@@ -51,6 +51,7 @@ public class BranchingRoomDefinition {
     private volatile boolean changedSinceLastSave;
     // Guard save admission, revisions, and completion with this room's monitor.
     private boolean saving;
+    private volatile boolean deleted;
     private long schematicRevision;
     private BoundingBox bounds;
     private String occurrencesString;
@@ -210,6 +211,7 @@ public class BranchingRoomDefinition {
     public CompletableFuture<Boolean> saveFunctionsAsync() {
         return this.saveOnOwnerThread(
                 () -> {
+                    if (this.deleted) return CompletableFuture.completedFuture(false);
                     this.roomConfig.set(
                             "Functions", new ArrayList<>(this.functionsMapRelative.values()));
                     return this.captureRoomSave();
@@ -590,6 +592,7 @@ public class BranchingRoomDefinition {
     }
 
     private synchronized CompletableFuture<Boolean> captureRoomSave() {
+        if (this.deleted) return CompletableFuture.completedFuture(false);
         LocationUtils.writeLocation(
                 "Bounds.Corner1",
                 this.roomConfig,
@@ -644,7 +647,7 @@ public class BranchingRoomDefinition {
      */
     public synchronized CompletableFuture<Boolean> captureSchematic(
             World world, boolean forceSave) {
-        if (world == null || this.saving) {
+        if (this.deleted || world == null || this.saving) {
             return CompletableFuture.completedFuture(false);
         }
         if (!forceSave && !this.changedSinceLastSave && this.schemFile.isFile()) {
@@ -658,6 +661,7 @@ public class BranchingRoomDefinition {
         Runnable captureTask =
                 () -> {
                     try {
+                        if (this.deleted) throw new IllegalStateException("Room has been deleted");
                         StructurePiece captured = this.captureStructurePiece(world);
                         this.writeSchematicAsync(captured)
                                 .whenComplete(
@@ -740,9 +744,22 @@ public class BranchingRoomDefinition {
      * Deletes this room configuration and schematic files.
      */
     public void delete() {
-        this.configFile.delete();
-        if (this.schemFile != null) {
-            this.schemFile.delete();
+        this.deleted = true;
+        // Deletion joins the same destination lanes as writes. A queued save must never
+        // resurrect a room after the editor has removed it.
+        for (File destination : List.of(this.configFile, this.schemFile)) {
+            ConfigurationFile.filesystemAsync(
+                            this.plugin(),
+                            destination,
+                            () -> {
+                                java.nio.file.Files.deleteIfExists(destination.toPath());
+                                return null;
+                            })
+                    .whenComplete(
+                            (ignored, failure) -> {
+                                if (failure != null)
+                                    this.logger().error("Failed to delete room file '{}'.", destination, failure);
+                            });
         }
     }
 

@@ -29,6 +29,25 @@ class RoomSchematicPersistenceTest {
     @TempDir Path directory;
 
     @Test
+    void deletionFollowsQueuedWritesAndStaleCallbacksCannotResurrectTheRoom() throws Exception {
+        try (var f = new Fixture()) {
+            when(f.paper.plugin.isEnabled()).thenReturn(true);
+            var schematic = f.room.captureSchematic(f.world, true);
+            var metadata = f.room.saveRoomAsync();
+            f.room.delete();
+            // Drive pending saves after deletion, just as a delayed autosave worker would run.
+            for (var task : java.util.List.copyOf(f.scheduler.asynchronous)) task.run();
+            assertTrue(schematic.join());
+            assertTrue(metadata.join());
+            assertFalse(Files.exists(f.target));
+            assertFalse(Files.exists(directory.resolve("rooms/hall.yml")));
+            assertFalse(f.room.captureSchematic(f.world, true).join());
+            assertFalse(f.room.saveFunctionsAsync().join());
+            assertFalse(f.room.saveRoomAsync().join());
+        }
+    }
+
+    @Test
     void writeFailureIsReportedAndDirtyRoomCanBeRetried() throws Exception {
         try (var f = new Fixture()) {
             Files.createDirectories(f.target);
