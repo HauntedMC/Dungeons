@@ -26,6 +26,8 @@ final class DebugCommandHandler implements CommandHandler {
     /** Runs handle command. */
     @Override
     public boolean handleCommand(CommandSender sender, String[] args) {
+        if (args.length == 2 && args[1].equalsIgnoreCase("map"))
+            return handleMapCommand(sender, new String[] {"map"});
         if (args.length < 2 || !args[1].equalsIgnoreCase("doors")) {
             CommandArguments.sendUsageList(sender, "commands.debug.help.lines");
             return true;
@@ -48,7 +50,7 @@ final class DebugCommandHandler implements CommandHandler {
     public List<String> handleTabComplete(CommandSender sender, String[] args) {
         List<String> options = new ArrayList<>();
         if (args.length == 2) {
-            CommandArguments.addMatchingLiteralOptions(options, args[1], "doors");
+            CommandArguments.addMatchingLiteralOptions(options, args[1], "doors", "map");
             return options;
         }
 
@@ -69,7 +71,7 @@ final class DebugCommandHandler implements CommandHandler {
             return false;
         }
 
-        if (!CommandUtils.hasPermission(sender, "dungeons.admin")) {
+        if (!CommandUtils.hasPermission(sender, "dungeons.role.operator")) {
             return false;
         }
 
@@ -98,7 +100,7 @@ final class DebugCommandHandler implements CommandHandler {
             return false;
         }
 
-        if (!CommandUtils.hasPermission(sender, "dungeons.admin")) {
+        if (!CommandUtils.hasPermission(sender, "dungeons.role.operator")) {
             return false;
         }
 
@@ -121,7 +123,7 @@ final class DebugCommandHandler implements CommandHandler {
     boolean handleMapCommand(CommandSender sender, String[] args) {
         if (args.length != 1) {
             if (sender instanceof Player player) {
-                LangUtils.sendMessage(player, "commands.instance.map.usage");
+                LangUtils.sendMessage(player, "commands.debug.map.usage");
                 return true;
             }
 
@@ -132,30 +134,30 @@ final class DebugCommandHandler implements CommandHandler {
             return false;
         }
 
-        if (!CommandUtils.hasPermission(sender, "dungeons.admin")) {
+        if (!CommandUtils.hasPermission(sender, "dungeons.role.operator")) {
             return false;
         }
 
         DungeonPlayerSession playerSession = this.playerManager.get(player);
         if (playerSession == null) {
-            LangUtils.sendMessage(player, "commands.instance.map.not-in-dungeon");
+            LangUtils.sendMessage(player, "commands.debug.map.not-in-dungeon");
             return true;
         }
 
         DungeonInstance abs = playerSession.getInstance();
         if (abs == null) {
-            LangUtils.sendMessage(player, "commands.instance.map.not-in-dungeon");
+            LangUtils.sendMessage(player, "commands.debug.map.not-in-dungeon");
             return true;
         }
 
         PlayableInstance instance = abs.as(PlayableInstance.class);
         if (instance == null) {
-            LangUtils.sendMessage(player, "commands.instance.map.not-in-dungeon");
+            LangUtils.sendMessage(player, "commands.debug.map.not-in-dungeon");
             return true;
         }
 
         instance.giveDungeonMap(player);
-        LangUtils.sendMessage(player, "commands.instance.map.success");
+        LangUtils.sendMessage(player, "commands.debug.map.success");
         return true;
     }
 }

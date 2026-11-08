@@ -49,14 +49,14 @@ class StructureFileContractTest {
     }
 
     @Test
-    void existingUnversionedStructureFilesRemainReadable() throws Exception {
+    void unversionedStructureFilesAreRejected() throws Exception {
         try (var paper = new PaperBoundary()) {
             data(paper, "minecraft:stone");
             var file = directory.resolve("legacy.schem");
             Files.write(file, SchematicUtils.compress("minecraft:stone\n-3,5,8|0|null"));
-            assertEquals(
-                    List.of("-3,5,8|minecraft:stone|null"),
-                    snapshots(SchematicUtils.loadStructurePiece(file.toFile())));
+            org.junit.jupiter.api.Assertions.assertThrows(
+                    IllegalArgumentException.class,
+                    () -> SchematicUtils.loadStructurePiece(file.toFile()));
         }
     }
 

@@ -80,9 +80,7 @@ public class DungeonListener implements Listener {
     private final Set<UUID> pendingRoomNameInputs = ConcurrentHashMap.newKeySet();
     private final Set<String> pendingFunctionDisplaySelections = ConcurrentHashMap.newKeySet();
 
-    /**
-     * Creates the global dungeon listener with runtime service dependencies.
-     */
+    /** Creates the global dungeon listener with runtime service dependencies. */
     public DungeonListener(
             DungeonsPlugin plugin,
             PlayerSessionRegistry playerManager,
@@ -96,9 +94,7 @@ public class DungeonListener implements Listener {
         this.guiService = guiService;
     }
 
-    /**
-     * Restores persisted player session state when a player joins the server.
-     */
+    /** Restores persisted player session state when a player joins the server. */
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
@@ -127,15 +123,14 @@ public class DungeonListener implements Listener {
                     .runTask(
                             this.plugin,
                             () -> {
-                                if (!session.isExpired() && session.getPlayer() == player && player.isOnline())
-                                    session.recoverPendingState();
+                                if (!session.isExpired()
+                                        && session.getPlayer() == player
+                                        && player.isOnline()) session.recoverPendingState();
                             });
         }
     }
 
-    /**
-     * Restores the captured edit hotbar for editors when they disconnect.
-     */
+    /** Restores the captured edit hotbar for editors when they disconnect. */
     @EventHandler
     public void restoreEditPlayerHotbar(PlayerQuitEvent event) {
         Player player = event.getPlayer();
@@ -151,9 +146,7 @@ public class DungeonListener implements Listener {
         }
     }
 
-    /**
-     * Handles right-click function tool usage and opens or creates function selections.
-     */
+    /** Handles right-click function tool usage and opens or creates function selections. */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onFunctionToolInteract(PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK) {
@@ -165,7 +158,7 @@ public class DungeonListener implements Listener {
         }
 
         Player player = event.getPlayer();
-        if (!CommandUtils.hasPermissionSilent(player, "dungeons.functioneditor")) {
+        if (!CommandUtils.hasPermissionSilent(player, "dungeons.staff.edit")) {
             return;
         }
 
@@ -187,9 +180,7 @@ public class DungeonListener implements Listener {
         this.handleFunctionSelection(player, playerSession, event.getClickedBlock().getLocation());
     }
 
-    /**
-     * Supports selecting a function by interacting with its floating text label.
-     */
+    /** Supports selecting a function by interacting with its floating text label. */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onFunctionLabelInteract(PlayerInteractEntityEvent event) {
         if (event.getHand() == EquipmentSlot.OFF_HAND) {
@@ -203,9 +194,7 @@ public class DungeonListener implements Listener {
         this.handleFunctionDisplaySelection(event.getPlayer(), display, event);
     }
 
-    /**
-     * Supports selecting a function by interacting at its floating text label.
-     */
+    /** Supports selecting a function by interacting at its floating text label. */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onFunctionLabelInteractAt(PlayerInteractAtEntityEvent event) {
         if (event.getHand() == EquipmentSlot.OFF_HAND) {
@@ -219,9 +208,7 @@ public class DungeonListener implements Listener {
         this.handleFunctionDisplaySelection(event.getPlayer(), display, event);
     }
 
-    /**
-     * Handles right-click room tool interactions for room selection and room edit entry.
-     */
+    /** Handles right-click room tool interactions for room selection and room edit entry. */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onRoomToolInteract(PlayerInteractEvent event) {
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK
@@ -235,7 +222,7 @@ public class DungeonListener implements Listener {
         }
 
         Player player = event.getPlayer();
-        if (!CommandUtils.hasPermissionSilent(player, "dungeons.roomeditor")) {
+        if (!CommandUtils.hasPermissionSilent(player, "dungeons.staff.edit")) {
             return;
         }
 
@@ -305,9 +292,7 @@ public class DungeonListener implements Listener {
         }
     }
 
-    /**
-     * Handles left-click room tool interactions for the first room-corner selection.
-     */
+    /** Handles left-click room tool interactions for the first room-corner selection. */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onRoomToolClick(PlayerInteractEvent event) {
         if (event.getAction() != Action.LEFT_CLICK_BLOCK
@@ -325,7 +310,7 @@ public class DungeonListener implements Listener {
             return;
         }
 
-        if (!CommandUtils.hasPermissionSilent(player, "dungeons.roomeditor")) {
+        if (!CommandUtils.hasPermissionSilent(player, "dungeons.staff.edit")) {
             return;
         }
 
@@ -378,9 +363,7 @@ public class DungeonListener implements Listener {
         }
     }
 
-    /**
-     * Renders a temporary room selection preview while awaiting room naming.
-     */
+    /** Renders a temporary room selection preview while awaiting room naming. */
     @EventHandler(priority = EventPriority.HIGH)
     public void previewRoomSelection(PlayerToggleSneakEvent event) {
         Player player = event.getPlayer();
@@ -400,9 +383,7 @@ public class DungeonListener implements Listener {
         }
     }
 
-    /**
-     * Consumes chat input when the player is currently naming a new branching room.
-     */
+    /** Consumes chat input when the player is currently naming a new branching room. */
     @EventHandler
     public void onCreateRoomMessage(AsyncChatEvent event) {
         String message = ComponentUtils.plainText(event.message()).trim();
@@ -412,9 +393,7 @@ public class DungeonListener implements Listener {
         }
     }
 
-    /**
-     * Prevents placing editor tools as normal blocks while in edit mode.
-     */
+    /** Prevents placing editor tools as normal blocks while in edit mode. */
     @EventHandler(priority = EventPriority.HIGH)
     public void onPreventToolPlacement(BlockPlaceEvent event) {
         Player player = event.getPlayer();
@@ -431,9 +410,7 @@ public class DungeonListener implements Listener {
         }
     }
 
-    /**
-     * Prevents function/room tools from being used to break blocks in edit mode.
-     */
+    /** Prevents function/room tools from being used to break blocks in edit mode. */
     @EventHandler(priority = EventPriority.HIGH)
     public void onPreventToolBreak(BlockBreakEvent event) {
         Player player = event.getPlayer();
@@ -452,9 +429,7 @@ public class DungeonListener implements Listener {
         }
     }
 
-    /**
-     * Reminds players to claim pending rewards after a successful run.
-     */
+    /** Reminds players to claim pending rewards after a successful run. */
     @EventHandler
     public void onFinishDungeon(PlayerFinishDungeonEvent event) {
         DungeonPlayerSession playerSession = event.getPlayerSession();
@@ -466,9 +441,7 @@ public class DungeonListener implements Listener {
         }
     }
 
-    /**
-     * Reminds players to claim pending rewards when they leave a run early.
-     */
+    /** Reminds players to claim pending rewards when they leave a run early. */
     @EventHandler
     public void onLeaveDungeon(PlayerLeaveDungeonEvent event) {
         if (!event.isCancelled()) {
@@ -482,9 +455,7 @@ public class DungeonListener implements Listener {
         }
     }
 
-    /**
-     * Applies runtime world defaults for dungeon and instance worlds on init.
-     */
+    /** Applies runtime world defaults for dungeon and instance worlds on init. */
     @EventHandler
     public void onLoadDungeonWorld(WorldInitEvent event) {
         World world = event.getWorld();
@@ -497,9 +468,7 @@ public class DungeonListener implements Listener {
         }
     }
 
-    /**
-     * Selects an existing function at the clicked block or opens function creation UI.
-     */
+    /** Selects an existing function at the clicked block or opens function creation UI. */
     private void handleFunctionSelection(
             Player player, DungeonPlayerSession playerSession, Location clickedLocation) {
         DungeonInstance instance = playerSession.getInstance();
@@ -535,12 +504,10 @@ public class DungeonListener implements Listener {
         this.guiService.openGui(player, "functionmenu");
     }
 
-    /**
-     * Resolves the clicked text display to a function and opens its editor.
-     */
+    /** Resolves the clicked text display to a function and opens its editor. */
     private void handleFunctionDisplaySelection(
             Player player, TextDisplay display, Cancellable event) {
-        if (!CommandUtils.hasPermissionSilent(player, "dungeons.functioneditor")) {
+        if (!CommandUtils.hasPermissionSilent(player, "dungeons.staff.edit")) {
             return;
         }
 
@@ -579,9 +546,7 @@ public class DungeonListener implements Listener {
         this.openExistingFunctionEditor(player, playerSession, function);
     }
 
-    /**
-     * Finds a function at a block location, including hologram-backed function anchors.
-     */
+    /** Finds a function at a block location, including hologram-backed function anchors. */
     private DungeonFunction findFunctionAt(DungeonDefinition dungeon, Location location) {
         if (dungeon == null || location == null) {
             return null;
@@ -611,9 +576,7 @@ public class DungeonListener implements Listener {
         return null;
     }
 
-    /**
-     * Finds the closest function represented by the clicked text display.
-     */
+    /** Finds the closest function represented by the clicked text display. */
     private DungeonFunction findFunctionByDisplay(DungeonInstance instance, TextDisplay display) {
         if (instance == null || display == null || !display.isValid()) {
             return null;
@@ -657,9 +620,7 @@ public class DungeonListener implements Listener {
         return closest;
     }
 
-    /**
-     * Returns the expected text label location for a function inside one world.
-     */
+    /** Returns the expected text label location for a function inside one world. */
     private Location getFunctionLabelLocation(DungeonFunction function, World world) {
         Location labelLocation = function.getLocation().clone();
         labelLocation.setWorld(world);
@@ -669,9 +630,7 @@ public class DungeonListener implements Listener {
         return labelLocation;
     }
 
-    /**
-     * Computes squared distance when both locations belong to the same world.
-     */
+    /** Computes squared distance when both locations belong to the same world. */
     private double distanceSquared(Location a, Location b) {
         if (a == null
                 || b == null
@@ -684,9 +643,7 @@ public class DungeonListener implements Listener {
         return a.distanceSquared(b);
     }
 
-    /**
-     * Switches the player into function edit mode for the selected function.
-     */
+    /** Switches the player into function edit mode for the selected function. */
     private void openExistingFunctionEditor(
             Player player, DungeonPlayerSession playerSession, DungeonFunction function) {
         LangUtils.sendMessage(
@@ -701,16 +658,12 @@ public class DungeonListener implements Listener {
         this.sendHotbarControls(player);
     }
 
-    /**
-     * Sends the shared editor hotbar controls hint to a player.
-     */
+    /** Sends the shared editor hotbar controls hint to a player. */
     private void sendHotbarControls(Player player) {
         LangUtils.sendMessageList(player, "editor.session.hotbar-controls");
     }
 
-    /**
-     * Routes room-name chat processing onto the main thread when chat is asynchronous.
-     */
+    /** Routes room-name chat processing onto the main thread when chat is asynchronous. */
     private boolean handleRoomNameInput(UUID playerId, String message, boolean asynchronous) {
         if (!asynchronous) {
             return this.handleRoomNameInputSync(playerId, message);
@@ -738,9 +691,7 @@ public class DungeonListener implements Listener {
         }
     }
 
-    /**
-     * Completes room creation from chat input for players awaiting a room name.
-     */
+    /** Completes room creation from chat input for players awaiting a room name. */
     private boolean handleRoomNameInputSync(UUID playerId, String message) {
         Player player = Bukkit.getPlayer(playerId);
         if (player == null || !player.isOnline()) {

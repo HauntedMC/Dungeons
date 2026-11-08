@@ -98,10 +98,6 @@ permissions:
       dungeons.staff.inspect: true
       dungeons.staff.edit: true
       dungeons.staff.backup: true
-      dungeons.edit: true
-      dungeons.functioneditor: true
-      dungeons.roomeditor: true
-      dungeons.cleansigns: true
   dungeons.role.administrator:
     default: false
     children:
@@ -126,11 +122,6 @@ permissions:
       dungeons.staff.restore: true
       dungeons.staff.loot: true
       dungeons.staff.diagnostics: true
-      dungeons.edit: true
-      dungeons.functioneditor: true
-      dungeons.roomeditor: true
-      dungeons.cleansigns: true
-      dungeons.loottables: true
   dungeons.role.operator:
     default: op
     children:
@@ -158,16 +149,6 @@ permissions:
       dungeons.staff.restrict: true
       dungeons.staff.scripts: true
       dungeons.staff.timer: true
-      dungeons.edit: true
-      dungeons.functioneditor: true
-      dungeons.roomeditor: true
-      dungeons.cleansigns: true
-      dungeons.loottables: true
-  dungeons.admin:
-    description: Deprecated administrative compatibility preset; does not bypass gameplay rules
-    default: false
-    children:
-      dungeons.role.operator: true
   dungeons.bypass.cooldown:
     description: Explicit gameplay bypass, independent of staff access
     default: false

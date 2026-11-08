@@ -4,8 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyInt;
@@ -36,7 +36,8 @@ class RepositoryContractTest {
     @TempDir Path directory;
 
     @Test
-    void malformedDungeonReloadRetainsTheWorkingDefinitionUntilAReplacementLoads() throws Exception {
+    void malformedDungeonReloadRetainsTheWorkingDefinitionUntilAReplacementLoads()
+            throws Exception {
         try (var fixture = new Fixture(directory)) {
             Path folder = Files.createDirectory(directory.resolve("healthy"));
             Path file = folder.resolve("config.yml");
@@ -110,14 +111,15 @@ class RepositoryContractTest {
             Path players = Files.createDirectory(folder.resolve("players"));
             var validId = UUID.fromString("00000000-0000-0000-0000-000000000001");
             var brokenId = UUID.fromString("00000000-0000-0000-0000-000000000002");
-            Files.writeString(players.resolve(validId + ".yml"), "AccessCooldown: 123456789\n");
+            Files.writeString(players.resolve(validId + ".yml"), "AccessCooldown: 4102444800000\n");
             Files.writeString(players.resolve("notes.yml"), "operator: notes\n");
             Files.writeString(players.resolve(brokenId + ".yml"), "RewardsInfo: [unfinished");
             fixture.scheduler.jobs.getFirst().run();
             var dungeon = fixture.repository.get("healthy");
             assertNotNull(dungeon);
-            assertEquals(123456789L, dungeon.getPlayerData(validId).getLong("AccessCooldown"));
-            assertNull(dungeon.getPlayerData(brokenId));
+            assertEquals(
+                    4102444800000L, dungeon.playerDataStore().getAccessCooldown(validId).getTime());
+            assertNull(dungeon.playerDataStore().getAccessCooldown(brokenId));
             assertEquals("operator: notes\n", Files.readString(players.resolve("notes.yml")));
             assertEquals(
                     "RewardsInfo: [unfinished",
@@ -134,7 +136,7 @@ class RepositoryContractTest {
             Path players = Files.createDirectory(folder.resolve("players"));
             var playerId = UUID.randomUUID();
             String saved =
-                    "RewardsInfo: invalid-legacy-record\nFinished: true\nAccessCooldown: 123456789\n";
+                    "RewardsInfo: invalid-record\nFinished: true\nAccessCooldown: 4102444800000\n";
             Path data = players.resolve(playerId + ".yml");
             Files.writeString(data, saved);
             fixture.scheduler.jobs.getFirst().run();
@@ -143,7 +145,9 @@ class RepositoryContractTest {
             var player = mock(Player.class);
             when(player.getUniqueId()).thenReturn(playerId);
             assertTrue(dungeon.hasPlayerCompletedDungeon(player));
-            assertEquals(123456789L, dungeon.getPlayerData(playerId).getLong("AccessCooldown"));
+            assertEquals(
+                    4102444800000L,
+                    dungeon.playerDataStore().getAccessCooldown(playerId).getTime());
             assertNull(dungeon.getPlayerLootData(player));
             assertEquals(saved, Files.readString(data));
         }

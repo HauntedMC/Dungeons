@@ -35,9 +35,7 @@ public class OpenDungeon extends StaticDungeon {
     private final List<OpenInstance> loadingInstances = new CopyOnWriteArrayList<>();
     private final AtomicBoolean preloadScheduled = new AtomicBoolean(false);
 
-    /**
-     * Creates a new OpenDungeon instance.
-     */
+    /** Creates a new OpenDungeon instance. */
     public OpenDungeon(
             @NotNull DungeonsRuntime runtime,
             @NotNull File folder,
@@ -50,9 +48,7 @@ public class OpenDungeon extends StaticDungeon {
         }
     }
 
-    /**
-     * Performs refresh runtime settings.
-     */
+    /** Performs refresh runtime settings. */
     @Override
     public void refreshRuntimeSettings() {
         super.refreshRuntimeSettings();
@@ -61,9 +57,7 @@ public class OpenDungeon extends StaticDungeon {
         }
     }
 
-    /**
-     * Creates play session.
-     */
+    /** Creates play session. */
     @Override
     public PlayableInstance createPlaySession(
             CountDownLatch latch, @Nullable UUID startedTeamLeaderId) {
@@ -79,18 +73,14 @@ public class OpenDungeon extends StaticDungeon {
         }
     }
 
-    /**
-     * Performs register loading instance.
-     */
+    /** Performs register loading instance. */
     private void registerLoadingInstance(OpenInstance instance) {
         this.instances.add(instance);
         this.activeInstances().registerActiveInstance(instance);
         this.loadingInstances.add(instance);
     }
 
-    /**
-     * Performs pre load.
-     */
+    /** Performs pre load. */
     public void preLoad() {
         if (!this.shouldMaintainWarmInstance()
                 || this.hasWarmInstance()
@@ -106,16 +96,12 @@ public class OpenDungeon extends StaticDungeon {
         this.watchPreloadedInstance(preloaded);
     }
 
-    /**
-     * Performs schedule pre load if needed.
-     */
+    /** Performs schedule pre load if needed. */
     public void schedulePreLoadIfNeeded() {
         this.schedulePreLoadIfNeeded(20L);
     }
 
-    /**
-     * Performs schedule pre load if needed.
-     */
+    /** Performs schedule pre load if needed. */
     private void schedulePreLoadIfNeeded(long delayTicks) {
         if (!this.config.getBoolean("open.preload_world", false) || !this.plugin().isEnabled()) {
             return;
@@ -135,9 +121,7 @@ public class OpenDungeon extends StaticDungeon {
                         Math.max(0L, delayTicks));
     }
 
-    /**
-     * Performs watch preloaded instance.
-     */
+    /** Performs watch preloaded instance. */
     private void watchPreloadedInstance(OpenInstance instance) {
         Bukkit.getScheduler()
                 .runTaskAsynchronously(
@@ -157,7 +141,7 @@ public class OpenDungeon extends StaticDungeon {
                                 this.logger()
                                         .error(
                                                 "Interrupted while watching preloaded open instance"
-                                                    + " '{}' for dungeon '{}'.",
+                                                        + " '{}' for dungeon '{}'.",
                                                 instance,
                                                 this.getWorldName(),
                                                 exception);
@@ -165,9 +149,7 @@ public class OpenDungeon extends StaticDungeon {
                         });
     }
 
-    /**
-     * Returns whether it can accept start now.
-     */
+    /** Returns whether it can accept start now. */
     @Override
     public boolean canAcceptStartNow(
             int requestedPlayers,
@@ -200,9 +182,7 @@ public class OpenDungeon extends StaticDungeon {
         return hasGlobalCapacity && this.hasAvailableInstances();
     }
 
-    /**
-     * Returns whether it can ever fit team size.
-     */
+    /** Returns whether it can ever fit team size. */
     @Override
     public boolean canEverFitTeamSize(int requestedPlayers) {
         int normalizedPlayers = Math.max(1, requestedPlayers);
@@ -214,9 +194,7 @@ public class OpenDungeon extends StaticDungeon {
         return maxPlayers <= 0 || normalizedPlayers <= maxPlayers;
     }
 
-    /**
-     * Performs prepare instance.
-     */
+    /** Performs prepare instance. */
     @Override
     public boolean prepareInstance(
             Player player,
@@ -224,8 +202,10 @@ public class OpenDungeon extends StaticDungeon {
             int requestedPlayers,
             @Nullable UUID startedTeamLeaderId) {
         DungeonPlayerSession playerSession = this.playerSessions().get(player);
-        if (playerSession == null || playerSession.isExpired()
-                || !player.isOnline() || playerSession.getInstance() != null
+        if (playerSession == null
+                || playerSession.isExpired()
+                || !player.isOnline()
+                || playerSession.getInstance() != null
                 || this.runtime().preparations().contains(playerSession)) {
             return false;
         }
@@ -253,14 +233,16 @@ public class OpenDungeon extends StaticDungeon {
                 this.reserveInstance(
                         this.readyInstances, reservationId, normalizedPlayers, difficulty);
         if (readyInstance != null) {
-            return new ReservedJoin(player, playerSession, readyInstance, reservationId, true).start();
+            return new ReservedJoin(player, playerSession, readyInstance, reservationId, true)
+                    .start();
         }
 
         OpenInstance loadingInstance =
                 this.reserveInstance(
                         this.loadingInstances, reservationId, normalizedPlayers, difficulty);
         if (loadingInstance != null) {
-            return new ReservedJoin(player, playerSession, loadingInstance, reservationId, true).start();
+            return new ReservedJoin(player, playerSession, loadingInstance, reservationId, true)
+                    .start();
         }
 
         if (!this.canCreateAdditionalOpenInstance()) {
@@ -281,8 +263,13 @@ public class OpenDungeon extends StaticDungeon {
             return false;
         }
 
-        return new ReservedJoin(player, playerSession, created, reservationId,
-                this.shouldMaintainWarmInstance()).start();
+        return new ReservedJoin(
+                        player,
+                        playerSession,
+                        created,
+                        reservationId,
+                        this.shouldMaintainWarmInstance())
+                .start();
     }
 
     @Nullable
@@ -306,9 +293,7 @@ public class OpenDungeon extends StaticDungeon {
         return instance;
     }
 
-    /**
-     * Performs wait for reserved instance.
-     */
+    /** Performs wait for reserved instance. */
     private final class ReservedJoin implements PreparationRegistry.Pending {
         private final Player player;
         private final DungeonPlayerSession session;
@@ -320,8 +305,12 @@ public class OpenDungeon extends StaticDungeon {
         private boolean admitted;
         private boolean cleaned;
 
-        ReservedJoin(Player player, DungeonPlayerSession session, OpenInstance instance,
-                UUID reservation, boolean keepWarm) {
+        ReservedJoin(
+                Player player,
+                DungeonPlayerSession session,
+                OpenInstance instance,
+                UUID reservation,
+                boolean keepWarm) {
             this.player = player;
             this.session = session;
             this.instance = instance;
@@ -351,8 +340,9 @@ public class OpenDungeon extends StaticDungeon {
 
         private void await() {
             try {
-                boolean loaded = instance.awaitInitialization(
-                        Math.max(0L, deadline - System.nanoTime()), TimeUnit.NANOSECONDS);
+                boolean loaded =
+                        instance.awaitInitialization(
+                                Math.max(0L, deadline - System.nanoTime()), TimeUnit.NANOSECONDS);
                 Bukkit.getScheduler().runTask(plugin(), () -> finish(loaded));
             } catch (InterruptedException failure) {
                 Thread.currentThread().interrupt();
@@ -360,18 +350,25 @@ public class OpenDungeon extends StaticDungeon {
             } catch (RuntimeException failure) {
                 // Keep ownership for quit/reload/shutdown if the server rejects the callback.
                 cancelled.set(true);
-                logger().error("Cannot schedule open dungeon admission; retaining it for cleanup.", failure);
+                logger().error(
+                                "Cannot schedule open dungeon admission; retaining it for cleanup.",
+                                failure);
             }
         }
 
         private void finish(boolean loaded) {
             if (cleaned || admitted) return;
-            if (cancelled.get() || !runtime().preparations().owns(session, this)
-                    || session.isExpired() || session.getPlayer() != player || !player.isOnline()
+            if (cancelled.get()
+                    || !runtime().preparations().owns(session, this)
+                    || session.isExpired()
+                    || session.getPlayer() != player
+                    || !player.isOnline()
                     || session.getInstance() != null
                     || runtime().dungeonCatalog().get(getWorldName()) != OpenDungeon.this
-                    || !loaded || System.nanoTime() >= deadline
-                    || instance.hasLoadFailed() || !instance.isReady()) {
+                    || !loaded
+                    || System.nanoTime() >= deadline
+                    || instance.hasLoadFailed()
+                    || !instance.isReady()) {
                 cancel();
                 return;
             }
@@ -380,7 +377,9 @@ public class OpenDungeon extends StaticDungeon {
                 if (admitted) {
                     runtime().preparations().remove(session, this);
                     session.setAwaitingDungeon(false);
-                    LangUtils.sendMessage(player, "instance.lifecycle.entered",
+                    LangUtils.sendMessage(
+                            player,
+                            "instance.lifecycle.entered",
                             LangUtils.placeholder("dungeon", getDisplayName()));
                 } else cancel();
             } catch (RuntimeException failure) {
@@ -402,7 +401,9 @@ public class OpenDungeon extends StaticDungeon {
                 try {
                     Bukkit.getScheduler().runTask(plugin(), this::cleanup);
                 } catch (RuntimeException failure) {
-                    logger().error("Retaining open dungeon preparation for shutdown cleanup.", failure);
+                    logger().error(
+                                    "Retaining open dungeon preparation for shutdown cleanup.",
+                                    failure);
                 }
             }
         }
@@ -422,25 +423,22 @@ public class OpenDungeon extends StaticDungeon {
         }
     }
 
-    /**
-     * Performs complete reserved join.
-     */
+    /** Performs complete reserved join. */
     private boolean completeReservedJoin(
             Player player,
             DungeonPlayerSession playerSession,
             OpenInstance instance,
             UUID reservationId,
             boolean keepWarmIfEmpty) {
-        if (!player.isOnline() || !instance.addReservedPlayer(playerSession, reservationId)) return false;
+        if (!player.isOnline() || !instance.addReservedPlayer(playerSession, reservationId))
+            return false;
         if (!this.completeReservedAccessKey(playerSession))
             throw new IllegalStateException("Could not finalize the reserved dungeon access key");
         playerSession.setAwaitingDungeon(false);
         return true;
     }
 
-    /**
-     * Performs release reservation.
-     */
+    /** Performs release reservation. */
     private void releaseReservation(
             OpenInstance instance, UUID reservationId, boolean keepWarmIfEmpty) {
         instance.releaseReservedSlots(reservationId);
@@ -458,9 +456,7 @@ public class OpenDungeon extends StaticDungeon {
         }
     }
 
-    /**
-     * Performs cancel unused instance.
-     */
+    /** Performs cancel unused instance. */
     private void cancelUnusedInstance(OpenInstance instance) {
         instance.cancelReadyRegistration();
         instance.dispose();
@@ -503,9 +499,7 @@ public class OpenDungeon extends StaticDungeon {
         return null;
     }
 
-    /**
-     * Applies requested difficulty if unset.
-     */
+    /** Applies requested difficulty if unset. */
     private void applyRequestedDifficultyIfUnset(
             OpenInstance instance, @Nullable DungeonDifficulty difficulty) {
         if (instance.getPlayers().isEmpty() && instance.getDifficulty() == null) {
@@ -513,9 +507,7 @@ public class OpenDungeon extends StaticDungeon {
         }
     }
 
-    /**
-     * Performs matches requested difficulty.
-     */
+    /** Performs matches requested difficulty. */
     private boolean matchesRequestedDifficulty(
             OpenInstance instance, @Nullable DungeonDifficulty requestedDifficulty) {
         DungeonDifficulty currentDifficulty = instance.getDifficulty();
@@ -531,9 +523,7 @@ public class OpenDungeon extends StaticDungeon {
                 && currentDifficulty.getNamespace().equals(requestedDifficulty.getNamespace());
     }
 
-    /**
-     * Performs publish ready instance.
-     */
+    /** Performs publish ready instance. */
     public boolean publishReadyInstance(OpenInstance instance) {
         this.loadingInstances.remove(instance);
         if (!this.isCurrentDungeonRegistration() || instance.isReadyRegistrationCancelled()) {
@@ -546,35 +536,26 @@ public class OpenDungeon extends StaticDungeon {
         return true;
     }
 
-    /**
-     * Returns whether current dungeon registration.
-     */
+    /** Returns whether current dungeon registration. */
     private boolean isCurrentDungeonRegistration() {
         return this.runtime().dungeonCatalog().get(this.getWorldName()) == this;
     }
 
-    /**
-     * Performs should maintain warm instance.
-     */
+    /** Performs should maintain warm instance. */
     private boolean shouldMaintainWarmInstance() {
         return this.isEnabled()
                 && this.config.getBoolean("open.preload_world", false)
                 && this.plugin().isEnabled()
                 && !this.isSaving()
-                && !this.isMarkedForDelete()
                 && this.isCurrentDungeonRegistration();
     }
 
-    /**
-     * Returns whether it has warm instance.
-     */
+    /** Returns whether it has warm instance. */
     private boolean hasWarmInstance() {
         return !this.readyInstances.isEmpty() || !this.loadingInstances.isEmpty();
     }
 
-    /**
-     * Returns whether it can create additional open instance.
-     */
+    /** Returns whether it can create additional open instance. */
     private boolean canCreateAdditionalOpenInstance() {
         int maxGlobalInstances = this.activeInstances().getMaxGlobalInstances();
         boolean hasGlobalCapacity =
@@ -583,9 +564,7 @@ public class OpenDungeon extends StaticDungeon {
         return hasGlobalCapacity && this.hasAvailableInstances();
     }
 
-    /**
-     * Removes instance.
-     */
+    /** Removes instance. */
     @Override
     public void removeInstance(DungeonInstance instance) {
         if (instance instanceof OpenInstance open) {
@@ -595,9 +574,7 @@ public class OpenDungeon extends StaticDungeon {
         super.removeInstance(instance);
     }
 
-    /**
-     * Performs on open instance disposed.
-     */
+    /** Performs on open instance disposed. */
     public void onOpenInstanceDisposed(OpenInstance instance) {
         this.readyInstances.remove(instance);
         this.loadingInstances.remove(instance);
@@ -606,9 +583,7 @@ public class OpenDungeon extends StaticDungeon {
         }
     }
 
-    /**
-     * Returns the active instances.
-     */
+    /** Returns the active instances. */
     public List<OpenInstance> getActiveInstances() {
         return this.readyInstances;
     }

@@ -23,7 +23,6 @@ import nl.hauntedmc.dungeons.util.command.CommandUtils;
 import nl.hauntedmc.dungeons.util.config.ConfigSyncUtils;
 import nl.hauntedmc.dungeons.util.config.DungeonConfigView;
 import nl.hauntedmc.dungeons.util.config.DungeonRuleConfiguration;
-import nl.hauntedmc.dungeons.util.config.GeneratorConfigMigration;
 import nl.hauntedmc.dungeons.util.config.PluginConfigView;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
@@ -118,12 +117,9 @@ public abstract class DungeonDefinition {
     protected List<DungeonInstance> instances;
     protected EditableInstance editSession;
     protected volatile boolean saving;
-    protected volatile boolean markedForDelete;
     private String durableConfiguration;
 
-    /**
-     * Loads a dungeon definition from disk or from a preloaded configuration snapshot.
-     */
+    /** Loads a dungeon definition from disk or from a preloaded configuration snapshot. */
     public DungeonDefinition(
             @NotNull DungeonsRuntime runtime,
             @NotNull File folder,
@@ -141,36 +137,24 @@ public abstract class DungeonDefinition {
                 if (!configFile.exists()) {
                     this.logger().info("Creating fresh config file for '{}'.", folder.getName());
                     this.config.load(new File(this.runtime.dungeonFiles(), "config_default.yml"));
-                    // Older on-disk templates may still contain active rules. New maps inherit
-                    // globally.
                     this.config.set("rules", null);
-                    if (new File(folder, "generation.yml").exists()) {
-                        this.config.set("generator", null);
-                    }
-                    // Delay the first write until legacy YAML has been validated and imported.
                 } else {
                     this.config.load(configFile);
                 }
             }
             File configFile = new File(folder, "config.yml");
-            GeneratorConfigMigration.migrate(
-                    new File(folder, "generation.yml"), configFile, this.config);
             if (!configFile.exists()) {
                 this.config.save(configFile);
             }
         } catch (IOException exception) {
             throw new DungeonLoadException(
-                    "Access of config.yml or legacy generation.yml failed!",
-                    false,
-                    exception.getMessage());
+                    "Access of config.yml failed!", false, exception.getMessage());
         } catch (InvalidConfigurationException
                 | IllegalArgumentException
                 | YAMLException exception) {
             DungeonLoadException failure =
                     new DungeonLoadException(
-                            "Dungeon config or legacy generator config is invalid!",
-                            true,
-                            exception.getMessage());
+                            "Dungeon config is invalid!", true, exception.getMessage());
             failure.initCause(exception);
             throw failure;
         }
@@ -196,8 +180,8 @@ public abstract class DungeonDefinition {
     }
 
     /**
-     * Synchronizes the dungeon config with the shipped default template and writes the result back to
-     * disk when keys changed.
+     * Synchronizes the dungeon config with the shipped default template and writes the result back
+     * to disk when keys changed.
      */
     private void syncConfigWithDefaults() throws DungeonLoadException {
         FileConfiguration defaultConfig = this.runtime.defaultDungeonConfig();
@@ -205,7 +189,7 @@ public abstract class DungeonDefinition {
             this.logger()
                     .warn(
                             "Skipping config sync for dungeon '{}' because the default dungeon"
-                                + " config is empty.",
+                                    + " config is empty.",
                             this.worldName);
             return;
         }
@@ -224,9 +208,7 @@ public abstract class DungeonDefinition {
         }
     }
 
-    /**
-     * Returns the runtime that owns this dungeon definition.
-     */
+    /** Returns the runtime that owns this dungeon definition. */
     public final DungeonsRuntime getRuntime() {
         return this.runtime;
     }
@@ -269,7 +251,7 @@ public abstract class DungeonDefinition {
             this.logger()
                     .warn(
                             "Dungeon '{}' has invalid team.max_size value '{}'. Falling back to"
-                                + " {}.",
+                                    + " {}.",
                             this.worldName,
                             configuredMaxTeamSize,
                             DEFAULT_MAX_TEAM_SIZE);
@@ -307,7 +289,7 @@ public abstract class DungeonDefinition {
             this.logger()
                     .warn(
                             "Exit location for dungeon '{}' references an unloaded world. Clearing"
-                                + " exit location.",
+                                    + " exit location.",
                             this.worldName);
         }
 
@@ -378,7 +360,7 @@ public abstract class DungeonDefinition {
                 this.logger()
                         .warn(
                                 "Skipping unsupported or invalid access key entry while loading"
-                                    + " dungeon '{}'.",
+                                        + " dungeon '{}'.",
                                 this.worldName);
             }
         }
@@ -445,7 +427,7 @@ public abstract class DungeonDefinition {
                     "Access of access_keys.yml file failed!",
                     false,
                     "There may be another process accessing the file, or we may not have"
-                        + " permission.");
+                            + " permission.");
         } catch (InvalidConfigurationException
                 | IllegalArgumentException
                 | YAMLException exception) {
@@ -466,8 +448,11 @@ public abstract class DungeonDefinition {
         try {
             candidate.loadFromString(this.accessKeyStateConfig.saveToString());
             candidate.set("issued_instances", new LinkedHashMap<>(this.issuedAccessKeyInstances));
-            candidate.set("reserved_instance_ids", new ArrayList<>(this.reservedAccessKeyInstances));
-            candidate.set("invalidated_instance_ids", new ArrayList<>(this.invalidatedAccessKeyInstances));
+            candidate.set(
+                    "reserved_instance_ids", new ArrayList<>(this.reservedAccessKeyInstances));
+            candidate.set(
+                    "invalidated_instance_ids",
+                    new ArrayList<>(this.invalidatedAccessKeyInstances));
             nl.hauntedmc.dungeons.config.ConfigurationFile.saveSnapshot(
                     this.plugin(), this.accessKeyStateFile, candidate.saveToString());
             this.rememberKeyLedger();
@@ -478,7 +463,8 @@ public abstract class DungeonDefinition {
             this.reservedAccessKeyInstances.addAll(this.durableReservedKeys);
             this.invalidatedAccessKeyInstances.clear();
             this.invalidatedAccessKeyInstances.addAll(this.durableInvalidatedKeys);
-            throw new IllegalStateException("Cannot durably update access key ledger for " + this.worldName, failure);
+            throw new IllegalStateException(
+                    "Cannot durably update access key ledger for " + this.worldName, failure);
         }
     }
 
@@ -607,7 +593,7 @@ public abstract class DungeonDefinition {
             this.logger()
                     .error(
                             "Failed to load access key state for dungeon '{}' while unique"
-                                + " validation was enabled.",
+                                    + " validation was enabled.",
                             this.worldName,
                             exception);
         }
@@ -938,14 +924,15 @@ public abstract class DungeonDefinition {
                 if (player != null)
                     player.sendMessage(
                             "[Dungeons] Enable maintenance and let play worlds drain before"
-                                + " editing.");
+                                    + " editing.");
                 return java.util.concurrent.CompletableFuture.completedFuture(false);
             }
         }
-        var preparation = new EditorPreparation(
-                this,
-                playerId,
-                PluginConfigView.getEditOpenTimeoutSeconds(this.plugin().getConfig()));
+        var preparation =
+                new EditorPreparation(
+                        this,
+                        playerId,
+                        PluginConfigView.getEditOpenTimeoutSeconds(this.plugin().getConfig()));
         if (Bukkit.isPrimaryThread()) preparation.start();
         else Bukkit.getScheduler().runTask(this.plugin(), preparation::start);
         return preparation.result();
@@ -1013,7 +1000,8 @@ public abstract class DungeonDefinition {
 
     public boolean shouldApplyAccessCooldown(@Nullable DungeonInstance instance, UUID playerId) {
         Player player = Bukkit.getPlayer(playerId);
-        if (player != null && CommandUtils.hasPermissionSilent(player, "dungeons.bypass.cooldown")) {
+        if (player != null
+                && CommandUtils.hasPermissionSilent(player, "dungeons.bypass.cooldown")) {
             return false;
         }
 
@@ -1069,10 +1057,6 @@ public abstract class DungeonDefinition {
     }
 
     @Nullable
-    public FileConfiguration getPlayerData(UUID playerID) {
-        return this.playerDataStore.getRecord(playerID);
-    }
-
     public boolean hasPlayerCompletedDungeon(Player player) {
         return this.playerDataStore.isCompleted(player.getUniqueId());
     }
@@ -1395,7 +1379,7 @@ public abstract class DungeonDefinition {
             this.logger()
                     .warn(
                             "Reserved access key for dungeon '{}' could not be recovered for player"
-                                + " '{}'.",
+                                    + " '{}'.",
                             this.worldName,
                             reservedKeyOwner == null ? "unknown" : reservedKeyOwner.getName());
             return false;
@@ -1411,7 +1395,7 @@ public abstract class DungeonDefinition {
             this.logger()
                     .warn(
                             "Failed to finalize reserved access key usage for player '{}' in"
-                                + " dungeon '{}'.",
+                                    + " dungeon '{}'.",
                             reservedKeyOwner == null ? "unknown" : reservedKeyOwner.getName(),
                             this.worldName);
             return false;
@@ -1547,7 +1531,7 @@ public abstract class DungeonDefinition {
                 try {
                     this.config.loadFromString(this.durableConfiguration);
                     this.refreshRuntimeSettings();
-        } catch (InvalidConfigurationException rollback) {
+                } catch (InvalidConfigurationException rollback) {
                     failure.addSuppressed(rollback);
                 }
             }
@@ -1743,13 +1727,5 @@ public abstract class DungeonDefinition {
 
     public void setSaving(boolean saving) {
         this.saving = saving;
-    }
-
-    public boolean isMarkedForDelete() {
-        return this.markedForDelete;
-    }
-
-    public void setMarkedForDelete(boolean markedForDelete) {
-        this.markedForDelete = markedForDelete;
     }
 }

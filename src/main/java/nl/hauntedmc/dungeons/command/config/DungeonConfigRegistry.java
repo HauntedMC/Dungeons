@@ -1,5 +1,18 @@
 package nl.hauntedmc.dungeons.command.config;
 
+import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
+import nl.hauntedmc.dungeons.content.dungeon.OpenDungeon;
+import nl.hauntedmc.dungeons.content.reward.CooldownPeriod;
+import nl.hauntedmc.dungeons.generation.layout.BranchingLayout;
+import nl.hauntedmc.dungeons.generation.layout.ConnectorExpansionLayout;
+import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
+
+import org.bukkit.GameMode;
+import org.bukkit.Material;
+import org.bukkit.World.Environment;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.EntityType;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -11,24 +24,12 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import nl.hauntedmc.dungeons.content.dungeon.OpenDungeon;
-import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
-import nl.hauntedmc.dungeons.content.reward.CooldownPeriod;
-import nl.hauntedmc.dungeons.generation.layout.BranchingLayout;
-import nl.hauntedmc.dungeons.generation.layout.ConnectorExpansionLayout;
-import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
-import org.bukkit.GameMode;
-import org.bukkit.Material;
-import org.bukkit.World.Environment;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.entity.EntityType;
 
 /**
  * Registry of dungeon settings that can be edited through {@code /dungeon config}.
  *
  * <p>The registry combines a static set of common settings with dynamic entries derived from the
- * current dungeon definition, such as difficulty presets and branching branch settings.</p>
+ * current dungeon definition, such as difficulty presets and branching branch settings.
  */
 public final class DungeonConfigRegistry {
     private static final Predicate<DungeonDefinition> ANY_DUNGEON = dungeon -> true;
@@ -81,8 +82,7 @@ public final class DungeonConfigRegistry {
                         "display-name",
                         "Shown in menus, messages and titles.",
                         "dungeon.display_name",
-                        DungeonConfigValueType.COLOR_STRING,
-                        aliases("name")));
+                        DungeonConfigValueType.COLOR_STRING));
         register(
                 main(
                         "dimension",
@@ -141,8 +141,7 @@ public final class DungeonConfigRegistry {
                         "open.max_players",
                         DungeonConfigValueType.INTEGER,
                         OPEN_ONLY,
-                        dungeon -> List.of(),
-                        List.of()));
+                        dungeon -> List.of()));
         register(
                 main(
                         "open-empty-unload-delay",
@@ -150,8 +149,7 @@ public final class DungeonConfigRegistry {
                         "open.empty_unload_delay_ticks",
                         DungeonConfigValueType.INTEGER,
                         OPEN_ONLY,
-                        dungeon -> List.of(),
-                        List.of()));
+                        dungeon -> List.of()));
         register(
                 main(
                         "open-preload-world",
@@ -159,8 +157,7 @@ public final class DungeonConfigRegistry {
                         "open.preload_world",
                         DungeonConfigValueType.BOOLEAN,
                         OPEN_ONLY,
-                        suggestions(BOOLEAN_VALUES),
-                        List.of()));
+                        suggestions(BOOLEAN_VALUES)));
         register(
                 main(
                         "show-title-on-start",
@@ -240,7 +237,8 @@ public final class DungeonConfigRegistry {
         register(
                 main(
                         "join-commands",
-                        "Comma separated console commands run when each player enters. Use {player} or <player>.",
+                        "Comma separated console commands run when each player enters. Use {player}"
+                                + " or <player>.",
                         "players.join_commands",
                         DungeonConfigValueType.STRING_LIST,
                         suggestions(
@@ -251,7 +249,8 @@ public final class DungeonConfigRegistry {
         register(
                 main(
                         "team-disband-shutdown-delay",
-                        "Seconds a started dungeon stays open after its team is dissolved or the leader leaves.",
+                        "Seconds a started dungeon stays open after its team is dissolved or the"
+                                + " leader leaves.",
                         "team.disband_shutdown_delay_seconds",
                         DungeonConfigValueType.INTEGER));
         register(
@@ -283,8 +282,7 @@ public final class DungeonConfigRegistry {
                         "locations.lobby.enabled",
                         DungeonConfigValueType.BOOLEAN,
                         NON_BRANCHING_ONLY,
-                        suggestions(BOOLEAN_VALUES),
-                        aliases("use-lobby")));
+                        suggestions(BOOLEAN_VALUES)));
         register(
                 main(
                         "lobby-location",
@@ -292,24 +290,21 @@ public final class DungeonConfigRegistry {
                         "locations.lobby.spawn",
                         DungeonConfigValueType.LOCATION,
                         NON_BRANCHING_ONLY,
-                        suggestions(List.of("here")),
-                        aliases("lobby")));
+                        suggestions(List.of("here"))));
         register(
                 main(
                         "start-location",
                         "Sets the dungeon start location with 'here'.",
                         "locations.start",
                         DungeonConfigValueType.LOCATION,
-                        suggestions(List.of("here")),
-                        aliases("spawn", "start")));
+                        suggestions(List.of("here"))));
         register(
                 main(
                         "exit-location",
                         "Sets the dungeon exit location with 'here', or clears it with 'clear'.",
                         "locations.exit",
                         DungeonConfigValueType.LOCATION,
-                        suggestions(List.of("here", "clear")),
-                        aliases("exit")));
+                        suggestions(List.of("here", "clear"))));
         register(
                 main(
                         "always-use-exit",
@@ -535,7 +530,8 @@ public final class DungeonConfigRegistry {
         register(
                 main(
                         "banned-materials",
-                        "Comma separated material list banned inside the dungeon. Use clear to empty.",
+                        "Comma separated material list banned inside the dungeon. Use clear to"
+                                + " empty.",
                         "rules.items.banned_materials",
                         DungeonConfigValueType.MATERIAL_LIST,
                         suggestions(MATERIAL_VALUES)));
@@ -612,14 +608,16 @@ public final class DungeonConfigRegistry {
         register(
                 main(
                         "block-break-whitelist",
-                        "Comma separated material whitelist for block breaking. Use clear to empty.",
+                        "Comma separated material whitelist for block breaking. Use clear to"
+                                + " empty.",
                         "rules.building.break_whitelist",
                         DungeonConfigValueType.MATERIAL_LIST,
                         suggestions(MATERIAL_VALUES)));
         register(
                 main(
                         "block-break-blacklist",
-                        "Comma separated material blacklist for block breaking. Use clear to empty.",
+                        "Comma separated material blacklist for block breaking. Use clear to"
+                                + " empty.",
                         "rules.building.break_blacklist",
                         DungeonConfigValueType.MATERIAL_LIST,
                         suggestions(MATERIAL_VALUES)));
@@ -633,20 +631,23 @@ public final class DungeonConfigRegistry {
         register(
                 main(
                         "interact-protected-entities",
-                        "Comma separated entity types protected from interaction. Use clear to empty.",
+                        "Comma separated entity types protected from interaction. Use clear to"
+                                + " empty.",
                         "rules.entities.interact_protected",
                         DungeonConfigValueType.ENTITY_TYPE_LIST,
                         suggestions(ENTITY_VALUES)));
         register(
                 main(
                         "allowed-commands",
-                        "Comma separated command labels allowed in the dungeon. Use clear to empty.",
+                        "Comma separated command labels allowed in the dungeon. Use clear to"
+                                + " empty.",
                         "rules.commands.allow_list",
                         DungeonConfigValueType.STRING_LIST));
         register(
                 main(
                         "disallowed-commands",
-                        "Comma separated command labels blocked in the dungeon. Use clear to empty.",
+                        "Comma separated command labels blocked in the dungeon. Use clear to"
+                                + " empty.",
                         "rules.commands.deny_list",
                         DungeonConfigValueType.STRING_LIST));
 
@@ -664,8 +665,7 @@ public final class DungeonConfigRegistry {
                         "generator.room_target.min",
                         DungeonConfigValueType.INTEGER,
                         MINECRAFTY_LAYOUT_ONLY,
-                        dungeon -> List.of(),
-                        List.of()));
+                        dungeon -> List.of()));
         register(
                 generation(
                         "room-target-max",
@@ -673,8 +673,7 @@ public final class DungeonConfigRegistry {
                         "generator.room_target.max",
                         DungeonConfigValueType.INTEGER,
                         MINECRAFTY_LAYOUT_ONLY,
-                        dungeon -> List.of(),
-                        List.of()));
+                        dungeon -> List.of()));
         register(
                 generation(
                         "enforce-room-target-minimum",
@@ -682,8 +681,7 @@ public final class DungeonConfigRegistry {
                         "generator.room_target.enforce_minimum",
                         DungeonConfigValueType.BOOLEAN,
                         MINECRAFTY_LAYOUT_ONLY,
-                        suggestions(BOOLEAN_VALUES),
-                        List.of()));
+                        suggestions(BOOLEAN_VALUES)));
         register(
                 generation(
                         "seal-open-connectors-with",
@@ -693,14 +691,10 @@ public final class DungeonConfigRegistry {
                         suggestions(MATERIAL_VALUES)));
     }
 
-    /**
-     * Creates a new DungeonConfigRegistry instance.
-     */
+    /** Creates a new DungeonConfigRegistry instance. */
     private DungeonConfigRegistry() {}
 
-    /**
-     * Returns a statically registered config entry by key, path, or alias.
-     */
+    /** Returns a statically registered config entry by key, path, or alias. */
     public static DungeonConfigEntry get(String key) {
         if (key == null) {
             return null;
@@ -728,20 +722,12 @@ public final class DungeonConfigRegistry {
                     || entry.getPath().toLowerCase(Locale.ROOT).equals(lowered)) {
                 return entry;
             }
-
-            for (String alias : entry.getAliases()) {
-                if (alias.toLowerCase(Locale.ROOT).equals(lowered)) {
-                    return entry;
-                }
-            }
         }
 
         return null;
     }
 
-    /**
-     * Returns every config entry that applies to the supplied dungeon.
-     */
+    /** Returns every config entry that applies to the supplied dungeon. */
     public static List<DungeonConfigEntry> getEntries(DungeonDefinition dungeon) {
         List<DungeonConfigEntry> entries = new ArrayList<>();
         for (DungeonConfigEntry entry : rootEntries) {
@@ -754,9 +740,7 @@ public final class DungeonConfigRegistry {
         return entries;
     }
 
-    /**
-     * Returns the dynamic entries.
-     */
+    /** Returns the dynamic entries. */
     private static List<DungeonConfigEntry> getDynamicEntries(DungeonDefinition dungeon) {
         List<DungeonConfigEntry> entries = new ArrayList<>();
 
@@ -854,7 +838,8 @@ public final class DungeonConfigRegistry {
         entries.add(
                 generation(
                         "trunk.end-room-pool",
-                        "Comma separated terminal room whitelist for the trunk. Use clear to empty.",
+                        "Comma separated terminal room whitelist for the trunk. Use clear to"
+                                + " empty.",
                         "generator.branching.trunk.end_room_pool",
                         DungeonConfigValueType.STRING_LIST,
                         suggestions(roomNames)));
@@ -899,8 +884,7 @@ public final class DungeonConfigRegistry {
                         "generator.branching.branches",
                         DungeonConfigValueType.STRING,
                         BRANCHING_LAYOUT_ONLY,
-                        ignoredDungeon -> List.of(),
-                        List.of()));
+                        ignoredDungeon -> List.of()));
         entries.add(
                 generation(
                         "branch.remove",
@@ -908,8 +892,7 @@ public final class DungeonConfigRegistry {
                         "generator.branching.branches",
                         DungeonConfigValueType.STRING,
                         BRANCHING_LAYOUT_ONLY,
-                        ignoredDungeon -> branchNames,
-                        List.of()));
+                        ignoredDungeon -> branchNames));
 
         if (branchSettings == null) {
             return entries;
@@ -1008,155 +991,73 @@ public final class DungeonConfigRegistry {
                 .toList();
     }
 
-    /**
-     * Returns the statically registered root config entries.
-     */
+    /** Returns the statically registered root config entries. */
     public static Collection<DungeonConfigEntry> getEntries() {
         return Collections.unmodifiableList(rootEntries);
     }
 
-    /**
-     * Runs register.
-     */
+    /** Runs register. */
     private static void register(DungeonConfigEntry entry) {
         rootEntries.add(entry);
         index(entry.getKey(), entry);
         index(entry.getPath(), entry);
-        for (String alias : entry.getAliases()) {
-            index(alias, entry);
-        }
     }
 
-    /**
-     * Runs index.
-     */
+    /** Runs index. */
     private static void index(String lookup, DungeonConfigEntry entry) {
         entriesByLookup.put(lookup.toLowerCase(Locale.ROOT), entry);
     }
 
-    /**
-     * Runs main.
-     */
+    /** Runs main. */
     private static DungeonConfigEntry main(
-            String key, String description, String path, DungeonConfigValueType valueType) {
-        return main(
-                key, description, path, valueType, ANY_DUNGEON, dungeon -> List.of(), List.of());
+            String key, String description, String path, DungeonConfigValueType type) {
+        return main(key, description, path, type, ANY_DUNGEON, dungeon -> List.of());
     }
 
-    /**
-     * Runs main.
-     */
     private static DungeonConfigEntry main(
             String key,
             String description,
             String path,
-            DungeonConfigValueType valueType,
-            Function<DungeonDefinition, List<String>> suggestionsProvider) {
-        return main(key, description, path, valueType, ANY_DUNGEON, suggestionsProvider, List.of());
+            DungeonConfigValueType type,
+            Function<DungeonDefinition, List<String>> suggestions) {
+        return main(key, description, path, type, ANY_DUNGEON, suggestions);
     }
 
-    /**
-     * Runs main.
-     */
     private static DungeonConfigEntry main(
             String key,
             String description,
             String path,
-            DungeonConfigValueType valueType,
-            List<String> aliases) {
-        return main(key, description, path, valueType, ANY_DUNGEON, dungeon -> List.of(), aliases);
+            DungeonConfigValueType type,
+            Predicate<DungeonDefinition> support,
+            Function<DungeonDefinition, List<String>> suggestions) {
+        return new DungeonConfigEntry(key, description, path, type, support, suggestions);
     }
 
-    /**
-     * Runs main.
-     */
-    private static DungeonConfigEntry main(
-            String key,
-            String description,
-            String path,
-            DungeonConfigValueType valueType,
-            Predicate<DungeonDefinition> supportPredicate,
-            Function<DungeonDefinition, List<String>> suggestionsProvider,
-            List<String> aliases) {
-        return new DungeonConfigEntry(
-                key, description, path, valueType, supportPredicate, suggestionsProvider, aliases);
-    }
-
-    /**
-     * Runs main.
-     */
-    private static DungeonConfigEntry main(
-            String key,
-            String description,
-            String path,
-            DungeonConfigValueType valueType,
-            Function<DungeonDefinition, List<String>> suggestionsProvider,
-            List<String> aliases) {
-        return main(key, description, path, valueType, ANY_DUNGEON, suggestionsProvider, aliases);
-    }
-
-    /**
-     * Runs generation.
-     */
     private static DungeonConfigEntry generation(
-            String key, String description, String path, DungeonConfigValueType valueType) {
-        return generation(key, description, path, valueType, dungeon -> List.of(), List.of());
+            String key, String description, String path, DungeonConfigValueType type) {
+        return main(key, description, path, type, BRANCHING_ONLY, dungeon -> List.of());
     }
 
-    /**
-     * Runs generation.
-     */
     private static DungeonConfigEntry generation(
             String key,
             String description,
             String path,
-            DungeonConfigValueType valueType,
-            Function<DungeonDefinition, List<String>> suggestionsProvider) {
-        return generation(key, description, path, valueType, suggestionsProvider, List.of());
+            DungeonConfigValueType type,
+            Function<DungeonDefinition, List<String>> suggestions) {
+        return main(key, description, path, type, BRANCHING_ONLY, suggestions);
     }
 
-    /**
-     * Runs generation.
-     */
     private static DungeonConfigEntry generation(
             String key,
             String description,
             String path,
-            DungeonConfigValueType valueType,
-            Function<DungeonDefinition, List<String>> suggestionsProvider,
-            List<String> aliases) {
-        return generation(
-                key, description, path, valueType, BRANCHING_ONLY, suggestionsProvider, aliases);
+            DungeonConfigValueType type,
+            Predicate<DungeonDefinition> support,
+            Function<DungeonDefinition, List<String>> suggestions) {
+        return main(key, description, path, type, support, suggestions);
     }
 
-    /**
-     * Runs generation.
-     */
-    private static DungeonConfigEntry generation(
-            String key,
-            String description,
-            String path,
-            DungeonConfigValueType valueType,
-            Predicate<DungeonDefinition> supportPredicate,
-            Function<DungeonDefinition, List<String>> suggestionsProvider,
-            List<String> aliases) {
-        return new DungeonConfigEntry(
-                key, description, path, valueType, supportPredicate, suggestionsProvider, aliases);
-    }
-
-    /**
-     * Runs suggestions.
-     */
     private static Function<DungeonDefinition, List<String>> suggestions(List<String> values) {
         return dungeon -> values;
-    }
-
-    /**
-     * Runs aliases.
-     */
-    private static List<String> aliases(String... aliases) {
-        return Arrays.stream(aliases)
-                .map(alias -> alias.toLowerCase(Locale.ROOT))
-                .collect(Collectors.toList());
     }
 }

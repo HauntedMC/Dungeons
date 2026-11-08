@@ -14,13 +14,6 @@ public final class StaffPermissions {
                 && !actor.hasPermission(node + "." + dungeon)) return false;
         if (actor.hasPermission(node)
                 || dungeon != null && actor.hasPermission(node + "." + dungeon)) return true;
-        if (capability.equals("cooldown") && actor.hasPermission("dungeons.setcooldown"))
-            return true;
-        if (capability.equals("edit") || capability.equals("maintenance")) {
-            return actor.hasPermission("dungeons.edit")
-                    || actor.hasPermission("dungeons.edit.*")
-                    || dungeon != null && actor.hasPermission("dungeons.edit." + dungeon);
-        }
         return false;
     }
 

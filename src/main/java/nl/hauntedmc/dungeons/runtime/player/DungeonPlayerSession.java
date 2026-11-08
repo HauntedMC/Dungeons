@@ -118,9 +118,7 @@ public final class DungeonPlayerSession {
     private ItemStack reservedAccessKey;
     private final List<ItemStack> pendingAccessKeyRefunds = new ArrayList<>();
 
-    /**
-     * Creates a session for an online player and loads their global persisted data.
-     */
+    /** Creates a session for an online player and loads their global persisted data. */
     public DungeonPlayerSession(DungeonsPlugin plugin, Player player) {
         this.plugin = plugin;
         this.player = player;
@@ -156,7 +154,9 @@ public final class DungeonPlayerSession {
         return this.recoveryJournal.addStaffRewards(operation, items);
     }
 
-    public boolean hasUnresolvedRecovery() { return this.recoveryJournal.hasPendingTransaction(); }
+    public boolean hasUnresolvedRecovery() {
+        return this.recoveryJournal.hasPendingTransaction();
+    }
 
     public String recoveryStatus() {
         return "recovery="
@@ -203,9 +203,7 @@ public final class DungeonPlayerSession {
         return true;
     }
 
-    /**
-     * Toggles edit mode and swaps the player between their normal and editor inventories.
-     */
+    /** Toggles edit mode and swaps the player between their normal and editor inventories. */
     public void setEditMode(boolean editMode) {
         this.requireActiveSession();
         if (this.editMode == editMode) return;
@@ -265,9 +263,7 @@ public final class DungeonPlayerSession {
                         .toArray(ItemStack[]::new);
     }
 
-    /**
-     * Restores the previously captured inventory snapshot.
-     */
+    /** Restores the previously captured inventory snapshot. */
     public void restoreInventory() {
         if (this.savedInventory == null || this.savedArmor == null || this.player.isDead()) return;
         this.player.getInventory().setContents(copyItems(this.savedInventory));
@@ -303,9 +299,7 @@ public final class DungeonPlayerSession {
         }
     }
 
-    /**
-     * Captures the current editor inventory layout.
-     */
+    /** Captures the current editor inventory layout. */
     public void saveEditInventory() {
         this.ensureEditModeTools();
         this.savedEditInventory = copyItems(this.player.getInventory().getContents());
@@ -376,9 +370,7 @@ public final class DungeonPlayerSession {
         inv.setItem(roomSlot, ItemUtils.getRoomTool());
     }
 
-    /**
-     * Restores editor tools after a menu or other temporary hotbar override.
-     */
+    /** Restores editor tools after a menu or other temporary hotbar override. */
     public void restoreEditorTools() {
         if (!this.editMode) {
             return;
@@ -445,19 +437,7 @@ public final class DungeonPlayerSession {
             this.recoveryJournal.recover(this.player);
             this.reservedAccessKey = null;
             this.reservedAccessKeyDungeon = null;
-            Location legacy = restoring ? null : this.getExitLocation();
-            if (restoring) {
-                this.clearExitLocation();
-                this.clearRecoveredState();
-            }
-            if (legacy != null) {
-                if (!this.player.teleport(
-                        legacy, org.bukkit.event.player.PlayerTeleportEvent.TeleportCause.PLUGIN)) {
-                    throw new IllegalStateException("Return teleport rejected");
-                }
-                this.player.saveData();
-                this.clearExitLocation();
-            }
+            if (restoring) this.clearRecoveredState();
             this.savedPosition = null;
             this.flushPendingAccessKeyRefund();
             return true;
@@ -485,7 +465,6 @@ public final class DungeonPlayerSession {
                 this.player.setExp(this.savedExp);
             }
             this.recoveryJournal.acknowledgeDeparture(this.player);
-            this.clearExitLocation();
             this.clearRecoveredState();
             this.flushPendingAccessKeyRefund();
         } catch (RuntimeException failure) {
@@ -543,9 +522,7 @@ public final class DungeonPlayerSession {
                                 + " administrator."));
     }
 
-    /**
-     * Captures the player's current hotbar so a temporary menu can be restored later.
-     */
+    /** Captures the player's current hotbar so a temporary menu can be restored later. */
     public void captureHotbar() {
         this.requireActiveSession();
         if (this.instance == null) {
@@ -562,9 +539,7 @@ public final class DungeonPlayerSession {
         if (this.savedHotbar == null) this.savedHotbar = new PlayerHotbarSnapshot(this.player);
     }
 
-    /**
-     * Restores the most recently captured hotbar snapshot and clears transient menu state.
-     */
+    /** Restores the most recently captured hotbar snapshot and clears transient menu state. */
     public void restoreCapturedHotbar() {
         if (this.expired) return;
         this.hotbarRevision++;
@@ -596,9 +571,7 @@ public final class DungeonPlayerSession {
         }
     }
 
-    /**
-     * Captures the current hotbar and then displays the provided replacement snapshot.
-     */
+    /** Captures the current hotbar and then displays the provided replacement snapshot. */
     public void captureAndShowHotbar(PlayerHotbarSnapshot hotbar) {
         this.captureHotbar();
         this.showHotbar(hotbar, true);
@@ -608,9 +581,7 @@ public final class DungeonPlayerSession {
         this.showHotbar(hotbar, false);
     }
 
-    /**
-     * Displays a temporary hotbar snapshot and optionally restores the held slot selection.
-     */
+    /** Displays a temporary hotbar snapshot and optionally restores the held slot selection. */
     public void showHotbar(final PlayerHotbarSnapshot hotbar, final boolean restoreHeldSlot) {
         if (this.savedHotbar == null) this.captureHotbar();
         long revision = this.hotbarRevision;
@@ -694,26 +665,6 @@ public final class DungeonPlayerSession {
     public void setSavedPosition(Location loc) {
         this.requireActiveSession();
         this.savedPosition = loc;
-        this.saveExitLocation();
-    }
-
-    public void saveExitLocation() {
-        this.requireActiveSession();
-        if (this.instance != null) {
-            this.playerData.set("DungeonReturnLocation", this.savedPosition);
-            this.playerData.save(this.playerDataFile);
-        }
-    }
-
-    @Nullable
-    public Location getExitLocation() {
-        return this.playerData.getLocation("DungeonReturnLocation");
-    }
-
-    public void clearExitLocation() {
-        this.requireActiveSession();
-        this.playerData.set("DungeonReturnLocation", null);
-        this.playerData.save(this.playerDataFile);
     }
 
     public void setDungeonFinished(StaticDungeon dungeon) {
@@ -843,13 +794,17 @@ public final class DungeonPlayerSession {
 
     public boolean reserveAccessKey(String dungeonName, ItemStack reservedKey) {
         this.requireActiveSession();
-        if (!this.player.isOnline() || this.player.isDead()
-                || dungeonName == null || dungeonName.isBlank()
-                || reservedKey == null || reservedKey.getType().isAir()) {
+        if (!this.player.isOnline()
+                || this.player.isDead()
+                || dungeonName == null
+                || dungeonName.isBlank()
+                || reservedKey == null
+                || reservedKey.getType().isAir()) {
             return false;
         }
 
-        if (this.reservedAccessKey != null || this.recoveryJournal.hasKeyReservation()
+        if (this.reservedAccessKey != null
+                || this.recoveryJournal.hasKeyReservation()
                 || this.recoveryJournal.hasPendingTransaction()) {
             return false;
         }

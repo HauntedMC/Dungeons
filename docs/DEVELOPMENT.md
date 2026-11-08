@@ -23,14 +23,14 @@ mvn -B package
 2. Implement the change with tests in the same pass.
 3. Run local validation (`test` and Checkstyle at minimum).
 4. Update docs when command behavior or configuration expectations change.
-5. Open a PR with context, impact, and migration notes (if any).
+5. Open a PR with context, impact, and configuration changes.
 
 ## Engineering Guidelines
 
 - Use typed, registry-backed Paper APIs for gamerules and Adventure components for player-facing text.
 - Use persistent data containers for plugin-owned tags and glint overrides for menu highlights.
 - Normalize identifiers with `Locale.ROOT`; reserve the configured locale for display text.
-- Use `java.time` for date arithmetic and formatting. Existing `Date` return types remain compatibility boundaries.
+- Use `java.time` for date arithmetic and formatting. Use the domain types required by the current storage model.
 - Resolve modern world storage from `Server#getLevelDirectory()`.
 - Keep composition and ordering logic in the bootstrap package.
 - Keep runtime state changes in runtime services, not scattered across commands/listeners.

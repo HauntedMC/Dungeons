@@ -24,7 +24,8 @@ class PlayerRecoveryJournalTest {
             var path = directory.resolve("escrow.yml");
             var journal = new PlayerRecoveryJournal(path);
             doThrow(new IllegalStateException("native save failed")).when(before.player).saveData();
-            assertThrows(IllegalStateException.class,
+            assertThrows(
+                    IllegalStateException.class,
                     () -> journal.reserveKey(before.player, "crypt", PlayerState.stack(1)));
             var reconnected = new PlayerState();
             reconnected.contents[0] = PlayerState.stack(1); // native data predates key removal
@@ -79,26 +80,21 @@ class PlayerRecoveryJournalTest {
     }
 
     @Test
-    void legacySnapshotsExpandToModernSlotsAndPopulatedExtraSlotsAreNeverTruncated() {
+    void unsupportedJournalAndInventoryFormatsAreRejected() throws Exception {
         try (var paper = new PaperBoundary()) {
-            var player = new PlayerState();
-            player.contents = new org.bukkit.inventory.ItemStack[41];
-            player.contents[40] = PlayerState.stack(2);
-            var path = directory.resolve("legacy.yml");
-            new PlayerRecoveryJournal(path).begin(player.player);
-            player.contents = new org.bukkit.inventory.ItemStack[43];
-            paper.bukkit.when(() -> Bukkit.getWorld(player.originWorld.getUID()))
-                    .thenReturn(player.originWorld);
-            assertTrue(new PlayerRecoveryJournal(path).recover(player.player));
-            assertEquals(43, player.contents.length);
-            assertEquals(2, player.contents[40].getAmount());
-            assertNull(player.contents[42]);
-            var extended = new org.bukkit.inventory.ItemStack[43];
-            extended[42] = PlayerState.stack(1);
-            player.contents = new org.bukkit.inventory.ItemStack[41];
-            assertThrows(IllegalStateException.class,
-                    () -> PlayerRecoverySnapshot.restoreContents(player.inventory, extended));
-            assertEquals(41, player.contents.length);
+            var file = directory.resolve("unsupported.yml");
+            Files.writeString(file, "version: 1\n");
+            assertThrows(IllegalStateException.class, () -> new PlayerRecoveryJournal(file));
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () ->
+                            PlayerRecoverySnapshot.validateInventoryContents(
+                                    new org.bukkit.inventory.ItemStack[41]));
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () ->
+                            PlayerRecoverySnapshot.validateInventoryContents(
+                                    new org.bukkit.inventory.ItemStack[42]));
         }
     }
 
@@ -109,7 +105,8 @@ class PlayerRecoveryJournalTest {
             player.contents = Arrays.copyOf(player.contents, 43);
             player.contents[41] = PlayerState.stack(2);
             player.contents[42] = PlayerState.stack(3);
-            paper.bukkit.when(() -> Bukkit.getWorld(player.originWorld.getUID()))
+            paper.bukkit
+                    .when(() -> Bukkit.getWorld(player.originWorld.getUID()))
                     .thenReturn(player.originWorld);
             var path = directory.resolve("modern.yml");
             var journal = new PlayerRecoveryJournal(path);

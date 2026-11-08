@@ -1,3 +1,5 @@
+> Historical validation of 1.2.21. The clean-install cleanup removes obsolete command and storage contracts.
+
 # Staff implementation validation
 
 Validation date: 2026-11-08. This review covers the staff implementation and its connections to
@@ -45,7 +47,7 @@ are generated under `target/site/jacoco/`, with individual test results under
 | `DepartureCause` | 100% | 100% |
 
 These figures measure executed code, not complete proof of every branch. The command tests cover
-readouts, scoped discovery, legacy routes, editor backup/open sequencing, maintenance/reload,
+readouts, scoped discovery, canonical staff routes, editor backup/open sequencing, maintenance/reload,
 archive/restore/purge, player support and corrections, compensation, keys, loot and confirmation
 replay. Menu tests cover every screen, pagination/search, action wizards and event ownership.
 Failure tests inject corrupt state, blocked storage, failed/exceptional loads, disposal failure,

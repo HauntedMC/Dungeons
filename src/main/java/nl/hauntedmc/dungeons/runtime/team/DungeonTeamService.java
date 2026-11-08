@@ -837,8 +837,7 @@ public final class DungeonTeamService implements Listener {
                     "commands.team.member-joined",
                     "commands.team.leave.other",
                     "commands.team.leave.started-other",
-                    "commands.team.kick.removed-other",
-                    "commands.player.queue.cleared.team" ->
+                    "commands.team.kick.removed-other" ->
                     LangUtils.sendMessage(
                             player, messageKey, LangUtils.placeholder("player", args[0]));
             case "commands.team.joined" ->

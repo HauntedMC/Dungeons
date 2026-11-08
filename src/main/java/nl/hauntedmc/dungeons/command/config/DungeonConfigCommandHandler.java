@@ -39,9 +39,7 @@ public final class DungeonConfigCommandHandler {
     private final PlayerSessionRegistry playerManager;
     private final ActiveInstanceRegistry activeInstanceManager;
 
-    /**
-     * Creates the config command handler against the runtime services it needs.
-     */
+    /** Creates the config command handler against the runtime services it needs. */
     public DungeonConfigCommandHandler(
             DungeonRepository dungeonManager,
             PlayerSessionRegistry playerManager,
@@ -51,9 +49,7 @@ public final class DungeonConfigCommandHandler {
         this.activeInstanceManager = activeInstanceManager;
     }
 
-    /**
-     * Handles {@code /dungeon config} command execution.
-     */
+    /** Handles {@code /dungeon config} command execution. */
     public boolean handleCommand(CommandSender sender, String[] args) {
         if (!CommandUtils.hasAnyDungeonEditAccess(sender)) {
             LangUtils.sendMessage(sender, "general.errors.no-permission");
@@ -113,9 +109,7 @@ public final class DungeonConfigCommandHandler {
         return this.applySetting(sender, dungeon, entry, this.joinArgs(args, 3));
     }
 
-    /**
-     * Produces tab completions for {@code /dungeon config}.
-     */
+    /** Produces tab completions for {@code /dungeon config}. */
     public List<String> handleTabComplete(CommandSender sender, String[] args) {
         List<String> options = new ArrayList<>();
         if (!CommandUtils.hasAnyDungeonEditAccess(sender)) {
@@ -155,9 +149,7 @@ public final class DungeonConfigCommandHandler {
         return values;
     }
 
-    /**
-     * Runs complete dungeon target.
-     */
+    /** Runs complete dungeon target. */
     private List<String> completeDungeonTarget(CommandSender sender, String rawQuery) {
         List<String> options = new ArrayList<>();
         String query = rawQuery == null ? "" : rawQuery.toLowerCase(Locale.ROOT);
@@ -179,9 +171,7 @@ public final class DungeonConfigCommandHandler {
         return options;
     }
 
-    /**
-     * Applies setting.
-     */
+    /** Applies setting. */
     private boolean applySetting(
             CommandSender sender,
             DungeonDefinition dungeon,
@@ -253,7 +243,7 @@ public final class DungeonConfigCommandHandler {
                             sender,
                             entry,
                             "Expected a comma separated list of valid Bukkit entity types, or"
-                                + " clear.");
+                                    + " clear.");
                 }
                 return this.persistValue(sender, dungeon, entry, parsed);
             }
@@ -321,9 +311,7 @@ public final class DungeonConfigCommandHandler {
         }
     }
 
-    /**
-     * Applies location setting.
-     */
+    /** Applies location setting. */
     private boolean applyLocationSetting(
             CommandSender sender,
             DungeonDefinition dungeon,
@@ -385,9 +373,7 @@ public final class DungeonConfigCommandHandler {
         return this.sendInvalidValue(sender, entry, "Unknown location target.");
     }
 
-    /**
-     * Adds branch.
-     */
+    /** Adds branch. */
     private boolean addBranch(
             CommandSender sender,
             DungeonDefinition dungeon,
@@ -426,9 +412,7 @@ public final class DungeonConfigCommandHandler {
         return true;
     }
 
-    /**
-     * Removes branch.
-     */
+    /** Removes branch. */
     private boolean removeBranch(
             CommandSender sender,
             DungeonDefinition dungeon,
@@ -457,9 +441,7 @@ public final class DungeonConfigCommandHandler {
         return true;
     }
 
-    /**
-     * Runs persist value.
-     */
+    /** Runs persist value. */
     private boolean persistValue(
             CommandSender sender,
             DungeonDefinition dungeon,
@@ -484,9 +466,7 @@ public final class DungeonConfigCommandHandler {
         return true;
     }
 
-    /**
-     * Runs send updated.
-     */
+    /** Runs send updated. */
     private void sendUpdated(
             CommandSender sender,
             DungeonDefinition dungeon,
@@ -506,9 +486,7 @@ public final class DungeonConfigCommandHandler {
         }
     }
 
-    /**
-     * Runs show setting.
-     */
+    /** Runs show setting. */
     private void showSetting(
             CommandSender sender, DungeonDefinition dungeon, DungeonConfigEntry entry) {
         LangUtils.sendMessage(
@@ -519,9 +497,7 @@ public final class DungeonConfigCommandHandler {
                 LangUtils.placeholder("description", entry.getDescription()));
     }
 
-    /**
-     * Runs list settings.
-     */
+    /** Runs list settings. */
     private void listSettings(CommandSender sender, DungeonDefinition dungeon, String filter) {
         String loweredFilter = filter == null ? "" : filter.toLowerCase(Locale.ROOT);
         sender.sendMessage(
@@ -563,17 +539,13 @@ public final class DungeonConfigCommandHandler {
         }
     }
 
-    /**
-     * Runs send usage.
-     */
+    /** Runs send usage. */
     private void sendUsage(CommandSender sender) {
         sender.sendMessage(LangUtils.getMessage("commands.config.help.header", false));
         LangUtils.sendMessageList(sender, "commands.config.help.lines");
     }
 
-    /**
-     * Runs send invalid value.
-     */
+    /** Runs send invalid value. */
     private boolean sendInvalidValue(
             CommandSender sender, DungeonConfigEntry entry, String message) {
         LangUtils.sendMessage(
@@ -584,9 +556,7 @@ public final class DungeonConfigCommandHandler {
         return true;
     }
 
-    /**
-     * Returns the current value.
-     */
+    /** Returns the current value. */
     private String getCurrentValue(DungeonDefinition dungeon, DungeonConfigEntry entry) {
         if (entry.getValueType() == DungeonConfigValueType.LOCATION) {
             return switch (entry.getKey()) {
@@ -634,9 +604,7 @@ public final class DungeonConfigCommandHandler {
         return entry.getPath().startsWith("rules.");
     }
 
-    /**
-     * Runs complete value.
-     */
+    /** Runs complete value. */
     private List<String> completeValue(
             DungeonConfigEntry entry, DungeonDefinition dungeon, String rawValue) {
         return switch (entry.getValueType()) {
@@ -648,9 +616,7 @@ public final class DungeonConfigCommandHandler {
         };
     }
 
-    /**
-     * Runs complete simple.
-     */
+    /** Runs complete simple. */
     private List<String> completeSimple(String rawValue, List<String> candidates) {
         String query = rawValue == null ? "" : rawValue.toLowerCase(Locale.ROOT).trim();
         List<String> matches = new ArrayList<>();
@@ -662,9 +628,7 @@ public final class DungeonConfigCommandHandler {
         return matches;
     }
 
-    /**
-     * Runs complete list.
-     */
+    /** Runs complete list. */
     private List<String> completeList(String rawValue, List<String> candidates) {
         String value = rawValue == null ? "" : rawValue.trim();
         String prefix = "";
@@ -706,9 +670,7 @@ public final class DungeonConfigCommandHandler {
         return matches;
     }
 
-    /**
-     * Runs normalize branch id.
-     */
+    /** Runs normalize branch id. */
     private String normalizeBranchId(String rawValue) {
         if (rawValue == null) {
             return null;
@@ -722,9 +684,7 @@ public final class DungeonConfigCommandHandler {
         return normalized;
     }
 
-    /**
-     * Runs parse boolean.
-     */
+    /** Runs parse boolean. */
     private Boolean parseBoolean(String rawValue) {
         return switch (rawValue.toLowerCase(Locale.ROOT)) {
             case "true", "yes", "y", "on", "enable", "enabled" -> true;
@@ -733,9 +693,7 @@ public final class DungeonConfigCommandHandler {
         };
     }
 
-    /**
-     * Runs parse integer.
-     */
+    /** Runs parse integer. */
     private Integer parseInteger(String rawValue) {
         try {
             return Integer.parseInt(rawValue);
@@ -744,9 +702,7 @@ public final class DungeonConfigCommandHandler {
         }
     }
 
-    /**
-     * Runs parse double.
-     */
+    /** Runs parse double. */
     private Double parseDouble(String rawValue) {
         try {
             double value = Double.parseDouble(rawValue);
@@ -756,17 +712,13 @@ public final class DungeonConfigCommandHandler {
         }
     }
 
-    /**
-     * Runs parse material.
-     */
+    /** Runs parse material. */
     private Material parseMaterial(String rawValue) {
         Material exact = Material.getMaterial(rawValue.toUpperCase(Locale.ROOT));
         return exact != null ? exact : Material.matchMaterial(rawValue);
     }
 
-    /**
-     * Runs parse material list.
-     */
+    /** Runs parse material list. */
     private List<String> parseMaterialList(String rawValue) {
         if (rawValue.equalsIgnoreCase("clear")) {
             return new ArrayList<>();
@@ -788,9 +740,7 @@ public final class DungeonConfigCommandHandler {
         return values;
     }
 
-    /**
-     * Runs parse entity type list.
-     */
+    /** Runs parse entity type list. */
     private List<String> parseEntityTypeList(String rawValue) {
         if (rawValue.equalsIgnoreCase("clear")) {
             return new ArrayList<>();
@@ -812,9 +762,7 @@ public final class DungeonConfigCommandHandler {
         return values;
     }
 
-    /**
-     * Runs parse string list.
-     */
+    /** Runs parse string list. */
     private List<String> parseStringList(String rawValue) {
         if (rawValue.equalsIgnoreCase("clear")) {
             return new ArrayList<>();
@@ -830,9 +778,7 @@ public final class DungeonConfigCommandHandler {
         return values;
     }
 
-    /**
-     * Runs parse game mode.
-     */
+    /** Runs parse game mode. */
     private GameMode parseGameMode(String rawValue) {
         try {
             return GameMode.valueOf(rawValue.toUpperCase(Locale.ROOT));
@@ -841,9 +787,7 @@ public final class DungeonConfigCommandHandler {
         }
     }
 
-    /**
-     * Runs parse environment.
-     */
+    /** Runs parse environment. */
     private Environment parseEnvironment(String rawValue) {
         try {
             return Environment.valueOf(rawValue.toUpperCase(Locale.ROOT));
@@ -852,9 +796,7 @@ public final class DungeonConfigCommandHandler {
         }
     }
 
-    /**
-     * Runs parse cooldown period.
-     */
+    /** Runs parse cooldown period. */
     private CooldownPeriod parseCooldownPeriod(String rawValue) {
         try {
             return CooldownPeriod.valueOf(rawValue.toUpperCase(Locale.ROOT));
@@ -863,9 +805,7 @@ public final class DungeonConfigCommandHandler {
         }
     }
 
-    /**
-     * Runs format location.
-     */
+    /** Runs format location. */
     private String formatLocation(Location location) {
         if (location == null) {
             return "<unset>";
@@ -881,9 +821,7 @@ public final class DungeonConfigCommandHandler {
                 + ")";
     }
 
-    /**
-     * Runs stringify value.
-     */
+    /** Runs stringify value. */
     private String stringifyValue(Object value) {
         if (value == null) {
             return "<unset>";
@@ -903,9 +841,7 @@ public final class DungeonConfigCommandHandler {
         return String.valueOf(value);
     }
 
-    /**
-     * Runs join args.
-     */
+    /** Runs join args. */
     private String joinArgs(String[] args, int startIndex) {
         StringBuilder builder = new StringBuilder();
         for (int index = startIndex; index < args.length; index++) {
@@ -917,21 +853,17 @@ public final class DungeonConfigCommandHandler {
         return builder.toString();
     }
 
-    /**
-     * Returns whether it has edit access.
-     */
+    /** Returns whether it has edit access. */
     private boolean hasEditAccess(CommandSender sender, DungeonDefinition dungeon) {
         if (!(sender instanceof Player player)) {
             return true;
         }
 
         return CommandUtils.hasDungeonEditAccess(player, dungeon.getWorldName())
-                || CommandUtils.hasPermissionSilent(player, "dungeons.admin");
+                || CommandUtils.hasPermissionSilent(player, "dungeons.role.operator");
     }
 
-    /**
-     * Resolves dungeon.
-     */
+    /** Resolves dungeon. */
     private DungeonDefinition resolveDungeon(CommandSender sender, String input) {
         if (input.equalsIgnoreCase("current") && sender instanceof Player player) {
             DungeonPlayerSession playerSession = this.playerManager.get(player);

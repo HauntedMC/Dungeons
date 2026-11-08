@@ -37,7 +37,7 @@ class ConfigAuthorizationContractTest {
             when(catalog.get("crypt")).thenReturn(crypt);
             paper.runtime.setDungeonCatalog(catalog);
             var sender = mock(Player.class);
-            when(sender.hasPermission("dungeons.edit.other")).thenReturn(true);
+            when(sender.hasPermission("dungeons.staff.edit.other")).thenReturn(true);
             var commands =
                     new DungeonConfigCommandHandler(
                             catalog,
@@ -46,7 +46,7 @@ class ConfigAuthorizationContractTest {
             var request = new String[] {"config", "crypt", "max-team-size", "2"};
             assertTrue(commands.handleCommand(sender, request));
             assertEquals(4, crypt.getMaxTeamSize());
-            when(sender.hasPermission("dungeons.edit.crypt")).thenReturn(true);
+            when(sender.hasPermission("dungeons.staff.edit.crypt")).thenReturn(true);
             assertTrue(commands.handleCommand(sender, request));
             assertEquals(2, crypt.getMaxTeamSize());
             var stored = new YamlConfiguration();
@@ -70,7 +70,7 @@ class ConfigAuthorizationContractTest {
             when(catalog.get("crypt")).thenReturn(dungeon);
             paper.runtime.setDungeonCatalog(catalog);
             var sender = mock(Player.class);
-            when(sender.hasPermission("dungeons.edit.crypt")).thenReturn(true);
+            when(sender.hasPermission("dungeons.staff.edit.crypt")).thenReturn(true);
             var commands =
                     new DungeonConfigCommandHandler(
                             catalog,
@@ -96,7 +96,7 @@ class ConfigAuthorizationContractTest {
             when(catalog.getLoadedDungeons()).thenReturn(List.of(f.dungeon));
             f.paper.runtime.setDungeonCatalog(catalog);
             var state = new PlayerState();
-            when(state.player.hasPermission("dungeons.edit.crypt")).thenReturn(true);
+            when(state.player.hasPermission("dungeons.staff.edit.crypt")).thenReturn(true);
             var commands =
                     new DungeonConfigCommandHandler(
                             catalog,

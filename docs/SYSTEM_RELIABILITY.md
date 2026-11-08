@@ -47,9 +47,7 @@ or an end-to-end simulation of every plugin installed on the production server.
 
 ## Compatibility and limits
 
-Journal version 2 reads version 1 records. Older plugin versions reject version 2
-rather than silently ignoring key escrow; preserve the journal when upgrading or
-investigating a failed transaction.
+Only journal version 2 and 43-slot Paper inventory snapshots are supported. Unsupported formats fail validation without rewriting their source.
 
 There is no single atomic transaction spanning the player journal, the dungeon key
 ledger and external plugins. In particular, a process failure during unique-key

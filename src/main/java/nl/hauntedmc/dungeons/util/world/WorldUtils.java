@@ -20,7 +20,7 @@ public final class WorldUtils {
 
     private WorldUtils() {}
 
-    /** Resolves the storage used by Paper 26.1+ for a legacy-named custom world. */
+    /** Resolves the storage used by Paper 26.1+ for a custom world. */
     public static File dimensionFolder(String worldName) {
         return dimensionRoot().toPath().resolve(worldName.toLowerCase(Locale.ROOT)).toFile();
     }
@@ -167,31 +167,6 @@ public final class WorldUtils {
                 }
             }
         }
-    }
-
-    /** Updates removed registry names in copied per-world configuration before Paper loads it. */
-    public static void migratePaperWorldConfig(File file) throws IOException {
-        if (!file.isFile()) return;
-        var yaml = new org.bukkit.configuration.file.YamlConfiguration();
-        try {
-            yaml.load(file);
-        } catch (org.bukkit.configuration.InvalidConfigurationException exception) {
-            throw new IOException("Invalid Paper world configuration: " + file, exception);
-        }
-        var limits = yaml.getConfigurationSection("chunks.entity-per-chunk-save-limit");
-        if (limits == null) return;
-        boolean changed = false;
-        for (String oldKey : List.of("potion", "minecraft:potion")) {
-            if (!limits.contains(oldKey)) continue;
-            Object limit = limits.get(oldKey);
-            String prefix = oldKey.startsWith("minecraft:") ? "minecraft:" : "";
-            for (String replacement : List.of("splash_potion", "lingering_potion")) {
-                if (!limits.contains(prefix + replacement)) limits.set(prefix + replacement, limit);
-            }
-            limits.set(oldKey, null);
-            changed = true;
-        }
-        if (changed) yaml.save(file);
     }
 
     /** Releases forced loading on the world spawn chunk. */

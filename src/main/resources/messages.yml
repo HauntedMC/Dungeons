@@ -1,4 +1,9 @@
 general:
+  labels:
+    none: geen
+    'yes': ja
+    'no': nee
+    default-difficulty: standaard
   prefix: <#5E55AD>[Dungeons]
   java-locale: nl-NL
   errors:
@@ -30,10 +35,8 @@ commands:
     rewards: '&d/dungeon rewards &7Open je openstaande beloningen.'
     config: '&d/dungeon config <dungeon> list &7Bekijk live map en generator instellingen.'
     edit: '&d/dungeon edit ... &7Werk in de huidige editor sessie.'
-    loot: '&d/dungeon loot <create|edit|remove|list> &7Beheer loot tables.'
+    loot: '&d/dungeon loot <create|edit|list> &7Beheer loot tables.'
     dungeon: '&d/dungeon dungeon ... &7Beheer opgeslagen dungeon definities.'
-    player: '&d/dungeon player <player> ... &7Beheer speler-specifieke dungeon status.'
-    instance: '&d/dungeon instance ... &7Werk met live dungeon instances.'
     debug: '&d/dungeon debug ... &7Gebruik debug tools voor instances.'
   help:
     header: <#5E55AD>-= Dungeons versie {version} =-
@@ -50,8 +53,6 @@ commands:
     edit: '&a/dungeon edit ... &f| &eWerk in de huidige dungeon editor sessie.'
     loot: '&a/dungeon loot ... &f| &eBeheer loot tables.'
     dungeon: '&a/dungeon dungeon ... &f| &eBeheer opgeslagen dungeon definities.'
-    player: '&a/dungeon player &6<player> ... &f| &ePas speler-specifieke dungeon status aan.'
-    instance: '&a/dungeon instance ... &f| &eWerk met live dungeon instances.'
     debug: '&a/dungeon debug ... &f| &eGebruik debug tools voor instances.'
   list:
     usage: '&a/dungeon list &b[filter] [pagina] &f| &eBekijk beschikbare dungeons.'
@@ -190,7 +191,7 @@ commands:
     deleted-dungeon-ended: '&7Je tijdelijke dungeon team is verwijderd omdat de dungeon is geëindigd.'
   loot:
     save-failed: '&cLoot tables konden niet worden opgeslagen. Controleer de console, herstel loottables.yml en laad opnieuw.'
-    usage: '&a/dungeon loot &6<create|edit|remove|list> &f| &eBeheer loot tables.'
+    usage: '&a/dungeon loot &6<create|edit|list> &f| &eBeheer loot tables.'
     create:
       usage: '&a/dungeon loot create &6<name> &f| &eMaak een nieuwe loot table.'
       already-exists: '&cLoot table ''&6{loot_table}&c'' bestaat al.'
@@ -199,9 +200,6 @@ commands:
       usage: '&a/dungeon loot edit &6<loot table> &f| &eOpen de loot table editor.'
       not-found: '&cLoot table ''&6{loot_table}&c'' bestaat niet.'
       already-editing: '&cDeze loot table wordt al door iemand anders bewerkt.'
-    remove:
-      usage: '&a/dungeon loot remove &6<loot table> &f| &eVerwijder de loot table.'
-      success: '&aLoot table &6{loot_table}&a is verwijderd.'
     list:
       usage: '&a/dungeon loot list &b[filter] [pagina] &f| &eBekijk bestaande loot tables.'
       header: <#5E55AD>-= Loot Tables =-
@@ -239,13 +237,10 @@ commands:
       lines:
       - '&a/dungeon dungeon create &6<name> [type] [generator] &f| &eMaak een nieuwe dungeon.'
       - '&a/dungeon dungeon import &6<world> [type] &f| &eImporteer een world als dungeon.'
-      - '&a/dungeon dungeon delete &6<dungeon> &f| &eVerwijder een dungeon.'
-      - '&a/dungeon dungeon reload &b[dungeon|all] &f| &eHerlaad configs of dungeon data.'
       - '&a/dungeon dungeon enable &6<dungeon> &f| &eSchakel een dungeon in voor spelen.'
       - '&a/dungeon dungeon disable &6<dungeon> &f| &eSchakel een dungeon uit voor spelen.'
       - '&a/dungeon dungeon list &b[filter] [pagina] &f| &eBekijk opgeslagen dungeons.'
       - '&a/dungeon dungeon info &6<dungeon> &f| &eToon statische dungeon info.'
-      - '&a/dungeon dungeon status &b[dungeon] &f| &eToon instance status.'
       - '&a/dungeon dungeon keys <add|remove|clear|list|give> &6<dungeon> &f| &eBeheer access keys.'
       - '&a/dungeon dungeon exit set &6<dungeon> &f| &eStel de exit locatie in.'
     create:
@@ -379,7 +374,6 @@ commands:
   edit:
     help:
       lines:
-      - '&a/dungeon edit open &6<dungeon> &f| &eOpen een edit sessie.'
       - '&a/dungeon edit close &f| &eSluit je huidige edit sessie.'
       - '&a/dungeon edit save &f| &eSla de huidige edit sessie op.'
       - '&a/dungeon edit lobby set &f| &eStel de lobby spawn in.'
@@ -440,85 +434,11 @@ commands:
         usage: '&a/dungeon edit signs clean &f| &eVerwijder alle signs op function locaties.'
         not-in-dungeon: '&cJe zit momenteel niet in een dungeon editor.'
         success: '&a{count} sign(s) verwijderd.'
-  player:
-    help:
-      lines:
-      - '&a/dungeon player &6<player> cooldown set <dungeon> [duur] &f| &eStel een access cooldown in.'
-      - '&a/dungeon player &6<player> cooldown clear <dungeon> &f| &eVerwijder een access cooldown.'
-      - '&a/dungeon player &6<player> queue clear &f| &eRuim queue of awaiting status op.'
-      - '&a/dungeon player &6<player> status &f| &eToon dungeon status van een speler.'
-    status:
-      usage: '&a/dungeon player &6<player> status &f| &eToon dungeon status van een speler.'
-      header: '<#5E55AD>---[ SPELER STATUS: {player} ]---'
-      instance: '&dInstance: &f{value}'
-      queue:
-        label: '&dQueue: &f{value}'
-        entry: '{dungeon} ({difficulty}, {mode})'
-        modes:
-          solo: solo
-          team-leader: teamleider
-          team-member: teamlid
-      awaiting: '&dWacht op start: &f{value}'
-      team:
-        label: '&dTeam: &f{value}'
-        states:
-          idle: gereed
-          queued: in wachtrij
-          running: actief
-        as-leader: leider van {count} spelers ({state})
-        as-member: lid van {leader} met {count} spelers ({state})
-      reserved-key: '&dGereserveerde key: &f{value}'
-      cooldowns-header: '&dAccess cooldowns:'
-      cooldowns-none: '&dAccess cooldowns: &fgeen'
-      cooldown-line: ' &6• {dungeon}: {time}'
-      labels:
-        none: geen
-        'yes': ja
-        'no': nee
-        default-difficulty: standaard
-    cooldown:
-      set:
-        usage: '&a/dungeon player &6<player> cooldown set <dungeon> [duur] &f| &eStel de access cooldown in voor de doelspeler.'
-        dungeon-not-found: '&cDungeon ''&6{dungeon}&c'' bestaat niet.'
-        player-not-found: '&cSpeler ''&6{player}&c'' is niet online of bestaat niet.'
-        success: '&aDe access cooldown voor &d{player}&a in dungeon &6{dungeon}&a is ingesteld.'
-        cooldown-time: '&7Cooldown verloopt op: &f{time}'
-        invalid-duration: '&cOngeldige duur opgegeven.'
-        invalid-duration-format: '&cOngeldige duur. Gebruik een getal met &6s, m, h of d&c.'
-      clear:
-        usage: '&a/dungeon player &6<player> cooldown clear <dungeon> &f| &eVerwijder een access cooldown.'
-        none: '&c{player} heeft geen access cooldown voor &6{dungeon}&c.'
-        success: '&aDe access cooldown voor &d{player}&a in &6{dungeon}&a is verwijderd.'
-        target: '&eJe access cooldown voor &6{dungeon}&e is verwijderd door een admin.'
-    queue:
-      clear:
-        usage: '&a/dungeon player &6<player> queue clear &f| &eRuim queue of awaiting status op.'
-        none: '&cEr was geen queue of awaiting status om op te ruimen voor &d{player}&c.'
-        success: '&aDe queue of awaiting status voor &d{player}&a is opgeschoond.'
-        target: '&eEen admin heeft je queue of awaiting status opgeschoond.'
-      cleared:
-        target: '&eEen admin heeft je uit de dungeon queue en uit je team gehaald.'
-        team: '&e{player} is door een admin uit de dungeon queue en uit het team gehaald.'
-  instance:
-    help:
-      lines:
-      - '&a/dungeon instance join-player &6<player> &f| &eGa naar de dungeon van een speler.'
-      - '&a/dungeon instance kick-player &6<player> &f| &eKick een speler uit zijn dungeon.'
-      - '&a/dungeon instance map &f| &eGeef jezelf de map van je huidige instance.'
-    join-player:
-      usage: '&a/dungeon instance join-player &6<player> &f| &eStuur jezelf naar de dungeon van de speler.'
-      not-in-dungeon: '&cDie speler zit niet in een dungeon.'
-      success: '&aJe bent naar dungeon &6{dungeon}&a van &d{player}&a gestuurd.'
-    kick-player:
-      usage: '&a/dungeon instance kick-player &6<player> &f| &eKick de speler uit zijn dungeon.'
-      not-in-dungeon: '&c{player} zit niet in een dungeon.'
-      kick-alert: '&cJe bent uit de dungeon gekickt door een admin.'
-      success: '&a{player} is uit de dungeon gezet.'
+  debug:
     map:
-      usage: '&a/dungeon instance map &f| &eGeef jezelf de map van je huidige dungeon instance.'
+      usage: '&a/dungeon debug map &f| &eGeef jezelf de map van je huidige dungeon instance.'
       not-in-dungeon: '&cJe zit niet in een actieve dungeon instance.'
       success: '&aDe kaart van je huidige dungeon instance is in je inventory geplaatst.'
-  debug:
     help:
       lines:
       - '&a/dungeon debug doors test &6<door> &f| &eToggle een specifieke deur in de huidige room.'

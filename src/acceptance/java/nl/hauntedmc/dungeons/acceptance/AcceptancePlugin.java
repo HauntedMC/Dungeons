@@ -99,8 +99,8 @@ public final class AcceptancePlugin extends JavaPlugin {
         require(Bukkit.getPluginCommand("dungeon") != null, "Dungeon command is missing");
         require(runtime().environment().plugin() == plugin, "Runtime refers to another plugin");
         require(
-                runtime().dungeonCatalog().get("config-migration") != null,
-                "Migrated dungeon is absent from the actual catalog");
+                runtime().dungeonCatalog().get("current-config") != null,
+                "Fresh dungeon is absent from the actual catalog");
         require(
                 runtime().functionRegistry().getRegisteredFunctions().size() == 33,
                 "Unexpected function registry contents");

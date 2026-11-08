@@ -1,12 +1,13 @@
 package nl.hauntedmc.dungeons.runtime.dungeon;
+
 import nl.hauntedmc.dungeons.gui.menu.PlayMenus;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonLoadException;
 import nl.hauntedmc.dungeons.registry.DungeonTypeRegistry;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.util.config.GeneratorConfigMigration;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -89,12 +90,13 @@ public final class DungeonRepository {
             if (bundledDefaults == null || bundledDefaults.getKeys(true).isEmpty()) {
                 throw new IOException(
                         "Cannot load dungeon defaults because the bundled template is missing or"
-                            + " empty.");
+                                + " empty.");
             }
-            GeneratorConfigMigration.loadTemplate(
-                    new File(this.runtime.dungeonFiles(), "generator_settings_default.yml"),
-                    defaultConfig,
-                    bundledDefaults);
+            YamlConfiguration template = new YamlConfiguration();
+            if (defaultConfig.exists()) template.load(defaultConfig);
+            nl.hauntedmc.dungeons.util.config.ConfigSyncUtils.syncMissingAndObsolete(
+                    bundledDefaults, template);
+            template.save(defaultConfig);
 
             this.runtime.defaultDungeonConfig().load(defaultConfig);
         } catch (InvalidConfigurationException | IOException exception) {
@@ -190,7 +192,7 @@ public final class DungeonRepository {
                             .logger()
                             .error(
                                     "Failed to load dungeon '{}' due to an unexpected exception"
-                                        + " during initialization.",
+                                            + " during initialization.",
                                     folder.getName(),
                                     ex);
                 }

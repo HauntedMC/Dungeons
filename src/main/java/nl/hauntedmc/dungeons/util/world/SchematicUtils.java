@@ -28,9 +28,7 @@ import java.util.Map;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterOutputStream;
 
-/**
- * Serialization helpers for compact structure-piece storage.
- */
+/** Serialization helpers for compact structure-piece storage. */
 public final class SchematicUtils {
     private static final String FORMAT_HEADER = "DUNGEONS-STRUCTURE-2\n";
 
@@ -118,8 +116,9 @@ public final class SchematicUtils {
         try {
             byte[] bytes = FileUtils.readFileToByteArray(file);
             String full = decompress(bytes);
-            boolean versioned = full.startsWith(FORMAT_HEADER);
-            String payload = versioned ? full.substring(FORMAT_HEADER.length()) : full;
+            if (!full.startsWith(FORMAT_HEADER))
+                throw new IllegalArgumentException("Unsupported structure format");
+            String payload = full.substring(FORMAT_HEADER.length());
             String[] pair = payload.split("\n", 2);
             String blocks = pair[0];
             if (blocks.isEmpty()) {
@@ -136,7 +135,7 @@ public final class SchematicUtils {
                     int blockDataPointer = Integer.parseInt(set[1]);
                     if (blockDataPointer < data.size()) {
                         String nbtStr = set[2];
-                        if (versioned && !nbtStr.equals("null")) {
+                        if (!nbtStr.equals("null")) {
                             nbtStr =
                                     new String(
                                             Base64.getDecoder().decode(nbtStr),

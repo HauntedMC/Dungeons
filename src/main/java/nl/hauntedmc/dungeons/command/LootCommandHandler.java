@@ -34,7 +34,7 @@ final class LootCommandHandler implements CommandHandler {
             return true;
         }
 
-        if (!CommandUtils.hasPermission(sender, "dungeons.loottables")) {
+        if (!CommandUtils.hasPermission(sender, "dungeons.staff.loot")) {
             return true;
         }
 
@@ -45,7 +45,6 @@ final class LootCommandHandler implements CommandHandler {
 
         return switch (args[1].toLowerCase(Locale.ROOT)) {
             case "create" -> this.handleLootCreate(player, args);
-            case "remove" -> this.handleLootRemove(player, args);
             case "edit" -> this.handleLootEdit(player, args);
             case "list" -> this.handleLootList(player, CommandArguments.shiftArgs(args));
             default -> {
@@ -60,8 +59,7 @@ final class LootCommandHandler implements CommandHandler {
     public List<String> handleTabComplete(CommandSender sender, String[] args) {
         List<String> options = new ArrayList<>();
         if (args.length == 2) {
-            CommandArguments.addMatchingLiteralOptions(
-                    options, args[1], "create", "edit", "remove", "list");
+            CommandArguments.addMatchingLiteralOptions(options, args[1], "create", "edit", "list");
             return options;
         }
 
@@ -103,24 +101,6 @@ final class LootCommandHandler implements CommandHandler {
                 "commands.loot.create.success",
                 LangUtils.placeholder("loot_table", args[2]));
 
-        return true;
-    }
-
-    /** Runs handle loot remove. */
-    private boolean handleLootRemove(Player player, String[] args) {
-        if (args.length != 3) {
-            LangUtils.sendMessage(player, "commands.loot.remove.usage");
-            return true;
-        }
-
-        if (!this.lootTableManager.remove(args[2])) {
-            LangUtils.sendMessage(player, "commands.loot.save-failed");
-            return true;
-        }
-        LangUtils.sendMessage(
-                player,
-                "commands.loot.remove.success",
-                LangUtils.placeholder("loot_table", args[2]));
         return true;
     }
 

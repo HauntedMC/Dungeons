@@ -19,11 +19,12 @@ class WorldStartupContractTest {
     @TempDir Path directory;
 
     @Test
-    void restartPreservesBothFoldersOfAnUncommittedEditorButCleansOrdinaryRuns()
-            throws Exception {
+    void restartPreservesBothFoldersOfAnUncommittedEditorButCleansOrdinaryRuns() throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
             var legacy = Files.createDirectories(directory.resolve("crypt_7"));
-            var modern = Files.createDirectories(directory.resolve("world/dimensions/minecraft/crypt_7"));
+            var modern =
+                    Files.createDirectories(
+                            directory.resolve("world/dimensions/minecraft/crypt_7"));
             var stale = Files.createDirectories(directory.resolve("crypt_8"));
             Files.writeString(legacy.resolve(".dungeons-editor-recovery"), "recover");
             Files.writeString(modern.resolve("edits"), "last edits");
@@ -31,8 +32,9 @@ class WorldStartupContractTest {
             assertTrue(Files.exists(legacy));
             assertEquals("last edits", Files.readString(modern.resolve("edits")));
             assertFalse(Files.exists(stale));
-            var editor = new EditableInstance(f.dungeon, new java.util.concurrent.CountDownLatch(1));
-            var reserved = editor.reserveWorldFolder(false).toPath();
+            var editor =
+                    new EditableInstance(f.dungeon, new java.util.concurrent.CountDownLatch(1));
+            var reserved = editor.reserveWorldFolder().toPath();
             assertTrue(Files.exists(reserved.resolve(".dungeons-editor-recovery")));
         }
     }
@@ -67,8 +69,8 @@ class WorldStartupContractTest {
     void allocatingMultipleRunsReservesDistinctFoldersEvenBeforeWorldCreation() throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
             when(Bukkit.getServer().getLevelDirectory()).thenReturn(directory.resolve("plots"));
-            var first = f.run.reserveWorldFolder(false);
-            var second = new RunFixture.Run(f.dungeon, f.world).reserveWorldFolder(false);
+            var first = f.run.reserveWorldFolder();
+            var second = new RunFixture.Run(f.dungeon, f.world).reserveWorldFolder();
             assertTrue(first.isDirectory());
             assertTrue(second.isDirectory());
             assertNotEquals(first, second);
@@ -98,8 +100,7 @@ class WorldStartupContractTest {
     }
 
     @Test
-    void modernTemplateDoesNotReimportStaleLegacyDimensionsAndMigratesPotionLimits()
-            throws Exception {
+    void currentTemplateCopiesCurrentPaperSettingsWithoutConversion() throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
             when(Bukkit.getServer().getLevelDirectory()).thenReturn(directory.resolve("plots"));
             Path source = f.dungeon.getFolder().toPath();
@@ -123,9 +124,9 @@ class WorldStartupContractTest {
             assertFalse(Files.exists(copy.resolve("DIM1")));
             var yaml =
                     YamlConfiguration.loadConfiguration(copy.resolve("paper-world.yml").toFile());
-            assertFalse(yaml.contains("chunks.entity-per-chunk-save-limit.potion"));
+            assertEquals(12, yaml.getInt("chunks.entity-per-chunk-save-limit.potion"));
             assertEquals(20, yaml.getInt("chunks.entity-per-chunk-save-limit.splash_potion"));
-            assertEquals(12, yaml.getInt("chunks.entity-per-chunk-save-limit.lingering_potion"));
+            assertFalse(yaml.contains("chunks.entity-per-chunk-save-limit.lingering_potion"));
             assertTrue(Files.exists(source.resolve("DIM1/region/old.mca")));
         }
     }
@@ -163,7 +164,8 @@ class WorldStartupContractTest {
         rules.set("rules.world.freeze_random_ticks", false);
         try (var f = new RunFixture(directory, rules)) {
             var source = f.dungeon.getFolder().toPath();
-            Files.writeString(source.resolve("level.dat"), "template world");
+            Files.createDirectories(source.resolve("region"));
+            Files.writeString(source.resolve("region/current.mca"), "template world");
             Files.writeString(source.resolve("uid.dat"), "template identity");
             Files.writeString(source.resolve("config.yml"), "template settings");
             when(Bukkit.getServer().getLevelDirectory()).thenReturn(directory.resolve("world"));
@@ -176,8 +178,12 @@ class WorldStartupContractTest {
             assertSame(f.run, f.run.initialize());
             assertFalse(f.run.isReady());
             assertEquals(
-                    "template world", Files.readString(directory.resolve("crypt_0/level.dat")));
-            assertFalse(Files.exists(directory.resolve("crypt_0/uid.dat")));
+                    "template world",
+                    Files.readString(
+                            directory.resolve(
+                                    "world/dimensions/minecraft/crypt_0/region/current.mca")));
+            assertFalse(
+                    Files.exists(directory.resolve("world/dimensions/minecraft/crypt_0/uid.dat")));
             assertFalse(Files.exists(directory.resolve("crypt_0/config.yml")));
             assertTrue(Files.exists(source.resolve("uid.dat")));
             f.scheduler.immediate.getFirst().run();

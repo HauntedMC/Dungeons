@@ -29,7 +29,8 @@ final class WorldLifecycle {
                                                     require(
                                                             world.getBlockAt(-1, 64, 15).getType()
                                                                     == Material.GOLD_BLOCK,
-                                                            "Template block at negative chunk boundary was lost");
+                                                            "Template block at negative chunk"
+                                                                + " boundary was lost");
                                                     var chest =
                                                             (Chest)
                                                                     world.getBlockAt(2, 65, 1)
@@ -40,14 +41,16 @@ final class WorldLifecycle {
                                                                     && item.getType()
                                                                             == Material.DIAMOND
                                                                     && item.getAmount() == 5,
-                                                            "Native tile inventory did not survive the world copy");
+                                                            "Native tile inventory did not survive"
+                                                                + " the world copy");
                                                     require(
                                                             Integer.valueOf(0)
                                                                     .equals(
                                                                             world.getGameRuleValue(
                                                                                     GameRules
                                                                                             .RANDOM_TICK_SPEED)),
-                                                            "Native world game rule was not applied");
+                                                            "Native world game rule was not"
+                                                                + " applied");
                                                     verifyGameRulePersistence(world);
                                                     require(
                                                             !world.isAutoSave(),
@@ -59,7 +62,8 @@ final class WorldLifecycle {
                                                                             .getBlockAt(-1, 64, 15)
                                                                             .getType()
                                                                     == Material.GOLD_BLOCK,
-                                                            "Changing one run mutated another world copy");
+                                                            "Changing one run mutated another world"
+                                                                + " copy");
                                                     return verifyConsoleSummons(test, first)
                                                             .thenCompose(
                                                                     ignored ->
@@ -82,18 +86,22 @@ final class WorldLifecycle {
             var loaded = new org.bukkit.configuration.file.YamlConfiguration();
             loaded.loadFromString(saved.saveToString());
             nl.hauntedmc.dungeons.util.world.GameRuleUtils.apply(world, loaded);
-            require(world.getGameRuleValue(mobRule) == originalMobs,
+            require(
+                    world.getGameRuleValue(mobRule) == originalMobs,
                     "Boolean gamerule did not survive YAML persistence");
-            require(world.getGameRuleValue(tickRule) == originalTicks,
+            require(
+                    world.getGameRuleValue(tickRule) == originalTicks,
                     "Integer gamerule did not survive YAML persistence");
-            // Older plugin saves wrote every value as a string.
             for (String path : saved.getKeys(true)) {
-                if (!saved.isConfigurationSection(path)) saved.set(path, saved.getString(path));
+                if (!saved.isConfigurationSection(path)) saved.set(path, String.valueOf(saved.get(path)));
             }
-            world.setGameRule(mobRule, !originalMobs);
-            nl.hauntedmc.dungeons.util.world.GameRuleUtils.apply(world, saved);
-            require(world.getGameRuleValue(mobRule) == originalMobs,
-                    "String gamerule saves are no longer compatible");
+            boolean rejected = false;
+            try {
+                nl.hauntedmc.dungeons.util.world.GameRuleUtils.apply(world, saved);
+            } catch (IllegalArgumentException expected) {
+                rejected = true;
+            }
+            require(rejected, "Untyped gamerule strings must be rejected");
         } catch (org.bukkit.configuration.InvalidConfigurationException exception) {
             throw new IllegalStateException(exception);
         } finally {

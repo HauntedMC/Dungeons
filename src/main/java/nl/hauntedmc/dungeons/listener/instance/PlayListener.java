@@ -76,17 +76,13 @@ public class PlayListener extends InstanceListener {
     private final PlayableInstance instance;
     protected final List<Location> placedBlocks = new ArrayList<>();
 
-    /**
-     * Creates the listener for a single playable instance.
-     */
+    /** Creates the listener for a single playable instance. */
     public PlayListener(PlayableInstance instance) {
         super(instance);
         this.instance = instance;
     }
 
-    /**
-     * Restores reconnecting players to the correct spectator or active state.
-     */
+    /** Restores reconnecting players to the correct spectator or active state. */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerConnectDungeon(PlayerJoinEvent event) {
         Player player = event.getPlayer();
@@ -121,9 +117,7 @@ public class PlayListener extends InstanceListener {
         }
     }
 
-    /**
-     * Applies dungeon-specific death handling such as lives, spectating, and key inheritance.
-     */
+    /** Applies dungeon-specific death handling such as lives, spectating, and key inheritance. */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerDeath(PlayerDeathEvent event) {
         var observer = RuntimeContext.playerSessions().get(event.getEntity());
@@ -225,9 +219,7 @@ public class PlayListener extends InstanceListener {
         }
     }
 
-    /**
-     * Restores respawn and spectator behavior after a death in the instance world.
-     */
+    /** Restores respawn and spectator behavior after a death in the instance world. */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerRespawn(PlayerRespawnEvent event) {
         if (event.getPlayer().getWorld() == this.instance.getInstanceWorld()) {
@@ -286,9 +278,7 @@ public class PlayListener extends InstanceListener {
         }
     }
 
-    /**
-     * Prevents external death respawns from anchoring players inside instance worlds.
-     */
+    /** Prevents external death respawns from anchoring players inside instance worlds. */
     @EventHandler
     public void onRespawnFromOutside(PlayerRespawnEvent event) {
         World deathWorld = event.getPlayer().getLocation().getWorld();
@@ -301,9 +291,7 @@ public class PlayListener extends InstanceListener {
         }
     }
 
-    /**
-     * Cleans up stale dungeon hologram displays once per loaded chunk.
-     */
+    /** Cleans up stale dungeon hologram displays once per loaded chunk. */
     @EventHandler
     public void removeDisplayOnChunkLoad(ChunkLoadEvent event) {
         Chunk chunk = event.getChunk();
@@ -311,7 +299,7 @@ public class PlayListener extends InstanceListener {
             NamespacedKey chunkKey = new NamespacedKey(RuntimeContext.plugin(), "cleaned");
             if (!chunk.getPersistentDataContainer().has(chunkKey)) {
                 // Marking the chunk after cleanup prevents expensive full-world rescans on every
-                // reload while still cleaning legacy holograms exactly once.
+                // reload while still cleaning persisted editor holograms exactly once.
                 Collection<TextDisplay> displays =
                         this.instance.getInstanceWorld().getEntitiesByClass(TextDisplay.class);
                 NamespacedKey key = new NamespacedKey(RuntimeContext.plugin(), "dungeonhologram");
@@ -328,9 +316,7 @@ public class PlayListener extends InstanceListener {
         }
     }
 
-    /**
-     * Applies configured natural mob spawning restrictions in the instance world.
-     */
+    /** Applies configured natural mob spawning restrictions in the instance world. */
     @EventHandler
     public void onMobSpawn(CreatureSpawnEvent event) {
         if (event.getEntity().getWorld() == this.instance.getInstanceWorld()) {
@@ -354,9 +340,7 @@ public class PlayListener extends InstanceListener {
         }
     }
 
-    /**
-     * Tracks spawned entities so they can be cleaned up when the instance disposes.
-     */
+    /** Tracks spawned entities so they can be cleaned up when the instance disposes. */
     @EventHandler
     public void onEntitySpawn(EntitySpawnEvent event) {
         if (event.getEntity().getWorld() == this.instance.getInstanceWorld()) {
@@ -365,9 +349,7 @@ public class PlayListener extends InstanceListener {
         }
     }
 
-    /**
-     * Enforces break rules, whitelists/blacklists, and function overrides.
-     */
+    /** Enforces break rules, whitelists/blacklists, and function overrides. */
     @EventHandler
     public void onBreakBlock(BlockBreakEvent event) {
         if (event.getBlock().getWorld() == this.instance.getInstanceWorld()) {
@@ -398,9 +380,7 @@ public class PlayListener extends InstanceListener {
         }
     }
 
-    /**
-     * Enforces place rules, whitelists/blacklists, and function overrides.
-     */
+    /** Enforces place rules, whitelists/blacklists, and function overrides. */
     @EventHandler
     public void onPlaceBlock(BlockPlaceEvent event) {
         if (event.getBlock().getWorld() == this.instance.getInstanceWorld()) {
@@ -430,9 +410,7 @@ public class PlayListener extends InstanceListener {
         }
     }
 
-    /**
-     * Enforces entity placement permissions in the instance world.
-     */
+    /** Enforces entity placement permissions in the instance world. */
     @EventHandler
     public void onPlaceEntity(EntityPlaceEvent event) {
         if (event.getEntity().getWorld() == this.instance.getInstanceWorld()) {
@@ -442,9 +420,7 @@ public class PlayListener extends InstanceListener {
         }
     }
 
-    /**
-     * Protects configured entity types from damage inside the instance world.
-     */
+    /** Protects configured entity types from damage inside the instance world. */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onDamageProtected(EntityDamageEvent event) {
         if (event.getEntity().getWorld() == this.instance.getInstanceWorld()) {
@@ -457,9 +433,7 @@ public class PlayListener extends InstanceListener {
         }
     }
 
-    /**
-     * Blocks interaction with configured protected entity types.
-     */
+    /** Blocks interaction with configured protected entity types. */
     @EventHandler
     public void onInteractProtected(PlayerInteractEntityEvent event) {
         if (event.getRightClicked().getWorld() == this.instance.getInstanceWorld()) {
@@ -469,9 +443,7 @@ public class PlayListener extends InstanceListener {
         }
     }
 
-    /**
-     * Armor stand manipulation variant of protected-entity interaction rules.
-     */
+    /** Armor stand manipulation variant of protected-entity interaction rules. */
     @EventHandler
     public void onInteractProtectedArmorstand(PlayerArmorStandManipulateEvent event) {
         if (event.getRightClicked().getWorld() == this.instance.getInstanceWorld()) {
@@ -481,9 +453,7 @@ public class PlayListener extends InstanceListener {
         }
     }
 
-    /**
-     * Enforces movement-related teleport restrictions such as pearls and chorus fruit.
-     */
+    /** Enforces movement-related teleport restrictions such as pearls and chorus fruit. */
     @EventHandler
     public void onTeleport(PlayerTeleportEvent event) {
         if (event.getPlayer().getWorld() == this.instance.getInstanceWorld()) {
@@ -504,9 +474,7 @@ public class PlayListener extends InstanceListener {
         }
     }
 
-    /**
-     * Enforces bucket-empty permissions and optional per-block function overrides.
-     */
+    /** Enforces bucket-empty permissions and optional per-block function overrides. */
     @EventHandler
     public void onBucketEmpty(PlayerBucketEmptyEvent event) {
         if (event.getPlayer().getWorld() == this.instance.getInstanceWorld()) {
@@ -529,9 +497,7 @@ public class PlayListener extends InstanceListener {
         }
     }
 
-    /**
-     * Enforces bucket-fill permissions and optional per-block function overrides.
-     */
+    /** Enforces bucket-fill permissions and optional per-block function overrides. */
     @EventHandler
     public void onBucketEmpty(PlayerBucketFillEvent event) {
         if (event.getPlayer().getWorld() == this.instance.getInstanceWorld()) {
@@ -554,9 +520,7 @@ public class PlayListener extends InstanceListener {
         }
     }
 
-    /**
-     * Blocks crafting of banned items when the instance rules disallow it.
-     */
+    /** Blocks crafting of banned items when the instance rules disallow it. */
     @EventHandler
     public void onCraftBannedItem(CraftItemEvent event) {
         Location loc = event.getInventory().getLocation();
@@ -578,9 +542,7 @@ public class PlayListener extends InstanceListener {
         }
     }
 
-    /**
-     * Blocks pickup of banned items when the instance rules disallow it.
-     */
+    /** Blocks pickup of banned items when the instance rules disallow it. */
     @EventHandler
     public void onPickupBannedItem(EntityPickupItemEvent event) {
         if (event.getEntity().getWorld() == this.instance.getInstanceWorld()) {
@@ -599,9 +561,7 @@ public class PlayListener extends InstanceListener {
         }
     }
 
-    /**
-     * Blocks inventory interaction with banned items when storage is restricted.
-     */
+    /** Blocks inventory interaction with banned items when storage is restricted. */
     @EventHandler
     public void onClickBannedItem(InventoryClickEvent event) {
         Player player = (Player) event.getWhoClicked();
@@ -619,9 +579,7 @@ public class PlayListener extends InstanceListener {
         }
     }
 
-    /**
-     * Prevents crop growth when plant growth is disabled for the instance.
-     */
+    /** Prevents crop growth when plant growth is disabled for the instance. */
     @EventHandler
     public void onGrowth(BlockGrowEvent event) {
         if (event.getNewState().getWorld() == this.instance.getInstanceWorld()) {
@@ -631,9 +589,7 @@ public class PlayListener extends InstanceListener {
         }
     }
 
-    /**
-     * Prevents block spread when plant growth is disabled for the instance.
-     */
+    /** Prevents block spread when plant growth is disabled for the instance. */
     @EventHandler
     public void onSpread(BlockSpreadEvent event) {
         if (event.getNewState().getWorld() == this.instance.getInstanceWorld()) {
@@ -643,9 +599,7 @@ public class PlayListener extends InstanceListener {
         }
     }
 
-    /**
-     * Enforces PVP rules for direct player-to-player damage.
-     */
+    /** Enforces PVP rules for direct player-to-player damage. */
     @EventHandler(priority = EventPriority.HIGH)
     public void onPvP(EntityDamageByEntityEvent event) {
         if (event.getEntity() instanceof Player player) {
@@ -658,9 +612,7 @@ public class PlayListener extends InstanceListener {
         }
     }
 
-    /**
-     * Enforces PVP rules for projectile-based player damage.
-     */
+    /** Enforces PVP rules for projectile-based player damage. */
     @EventHandler(priority = EventPriority.HIGH)
     public void onProjectilePvP(EntityDamageByEntityEvent event) {
         if (event.getEntity() instanceof Player player) {
@@ -675,9 +627,7 @@ public class PlayListener extends InstanceListener {
         }
     }
 
-    /**
-     * Enforces command allow/deny lists while players are inside the instance world.
-     */
+    /** Enforces command allow/deny lists while players are inside the instance world. */
     @EventHandler
     public void onCommand(PlayerCommandPreprocessEvent event) {
         Player player = event.getPlayer();

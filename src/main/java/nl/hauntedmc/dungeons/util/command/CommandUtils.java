@@ -1,8 +1,10 @@
 package nl.hauntedmc.dungeons.util.command;
+
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.util.config.PluginConfigView;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+
 import org.bukkit.command.CommandSender;
 
 import java.util.ArrayList;
@@ -25,33 +27,18 @@ public final class CommandUtils {
 
     /** Checks permission without sending feedback messages. */
     public static boolean hasPermissionSilent(CommandSender sender, String node) {
-        if (sender.hasPermission(node)) return true;
-        return switch (node) {
-            case "dungeons.admin" -> sender.hasPermission("dungeons.role.operator");
-            case "dungeons.loottables" -> sender.hasPermission("dungeons.staff.loot");
-            case "dungeons.setcooldown" -> sender.hasPermission("dungeons.staff.cooldown");
-            case "dungeons.functioneditor", "dungeons.roomeditor", "dungeons.cleansigns" ->
-                    sender.hasPermission("dungeons.staff.edit");
-            default -> false;
-        };
+        return sender.hasPermission(node);
     }
 
     /** Returns whether sender can edit a specific dungeon by name. */
     public static boolean hasDungeonEditAccess(CommandSender sender, String dungeonName) {
         return nl.hauntedmc.dungeons.runtime.staff.StaffPermissions.allows(
-                        sender, "edit", dungeonName)
-                || hasPermissionSilent(sender, "dungeons.edit")
-                || hasPermissionSilent(sender, "dungeons.edit.*")
-                || (dungeonName != null
-                        && !dungeonName.isBlank()
-                        && hasPermissionSilent(sender, "dungeons.edit." + dungeonName));
+                sender, "edit", dungeonName);
     }
 
     /** Returns whether sender has any dungeon-edit access across loaded dungeons. */
     public static boolean hasAnyDungeonEditAccess(CommandSender sender) {
-        if (nl.hauntedmc.dungeons.runtime.staff.StaffPermissions.allows(sender, "edit", null)
-                || hasPermissionSilent(sender, "dungeons.edit")
-                || hasPermissionSilent(sender, "dungeons.edit.*")) {
+        if (nl.hauntedmc.dungeons.runtime.staff.StaffPermissions.allows(sender, "edit", null)) {
             return true;
         }
 
@@ -82,7 +69,7 @@ public final class CommandUtils {
         List<String> helpInfo = new ArrayList<>();
         boolean playerSender = sender instanceof org.bukkit.entity.Player;
         boolean dungeonEditPerm = hasAnyDungeonEditAccess(sender);
-        boolean dungeonAdminPerm = hasPermissionSilent(sender, "dungeons.admin");
+        boolean dungeonAdminPerm = hasPermissionSilent(sender, "dungeons.role.operator");
         boolean playPerm = hasPermissionSilent(sender, "dungeons.play");
         boolean playSendPerm = hasPermissionSilent(sender, "dungeons.play.send");
 
@@ -116,14 +103,12 @@ public final class CommandUtils {
                 helpInfo.add(LangUtils.getMessage("commands.help.edit", false));
             }
         }
-        if (playerSender && hasPermissionSilent(sender, "dungeons.loottables")) {
+        if (playerSender && hasPermissionSilent(sender, "dungeons.staff.loot")) {
             helpInfo.add(LangUtils.getMessage("commands.help.loot", false));
         }
         if (dungeonAdminPerm) {
             helpInfo.add(LangUtils.getMessage("commands.help.dungeon", false));
-            helpInfo.add(LangUtils.getMessage("commands.help.player", false));
             if (playerSender) {
-                helpInfo.add(LangUtils.getMessage("commands.help.instance", false));
                 helpInfo.add(LangUtils.getMessage("commands.help.debug", false));
             }
         }

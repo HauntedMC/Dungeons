@@ -25,7 +25,7 @@ access:
     # bool. Applies when unique_validation_enabled = false.
     # True = /dungeon dungeon keys add|give still stamp issued keys with stable plugin-owned metadata,
     # so ordinary copies of the same item no longer validate or stack with the dungeon key.
-    # Existing legacy keys must be re-issued after enabling this.
+    # Untracked keys are rejected when this is enabled.
     metadata_validation_enabled: true
 
 editor:

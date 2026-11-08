@@ -22,9 +22,7 @@ import org.bukkit.persistence.PersistentDataType;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Item utility helpers for editor tools, key items, and reward transfers.
- */
+/** Item utility helpers for editor tools, key items, and reward transfers. */
 public final class ItemUtils {
     private ItemUtils() {}
 
@@ -85,11 +83,7 @@ public final class ItemUtils {
 
     /** Returns whether an item matches the function tool signature. */
     public static boolean isFunctionTool(ItemStack item) {
-        return isTaggedTool(
-                item,
-                getFunctionToolKey(),
-                RuntimeContext.functionBuilderMaterial(),
-                LangUtils.getMessage("general.items.function-tool.name", false));
+        return isTaggedTool(item, getFunctionToolKey(), RuntimeContext.functionBuilderMaterial());
     }
 
     /** Builds the configured room editor tool item. */
@@ -118,16 +112,12 @@ public final class ItemUtils {
 
     /** Returns whether an item matches the room tool signature. */
     public static boolean isRoomTool(ItemStack item) {
-        return isTaggedTool(
-                item,
-                getRoomToolKey(),
-                RuntimeContext.roomEditorMaterial(),
-                LangUtils.getMessage("general.items.room-tool.name", false));
+        return isTaggedTool(item, getRoomToolKey(), RuntimeContext.roomEditorMaterial());
     }
 
-    /** Validates tool identity by persistent key, material, and fallback item name. */
+    /** Validates tool identity by persistent key and configured material. */
     private static boolean isTaggedTool(
-            ItemStack item, NamespacedKey key, Material expectedMaterial, String expectedName) {
+            ItemStack item, NamespacedKey key, Material expectedMaterial) {
         if (item == null || item.getType() == Material.AIR) {
             return false;
         }
@@ -137,21 +127,8 @@ public final class ItemUtils {
             return false;
         }
 
-        PersistentDataContainer data = meta.getPersistentDataContainer();
-        if (data.has(key, PersistentDataType.INTEGER)) {
-            return true;
-        }
-
-        if (item.getType() != expectedMaterial) {
-            return false;
-        }
-
-        if (expectedName == null || expectedName.isBlank()) {
-            return false;
-        }
-
-        String actualName = ComponentUtils.serialize(meta.itemName());
-        return !actualName.isBlank() && actualName.equals(expectedName);
+        return item.getType() == expectedMaterial
+                && meta.getPersistentDataContainer().has(key, PersistentDataType.INTEGER);
     }
 
     /** Returns the persistent data key used to tag function tools. */

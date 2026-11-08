@@ -277,7 +277,7 @@ class StaffCommandContractTest {
     }
 
     @Test
-    void openingTheLegacyEditorMakesABackupBeforeInvokingTheCurrentDefinition() throws Exception {
+    void openingTheEditorMakesABackupBeforeInvokingTheCurrentDefinition() throws Exception {
         try (var f = new StaffFixture(directory)) {
             var h = handler(f);
             var player = f.player("Builder");
@@ -295,7 +295,7 @@ class StaffCommandContractTest {
                             })
                     .when(dungeon)
                     .editAsync(playerId);
-            assertTrue(h.handleLegacy(player.player, new String[] {"edit", "open", "crypt"}));
+            h.executeChecked(player.player, new String[] {"edit", "crypt", "Open editor"});
             f.flush();
             verify(dungeon).editAsync(playerId);
             assertEquals(
@@ -360,7 +360,7 @@ class StaffCommandContractTest {
     }
 
     @Test
-    void observationRetryEvacuationAndLegacyAliasesUseTheSamePolicy() throws Exception {
+    void observationAndEvacuationUseTheSamePolicy() throws Exception {
         try (var f = new StaffFixture(directory)) {
             var h = handler(f);
             var staff = f.player("Observer");
@@ -369,9 +369,9 @@ class StaffCommandContractTest {
             f.runtime.activeInstances().registerActiveInstance(f.run.run);
             f.run.run.completeInitialization(false);
             f.run.run.addPlayer(session);
-            assertTrue(
-                    h.handleLegacy(
-                            staff.player, new String[] {"instance", "join-player", "Player"}));
+            h.executeChecked(
+                    staff.player,
+                    new String[] {"instance", f.run.run.getInstanceId().toString(), "observe"});
             assertTrue(f.runtime.playerSessions().get(staff.player).isObserving());
             h.executeChecked(staff.player, new String[] {"stop-observing"});
             assertFalse(f.runtime.playerSessions().get(staff.player).isObserving());
@@ -383,15 +383,6 @@ class StaffCommandContractTest {
                     "evacuate",
                     "Emergency");
             assertTrue(f.run.run.getPlayers().isEmpty());
-            assertTrue(h.handleLegacy(f.actor, new String[] {"status"}));
-            assertTrue(h.handleLegacy(f.actor, new String[] {"reload"}));
-            assertTrue(h.handleLegacy(f.actor, new String[] {"player", "Player", "status"}));
-            assertFalse(h.handleLegacy(f.actor, new String[] {"admin", "help"}));
-            assertThrows(
-                    IllegalArgumentException.class,
-                    () ->
-                            h.handleLegacy(
-                                    f.actor, new String[] {"dungeon", "KEYS", "CLEAR", "crypt"}));
         }
     }
 

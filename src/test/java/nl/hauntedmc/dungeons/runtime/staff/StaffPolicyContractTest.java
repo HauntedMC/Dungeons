@@ -21,7 +21,7 @@ class StaffPolicyContractTest {
     @TempDir Path directory;
 
     @Test
-    void capabilitiesRespectGlobalScopedNegativeAndLegacyGrants() {
+    void capabilitiesRespectGlobalScopedNegativeGrants() {
         var actor = mock(CommandSender.class);
         when(actor.hasPermission("dungeons.staff.edit.crypt")).thenReturn(true);
         assertTrue(StaffPermissions.allows(actor, "edit", "crypt"));
@@ -36,14 +36,11 @@ class StaffPolicyContractTest {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> StaffPermissions.require(actor, "edit", "crypt"));
-        var legacy = mock(CommandSender.class);
-        when(legacy.hasPermission("dungeons.edit.crypt")).thenReturn(true);
-        assertTrue(StaffPermissions.allows(legacy, "maintenance", "crypt"));
-        assertFalse(StaffPermissions.allows(legacy, "scripts", "crypt"));
-        when(legacy.hasPermission("dungeons.edit.*")).thenReturn(true);
-        assertTrue(StaffPermissions.allows(legacy, "edit", "other"));
-        when(legacy.hasPermission("dungeons.setcooldown")).thenReturn(true);
-        assertTrue(StaffPermissions.allows(legacy, "cooldown", null));
+        var retired = mock(CommandSender.class);
+        when(retired.hasPermission("dungeons.edit.crypt")).thenReturn(true);
+        when(retired.hasPermission("dungeons.admin")).thenReturn(true);
+        assertFalse(StaffPermissions.allows(retired, "edit", "crypt"));
+        assertFalse(StaffPermissions.allows(retired, "maintenance", "crypt"));
     }
 
     @Test
