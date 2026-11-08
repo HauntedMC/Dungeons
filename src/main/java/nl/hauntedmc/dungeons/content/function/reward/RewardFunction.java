@@ -384,251 +384,18 @@ public class RewardFunction extends DungeonFunction {
      */
     public void initializeCooldownMenu() {
         this.cooldownMenu = PlayerHotbarMenu.createMenu();
-        this.cooldownMenu.addMenuItem(
-                new MenuItem() {
-                    /**
-                     * Builds button.
-                     */
-                    @Override
-                    public void buildButton() {
-                        this.button = new MenuButton(Material.RED_STAINED_GLASS_PANE);
-                        this.button.setDisplayName("&c&lBACK");
-                    }
-
-                    /**
-                     * Performs on select.
-                     */
-                    @Override
-                    public void onSelect(PlayerEvent event) {
-                        Player player = event.getPlayer();
-                        DungeonPlayerSession playerSession =
-                                RuntimeContext.playerSessions().get(player);
-                        playerSession.restorePreviousHotbar();
-                    }
-                });
-        this.cooldownMenu.addMenuItem(
-                new ToggleMenuItem() {
-                    /**
-                     * Builds button.
-                     */
-                    @Override
-                    public void buildButton() {
-                        this.button = new MenuButton(Material.BEACON);
-                        this.button.setDisplayName("&d&lToggle Cooldown Enabled");
-                        this.button.setEnchanted(!RewardFunction.this.cooldownDisabled);
-                    }
-
-                    /**
-                     * Performs on select.
-                     */
-                    @Override
-                    public void onSelect(Player player) {
-                        if (!RewardFunction.this.cooldownDisabled) {
-                            LangUtils.sendMessage(
-                                    player, "editor.function.reward.cooldown-disabled");
-                        } else {
-                            LangUtils.sendMessage(
-                                    player, "editor.function.reward.cooldown-enabled");
-                        }
-
-                        RewardFunction.this.cooldownDisabled =
-                                !RewardFunction.this.cooldownDisabled;
-                    }
-                });
-        this.cooldownMenu.addMenuItem(
-                new ToggleMenuItem() {
-                    /**
-                     * Builds button.
-                     */
-                    @Override
-                    public void buildButton() {
-                        this.button = new MenuButton(Material.NETHER_STAR);
-                        this.button.setDisplayName("&e&lToggle Custom Cooldown");
-                        this.button.setEnchanted(RewardFunction.this.overrideCooldown);
-                    }
-
-                    /**
-                     * Performs on select.
-                     */
-                    @Override
-                    public void onSelect(Player player) {
-                        if (!RewardFunction.this.overrideCooldown) {
-                            LangUtils.sendMessage(
-                                    player, "editor.function.reward.custom-cooldown-enabled");
-                        } else {
-                            LangUtils.sendMessage(
-                                    player, "editor.function.reward.custom-cooldown-disabled");
-                        }
-
-                        RewardFunction.this.overrideCooldown =
-                                !RewardFunction.this.overrideCooldown;
-                    }
-                });
+        this.cooldownMenu.addMenuItem(createBACKItem());
+        this.cooldownMenu.addMenuItem(createToggleCooldownEnabledItem());
+        this.cooldownMenu.addMenuItem(createToggleCustomCooldownItem());
         this.cooldownMenu.addMenuItem(
                 3,
-                new MenuItem() {
-                    /**
-                     * Builds button.
-                     */
-                    @Override
-                    public void buildButton() {
-                        if (!RewardFunction.this.overrideCooldown) {
-                            this.button = null;
-                        } else {
-                            this.button = new MenuButton(Material.CLOCK);
-                            this.button.setDisplayName(
-                                    "&d&lType: "
-                                            + CooldownPeriod.fromIndex(RewardFunction.this.period));
-                        }
-                    }
-
-                    /**
-                     * Performs on select.
-                     */
-                    @Override
-                    public void onSelect(PlayerEvent event) {
-                        if (RewardFunction.this.overrideCooldown) {
-                            Player player = event.getPlayer();
-                            DungeonPlayerSession playerSession =
-                                    RuntimeContext.playerSessions().get(player);
-                            RewardFunction.this.period++;
-                            if (RewardFunction.this.period >= CooldownPeriod.values().length) {
-                                RewardFunction.this.period = 0;
-                            }
-
-                            CooldownPeriod period =
-                                    CooldownPeriod.fromIndex(RewardFunction.this.period);
-                            LangUtils.sendMessage(
-                                    player,
-                                    "editor.function.reward.cooldown-type-set",
-                                    LangUtils.placeholder("type", period.toString()));
-                            playerSession.showHotbar(RewardFunction.this.cooldownMenu, false);
-                        }
-                    }
-                });
+                createTypeItem());
         this.cooldownMenu.addMenuItem(
                 4,
-                new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
-                    @Override
-                    public void buildButton() {
-                        if (!RewardFunction.this.overrideCooldown) {
-                            this.button = null;
-                        } else {
-                            CooldownPeriod period =
-                                    CooldownPeriod.fromIndex(RewardFunction.this.period);
-                            this.button = new MenuButton(Material.REPEATER);
-                            if (period == CooldownPeriod.TIMER) {
-                                this.button.setDisplayName("&d&lCooldown in Minutes");
-                            } else {
-                                this.button.setDisplayName("&d&lHour of Day");
-                            }
-
-                            this.button.setAmount(RewardFunction.this.cooldownTime);
-                        }
-                    }
-
-                    /**
-                     * Performs on select.
-                     */
-                    @Override
-                    public void onSelect(Player player) {
-                        if (RewardFunction.this.overrideCooldown) {
-                            CooldownPeriod period =
-                                    CooldownPeriod.fromIndex(RewardFunction.this.period);
-                            if (period == CooldownPeriod.TIMER) {
-                                LangUtils.sendMessage(
-                                        player, "editor.function.reward.ask-cooldown-minutes");
-                            } else {
-                                LangUtils.sendMessage(
-                                        player, "editor.function.reward.ask-reset-hour");
-                            }
-                        }
-                    }
-
-                    /**
-                     * Performs on input.
-                     */
-                    @Override
-                    public void onInput(Player player, String message) {
-                        Optional<Integer> value = InputUtils.readIntegerInput(player, message);
-                        RewardFunction.this.cooldownTime =
-                                value.orElse(RewardFunction.this.cooldownTime);
-                        if (value.isPresent()) {
-                            LangUtils.sendMessage(
-                                    player,
-                                    "editor.function.reward.cooldown-time-set",
-                                    LangUtils.placeholder(
-                                            "time",
-                                            String.valueOf(RewardFunction.this.cooldownTime)));
-                        }
-                    }
-                });
+                createCooldownInMinutesItem());
         this.cooldownMenu.addMenuItem(
                 5,
-                new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
-                    @Override
-                    public void buildButton() {
-                        if (!RewardFunction.this.overrideCooldown) {
-                            this.button = null;
-                        } else {
-                            CooldownPeriod period =
-                                    CooldownPeriod.fromIndex(RewardFunction.this.period);
-                            if (period == CooldownPeriod.WEEKLY) {
-                                this.button = new MenuButton(Material.CLOCK);
-                                this.button.setDisplayName("&d&lDay of Week");
-                                this.button.setAmount(RewardFunction.this.resetDay);
-                            } else if (period == CooldownPeriod.MONTHLY) {
-                                this.button = new MenuButton(Material.CLOCK);
-                                this.button.setDisplayName("&d&lDay of Month");
-                                this.button.setAmount(RewardFunction.this.resetDay);
-                            } else {
-                                this.button = null;
-                            }
-                        }
-                    }
-
-                    /**
-                     * Performs on select.
-                     */
-                    @Override
-                    public void onSelect(Player player) {
-                        if (RewardFunction.this.overrideCooldown) {
-                            if (RewardFunction.this.period >= 3) {
-                                CooldownPeriod cPeriod =
-                                        CooldownPeriod.fromIndex(RewardFunction.this.period);
-                                if (cPeriod == CooldownPeriod.WEEKLY) {
-                                    LangUtils.sendMessage(
-                                            player, "editor.function.reward.ask-reset-weekday");
-                                } else if (cPeriod == CooldownPeriod.MONTHLY) {
-                                    LangUtils.sendMessage(
-                                            player, "editor.function.reward.ask-reset-monthday");
-                                }
-                            }
-                        }
-                    }
-
-                    /**
-                     * Performs on input.
-                     */
-                    @Override
-                    public void onInput(Player player, String message) {
-                        Optional<Integer> value = InputUtils.readIntegerInput(player, message);
-                        RewardFunction.this.resetDay = value.orElse(RewardFunction.this.resetDay);
-                        if (value.isPresent()) {
-                            LangUtils.sendMessage(
-                                    player,
-                                    "editor.function.reward.reset-day-set",
-                                    LangUtils.placeholder(
-                                            "day", String.valueOf(RewardFunction.this.resetDay)));
-                        }
-                    }
-                });
+                createDayOfWeekItem());
     }
 
     /**
@@ -651,121 +418,10 @@ public class RewardFunction extends DungeonFunction {
      */
     @Override
     public void buildHotbarMenu() {
-        this.menu.addMenuItem(
-                new MenuItem() {
-                    /**
-                     * Builds button.
-                     */
-                    @Override
-                    public void buildButton() {
-                        this.button = new MenuButton(Material.CHEST);
-                        this.button.setDisplayName("&d&lEdit Rewards");
-                    }
-
-                    /**
-                     * Performs on select.
-                     */
-                    @Override
-                    public void onSelect(PlayerEvent event) {
-                        Player player = event.getPlayer();
-                        RuntimeContext.guiService()
-                                .openGui(player, RewardFunction.this.rewardsGuiName);
-                    }
-                });
-        this.menu.addMenuItem(
-                new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
-                    @Override
-                    public void buildButton() {
-                        this.button = new MenuButton(Material.EMERALD);
-                        this.button.setDisplayName("&d&lExp Reward");
-                        this.button.setAmount(RewardFunction.this.xp);
-                    }
-
-                    /**
-                     * Performs on select.
-                     */
-                    @Override
-                    public void onSelect(Player player) {
-                        LangUtils.sendMessage(player, "editor.function.reward.ask-exp");
-                    }
-
-                    /**
-                     * Performs on input.
-                     */
-                    @Override
-                    public void onInput(Player player, String message) {
-                        Optional<Integer> value = InputUtils.readIntegerInput(player, message);
-                        RewardFunction.this.xp = value.orElse(RewardFunction.this.xp);
-                        if (value.isPresent()) {
-                            LangUtils.sendMessage(
-                                    player,
-                                    "editor.function.reward.exp-set",
-                                    LangUtils.placeholder(
-                                            "xp", String.valueOf(RewardFunction.this.xp)));
-                        }
-                    }
-                });
-        this.menu.addMenuItem(
-                new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
-                    @Override
-                    public void buildButton() {
-                        this.button = new MenuButton(Material.NETHER_STAR);
-                        this.button.setDisplayName("&d&lExp Levels Reward");
-                        this.button.setAmount(RewardFunction.this.levels);
-                    }
-
-                    /**
-                     * Performs on select.
-                     */
-                    @Override
-                    public void onSelect(Player player) {
-                        LangUtils.sendMessage(player, "editor.function.reward.ask-levels");
-                    }
-
-                    /**
-                     * Performs on input.
-                     */
-                    @Override
-                    public void onInput(Player player, String message) {
-                        Optional<Integer> value = InputUtils.readIntegerInput(player, message);
-                        RewardFunction.this.levels = value.orElse(RewardFunction.this.levels);
-                        if (value.isPresent()) {
-                            LangUtils.sendMessage(
-                                    player,
-                                    "editor.function.reward.levels-set",
-                                    LangUtils.placeholder(
-                                            "levels", String.valueOf(RewardFunction.this.levels)));
-                        }
-                    }
-                });
-        this.menu.addMenuItem(
-                new MenuItem() {
-                    /**
-                     * Builds button.
-                     */
-                    @Override
-                    public void buildButton() {
-                        this.button = new MenuButton(Material.CLOCK);
-                        this.button.setDisplayName("&a&lCooldown Settings");
-                    }
-
-                    /**
-                     * Performs on select.
-                     */
-                    @Override
-                    public void onSelect(PlayerEvent event) {
-                        Player player = event.getPlayer();
-                        DungeonPlayerSession playerSession =
-                                RuntimeContext.playerSessions().get(player);
-                        playerSession.showHotbar(RewardFunction.this.cooldownMenu, true);
-                    }
-                });
+        this.menu.addMenuItem(createEditRewardsItem());
+        this.menu.addMenuItem(createExpRewardItem());
+        this.menu.addMenuItem(createExpLevelsRewardItem());
+        this.menu.addMenuItem(createCooldownSettingsItem());
     }
 
     /**
@@ -856,5 +512,296 @@ public class RewardFunction extends DungeonFunction {
             }
         }
         return clone;
+    }
+
+    private MenuItem createBACKItem() {
+        return new MenuItem() {
+            @Override
+            public void buildButton() {
+                this.button = new MenuButton(Material.RED_STAINED_GLASS_PANE);
+                this.button.setDisplayName("&c&lBACK");
+            }
+            @Override
+            public void onSelect(PlayerEvent event) {
+                Player player = event.getPlayer();
+                DungeonPlayerSession playerSession =
+                        RuntimeContext.playerSessions().get(player);
+                playerSession.restorePreviousHotbar();
+            }
+        };
+    }
+
+    private MenuItem createToggleCooldownEnabledItem() {
+        return new ToggleMenuItem() {
+            @Override
+            public void buildButton() {
+                this.button = new MenuButton(Material.BEACON);
+                this.button.setDisplayName("&d&lToggle Cooldown Enabled");
+                this.button.setEnchanted(!RewardFunction.this.cooldownDisabled);
+            }
+            @Override
+            public void onSelect(Player player) {
+                if (!RewardFunction.this.cooldownDisabled) {
+                    LangUtils.sendMessage(
+                            player, "editor.function.reward.cooldown-disabled");
+                } else {
+                    LangUtils.sendMessage(
+                            player, "editor.function.reward.cooldown-enabled");
+                }
+
+                RewardFunction.this.cooldownDisabled =
+                        !RewardFunction.this.cooldownDisabled;
+            }
+        };
+    }
+
+    private MenuItem createToggleCustomCooldownItem() {
+        return new ToggleMenuItem() {
+            @Override
+            public void buildButton() {
+                this.button = new MenuButton(Material.NETHER_STAR);
+                this.button.setDisplayName("&e&lToggle Custom Cooldown");
+                this.button.setEnchanted(RewardFunction.this.overrideCooldown);
+            }
+            @Override
+            public void onSelect(Player player) {
+                if (!RewardFunction.this.overrideCooldown) {
+                    LangUtils.sendMessage(
+                            player, "editor.function.reward.custom-cooldown-enabled");
+                } else {
+                    LangUtils.sendMessage(
+                            player, "editor.function.reward.custom-cooldown-disabled");
+                }
+
+                RewardFunction.this.overrideCooldown =
+                        !RewardFunction.this.overrideCooldown;
+            }
+        };
+    }
+
+    private MenuItem createTypeItem() {
+        return new MenuItem() {
+            @Override
+            public void buildButton() {
+                if (!RewardFunction.this.overrideCooldown) {
+                    this.button = null;
+                } else {
+                    this.button = new MenuButton(Material.CLOCK);
+                    this.button.setDisplayName(
+                            "&d&lType: "
+                                    + CooldownPeriod.fromIndex(RewardFunction.this.period));
+                }
+            }
+            @Override
+            public void onSelect(PlayerEvent event) {
+                if (RewardFunction.this.overrideCooldown) {
+                    Player player = event.getPlayer();
+                    DungeonPlayerSession playerSession =
+                            RuntimeContext.playerSessions().get(player);
+                    RewardFunction.this.period++;
+                    if (RewardFunction.this.period >= CooldownPeriod.values().length) {
+                        RewardFunction.this.period = 0;
+                    }
+
+                    CooldownPeriod period =
+                            CooldownPeriod.fromIndex(RewardFunction.this.period);
+                    LangUtils.sendMessage(
+                            player,
+                            "editor.function.reward.cooldown-type-set",
+                            LangUtils.placeholder("type", period.toString()));
+                    playerSession.showHotbar(RewardFunction.this.cooldownMenu, false);
+                }
+            }
+        };
+    }
+
+    private MenuItem createCooldownInMinutesItem() {
+        return new ChatMenuItem() {
+            @Override
+            public void buildButton() {
+                if (!RewardFunction.this.overrideCooldown) {
+                    this.button = null;
+                } else {
+                    CooldownPeriod period =
+                            CooldownPeriod.fromIndex(RewardFunction.this.period);
+                    this.button = new MenuButton(Material.REPEATER);
+                    if (period == CooldownPeriod.TIMER) {
+                        this.button.setDisplayName("&d&lCooldown in Minutes");
+                    } else {
+                        this.button.setDisplayName("&d&lHour of Day");
+                    }
+
+                    this.button.setAmount(RewardFunction.this.cooldownTime);
+                }
+            }
+            @Override
+            public void onSelect(Player player) {
+                if (RewardFunction.this.overrideCooldown) {
+                    CooldownPeriod period =
+                            CooldownPeriod.fromIndex(RewardFunction.this.period);
+                    if (period == CooldownPeriod.TIMER) {
+                        LangUtils.sendMessage(
+                                player, "editor.function.reward.ask-cooldown-minutes");
+                    } else {
+                        LangUtils.sendMessage(
+                                player, "editor.function.reward.ask-reset-hour");
+                    }
+                }
+            }
+            @Override
+            public void onInput(Player player, String message) {
+                Optional<Integer> value = InputUtils.readIntegerInput(player, message);
+                RewardFunction.this.cooldownTime =
+                        value.orElse(RewardFunction.this.cooldownTime);
+                if (value.isPresent()) {
+                    LangUtils.sendMessage(
+                            player,
+                            "editor.function.reward.cooldown-time-set",
+                            LangUtils.placeholder(
+                                    "time",
+                                    String.valueOf(RewardFunction.this.cooldownTime)));
+                }
+            }
+        };
+    }
+
+    private MenuItem createDayOfWeekItem() {
+        return new ChatMenuItem() {
+            @Override
+            public void buildButton() {
+                if (!RewardFunction.this.overrideCooldown) {
+                    this.button = null;
+                } else {
+                    CooldownPeriod period =
+                            CooldownPeriod.fromIndex(RewardFunction.this.period);
+                    if (period == CooldownPeriod.WEEKLY) {
+                        this.button = new MenuButton(Material.CLOCK);
+                        this.button.setDisplayName("&d&lDay of Week");
+                        this.button.setAmount(RewardFunction.this.resetDay);
+                    } else if (period == CooldownPeriod.MONTHLY) {
+                        this.button = new MenuButton(Material.CLOCK);
+                        this.button.setDisplayName("&d&lDay of Month");
+                        this.button.setAmount(RewardFunction.this.resetDay);
+                    } else {
+                        this.button = null;
+                    }
+                }
+            }
+            @Override
+            public void onSelect(Player player) {
+                if (RewardFunction.this.overrideCooldown) {
+                    if (RewardFunction.this.period >= 3) {
+                        CooldownPeriod cPeriod =
+                                CooldownPeriod.fromIndex(RewardFunction.this.period);
+                        if (cPeriod == CooldownPeriod.WEEKLY) {
+                            LangUtils.sendMessage(
+                                    player, "editor.function.reward.ask-reset-weekday");
+                        } else if (cPeriod == CooldownPeriod.MONTHLY) {
+                            LangUtils.sendMessage(
+                                    player, "editor.function.reward.ask-reset-monthday");
+                        }
+                    }
+                }
+            }
+            @Override
+            public void onInput(Player player, String message) {
+                Optional<Integer> value = InputUtils.readIntegerInput(player, message);
+                RewardFunction.this.resetDay = value.orElse(RewardFunction.this.resetDay);
+                if (value.isPresent()) {
+                    LangUtils.sendMessage(
+                            player,
+                            "editor.function.reward.reset-day-set",
+                            LangUtils.placeholder(
+                                    "day", String.valueOf(RewardFunction.this.resetDay)));
+                }
+            }
+        };
+    }
+
+    private MenuItem createEditRewardsItem() {
+        return new MenuItem() {
+            @Override
+            public void buildButton() {
+                this.button = new MenuButton(Material.CHEST);
+                this.button.setDisplayName("&d&lEdit Rewards");
+            }
+            @Override
+            public void onSelect(PlayerEvent event) {
+                Player player = event.getPlayer();
+                RuntimeContext.guiService()
+                        .openGui(player, RewardFunction.this.rewardsGuiName);
+            }
+        };
+    }
+
+    private MenuItem createExpRewardItem() {
+        return new ChatMenuItem() {
+            @Override
+            public void buildButton() {
+                this.button = new MenuButton(Material.EMERALD);
+                this.button.setDisplayName("&d&lExp Reward");
+                this.button.setAmount(RewardFunction.this.xp);
+            }
+            @Override
+            public void onSelect(Player player) {
+                LangUtils.sendMessage(player, "editor.function.reward.ask-exp");
+            }
+            @Override
+            public void onInput(Player player, String message) {
+                Optional<Integer> value = InputUtils.readIntegerInput(player, message);
+                RewardFunction.this.xp = value.orElse(RewardFunction.this.xp);
+                if (value.isPresent()) {
+                    LangUtils.sendMessage(
+                            player,
+                            "editor.function.reward.exp-set",
+                            LangUtils.placeholder(
+                                    "xp", String.valueOf(RewardFunction.this.xp)));
+                }
+            }
+        };
+    }
+
+    private MenuItem createExpLevelsRewardItem() {
+        return new ChatMenuItem() {
+            @Override
+            public void buildButton() {
+                this.button = new MenuButton(Material.NETHER_STAR);
+                this.button.setDisplayName("&d&lExp Levels Reward");
+                this.button.setAmount(RewardFunction.this.levels);
+            }
+            @Override
+            public void onSelect(Player player) {
+                LangUtils.sendMessage(player, "editor.function.reward.ask-levels");
+            }
+            @Override
+            public void onInput(Player player, String message) {
+                Optional<Integer> value = InputUtils.readIntegerInput(player, message);
+                RewardFunction.this.levels = value.orElse(RewardFunction.this.levels);
+                if (value.isPresent()) {
+                    LangUtils.sendMessage(
+                            player,
+                            "editor.function.reward.levels-set",
+                            LangUtils.placeholder(
+                                    "levels", String.valueOf(RewardFunction.this.levels)));
+                }
+            }
+        };
+    }
+
+    private MenuItem createCooldownSettingsItem() {
+        return new MenuItem() {
+            @Override
+            public void buildButton() {
+                this.button = new MenuButton(Material.CLOCK);
+                this.button.setDisplayName("&a&lCooldown Settings");
+            }
+            @Override
+            public void onSelect(PlayerEvent event) {
+                Player player = event.getPlayer();
+                DungeonPlayerSession playerSession =
+                        RuntimeContext.playerSessions().get(player);
+                playerSession.showHotbar(RewardFunction.this.cooldownMenu, true);
+            }
+        };
     }
 }
