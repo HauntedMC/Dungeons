@@ -14,6 +14,7 @@ If you run the plugin:
 If you contribute code:
 
 - [Development](DEVELOPMENT.md): local setup and day-to-day workflow.
+- [Refactoring worklist](REFACTORING.md): completed extractions, full source inventory, and remaining review.
 - [System reliability](SYSTEM_RELIABILITY.md): persistence, runtime boundaries, and recovery.
 - [Staff validation](STAFF_VALIDATION.md): regression fixes, class coverage, and native acceptance results.
 - [Contributing Guide](../CONTRIBUTING.md): pull request expectations.

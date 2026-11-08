@@ -103,9 +103,13 @@ For contributors, boundaries are clear: bootstrap wiring in `bootstrap`, runtime
 
 ## Command, Persistence and Editor Boundaries
 
-`DungeonCommand` owns Bukkit registration, gameplay and authoring groups. `StaffCommandHandler`
-owns staff operations and editor opening; obsolete flat aliases and player/instance admin groups
-are removed. Focused handlers share scoped capability checks and current-format persistence.
+`DungeonCommand` owns Bukkit registration, root routing, help and discovery. Separate handlers own
+editor actions (`EditCommandHandler`), player run commands (`GameplayCommandHandler`), dungeon
+administration (`DungeonDefinitionCommandHandler`), and world import/creation
+(`DungeonWorldCommandHandler`). `DungeonCompletions` shares catalogue and scoped editor completion
+policy. World commands capture inputs before scheduling named disk-copy and server-thread completion
+phases. `StaffCommandHandler` owns staff operations and editor opening. Focused handlers preserve
+scoped capability checks and current-format persistence.
 
 `DungeonPlayerDataStore` owns each dungeon's progression documents and access/reward cooldown indexes. `DungeonDefinition` keeps its public progression methods as delegates. The store loads checked snapshots and saves through the same atomic destination lanes as other configuration files. Unreadable or mismatched records remain protected from writes until repaired and reloaded; valid fields in partially invalid records remain readable. Save failures propagate to the caller and keep in-memory changes available for retry. Date values and cooldown collections are detached. Models belong to the server thread; progression inspection uses detached store summaries.
 
@@ -115,7 +119,24 @@ are removed. Focused handlers share scoped capability checks and current-format 
 
 The regression baseline was run before these extractions: command routing and permission checks, room write failures/dirty revisions, immutable ordered configuration snapshots, editor final saves and shutdown draining, preparation timeout cancellation and retryable unload failures. Additional tests cover protected progression records, atomic save retry, editor leases across navigation/reload/quit and window retirement. Run `./mvnw -Pplatform-acceptance verify` for the complete unit, contract, style and native Paper acceptance checks.
 
-Further extractions can use the same boundaries: move the remaining root command branches one at a time, separate the access-key ledger from dungeon definitions, and split `EditorMenus` by editor workflow. Preserve public gameplay entry points and failure-boundary tests while migrating those slices; moving every method at once would obscure lifecycle changes during review.
+`DungeonAccessKeyService` owns issued-key validation, reservation, consumption, rotation and durable
+ledger rollback. It reads current key definitions through a supplier so configuration refreshes do
+not leave it using an old collection. `DungeonDefinition` retains the public key API as delegates.
+`InstanceWorldCleanup` owns startup deletion policy, including loaded-world protection, retired-folder
+validation and preservation of both folders belonging to an uncommitted editor.
+
+`EditorMenus` and `HotbarMenus` retain stable initialization/access entry points and delegate to
+workflow builders for functions, triggers, conditions, gates, composites, and room/function hotbars.
+`EditorMenuSupport` centralizes editor window access checks and persisted-field descriptions.
+`ConnectorEditorMenus` builds layout connector/door hotbars; the layout retains its existing
+initialization hooks. `ConnectorClipboardActions` owns copy/move validation, door transforms and
+clipboard completion. `StaffMenus` owns inventory and prompt lifetime, events and refresh;
+`StaffScreenRows` builds screen content through a navigation interface. Several content mechanics
+use named item factories to keep menu assembly separate from individual editing callbacks.
+
+The repository-wide structural inventory and remaining semantic review work are tracked in
+[Refactoring worklist](REFACTORING.md). Preserve public gameplay entry points and failure-boundary
+tests when extracting the remaining lifecycle, player-session, queue/team and configuration code.
 
 ## Retained Editor Recovery Files
 
