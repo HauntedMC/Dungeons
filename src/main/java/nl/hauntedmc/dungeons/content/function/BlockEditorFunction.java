@@ -1,5 +1,7 @@
 package nl.hauntedmc.dungeons.content.function;
 
+import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuItem;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -171,229 +173,9 @@ public class BlockEditorFunction extends DungeonFunction {
      */
     @Override
     public void buildHotbarMenu() {
-        this.menu.addMenuItem(
-                new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
-                    @Override
-                    public void buildButton() {
-                        this.button = new MenuButton(Material.GRASS_BLOCK);
-                        this.button.setDisplayName("&d&lBlock Type");
-                    }
-
-                    /**
-                     * Performs on select.
-                     */
-                    @Override
-                    public void onSelect(Player player) {
-                        if (!BlockEditorFunction.this.remove) {
-                            LangUtils.sendMessage(
-                                    player, "editor.function.block-editor.ask-place-block");
-                        } else {
-                            LangUtils.sendMessage(
-                                    player, "editor.function.block-editor.ask-remove-block");
-                        }
-
-                        LangUtils.sendMessage(
-                                player,
-                                "editor.function.block-editor.current-block",
-                                LangUtils.placeholder("block", BlockEditorFunction.this.blockType));
-                    }
-
-                    /**
-                     * Performs on input.
-                     */
-                    @Override
-                    public void onInput(Player player, String message) {
-                        String matString = message.toUpperCase(Locale.ROOT);
-
-                        try {
-                            if (BlockEditorFunction.this.remove && matString.equals("ANY")) {
-                                BlockEditorFunction.this.blockType = matString;
-                                BlockEditorFunction.this.setDisplayName("Block Remover");
-                                LangUtils.sendMessage(
-                                        player,
-                                        "editor.function.block-editor.block-set",
-                                        LangUtils.placeholder(
-                                                "block", BlockEditorFunction.this.blockType));
-                                return;
-                            }
-
-                            Material mat = Material.valueOf(matString);
-                            if (!mat.isBlock()) {
-                                throw new IllegalArgumentException("Invalid block");
-                            }
-
-                            BlockEditorFunction.this.blockType = matString;
-                            if (!BlockEditorFunction.this.remove) {
-                                BlockEditorFunction.this.setDisplayName(
-                                        BlockEditorFunction.this.blockType + " Placer");
-                            } else {
-                                BlockEditorFunction.this.setDisplayName(
-                                        BlockEditorFunction.this.blockType + " Remover");
-                            }
-
-                            LangUtils.sendMessage(
-                                    player,
-                                    "editor.function.block-editor.block-set",
-                                    LangUtils.placeholder(
-                                            "block", BlockEditorFunction.this.blockType));
-                        } catch (IllegalArgumentException exception) {
-                            LangUtils.sendMessage(
-                                    player, "editor.function.block-editor.invalid-material");
-                            MessageUtils.sendClickableLink(
-                                    player,
-                                    LangUtils.getMessage(
-                                            "editor.function.block-editor.valid-materials-link"),
-                                    "https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Material.html");
-                        }
-                    }
-                });
-        this.menu.addMenuItem(
-                new ToggleMenuItem() {
-                    /**
-                     * Builds button.
-                     */
-                    @Override
-                    public void buildButton() {
-                        this.button = new MenuButton(Material.BARRIER);
-                        this.button.setDisplayName("&d&lToggle Remover");
-                    }
-
-                    /**
-                     * Performs on select.
-                     */
-                    @Override
-                    public void onSelect(Player player) {
-                        if (!BlockEditorFunction.this.remove) {
-                            LangUtils.sendMessage(
-                                    player, "editor.function.block-editor.mode-remove");
-                            BlockEditorFunction.this.setDisplayName(
-                                    BlockEditorFunction.this.blockType + " Remover");
-                        } else {
-                            LangUtils.sendMessage(
-                                    player, "editor.function.block-editor.mode-place");
-                            BlockEditorFunction.this.setDisplayName(
-                                    BlockEditorFunction.this.blockType + " Placer");
-                        }
-
-                        BlockEditorFunction.this.remove = !BlockEditorFunction.this.remove;
-                    }
-                });
-        this.menu.addMenuItem(
-                new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
-                    @Override
-                    public void buildButton() {
-                        this.button = new MenuButton(Material.MAGENTA_GLAZED_TERRACOTTA);
-                        this.button.setDisplayName("&d&lBlock Direction");
-                    }
-
-                    /**
-                     * Performs on select.
-                     */
-                    @Override
-                    public void onSelect(Player player) {
-                        Material mat = BlockEditorFunction.this.resolveConfiguredMaterial(true);
-                        if (mat == null) {
-                            LangUtils.sendMessage(
-                                    player, "editor.function.block-editor.invalid-material");
-                            this.setCancelled(true);
-                            return;
-                        }
-
-                        BlockData data = mat.createBlockData();
-                        if (BlockEditorFunction.this.remove) {
-                            LangUtils.sendMessage(
-                                    player,
-                                    "editor.function.block-editor.no-direction-while-removing");
-                            this.setCancelled(true);
-                        } else if (!(data instanceof Directional)
-                                && !(data instanceof Rotatable)
-                                && !(data instanceof Orientable)) {
-                            LangUtils.sendMessage(
-                                    player, "editor.function.block-editor.no-direction-for-block");
-                            this.setCancelled(true);
-                        } else {
-                            LangUtils.sendMessage(
-                                    player, "editor.function.block-editor.ask-direction");
-                            LangUtils.sendMessage(
-                                    player,
-                                    "editor.function.block-editor.current-direction",
-                                    LangUtils.placeholder(
-                                            "direction", BlockEditorFunction.this.direction));
-                        }
-                    }
-
-                    /**
-                     * Performs on input.
-                     */
-                    @Override
-                    public void onInput(Player player, String message) {
-                        String directionString = message.toUpperCase(Locale.ROOT);
-                        Material mat = BlockEditorFunction.this.resolveConfiguredMaterial(true);
-                        if (mat == null) {
-                            LangUtils.sendMessage(
-                                    player, "editor.function.block-editor.invalid-material");
-                            return;
-                        }
-
-                        BlockData data = mat.createBlockData();
-                        if (data instanceof Directional) {
-                            try {
-                                BlockEditorFunction.this.direction = directionString;
-                                LangUtils.sendMessage(
-                                        player,
-                                        "editor.function.block-editor.direction-set",
-                                        LangUtils.placeholder(
-                                                "direction", BlockEditorFunction.this.direction));
-                            } catch (IllegalArgumentException exception) {
-                                LangUtils.sendMessage(
-                                        player, "editor.function.block-editor.invalid-direction");
-                                MessageUtils.sendClickableLink(
-                                        player,
-                                        LangUtils.getMessage(
-                                                "editor.function.block-editor.valid-directions-link"),
-                                        "https://hub.spigotmc.org/javadocs/spigot/org/bukkit/block/BlockFace.html");
-                            }
-                        } else if (data instanceof Rotatable) {
-                            try {
-                                BlockEditorFunction.this.direction = directionString;
-                                LangUtils.sendMessage(
-                                        player,
-                                        "editor.function.block-editor.direction-set",
-                                        LangUtils.placeholder(
-                                                "direction", BlockEditorFunction.this.direction));
-                            } catch (IllegalArgumentException exception) {
-                                LangUtils.sendMessage(
-                                        player, "editor.function.block-editor.invalid-direction");
-                                MessageUtils.sendClickableLink(
-                                        player,
-                                        LangUtils.getMessage(
-                                                "editor.function.block-editor.valid-directions-link"),
-                                        "https://hub.spigotmc.org/javadocs/spigot/org/bukkit/block/BlockFace.html");
-                            }
-                        } else {
-                            try {
-                                BlockEditorFunction.this.direction = directionString;
-                                LangUtils.sendMessage(
-                                        player,
-                                        "editor.function.block-editor.axis-set",
-                                        LangUtils.placeholder(
-                                                "axis", BlockEditorFunction.this.direction));
-                            } catch (IllegalArgumentException exception) {
-                                LangUtils.sendMessage(
-                                        player, "editor.function.block-editor.invalid-direction");
-                                LangUtils.sendMessage(
-                                        player,
-                                        "editor.function.block-editor.valid-axis-directions");
-                            }
-                        }
-                    }
-                });
+        this.menu.addMenuItem(createBlockTypeItem());
+        this.menu.addMenuItem(createToggleRemoverItem());
+        this.menu.addMenuItem(createBlockDirectionItem());
     }
 
     /**
@@ -449,5 +231,205 @@ public class BlockEditorFunction extends DungeonFunction {
 
             return null;
         }
+    }
+
+    private MenuItem createBlockTypeItem() {
+        return new ChatMenuItem() {
+            @Override
+            public void buildButton() {
+                this.button = new MenuButton(Material.GRASS_BLOCK);
+                this.button.setDisplayName("&d&lBlock Type");
+            }
+            @Override
+            public void onSelect(Player player) {
+                if (!BlockEditorFunction.this.remove) {
+                    LangUtils.sendMessage(
+                            player, "editor.function.block-editor.ask-place-block");
+                } else {
+                    LangUtils.sendMessage(
+                            player, "editor.function.block-editor.ask-remove-block");
+                }
+
+                LangUtils.sendMessage(
+                        player,
+                        "editor.function.block-editor.current-block",
+                        LangUtils.placeholder("block", BlockEditorFunction.this.blockType));
+            }
+            @Override
+            public void onInput(Player player, String message) {
+                String matString = message.toUpperCase(Locale.ROOT);
+
+                try {
+                    if (BlockEditorFunction.this.remove && matString.equals("ANY")) {
+                        BlockEditorFunction.this.blockType = matString;
+                        BlockEditorFunction.this.setDisplayName("Block Remover");
+                        LangUtils.sendMessage(
+                                player,
+                                "editor.function.block-editor.block-set",
+                                LangUtils.placeholder(
+                                        "block", BlockEditorFunction.this.blockType));
+                        return;
+                    }
+
+                    Material mat = Material.valueOf(matString);
+                    if (!mat.isBlock()) {
+                        throw new IllegalArgumentException("Invalid block");
+                    }
+
+                    BlockEditorFunction.this.blockType = matString;
+                    if (!BlockEditorFunction.this.remove) {
+                        BlockEditorFunction.this.setDisplayName(
+                                BlockEditorFunction.this.blockType + " Placer");
+                    } else {
+                        BlockEditorFunction.this.setDisplayName(
+                                BlockEditorFunction.this.blockType + " Remover");
+                    }
+
+                    LangUtils.sendMessage(
+                            player,
+                            "editor.function.block-editor.block-set",
+                            LangUtils.placeholder(
+                                    "block", BlockEditorFunction.this.blockType));
+                } catch (IllegalArgumentException exception) {
+                    LangUtils.sendMessage(
+                            player, "editor.function.block-editor.invalid-material");
+                    MessageUtils.sendClickableLink(
+                            player,
+                            LangUtils.getMessage(
+                                    "editor.function.block-editor.valid-materials-link"),
+                            "https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Material.html");
+                }
+            }
+        };
+    }
+
+    private MenuItem createToggleRemoverItem() {
+        return new ToggleMenuItem() {
+            @Override
+            public void buildButton() {
+                this.button = new MenuButton(Material.BARRIER);
+                this.button.setDisplayName("&d&lToggle Remover");
+            }
+            @Override
+            public void onSelect(Player player) {
+                if (!BlockEditorFunction.this.remove) {
+                    LangUtils.sendMessage(
+                            player, "editor.function.block-editor.mode-remove");
+                    BlockEditorFunction.this.setDisplayName(
+                            BlockEditorFunction.this.blockType + " Remover");
+                } else {
+                    LangUtils.sendMessage(
+                            player, "editor.function.block-editor.mode-place");
+                    BlockEditorFunction.this.setDisplayName(
+                            BlockEditorFunction.this.blockType + " Placer");
+                }
+
+                BlockEditorFunction.this.remove = !BlockEditorFunction.this.remove;
+            }
+        };
+    }
+
+    private MenuItem createBlockDirectionItem() {
+        return new ChatMenuItem() {
+            @Override
+            public void buildButton() {
+                this.button = new MenuButton(Material.MAGENTA_GLAZED_TERRACOTTA);
+                this.button.setDisplayName("&d&lBlock Direction");
+            }
+            @Override
+            public void onSelect(Player player) {
+                Material mat = BlockEditorFunction.this.resolveConfiguredMaterial(true);
+                if (mat == null) {
+                    LangUtils.sendMessage(
+                            player, "editor.function.block-editor.invalid-material");
+                    this.setCancelled(true);
+                    return;
+                }
+
+                BlockData data = mat.createBlockData();
+                if (BlockEditorFunction.this.remove) {
+                    LangUtils.sendMessage(
+                            player,
+                            "editor.function.block-editor.no-direction-while-removing");
+                    this.setCancelled(true);
+                } else if (!(data instanceof Directional)
+                        && !(data instanceof Rotatable)
+                        && !(data instanceof Orientable)) {
+                    LangUtils.sendMessage(
+                            player, "editor.function.block-editor.no-direction-for-block");
+                    this.setCancelled(true);
+                } else {
+                    LangUtils.sendMessage(
+                            player, "editor.function.block-editor.ask-direction");
+                    LangUtils.sendMessage(
+                            player,
+                            "editor.function.block-editor.current-direction",
+                            LangUtils.placeholder(
+                                    "direction", BlockEditorFunction.this.direction));
+                }
+            }
+            @Override
+            public void onInput(Player player, String message) {
+                String directionString = message.toUpperCase(Locale.ROOT);
+                Material mat = BlockEditorFunction.this.resolveConfiguredMaterial(true);
+                if (mat == null) {
+                    LangUtils.sendMessage(
+                            player, "editor.function.block-editor.invalid-material");
+                    return;
+                }
+
+                BlockData data = mat.createBlockData();
+                if (data instanceof Directional) {
+                    try {
+                        BlockEditorFunction.this.direction = directionString;
+                        LangUtils.sendMessage(
+                                player,
+                                "editor.function.block-editor.direction-set",
+                                LangUtils.placeholder(
+                                        "direction", BlockEditorFunction.this.direction));
+                    } catch (IllegalArgumentException exception) {
+                        LangUtils.sendMessage(
+                                player, "editor.function.block-editor.invalid-direction");
+                        MessageUtils.sendClickableLink(
+                                player,
+                                LangUtils.getMessage(
+                                        "editor.function.block-editor.valid-directions-link"),
+                                "https://hub.spigotmc.org/javadocs/spigot/org/bukkit/block/BlockFace.html");
+                    }
+                } else if (data instanceof Rotatable) {
+                    try {
+                        BlockEditorFunction.this.direction = directionString;
+                        LangUtils.sendMessage(
+                                player,
+                                "editor.function.block-editor.direction-set",
+                                LangUtils.placeholder(
+                                        "direction", BlockEditorFunction.this.direction));
+                    } catch (IllegalArgumentException exception) {
+                        LangUtils.sendMessage(
+                                player, "editor.function.block-editor.invalid-direction");
+                        MessageUtils.sendClickableLink(
+                                player,
+                                LangUtils.getMessage(
+                                        "editor.function.block-editor.valid-directions-link"),
+                                "https://hub.spigotmc.org/javadocs/spigot/org/bukkit/block/BlockFace.html");
+                    }
+                } else {
+                    try {
+                        BlockEditorFunction.this.direction = directionString;
+                        LangUtils.sendMessage(
+                                player,
+                                "editor.function.block-editor.axis-set",
+                                LangUtils.placeholder(
+                                        "axis", BlockEditorFunction.this.direction));
+                    } catch (IllegalArgumentException exception) {
+                        LangUtils.sendMessage(
+                                player, "editor.function.block-editor.invalid-direction");
+                        LangUtils.sendMessage(
+                                player,
+                                "editor.function.block-editor.valid-axis-directions");
+                    }
+                }
+            }
+        };
     }
 }
