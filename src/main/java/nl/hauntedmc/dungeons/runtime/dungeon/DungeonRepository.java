@@ -1,14 +1,4 @@
 package nl.hauntedmc.dungeons.runtime.dungeon;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.lang.reflect.InvocationTargetException;
-import java.nio.charset.StandardCharsets;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.UUID;
 import nl.hauntedmc.dungeons.gui.menu.PlayMenus;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonLoadException;
@@ -23,14 +13,60 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.lang.reflect.InvocationTargetException;
+import java.nio.charset.StandardCharsets;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.UUID;
+
 /**
  * Runtime catalogue of loaded dungeon definitions.
  *
  * <p>This service owns template synchronization, folder discovery, and runtime loading of dungeon
- * model instances.</p>
+ * model instances.
  */
 public final class DungeonRepository {
     private final DungeonsRuntime runtime;
+    private final java.util.Map<String, String> loadFailures = new java.util.LinkedHashMap<>();
+
+    public java.util.Map<String, String> loadFailures() {
+        return java.util.Map.copyOf(loadFailures);
+    }
+
+    public java.util.concurrent.CompletableFuture<java.util.Map<String, String>> reloadAllAsync() {
+        var result = new java.util.concurrent.CompletableFuture<java.util.Map<String, String>>();
+        this.loadDefaultDungeonConfig();
+        Bukkit.getScheduler()
+                .runTask(
+                        this.runtime.environment().plugin(),
+                        () -> {
+                            try {
+                                File[] files = this.runtime.dungeonFiles().listFiles();
+                                if (files == null)
+                                    throw new IllegalStateException(
+                                            "Cannot list dungeon directory");
+                                var present = new java.util.HashSet<String>();
+                                for (File file : files)
+                                    if (file.isDirectory()) {
+                                        present.add(file.getName());
+                                        this.loadDungeon(file);
+                                    }
+                                this.dungeons.keySet().removeIf(name -> !present.contains(name));
+                                this.loadFailures
+                                        .keySet()
+                                        .removeIf(name -> !present.contains(name));
+                                result.complete(loadFailures());
+                            } catch (Exception failure) {
+                                result.completeExceptionally(failure);
+                            }
+                        });
+        return result;
+    }
+
     private final HashMap<String, DungeonDefinition> dungeons = new HashMap<>();
 
     /** Creates the repository and immediately loads all dungeon definitions. */
@@ -52,7 +88,8 @@ public final class DungeonRepository {
             YamlConfiguration bundledDefaults = this.loadBundledDefaultDungeonConfig();
             if (bundledDefaults == null || bundledDefaults.getKeys(true).isEmpty()) {
                 throw new IOException(
-                        "Cannot load dungeon defaults because the bundled template is missing or empty.");
+                        "Cannot load dungeon defaults because the bundled template is missing or"
+                            + " empty.");
             }
             GeneratorConfigMigration.loadTemplate(
                     new File(this.runtime.dungeonFiles(), "generator_settings_default.yml"),
@@ -152,7 +189,8 @@ public final class DungeonRepository {
                             .environment()
                             .logger()
                             .error(
-                                    "Failed to load dungeon '{}' due to an unexpected exception during initialization.",
+                                    "Failed to load dungeon '{}' due to an unexpected exception"
+                                        + " during initialization.",
                                     folder.getName(),
                                     ex);
                 }
@@ -170,6 +208,7 @@ public final class DungeonRepository {
             }
 
             if (dungeon == null) {
+                this.loadFailures.put(folder.getName(), "Initialization failed; see server log");
                 return null;
             }
             dungeon.setGenerator(generator);
@@ -177,6 +216,8 @@ public final class DungeonRepository {
                 PlayMenus.initializeDifficultySelector(dungeon);
             }
             this.put(dungeon);
+
+            this.loadFailures.remove(folder.getName());
 
             this.runtime
                     .environment()
@@ -186,6 +227,8 @@ public final class DungeonRepository {
             return dungeon;
 
         } catch (InvalidConfigurationException | IOException exception) {
+            this.loadFailures.put(
+                    folder.getName(), "Invalid or unreadable configuration; see server log");
             this.runtime
                     .environment()
                     .logger()

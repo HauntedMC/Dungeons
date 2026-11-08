@@ -132,7 +132,7 @@ Preferred management commands:
 
 With unique validation disabled, matching falls back to the configured item itself. With unique validation enabled, only plugin-issued tagged keys are considered valid and old raw player-held copies should be reissued through the current key commands.
 
-Players with `dungeons.admin` bypass access-cooldown checks and do not receive new access cooldown entries from dungeon start/finish/leave flows.
+Access-cooldown bypass requires `dungeons.bypass.cooldown`. Administrative access does not implicitly bypass gameplay. See [staff operations](STAFF_OPERATIONS.md) for permissions and maintenance.
 
 ## Generator Settings (`config.yml`)
 
@@ -239,5 +239,4 @@ initial load must be reloaded.
 
 If Paper refuses or fails to unload an instance world, cleanup retains the world files
 and reference instead of deleting files that the server may still be using. Initialization
-failure still releases waiting initialization tasks. This does not add an automatic unload
-retry.
+failure still releases waiting initialization tasks. Failed disposal is automatically retried up to three times at 100-tick intervals. Staff can inspect and explicitly retry retained instances through the staff dashboard.

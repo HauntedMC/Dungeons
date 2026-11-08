@@ -24,6 +24,19 @@ public final class PreparationRegistry {
         return !closed && pending.putIfAbsent(session, attempt) == null;
     }
 
+    public int count(@Nullable String dungeon) {
+        return (int)
+                pending.values().stream()
+                        .distinct()
+                        .filter(p -> dungeon == null || p.dungeon().getWorldName().equals(dungeon))
+                        .count();
+    }
+
+    public String dungeonName(DungeonPlayerSession session) {
+        Pending attempt = pending.get(session);
+        return attempt == null ? null : attempt.dungeon().getWorldName();
+    }
+
     public boolean contains(DungeonPlayerSession session) {
         return pending.containsKey(session);
     }
@@ -51,7 +64,9 @@ public final class PreparationRegistry {
                 } catch (RuntimeException failure) {
                     // Keep failed ownership for retry while allowing unrelated players to settle.
                     attempt.dungeon().getEnvironment().logger()
-                            .error("Failed to cancel a dungeon preparation; retaining it for retry.", failure);
+                            .error(
+                                    "Failed to cancel a dungeon preparation; retaining it for"
+                                        + " retry.", failure);
                 }
             }
         }

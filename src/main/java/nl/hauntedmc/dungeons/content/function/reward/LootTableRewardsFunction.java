@@ -1,11 +1,4 @@
 package nl.hauntedmc.dungeons.content.function.reward;
-
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import nl.hauntedmc.dungeons.util.time.TimeUtils;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.content.reward.LootTable;
@@ -24,12 +17,20 @@ import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.math.MathUtils;
 import nl.hauntedmc.dungeons.util.text.MessageUtils;
+import nl.hauntedmc.dungeons.util.time.TimeUtils;
+
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * Reward function that pulls items from a named loot table.
@@ -38,6 +39,10 @@ import org.bukkit.inventory.ItemStack;
 @SerializableAs("dungeons.function.loot_table_rewards")
 public class LootTableRewardsFunction extends RewardFunction {
     @PersistedField private String loottableName = "";
+
+    public String getLootTableName() {
+        return this.loottableName;
+    }
 
     /**
      * Creates a new LootTableRewardsFunction instance.
@@ -125,7 +130,8 @@ public class LootTableRewardsFunction extends RewardFunction {
                                 if (table == null) {
                                     this.logger()
                                             .warn(
-                                                    "Loot table reward in dungeon '{}' at {} references missing loot table '{}'.",
+                                                    "Loot table reward in dungeon '{}' at {}"
+                                                        + " references missing loot table '{}'.",
                                                     this.dungeonNameForLogs(),
                                                     this.locationForLogs(),
                                                     this.loottableName);

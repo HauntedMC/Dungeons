@@ -21,7 +21,7 @@ import java.util.concurrent.CompletableFuture;
  *
  * <p>The coordinator deliberately works against stable manager instances. Reload paths refresh
  * manager contents in place instead of swapping manager objects, which keeps constructor-injected
- * collaborators valid after a reload.</p>
+ * collaborators valid after a reload.
  */
 public final class LifecycleCoordinator {
     private final DungeonsRuntime runtime;
@@ -44,6 +44,8 @@ public final class LifecycleCoordinator {
         this.shuttingDown = true;
         if (this.reloadAttempt != null) this.reloadAttempt.complete(false);
         try {
+            if (this.runtime.staffOperations() != null)
+                this.runCleanup("staff operations", () -> this.runtime.staffOperations().close());
             this.runtime
                     .environment()
                     .logger()
@@ -186,7 +188,9 @@ public final class LifecycleCoordinator {
         editors.whenComplete((success, failure) -> {
             Runnable finish = () -> {
                 if (this.shuttingDown || failure != null || !Boolean.TRUE.equals(success)) {
-                    this.runtime.environment().logger().error("Dungeon reload aborted: editor persistence or unload did not succeed.");
+                    this.runtime.environment().logger().error(
+                                                    "Dungeon reload aborted: editor persistence or"
+                                                        + " unload did not succeed.");
                     result.complete(false);
                     return;
                 }
@@ -297,7 +301,8 @@ public final class LifecycleCoordinator {
             dungeon.refreshRuleSettings();
         }
         LangUtils.initialize();
-        this.runtime.lootTableRepository().reload();
+        if (!this.runtime.lootTableRepository().reload())
+            throw new IllegalStateException("Plugin configuration refreshed, but loot reload failed; last working loot retained and editing blocked");
     }
 
     /**

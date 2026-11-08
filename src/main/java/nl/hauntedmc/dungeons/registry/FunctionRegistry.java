@@ -27,7 +27,7 @@ import java.util.Map;
  *
  * <p>Besides type lookup and editor button metadata, this registry wires annotated event handler
  * methods onto a shared relay listener and dispatches them to active instance-owned function
- * clones.</p>
+ * clones.
  */
 public final class FunctionRegistry {
     private final DungeonsPlugin plugin;
@@ -68,7 +68,8 @@ public final class FunctionRegistry {
                 this.plugin
                         .getSLF4JLogger()
                         .warn(
-                                "Function '{}' does not expose a menu button and will not appear in the editor.",
+                                "Function '{}' does not expose a menu button and will not appear in"
+                                    + " the editor.",
                                 functionClass.getSimpleName());
                 return;
             }
@@ -92,6 +93,9 @@ public final class FunctionRegistry {
                                     this.elementEventHandler,
                                     handler.priority(),
                                     (listener, event) -> {
+                                        if (nl.hauntedmc.dungeons.runtime.staff
+                                                .StaffObserverListener.isObserverEvent(event))
+                                            return;
                                         for (DungeonInstance instance :
                                                 this.activeInstanceManager.getActiveInstances()) {
                                             List<DungeonFunction> elements =
@@ -117,7 +121,11 @@ public final class FunctionRegistry {
                                                             this.plugin
                                                                     .getSLF4JLogger()
                                                                     .error(
-                                                                            "Function listener '{}#{}' failed for event '{}' in instance '{}'.",
+                                                                            "Function listener"
+                                                                                + " '{}#{}' failed"
+                                                                                + " for event '{}'"
+                                                                                + " in instance"
+                                                                                + " '{}'.",
                                                                             functionClass
                                                                                     .getSimpleName(),
                                                                             method.getName(),

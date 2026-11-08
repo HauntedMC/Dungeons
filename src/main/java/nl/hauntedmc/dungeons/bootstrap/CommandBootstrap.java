@@ -22,7 +22,8 @@ final class CommandBootstrap {
      * Creates and registers the main command handler.
      */
     void registerCommands() {
-        new DungeonCommand(
+        var command =
+                new DungeonCommand(
                 this.runtime.environment().plugin(),
                 this.runtime.playerSessions(),
                 this.runtime.dungeonCatalog(),
@@ -36,5 +37,8 @@ final class CommandBootstrap {
                 this.lifecycleCoordinator,
                 this.runtime.guiService(),
                 "dungeon");
+        command.setStaffCommandHandler(
+                new nl.hauntedmc.dungeons.command.StaffCommandHandler(
+                        this.runtime, this.lifecycleCoordinator));
     }
 }

@@ -30,9 +30,9 @@ import java.util.Set;
 /**
  * Command handler for {@code /dungeon config}.
  *
- * <p>The handler resolves a target dungeon, looks up the referenced setting in
- * {@link DungeonConfigRegistry}, validates user input based on the setting's declared
- * {@link DungeonConfigValueType}, and persists the result back into the dungeon config.</p>
+ * <p>The handler resolves a target dungeon, looks up the referenced setting in {@link
+ * DungeonConfigRegistry}, validates user input based on the setting's declared {@link
+ * DungeonConfigValueType}, and persists the result back into the dungeon config.
  */
 public final class DungeonConfigCommandHandler {
     private final DungeonRepository dungeonManager;
@@ -187,6 +187,8 @@ public final class DungeonConfigCommandHandler {
             DungeonDefinition dungeon,
             DungeonConfigEntry entry,
             String rawValue) {
+        nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard.configuration(
+                sender, dungeon, entry.getPath());
         rawValue = rawValue == null ? "" : rawValue.trim();
 
         if (this.isRuleSetting(entry) && rawValue.equalsIgnoreCase("inherit")) {
@@ -250,7 +252,8 @@ public final class DungeonConfigCommandHandler {
                     return this.sendInvalidValue(
                             sender,
                             entry,
-                            "Expected a comma separated list of valid Bukkit entity types, or clear.");
+                            "Expected a comma separated list of valid Bukkit entity types, or"
+                                + " clear.");
                 }
                 return this.persistValue(sender, dungeon, entry, parsed);
             }
@@ -335,6 +338,18 @@ public final class DungeonConfigCommandHandler {
         if (!lowered.equals("here")
                 && !(entry.getKey().equals("exit-location") && lowered.equals("clear"))) {
             return this.sendInvalidValue(sender, entry, "Use here, or clear for exit-location.");
+        }
+
+        if (!entry.getKey().equals("exit-location")
+                && dungeon.getRuntime().staffOperations() != null) {
+            var session = this.playerManager.get(player);
+            if (session == null
+                    || session.getInstance() == null
+                    || session.getInstance().getDungeon() != dungeon
+                    || session.getInstance().getInstanceWorld() != player.getWorld()
+                    || !session.isEditMode())
+                return this.sendInvalidValue(
+                        sender, entry, "Stand in this dungeon's editor world.");
         }
 
         switch (entry.getKey()) {
@@ -450,6 +465,8 @@ public final class DungeonConfigCommandHandler {
             DungeonDefinition dungeon,
             DungeonConfigEntry entry,
             Object value) {
+        nl.hauntedmc.dungeons.runtime.staff.SettingValidation.validate(
+                dungeon, entry.getPath(), value);
         dungeon.getConfig().set(entry.getPath(), value);
         dungeon.saveConfig();
         if (entry.getPath().startsWith("generator.")) {

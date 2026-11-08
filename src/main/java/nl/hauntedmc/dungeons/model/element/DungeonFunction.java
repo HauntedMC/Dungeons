@@ -31,7 +31,7 @@ import javax.annotation.Nullable;
  * Base class for executable dungeon elements.
  *
  * <p>A function is responsible for resolving its targets, coordinating with its trigger, and
- * exposing editor controls. Concrete subclasses provide only the actual gameplay effect.</p>
+ * exposing editor controls. Concrete subclasses provide only the actual gameplay effect.
  */
 public abstract class DungeonFunction extends DungeonElement
         implements Cloneable, ConfigurationSerializable {
@@ -179,7 +179,8 @@ public abstract class DungeonFunction extends DungeonElement
         if (this.trigger == null) {
             this.logger()
                     .warn(
-                            "Skipping function '{}' in dungeon '{}' at {} because it has no bound trigger.",
+                            "Skipping function '{}' in dungeon '{}' at {} because it has no bound"
+                                + " trigger.",
                             this.getClass().getSimpleName(),
                             this.dungeonNameForLogs(),
                             this.locationForLogs());
@@ -290,7 +291,8 @@ public abstract class DungeonFunction extends DungeonElement
         if (nestedFunction == null) {
             this.logger()
                     .warn(
-                            "Skipping nested function execution in '{}' for dungeon '{}' at {} because no function was configured.",
+                            "Skipping nested function execution in '{}' for dungeon '{}' at {}"
+                                + " because no function was configured.",
                             this.getClass().getSimpleName(),
                             this.dungeonNameForLogs(),
                             this.locationForLogs());
@@ -301,6 +303,9 @@ public abstract class DungeonFunction extends DungeonElement
     }
 
     private void runFunctionSafely(TriggerFireEvent event, List<DungeonPlayerSession> targets) {
+        if (event.getPlayerSession() != null && event.getPlayerSession().isObserving()) return;
+        targets =
+                new ArrayList<>(targets.stream().filter(target -> !target.isObserving()).toList());
         try {
             this.runFunction(event, targets);
         } catch (Exception exception) {

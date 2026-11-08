@@ -81,7 +81,9 @@ public final class HotbarMenuListener implements Listener {
         event.setCancelled(true);
         this.playMenuSound(player);
         playerSession.setChatListening(false);
-        menuItem.runSelectActions(event);
+        if (!playerSession.isEditMode()
+                || nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard.editor(player, playerSession))
+            menuItem.runSelectActions(event);
         menu.renderMenu();
     }
 
@@ -108,7 +110,9 @@ public final class HotbarMenuListener implements Listener {
         event.setCancelled(true);
         this.playMenuSound(player);
         playerSession.setChatListening(false);
-        menuItem.runSelectActions(event);
+        if (!playerSession.isEditMode()
+                || nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard.editor(player, playerSession))
+            menuItem.runSelectActions(event);
         menu.renderMenu();
     }
 
@@ -140,7 +144,9 @@ public final class HotbarMenuListener implements Listener {
         event.setCancelled(true);
         this.playMenuSound(player);
         playerSession.setChatListening(false);
-        menuItem.runClickActions(event);
+        if (!playerSession.isEditMode()
+                || nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard.editor(player, playerSession))
+            menuItem.runClickActions(event);
         menu.renderMenu();
     }
 
@@ -478,7 +484,11 @@ public final class HotbarMenuListener implements Listener {
 
         try {
             if (playerSession.isChatListening()) {
-                menuItem.runChatActions(player, message);
+                if (!message.equalsIgnoreCase("cancel")
+                        && (!playerSession.isEditMode()
+                                || nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard.editor(
+                                        player, playerSession)))
+                    menuItem.runChatActions(player, message);
                 player.playSound(
                         player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.5F, 1.2F);
             }

@@ -30,11 +30,11 @@ import java.util.UUID;
 import javax.annotation.Nullable;
 
 /**
- * Base class for elements that observe gameplay state and dispatch functions when their
- * conditions pass.
+ * Base class for elements that observe gameplay state and dispatch functions when their conditions
+ * pass.
  *
  * <p>The trigger owns condition evaluation, retrigger rules, and the bridge from raw gameplay
- * events to {@link TriggerFireEvent} dispatch.</p>
+ * events to {@link TriggerFireEvent} dispatch.
  */
 public abstract class DungeonTrigger extends DungeonElement
         implements Cloneable, ConfigurationSerializable {
@@ -291,6 +291,7 @@ public abstract class DungeonTrigger extends DungeonElement
     }
 
     public final void trigger(DungeonPlayerSession playerSession, boolean disable) {
+        if (playerSession != null && playerSession.isObserving()) return;
         PlayableInstance instance = this.instance.asPlayInstance();
         if (instance != null) {
             this.triggered = true;

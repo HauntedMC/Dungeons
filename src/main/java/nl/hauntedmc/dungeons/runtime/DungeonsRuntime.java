@@ -30,6 +30,16 @@ import java.util.Objects;
  * runtime graph remains in the composition root.
  */
 public final class DungeonsRuntime {
+    private nl.hauntedmc.dungeons.runtime.staff.StaffOperations staffOperations;
+
+    public nl.hauntedmc.dungeons.runtime.staff.StaffOperations staffOperations() {
+        return this.staffOperations;
+    }
+
+    public void setStaffOperations(nl.hauntedmc.dungeons.runtime.staff.StaffOperations operations) {
+        this.staffOperations = operations;
+    }
+
     private final PluginEnvironment environment;
     private PreparationRegistry preparations = new PreparationRegistry();
     private final EventRelayListener elementEventHandler = new EventRelayListener();

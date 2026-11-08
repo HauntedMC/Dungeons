@@ -9,3 +9,168 @@ commands:
     description: Main dungeon command
     usage: /<command>
     aliases: [du]
+
+permissions:
+  dungeons.staff.queue:
+    description: Cancel queued and pending dungeon admissions
+    default: false
+  dungeons.staff.backup:
+    description: Dungeon staff capability - backup
+    default: false
+  dungeons.staff.compensate:
+    description: Dungeon staff capability - compensate
+    default: false
+  dungeons.staff.cooldown:
+    description: Dungeon staff capability - cooldown
+    default: false
+  dungeons.staff.delete:
+    description: Dungeon staff capability - delete
+    default: false
+  dungeons.staff.diagnostics:
+    description: Dungeon staff capability - diagnostics
+    default: false
+  dungeons.staff.edit:
+    description: Dungeon staff capability - edit
+    default: false
+  dungeons.staff.inspect:
+    description: Dungeon staff capability - inspect
+    default: false
+  dungeons.staff.keys:
+    description: Dungeon staff capability - keys
+    default: false
+  dungeons.staff.lives:
+    description: Dungeon staff capability - lives
+    default: false
+  dungeons.staff.loot:
+    description: Dungeon staff capability - loot
+    default: false
+  dungeons.staff.maintenance:
+    description: Dungeon staff capability - maintenance
+    default: false
+  dungeons.staff.observe:
+    description: Dungeon staff capability - observe
+    default: false
+  dungeons.staff.progression:
+    description: Dungeon staff capability - progression
+    default: false
+  dungeons.staff.purge:
+    description: Dungeon staff capability - purge
+    default: false
+  dungeons.staff.recovery:
+    description: Dungeon staff capability - recovery
+    default: false
+  dungeons.staff.reload:
+    description: Dungeon staff capability - reload
+    default: false
+  dungeons.staff.remove:
+    description: Dungeon staff capability - remove
+    default: false
+  dungeons.staff.rescue:
+    description: Dungeon staff capability - rescue
+    default: false
+  dungeons.staff.restore:
+    description: Dungeon staff capability - restore
+    default: false
+  dungeons.staff.restrict:
+    description: Dungeon staff capability - restrict
+    default: false
+  dungeons.staff.scripts:
+    description: Dungeon staff capability - scripts
+    default: false
+  dungeons.staff.timer:
+    description: Dungeon staff capability - timer
+    default: false
+  dungeons.role.moderator:
+    default: false
+    children:
+      dungeons.core: true
+      dungeons.staff.inspect: true
+      dungeons.staff.observe: true
+      dungeons.staff.rescue: true
+      dungeons.staff.remove: true
+      dungeons.staff.queue: true
+      dungeons.staff.restrict: true
+  dungeons.role.builder:
+    default: false
+    children:
+      dungeons.staff.maintenance: true
+      dungeons.core: true
+      dungeons.staff.inspect: true
+      dungeons.staff.edit: true
+      dungeons.staff.backup: true
+      dungeons.edit: true
+      dungeons.functioneditor: true
+      dungeons.roomeditor: true
+      dungeons.cleansigns: true
+  dungeons.role.administrator:
+    default: false
+    children:
+      dungeons.core: true
+      dungeons.staff.inspect: true
+      dungeons.staff.observe: true
+      dungeons.staff.rescue: true
+      dungeons.staff.remove: true
+      dungeons.staff.queue: true
+      dungeons.staff.restrict: true
+      dungeons.staff.cooldown: true
+      dungeons.staff.progression: true
+      dungeons.staff.compensate: true
+      dungeons.staff.lives: true
+      dungeons.staff.timer: true
+      dungeons.staff.edit: true
+      dungeons.staff.keys: true
+      dungeons.staff.reload: true
+      dungeons.staff.recovery: true
+      dungeons.staff.maintenance: true
+      dungeons.staff.backup: true
+      dungeons.staff.restore: true
+      dungeons.staff.loot: true
+      dungeons.staff.diagnostics: true
+      dungeons.edit: true
+      dungeons.functioneditor: true
+      dungeons.roomeditor: true
+      dungeons.cleansigns: true
+      dungeons.loottables: true
+  dungeons.role.operator:
+    default: op
+    children:
+      dungeons.core: true
+      dungeons.staff.backup: true
+      dungeons.staff.compensate: true
+      dungeons.staff.cooldown: true
+      dungeons.staff.delete: true
+      dungeons.staff.diagnostics: true
+      dungeons.staff.edit: true
+      dungeons.staff.inspect: true
+      dungeons.staff.keys: true
+      dungeons.staff.lives: true
+      dungeons.staff.loot: true
+      dungeons.staff.maintenance: true
+      dungeons.staff.observe: true
+      dungeons.staff.progression: true
+      dungeons.staff.purge: true
+      dungeons.staff.recovery: true
+      dungeons.staff.reload: true
+      dungeons.staff.remove: true
+      dungeons.staff.queue: true
+      dungeons.staff.rescue: true
+      dungeons.staff.restore: true
+      dungeons.staff.restrict: true
+      dungeons.staff.scripts: true
+      dungeons.staff.timer: true
+      dungeons.edit: true
+      dungeons.functioneditor: true
+      dungeons.roomeditor: true
+      dungeons.cleansigns: true
+      dungeons.loottables: true
+  dungeons.admin:
+    description: Deprecated administrative compatibility preset; does not bypass gameplay rules
+    default: false
+    children:
+      dungeons.role.operator: true
+  dungeons.bypass.cooldown:
+    description: Explicit gameplay bypass, independent of staff access
+    default: false
+  dungeons.bypass.commands:
+    description: Explicit gameplay bypass, independent of staff access
+    default: false

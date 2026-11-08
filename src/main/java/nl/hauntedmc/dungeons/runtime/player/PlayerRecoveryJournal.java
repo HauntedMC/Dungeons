@@ -194,6 +194,26 @@ final class PlayerRecoveryJournal {
                                 PlayerRecoverySnapshot.encode(rewards.toArray(ItemStack[]::new))));
     }
 
+    boolean addStaffRewards(UUID operation, ItemStack... incoming) {
+        requireServerThread();
+        String receipt = "staff-receipts." + operation;
+        if (state.contains(receipt)) return false;
+        var rewards = items("rewards");
+        for (ItemStack item : incoming) {
+            if (item == null || item.getType().isAir() || item.getAmount() < 1)
+                throw new IllegalArgumentException("Invalid compensation item");
+            rewards.add(item.clone());
+        }
+        commit(
+                next -> {
+                    next.set(
+                            "rewards",
+                            PlayerRecoverySnapshot.encode(rewards.toArray(ItemStack[]::new)));
+                    next.set(receipt, System.currentTimeMillis());
+                });
+        return true;
+    }
+
     boolean recover(Player player) {
         requireServerThread();
         // A crash during reservation can precede the native inventory removal checkpoint.

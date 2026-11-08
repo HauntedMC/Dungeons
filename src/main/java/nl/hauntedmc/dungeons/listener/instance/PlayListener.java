@@ -70,8 +70,7 @@ import java.util.Locale;
  * Primary gameplay listener for active playable instances.
  *
  * <p>This listener enforces the dungeon's runtime rules while players are inside an instance:
- * deaths, teleports, block interaction, entity protection, item handling, and similar
- * restrictions.</p>
+ * deaths, teleports, block interaction, entity protection, item handling, and similar restrictions.
  */
 public class PlayListener extends InstanceListener {
     private final PlayableInstance instance;
@@ -127,6 +126,8 @@ public class PlayListener extends InstanceListener {
      */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerDeath(PlayerDeathEvent event) {
+        var observer = RuntimeContext.playerSessions().get(event.getEntity());
+        if (observer != null && observer.isObserving()) return;
         if (!event.isCancelled()) {
             if (event.getEntity().getWorld() == this.instance.getInstanceWorld()) {
                 Player player = event.getEntity();
@@ -709,7 +710,16 @@ public class PlayListener extends InstanceListener {
                 }
             }
 
-            if (!commandAllowed && !CommandUtils.hasPermissionSilent(player, "dungeons.admin")) {
+            boolean staffRoute =
+                    (trimmed.equals("dungeon admin")
+                            || trimmed.startsWith("dungeon admin ")
+                            || trimmed.equals("du admin")
+                            || trimmed.startsWith("du admin ")
+                            || trimmed.equals("dungeons:dungeon admin")
+                            || trimmed.startsWith("dungeons:dungeon admin "));
+            if (!commandAllowed
+                    && !staffRoute
+                    && !CommandUtils.hasPermissionSilent(player, "dungeons.bypass.commands")) {
                 event.setCancelled(true);
                 LangUtils.sendMessage(player, "instance.play.events.command-deny");
             }

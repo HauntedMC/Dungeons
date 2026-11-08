@@ -57,7 +57,7 @@ import java.util.concurrent.CountDownLatch;
  * Base runtime instance for playable dungeon runs.
  *
  * <p>This instance type owns match lifecycle state such as participants, lives, rewards, and run
- * timers.</p>
+ * timers.
  */
 public abstract class PlayableInstance extends DungeonInstance {
     protected boolean livesEnabled;
@@ -356,6 +356,9 @@ public abstract class PlayableInstance extends DungeonInstance {
     @Override
     public void addPlayer(DungeonPlayerSession playerSession) {
         if (this.disposing || this.loadFailed) return;
+        if (this.runtime().staffOperations() != null && (!this.dungeon.isEnabled()
+                || this.runtime().staffOperations().entryBlock(playerSession.getPlayer().getUniqueId(),
+                        this.dungeon.getWorldName()) != null)) return;
         if (this.players.contains(playerSession)) {
             return;
         }
@@ -538,7 +541,8 @@ public abstract class PlayableInstance extends DungeonInstance {
                                 LangUtils.placeholder("player", player.getName())));
             }
 
-            if (!this.dungeon.isCooldownsPerReward()
+            if (!this.recovering(playerSession)
+                    && !this.dungeon.isCooldownsPerReward()
                     && this.receivedRewards.getOrDefault(player.getUniqueId(), false)) {
                 for (RewardFunction function : this.rewardFunctions.values()) {
                     if (function.overrideCooldown()) {
@@ -677,6 +681,14 @@ public abstract class PlayableInstance extends DungeonInstance {
     /**
      * Returns remaining run time in seconds, or zero when unlimited/expired.
      */
+    public void extendTime(int seconds) {
+        if (!this.started || this.config.getInt("runs.time_limit_minutes", 0) == 0)
+            throw new IllegalArgumentException("Run has no active time limit");
+        if (seconds < 1 || seconds > 86400)
+            throw new IllegalArgumentException("Use 1–86400 seconds");
+        this.timeLeft = Math.addExact(this.timeLeft, seconds);
+    }
+
     public int getTimeLeft() {
         return this.timeLeft;
     }

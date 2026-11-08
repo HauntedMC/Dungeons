@@ -1,7 +1,4 @@
 package nl.hauntedmc.dungeons.util.world;
-
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.ExecutionException;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.util.config.PluginConfigView;
 import nl.hauntedmc.dungeons.util.math.MathUtils;
@@ -11,11 +8,44 @@ import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.util.BoundingBox;
 
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+
 /**
  * Location and bounding-box helpers used by dungeon generation and runtime flows.
  */
 public final class LocationUtils {
     private LocationUtils() {}
+
+    /** External destinations retain world identity; internal dungeon anchors remain relative. */
+    public static void writeExternalLocation(
+            String path, ConfigurationSection config, Location loc) {
+        if (loc.getWorld() == null)
+            throw new IllegalArgumentException("Destination world is unavailable");
+        writeLocation(path, config, loc);
+        config.set(path + ".world_uuid", loc.getWorld().getUID().toString());
+        config.set(path + ".world", loc.getWorld().getName());
+    }
+
+    /** A legacy coordinate-only exit cannot safely identify a destination world. */
+    public static Location readExternalLocation(ConfigurationSection config) {
+        Location loc = readLocation(config);
+        if (loc == null) return null;
+        World world = null;
+        String id = config.getString("world_uuid");
+        if (id != null) {
+            try {
+                world = Bukkit.getWorld(java.util.UUID.fromString(id));
+            } catch (IllegalArgumentException ignored) {
+                return null;
+            }
+        } else if (config.getString("world") != null) {
+            world = Bukkit.getWorld(config.getString("world"));
+        }
+        if (world == null) return null;
+        loc.setWorld(world);
+        return loc;
+    }
 
     /** Reads a location from config section coordinates with null world. */
     public static Location readLocation(ConfigurationSection config) {
@@ -72,7 +102,8 @@ public final class LocationUtils {
             if (!RuntimeContext.plugin().isEnabled()) {
                 RuntimeContext.logger()
                         .warn(
-                                "Refused to search for a safe spawn off-thread in world '{}' because the plugin is disabled.",
+                                "Refused to search for a safe spawn off-thread in world '{}'"
+                                    + " because the plugin is disabled.",
                                 world.getName());
                 return null;
             }

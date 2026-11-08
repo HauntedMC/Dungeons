@@ -166,6 +166,10 @@ public final class PlayerSessionRegistry implements Listener {
         }
     }
 
+    public java.util.List<DungeonPlayerSession> snapshot() {
+        return java.util.List.copyOf(players.values());
+    }
+
     public int size() {
         return players.size();
     }
