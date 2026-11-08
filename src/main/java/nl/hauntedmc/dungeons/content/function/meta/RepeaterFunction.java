@@ -190,164 +190,11 @@ public class RepeaterFunction extends CompositeFunction {
      */
     @Override
     public void buildHotbarMenu() {
-        this.menu.addMenuItem(
-                new MenuItem() {
-                    /**
-                     * Builds button.
-                     */
-                    @Override
-                    public void buildButton() {
-                        this.button = new MenuButton(Material.COMMAND_BLOCK);
-                        this.button.setDisplayName("&a&lSet Function");
-                    }
-
-                    /**
-                     * Performs on select.
-                     */
-                    @Override
-                    public void onSelect(PlayerEvent event) {
-                        Player player = event.getPlayer();
-                        RuntimeContext.guiService().openGui(player, "functionmenu");
-                    }
-                });
-        this.menu.addMenuItem(
-                new MenuItem() {
-                    /**
-                     * Builds button.
-                     */
-                    @Override
-                    public void buildButton() {
-                        this.button = new MenuButton(Material.CHAIN_COMMAND_BLOCK);
-                        this.button.setDisplayName("&e&lEdit Function");
-                    }
-
-                    /**
-                     * Performs on select.
-                     */
-                    @Override
-                    public void onSelect(PlayerEvent event) {
-                        Player player = event.getPlayer();
-                        DungeonPlayerSession playerSession =
-                                RuntimeContext.playerSessions().get(player);
-                        if (RepeaterFunction.this.function != null) {
-                            playerSession.showHotbar(RepeaterFunction.this.function.getMenu());
-                        } else {
-                            LangUtils.sendMessage(player, "editor.function.repeater.no-function");
-                        }
-                    }
-                });
-        this.menu.addMenuItem(
-                new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
-                    @Override
-                    public void buildButton() {
-                        this.button = new MenuButton(Material.REPEATER);
-                        this.button.setDisplayName("&d&lStart Delay");
-                        this.button.setAmount(RepeaterFunction.this.delay);
-                    }
-
-                    /**
-                     * Performs on select.
-                     */
-                    @Override
-                    public void onSelect(Player player) {
-                        LangUtils.sendMessage(player, "editor.function.repeater.ask-delay");
-                    }
-
-                    /**
-                     * Performs on input.
-                     */
-                    @Override
-                    public void onInput(Player player, String message) {
-                        Optional<Integer> value = InputUtils.readIntegerInput(player, message);
-                        RepeaterFunction.this.delay = value.orElse(RepeaterFunction.this.delay);
-                        if (value.isPresent()) {
-                            LangUtils.sendMessage(
-                                    player,
-                                    "editor.function.repeater.delay-set",
-                                    LangUtils.placeholder(
-                                            "delay", String.valueOf(RepeaterFunction.this.delay)));
-                        }
-                    }
-                });
-        this.menu.addMenuItem(
-                new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
-                    @Override
-                    public void buildButton() {
-                        this.button = new MenuButton(Material.CLOCK);
-                        this.button.setDisplayName("&d&lRepeater Interval");
-                        this.button.setAmount(RepeaterFunction.this.interval);
-                    }
-
-                    /**
-                     * Performs on select.
-                     */
-                    @Override
-                    public void onSelect(Player player) {
-                        LangUtils.sendMessage(player, "editor.function.repeater.ask-rate");
-                    }
-
-                    /**
-                     * Performs on input.
-                     */
-                    @Override
-                    public void onInput(Player player, String message) {
-                        Optional<Integer> value = InputUtils.readIntegerInput(player, message);
-                        RepeaterFunction.this.interval =
-                                value.orElse(RepeaterFunction.this.interval);
-                        if (value.isPresent()) {
-                            LangUtils.sendMessage(
-                                    player,
-                                    "editor.function.repeater.interval-set",
-                                    LangUtils.placeholder(
-                                            "interval",
-                                            String.valueOf(RepeaterFunction.this.interval)));
-                        }
-                    }
-                });
-        this.menu.addMenuItem(
-                new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
-                    @Override
-                    public void buildButton() {
-                        this.button = new MenuButton(Material.REDSTONE_TORCH);
-                        this.button.setDisplayName("&d&lMax Repeats");
-                        this.button.setAmount(RepeaterFunction.this.maxRepeats);
-                    }
-
-                    /**
-                     * Performs on select.
-                     */
-                    @Override
-                    public void onSelect(Player player) {
-                        LangUtils.sendMessage(player, "editor.function.repeater.ask-max-repeats");
-                    }
-
-                    /**
-                     * Performs on input.
-                     */
-                    @Override
-                    public void onInput(Player player, String message) {
-                        Optional<Integer> value = InputUtils.readIntegerInput(player, message);
-                        RepeaterFunction.this.maxRepeats =
-                                value.orElse(RepeaterFunction.this.maxRepeats);
-                        if (value.isPresent()) {
-                            LangUtils.sendMessage(
-                                    player,
-                                    "editor.function.repeater.max-repeats-set",
-                                    LangUtils.placeholder(
-                                            "max_repeats",
-                                            String.valueOf(RepeaterFunction.this.maxRepeats)));
-                        }
-                    }
-                });
+        this.menu.addMenuItem(createSetFunctionItem());
+        this.menu.addMenuItem(createEditFunctionItem());
+        this.menu.addMenuItem(createStartDelayItem());
+        this.menu.addMenuItem(createRepeaterIntervalItem());
+        this.menu.addMenuItem(createMaxRepeatsItem());
     }
 
     /**
@@ -364,5 +211,126 @@ public class RepeaterFunction extends CompositeFunction {
             }
         }
         return clone;
+    }
+
+    private MenuItem createSetFunctionItem() {
+        return new MenuItem() {
+            @Override
+            public void buildButton() {
+                this.button = new MenuButton(Material.COMMAND_BLOCK);
+                this.button.setDisplayName("&a&lSet Function");
+            }
+            @Override
+            public void onSelect(PlayerEvent event) {
+                Player player = event.getPlayer();
+                RuntimeContext.guiService().openGui(player, "functionmenu");
+            }
+        };
+    }
+
+    private MenuItem createEditFunctionItem() {
+        return new MenuItem() {
+            @Override
+            public void buildButton() {
+                this.button = new MenuButton(Material.CHAIN_COMMAND_BLOCK);
+                this.button.setDisplayName("&e&lEdit Function");
+            }
+            @Override
+            public void onSelect(PlayerEvent event) {
+                Player player = event.getPlayer();
+                DungeonPlayerSession playerSession =
+                        RuntimeContext.playerSessions().get(player);
+                if (RepeaterFunction.this.function != null) {
+                    playerSession.showHotbar(RepeaterFunction.this.function.getMenu());
+                } else {
+                    LangUtils.sendMessage(player, "editor.function.repeater.no-function");
+                }
+            }
+        };
+    }
+
+    private MenuItem createStartDelayItem() {
+        return new ChatMenuItem() {
+            @Override
+            public void buildButton() {
+                this.button = new MenuButton(Material.REPEATER);
+                this.button.setDisplayName("&d&lStart Delay");
+                this.button.setAmount(RepeaterFunction.this.delay);
+            }
+            @Override
+            public void onSelect(Player player) {
+                LangUtils.sendMessage(player, "editor.function.repeater.ask-delay");
+            }
+            @Override
+            public void onInput(Player player, String message) {
+                Optional<Integer> value = InputUtils.readIntegerInput(player, message);
+                RepeaterFunction.this.delay = value.orElse(RepeaterFunction.this.delay);
+                if (value.isPresent()) {
+                    LangUtils.sendMessage(
+                            player,
+                            "editor.function.repeater.delay-set",
+                            LangUtils.placeholder(
+                                    "delay", String.valueOf(RepeaterFunction.this.delay)));
+                }
+            }
+        };
+    }
+
+    private MenuItem createRepeaterIntervalItem() {
+        return new ChatMenuItem() {
+            @Override
+            public void buildButton() {
+                this.button = new MenuButton(Material.CLOCK);
+                this.button.setDisplayName("&d&lRepeater Interval");
+                this.button.setAmount(RepeaterFunction.this.interval);
+            }
+            @Override
+            public void onSelect(Player player) {
+                LangUtils.sendMessage(player, "editor.function.repeater.ask-rate");
+            }
+            @Override
+            public void onInput(Player player, String message) {
+                Optional<Integer> value = InputUtils.readIntegerInput(player, message);
+                RepeaterFunction.this.interval =
+                        value.orElse(RepeaterFunction.this.interval);
+                if (value.isPresent()) {
+                    LangUtils.sendMessage(
+                            player,
+                            "editor.function.repeater.interval-set",
+                            LangUtils.placeholder(
+                                    "interval",
+                                    String.valueOf(RepeaterFunction.this.interval)));
+                }
+            }
+        };
+    }
+
+    private MenuItem createMaxRepeatsItem() {
+        return new ChatMenuItem() {
+            @Override
+            public void buildButton() {
+                this.button = new MenuButton(Material.REDSTONE_TORCH);
+                this.button.setDisplayName("&d&lMax Repeats");
+                this.button.setAmount(RepeaterFunction.this.maxRepeats);
+            }
+            @Override
+            public void onSelect(Player player) {
+                LangUtils.sendMessage(player, "editor.function.repeater.ask-max-repeats");
+            }
+            @Override
+            public void onInput(Player player, String message) {
+                Optional<Integer> value = InputUtils.readIntegerInput(player, message);
+                RepeaterFunction.this.maxRepeats =
+                        value.orElse(RepeaterFunction.this.maxRepeats);
+                if (value.isPresent()) {
+                    LangUtils.sendMessage(
+                            player,
+                            "editor.function.repeater.max-repeats-set",
+                            LangUtils.placeholder(
+                                    "max_repeats",
+                                    String.valueOf(RepeaterFunction.this.maxRepeats)));
+                }
+            }
+        };
     }
 }
