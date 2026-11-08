@@ -303,22 +303,11 @@ public final class DungeonCommand implements TabExecutor {
         };
     }
 
-    /** Adds matching dungeon names. */
-    private void addMatchingDungeonNames(List<String> options, String query) {
-        String lowerQuery = query.toLowerCase(Locale.ROOT);
-        for (DungeonDefinition dungeon : this.dungeonManager.getLoadedDungeons()) {
-            String namespace = dungeon.getWorldName().toLowerCase(Locale.ROOT);
-            if (namespace.contains(lowerQuery)) {
-                options.add(dungeon.getWorldName());
-            }
-        }
-    }
-
     /** Runs complete list command. */
     private List<String> completeListCommand(String[] args) {
         List<String> options = new ArrayList<>();
         if (args.length == 2) {
-            this.addMatchingDungeonNames(options, args[1]);
+            DungeonCompletions.addMatchingDungeonNames(this.dungeonManager, options, args[1]);
             CommandArguments.addMatchingLiteralOptions(options, args[1], "1", "2", "3");
         } else if (args.length == 3) {
             CommandArguments.addMatchingLiteralOptions(options, args[2], "1", "2", "3", "4", "5");

@@ -99,12 +99,12 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
         switch (args[1].toLowerCase(Locale.ROOT)) {
             case "info", "enable", "disable" -> {
                 if (args.length == 3) {
-                    this.addMatchingDungeonNames(options, args[2]);
+                    DungeonCompletions.addMatchingDungeonNames(this.dungeonManager, options, args[2]);
                 }
             }
             case "list" -> {
                 if (args.length == 3) {
-                    this.addMatchingDungeonNames(options, args[2]);
+                    DungeonCompletions.addMatchingDungeonNames(this.dungeonManager, options, args[2]);
                 } else if (args.length == 4) {
                     CommandArguments.addMatchingLiteralOptions(
                             options, args[3], "1", "2", "3", "4", "5");
@@ -127,14 +127,14 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
                     CommandArguments.addMatchingLiteralOptions(
                             options, args[2], "add", "remove", "clear");
                 else if (args.length == 4)
-                    this.addMatchingEditableDungeonNames(
+                    DungeonCompletions.addMatchingEditableDungeonNames(this.dungeonManager, 
                             sender, options, args[3]);
             }
             case "exit" -> {
                 if (args.length == 3) {
                     CommandArguments.addMatchingLiteralOptions(options, args[2], "set");
                 } else if (args.length == 4 && args[2].equalsIgnoreCase("set")) {
-                    this.addMatchingDungeonNames(options, args[3]);
+                    DungeonCompletions.addMatchingDungeonNames(this.dungeonManager, options, args[3]);
                 }
             }
             default -> {
@@ -596,30 +596,4 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
         }
     }
 
-    /** Adds matching editable dungeon names. */
-    private void addMatchingEditableDungeonNames(
-            CommandSender sender, List<String> options, String query) {
-        String lowerQuery = query.toLowerCase(Locale.ROOT);
-        for (DungeonDefinition dungeon : this.dungeonManager.getLoadedDungeons()) {
-            if (!CommandUtils.hasDungeonEditAccess(sender, dungeon.getWorldName())) {
-                continue;
-            }
-
-            String namespace = dungeon.getWorldName().toLowerCase(Locale.ROOT);
-            if (namespace.contains(lowerQuery)) {
-                options.add(dungeon.getWorldName());
-            }
-        }
-    }
-
-    /** Adds matching dungeon names. */
-    private void addMatchingDungeonNames(List<String> options, String query) {
-        String lowerQuery = query.toLowerCase(Locale.ROOT);
-        for (DungeonDefinition dungeon : this.dungeonManager.getLoadedDungeons()) {
-            String namespace = dungeon.getWorldName().toLowerCase(Locale.ROOT);
-            if (namespace.contains(lowerQuery)) {
-                options.add(dungeon.getWorldName());
-            }
-        }
-    }
 }

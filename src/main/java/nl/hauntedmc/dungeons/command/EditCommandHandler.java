@@ -72,7 +72,7 @@ final class EditCommandHandler implements CommandHandler {
             CommandArguments.addMatchingLiteralOptions(
                     options, args[1], "close", "save", "lobby", "start", "items", "tools",
                     "signs");
-            this.addMatchingEditableDungeonNames(sender, options, args[1]);
+            DungeonCompletions.addMatchingEditableDungeonNames(this.dungeonManager, sender, options, args[1]);
             return options;
         }
 
@@ -556,19 +556,4 @@ final class EditCommandHandler implements CommandHandler {
         return false;
     }
 
-    /** Adds matching editable dungeon names. */
-    private void addMatchingEditableDungeonNames(
-            CommandSender sender, List<String> options, String query) {
-        String lowerQuery = query.toLowerCase(Locale.ROOT);
-        for (DungeonDefinition dungeon : this.dungeonManager.getLoadedDungeons()) {
-            if (!CommandUtils.hasDungeonEditAccess(sender, dungeon.getWorldName())) {
-                continue;
-            }
-
-            String namespace = dungeon.getWorldName().toLowerCase(Locale.ROOT);
-            if (namespace.contains(lowerQuery)) {
-                options.add(dungeon.getWorldName());
-            }
-        }
-    }
 }

@@ -316,35 +316,6 @@ final class GameplayCommandHandler implements CommandHandler {
         return true;
     }
 
-    /** Adds matching dungeon names. */
-    private void addMatchingDungeonNames(List<String> options, String query) {
-        String lowerQuery = query.toLowerCase(Locale.ROOT);
-        for (DungeonDefinition dungeon : this.dungeonManager.getLoadedDungeons()) {
-            String namespace = dungeon.getWorldName().toLowerCase(Locale.ROOT);
-            if (namespace.contains(lowerQuery)) {
-                options.add(dungeon.getWorldName());
-            }
-        }
-    }
-
-    /** Adds matching play difficulty options. */
-    private void addMatchingPlayDifficultyOptions(List<String> options, String query) {
-        String lowerQuery = query.toLowerCase(Locale.ROOT);
-        for (DungeonDefinition dungeon : this.dungeonManager.getLoadedDungeons()) {
-            if (!dungeon.isUseDifficultyLevels()) {
-                continue;
-            }
-
-            for (String difficulty : dungeon.getDifficultyLevels().keySet()) {
-                String option = dungeon.getWorldName() + ":" + difficulty;
-                if (option.toLowerCase(Locale.ROOT).contains(lowerQuery)
-                        && !options.contains(option)) {
-                    options.add(option);
-                }
-            }
-        }
-    }
-
     /** Runs complete play command. */
     List<String> completePlayCommand(CommandSender sender, String[] args) {
         List<String> options = new ArrayList<>();
@@ -352,12 +323,12 @@ final class GameplayCommandHandler implements CommandHandler {
             String query = args[1];
             if (query.contains(":")) {
                 if (CommandUtils.hasPermissionSilent(sender, "dungeons.play.difficulty")) {
-                    this.addMatchingPlayDifficultyOptions(options, query);
+                    DungeonCompletions.addMatchingPlayDifficultyOptions(this.dungeonManager, options, query);
                 }
             } else {
-                this.addMatchingDungeonNames(options, query);
+                DungeonCompletions.addMatchingDungeonNames(this.dungeonManager, options, query);
                 if (CommandUtils.hasPermissionSilent(sender, "dungeons.play.difficulty")) {
-                    this.addMatchingPlayDifficultyOptions(options, query);
+                    DungeonCompletions.addMatchingPlayDifficultyOptions(this.dungeonManager, options, query);
                 }
             }
 
