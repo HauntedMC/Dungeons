@@ -1,5 +1,7 @@
 package nl.hauntedmc.dungeons.content.function;
 
+import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuItem;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -147,104 +149,11 @@ public class CommandFunction extends DungeonFunction {
     public void buildHotbarMenu() {
         this.normalizeCommandType();
 
-        this.menu.addMenuItem(
-                new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
-                    @Override
-                    public void buildButton() {
-                        this.button = new MenuButton(Material.COMMAND_BLOCK);
-                        this.button.setDisplayName("&d&lSet Command");
-                    }
+        this.menu.addMenuItem(createSetCommandItem());
 
-                    /**
-                     * Performs on select.
-                     */
-                    @Override
-                    public void onSelect(Player player) {
-                        LangUtils.sendMessage(player, "editor.function.command.ask-command");
-                        LangUtils.sendMessage(
-                                player,
-                                "editor.function.command.current-command",
-                                LangUtils.placeholder("command", CommandFunction.this.command));
-                    }
+        this.menu.addMenuItem(createExecutionItem());
 
-                    /**
-                     * Performs on input.
-                     */
-                    @Override
-                    public void onInput(Player player, String message) {
-                        CommandFunction.this.command = message;
-                        LangUtils.sendMessage(
-                                player,
-                                "editor.function.command.command-set",
-                                LangUtils.placeholder("command", CommandFunction.this.command));
-                    }
-                });
-
-        this.menu.addMenuItem(
-                new ToggleMenuItem() {
-                    @Override
-                    public void buildButton() {
-                        this.button =
-                                new MenuButton(
-                                        CommandFunction.this.commandType == CONSOLE_COMMAND_TYPE
-                                                ? Material.REPEATING_COMMAND_BLOCK
-                                                : Material.COMMAND_BLOCK);
-                        this.button.setDisplayName(
-                                "&d&lExecution: " + CommandFunction.this.getCommandTypeDisplay());
-                        this.button.addLore("&ePlayer: runs as resolved target.");
-                        this.button.addLore("&eConsole: runs in the dungeon world");
-                        this.button.addLore("&eat this function's location.");
-                        this.button.setEnchanted(
-                                CommandFunction.this.commandType == CONSOLE_COMMAND_TYPE);
-                    }
-
-                    @Override
-                    public void onSelect(Player player) {
-                        CommandFunction.this.commandType =
-                                CommandFunction.this.commandType == CONSOLE_COMMAND_TYPE
-                                        ? PLAYER_COMMAND_TYPE
-                                        : CONSOLE_COMMAND_TYPE;
-                        player.sendMessage(
-                                LangUtils.getMessage(
-                                        "editor.function.command.command-set",
-                                        LangUtils.placeholder(
-                                                "command",
-                                                "Execution set to "
-                                                        + CommandFunction.this
-                                                                .getCommandTypeDisplay())));
-                    }
-                });
-
-        this.menu.addMenuItem(
-                new ToggleMenuItem() {
-                    /**
-                     * Builds button.
-                     */
-                    @Override
-                    public void buildButton() {
-                        this.button = new MenuButton(Material.PLAYER_HEAD);
-                        this.button.setDisplayName("&d&lToggle 'For Each Player'");
-                        this.button.setEnchanted(CommandFunction.this.forEachPlayer);
-                    }
-
-                    /**
-                     * Performs on select.
-                     */
-                    @Override
-                    public void onSelect(Player player) {
-                        if (!CommandFunction.this.forEachPlayer) {
-                            LangUtils.sendMessage(
-                                    player, "editor.function.command.for-each-player");
-                        } else {
-                            LangUtils.sendMessage(player, "editor.function.command.run-once");
-                        }
-
-                        CommandFunction.this.forEachPlayer = !CommandFunction.this.forEachPlayer;
-                    }
-                });
+        this.menu.addMenuItem(createToggleForEachPlayerItem());
     }
 
     /**
@@ -509,5 +418,89 @@ public class CommandFunction extends DungeonFunction {
      */
     private String getCommandTypeDisplay() {
         return this.commandType == CONSOLE_COMMAND_TYPE ? "Console" : "Player";
+    }
+
+    private MenuItem createSetCommandItem() {
+        return new ChatMenuItem() {
+            @Override
+            public void buildButton() {
+                this.button = new MenuButton(Material.COMMAND_BLOCK);
+                this.button.setDisplayName("&d&lSet Command");
+            }
+            @Override
+            public void onSelect(Player player) {
+                LangUtils.sendMessage(player, "editor.function.command.ask-command");
+                LangUtils.sendMessage(
+                        player,
+                        "editor.function.command.current-command",
+                        LangUtils.placeholder("command", CommandFunction.this.command));
+            }
+            @Override
+            public void onInput(Player player, String message) {
+                CommandFunction.this.command = message;
+                LangUtils.sendMessage(
+                        player,
+                        "editor.function.command.command-set",
+                        LangUtils.placeholder("command", CommandFunction.this.command));
+            }
+        };
+    }
+
+    private MenuItem createExecutionItem() {
+        return new ToggleMenuItem() {
+            @Override
+            public void buildButton() {
+                this.button =
+                        new MenuButton(
+                                CommandFunction.this.commandType == CONSOLE_COMMAND_TYPE
+                                        ? Material.REPEATING_COMMAND_BLOCK
+                                        : Material.COMMAND_BLOCK);
+                this.button.setDisplayName(
+                        "&d&lExecution: " + CommandFunction.this.getCommandTypeDisplay());
+                this.button.addLore("&ePlayer: runs as resolved target.");
+                this.button.addLore("&eConsole: runs in the dungeon world");
+                this.button.addLore("&eat this function's location.");
+                this.button.setEnchanted(
+                        CommandFunction.this.commandType == CONSOLE_COMMAND_TYPE);
+            }
+
+            @Override
+            public void onSelect(Player player) {
+                CommandFunction.this.commandType =
+                        CommandFunction.this.commandType == CONSOLE_COMMAND_TYPE
+                                ? PLAYER_COMMAND_TYPE
+                                : CONSOLE_COMMAND_TYPE;
+                player.sendMessage(
+                        LangUtils.getMessage(
+                                "editor.function.command.command-set",
+                                LangUtils.placeholder(
+                                        "command",
+                                        "Execution set to "
+                                                + CommandFunction.this
+                                                        .getCommandTypeDisplay())));
+            }
+        };
+    }
+
+    private MenuItem createToggleForEachPlayerItem() {
+        return new ToggleMenuItem() {
+            @Override
+            public void buildButton() {
+                this.button = new MenuButton(Material.PLAYER_HEAD);
+                this.button.setDisplayName("&d&lToggle 'For Each Player'");
+                this.button.setEnchanted(CommandFunction.this.forEachPlayer);
+            }
+            @Override
+            public void onSelect(Player player) {
+                if (!CommandFunction.this.forEachPlayer) {
+                    LangUtils.sendMessage(
+                            player, "editor.function.command.for-each-player");
+                } else {
+                    LangUtils.sendMessage(player, "editor.function.command.run-once");
+                }
+
+                CommandFunction.this.forEachPlayer = !CommandFunction.this.forEachPlayer;
+            }
+        };
     }
 }
