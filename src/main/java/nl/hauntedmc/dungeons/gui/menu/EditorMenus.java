@@ -14,14 +14,12 @@ import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
 import nl.hauntedmc.dungeons.model.element.FunctionCategory;
 import nl.hauntedmc.dungeons.model.element.TriggerCategory;
-import nl.hauntedmc.dungeons.model.element.TriggerCondition;
 import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
 import nl.hauntedmc.dungeons.model.instance.EditableInstance;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
-import nl.hauntedmc.dungeons.util.metadata.PersistedFieldSupport;
 import nl.hauntedmc.dungeons.util.text.ColorUtils;
 import nl.hauntedmc.dungeons.util.text.TextUtils;
 import org.bukkit.Material;
@@ -30,7 +28,6 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.Collection;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -40,12 +37,7 @@ import java.util.Map.Entry;
  */
 public class EditorMenus {
     public static GuiWindow editorWindow(String namespace, int size, String title) {
-        var window = new GuiWindow(namespace, size, title);
-        window.setAccessCheck(
-                player ->
-                        nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard.editor(
-                                player, RuntimeContext.playerSessions().get(player)));
-        return window;
+        return EditorMenuSupport.editorWindow(namespace, size, title);
     }
 
     /** Builds and registers the function browser GUI. */
@@ -564,153 +556,6 @@ public class EditorMenus {
                 });
     }
 
-    /** Builds and registers all trigger-condition editor GUIs. */
-    public static void initializeConditionsMenus() {
-        initializeConditionsBrowser();
-        initializeConditionsEditor();
-        initializeConditionsRemover();
-    }
-
-    /** Builds and registers the trigger-condition browser GUI. */
-    private static void initializeConditionsBrowser() {
-        GuiWindow gui = editorWindow("conditionsmenu", 54, "&8Select a Condition");
-        int i = 0;
-
-        for (Entry<String, MenuButton> pair :
-                RuntimeContext.conditionRegistry().getConditionButtons().entrySet()) {
-            String conditionName = pair.getKey();
-            MenuButton menuButton = pair.getValue();
-            Button button = new Button("trigger_" + i, menuButton.getItem());
-            button.addAction(
-                    "click",
-                    event -> {
-                        Player player = (Player) event.getWhoClicked();
-                        DungeonPlayerSession playerSession =
-                                RuntimeContext.playerSessions().get(player);
-
-                        try {
-                            DungeonTrigger trigger = playerSession.getActiveTrigger();
-                            TriggerCondition condition =
-                                    RuntimeContext.conditionRegistry()
-                                            .getConditionClass(conditionName)
-                                            .getDeclaredConstructor()
-                                            .newInstance();
-                            condition.setTrigger(trigger);
-                            condition.initialize();
-                            trigger.addCondition(condition);
-                            player.closeInventory();
-                            playerSession.setTargetLocation(null);
-                            if (playerSession.getSavedHotbar() == null) {
-                                playerSession.captureAndShowHotbar(condition.getMenu());
-                            } else {
-                                playerSession.showHotbar(condition.getMenu());
-                            }
-                        } catch (IllegalAccessException
-                                | InvocationTargetException
-                                | NoSuchMethodException
-                                | InstantiationException exception) {
-                            RuntimeContext.plugin()
-                                    .getSLF4JLogger()
-                                    .error(
-                                            "Failed to create condition '{}' from the condition"
-                                                + " browser for player '{}'.",
-                                            conditionName,
-                                            player.getName(),
-                                            exception);
-                        }
-                    });
-            gui.addButton(i, button);
-            i++;
-        }
-    }
-
-    /** Builds and registers the trigger-condition edit GUI. */
-    private static void initializeConditionsEditor() {
-        GuiWindow gui = editorWindow("editcondition", 54, "&8Edit a Condition");
-        gui.addOpenAction(
-                "populate",
-                event -> {
-                    Player player = (Player) event.getPlayer();
-                    DungeonPlayerSession playerSession =
-                            RuntimeContext.playerSessions().get(player);
-                    DungeonTrigger trigger = playerSession.getActiveTrigger();
-                    GuiInventory guiInv = gui.getInventoryFor(player);
-
-                    for (int x = 0; x < 27; x++) {
-                        guiInv.removeButton(x);
-                    }
-
-                    int slot = 0;
-
-                    for (TriggerCondition condition : trigger.getConditions()) {
-                        MenuButton menuButton =
-                                RuntimeContext.conditionRegistry()
-                                        .getConditionButton(condition.getClass());
-                        if (menuButton != null) {
-                            Button button = new Button("condition_" + slot, menuButton.getItem());
-                            button.addLore("");
-                            button.addLore(ColorUtils.colorize("&6Options:"));
-                            addPersistedFieldLore(button, condition, false, "condition");
-
-                            button.addAction(
-                                    "click",
-                                    clickEvent -> {
-                                        Player clickPlayer = (Player) clickEvent.getWhoClicked();
-                                        DungeonPlayerSession clickAPlayer =
-                                                RuntimeContext.playerSessions().get(clickPlayer);
-                                        clickPlayer.closeInventory();
-                                        clickAPlayer.showHotbar(condition.getMenu());
-                                    });
-                            guiInv.setButton(slot, button);
-                            slot++;
-                        }
-                    }
-                });
-    }
-
-    /** Builds and registers the trigger-condition removal GUI. */
-    private static void initializeConditionsRemover() {
-        GuiWindow gui = editorWindow("removecondition", 54, "&8Remove a Condition");
-        gui.addOpenAction(
-                "populate", event -> reloadConditionsRemovalGui(gui, (Player) event.getPlayer()));
-    }
-
-    /** Reloads condition-removal buttons for the active player's trigger. */
-    private static void reloadConditionsRemovalGui(GuiWindow gui, Player player) {
-        DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
-        DungeonTrigger trigger = playerSession.getActiveTrigger();
-        GuiInventory guiInv = gui.getInventoryFor(player);
-
-        for (int x = 0; x < 27; x++) {
-            guiInv.removeButton(x);
-        }
-
-        int slot = 0;
-
-        for (TriggerCondition condition : trigger.getConditions()) {
-            MenuButton menuButton =
-                    RuntimeContext.conditionRegistry().getConditionButton(condition.getClass());
-            if (menuButton != null) {
-                Button button = new Button("condition_" + slot, menuButton.getItem());
-                button.addAction(
-                        "click",
-                        clickEvent -> {
-                            Player clickPlayer = (Player) clickEvent.getWhoClicked();
-                            trigger.removeCondition(condition);
-                            LangUtils.sendMessage(
-                                    clickPlayer,
-                                    "menus.remove.condition-from-trigger",
-                                    LangUtils.placeholder("name", menuButton.getDisplayName()));
-                            reloadConditionsRemovalGui(gui, clickPlayer);
-                        });
-                guiInv.setButton(slot, button);
-                slot++;
-            }
-        }
-
-        gui.updateButtons(player);
-    }
-
     /** Builds and registers all trigger-gate editor GUIs. */
     public static void initializeGateTriggerMenus() {
         initializeGateTriggerBrowser();
@@ -798,7 +643,7 @@ public class EditorMenus {
                                 Button button = new Button("trigger_" + slot, menuButton.getItem());
                                 button.addLore("");
                                 button.addLore(ColorUtils.colorize("&6Options:"));
-                                addPersistedFieldLore(button, trigger, false, "trigger");
+                                EditorMenuSupport.addPersistedFieldLore(button, trigger, false, "trigger");
 
                                 if (trigger instanceof GateTrigger subGate) {
                                     button.addLore(ColorUtils.colorize(" &eTriggers:"));
@@ -907,7 +752,7 @@ public class EditorMenus {
                                         new Button("function_" + slot, menuButton.getItem());
                                 button.addLore("");
                                 button.addLore(ColorUtils.colorize("&6Options:"));
-                                addPersistedFieldLore(button, targetFunction, true, "function");
+                                EditorMenuSupport.addPersistedFieldLore(button, targetFunction, true, "function");
 
                                 if (targetFunction instanceof CompositeFunction subMulti) {
                                     button.addLore(ColorUtils.colorize(" &eFunctions:"));
@@ -1011,7 +856,7 @@ public class EditorMenus {
                                         new Button("function_" + slot, menuButton.getItem());
                                 button.addLore("");
                                 button.addLore(ColorUtils.colorize("&6Options:"));
-                                addPersistedFieldLore(
+                                EditorMenuSupport.addPersistedFieldLore(
                                         button, targetFunction, true, "function trigger");
 
                                 if (targetFunction instanceof CompositeFunction subMulti) {
@@ -1044,33 +889,8 @@ public class EditorMenus {
                 });
     }
 
-    /** Adds field metadata and current value details to button lore. */
-    private static void addPersistedFieldLore(
-            Button button, Object target, boolean formatTriggerValues, String logContext) {
-        for (PersistedFieldSupport.FieldMetadata metadata :
-                PersistedFieldSupport.editorVisibleFields(target.getClass())) {
-            try {
-                Object value = metadata.field().get(target);
-                if (value == null || value instanceof Collection<?>) {
-                    continue;
-                }
-
-                if (formatTriggerValues && value instanceof DungeonTrigger trigger) {
-                    button.addLore(
-                            ColorUtils.colorize(" &eTrigger: &7" + trigger.getDisplayName()));
-                } else {
-                    button.addLore(ColorUtils.colorize(" &e" + metadata.name() + ": &7" + value));
-                }
-            } catch (IllegalAccessException exception) {
-                RuntimeContext.plugin()
-                        .getSLF4JLogger()
-                        .error(
-                                "Failed to inspect {} field '{}' on '{}'.",
-                                logContext,
-                                metadata.name(),
-                                target.getClass().getSimpleName(),
-                                exception);
-            }
-        }
+    public static void initializeConditionsMenus() {
+        ConditionEditorMenus.initializeConditionsMenus();
     }
+
 }
