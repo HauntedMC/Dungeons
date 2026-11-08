@@ -3,13 +3,11 @@ package nl.hauntedmc.dungeons.command;
 import nl.hauntedmc.dungeons.bootstrap.LifecycleCoordinator;
 import nl.hauntedmc.dungeons.command.CommandOutput.FilterPageQuery;
 import nl.hauntedmc.dungeons.command.config.DungeonConfigCommandHandler;
-import nl.hauntedmc.dungeons.content.instance.edit.BranchingEditableInstance;
 import nl.hauntedmc.dungeons.gui.framework.GuiService;
 import nl.hauntedmc.dungeons.gui.loot.LootTableEditor;
 import nl.hauntedmc.dungeons.model.dungeon.AccessKeyDefinition;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
-import nl.hauntedmc.dungeons.model.instance.EditableInstance;
 import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.registry.DungeonTypeRegistry;
@@ -26,7 +24,6 @@ import nl.hauntedmc.dungeons.runtime.team.DungeonTeam;
 import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
 import nl.hauntedmc.dungeons.util.command.CommandUtils;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
-import nl.hauntedmc.dungeons.util.config.PluginConfigView;
 import nl.hauntedmc.dungeons.util.entity.EntityUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.math.MathUtils;
@@ -35,7 +32,6 @@ import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.World.Environment;
 import org.bukkit.WorldCreator;
@@ -45,9 +41,6 @@ import org.bukkit.command.PluginCommand;
 import org.bukkit.command.TabExecutor;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataContainer;
-import org.bukkit.persistence.PersistentDataType;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -120,7 +113,7 @@ public final class DungeonCommand implements TabExecutor {
         this.teamCommandGroup = new TeamCommandHandler(teamManager);
         this.lootCommandGroup = new LootCommandHandler(lootTableManager, lootEditor, this.output);
         this.dungeonCommandGroup = new DungeonDefinitionCommandGroup();
-        this.editCommandGroup = new EditCommandGroup();
+        this.editCommandGroup = new EditCommandHandler(plugin, playerManager, dungeonManager);
         this.debugCommandGroup = new DebugCommandHandler(playerManager);
         PluginCommand pluginCommand = plugin.getServer().getPluginCommand(command);
         if (pluginCommand != null) {
@@ -461,18 +454,6 @@ public final class DungeonCommand implements TabExecutor {
                 : CommandUtils.hasPermissionSilent(sender, "dungeons.play.send");
     }
 
-    /** Runs require dungeon edit access. */
-    private boolean requireDungeonEditAccess(Player player, DungeonDefinition dungeon) {
-        if (dungeon != null && CommandUtils.hasDungeonEditAccess(player, dungeon.getWorldName())) {
-            nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard.configuration(
-                    player, dungeon, "editor");
-            return true;
-        }
-
-        LangUtils.sendMessage(player, "general.errors.no-permission");
-        return false;
-    }
-
     /** Runs send root help. */
     private void sendRootHelp(CommandSender sender) {
         boolean playerSender = sender instanceof Player;
@@ -559,35 +540,6 @@ public final class DungeonCommand implements TabExecutor {
         }
 
         this.guiService.openGui(player, "rewards");
-        return true;
-    }
-
-    /** Runs handle clean signs command. */
-    private boolean handleCleanSignsCommand(CommandSender sender, String[] args) {
-        if (!(sender instanceof Player player)) {
-            return false;
-        }
-
-        if (!CommandUtils.hasPermission(sender, "dungeons.staff.edit")) {
-            return false;
-        }
-
-        if (args.length != 1) {
-            LangUtils.sendMessage(player, "commands.edit.signs.clean.usage");
-            return true;
-        }
-
-        DungeonPlayerSession playerSession = this.playerManager.get(player);
-        if (!playerSession.isEditMode()) {
-            LangUtils.sendMessage(player, "commands.edit.signs.clean.not-in-dungeon");
-            return true;
-        }
-
-        int cleanedSigns = ((EditableInstance) playerSession.getInstance()).cleanSigns();
-        LangUtils.sendMessage(
-                player,
-                "commands.edit.signs.clean.success",
-                LangUtils.placeholder("count", String.valueOf(cleanedSigns)));
         return true;
     }
 
@@ -883,220 +835,6 @@ public final class DungeonCommand implements TabExecutor {
                         () -> LangUtils.sendMessage(sender, "commands.dungeon.import.failed"));
     }
 
-    /** Runs handle save command. */
-    private boolean handleSaveCommand(CommandSender sender) {
-        if (!(sender instanceof Player player)) {
-            return false;
-        }
-
-        DungeonPlayerSession playerSession = this.playerManager.get(player);
-        DungeonInstance instance = playerSession.getInstance();
-        if (instance == null) {
-            LangUtils.sendMessage(player, "commands.edit.save.not-in-dungeon");
-            return true;
-        }
-
-        EditableInstance editable = instance.asEditInstance();
-        if (editable == null) {
-            LangUtils.sendMessage(player, "commands.edit.save.not-in-dungeon");
-            return true;
-        }
-
-        if (!this.requireDungeonEditAccess(player, instance.getDungeon())) {
-            return false;
-        }
-
-        if (instance.getDungeon().isSaving()) {
-            LangUtils.sendMessage(player, "instance.lifecycle.is-saving");
-            return true;
-        }
-
-        LangUtils.sendMessage(player, "commands.edit.save.saving");
-        editable.saveWorldAsync()
-                .whenComplete(
-                        (success, throwable) ->
-                                Bukkit.getScheduler()
-                                        .runTask(
-                                                this.plugin,
-                                                () -> {
-                                                    if (!player.isOnline()) {
-                                                        return;
-                                                    }
-
-                                                    if (throwable != null
-                                                            || !Boolean.TRUE.equals(success)) {
-                                                        LangUtils.sendMessage(
-                                                                player,
-                                                                "commands.edit.save.failed",
-                                                                LangUtils.placeholder(
-                                                                        "dungeon",
-                                                                        instance.getDungeon()
-                                                                                .getWorldName()));
-                                                        return;
-                                                    }
-
-                                                    LangUtils.sendMessage(
-                                                            player,
-                                                            "commands.edit.save.success",
-                                                            LangUtils.placeholder(
-                                                                    "dungeon",
-                                                                    instance.getDungeon()
-                                                                            .getWorldName()));
-                                                }));
-        return true;
-    }
-
-    /** Runs handle function tool command. */
-    private boolean handleFunctionToolCommand(CommandSender sender) {
-        if (!(sender instanceof Player player)) {
-            return false;
-        }
-
-        if (!CommandUtils.hasPermission(sender, "dungeons.staff.edit")) {
-            return false;
-        }
-
-        DungeonPlayerSession playerSession = this.playerManager.get(player);
-        if (playerSession == null || !playerSession.isEditMode()) {
-            LangUtils.sendMessage(player, "commands.edit.tools.function.not-in-dungeon");
-            return true;
-        }
-
-        playerSession.restoreEditorTools();
-        int functionSlot = PluginConfigView.getFunctionToolSlot(this.plugin.getConfig());
-        player.getInventory().setHeldItemSlot(functionSlot);
-        LangUtils.sendMessage(
-                player,
-                "commands.edit.tools.function.restored",
-                LangUtils.placeholder("slot", String.valueOf(functionSlot + 1)));
-        return true;
-    }
-
-    /** Runs handle room tool command. */
-    private boolean handleRoomToolCommand(CommandSender sender) {
-        if (!(sender instanceof Player player)) {
-            return false;
-        }
-
-        if (!CommandUtils.hasPermission(sender, "dungeons.staff.edit")) {
-            return false;
-        }
-
-        DungeonPlayerSession playerSession = this.playerManager.get(player);
-        if (playerSession == null || !playerSession.isEditMode()) {
-            LangUtils.sendMessage(player, "commands.edit.tools.room.not-in-dungeon");
-            return true;
-        }
-
-        if (playerSession.getInstance().as(BranchingEditableInstance.class) == null) {
-            LangUtils.sendMessage(player, "commands.edit.tools.room.not-in-branching");
-            return true;
-        }
-
-        playerSession.restoreEditorTools();
-        int roomSlot = PluginConfigView.getRoomToolSlot(this.plugin.getConfig());
-        player.getInventory().setHeldItemSlot(roomSlot);
-        LangUtils.sendMessage(
-                player,
-                "commands.edit.tools.room.restored",
-                LangUtils.placeholder("slot", String.valueOf(roomSlot + 1)));
-        return true;
-    }
-
-    /** Runs handle dungeon item command. */
-    private boolean handleDungeonItemCommand(CommandSender sender, String[] args) {
-        if (!(sender instanceof Player player)) {
-            return false;
-        }
-
-        if (args.length != 1) {
-            LangUtils.sendMessage(player, "commands.edit.items.mark-dungeon.usage");
-            return true;
-        }
-
-        DungeonPlayerSession playerSession = this.playerManager.get(player);
-        if (!playerSession.isEditMode()) {
-            LangUtils.sendMessage(player, "commands.edit.items.mark-dungeon.not-in-dungeon");
-            return true;
-        }
-
-        if (!this.requireDungeonEditAccess(player, playerSession.getInstance().getDungeon())) {
-            return false;
-        }
-
-        ItemStack item = player.getInventory().getItemInMainHand();
-        if (item.getType() == Material.AIR) {
-            LangUtils.sendMessage(player, "commands.dungeon.keys.add.no-held-item");
-            return true;
-        }
-
-        ItemMeta meta = item.getItemMeta();
-        PersistentDataContainer data = meta.getPersistentDataContainer();
-        data.set(new NamespacedKey(this.plugin, "DungeonItem"), PersistentDataType.INTEGER, 1);
-        item.setItemMeta(meta);
-        LangUtils.sendMessage(player, "commands.edit.items.mark-dungeon.success");
-        return true;
-    }
-
-    /** Runs handle unban item command. */
-    private boolean handleUnbanItemCommand(CommandSender sender, String[] args) {
-        if (!(sender instanceof Player player)) {
-            return false;
-        }
-
-        if (args.length != 1) {
-            LangUtils.sendMessage(player, "commands.edit.items.unban.usage");
-            return true;
-        }
-
-        DungeonPlayerSession playerSession = this.playerManager.get(player);
-        if (!playerSession.isEditMode()) {
-            LangUtils.sendMessage(player, "commands.edit.items.unban.not-in-dungeon");
-            return true;
-        }
-
-        DungeonDefinition dungeon = playerSession.getInstance().getDungeon();
-        if (!this.requireDungeonEditAccess(player, dungeon)) {
-            return false;
-        }
-
-        boolean unbanSuccess = dungeon.unbanItem(player.getInventory().getItemInMainHand());
-        if (unbanSuccess) {
-            LangUtils.sendMessage(player, "commands.edit.items.unban.success");
-        } else {
-            LangUtils.sendMessage(player, "commands.edit.items.unban.not-banned");
-        }
-
-        return true;
-    }
-
-    /** Runs handle ban item command. */
-    private boolean handleBanItemCommand(CommandSender sender, String[] args) {
-        if (!(sender instanceof Player player)) {
-            return false;
-        }
-
-        if (args.length != 1) {
-            LangUtils.sendMessage(player, "commands.edit.items.ban.usage");
-            return true;
-        }
-
-        DungeonPlayerSession playerSession = this.playerManager.get(player);
-        if (!playerSession.isEditMode()) {
-            LangUtils.sendMessage(player, "commands.edit.items.ban.not-in-dungeon");
-            return true;
-        }
-
-        DungeonDefinition dungeon = playerSession.getInstance().getDungeon();
-        if (!this.requireDungeonEditAccess(player, dungeon)) {
-            return false;
-        }
-
-        dungeon.banItem(player.getInventory().getItemInMainHand());
-        LangUtils.sendMessage(player, "commands.edit.items.ban.success");
-        return true;
-    }
-
     /** Runs handle set exit command. */
     private boolean handleSetExitCommand(CommandSender sender, String[] args) {
         if (!(sender instanceof Player player)) {
@@ -1207,83 +945,6 @@ public final class DungeonCommand implements TabExecutor {
 
             this.dungeonQueueCoordinator.discardQueue(queue);
         }
-    }
-
-    /** Runs handle set spawn command. */
-    private boolean handleSetSpawnCommand(CommandSender sender, String[] args) {
-        if (!(sender instanceof Player player)) {
-            return false;
-        }
-
-        if (args.length != 1) {
-            LangUtils.sendMessage(player, "commands.edit.start.set.usage");
-            return true;
-        }
-
-        DungeonPlayerSession playerSession = this.playerManager.get(player);
-        if (!playerSession.isEditMode()) {
-            LangUtils.sendMessage(player, "commands.edit.start.set.not-in-dungeon");
-            LangUtils.sendMessage(player, "commands.edit.start.set.not-editing");
-            return true;
-        }
-
-        DungeonDefinition dungeon = playerSession.getInstance().getDungeon();
-        if (!this.requireDungeonEditAccess(player, dungeon)) {
-            return false;
-        }
-
-        Location spawnLoc = player.getLocation();
-        dungeon.setStartSpawn(spawnLoc);
-        double spawnX = MathUtils.round(spawnLoc.getX(), 2);
-        double spawnY = MathUtils.round(spawnLoc.getY(), 2);
-        double spawnZ = MathUtils.round(spawnLoc.getZ(), 2);
-        double spawnYAW = MathUtils.round(spawnLoc.getYaw(), 2);
-        LangUtils.sendMessage(
-                player,
-                "commands.edit.start.set.success",
-                LangUtils.placeholder("x", String.valueOf(spawnX)),
-                LangUtils.placeholder("y", String.valueOf(spawnY)),
-                LangUtils.placeholder("z", String.valueOf(spawnZ)),
-                LangUtils.placeholder("yaw", String.valueOf(spawnYAW)));
-        return true;
-    }
-
-    /** Runs handle set lobby command. */
-    private boolean handleSetLobbyCommand(CommandSender sender, String[] args) {
-        if (!(sender instanceof Player player)) {
-            return false;
-        }
-
-        if (args.length != 1) {
-            LangUtils.sendMessage(player, "commands.edit.lobby.set.usage");
-            return true;
-        }
-
-        DungeonPlayerSession playerSession = this.playerManager.get(player);
-        if (!playerSession.isEditMode()) {
-            LangUtils.sendMessage(player, "commands.edit.lobby.set.not-in-dungeon");
-            return true;
-        }
-
-        DungeonDefinition dungeon = playerSession.getInstance().getDungeon();
-        if (!this.requireDungeonEditAccess(player, dungeon)) {
-            return false;
-        }
-
-        Location lobbyLocation = player.getLocation();
-        dungeon.setLobbySpawn(lobbyLocation);
-        double lobbyX = MathUtils.round(lobbyLocation.getX(), 2);
-        double lobbyY = MathUtils.round(lobbyLocation.getY(), 2);
-        double lobbyZ = MathUtils.round(lobbyLocation.getZ(), 2);
-        double lobbyYAW = MathUtils.round(lobbyLocation.getYaw(), 2);
-        LangUtils.sendMessage(
-                player,
-                "commands.edit.lobby.set.success",
-                LangUtils.placeholder("x", String.valueOf(lobbyX)),
-                LangUtils.placeholder("y", String.valueOf(lobbyY)),
-                LangUtils.placeholder("z", String.valueOf(lobbyZ)),
-                LangUtils.placeholder("yaw", String.valueOf(lobbyYAW)));
-        return true;
     }
 
     /** Runs handle remove allkeys command. */
@@ -2062,42 +1723,6 @@ public final class DungeonCommand implements TabExecutor {
         return true;
     }
 
-    /** Runs handle edit close command. */
-    private boolean handleEditCloseCommand(CommandSender sender, String[] args) {
-        if (!(sender instanceof Player player)) {
-            return false;
-        }
-
-        if (args.length != 2) {
-            LangUtils.sendMessage(player, "commands.edit.close.usage");
-            return true;
-        }
-
-        DungeonPlayerSession playerSession = this.playerManager.get(player);
-        if (playerSession == null) {
-            LangUtils.sendMessage(player, "commands.edit.close.not-in-editor");
-            return true;
-        }
-
-        DungeonInstance instance = playerSession.getInstance();
-        if (instance == null || instance.asEditInstance() == null || !playerSession.isEditMode()) {
-            LangUtils.sendMessage(player, "commands.edit.close.not-in-editor");
-            return true;
-        }
-
-        if (!this.requireDungeonEditAccess(player, instance.getDungeon())) {
-            return false;
-        }
-
-        String dungeonName = instance.getDungeon().getDisplayName();
-        instance.removePlayer(playerSession);
-        LangUtils.sendMessage(
-                player,
-                "commands.edit.close.success",
-                LangUtils.placeholder("dungeon", dungeonName));
-        return true;
-    }
-
     /** Handles dungeon definition administration subcommands. */
     private final class DungeonDefinitionCommandGroup implements CommandHandler {
         /** Runs handle command. */
@@ -2245,167 +1870,4 @@ public final class DungeonCommand implements TabExecutor {
         }
     }
 
-    /** Handles edit-mode and builder workflow subcommands. */
-    private final class EditCommandGroup implements CommandHandler {
-        /** Runs handle command. */
-        @Override
-        public boolean handleCommand(CommandSender sender, String[] args) {
-            if (args.length < 2) {
-                CommandArguments.sendUsageList(sender, "commands.edit.help.lines");
-                return true;
-            }
-
-            return switch (args[1].toLowerCase(Locale.ROOT)) {
-                case "close" -> DungeonCommand.this.handleEditCloseCommand(sender, args);
-                case "save" -> this.handleSaveCommand(sender, args);
-                case "lobby" -> this.handleLobbyCommand(sender, args);
-                case "start" -> this.handleStartCommand(sender, args);
-                case "items" -> this.handleItemsCommand(sender, args);
-                case "tools" -> this.handleToolsCommand(sender, args);
-                case "signs" -> this.handleSignsCommand(sender, args);
-                default -> {
-                    CommandArguments.sendUsageList(sender, "commands.edit.help.lines");
-                    yield true;
-                }
-            };
-        }
-
-        /** Runs handle tab complete. */
-        @Override
-        public List<String> handleTabComplete(CommandSender sender, String[] args) {
-            List<String> options = new ArrayList<>();
-            if (args.length == 2) {
-                CommandArguments.addMatchingLiteralOptions(
-                        options, args[1], "close", "save", "lobby", "start", "items", "tools",
-                        "signs");
-                DungeonCommand.this.addMatchingEditableDungeonNames(sender, options, args[1]);
-                return options;
-            }
-
-            switch (args[1].toLowerCase(Locale.ROOT)) {
-                case "lobby", "start" -> {
-                    if (args.length == 3) {
-                        CommandArguments.addMatchingLiteralOptions(options, args[2], "set");
-                    }
-                }
-                case "items" -> {
-                    if (args.length == 3) {
-                        CommandArguments.addMatchingLiteralOptions(
-                                options, args[2], "ban", "unban", "mark-dungeon");
-                    }
-                }
-                case "tools" -> {
-                    if (args.length == 3) {
-                        CommandArguments.addMatchingLiteralOptions(
-                                options, args[2], "function", "room");
-                    }
-                }
-                case "signs" -> {
-                    if (args.length == 3) {
-                        CommandArguments.addMatchingLiteralOptions(options, args[2], "clean");
-                    }
-                }
-                default -> {
-                    return List.of();
-                }
-            }
-
-            return options;
-        }
-
-        /** Returns whether named subcommand. */
-        private boolean isNamedSubcommand(String value) {
-            return value.equalsIgnoreCase("open")
-                    || value.equalsIgnoreCase("close")
-                    || value.equalsIgnoreCase("save")
-                    || value.equalsIgnoreCase("lobby")
-                    || value.equalsIgnoreCase("start")
-                    || value.equalsIgnoreCase("items")
-                    || value.equalsIgnoreCase("tools")
-                    || value.equalsIgnoreCase("signs");
-        }
-
-        /** Runs handle save command. */
-        private boolean handleSaveCommand(CommandSender sender, String[] args) {
-            if (args.length != 2) {
-                CommandArguments.sendUsageList(sender, "commands.edit.help.lines");
-                return true;
-            }
-
-            return DungeonCommand.this.handleSaveCommand(sender);
-        }
-
-        /** Runs handle lobby command. */
-        private boolean handleLobbyCommand(CommandSender sender, String[] args) {
-            if (args.length == 3 && args[2].equalsIgnoreCase("set")) {
-                return DungeonCommand.this.handleSetLobbyCommand(sender, new String[] {"setlobby"});
-            }
-
-            CommandArguments.sendUsageList(sender, "commands.edit.help.lines");
-            return true;
-        }
-
-        /** Runs handle start command. */
-        private boolean handleStartCommand(CommandSender sender, String[] args) {
-            if (args.length == 3 && args[2].equalsIgnoreCase("set")) {
-                return DungeonCommand.this.handleSetSpawnCommand(sender, new String[] {"setspawn"});
-            }
-
-            CommandArguments.sendUsageList(sender, "commands.edit.help.lines");
-            return true;
-        }
-
-        /** Runs handle items command. */
-        private boolean handleItemsCommand(CommandSender sender, String[] args) {
-            if (args.length != 3) {
-                CommandArguments.sendUsageList(sender, "commands.edit.help.lines");
-                return true;
-            }
-
-            return switch (args[2].toLowerCase(Locale.ROOT)) {
-                case "ban" ->
-                        DungeonCommand.this.handleBanItemCommand(sender, new String[] {"banitem"});
-                case "unban" ->
-                        DungeonCommand.this.handleUnbanItemCommand(
-                                sender, new String[] {"unbanitem"});
-                case "mark-dungeon" ->
-                        DungeonCommand.this.handleDungeonItemCommand(
-                                sender, new String[] {"dungeonitem"});
-                default -> {
-                    CommandArguments.sendUsageList(sender, "commands.edit.help.lines");
-                    yield true;
-                }
-            };
-        }
-
-        /** Runs handle tools command. */
-        private boolean handleToolsCommand(CommandSender sender, String[] args) {
-            if (args.length != 3) {
-                CommandArguments.sendUsageList(sender, "commands.edit.help.lines");
-                return true;
-            }
-
-            return switch (args[2].toLowerCase(Locale.ROOT)) {
-                case "function" -> DungeonCommand.this.handleFunctionToolCommand(sender);
-                case "room" -> DungeonCommand.this.handleRoomToolCommand(sender);
-                default -> {
-                    CommandArguments.sendUsageList(sender, "commands.edit.help.lines");
-                    yield true;
-                }
-            };
-        }
-
-        /** Runs handle signs command. */
-        private boolean handleSignsCommand(CommandSender sender, String[] args) {
-            if (args.length == 3 && args[2].equalsIgnoreCase("clean")) {
-                return DungeonCommand.this.handleCleanSignsCommand(
-                        sender, new String[] {"cleansigns"});
-            }
-
-            CommandArguments.sendUsageList(sender, "commands.edit.help.lines");
-            return true;
-        }
-    }
-
-    /** Handles active-instance administration subcommands. */
 }
