@@ -236,160 +236,132 @@ public class LootTableRewardsFunction extends RewardFunction {
      */
     @Override
     public void buildHotbarMenu() {
-        this.menu.addMenuItem(
-                new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
-                    @Override
-                    public void buildButton() {
-                        this.button = new MenuButton(Material.CHEST);
-                        this.button.setDisplayName("&d&lSet Loot Table");
-                    }
+        this.menu.addMenuItem(createSetLootTableItem());
+        this.menu.addMenuItem(createExpRewardItem());
+        this.menu.addMenuItem(createExpLevelsRewardItem());
+        this.menu.addMenuItem(createCooldownSettingsItem());
+    }
 
-                    /**
-                     * Performs on select.
-                     */
-                    @Override
-                    public void onSelect(Player player) {
-                        LangUtils.sendMessage(
-                                player, "editor.function.loot-table-rewards.ask-loot-table");
-                        LangUtils.sendMessage(
-                                player,
-                                "editor.function.loot-table-rewards.current-loot-table",
-                                LangUtils.placeholder(
-                                        "loot_table", LootTableRewardsFunction.this.loottableName));
-                    }
+    private MenuItem createSetLootTableItem() {
+        return new ChatMenuItem() {
+            @Override
+            public void buildButton() {
+                this.button = new MenuButton(Material.CHEST);
+                this.button.setDisplayName("&d&lSet Loot Table");
+            }
+            @Override
+            public void onSelect(Player player) {
+                LangUtils.sendMessage(
+                        player, "editor.function.loot-table-rewards.ask-loot-table");
+                LangUtils.sendMessage(
+                        player,
+                        "editor.function.loot-table-rewards.current-loot-table",
+                        LangUtils.placeholder(
+                                "loot_table", LootTableRewardsFunction.this.loottableName));
+            }
+            @Override
+            public void onInput(Player player, String message) {
+                if (message.contains(" ")) {
+                    LangUtils.sendMessage(
+                            player, "editor.function.loot-table-rewards.warning-no-spaces");
+                    LangUtils.sendMessage(
+                            player,
+                            "editor.function.loot-table-rewards.warning-spaces-replaced");
+                    message = message.replace(" ", "_");
+                }
 
-                    /**
-                     * Performs on input.
-                     */
-                    @Override
-                    public void onInput(Player player, String message) {
-                        if (message.contains(" ")) {
-                            LangUtils.sendMessage(
-                                    player, "editor.function.loot-table-rewards.warning-no-spaces");
-                            LangUtils.sendMessage(
-                                    player,
-                                    "editor.function.loot-table-rewards.warning-spaces-replaced");
-                            message = message.replace(" ", "_");
-                        }
+                if (!RuntimeContext.lootTableRepository().contains(message)) {
+                    LangUtils.sendMessage(
+                            player, "editor.function.loot-table-rewards.warning-not-found");
+                    MessageUtils.sendClickableCommand(
+                            player,
+                            RuntimeContext.logPrefix() + "&b&lClick here &bto create it!",
+                            "dungeon loot create " + message);
+                }
 
-                        if (!RuntimeContext.lootTableRepository().contains(message)) {
-                            LangUtils.sendMessage(
-                                    player, "editor.function.loot-table-rewards.warning-not-found");
-                            MessageUtils.sendClickableCommand(
-                                    player,
-                                    RuntimeContext.logPrefix() + "&b&lClick here &bto create it!",
-                                    "dungeon loot create " + message);
-                        }
+                LootTableRewardsFunction.this.loottableName = message;
+                LangUtils.sendMessage(
+                        player,
+                        "editor.function.loot-table-rewards.loot-table-set",
+                        LangUtils.placeholder(
+                                "loot_table", LootTableRewardsFunction.this.loottableName));
+            }
+        };
+    }
 
-                        LootTableRewardsFunction.this.loottableName = message;
-                        LangUtils.sendMessage(
-                                player,
-                                "editor.function.loot-table-rewards.loot-table-set",
-                                LangUtils.placeholder(
-                                        "loot_table", LootTableRewardsFunction.this.loottableName));
-                    }
-                });
-        this.menu.addMenuItem(
-                new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
-                    @Override
-                    public void buildButton() {
-                        this.button = new MenuButton(Material.EMERALD);
-                        this.button.setDisplayName("&d&lExp Reward");
-                        this.button.setAmount(LootTableRewardsFunction.this.xp);
-                    }
+    private MenuItem createExpRewardItem() {
+        return new ChatMenuItem() {
+            @Override
+            public void buildButton() {
+                this.button = new MenuButton(Material.EMERALD);
+                this.button.setDisplayName("&d&lExp Reward");
+                this.button.setAmount(LootTableRewardsFunction.this.xp);
+            }
+            @Override
+            public void onSelect(Player player) {
+                LangUtils.sendMessage(player, "editor.function.loot-table-rewards.ask-exp");
+            }
+            @Override
+            public void onInput(Player player, String message) {
+                Optional<Integer> value = InputUtils.readIntegerInput(player, message);
+                LootTableRewardsFunction.this.xp =
+                        value.orElse(LootTableRewardsFunction.this.xp);
+                if (value.isPresent()) {
+                    LangUtils.sendMessage(
+                            player,
+                            "editor.function.loot-table-rewards.exp-set",
+                            LangUtils.placeholder(
+                                    "xp",
+                                    String.valueOf(LootTableRewardsFunction.this.xp)));
+                }
+            }
+        };
+    }
 
-                    /**
-                     * Performs on select.
-                     */
-                    @Override
-                    public void onSelect(Player player) {
-                        LangUtils.sendMessage(player, "editor.function.loot-table-rewards.ask-exp");
-                    }
+    private MenuItem createExpLevelsRewardItem() {
+        return new ChatMenuItem() {
+            @Override
+            public void buildButton() {
+                this.button = new MenuButton(Material.NETHER_STAR);
+                this.button.setDisplayName("&d&lExp Levels Reward");
+                this.button.setAmount(LootTableRewardsFunction.this.levels);
+            }
+            @Override
+            public void onSelect(Player player) {
+                LangUtils.sendMessage(
+                        player, "editor.function.loot-table-rewards.ask-levels");
+            }
+            @Override
+            public void onInput(Player player, String message) {
+                Optional<Integer> value = InputUtils.readIntegerInput(player, message);
+                LootTableRewardsFunction.this.levels =
+                        value.orElse(LootTableRewardsFunction.this.levels);
+                if (value.isPresent()) {
+                    LangUtils.sendMessage(
+                            player,
+                            "editor.function.loot-table-rewards.levels-set",
+                            LangUtils.placeholder(
+                                    "levels",
+                                    String.valueOf(LootTableRewardsFunction.this.levels)));
+                }
+            }
+        };
+    }
 
-                    /**
-                     * Performs on input.
-                     */
-                    @Override
-                    public void onInput(Player player, String message) {
-                        Optional<Integer> value = InputUtils.readIntegerInput(player, message);
-                        LootTableRewardsFunction.this.xp =
-                                value.orElse(LootTableRewardsFunction.this.xp);
-                        if (value.isPresent()) {
-                            LangUtils.sendMessage(
-                                    player,
-                                    "editor.function.loot-table-rewards.exp-set",
-                                    LangUtils.placeholder(
-                                            "xp",
-                                            String.valueOf(LootTableRewardsFunction.this.xp)));
-                        }
-                    }
-                });
-        this.menu.addMenuItem(
-                new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
-                    @Override
-                    public void buildButton() {
-                        this.button = new MenuButton(Material.NETHER_STAR);
-                        this.button.setDisplayName("&d&lExp Levels Reward");
-                        this.button.setAmount(LootTableRewardsFunction.this.levels);
-                    }
-
-                    /**
-                     * Performs on select.
-                     */
-                    @Override
-                    public void onSelect(Player player) {
-                        LangUtils.sendMessage(
-                                player, "editor.function.loot-table-rewards.ask-levels");
-                    }
-
-                    /**
-                     * Performs on input.
-                     */
-                    @Override
-                    public void onInput(Player player, String message) {
-                        Optional<Integer> value = InputUtils.readIntegerInput(player, message);
-                        LootTableRewardsFunction.this.levels =
-                                value.orElse(LootTableRewardsFunction.this.levels);
-                        if (value.isPresent()) {
-                            LangUtils.sendMessage(
-                                    player,
-                                    "editor.function.loot-table-rewards.levels-set",
-                                    LangUtils.placeholder(
-                                            "levels",
-                                            String.valueOf(LootTableRewardsFunction.this.levels)));
-                        }
-                    }
-                });
-        this.menu.addMenuItem(
-                new MenuItem() {
-                    /**
-                     * Builds button.
-                     */
-                    @Override
-                    public void buildButton() {
-                        this.button = new MenuButton(Material.CLOCK);
-                        this.button.setDisplayName("&a&lCooldown Settings");
-                    }
-
-                    /**
-                     * Performs on select.
-                     */
-                    @Override
-                    public void onSelect(PlayerEvent event) {
-                        Player player = event.getPlayer();
-                        DungeonPlayerSession playerSession =
-                                RuntimeContext.playerSessions().get(player);
-                        playerSession.showHotbar(LootTableRewardsFunction.this.cooldownMenu, true);
-                    }
-                });
+    private MenuItem createCooldownSettingsItem() {
+        return new MenuItem() {
+            @Override
+            public void buildButton() {
+                this.button = new MenuButton(Material.CLOCK);
+                this.button.setDisplayName("&a&lCooldown Settings");
+            }
+            @Override
+            public void onSelect(PlayerEvent event) {
+                Player player = event.getPlayer();
+                DungeonPlayerSession playerSession =
+                        RuntimeContext.playerSessions().get(player);
+                playerSession.showHotbar(LootTableRewardsFunction.this.cooldownMenu, true);
+            }
+        };
     }
 }
