@@ -24,7 +24,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.util.Vector;
 
 import java.util.function.Supplier;
 import java.util.function.IntSupplier;
@@ -192,109 +191,8 @@ public final class ConnectorEditorMenus {
                             if (dungeon != null && room != null) {
                                 SimpleLocation simpleLoc =
                                         SimpleLocation.from(targetLocation);
-                                if (playerSession.isConnectorCopying()) {
-                                    if (room.getConnector(simpleLoc) != null) {
-                                        LangUtils.sendMessage(
-                                                player,
-                                                "editor.layout.connector.already-here");
-                                    } else {
-                                        Connector connector =
-                                                playerSession.getCopiedConnector();
-                                        if (connector == null) {
-                                            playerSession.clearConnectorClipboard();
-                                            LangUtils.sendMessage(
-                                                    player,
-                                                    "editor.layout.connector.no-selection");
-                                            return;
-                                        }
-
-                                        if (!room.applyDirectionAtEdge(simpleLoc)) {
-                                            LangUtils.sendMessage(
-                                                    player,
-                                                    "editor.layout.connector.must-be-on-edge");
-                                        } else {
-                                            Connector copiedConnector =
-                                                    connector.copy(simpleLoc);
-                                            if (copiedConnector == null) {
-                                                LangUtils.sendMessage(
-                                                        player,
-                                                        "editor.layout.connector.no-selection");
-                                                return;
-                                            }
-
-                                            room.addConnector(copiedConnector);
-                                            SimpleLocation.Direction oldDir =
-                                                    connector.getLocation().getDirection();
-                                            SimpleLocation.Direction newDir =
-                                                    simpleLoc.getDirection();
-                                            int rotation =
-                                                    newDir.getDegrees()
-                                                            - oldDir.getDegrees();
-                                            Vector origin =
-                                                    connector.getLocation().asVector();
-                                            Vector dest = simpleLoc.asVector();
-                                            Vector offset = dest.subtract(origin);
-                                            copiedConnector.setDoor(
-                                                    copiedConnector
-                                                            .getDoor()
-                                                            .copy(
-                                                                    offset, origin,
-                                                                    rotation));
-                                            playerSession.setActiveConnector(
-                                                    copiedConnector);
-                                            LangUtils.sendMessage(
-                                                    player,
-                                                    "editor.layout.connector.pasted");
-                                        }
-                                    }
-                                } else if (playerSession.isConnectorCutting()) {
-                                    if (room.getConnector(simpleLoc) != null) {
-                                        LangUtils.sendMessage(
-                                                player,
-                                                "editor.layout.connector.already-here");
-                                        return;
-                                    }
-
-                                    Connector connector =
-                                            playerSession.getCopiedConnector();
-                                    if (connector == null) {
-                                        playerSession.clearConnectorClipboard();
-                                        LangUtils.sendMessage(
-                                                player,
-                                                "editor.layout.connector.no-selection");
-                                        return;
-                                    }
-
-                                    if (!room.applyDirectionAtEdge(simpleLoc)) {
-                                        LangUtils.sendMessage(
-                                                player,
-                                                "editor.layout.connector.must-be-on-edge");
-                                        return;
-                                    }
-
-                                    SimpleLocation.Direction oldDir =
-                                            connector.getLocation().getDirection();
-                                    SimpleLocation.Direction newDir =
-                                            simpleLoc.getDirection();
-                                    int rotation =
-                                            newDir.getDegrees() - oldDir.getDegrees();
-                                    Vector origin = connector.getLocation().asVector();
-                                    Vector dest = simpleLoc.asVector();
-                                    Vector offset = dest.subtract(origin);
-                                    connector.setLocation(simpleLoc);
-                                    connector.setDoor(
-                                            connector.getDoor() == null
-                                                    ? new ConnectorDoor(connector)
-                                                    : connector
-                                                            .getDoor()
-                                                            .copy(
-                                                                    offset, origin,
-                                                                    rotation));
-                                    playerSession.setActiveConnector(connector);
-                                    LangUtils.sendMessage(
-                                            player, "editor.layout.connector.cut-pasted");
-                                    playerSession.clearConnectorClipboard();
-                                }
+                                ConnectorClipboardActions.paste(
+                                        player, playerSession, room, simpleLoc);
                             }
                         }
                     }
