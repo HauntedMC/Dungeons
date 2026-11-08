@@ -76,584 +76,612 @@ public final class StaffMenus implements Listener, AutoCloseable {
         if (screen.kind.equals("operation")) scope = ops.operation(screen.target).target;
         StaffPermissions.require(p, "inspect", scope);
         switch (screen.kind) {
-            case "overview" -> {
-                rows.add(
-                        row(
-                                "Dungeons",
-                                List.of(ops.impact("all")),
-                                Material.SPAWNER,
-                                () -> open(p, "dungeons", "", "", 0)));
-                rows.add(
-                        row(
-                                "Active instances",
-                                List.of("Participants, timers and lifecycle"),
-                                Material.COMPASS,
-                                () -> open(p, "instances", "all", "", 0)));
-                rows.add(
-                        row(
-                                "Player support",
-                                List.of("Search exact name or UUID"),
-                                Material.PLAYER_HEAD,
-                                () ->
-                                        prompt(
-                                                p,
-                                                "Player name or UUID",
-                                                value -> execute(p, "player", value),
-                                                () -> reopen(p, screen))));
-                rows.add(
-                        row(
-                                "Queued starts",
-                                commands.queueLines(),
-                                Material.CLOCK,
-                                () -> open(p, "queues", "", "", 0)));
-                rows.add(
-                        row(
-                                "Operations",
-                                List.of("Waiting, running and completed work"),
-                                Material.WRITABLE_BOOK,
-                                () -> open(p, "operations", "", "", 0)));
-                rows.add(
-                        row(
-                                "Loot tables",
-                                List.of("Manage reward content"),
-                                Material.CHEST,
-                                () -> execute(p, "loot")));
-                rows.add(
-                        row(
-                                "Operational problems",
-                                List.of(
-                                        "Failed loads: "
-                                                + runtime.dungeonCatalog().loadFailures().size(),
-                                        "Recent failures: " + ops.problems().size()),
-                                Material.REDSTONE_TORCH,
-                                () -> execute(p, "problems")));
-            }
-            case "dungeons" -> {
-                for (var d : commands.sortedDungeons()) {
-                    if (!StaffPermissions.allows(p, "inspect", d.getWorldName())) continue;
-                    rows.add(
-                            row(
-                                    d.getWorldName(),
-                                    List.of(commands.describe(d)),
-                                    d.isEnabled() ? Material.MOSSY_COBBLESTONE : Material.BARRIER,
-                                    () -> open(p, "dungeon", d.getWorldName(), "", 0)));
-                }
-                runtime.dungeonCatalog()
-                        .loadFailures()
-                        .forEach(
-                                (name, failure) ->
-                                        rows.add(
-                                                row(
-                                                        name + " (load failed)",
-                                                        List.of(
-                                                                failure,
-                                                                "Repair files, then reload in"
-                                                                        + " maintenance"),
-                                                        Material.BARRIER,
-                                                        () -> execute(p, "problems"))));
-            }
-            case "dungeon" -> {
-                var d = commands.dungeon(screen.target);
-                String name = d.getWorldName();
-                rows.add(
-                        row(
-                                "Readiness and details",
-                                commands.validation(d),
-                                Material.BOOK,
-                                () -> execute(p, "dungeon", name, "validate")));
-                rows.add(
-                        row(
-                                "Instances",
-                                List.of(ops.impact(name)),
-                                Material.COMPASS,
-                                () -> open(p, "instances", name, "", 0)));
-                action(
-                        rows,
-                        p,
-                        "maintenance",
-                        name,
-                        "Enable maintenance",
-                        "Stops entries; existing runs finish",
-                        Material.REDSTONE_BLOCK,
-                        () ->
-                                reason(
-                                        p,
-                                        "Maintenance reason",
-                                        value -> execute(p, "maintenance", name, "on", value),
-                                        screen));
-                action(
-                        rows,
-                        p,
-                        "maintenance",
-                        name,
-                        "Resume admissions",
-                        "End maintenance after checking readiness",
-                        Material.EMERALD_BLOCK,
-                        () ->
-                                reason(
-                                        p,
-                                        "Reason to resume",
-                                        value -> execute(p, "maintenance", name, "off", value),
-                                        screen));
-                action(
-                        rows,
-                        p,
-                        "reload",
-                        name,
-                        "Reload after drain",
-                        "Maintenance remains enabled when finished",
-                        Material.REPEATER,
-                        () ->
-                                reason(
-                                        p,
-                                        "Reload reason",
-                                        value -> execute(p, "reload", name, value),
-                                        screen));
-                action(
-                        rows,
-                        p,
-                        "edit",
-                        name,
-                        "Open editor",
-                        "Requires maintenance and drained play worlds",
-                        Material.FEATHER,
-                        () -> {
-                            p.closeInventory();
-                            execute(p, "edit", name, "Open editor");
-                        });
-                action(
-                        rows,
-                        p,
-                        "edit",
-                        name,
-                        "Dungeon settings",
-                        "Browse validated settings",
-                        Material.COMPARATOR,
-                        () -> open(p, "settings", name, "", 0));
-                action(
-                        rows,
-                        p,
-                        "backup",
-                        name,
-                        "Create backup",
-                        "Keeps ten copies; excludes progression",
-                        Material.CHEST,
-                        () ->
-                                reason(
-                                        p,
-                                        "Backup reason",
-                                        value -> execute(p, "backup", name, value),
-                                        screen));
-                action(
-                        rows,
-                        p,
-                        "restore",
-                        name,
-                        "Restore backup",
-                        "List copies and supply an ID",
-                        Material.ENDER_CHEST,
-                        () -> {
-                            execute(p, "backups", name);
-                            prompt(
-                                    p,
-                                    "Backup ID",
-                                    id ->
-                                            reason(
-                                                    p,
-                                                    "Restore reason",
-                                                    value -> execute(p, "restore", name, id, value),
-                                                    screen),
-                                    () -> reopen(p, screen));
-                        });
-                action(
-                        rows,
-                        p,
-                        "delete",
-                        name,
-                        "Archive dungeon",
-                        "Recoverable until explicitly purged",
-                        Material.BARRIER,
-                        () ->
-                                reason(
-                                        p,
-                                        "Archive reason",
-                                        value -> execute(p, "archive", name, value),
-                                        screen));
-            }
-            case "loot" -> {
-                StaffPermissions.require(p, "loot", null);
-                for (var table : runtime.lootTableRepository().getTables())
-                    rows.add(
-                            row(
-                                    table.getNamespace(),
-                                    List.of("Click to edit"),
-                                    Material.CHEST,
-                                    () -> execute(p, "loot", table.getNamespace())));
-            }
-            case "settings" -> {
-                var d = commands.dungeon(screen.target);
-                StaffPermissions.require(p, "edit", d.getWorldName());
-                for (var entry :
-                        nl.hauntedmc.dungeons.command.config.DungeonConfigRegistry.getEntries(d)) {
-                    String value = Objects.toString(d.getConfig().get(entry.getPath()), "unset");
-                    String source =
-                            entry.getPath().startsWith("rules.")
-                                            && !d.getConfig()
-                                                    .getValues(true)
-                                                    .containsKey(entry.getPath())
-                                    ? "inherited globally"
-                                    : "dungeon override";
-                    rows.add(
-                            row(
-                                    entry.getKey(),
-                                    List.of(
-                                            entry.getDescription(),
-                                            "Current: " + value,
-                                            "Source: " + source,
-                                            "Gameplay changes require drained maintenance"),
-                                    Material.PAPER,
-                                    () ->
-                                            prompt(
-                                                    p,
-                                                    entry.getKey() + " (current: " + value + ")",
-                                                    input -> {
-                                                        if (runtime.dungeonCatalog()
-                                                                        .get(d.getWorldName())
-                                                                != d)
-                                                            throw new IllegalArgumentException(
-                                                                    "Dungeon was replaced; reopen"
-                                                                            + " settings");
-                                                        p.performCommand(
-                                                                "dungeon config "
-                                                                        + d.getWorldName()
-                                                                        + " "
-                                                                        + entry.getKey()
-                                                                        + " "
-                                                                        + input);
-                                                        reopen(p, screen);
-                                                    },
-                                                    () -> reopen(p, screen))));
-                }
-            }
-            case "instances" -> {
-                for (var i : ops.instances(screen.target.isBlank() ? "all" : screen.target)) {
-                    if (!StaffPermissions.allows(p, "inspect", i.getDungeon().getWorldName()))
-                        continue;
-                    rows.add(
-                            row(
-                                    i.getInstanceId().toString().substring(0, 8),
-                                    List.of(
-                                            commands.describe(i),
-                                            "World: "
-                                                    + Objects.toString(
-                                                            i.getInstanceWorldName(),
-                                                            "not loaded")),
-                                    Material.COMPASS,
-                                    () ->
-                                            open(
-                                                    p,
-                                                    "instance",
-                                                    i.getInstanceId().toString(),
-                                                    "",
-                                                    0)));
-                }
-            }
-            case "instance" -> {
-                var i = ops.instance(screen.target);
-                String id = i.getInstanceId().toString();
-                String name = i.getDungeon().getWorldName();
-                rows.add(
-                        row(
-                                "Instance details",
-                                List.of(commands.describe(i)),
-                                Material.BOOK,
-                                () -> execute(p, "instance", id)));
-                for (var session : i.getPlayers()) {
-                    UUID playerId = session.getPlayer().getUniqueId();
-                    rows.add(
-                            row(
-                                    session.getPlayer().getName(),
-                                    List.of("Player support"),
-                                    Material.PLAYER_HEAD,
-                                    () -> execute(p, "player", playerId.toString())));
-                }
-                action(
-                        rows,
-                        p,
-                        "observe",
-                        name,
-                        "Observe run",
-                        "Spectator presence; does not join gameplay",
-                        Material.ENDER_EYE,
-                        () -> {
-                            p.closeInventory();
-                            execute(p, "instance", id, "observe");
-                        });
-                action(
-                        rows,
-                        p,
-                        "recovery",
-                        name,
-                        "Retry disposal",
-                        "Refuses while participants remain",
-                        Material.REPEATER,
-                        () ->
-                                reason(
-                                        p,
-                                        "Disposal retry reason",
-                                        value -> execute(p, "instance", id, "retry", value),
-                                        screen));
-                action(
-                        rows,
-                        p,
-                        "rescue",
-                        name,
-                        "Evacuate run",
-                        "Confirmed removal without new access penalties",
-                        Material.BARRIER,
-                        () ->
-                                reason(
-                                        p,
-                                        "Evacuation reason",
-                                        value -> execute(p, "instance", id, "evacuate", value),
-                                        screen));
-                action(
-                        rows,
-                        p,
-                        "timer",
-                        name,
-                        "Extend time",
-                        "Add seconds to a running timed instance",
-                        Material.CLOCK,
-                        () ->
-                                prompt(
-                                        p,
-                                        "Seconds to add",
-                                        seconds ->
-                                                reason(
-                                                        p,
-                                                        "Extension reason",
-                                                        value ->
-                                                                execute(
-                                                                        p,
-                                                                        "instance",
-                                                                        id,
-                                                                        "extend",
-                                                                        seconds,
-                                                                        value),
-                                                        screen),
-                                        () -> reopen(p, screen)));
-            }
-            case "player" -> {
-                UUID id = UUID.fromString(screen.target);
-                rows.add(
-                        row(
-                                "Player details",
-                                commands.playerLines(p, id),
-                                Material.BOOK,
-                                () -> execute(p, "player", id.toString())));
-                var session = runtime.playerSessions().get(id);
-                String name = commands.playerScope(session);
-                for (String support :
-                        List.of("rescue", "remove", "queue-clear", "recover", "revive")) {
-                    String cap =
-                            switch (support) {
-                                case "queue-clear" -> "queue";
-                                case "recover" -> "recovery";
-                                case "revive" -> "lives";
-                                default -> support;
-                            };
-                    action(
-                            rows,
-                            p,
-                            cap,
-                            name,
-                            support,
-                            "Requires a reason; state is checked again at execution",
-                            Material.PAPER,
-                            () ->
-                                    reason(
-                                            p,
-                                            support + " reason",
-                                            value ->
-                                                    execute(
-                                                            p,
-                                                            "player",
-                                                            id.toString(),
-                                                            support,
-                                                            value),
-                                            screen));
-                }
-                action(
-                        rows,
-                        p,
-                        "lives",
-                        name,
-                        "Set lives",
-                        "Set a living participant's life count",
-                        Material.TOTEM_OF_UNDYING,
-                        () ->
-                                prompt(
-                                        p,
-                                        "Lives (1–10000)",
-                                        count ->
-                                                reason(
-                                                        p,
-                                                        "Lives correction reason",
-                                                        value ->
-                                                                execute(
-                                                                        p,
-                                                                        "player",
-                                                                        id.toString(),
-                                                                        "lives",
-                                                                        count,
-                                                                        value),
-                                                        screen),
-                                        () -> reopen(p, screen)));
-                for (String correction :
-                        List.of("cooldown", "loot-cooldown", "completion", "restrict")) {
-                    String capability =
-                            correction.equals("completion")
-                                    ? "progression"
-                                    : correction.equals("restrict") ? "restrict" : "cooldown";
-                    action(
-                            rows,
-                            p,
-                            capability,
-                            name,
-                            correction,
-                            "Correct persisted player state for one dungeon",
-                            Material.WRITABLE_BOOK,
-                            () ->
-                                    prompt(
-                                            p,
-                                            "Dungeon name"
-                                                    + (correction.equals("restrict")
-                                                            ? " or all"
-                                                            : ""),
-                                            dungeon ->
-                                                    prompt(
-                                                            p,
-                                                            correction.equals("completion")
-                                                                    ? "true or false"
-                                                                    : correction.equals(
-                                                                                    "loot-cooldown")
-                                                                            ? "clear"
-                                                                            : correction.equals(
-                                                                                            "restrict")
-                                                                                    ? "Duration,"
-                                                                                          + " forever"
-                                                                                          + " or clear"
-                                                                                    : "Duration or"
-                                                                                          + " clear",
-                                                            amount ->
-                                                                    reason(
-                                                                            p,
-                                                                            "Correction reason",
-                                                                            value ->
-                                                                                    execute(
-                                                                                            p,
-                                                                                            correction,
-                                                                                            id
-                                                                                                    .toString(),
-                                                                                            dungeon,
-                                                                                            amount,
-                                                                                            value),
-                                                                            screen),
-                                                            () -> reopen(p, screen)),
-                                            () -> reopen(p, screen)));
-                }
-                action(
-                        rows,
-                        p,
-                        "compensate",
-                        null,
-                        "Compensate",
-                        "Queue an item stack for durable reward delivery",
-                        Material.CHEST,
-                        () ->
-                                prompt(
-                                        p,
-                                        "Material name",
-                                        material ->
-                                                prompt(
-                                                        p,
-                                                        "Amount",
-                                                        amount ->
-                                                                reason(
-                                                                        p,
-                                                                        "Compensation reason",
-                                                                        value ->
-                                                                                execute(
-                                                                                        p,
-                                                                                        "compensate",
-                                                                                        id
-                                                                                                .toString(),
-                                                                                        material,
-                                                                                        amount,
-                                                                                        value),
-                                                                        screen),
-                                                        () -> reopen(p, screen)),
-                                        () -> reopen(p, screen)));
-            }
-            case "queues" -> {
-                for (var q : runtime.queueRegistry().snapshotQueues()) {
-                    UUID leader = q.getLeaderId();
-                    rows.add(
-                            row(
-                                    q.getDungeon().getWorldName(),
-                                    List.of(
-                                            "Players: " + q.getPlayers().size(),
-                                            "Leader: " + leader,
-                                            "Waiting: " + q.getWaitingSeconds() + "s",
-                                            "Click to inspect and cancel pending starts"),
-                                    Material.CLOCK,
-                                    () -> execute(p, "player", leader.toString())));
-                }
-            }
-            case "operations" -> {
-                for (var op : ops.operations())
-                    rows.add(
-                            row(
-                                    op.shortId() + " " + op.state,
-                                    List.of(
-                                            op.action + " " + op.target,
-                                            op.detail,
-                                            "Actor: " + op.actor,
-                                            "Reason: " + op.reason),
-                                    op.state
-                                                    == nl.hauntedmc.dungeons.runtime.staff
-                                                            .StaffOperations.State.FAILED
-                                            ? Material.BARRIER
-                                            : Material.PAPER,
-                                    () -> open(p, "operation", op.shortId(), "", 0)));
-            }
-            case "operation" -> {
-                var op = ops.operation(screen.target);
-                rows.add(
-                        row(
-                                op.shortId() + " " + op.state,
-                                List.of(op.action + " " + op.target, op.detail, op.reason),
-                                Material.BOOK,
-                                () -> execute(p, "operation", op.shortId())));
-                action(
-                        rows,
-                        p,
-                        "maintenance",
-                        op.target,
-                        "Cancel waiting operation",
-                        "Maintenance remains enabled",
-                        Material.BARRIER,
-                        () ->
-                                reason(
-                                        p,
-                                        "Cancellation reason",
-                                        value -> execute(p, "cancel", op.shortId(), value),
-                                        screen));
-            }
+            case "overview" -> overviewRows(p, screen, rows);
+            case "dungeons" -> dungeonsRows(p, screen, rows);
+            case "dungeon" -> dungeonRows(p, screen, rows);
+            case "loot" -> lootRows(p, screen, rows);
+            case "settings" -> settingsRows(p, screen, rows);
+            case "instances" -> instancesRows(p, screen, rows);
+            case "instance" -> instanceRows(p, screen, rows);
+            case "player" -> playerRows(p, screen, rows);
+            case "queues" -> queuesRows(p, screen, rows);
+            case "operations" -> operationsRows(p, screen, rows);
+            case "operation" -> operationRows(p, screen, rows);
             default -> throw new IllegalArgumentException("Unknown staff screen");
         }
         return rows;
+    }
+
+    private void overviewRows(Player p, Screen screen, List<Row> rows) {
+        var ops = runtime.staffOperations();
+        rows.add(
+                row(
+                        "Dungeons",
+                        List.of(ops.impact("all")),
+                        Material.SPAWNER,
+                        () -> open(p, "dungeons", "", "", 0)));
+        rows.add(
+                row(
+                        "Active instances",
+                        List.of("Participants, timers and lifecycle"),
+                        Material.COMPASS,
+                        () -> open(p, "instances", "all", "", 0)));
+        rows.add(
+                row(
+                        "Player support",
+                        List.of("Search exact name or UUID"),
+                        Material.PLAYER_HEAD,
+                        () ->
+                                prompt(
+                                        p,
+                                        "Player name or UUID",
+                                        value -> execute(p, "player", value),
+                                        () -> reopen(p, screen))));
+        rows.add(
+                row(
+                        "Queued starts",
+                        commands.queueLines(),
+                        Material.CLOCK,
+                        () -> open(p, "queues", "", "", 0)));
+        rows.add(
+                row(
+                        "Operations",
+                        List.of("Waiting, running and completed work"),
+                        Material.WRITABLE_BOOK,
+                        () -> open(p, "operations", "", "", 0)));
+        rows.add(
+                row(
+                        "Loot tables",
+                        List.of("Manage reward content"),
+                        Material.CHEST,
+                        () -> execute(p, "loot")));
+        rows.add(
+                row(
+                        "Operational problems",
+                        List.of(
+                                "Failed loads: "
+                                        + runtime.dungeonCatalog().loadFailures().size(),
+                                "Recent failures: " + ops.problems().size()),
+                        Material.REDSTONE_TORCH,
+                        () -> execute(p, "problems")));
+    }
+
+    private void dungeonsRows(Player p, Screen screen, List<Row> rows) {
+        for (var d : commands.sortedDungeons()) {
+            if (!StaffPermissions.allows(p, "inspect", d.getWorldName())) continue;
+            rows.add(
+                    row(
+                            d.getWorldName(),
+                            List.of(commands.describe(d)),
+                            d.isEnabled() ? Material.MOSSY_COBBLESTONE : Material.BARRIER,
+                            () -> open(p, "dungeon", d.getWorldName(), "", 0)));
+        }
+        runtime.dungeonCatalog()
+                .loadFailures()
+                .forEach(
+                        (name, failure) ->
+                                rows.add(
+                                        row(
+                                                name + " (load failed)",
+                                                List.of(
+                                                        failure,
+                                                        "Repair files, then reload in"
+                                                                + " maintenance"),
+                                                Material.BARRIER,
+                                                () -> execute(p, "problems"))));
+    }
+
+    private void dungeonRows(Player p, Screen screen, List<Row> rows) {
+        var ops = runtime.staffOperations();
+        var d = commands.dungeon(screen.target);
+        String name = d.getWorldName();
+        rows.add(
+                row(
+                        "Readiness and details",
+                        commands.validation(d),
+                        Material.BOOK,
+                        () -> execute(p, "dungeon", name, "validate")));
+        rows.add(
+                row(
+                        "Instances",
+                        List.of(ops.impact(name)),
+                        Material.COMPASS,
+                        () -> open(p, "instances", name, "", 0)));
+        action(
+                rows,
+                p,
+                "maintenance",
+                name,
+                "Enable maintenance",
+                "Stops entries; existing runs finish",
+                Material.REDSTONE_BLOCK,
+                () ->
+                        reason(
+                                p,
+                                "Maintenance reason",
+                                value -> execute(p, "maintenance", name, "on", value),
+                                screen));
+        action(
+                rows,
+                p,
+                "maintenance",
+                name,
+                "Resume admissions",
+                "End maintenance after checking readiness",
+                Material.EMERALD_BLOCK,
+                () ->
+                        reason(
+                                p,
+                                "Reason to resume",
+                                value -> execute(p, "maintenance", name, "off", value),
+                                screen));
+        action(
+                rows,
+                p,
+                "reload",
+                name,
+                "Reload after drain",
+                "Maintenance remains enabled when finished",
+                Material.REPEATER,
+                () ->
+                        reason(
+                                p,
+                                "Reload reason",
+                                value -> execute(p, "reload", name, value),
+                                screen));
+        action(
+                rows,
+                p,
+                "edit",
+                name,
+                "Open editor",
+                "Requires maintenance and drained play worlds",
+                Material.FEATHER,
+                () -> {
+                    p.closeInventory();
+                    execute(p, "edit", name, "Open editor");
+                });
+        action(
+                rows,
+                p,
+                "edit",
+                name,
+                "Dungeon settings",
+                "Browse validated settings",
+                Material.COMPARATOR,
+                () -> open(p, "settings", name, "", 0));
+        action(
+                rows,
+                p,
+                "backup",
+                name,
+                "Create backup",
+                "Keeps ten copies; excludes progression",
+                Material.CHEST,
+                () ->
+                        reason(
+                                p,
+                                "Backup reason",
+                                value -> execute(p, "backup", name, value),
+                                screen));
+        action(
+                rows,
+                p,
+                "restore",
+                name,
+                "Restore backup",
+                "List copies and supply an ID",
+                Material.ENDER_CHEST,
+                () -> {
+                    execute(p, "backups", name);
+                    prompt(
+                            p,
+                            "Backup ID",
+                            id ->
+                                    reason(
+                                            p,
+                                            "Restore reason",
+                                            value -> execute(p, "restore", name, id, value),
+                                            screen),
+                            () -> reopen(p, screen));
+                });
+        action(
+                rows,
+                p,
+                "delete",
+                name,
+                "Archive dungeon",
+                "Recoverable until explicitly purged",
+                Material.BARRIER,
+                () ->
+                        reason(
+                                p,
+                                "Archive reason",
+                                value -> execute(p, "archive", name, value),
+                                screen));
+    }
+
+    private void lootRows(Player p, Screen screen, List<Row> rows) {
+        StaffPermissions.require(p, "loot", null);
+        for (var table : runtime.lootTableRepository().getTables())
+            rows.add(
+                    row(
+                            table.getNamespace(),
+                            List.of("Click to edit"),
+                            Material.CHEST,
+                            () -> execute(p, "loot", table.getNamespace())));
+    }
+
+    private void settingsRows(Player p, Screen screen, List<Row> rows) {
+        var d = commands.dungeon(screen.target);
+        StaffPermissions.require(p, "edit", d.getWorldName());
+        for (var entry :
+                nl.hauntedmc.dungeons.command.config.DungeonConfigRegistry.getEntries(d)) {
+            String value = Objects.toString(d.getConfig().get(entry.getPath()), "unset");
+            String source =
+                    entry.getPath().startsWith("rules.")
+                                    && !d.getConfig()
+                                            .getValues(true)
+                                            .containsKey(entry.getPath())
+                            ? "inherited globally"
+                            : "dungeon override";
+            rows.add(
+                    row(
+                            entry.getKey(),
+                            List.of(
+                                    entry.getDescription(),
+                                    "Current: " + value,
+                                    "Source: " + source,
+                                    "Gameplay changes require drained maintenance"),
+                            Material.PAPER,
+                            () ->
+                                    prompt(
+                                            p,
+                                            entry.getKey() + " (current: " + value + ")",
+                                            input -> {
+                                                if (runtime.dungeonCatalog()
+                                                                .get(d.getWorldName())
+                                                        != d)
+                                                    throw new IllegalArgumentException(
+                                                            "Dungeon was replaced; reopen"
+                                                                    + " settings");
+                                                p.performCommand(
+                                                        "dungeon config "
+                                                                + d.getWorldName()
+                                                                + " "
+                                                                + entry.getKey()
+                                                                + " "
+                                                                + input);
+                                                reopen(p, screen);
+                                            },
+                                            () -> reopen(p, screen))));
+        }
+    }
+
+    private void instancesRows(Player p, Screen screen, List<Row> rows) {
+        var ops = runtime.staffOperations();
+        for (var i : ops.instances(screen.target.isBlank() ? "all" : screen.target)) {
+            if (!StaffPermissions.allows(p, "inspect", i.getDungeon().getWorldName()))
+                continue;
+            rows.add(
+                    row(
+                            i.getInstanceId().toString().substring(0, 8),
+                            List.of(
+                                    commands.describe(i),
+                                    "World: "
+                                            + Objects.toString(
+                                                    i.getInstanceWorldName(),
+                                                    "not loaded")),
+                            Material.COMPASS,
+                            () ->
+                                    open(
+                                            p,
+                                            "instance",
+                                            i.getInstanceId().toString(),
+                                            "",
+                                            0)));
+        }
+    }
+
+    private void instanceRows(Player p, Screen screen, List<Row> rows) {
+        var ops = runtime.staffOperations();
+        var i = ops.instance(screen.target);
+        String id = i.getInstanceId().toString();
+        String name = i.getDungeon().getWorldName();
+        rows.add(
+                row(
+                        "Instance details",
+                        List.of(commands.describe(i)),
+                        Material.BOOK,
+                        () -> execute(p, "instance", id)));
+        for (var session : i.getPlayers()) {
+            UUID playerId = session.getPlayer().getUniqueId();
+            rows.add(
+                    row(
+                            session.getPlayer().getName(),
+                            List.of("Player support"),
+                            Material.PLAYER_HEAD,
+                            () -> execute(p, "player", playerId.toString())));
+        }
+        action(
+                rows,
+                p,
+                "observe",
+                name,
+                "Observe run",
+                "Spectator presence; does not join gameplay",
+                Material.ENDER_EYE,
+                () -> {
+                    p.closeInventory();
+                    execute(p, "instance", id, "observe");
+                });
+        action(
+                rows,
+                p,
+                "recovery",
+                name,
+                "Retry disposal",
+                "Refuses while participants remain",
+                Material.REPEATER,
+                () ->
+                        reason(
+                                p,
+                                "Disposal retry reason",
+                                value -> execute(p, "instance", id, "retry", value),
+                                screen));
+        action(
+                rows,
+                p,
+                "rescue",
+                name,
+                "Evacuate run",
+                "Confirmed removal without new access penalties",
+                Material.BARRIER,
+                () ->
+                        reason(
+                                p,
+                                "Evacuation reason",
+                                value -> execute(p, "instance", id, "evacuate", value),
+                                screen));
+        action(
+                rows,
+                p,
+                "timer",
+                name,
+                "Extend time",
+                "Add seconds to a running timed instance",
+                Material.CLOCK,
+                () ->
+                        prompt(
+                                p,
+                                "Seconds to add",
+                                seconds ->
+                                        reason(
+                                                p,
+                                                "Extension reason",
+                                                value ->
+                                                        execute(
+                                                                p,
+                                                                "instance",
+                                                                id,
+                                                                "extend",
+                                                                seconds,
+                                                                value),
+                                                screen),
+                                () -> reopen(p, screen)));
+    }
+
+    private void playerRows(Player p, Screen screen, List<Row> rows) {
+        UUID id = UUID.fromString(screen.target);
+        rows.add(
+                row(
+                        "Player details",
+                        commands.playerLines(p, id),
+                        Material.BOOK,
+                        () -> execute(p, "player", id.toString())));
+        var session = runtime.playerSessions().get(id);
+        String name = commands.playerScope(session);
+        for (String support :
+                List.of("rescue", "remove", "queue-clear", "recover", "revive")) {
+            String cap =
+                    switch (support) {
+                        case "queue-clear" -> "queue";
+                        case "recover" -> "recovery";
+                        case "revive" -> "lives";
+                        default -> support;
+                    };
+            action(
+                    rows,
+                    p,
+                    cap,
+                    name,
+                    support,
+                    "Requires a reason; state is checked again at execution",
+                    Material.PAPER,
+                    () ->
+                            reason(
+                                    p,
+                                    support + " reason",
+                                    value ->
+                                            execute(
+                                                    p,
+                                                    "player",
+                                                    id.toString(),
+                                                    support,
+                                                    value),
+                                    screen));
+        }
+        action(
+                rows,
+                p,
+                "lives",
+                name,
+                "Set lives",
+                "Set a living participant's life count",
+                Material.TOTEM_OF_UNDYING,
+                () ->
+                        prompt(
+                                p,
+                                "Lives (1–10000)",
+                                count ->
+                                        reason(
+                                                p,
+                                                "Lives correction reason",
+                                                value ->
+                                                        execute(
+                                                                p,
+                                                                "player",
+                                                                id.toString(),
+                                                                "lives",
+                                                                count,
+                                                                value),
+                                                screen),
+                                () -> reopen(p, screen)));
+        for (String correction :
+                List.of("cooldown", "loot-cooldown", "completion", "restrict")) {
+            String capability =
+                    correction.equals("completion")
+                            ? "progression"
+                            : correction.equals("restrict") ? "restrict" : "cooldown";
+            action(
+                    rows,
+                    p,
+                    capability,
+                    name,
+                    correction,
+                    "Correct persisted player state for one dungeon",
+                    Material.WRITABLE_BOOK,
+                    () ->
+                            prompt(
+                                    p,
+                                    "Dungeon name"
+                                            + (correction.equals("restrict")
+                                                    ? " or all"
+                                                    : ""),
+                                    dungeon ->
+                                            prompt(
+                                                    p,
+                                                    correction.equals("completion")
+                                                            ? "true or false"
+                                                            : correction.equals(
+                                                                            "loot-cooldown")
+                                                                    ? "clear"
+                                                                    : correction.equals(
+                                                                                    "restrict")
+                                                                            ? "Duration,"
+                                                                                  + " forever"
+                                                                                  + " or clear"
+                                                                            : "Duration or"
+                                                                                  + " clear",
+                                                    amount ->
+                                                            reason(
+                                                                    p,
+                                                                    "Correction reason",
+                                                                    value ->
+                                                                            execute(
+                                                                                    p,
+                                                                                    correction,
+                                                                                    id
+                                                                                            .toString(),
+                                                                                    dungeon,
+                                                                                    amount,
+                                                                                    value),
+                                                                    screen),
+                                                    () -> reopen(p, screen)),
+                                    () -> reopen(p, screen)));
+        }
+        action(
+                rows,
+                p,
+                "compensate",
+                null,
+                "Compensate",
+                "Queue an item stack for durable reward delivery",
+                Material.CHEST,
+                () ->
+                        prompt(
+                                p,
+                                "Material name",
+                                material ->
+                                        prompt(
+                                                p,
+                                                "Amount",
+                                                amount ->
+                                                        reason(
+                                                                p,
+                                                                "Compensation reason",
+                                                                value ->
+                                                                        execute(
+                                                                                p,
+                                                                                "compensate",
+                                                                                id
+                                                                                        .toString(),
+                                                                                material,
+                                                                                amount,
+                                                                                value),
+                                                                screen),
+                                                () -> reopen(p, screen)),
+                                () -> reopen(p, screen)));
+    }
+
+    private void queuesRows(Player p, Screen screen, List<Row> rows) {
+        for (var q : runtime.queueRegistry().snapshotQueues()) {
+            UUID leader = q.getLeaderId();
+            rows.add(
+                    row(
+                            q.getDungeon().getWorldName(),
+                            List.of(
+                                    "Players: " + q.getPlayers().size(),
+                                    "Leader: " + leader,
+                                    "Waiting: " + q.getWaitingSeconds() + "s",
+                                    "Click to inspect and cancel pending starts"),
+                            Material.CLOCK,
+                            () -> execute(p, "player", leader.toString())));
+        }
+    }
+
+    private void operationsRows(Player p, Screen screen, List<Row> rows) {
+        var ops = runtime.staffOperations();
+        for (var op : ops.operations())
+            rows.add(
+                    row(
+                            op.shortId() + " " + op.state,
+                            List.of(
+                                    op.action + " " + op.target,
+                                    op.detail,
+                                    "Actor: " + op.actor,
+                                    "Reason: " + op.reason),
+                            op.state
+                                            == nl.hauntedmc.dungeons.runtime.staff
+                                                    .StaffOperations.State.FAILED
+                                    ? Material.BARRIER
+                                    : Material.PAPER,
+                            () -> open(p, "operation", op.shortId(), "", 0)));
+    }
+
+    private void operationRows(Player p, Screen screen, List<Row> rows) {
+        var ops = runtime.staffOperations();
+        var op = ops.operation(screen.target);
+        rows.add(
+                row(
+                        op.shortId() + " " + op.state,
+                        List.of(op.action + " " + op.target, op.detail, op.reason),
+                        Material.BOOK,
+                        () -> execute(p, "operation", op.shortId())));
+        action(
+                rows,
+                p,
+                "maintenance",
+                op.target,
+                "Cancel waiting operation",
+                "Maintenance remains enabled",
+                Material.BARRIER,
+                () ->
+                        reason(
+                                p,
+                                "Cancellation reason",
+                                value -> execute(p, "cancel", op.shortId(), value),
+                                screen));
     }
 
     private void render(Player player, Screen screen, boolean open) {
