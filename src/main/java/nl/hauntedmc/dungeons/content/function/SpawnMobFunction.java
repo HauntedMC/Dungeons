@@ -260,193 +260,12 @@ public class SpawnMobFunction extends DungeonFunction {
      */
     @Override
     public void buildHotbarMenu() {
-        this.menu.addMenuItem(
-                new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
-                    @Override
-                    public void buildButton() {
-                        this.button = new MenuButton(Material.ZOMBIE_HEAD);
-                        this.button.setDisplayName("&d&lMob Name");
-                    }
+        this.menu.addMenuItem(createMobNameItem());
 
-                    /**
-                     * Performs on select.
-                     */
-                    @Override
-                    public void onSelect(Player player) {
-                        LangUtils.sendMessage(player, "editor.function.spawn-mob.ask-mob");
-                        LangUtils.sendMessage(
-                                player,
-                                "editor.function.spawn-mob.current-mob",
-                                LangUtils.placeholder("mob", SpawnMobFunction.this.mob));
-                    }
-
-                    /**
-                     * Performs on input.
-                     */
-                    @Override
-                    public void onInput(Player player, String message) {
-                        EntityType type = EntityType.fromName(message);
-                        if (type == null) {
-                            try {
-                                type = EntityType.valueOf(message.toUpperCase(Locale.ROOT));
-                            } catch (IllegalArgumentException exception) {
-                                LangUtils.sendMessage(
-                                        player, "editor.function.spawn-mob.invalid-mob");
-                                return;
-                            }
-                        }
-
-                        SpawnMobFunction.this.mob = type.name();
-                        LangUtils.sendMessage(
-                                player,
-                                "editor.function.spawn-mob.mob-set",
-                                LangUtils.placeholder("mob", SpawnMobFunction.this.mob));
-                        SpawnMobFunction.this.setDisplayName(
-                                SpawnMobFunction.this.mob + " Spawner");
-                    }
-                });
-
-        this.menu.addMenuItem(
-                new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
-                    @Override
-                    public void buildButton() {
-                        this.button = new MenuButton(Material.BONE);
-                        this.button.setDisplayName("&d&lAmount");
-                        this.button.setAmount(SpawnMobFunction.this.maxCount);
-                    }
-
-                    /**
-                     * Performs on select.
-                     */
-                    @Override
-                    public void onSelect(Player player) {
-                        LangUtils.sendMessage(player, "editor.function.spawn-mob.ask-count");
-                    }
-
-                    /**
-                     * Performs on input.
-                     */
-                    @Override
-                    public void onInput(Player player, String message) {
-                        Optional<Integer> value = InputUtils.readIntegerInput(player, message);
-                        SpawnMobFunction.this.maxCount =
-                                value.orElse(SpawnMobFunction.this.maxCount);
-                        if (value.isPresent()) {
-                            LangUtils.sendMessage(
-                                    player,
-                                    "editor.function.spawn-mob.count-set",
-                                    LangUtils.placeholder(
-                                            "count",
-                                            String.valueOf(SpawnMobFunction.this.maxCount)));
-                        }
-                    }
-                });
-        this.menu.addMenuItem(
-                new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
-                    @Override
-                    public void buildButton() {
-                        this.button = new MenuButton(Material.REPEATER);
-                        this.button.setDisplayName("&d&lSpawn Delay");
-                        this.button.setAmount(SpawnMobFunction.this.delay);
-                    }
-
-                    /**
-                     * Performs on select.
-                     */
-                    @Override
-                    public void onSelect(Player player) {
-                        LangUtils.sendMessage(player, "editor.function.spawn-mob.ask-delay");
-                    }
-
-                    /**
-                     * Performs on input.
-                     */
-                    @Override
-                    public void onInput(Player player, String message) {
-                        Optional<Integer> value = InputUtils.readIntegerInput(player, message);
-                        SpawnMobFunction.this.delay = value.orElse(SpawnMobFunction.this.delay);
-                        if (value.isPresent()) {
-                            LangUtils.sendMessage(
-                                    player,
-                                    "editor.function.spawn-mob.delay-set",
-                                    LangUtils.placeholder(
-                                            "delay", String.valueOf(SpawnMobFunction.this.delay)));
-                        }
-                    }
-                });
-        this.menu.addMenuItem(
-                new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
-                    @Override
-                    public void buildButton() {
-                        this.button = new MenuButton(Material.CLOCK);
-                        this.button.setDisplayName("&d&lSpawn Interval");
-                        this.button.setAmount(SpawnMobFunction.this.interval);
-                    }
-
-                    /**
-                     * Performs on select.
-                     */
-                    @Override
-                    public void onSelect(Player player) {
-                        LangUtils.sendMessage(player, "editor.function.spawn-mob.ask-interval");
-                    }
-
-                    /**
-                     * Performs on input.
-                     */
-                    @Override
-                    public void onInput(Player player, String message) {
-                        Optional<Integer> value = InputUtils.readIntegerInput(player, message);
-                        SpawnMobFunction.this.interval =
-                                value.orElse(SpawnMobFunction.this.interval);
-                        if (value.isPresent()) {
-                            LangUtils.sendMessage(
-                                    player,
-                                    "editor.function.spawn-mob.interval-set",
-                                    LangUtils.placeholder(
-                                            "interval",
-                                            String.valueOf(SpawnMobFunction.this.interval)));
-                        }
-                    }
-                });
-        this.menu.addMenuItem(
-                new MenuItem() {
-                    /**
-                     * Builds button.
-                     */
-                    @Override
-                    public void buildButton() {
-                        this.button = new MenuButton(Material.COMPASS);
-                        this.button.setDisplayName("&d&lMob Direction");
-                    }
-
-                    /**
-                     * Performs on select.
-                     */
-                    @Override
-                    public void onSelect(PlayerEvent event) {
-                        Player player = event.getPlayer();
-                        SpawnMobFunction.this.yaw =
-                                MathUtils.round(player.getLocation().getYaw(), 0);
-                        LangUtils.sendMessage(
-                                player,
-                                "editor.function.spawn-mob.direction-set",
-                                LangUtils.placeholder(
-                                        "yaw", String.valueOf(SpawnMobFunction.this.yaw)));
-                    }
-                });
+        this.menu.addMenuItem(createAmountItem());
+        this.menu.addMenuItem(createSpawnDelayItem());
+        this.menu.addMenuItem(createSpawnIntervalItem());
+        this.menu.addMenuItem(createMobDirectionItem());
     }
 
     /**
@@ -531,5 +350,150 @@ public class SpawnMobFunction extends DungeonFunction {
      */
     public void setYaw(double yaw) {
         this.yaw = yaw;
+    }
+
+    private MenuItem createMobNameItem() {
+        return new ChatMenuItem() {
+            @Override
+            public void buildButton() {
+                this.button = new MenuButton(Material.ZOMBIE_HEAD);
+                this.button.setDisplayName("&d&lMob Name");
+            }
+            @Override
+            public void onSelect(Player player) {
+                LangUtils.sendMessage(player, "editor.function.spawn-mob.ask-mob");
+                LangUtils.sendMessage(
+                        player,
+                        "editor.function.spawn-mob.current-mob",
+                        LangUtils.placeholder("mob", SpawnMobFunction.this.mob));
+            }
+            @Override
+            public void onInput(Player player, String message) {
+                EntityType type = EntityType.fromName(message);
+                if (type == null) {
+                    try {
+                        type = EntityType.valueOf(message.toUpperCase(Locale.ROOT));
+                    } catch (IllegalArgumentException exception) {
+                        LangUtils.sendMessage(
+                                player, "editor.function.spawn-mob.invalid-mob");
+                        return;
+                    }
+                }
+
+                SpawnMobFunction.this.mob = type.name();
+                LangUtils.sendMessage(
+                        player,
+                        "editor.function.spawn-mob.mob-set",
+                        LangUtils.placeholder("mob", SpawnMobFunction.this.mob));
+                SpawnMobFunction.this.setDisplayName(
+                        SpawnMobFunction.this.mob + " Spawner");
+            }
+        };
+    }
+
+    private MenuItem createAmountItem() {
+        return new ChatMenuItem() {
+            @Override
+            public void buildButton() {
+                this.button = new MenuButton(Material.BONE);
+                this.button.setDisplayName("&d&lAmount");
+                this.button.setAmount(SpawnMobFunction.this.maxCount);
+            }
+            @Override
+            public void onSelect(Player player) {
+                LangUtils.sendMessage(player, "editor.function.spawn-mob.ask-count");
+            }
+            @Override
+            public void onInput(Player player, String message) {
+                Optional<Integer> value = InputUtils.readIntegerInput(player, message);
+                SpawnMobFunction.this.maxCount =
+                        value.orElse(SpawnMobFunction.this.maxCount);
+                if (value.isPresent()) {
+                    LangUtils.sendMessage(
+                            player,
+                            "editor.function.spawn-mob.count-set",
+                            LangUtils.placeholder(
+                                    "count",
+                                    String.valueOf(SpawnMobFunction.this.maxCount)));
+                }
+            }
+        };
+    }
+
+    private MenuItem createSpawnDelayItem() {
+        return new ChatMenuItem() {
+            @Override
+            public void buildButton() {
+                this.button = new MenuButton(Material.REPEATER);
+                this.button.setDisplayName("&d&lSpawn Delay");
+                this.button.setAmount(SpawnMobFunction.this.delay);
+            }
+            @Override
+            public void onSelect(Player player) {
+                LangUtils.sendMessage(player, "editor.function.spawn-mob.ask-delay");
+            }
+            @Override
+            public void onInput(Player player, String message) {
+                Optional<Integer> value = InputUtils.readIntegerInput(player, message);
+                SpawnMobFunction.this.delay = value.orElse(SpawnMobFunction.this.delay);
+                if (value.isPresent()) {
+                    LangUtils.sendMessage(
+                            player,
+                            "editor.function.spawn-mob.delay-set",
+                            LangUtils.placeholder(
+                                    "delay", String.valueOf(SpawnMobFunction.this.delay)));
+                }
+            }
+        };
+    }
+
+    private MenuItem createSpawnIntervalItem() {
+        return new ChatMenuItem() {
+            @Override
+            public void buildButton() {
+                this.button = new MenuButton(Material.CLOCK);
+                this.button.setDisplayName("&d&lSpawn Interval");
+                this.button.setAmount(SpawnMobFunction.this.interval);
+            }
+            @Override
+            public void onSelect(Player player) {
+                LangUtils.sendMessage(player, "editor.function.spawn-mob.ask-interval");
+            }
+            @Override
+            public void onInput(Player player, String message) {
+                Optional<Integer> value = InputUtils.readIntegerInput(player, message);
+                SpawnMobFunction.this.interval =
+                        value.orElse(SpawnMobFunction.this.interval);
+                if (value.isPresent()) {
+                    LangUtils.sendMessage(
+                            player,
+                            "editor.function.spawn-mob.interval-set",
+                            LangUtils.placeholder(
+                                    "interval",
+                                    String.valueOf(SpawnMobFunction.this.interval)));
+                }
+            }
+        };
+    }
+
+    private MenuItem createMobDirectionItem() {
+        return new MenuItem() {
+            @Override
+            public void buildButton() {
+                this.button = new MenuButton(Material.COMPASS);
+                this.button.setDisplayName("&d&lMob Direction");
+            }
+            @Override
+            public void onSelect(PlayerEvent event) {
+                Player player = event.getPlayer();
+                SpawnMobFunction.this.yaw =
+                        MathUtils.round(player.getLocation().getYaw(), 0);
+                LangUtils.sendMessage(
+                        player,
+                        "editor.function.spawn-mob.direction-set",
+                        LangUtils.placeholder(
+                                "yaw", String.valueOf(SpawnMobFunction.this.yaw)));
+            }
+        };
     }
 }
