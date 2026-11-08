@@ -81,7 +81,7 @@ public final class LootTableEditor implements Listener, AutoCloseable {
     public boolean open(LootTable table, Player player) {
         requireOwnerThread();
         if (this.closed
-                || !(player.hasPermission("dungeons.loottables")
+                || !(player.hasPermission("dungeons.staff.loot")
                         || nl.hauntedmc.dungeons.runtime.staff.StaffPermissions.allows(
                                 player, "loot", null))
                 || !this.repository.isWritable()
@@ -97,7 +97,7 @@ public final class LootTableEditor implements Listener, AutoCloseable {
     boolean canEdit(LootTable table, Player player) {
         requireOwnerThread();
         return !this.closed
-                && (player.hasPermission("dungeons.loottables")
+                && (player.hasPermission("dungeons.staff.loot")
                         || nl.hauntedmc.dungeons.runtime.staff.StaffPermissions.allows(
                                 player, "loot", null))
                 && this.repository.isWritable()

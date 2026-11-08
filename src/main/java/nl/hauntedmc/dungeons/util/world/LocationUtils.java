@@ -1,7 +1,9 @@
 package nl.hauntedmc.dungeons.util.world;
+
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.util.config.PluginConfigView;
 import nl.hauntedmc.dungeons.util.math.MathUtils;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -11,9 +13,7 @@ import org.bukkit.util.BoundingBox;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Location and bounding-box helpers used by dungeon generation and runtime flows.
- */
+/** Location and bounding-box helpers used by dungeon generation and runtime flows. */
 public final class LocationUtils {
     private LocationUtils() {}
 
@@ -27,7 +27,7 @@ public final class LocationUtils {
         config.set(path + ".world", loc.getWorld().getName());
     }
 
-    /** A legacy coordinate-only exit cannot safely identify a destination world. */
+    /** A coordinate-only exit cannot safely identify a destination world. */
     public static Location readExternalLocation(ConfigurationSection config) {
         Location loc = readLocation(config);
         if (loc == null) return null;
@@ -103,7 +103,7 @@ public final class LocationUtils {
                 RuntimeContext.logger()
                         .warn(
                                 "Refused to search for a safe spawn off-thread in world '{}'"
-                                    + " because the plugin is disabled.",
+                                        + " because the plugin is disabled.",
                                 world.getName());
                 return null;
             }

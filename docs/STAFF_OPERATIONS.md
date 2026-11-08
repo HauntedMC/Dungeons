@@ -25,12 +25,10 @@ Use explicit negative permissions to deny individual capabilities.
 Scoped inspection filters player progression and target completion to authorized dungeons.
 Global recovery summaries require global inspection access.
 
-`dungeons.admin` remains a deprecated compatibility preset for administrative powers.
-It **does not bypass gameplay**. Explicit gameplay bypasses are
-`dungeons.bypass.cooldown` and `dungeons.bypass.commands`; staff presets do not grant them.
-Existing `dungeons.edit`, `dungeons.edit.*`, and dungeon-specific editing grants retain
-authoring access and associated maintenance access. Editing console-command mechanics or
-`players.join_commands` additionally requires `dungeons.staff.scripts`.
+Staff capabilities use only `dungeons.staff.<capability>[.<dungeon>]`. Old administrative,
+editing and cooldown permission nodes have no effect. Gameplay bypasses are separately assigned
+with `dungeons.bypass.cooldown` and `dungeons.bypass.commands`. Console-command mechanics and
+`players.join_commands` require `dungeons.staff.scripts`.
 
 ## Maintaining or editing a dungeon
 
@@ -65,9 +63,9 @@ accepted only when unambiguous. Ending active runs is an explicit, confirmed eva
 not a side effect of an ordinary reload. Global configuration reload drains all dungeons;
 world-creation settings take effect on future instances.
 
-Legacy delete, reload, status, join, kick, and editor-opening routes enter the new operations
-where applicable. Legacy staff join observes rather than admits a gameplay participant.
-Use canonical `/dungeon admin` commands for reasons, operation tracking, and confirmations.
+Use `/dungeon admin` for staff operations, including `/dungeon admin edit <dungeon> <reason>`.
+Authoring commands remain under `/dungeon edit`, `/dungeon dungeon` and `/dungeon config`.
+Flat command aliases and old player/instance administration groups are not registered.
 
 ## Supporting players
 
@@ -147,8 +145,7 @@ state and the latest failure category. `/dungeon admin instance <id> retry <reas
 unload after the underlying issue is fixed. It refuses occupied worlds.
 
 Dungeon configuration writes use atomic ordered replacement. Failed writes restore the last durable
-configuration and report failure. External exits now persist a world UUID/name. Old coordinate-only
-exit locations cannot identify a safe world: set them again from the intended external destination.
+configuration and report failure. External exits now persist a world UUID/name. Coordinate-only exit locations are invalid.
 Internal lobby/start positions must be selected inside that dungeon's editor world.
 
 Staff actions are recorded in `staff-audit.log` and the server log with actor, target, reason,

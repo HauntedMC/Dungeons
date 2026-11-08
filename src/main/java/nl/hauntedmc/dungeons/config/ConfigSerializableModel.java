@@ -97,7 +97,7 @@ public interface ConfigSerializableModel {
      * Applies any normalization that depends on all persisted fields already being loaded.
      *
      * <p>Implementations can use this to rebuild derived state, restore defaults for omitted data,
-     * or migrate legacy payloads before the object is accepted by callers.
+     * or rebuild transient state before the object is accepted by callers.
      */
     default void postDeserialize() {}
 
@@ -303,7 +303,7 @@ public interface ConfigSerializableModel {
      * @param fieldName serialized field name used in log output
      * @param ownerType declaring model type used in log output
      * @return restored map value, original map when generics are unavailable, or {@code SKIP} on
-     *         fatal conversion errors
+     *     fatal conversion errors
      */
     private static Object deserializeMapField(
             Field field, Map<?, ?> rawMap, String fieldName, Class<?> ownerType) {
@@ -368,7 +368,7 @@ public interface ConfigSerializableModel {
      * @param fieldName serialized field name used in log output
      * @param ownerType declaring model type used in log output
      * @return restored list value, original list when generics are unavailable, or {@code SKIP} on
-     *         fatal conversion errors
+     *     fatal conversion errors
      */
     private static Object deserializeListField(
             Field field, List<?> baseList, String fieldName, Class<?> ownerType) {

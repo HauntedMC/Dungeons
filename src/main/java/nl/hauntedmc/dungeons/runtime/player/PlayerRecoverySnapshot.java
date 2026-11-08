@@ -238,23 +238,15 @@ record PlayerRecoverySnapshot(
     }
 
     static void validateInventoryContents(ItemStack[] contents) {
-        // Paper adds body and saddle equipment slots after the legacy offhand slot.
-        // Keep existing 41-slot journals readable, including those written before an upgrade.
-        if (contents.length < 41 || contents.length > 43)
-            throw new IllegalArgumentException("Invalid player inventory slot count: " + contents.length);
+        if (contents.length != 43)
+            throw new IllegalArgumentException("Expected 43 player inventory slots");
     }
 
     static void restoreContents(PlayerInventory inventory, ItemStack[] contents) {
         validateInventoryContents(contents);
-        int size = inventory.getSize();
-        if (size < 41 || size > 43)
-            throw new IllegalArgumentException("Unsupported live player inventory size: " + size);
-        // Never silently truncate populated equipment slots when restoring on an older server.
-        for (int slot = size; slot < contents.length; slot++) {
-            if (contents[slot] != null && !contents[slot].getType().isAir())
-                throw new IllegalStateException("Cannot restore occupied player equipment slot " + slot);
-        }
-        inventory.setContents(Arrays.copyOf(copy(contents), size));
+        if (inventory.getSize() != 43)
+            throw new IllegalArgumentException("Expected 43 live inventory slots");
+        inventory.setContents(copy(contents));
     }
 
     void apply(Player player, World world) {

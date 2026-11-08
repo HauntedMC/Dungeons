@@ -117,7 +117,8 @@ public abstract class DungeonInstance {
     @Nullable protected UUID startedTeamLeaderId;
 
     /**
-     * Creates a new instance wrapper for a dungeon and the latch used to signal async world startup.
+     * Creates a new instance wrapper for a dungeon and the latch used to signal async world
+     * startup.
      */
     public DungeonInstance(DungeonDefinition dungeon, CountDownLatch latch) {
         this.dungeon = dungeon;
@@ -193,21 +194,17 @@ public abstract class DungeonInstance {
                 () -> {
                     this.id = this.dungeon.getInstances().size();
                     File instFolder = this.getUniqueWorldName();
-                    boolean modern =
-                            new File(source, "data/minecraft/world_gen_settings.dat").isFile();
                     FileUtils.copyDirectory(
                             source,
                             instFolder,
                             file ->
-                                    !modern
-                                            || !List.of(
-                                                            "level.dat",
-                                                            "level.dat_old",
-                                                            "DIM1",
-                                                            "DIM-1",
-                                                            "session.lock")
-                                                    .contains(file.getName()));
-                    WorldUtils.migratePaperWorldConfig(new File(instFolder, "paper-world.yml"));
+                                    !List.of(
+                                                    "level.dat",
+                                                    "level.dat_old",
+                                                    "DIM1",
+                                                    "DIM-1",
+                                                    "session.lock")
+                                            .contains(file.getName()));
                     new File(instFolder, "config.yml").delete();
                     for (String identity :
                             List.of(
@@ -220,22 +217,20 @@ public abstract class DungeonInstance {
     }
 
     protected File getUniqueWorldName() throws IOException {
-        File source = this.dungeon.getFolder();
-        boolean legacyTemplate =
-                new File(source, "level.dat").isFile()
-                        && !new File(source, "data/minecraft/world_gen_settings.dat").isFile();
-        return this.reserveWorldFolder(legacyTemplate);
+        return this.reserveWorldFolder();
     }
 
     /** Reserves a name before asynchronous copies or generation can race another instance. */
-    protected File reserveWorldFolder(boolean legacyTemplate) throws IOException {
+    protected File reserveWorldFolder() throws IOException {
         synchronized (WorldUtils.class) {
             while (true) {
                 String name = this.getDungeon().getWorldName() + "_" + this.id;
-                File legacy = new File(Bukkit.getWorldContainer(), name);
+                File conflictingRoot = new File(Bukkit.getWorldContainer(), name);
                 File dimension = WorldUtils.dimensionFolder(name);
-                if (!legacy.exists() && !dimension.exists() && Bukkit.getWorld(name) == null) {
-                    File destination = legacyTemplate ? legacy : dimension;
+                if (!conflictingRoot.exists()
+                        && !dimension.exists()
+                        && Bukkit.getWorld(name) == null) {
+                    File destination = dimension;
                     java.nio.file.Files.createDirectories(destination.toPath().getParent());
                     try {
                         java.nio.file.Files.createDirectory(destination.toPath());
@@ -256,9 +251,7 @@ public abstract class DungeonInstance {
         }
     }
 
-    /**
-     * Builds the default world creator from the dungeon configuration.
-     */
+    /** Builds the default world creator from the dungeon configuration. */
     protected void initializeWorld() {
         WorldCreator loader = new WorldCreator(this.instanceWorldName);
         String genName = this.dungeon.getConfig().getString("dungeon.chunk_generator", "NATURAL");
@@ -272,9 +265,7 @@ public abstract class DungeonInstance {
         this.initializeWorld(loader);
     }
 
-    /**
-     * Builds a world creator that uses an explicit chunk generator.
-     */
+    /** Builds a world creator that uses an explicit chunk generator. */
     protected void initializeWorld(ChunkGenerator chunkHandler) {
         WorldCreator loader = new WorldCreator(this.instanceWorldName);
         loader.generateStructures(false);
@@ -283,9 +274,7 @@ public abstract class DungeonInstance {
         this.initializeWorld(loader);
     }
 
-    /**
-     * Finalizes world creation and then proceeds into gameplay state loading.
-     */
+    /** Finalizes world creation and then proceeds into gameplay state loading. */
     protected void initializeWorld(WorldCreator loader) {
         if (this.disposing) {
             this.loadFailed = true;
@@ -302,7 +291,7 @@ public abstract class DungeonInstance {
             this.logger()
                     .warn(
                             "Invalid world dimension '{}' for instance '{}' of dungeon '{}'."
-                                + " Falling back to default environment.",
+                                    + " Falling back to default environment.",
                             worldDimension,
                             this.instanceWorldName,
                             this.dungeon.getWorldName(),
@@ -364,7 +353,7 @@ public abstract class DungeonInstance {
             this.logger()
                     .error(
                             "Retaining files for instance world '{}' because Bukkit refused to"
-                                + " unload it.",
+                                    + " unload it.",
                             this.instanceWorld.getName());
         } catch (Exception exception) {
             this.logger()
@@ -658,7 +647,7 @@ public abstract class DungeonInstance {
                     this.logger()
                             .error(
                                     "Unable to schedule deletion of retired world folders '{}';"
-                                        + " retaining them for restart cleanup.",
+                                            + " retaining them for restart cleanup.",
                                     retired,
                                     failure);
                 }
@@ -781,7 +770,7 @@ public abstract class DungeonInstance {
                 this.logger()
                         .warn(
                                 "Cannot detach unloaded world folder '{}'; retaining it for restart"
-                                    + " cleanup.",
+                                        + " cleanup.",
                                 source,
                                 failure);
             }
@@ -798,7 +787,7 @@ public abstract class DungeonInstance {
                 this.logger()
                         .warn(
                                 "Cannot delete retired world folder '{}'; retaining it for restart"
-                                    + " cleanup.",
+                                        + " cleanup.",
                                 path,
                                 failure);
             }
@@ -899,11 +888,12 @@ public abstract class DungeonInstance {
                     playerSession.recoverPendingState();
                 } else
                     playerSession.completeDeparture(
-                        this.isEditInstance()
-                                || !this.config.getBoolean("players.keep_on_entry.inventory", true),
-                        this.isEditInstance()
-                                || !this.config.getBoolean(
-                                        "players.keep_on_entry.experience", true));
+                            this.isEditInstance()
+                                    || !this.config.getBoolean(
+                                            "players.keep_on_entry.inventory", true),
+                            this.isEditInstance()
+                                    || !this.config.getBoolean(
+                                            "players.keep_on_entry.experience", true));
             }
         } else {
             PlayerLeaveDungeonEvent leaveEvent = new PlayerLeaveDungeonEvent(this, playerSession);
@@ -934,11 +924,12 @@ public abstract class DungeonInstance {
                     playerSession.recoverPendingState();
                 } else
                     playerSession.completeDeparture(
-                        this.isEditInstance()
-                                || !this.config.getBoolean("players.keep_on_entry.inventory", true),
-                        this.isEditInstance()
-                                || !this.config.getBoolean(
-                                        "players.keep_on_entry.experience", true));
+                            this.isEditInstance()
+                                    || !this.config.getBoolean(
+                                            "players.keep_on_entry.inventory", true),
+                            this.isEditInstance()
+                                    || !this.config.getBoolean(
+                                            "players.keep_on_entry.experience", true));
 
                 if (this.players.isEmpty()) {
                     this.scheduleEmptyCleanup();

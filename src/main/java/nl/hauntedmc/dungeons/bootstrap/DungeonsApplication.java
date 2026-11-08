@@ -3,6 +3,7 @@ package nl.hauntedmc.dungeons.bootstrap;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
+
 import org.bukkit.generator.ChunkGenerator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -12,7 +13,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>This class owns the startup and shutdown sequence and keeps the ordering explicit in one
  * place. The individual bootstrap collaborators remain concrete classes because the codebase has a
- * single startup path and does not benefit from an extra bootstrap framework.</p>
+ * single startup path and does not benefit from an extra bootstrap framework.
  */
 public final class DungeonsApplication {
     private final DungeonsRuntime runtime;
@@ -25,9 +26,7 @@ public final class DungeonsApplication {
     private final CommandBootstrap commandBootstrap;
     private boolean started;
 
-    /**
-     * Creates the application composition root around the Bukkit plugin entrypoint.
-     */
+    /** Creates the application composition root around the Bukkit plugin entrypoint. */
     public DungeonsApplication(DungeonsPlugin plugin) {
         this.runtime = new DungeonsRuntime(plugin);
         this.worldGeneratorResolver = new WorldGeneratorResolver(this.runtime.environment());
@@ -62,9 +61,7 @@ public final class DungeonsApplication {
         }
     }
 
-    /**
-     * Stops the application and always clears the static runtime bridge afterwards.
-     */
+    /** Stops the application and always clears the static runtime bridge afterwards. */
     public void stop() {
         try {
             if (this.started) {
@@ -76,78 +73,58 @@ public final class DungeonsApplication {
         }
     }
 
-    /**
-     * Resolves the plugin-owned world generator hook required by Bukkit.
-     */
+    /** Resolves the plugin-owned world generator hook required by Bukkit. */
     @Nullable
     public ChunkGenerator resolveWorldGenerator(@NotNull String worldName, @Nullable String id) {
         return this.worldGeneratorResolver.resolve(worldName, id);
     }
 
-    /**
-     * Publishes the freshly created runtime graph through the legacy static bridge.
-     */
+    /** Publishes the freshly created runtime graph through the shared runtime context. */
     private void initializeRuntimeAccess() {
         RuntimeContext.initialize(this.runtime);
     }
 
-    /**
-     * Loads config-backed runtime state before any registry or service initialization occurs.
-     */
+    /** Loads config-backed runtime state before any registry or service initialization occurs. */
     private void initializeCoreState() {
         this.coreBootstrap.initializeCoreState();
         this.registryBootstrap.registerConfigurationSerializers();
     }
 
-    /**
-     * Creates the long-lived services and managers that later startup stages consume.
-     */
+    /** Creates the long-lived services and managers that later startup stages consume. */
     private void initializeRuntimeServices() {
         this.coreBootstrap.initializeManagers();
     }
 
-    /**
-     * Registers the type metadata and serializers required before dungeon content is loaded.
-     */
+    /** Registers the type metadata and serializers required before dungeon content is loaded. */
     private void registerRuntimeTypes() {
         this.registryBootstrap.registerElementSerialization();
         this.registryBootstrap.registerRuntimeTypes();
     }
 
-    /**
-     * Loads the dungeon catalogue after all registries know how to deserialize its contents.
-     */
+    /** Loads the dungeon catalogue after all registries know how to deserialize its contents. */
     private void initializeContentManagers() {
         // Commands, listeners and optional integrations all depend on the dungeon catalogue being
         // available at registration time. Keeping this earlier prevents stale null dependencies.
         this.coreBootstrap.initializeDungeonCatalog();
     }
 
-    /**
-     * Registers Bukkit-facing commands, listeners, and optional integrations.
-     */
+    /** Registers Bukkit-facing commands, listeners, and optional integrations. */
     private void bindBukkitIntegrations() {
         this.commandBootstrap.registerCommands();
         this.listenerBootstrap.registerCoreListeners();
     }
 
-    /**
-     * Initializes static GUI state that the current menu layer expects to exist globally.
-     */
+    /** Initializes static GUI state that the current menu layer expects to exist globally. */
     private void initializeUserInterfaces() {
         this.menuBootstrap.initializeMenus();
     }
 
-    /**
-     * Rebuilds lightweight runtime state for players that were already online during a reload.
-     */
+    /** Rebuilds lightweight runtime state for players that were already online during a reload. */
     private void restoreRuntimeState() {
         this.coreBootstrap.restoreOnlinePlayers();
     }
 
-    /**
-     * Emits the startup summary after every stage has completed successfully.
-     */
+    /** Emits the startup summary after every stage has completed successfully. */
     private void logStartupSummary() {
         this.coreBootstrap.logStartupSummary();
     }

@@ -61,7 +61,7 @@ Shutdown:
 
 Rooms remain dirty until persistence succeeds. A revision counter keeps edits made during an in-flight save dirty for the next capture. Successful saves publish the captured schematic and invalidate rotated block caches; failed saves retain the previous cache.
 
-`SchematicUtils.saveStructurePiece` throws `IOException` on storage failure. It serializes into a unique temporary file beside the destination, flushes the file, and atomically replaces the destination. Failed writes clean up the temporary file where possible and preserve the previous destination. The filesystem must support atomic replacement; unsupported replacement fails the save. The existing versioned format and legacy read compatibility are unchanged. This guarantees replacement of an individual schematic, rather than a transaction across room metadata, schematics, and world files. A power loss can leave temporary files, and directory-entry durability depends on the filesystem.
+`SchematicUtils.saveStructurePiece` throws `IOException` on storage failure. It serializes into a unique temporary file beside the destination, flushes the file, and atomically replaces the destination. Failed writes clean up the temporary file where possible and preserve the previous destination. The filesystem must support atomic replacement; unsupported replacement fails the save. Only the current versioned structure format is read. This guarantees replacement of an individual schematic, rather than a transaction across room metadata, schematics, and world files. A power loss can leave temporary files, and directory-entry durability depends on the filesystem.
 
 ## Player Recovery and Reward Delivery
 
@@ -103,9 +103,11 @@ For contributors, boundaries are clear: bootstrap wiring in `bootstrap`, runtime
 
 ## Command, Persistence and Editor Boundaries
 
-The command refactor is incremental. `DungeonCommand` retains Bukkit registration, root permission checks, aliases and the remaining dungeon/player/instance/editor branches. `TeamCommandHandler`, `LootCommandHandler` and `DebugCommandHandler` own their branch dispatch and completion with constructor-injected dependencies. `CommandArguments` handles argument slicing and discovery; `CommandOutput` handles presentation, filtering and pagination. Extracted handlers do not retain the root executor or obtain dependencies through `RuntimeContext`.
+`DungeonCommand` owns Bukkit registration, gameplay and authoring groups. `StaffCommandHandler`
+owns staff operations and editor opening; obsolete flat aliases and player/instance admin groups
+are removed. Focused handlers share scoped capability checks and current-format persistence.
 
-`DungeonPlayerDataStore` owns each dungeon's progression documents and access/reward cooldown indexes. `DungeonDefinition` keeps its public progression methods as delegates. The store loads checked snapshots and saves through the same atomic destination lanes as other configuration files. Unreadable or mismatched records remain protected from writes until repaired and reloaded; valid fields in partially invalid records remain readable. Save failures propagate to the caller and keep in-memory changes available for retry. Date values and cooldown collections are detached. Models and the legacy `getPlayerData` configuration view still belong to the server thread; external callers must not mutate them from workers.
+`DungeonPlayerDataStore` owns each dungeon's progression documents and access/reward cooldown indexes. `DungeonDefinition` keeps its public progression methods as delegates. The store loads checked snapshots and saves through the same atomic destination lanes as other configuration files. Unreadable or mismatched records remain protected from writes until repaired and reloaded; valid fields in partially invalid records remain readable. Save failures propagate to the caller and keep in-memory changes available for retry. Date values and cooldown collections are detached. Models belong to the server thread; progression inspection uses detached store summaries.
 
 `EditorSaveCoordinator` owns admission and the explicit `IDLE -> CAPTURING -> WRITING -> IDLE` lifecycle. `EditableInstance` supplies world capture, persistence and shutdown recovery through a narrow target interface. Capture runs on the server thread; disk work receives the captured inputs. Success and failure both release save ownership. Observer cancellation cannot release that ownership or cancel an admitted write. Disposal waits for earlier work and takes a fresh final snapshot; a failed final save retains the managed world for retry. `DungeonInstance` continues to own unload/disposal transitions independently of this save lifecycle.
 
@@ -119,18 +121,12 @@ Further extractions can use the same boundaries: move the remaining root command
 
 Editor world reservations contain `.dungeons-editor-recovery` before they can accept edits.
 If a final save fails or the process exits unexpectedly, startup cleanup preserves that world
-and its companion legacy/dimension folder. These files require manual recovery: back them up
+in its native dimension folder. These files require manual recovery: back them up
 before copying recovered world data into a template. Normal successful disposal removes them;
 retired `.disposed-<uuid>` folders have already passed final persistence and remain eligible
 for startup deletion. Recovery markers never enter templates through the editor save path.
 
-Player recovery accepts legacy 41-slot inventories and modern Paper inventories with body and
-saddle equipment slots (43 slots on Paper 26.3). Restoration pads older snapshots to the live
-inventory size and refuses to truncate populated equipment slots. Snapshot validation happens
-before the write-ahead record is committed. Existing 1.2.16 records with 43 slots remain valid
-and recover through the normal online-player/reconnect lifecycle; do not delete those records.
-The native acceptance fixture uses Paper's actual inventory/equipment containers so slot-layout
-changes cannot be hidden behind a fixed-size inventory array.
+Player recovery accepts only version 2 journals with 43-slot Paper inventories.
 
 Native player checkpoint paths come from the same `PlayerDataStorage` used by
 `CraftPlayer.saveData()`, through a small Paper adapter. They are not derived from

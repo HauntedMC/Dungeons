@@ -19,8 +19,7 @@ class StaffBootstrapContractTest {
     @TempDir Path directory;
 
     @Test
-    void registeredRootUsesStaffServicesForLegacyDeletionAndChecksCorePermissionFirst()
-            throws Exception {
+    void registeredRootUsesStaffServicesForArchivalAndChecksCorePermissionFirst() throws Exception {
         try (var f = new StaffFixture(directory)) {
             var server = mock(Server.class);
             var command = mock(PluginCommand.class);
@@ -33,21 +32,27 @@ class StaffBootstrapContractTest {
             verify(command).setExecutor(capture.capture());
             var executor = capture.getValue();
             f.grants.clear();
-            executor.onCommand(f.actor, command, "dungeon", new String[] {"delete", "crypt"});
+            executor.onCommand(
+                    f.actor,
+                    command,
+                    "dungeon",
+                    new String[] {"admin", "archive", "crypt", "Retire"});
             assertTrue(f.run.dungeon.getFolder().exists());
-            assertFalse(f.run.dungeon.isMarkedForDelete());
+
             f.grants.add("*");
-            executor.onCommand(f.actor, command, "dungeon", new String[] {"delete", "crypt"});
+            executor.onCommand(
+                    f.actor,
+                    command,
+                    "dungeon",
+                    new String[] {"admin", "archive", "crypt", "Retire"});
             assertTrue(f.run.dungeon.getFolder().exists());
-            assertFalse(f.run.dungeon.isMarkedForDelete());
+
             String token = f.token();
             executor.onCommand(
                     f.actor,
                     command,
                     "dungeon",
-                    new String[] {
-                        "admin", "archive", "crypt", "Legacy deletion request", "--confirm", token
-                    });
+                    new String[] {"admin", "archive", "crypt", "Retire", "--confirm", token});
             f.flush();
             assertFalse(f.run.dungeon.getFolder().exists());
         }

@@ -1,36 +1,31 @@
 package nl.hauntedmc.dungeons.registry;
 
-import java.util.Locale;
+import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
+import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
+
+import org.bukkit.configuration.InvalidConfigurationException;
+import org.bukkit.configuration.file.YamlConfiguration;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
-import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
-import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
-import org.bukkit.configuration.InvalidConfigurationException;
-import org.bukkit.configuration.file.YamlConfiguration;
 
-/**
- * Static registry for known dungeon model types.
- */
+/** Static registry for known dungeon model types. */
 public final class DungeonTypeRegistry {
     private static final Map<String, Class<? extends DungeonDefinition>> types =
             new LinkedHashMap<>();
 
-    /** Returns a snapshot of registered dungeon type aliases to classes. */
+    /** Returns a snapshot of registered dungeon type names to classes. */
     public static Map<String, Class<? extends DungeonDefinition>> getDungeonTypes() {
         return new LinkedHashMap<>(types);
     }
 
-    /** Registers one dungeon type class under a primary name and optional aliases. */
-    public static <T extends DungeonDefinition> void register(
-            Class<T> dungeonType, String name, String... aliases) {
+    /** Registers one dungeon type class under a canonical name. */
+    public static <T extends DungeonDefinition> void register(Class<T> dungeonType, String name) {
         types.put(name.toLowerCase(Locale.ROOT), dungeonType);
-
-        for (String alias : aliases) {
-            types.put(alias.toLowerCase(Locale.ROOT), dungeonType);
-        }
     }
 
     /** Clears all registered dungeon type mappings. */
@@ -58,9 +53,7 @@ public final class DungeonTypeRegistry {
         return createDungeon(runtime, "static", folder, null);
     }
 
-    /**
-     * Instantiates a dungeon model using a specific registered type alias.
-     */
+    /** Instantiates a dungeon model using a specific registered type name. */
     public static DungeonDefinition createDungeon(
             DungeonsRuntime runtime, String type, File folder, YamlConfiguration config)
             throws NoSuchMethodException,

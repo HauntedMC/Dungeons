@@ -4,7 +4,6 @@ import nl.hauntedmc.dungeons.config.ConfigurationFile;
 import nl.hauntedmc.dungeons.content.function.reward.RewardFunction;
 import nl.hauntedmc.dungeons.content.reward.PlayerLootData;
 
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.Nullable;
@@ -116,12 +115,6 @@ public final class DungeonPlayerDataStore {
     private ConfigurationFile record(UUID id) {
         requireWritable(id);
         return records.computeIfAbsent(id, ignored -> new ConfigurationFile(plugin));
-    }
-
-    /** Legacy live configuration view. Callers must mutate and save it on the server thread. */
-    public @Nullable FileConfiguration getRecord(UUID id) {
-        requireOwnerThread();
-        return records.get(id);
     }
 
     public void setAccessCooldown(UUID id, Date reset) {

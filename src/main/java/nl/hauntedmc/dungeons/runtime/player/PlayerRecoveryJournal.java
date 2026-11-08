@@ -32,7 +32,7 @@ final class PlayerRecoveryJournal {
         if (Files.exists(file)) {
             try {
                 state.load(file.toFile());
-                if (state.getInt("version") != 1 && state.getInt("version") != 2)
+                if (state.getInt("version") != 2)
                     throw new IllegalArgumentException("Unknown recovery journal version");
                 rewards();
                 if (state.contains("key-reservation")) {
@@ -64,12 +64,15 @@ final class PlayerRecoveryJournal {
             throw new IllegalStateException("Player already has an unfinished state transaction");
         var contents = PlayerRecoverySnapshot.copy(player.getInventory().getContents());
         PlayerRecoverySnapshot.validateInventoryContents(contents);
-        commit(next -> {
-            next.set("key-reservation.dungeon", dungeon);
-            next.set("key-reservation.item", PlayerRecoverySnapshot.encode(new ItemStack[] {key}));
-            next.set("delivery.id", UUID.randomUUID().toString());
-            next.set("delivery.contents", PlayerRecoverySnapshot.encode(contents));
-        });
+        commit(
+                next -> {
+                    next.set("key-reservation.dungeon", dungeon);
+                    next.set(
+                            "key-reservation.item",
+                            PlayerRecoverySnapshot.encode(new ItemStack[] {key}));
+                    next.set("delivery.id", UUID.randomUUID().toString());
+                    next.set("delivery.contents", PlayerRecoverySnapshot.encode(contents));
+                });
         if (player.isOnline() && !player.isDead()) finishDelivery(player);
     }
 
@@ -78,13 +81,18 @@ final class PlayerRecoveryJournal {
         requireServerThread();
         if (!state.contains("key-reservation")) return false;
         var refunds = items("refunds");
-        if (refundOriginal) refunds.add(PlayerRecoverySnapshot.decode(
-                Objects.requireNonNull(state.getList("key-reservation.item")))[0]);
+        if (refundOriginal)
+            refunds.add(
+                    PlayerRecoverySnapshot.decode(
+                            Objects.requireNonNull(state.getList("key-reservation.item")))[0]);
         else if (replacement != null) refunds.add(replacement.clone());
-        commit(next -> {
-            next.set("key-reservation", null);
-            next.set("refunds", PlayerRecoverySnapshot.encode(refunds.toArray(ItemStack[]::new)));
-        });
+        commit(
+                next -> {
+                    next.set("key-reservation", null);
+                    next.set(
+                            "refunds",
+                            PlayerRecoverySnapshot.encode(refunds.toArray(ItemStack[]::new)));
+                });
         return true;
     }
 

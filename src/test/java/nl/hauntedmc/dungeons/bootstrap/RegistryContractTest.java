@@ -45,14 +45,14 @@ class RegistryContractTest {
     @TempDir Path directory;
 
     @Test
-    void dungeonAliasesAreIndependentOfTheServerLocale() throws Exception {
+    void dungeonNamesAreIndependentOfTheServerLocale() throws Exception {
         var previousLocale = java.util.Locale.getDefault();
         try (var registry = new StaticMapSnapshot(DungeonTypeRegistry.class, "types")) {
             java.util.Locale.setDefault(java.util.Locale.forLanguageTag("tr-TR"));
-            DungeonTypeRegistry.register(nl.hauntedmc.dungeons.content.dungeon.StaticDungeon.class,
-                    "STATIC", "INSTANCE");
+            DungeonTypeRegistry.register(
+                    nl.hauntedmc.dungeons.content.dungeon.StaticDungeon.class, "STATIC");
             assertTrue(DungeonTypeRegistry.getDungeonTypes().containsKey("static"));
-            assertTrue(DungeonTypeRegistry.getDungeonTypes().containsKey("instance"));
+            assertFalse(DungeonTypeRegistry.getDungeonTypes().containsKey("instance"));
         } finally {
             java.util.Locale.setDefault(previousLocale);
         }

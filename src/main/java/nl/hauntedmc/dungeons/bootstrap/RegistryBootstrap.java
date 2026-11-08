@@ -42,9 +42,7 @@ import java.util.List;
 final class RegistryBootstrap {
     private final DungeonsRuntime runtime;
 
-    /**
-     * Creates the registry bootstrap stage.
-     */
+    /** Creates the registry bootstrap stage. */
     RegistryBootstrap(DungeonsRuntime runtime) {
         this.runtime = runtime;
     }
@@ -62,48 +60,36 @@ final class RegistryBootstrap {
         TypeMetadataSupport.registerConfigurationSerializable(VariableEditMode.class);
     }
 
-    /**
-     * Registers custom serialization support that depends on the plugin instance.
-     */
+    /** Registers custom serialization support that depends on the plugin instance. */
     void registerElementSerialization() {
         ConfigSerializableModel.register("nl.hauntedmc.dungeons");
     }
 
-    /**
-     * Registers dungeon/runtime types that later dungeon loading depends on.
-     */
+    /** Registers dungeon/runtime types that later dungeon loading depends on. */
     void registerRuntimeTypes() {
         this.registerInstanceListener(PlayListener.class);
         this.registerInstanceListener(EditListener.class);
         this.registerDungeonType(StaticDungeon.class, "static");
         this.registerDungeonType(OpenDungeon.class, "open");
         this.registerDungeonType(BranchingDungeon.class, "branching");
-        this.registerLayout(
-                ConnectorExpansionLayout.class, "minecrafty", "minecraft", "vanilla", "random");
-        this.registerLayout(BranchingLayout.class, "branching", "branch", "linear");
+        this.registerLayout(ConnectorExpansionLayout.class, "minecrafty");
+        this.registerLayout(BranchingLayout.class, "branching");
         this.registerFunctions("nl.hauntedmc.dungeons.content.function");
         this.registerTriggers("nl.hauntedmc.dungeons.content.trigger");
         this.registerConditions("nl.hauntedmc.dungeons.content.condition");
     }
 
-    /**
-     * Registers a concrete dungeon type name and its aliases.
-     */
-    private <T extends DungeonDefinition> void registerDungeonType(
-            Class<T> type, String name, String... aliases) {
-        DungeonTypeRegistry.register(type, name, aliases);
+    /** Registers a concrete dungeon type canonical name. */
+    private <T extends DungeonDefinition> void registerDungeonType(Class<T> type, String name) {
+        DungeonTypeRegistry.register(type, name);
     }
 
-    /**
-     * Registers a concrete layout type name and its aliases.
-     */
-    private <T extends Layout> void registerLayout(Class<T> type, String name, String... aliases) {
-        LayoutRegistry.register(type, name, aliases);
+    /** Registers a concrete layout type canonical name. */
+    private <T extends Layout> void registerLayout(Class<T> type, String name) {
+        LayoutRegistry.register(type, name);
     }
 
-    /**
-     * Reflectively multiplexes Bukkit events to the matching per-instance listener class.
-     */
+    /** Reflectively multiplexes Bukkit events to the matching per-instance listener class. */
     private <T extends InstanceListener> void registerInstanceListener(Class<T> type) {
         List<Method> eventMethods =
                 MethodUtils.getMethodsListWithAnnotation(type, EventHandler.class);
@@ -149,7 +135,10 @@ final class RegistryBootstrap {
                                                             .environment()
                                                             .logger()
                                                             .error(
-                                                                    "Failed to invoke instance listener method '{}#{}' for event '{}' in instance '{}'.",
+                                                                    "Failed to invoke instance"
+                                                                        + " listener method '{}#{}'"
+                                                                        + " for event '{}' in"
+                                                                        + " instance '{}'.",
                                                                     type.getSimpleName(),
                                                                     method.getName(),
                                                                     eventClass.getSimpleName(),
@@ -190,9 +179,7 @@ final class RegistryBootstrap {
         TypeMetadataSupport.registerConfigurationSerializable(condition);
     }
 
-    /**
-     * Discovers and registers all auto-registered function types in the supplied package.
-     */
+    /** Discovers and registers all auto-registered function types in the supplied package. */
     private void registerFunctions(String functionsPackage) {
         for (Class<? extends DungeonFunction> function :
                 TypeMetadataSupport.discoverAutoRegisteredTypes(
@@ -201,9 +188,7 @@ final class RegistryBootstrap {
         }
     }
 
-    /**
-     * Discovers and registers all auto-registered trigger types in the supplied package.
-     */
+    /** Discovers and registers all auto-registered trigger types in the supplied package. */
     private void registerTriggers(String triggersPackage) {
         for (Class<? extends DungeonTrigger> trigger :
                 TypeMetadataSupport.discoverAutoRegisteredTypes(
@@ -212,9 +197,7 @@ final class RegistryBootstrap {
         }
     }
 
-    /**
-     * Discovers and registers all auto-registered condition types in the supplied package.
-     */
+    /** Discovers and registers all auto-registered condition types in the supplied package. */
     private void registerConditions(String conditionsPackage) {
         for (Class<? extends TriggerCondition> condition :
                 TypeMetadataSupport.discoverAutoRegisteredTypes(

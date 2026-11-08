@@ -160,15 +160,8 @@ generator:
     branches: {}
 ```
 
-Existing `generation.yml` files are automatically imported before missing defaults are filled.
-Legacy top-level `branching` settings move to `generator.branching`, including named branches.
-Explicit values already present in `config.yml` take priority. The old
-`generator_settings_default.yml` is also imported into `dungeons/config_default.yml`.
-After each successful import and save, its old file is renamed with a `.migrated` suffix
-as a backup; it is no longer read or recreated. Invalid YAML or a failed save leaves
-the legacy file in place. A failed first migration does not create a replacement template
-that could mask legacy values on the next attempt. Generator and branching sections must be
-YAML mappings; malformed sections are reported instead of silently discarded.
+Only `config.yml` and `dungeons/config_default.yml` are read. Generator settings live under
+`generator.branching`; separate generation files and old configuration names are not imported.
 
 The existing `/dungeon config` layout, trunk, and branch commands now read and write
 `config.yml`. Changes apply to future generation runs.
@@ -218,11 +211,8 @@ times skipped by daylight saving advance to the next valid local time.
 
 ## Structure file compatibility
 
-Newly saved room structures use the `DUNGEONS-STRUCTURE-2` format, still compressed with
-deflate. Tile SNBT is encoded inside the file so names or text containing `|` and `!` cannot
-split block records. Existing unversioned structure files remain readable and are converted
-when saved. Older plugin versions cannot read the new format; retain backups if rollback
-to an earlier plugin version is needed.
+Room structures must use the deflate-compressed `DUNGEONS-STRUCTURE-2` format. Tile SNBT is
+encoded so delimiters cannot split records. Unversioned structures are rejected.
 
 
 ## Invalid saved data and failed world unloads

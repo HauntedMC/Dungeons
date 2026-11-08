@@ -272,7 +272,10 @@ class StaffMenusContractTest {
             f.menus.open(f.player.player, "dungeon", "crypt", "", 0);
             f.click(5, ClickType.LEFT);
             f.base.flush();
-            verify(f.player.player).performCommand("dungeon edit open crypt");
+            verify(f.commands)
+                    .executeChecked(
+                            eq(f.player.player),
+                            aryEq(new String[] {"admin", "edit", "crypt", "Open editor"}));
         }
     }
 

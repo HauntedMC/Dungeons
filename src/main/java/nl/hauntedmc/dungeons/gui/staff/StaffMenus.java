@@ -219,7 +219,7 @@ public final class StaffMenus implements Listener, AutoCloseable {
                         Material.FEATHER,
                         () -> {
                             p.closeInventory();
-                            p.performCommand("dungeon edit open " + name);
+                            execute(p, "edit", name, "Open editor");
                         });
                 action(
                         rows,

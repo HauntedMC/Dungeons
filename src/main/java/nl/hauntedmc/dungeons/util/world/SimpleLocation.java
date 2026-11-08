@@ -3,6 +3,7 @@ package nl.hauntedmc.dungeons.util.world;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.annotation.TypeKey;
 import nl.hauntedmc.dungeons.config.ConfigSerializableModel;
+
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -10,9 +11,7 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.util.Vector;
 
-/**
- * Lightweight serializable location value with plugin-defined cardinal direction.
- */
+/** Lightweight serializable location value with plugin-defined cardinal direction. */
 @TypeKey(id = "dungeons.serializable.simple_location")
 @SerializableAs("dungeons.serializable.simple_location")
 public class SimpleLocation implements Cloneable, ConfigSerializableModel {
@@ -125,17 +124,13 @@ public class SimpleLocation implements Cloneable, ConfigSerializableModel {
         }
     }
 
-    /**
-     * Returns a debug representation of coordinates and facing direction.
-     */
+    /** Returns a debug representation of coordinates and facing direction. */
     @Override
     public String toString() {
         return "[XYZD] " + this.x + ", " + this.y + ", " + this.z + ", " + this.direction;
     }
 
-    /**
-     * Compares coordinates only, ignoring facing direction.
-     */
+    /** Compares coordinates only, ignoring facing direction. */
     @Override
     public boolean equals(Object obj) {
         return obj instanceof SimpleLocation loc
@@ -144,66 +139,48 @@ public class SimpleLocation implements Cloneable, ConfigSerializableModel {
                 && this.z == loc.getZ();
     }
 
-    /**
-     * Returns a constant hash code for compatibility with legacy behavior.
-     */
+    /** Hashes the coordinates used by equality. */
     @Override
     public int hashCode() {
-        return 0;
+        return java.util.Objects.hash(x == 0 ? 0.0 : x, y == 0 ? 0.0 : y, z == 0 ? 0.0 : z);
     }
 
-    /**
-     * Returns the X coordinate.
-     */
+    /** Returns the X coordinate. */
     public double getX() {
         return this.x;
     }
 
-    /**
-     * Sets the X coordinate.
-     */
+    /** Sets the X coordinate. */
     public void setX(double x) {
         this.x = x;
     }
 
-    /**
-     * Returns the Y coordinate.
-     */
+    /** Returns the Y coordinate. */
     public double getY() {
         return this.y;
     }
 
-    /**
-     * Sets the Y coordinate.
-     */
+    /** Sets the Y coordinate. */
     public void setY(double y) {
         this.y = y;
     }
 
-    /**
-     * Returns the Z coordinate.
-     */
+    /** Returns the Z coordinate. */
     public double getZ() {
         return this.z;
     }
 
-    /**
-     * Sets the Z coordinate.
-     */
+    /** Sets the Z coordinate. */
     public void setZ(double z) {
         this.z = z;
     }
 
-    /**
-     * Returns the current direction.
-     */
+    /** Returns the current direction. */
     public SimpleLocation.Direction getDirection() {
         return this.direction;
     }
 
-    /**
-     * Sets the current direction.
-     */
+    /** Sets the current direction. */
     public void setDirection(SimpleLocation.Direction direction) {
         this.direction = direction;
     }

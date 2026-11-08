@@ -15,6 +15,8 @@ Dungeons is a Paper plugin for creating, editing, and running configurable dunge
 4. Create or edit dungeon content with `/dungeon` editor commands.
 5. Start a run with `/dungeon play <dungeon>[:difficulty]`.
 
+Fresh installations only: see the [supported storage and command contract](docs/CLEAN_INSTALLS.md).
+
 ## Requirements
 
 - Java 25

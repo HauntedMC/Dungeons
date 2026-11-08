@@ -7,6 +7,7 @@ This folder is the practical guide for running, maintaining, and contributing to
 If you run the plugin:
 
 - [Staff operations](STAFF_OPERATIONS.md): dashboard, permissions, maintenance, player support, and recovery.
+- [Clean installs](CLEAN_INSTALLS.md): supported formats and current command/permission contracts.
 - [Configuration](CONFIGURATION.md): global config, dungeon defaults, and safe rollout flow.
 - [Architecture](ARCHITECTURE.md): startup sequence, runtime graph, and lifecycle responsibilities.
 

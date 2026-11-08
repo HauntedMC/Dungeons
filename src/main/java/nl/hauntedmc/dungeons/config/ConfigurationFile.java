@@ -214,7 +214,7 @@ public class ConfigurationFile extends YamlConfiguration {
     }
 
     private static void requireOwnerThread() {
-        // Standalone configurations (e.g. migration tools) have no Bukkit server. While a server
+        // Standalone configurations (e.g. offline validation) have no Bukkit server. While a server
         // exists, mutable YAML and model serialization must stay on its primary thread, even at
         // disable.
         if (Bukkit.getServer() != null && !Bukkit.isPrimaryThread()) {

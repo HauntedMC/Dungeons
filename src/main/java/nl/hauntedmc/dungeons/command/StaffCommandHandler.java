@@ -25,6 +25,7 @@ public final class StaffCommandHandler implements CommandHandler {
 
     private static final List<Syntax> SYNTAX =
             List.of(
+                    new Syntax("edit", "edit", "edit <dungeon> <reason>"),
                     new Syntax("overview", "inspect", "overview"),
                     new Syntax("dungeons", "inspect", "dungeons [filter]"),
                     new Syntax("dungeon", "inspect", "dungeon <name> [validate]"),
@@ -105,208 +106,6 @@ public final class StaffCommandHandler implements CommandHandler {
         return menus;
     }
 
-    /** Compatibility routes retain syntax while removing unsafe legacy execution paths. */
-    public boolean handleLegacy(CommandSender actor, String[] original) {
-        if (original.length == 0 || original[0].equalsIgnoreCase("admin")) return false;
-        var args = new ArrayList<>(Arrays.asList(original));
-        String root = args.getFirst().toLowerCase(Locale.ROOT);
-        if (root.equals("dungeon") && args.size() > 1) {
-            args.set(1, args.get(1).toLowerCase(Locale.ROOT));
-            if (List.of("keys", "exit").contains(args.get(1)) && args.size() > 2)
-                args.set(2, args.get(2).toLowerCase(Locale.ROOT));
-        }
-        if (root.equals("dungeon") && args.size() > 1) {
-            String sub = args.get(1).toLowerCase(Locale.ROOT);
-            if (List.of("delete", "reload", "status").contains(sub)) {
-                args.removeFirst();
-                root = sub;
-            }
-        }
-        if (root.equals("delete") && args.size() == 2) {
-            handleCommand(
-                    actor,
-                    new String[] {"admin", "archive", args.get(1), "Legacy deletion request"});
-            return true;
-        }
-        if (root.equals("reload") && args.size() <= 2) {
-            handleCommand(
-                    actor,
-                    new String[] {
-                        "admin",
-                        "reload",
-                        args.size() == 2 ? args.get(1) : "config",
-                        "Legacy reload request"
-                    });
-            return true;
-        }
-        if (root.equals("status")) {
-            handleCommand(
-                    actor,
-                    args.size() == 2
-                            ? new String[] {"admin", "dungeon", args.get(1)}
-                            : new String[] {"admin", "overview"});
-            return true;
-        }
-        if (root.equals("join")
-                || root.equals("instance")
-                        && args.size() == 3
-                        && args.get(1).equalsIgnoreCase("join-player")) {
-            int index = root.equals("join") ? 1 : 2;
-            if (args.size() <= index) return false;
-            UUID id = playerId(args.get(index));
-            var session = runtime.playerSessions().get(id);
-            if (session == null || session.getInstance() == null)
-                throw new IllegalArgumentException("Target is not in a dungeon");
-            handleCommand(
-                    actor,
-                    new String[] {
-                        "admin",
-                        "instance",
-                        session.getInstance().getInstanceId().toString(),
-                        "observe"
-                    });
-            return true;
-        }
-        if (root.equals("kick")
-                || root.equals("instance")
-                        && args.size() == 3
-                        && args.get(1).equalsIgnoreCase("kick-player")) {
-            int index = root.equals("kick") ? 1 : 2;
-            if (args.size() <= index) return false;
-            handleCommand(
-                    actor,
-                    new String[] {
-                        "admin", "player", args.get(index), "remove", "Legacy staff removal"
-                    });
-            return true;
-        }
-        if (root.equals("player") && args.size() == 3 && args.get(2).equalsIgnoreCase("status")) {
-            handleCommand(actor, new String[] {"admin", "player", args.get(1)});
-            return true;
-        }
-        if (root.equals("player")
-                && args.size() == 4
-                && args.get(2).equalsIgnoreCase("queue")
-                && args.get(3).equalsIgnoreCase("clear")) {
-            handleCommand(
-                    actor,
-                    new String[] {
-                        "admin", "player", args.get(1), "queue-clear", "Legacy queue cancellation"
-                    });
-            return true;
-        }
-        if (root.equals("loot") && args.size() == 3 && args.get(1).equalsIgnoreCase("remove")) {
-            handleCommand(
-                    actor,
-                    new String[] {"admin", "loot-remove", args.get(2), "Legacy loot removal"});
-            return true;
-        }
-        if (root.equals("setcooldown") && (args.size() == 3 || args.size() == 4)) {
-            String duration = args.size() == 4 ? args.get(3) : defaultCooldown(args.get(1));
-            handleCommand(
-                    actor,
-                    new String[] {
-                        "admin",
-                        "cooldown",
-                        args.get(2),
-                        args.get(1),
-                        duration,
-                        "Legacy cooldown correction"
-                    });
-            return true;
-        }
-        if (root.equals("player") && args.size() >= 5 && args.get(2).equalsIgnoreCase("cooldown")) {
-            String duration =
-                    args.get(3).equalsIgnoreCase("clear")
-                            ? "clear"
-                            : args.size() == 6 ? args.get(5) : defaultCooldown(args.get(4));
-            handleCommand(
-                    actor,
-                    new String[] {
-                        "admin",
-                        "cooldown",
-                        args.get(1),
-                        args.get(4),
-                        duration,
-                        "Legacy cooldown correction"
-                    });
-            return true;
-        }
-        if (root.equals("edit")) {
-            String target =
-                    args.size() == 2
-                                    && !List.of(
-                                                    "close", "save", "lobby", "start", "items",
-                                                    "tools", "signs")
-                                            .contains(args.get(1))
-                            ? args.get(1)
-                            : args.size() == 3 && args.get(1).equalsIgnoreCase("open")
-                                    ? args.get(2)
-                                    : null;
-            if (target != null && actor instanceof Player p) {
-                var dungeon = dungeon(target);
-                StaffPermissions.require(actor, "edit", target);
-                if (dungeon.getEditSession() != null)
-                    throw new IllegalArgumentException(
-                            "Editor already open; close its existing session first");
-                {
-                    var op =
-                            ops.drain(
-                                    actor,
-                                    "edit",
-                                    "open-editor",
-                                    target,
-                                    "Open editor",
-                                    () -> openEditor(p, dungeon));
-                    tell(actor, "Editor operation " + op.shortId() + ": " + op.detail);
-                    return true;
-                }
-            }
-        }
-        String target =
-                switch (root) {
-                    case "setexit", "setspawn", "setlobby", "addkey", "removekey", "clearkeys" ->
-                            args.size() > 1 ? args.get(1) : null;
-                    default -> null;
-                };
-        if (root.equals("dungeon") && args.size() > 3 && args.get(1).equals("keys")) {
-            StaffPermissions.require(actor, "keys", args.get(3));
-            if (List.of("add", "remove", "clear").contains(args.get(2))) target = args.get(3);
-        }
-        if (root.equals("dungeon") && args.size() > 3 && args.get(1).equals("exit"))
-            target = args.get(3);
-        if (target != null) {
-            var dungeon = dungeon(target);
-            StaffEditGuard.configuration(actor, dungeon, "legacy");
-            if (actor instanceof Player p && (root.equals("setspawn") || root.equals("setlobby"))) {
-                var session = runtime.playerSessions().get(p);
-                if (session == null
-                        || session.getInstance() == null
-                        || session.getInstance().getDungeon() != dungeon
-                        || session.getInstance().getInstanceWorld() != p.getWorld())
-                    throw new IllegalArgumentException("Stand in this dungeon's editor world");
-            }
-        }
-        if (List.of("testdoor", "testalldoors", "debug").contains(root)) {
-            if (!(actor instanceof Player p)
-                    || !StaffEditGuard.editor(p, runtime.playerSessions().get(p)))
-                throw new IllegalArgumentException(
-                        "Mutating diagnostics require an authorized editor session");
-        }
-        return false;
-    }
-
-    private String defaultCooldown(String name) {
-        long seconds =
-                Math.max(
-                        1L,
-                        (dungeon(name).getNextUnlockTime().getTime()
-                                        - System.currentTimeMillis()
-                                        + 999L)
-                                / 1000L);
-        return seconds + "s";
-    }
-
     private CompletableFuture<String> openEditor(Player player, DungeonDefinition dungeon) {
         String name = dungeon.getWorldName();
         StaffPermissions.require(player, "edit", name);
@@ -384,6 +183,23 @@ public final class StaffCommandHandler implements CommandHandler {
             return;
         }
         switch (action) {
+            case "edit" -> {
+                need(a, 3, "edit <dungeon> <reason>");
+                if (!(actor instanceof Player p))
+                    throw new IllegalArgumentException("Players only");
+                var definition = dungeon(a[1]);
+                if (definition.getEditSession() != null)
+                    throw new IllegalArgumentException("Close the existing editor first");
+                var operation =
+                        ops.drain(
+                                actor,
+                                "edit",
+                                "open-editor",
+                                a[1],
+                                reason(a, 2),
+                                () -> openEditor(p, definition));
+                tell(actor, "Editor operation " + operation.shortId() + ": " + operation.detail);
+            }
             case "overview" -> overview(actor);
             case "dungeons" -> {
                 StaffPermissions.require(actor, "inspect", null);

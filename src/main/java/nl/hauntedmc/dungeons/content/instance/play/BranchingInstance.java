@@ -1,12 +1,5 @@
 package nl.hauntedmc.dungeons.content.instance.play;
 
-import java.io.File;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
 import nl.hauntedmc.dungeons.generation.layout.Layout;
 import nl.hauntedmc.dungeons.generation.room.InstanceRoom;
@@ -15,10 +8,19 @@ import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
 import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.util.world.LocationUtils;
 import nl.hauntedmc.dungeons.world.generator.DungeonChunkGenerator;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3i;
+
+import java.io.File;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * Playable instance for branching dungeons.
@@ -32,17 +34,13 @@ public class BranchingInstance extends PlayableInstance {
     private Collection<InstanceRoom> rooms;
     private Layout builder;
 
-    /**
-     * Creates a new BranchingInstance instance.
-     */
+    /** Creates a new BranchingInstance instance. */
     public BranchingInstance(BranchingDungeon dungeon, CountDownLatch latch) {
         super(dungeon, latch);
         this.dungeon = dungeon;
     }
 
-    /**
-     * Performs initialize.
-     */
+    /** Performs initialize. */
     @Override
     public DungeonInstance initialize() {
         if (this.initialized) {
@@ -52,8 +50,8 @@ public class BranchingInstance extends PlayableInstance {
         this.id = this.dungeon.getInstances().size();
         File instFolder;
         try {
-            // Generated runs have no legacy level data to import, regardless of template history.
-            instFolder = this.reserveWorldFolder(false);
+            // Generated runs reserve a native dimension directory.
+            instFolder = this.reserveWorldFolder();
         } catch (java.io.IOException exception) {
             this.loadFailed = true;
             this.logger()
@@ -83,9 +81,7 @@ public class BranchingInstance extends PlayableInstance {
         return this;
     }
 
-    /**
-     * Initializes world generation.
-     */
+    /** Initializes world generation. */
     protected void initializeWorldGeneration() {
         this.roomsByUuid = new HashMap<>();
         this.rooms = this.builder.getAllRooms();
@@ -110,17 +106,13 @@ public class BranchingInstance extends PlayableInstance {
                                                 blocks)));
     }
 
-    /**
-     * Performs on apply world rules.
-     */
+    /** Performs on apply world rules. */
     @Override
     protected void onApplyWorldRules() {
         this.dungeon.loadGamerulesTo(this.instanceWorld);
     }
 
-    /**
-     * Initializes functions.
-     */
+    /** Initializes functions. */
     @Override
     public void initializeFunctions() {
         for (InstanceRoom room : this.rooms) {
@@ -128,17 +120,13 @@ public class BranchingInstance extends PlayableInstance {
         }
     }
 
-    /**
-     * Performs on load game.
-     */
+    /** Performs on load game. */
     @Override
     public void onLoadGame() {
         Bukkit.getScheduler().runTaskLater(this.plugin(), this::startGame, 1L);
     }
 
-    /**
-     * Performs prepare valid start point.
-     */
+    /** Performs prepare valid start point. */
     public void prepareValidStartPoint() {
         InstanceRoom firstRoom = this.builder.getFirst();
         Location spawn = firstRoom.getSpawn();
@@ -173,23 +161,17 @@ public class BranchingInstance extends PlayableInstance {
         return this.roomsByUuid.get(uuid);
     }
 
-    /**
-     * Returns the dungeon.
-     */
+    /** Returns the dungeon. */
     public BranchingDungeon getDungeon() {
         return this.dungeon;
     }
 
-    /**
-     * Returns the rooms by uuid.
-     */
+    /** Returns the rooms by uuid. */
     public Map<UUID, InstanceRoom> getRoomsByUuid() {
         return this.roomsByUuid;
     }
 
-    /**
-     * Returns the rooms.
-     */
+    /** Returns the rooms. */
     public Collection<InstanceRoom> getRooms() {
         return this.rooms;
     }

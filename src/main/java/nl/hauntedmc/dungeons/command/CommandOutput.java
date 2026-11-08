@@ -4,9 +4,6 @@ import nl.hauntedmc.dungeons.model.dungeon.AccessKeyDefinition;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
-import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueEntry;
-import nl.hauntedmc.dungeons.runtime.team.DungeonTeam;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
 import nl.hauntedmc.dungeons.util.config.PluginConfigView;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
@@ -14,10 +11,8 @@ import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.text.TextUtils;
 import nl.hauntedmc.dungeons.util.time.TimeUtils;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
@@ -111,81 +106,16 @@ final class CommandOutput {
     /** Runs format yes no state. */
     String formatYesNoState(boolean value) {
         return LangUtils.getMessage(
-                value ? "commands.player.status.labels.yes" : "commands.player.status.labels.no",
+                value ? "general.labels.yes" : "general.labels.no",
                 false);
     }
 
-    /** Runs format queue status. */
-    String formatQueueStatus(Player targetPlayer, DungeonQueueEntry queue) {
-        if (queue == null) {
-            return LangUtils.getMessage("commands.player.status.labels.none", false);
-        }
+/** Runs format team status. */
 
-        String modeKey;
-        if (!queue.isTeamQueue()) {
-            modeKey = "commands.player.status.queue.modes.solo";
-        } else if (queue.isLeader(targetPlayer.getUniqueId())) {
-            modeKey = "commands.player.status.queue.modes.team-leader";
-        } else {
-            modeKey = "commands.player.status.queue.modes.team-member";
-        }
-
-        return LangUtils.getMessage(
-                "commands.player.status.queue.entry",
-                false,
-                LangUtils.placeholder("dungeon", queue.getDungeon().getWorldName()),
-                LangUtils.placeholder(
-                        "difficulty", this.formatDifficultyValue(queue.getDifficulty())),
-                LangUtils.placeholder("mode", LangUtils.getMessage(modeKey, false)));
-    }
-
-    /** Runs format team status. */
-    String formatTeamStatus(Player targetPlayer, DungeonTeam team) {
-        if (team == null) {
-            return LangUtils.getMessage("commands.player.status.labels.none", false);
-        }
-
-        String stateKey =
-                team.isStarted()
-                        ? "commands.player.status.team.states.running"
-                        : team.isQueued()
-                                ? "commands.player.status.team.states.queued"
-                                : "commands.player.status.team.states.idle";
-        String state = LangUtils.getMessage(stateKey, false);
-        if (team.isLeader(targetPlayer.getUniqueId())) {
-            return LangUtils.getMessage(
-                    "commands.player.status.team.as-leader",
-                    false,
-                    LangUtils.placeholder("count", String.valueOf(team.size())),
-                    LangUtils.placeholder("state", state));
-        }
-
-        Player leader = Bukkit.getPlayer(team.getLeaderId());
-        String leaderName = leader == null ? team.getLeaderId().toString() : leader.getName();
-        return LangUtils.getMessage(
-                "commands.player.status.team.as-member",
-                false,
-                LangUtils.placeholder("leader", leaderName),
-                LangUtils.placeholder("count", String.valueOf(team.size())),
-                LangUtils.placeholder("state", state));
-    }
-
-    /** Runs format reserved key status. */
-    String formatReservedKeyStatus(DungeonPlayerSession targetSession) {
-        if (targetSession == null || !targetSession.hasReservedAccessKey()) {
-            return LangUtils.getMessage("commands.player.status.labels.none", false);
-        }
-
-        String reservedDungeon = targetSession.getReservedAccessKeyDungeon();
-        return reservedDungeon == null || reservedDungeon.isBlank()
-                ? LangUtils.getMessage("commands.player.status.labels.none", false)
-                : reservedDungeon;
-    }
-
-    /** Runs format difficulty value. */
+/** Runs format difficulty value. */
     String formatDifficultyValue(String difficulty) {
         return difficulty == null || difficulty.isBlank()
-                ? LangUtils.getMessage("commands.player.status.labels.default-difficulty", false)
+                ? LangUtils.getMessage("general.labels.default-difficulty", false)
                 : difficulty;
     }
 
