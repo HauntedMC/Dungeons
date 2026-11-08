@@ -67,8 +67,8 @@ import java.util.regex.Pattern;
 /**
  * Global listener coordinating player session recovery and editor tool interactions.
  *
- * <p>This listener handles behavior that is not scoped to one live instance listener, such as
- * queue restore on join, function/room editor selection tools, and world bootstrap hooks.</p>
+ * <p>This listener handles behavior that is not scoped to one live instance listener, such as queue
+ * restore on join, function/room editor selection tools, and world bootstrap hooks.
  */
 public class DungeonListener implements Listener {
     private static final double MAX_FUNCTION_DISPLAY_DISTANCE_SQUARED = 0.75D * 0.75D;
@@ -248,6 +248,9 @@ public class DungeonListener implements Listener {
             return;
         }
 
+        if (!nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard.editor(player, playerSession))
+            return;
+
         if (!ItemUtils.isRoomTool(item)) {
             return;
         }
@@ -335,6 +338,9 @@ public class DungeonListener implements Listener {
             return;
         }
 
+        if (!nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard.editor(player, playerSession))
+            return;
+
         if (!(playerSession.getInstance() instanceof BranchingEditableInstance)) {
             return;
         }
@@ -414,6 +420,10 @@ public class DungeonListener implements Listener {
         Player player = event.getPlayer();
         DungeonPlayerSession playerSession = this.playerManager.get(player);
         if (playerSession != null && playerSession.isEditMode()) {
+            if (!nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard.editor(player, playerSession)) {
+                event.setCancelled(true);
+                return;
+            }
             ItemStack item = event.getItemInHand();
             if (ItemUtils.isFunctionTool(item) || ItemUtils.isRoomTool(item)) {
                 event.setCancelled(true);
@@ -429,6 +439,10 @@ public class DungeonListener implements Listener {
         Player player = event.getPlayer();
         DungeonPlayerSession playerSession = this.playerManager.get(player);
         if (playerSession != null && playerSession.isEditMode()) {
+            if (!nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard.editor(player, playerSession)) {
+                event.setCancelled(true);
+                return;
+            }
             ItemStack item = player.getInventory().getItemInMainHand();
             if (ItemUtils.isFunctionTool(item) || ItemUtils.isRoomTool(item)) {
                 if (event.getBlock().getType() != Material.AIR) {
@@ -496,6 +510,9 @@ public class DungeonListener implements Listener {
         Location blockLoc = clickedLocation.clone();
         blockLoc.setWorld(null);
 
+        if (!nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard.editor(player, playerSession))
+            return;
+
         DungeonFunction function = this.findFunctionAt(instance.getDungeon(), blockLoc);
         if (function != null) {
             this.openExistingFunctionEditor(player, playerSession, function);
@@ -542,6 +559,8 @@ public class DungeonListener implements Listener {
             return;
         }
 
+        if (!nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard.editor(player, playerSession))
+            return;
         DungeonFunction function = this.findFunctionByDisplay(instance, display);
         if (function == null) {
             return;
@@ -736,13 +755,15 @@ public class DungeonListener implements Listener {
             return false;
         }
 
+        if (!nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard.editor(player, playerSession))
+            return true;
         if (!this.pendingRoomNameInputs.add(playerId)) {
             return true;
         }
 
         try {
             String normalizedMessage = message.trim();
-            if (normalizedMessage.isEmpty()) {
+            if (normalizedMessage.isEmpty() || normalizedMessage.equalsIgnoreCase("cancel")) {
                 this.clearRoomNamePromptState(playerSession);
                 LangUtils.sendMessage(player, "editor.session.room-create-cancelled");
                 return true;

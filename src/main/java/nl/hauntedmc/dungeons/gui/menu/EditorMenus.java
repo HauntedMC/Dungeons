@@ -1,10 +1,4 @@
 package nl.hauntedmc.dungeons.gui.menu;
-
-import java.util.Locale;
-import java.lang.reflect.InvocationTargetException;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Map.Entry;
 import nl.hauntedmc.dungeons.content.function.GiveItemFunction;
 import nl.hauntedmc.dungeons.content.function.meta.CompositeFunction;
 import nl.hauntedmc.dungeons.content.instance.edit.BranchingEditableInstance;
@@ -35,13 +29,28 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
+import java.lang.reflect.InvocationTargetException;
+import java.util.Collection;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Map.Entry;
+
 /**
  * Inventory menu builders used by the dungeon editor.
  */
 public class EditorMenus {
+    public static GuiWindow editorWindow(String namespace, int size, String title) {
+        var window = new GuiWindow(namespace, size, title);
+        window.setAccessCheck(
+                player ->
+                        nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard.editor(
+                                player, RuntimeContext.playerSessions().get(player)));
+        return window;
+    }
+
     /** Builds and registers the function browser GUI. */
     public static void initializeFunctionMenu() {
-        GuiWindow gui = new GuiWindow("functionmenu", 27, "&8Select a Function");
+        GuiWindow gui = editorWindow("functionmenu", 27, "&8Select a Function");
         Button catButton =
                 new Button("category_dungeon", Material.MOSSY_COBBLESTONE, "&6Dungeon Functions");
         catButton.addLore(ColorUtils.colorize("&eFunctions relating to general"));
@@ -133,7 +142,7 @@ public class EditorMenus {
         for (FunctionCategory category : FunctionCategory.values()) {
             String catName = category.name().toLowerCase(Locale.ROOT);
             GuiWindow gui =
-                    new GuiWindow(
+                    editorWindow(
                             "functions_" + catName,
                             27,
                             "&8" + TextUtils.humanize(catName) + " Functions");
@@ -153,6 +162,21 @@ public class EditorMenus {
                             EditableInstance instance =
                                     playerSession.getInstance().asEditInstance();
                             if (instance != null) {
+                                if (nl.hauntedmc.dungeons.content.function.CommandFunction.class
+                                        .isAssignableFrom(
+                                                RuntimeContext.functionRegistry()
+                                                        .getFunctionClass(functionName))) {
+                                    try {
+                                        nl.hauntedmc.dungeons.runtime.staff.StaffPermissions
+                                                .require(
+                                                        player,
+                                                        "scripts",
+                                                        instance.getDungeon().getWorldName());
+                                    } catch (IllegalArgumentException denied) {
+                                        player.sendMessage("[Dungeons] " + denied.getMessage());
+                                        return;
+                                    }
+                                }
                                 try {
                                     if (playerSession.getTargetLocation() == null
                                             && playerSession.getActiveFunction()
@@ -199,7 +223,8 @@ public class EditorMenus {
                                     RuntimeContext.plugin()
                                             .getSLF4JLogger()
                                             .error(
-                                                    "Failed to create function '{}' from the function browser for player '{}'.",
+                                                    "Failed to create function '{}' from the"
+                                                        + " function browser for player '{}'.",
                                                     functionName,
                                                     player.getName(),
                                                     exception);
@@ -214,7 +239,7 @@ public class EditorMenus {
 
     /** Builds and registers the trigger browser GUI. */
     public static void initializeTriggerMenu() {
-        GuiWindow gui = new GuiWindow("triggermenu", 27, "&8Select a Trigger");
+        GuiWindow gui = editorWindow("triggermenu", 27, "&8Select a Trigger");
         Button button = new Button("trigger_none", Material.BARRIER, "&cNONE");
         button.addLore(ColorUtils.fullColor("&cCreate a function without a"));
         button.addLore(ColorUtils.fullColor("&ctrigger."));
@@ -372,7 +397,7 @@ public class EditorMenus {
         for (TriggerCategory category : TriggerCategory.values()) {
             String catName = category.name().toLowerCase(Locale.ROOT);
             GuiWindow gui =
-                    new GuiWindow(
+                    editorWindow(
                             "triggers_" + catName,
                             27,
                             "&8" + TextUtils.humanize(catName) + " Triggers");
@@ -447,7 +472,8 @@ public class EditorMenus {
                                     RuntimeContext.plugin()
                                             .getSLF4JLogger()
                                             .error(
-                                                    "Failed to create trigger '{}' from the trigger browser for player '{}'.",
+                                                    "Failed to create trigger '{}' from the trigger"
+                                                        + " browser for player '{}'.",
                                                     triggerName,
                                                     player.getName(),
                                                     exception);
@@ -462,7 +488,7 @@ public class EditorMenus {
 
     /** Builds and registers the trigger item-selection GUI. */
     public static void initializeItemSelectTriggerMenu() {
-        GuiWindow gui = new GuiWindow("selectitem_trigger", 9, "&8Put your item here");
+        GuiWindow gui = editorWindow("selectitem_trigger", 9, "&8Put your item here");
         gui.setCancelClick(false);
 
         for (int i = 0; i < 9; i++) {
@@ -501,7 +527,7 @@ public class EditorMenus {
 
     /** Builds and registers the function item-selection GUI. */
     public static void initializeItemSelectFunctionMenu() {
-        GuiWindow gui = new GuiWindow("selectitem_function", 9, "&8Put your item here");
+        GuiWindow gui = editorWindow("selectitem_function", 9, "&8Put your item here");
         gui.setCancelClick(false);
 
         for (int i = 0; i < 9; i++) {
@@ -547,7 +573,7 @@ public class EditorMenus {
 
     /** Builds and registers the trigger-condition browser GUI. */
     private static void initializeConditionsBrowser() {
-        GuiWindow gui = new GuiWindow("conditionsmenu", 54, "&8Select a Condition");
+        GuiWindow gui = editorWindow("conditionsmenu", 54, "&8Select a Condition");
         int i = 0;
 
         for (Entry<String, MenuButton> pair :
@@ -586,7 +612,8 @@ public class EditorMenus {
                             RuntimeContext.plugin()
                                     .getSLF4JLogger()
                                     .error(
-                                            "Failed to create condition '{}' from the condition browser for player '{}'.",
+                                            "Failed to create condition '{}' from the condition"
+                                                + " browser for player '{}'.",
                                             conditionName,
                                             player.getName(),
                                             exception);
@@ -599,7 +626,7 @@ public class EditorMenus {
 
     /** Builds and registers the trigger-condition edit GUI. */
     private static void initializeConditionsEditor() {
-        GuiWindow gui = new GuiWindow("editcondition", 54, "&8Edit a Condition");
+        GuiWindow gui = editorWindow("editcondition", 54, "&8Edit a Condition");
         gui.addOpenAction(
                 "populate",
                 event -> {
@@ -643,7 +670,7 @@ public class EditorMenus {
 
     /** Builds and registers the trigger-condition removal GUI. */
     private static void initializeConditionsRemover() {
-        GuiWindow gui = new GuiWindow("removecondition", 54, "&8Remove a Condition");
+        GuiWindow gui = editorWindow("removecondition", 54, "&8Remove a Condition");
         gui.addOpenAction(
                 "populate", event -> reloadConditionsRemovalGui(gui, (Player) event.getPlayer()));
     }
@@ -693,7 +720,7 @@ public class EditorMenus {
 
     /** Builds and registers the trigger-gate browser GUI. */
     private static void initializeGateTriggerBrowser() {
-        GuiWindow gui = new GuiWindow("gatetriggersmenu", 54, "&8Select a Trigger");
+        GuiWindow gui = editorWindow("gatetriggersmenu", 54, "&8Select a Trigger");
         int i = 0;
 
         for (Entry<String, MenuButton> pair :
@@ -747,7 +774,7 @@ public class EditorMenus {
 
     /** Builds and registers the trigger-gate edit GUI. */
     private static void initializeGateTriggerEditor() {
-        GuiWindow gui = new GuiWindow("editgatetrigger", 54, "&8Edit a Trigger");
+        GuiWindow gui = editorWindow("editgatetrigger", 54, "&8Edit a Trigger");
         gui.addOpenAction(
                 "populate",
                 event -> {
@@ -804,7 +831,7 @@ public class EditorMenus {
 
     /** Builds and registers the trigger-gate removal GUI. */
     private static void initializeGateTriggerRemover() {
-        GuiWindow gui = new GuiWindow("removegatetrigger", 54, "&8Remove a Trigger");
+        GuiWindow gui = editorWindow("removegatetrigger", 54, "&8Remove a Trigger");
         gui.addOpenAction(
                 "populate", event -> reloadTriggerRemovalGui(gui, (Player) event.getPlayer()));
     }
@@ -855,7 +882,7 @@ public class EditorMenus {
 
     /** Builds and registers the composite-function edit GUI. */
     private static void initializeCompositeFunctionEditor() {
-        GuiWindow gui = new GuiWindow("editmultifunction", 54, "&8Edit a Function");
+        GuiWindow gui = editorWindow("editmultifunction", 54, "&8Edit a Function");
         gui.addOpenAction(
                 "populate",
                 event -> {
@@ -913,7 +940,7 @@ public class EditorMenus {
 
     /** Builds and registers the composite-function removal GUI. */
     private static void initializeCompositeFunctionRemover() {
-        GuiWindow gui = new GuiWindow("removemultifunction", 54, "&8Remove a Function");
+        GuiWindow gui = editorWindow("removemultifunction", 54, "&8Remove a Function");
         gui.addOpenAction(
                 "populate",
                 event -> reloadCompositeFunctionRemovalGui(gui, (Player) event.getPlayer()));
@@ -959,7 +986,7 @@ public class EditorMenus {
 
     /** Builds and registers the composite-function trigger-link GUI. */
     private static void initializeCompositeFunctionTriggerEditor() {
-        GuiWindow gui = new GuiWindow("editmultifunctiontriggers", 54, "&8Edit Function Triggers");
+        GuiWindow gui = editorWindow("editmultifunctiontriggers", 54, "&8Edit Function Triggers");
         gui.addOpenAction(
                 "populate",
                 event -> {

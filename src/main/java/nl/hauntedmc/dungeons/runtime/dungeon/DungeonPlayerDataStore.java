@@ -195,6 +195,39 @@ public final class DungeonPlayerDataStore {
         record(id).set("Finished", completed);
     }
 
+    /** Captures staged indexes, writes the candidate, then commits indexes after durability. */
+    public void correct(UUID id, java.util.function.Consumer<ConfigurationFile> change) {
+        requireWritable(id);
+        var candidate = new ConfigurationFile(plugin);
+        try {
+            var existing = records.get(id);
+            if (existing != null) candidate.loadFromString(existing.saveToString());
+            Date reset = access.get(id);
+            candidate.set("AccessCooldown", reset == null ? null : reset.getTime());
+            if (rewards.containsKey(id)) candidate.set("RewardsInfo", rewards.get(id));
+            change.accept(candidate);
+            candidate.save(target(id));
+            records.put(id, candidate);
+            loadCooldowns(id);
+        } catch (org.bukkit.configuration.InvalidConfigurationException failure) {
+            throw new IllegalStateException("Cannot stage player correction", failure);
+        }
+    }
+
+    public boolean isReadOnly(UUID id) {
+        return readOnly.contains(id);
+    }
+
+    public Map<String, Object> inspect(UUID id) {
+        var result = new LinkedHashMap<String, Object>();
+        result.put("completed", isCompleted(id));
+        result.put("access cooldown", Objects.toString(getAccessCooldown(id), "none"));
+        result.put(
+                "reward cooldowns", rewards.containsKey(id) && rewards.get(id).hasLootOnCooldown());
+        result.put("protected record", readOnly.contains(id));
+        return Map.copyOf(result);
+    }
+
     private static void requireOwnerThread() {
         if (org.bukkit.Bukkit.getServer() != null && !org.bukkit.Bukkit.isPrimaryThread()) {
             throw new IllegalStateException("Dungeon player records require the server thread");

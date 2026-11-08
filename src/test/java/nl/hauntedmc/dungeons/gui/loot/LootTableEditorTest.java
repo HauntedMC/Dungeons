@@ -131,6 +131,7 @@ class LootTableEditorTest {
         final Runnable replaced;
 
         Fixture() {
+            when(player.hasPermission("dungeons.loottables")).thenReturn(true);
             when(repository.get("first")).thenReturn(table);
             when(repository.isWritable()).thenReturn(true);
             when(repository.saveTablesConfig(table)).thenReturn(true);

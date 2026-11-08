@@ -56,6 +56,8 @@ public final class AcceptancePlugin extends JavaPlugin {
                         : List.of(
                                 new Scenario("packaged-bootstrap", this::bootstrap),
                                 new Scenario(
+                                        "native-staff-operations", () -> NativeStaff.run(this)),
+                                new Scenario(
                                         "native-item-and-graph-persistence",
                                         () -> NativePersistence.run(this)),
                                 new Scenario(

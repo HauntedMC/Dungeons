@@ -6,15 +6,15 @@ This folder is the practical guide for running, maintaining, and contributing to
 
 If you run the plugin:
 
+- [Staff operations](STAFF_OPERATIONS.md): dashboard, permissions, maintenance, player support, and recovery.
 - [Configuration](CONFIGURATION.md): global config, dungeon defaults, and safe rollout flow.
 - [Architecture](ARCHITECTURE.md): startup sequence, runtime graph, and lifecycle responsibilities.
 
 If you contribute code:
 
 - [Development](DEVELOPMENT.md): local setup and day-to-day workflow.
-- [Paper acceptance](ACCEPTANCE_TESTS.md): real-server contracts, restart checks, reports, and limits.
-- [Core contracts](CORE_TEST_CONTRACTS.md): executable guarantees, coverage measurements, and boundaries.
-- [Mechanic coverage](MECHANIC_TEST_COVERAGE.md): execution contracts for every registered mechanic.
+- [System reliability](SYSTEM_RELIABILITY.md): persistence, runtime boundaries, and recovery.
+- [Staff validation](STAFF_VALIDATION.md): regression fixes, class coverage, and native acceptance results.
 - [Contributing Guide](../CONTRIBUTING.md): pull request expectations.
 
 ## Releases

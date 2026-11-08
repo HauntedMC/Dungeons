@@ -1,9 +1,7 @@
 package nl.hauntedmc.dungeons.gui.menu;
-
-import java.util.List;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
-import nl.hauntedmc.dungeons.generation.room.Connector;
 import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
+import nl.hauntedmc.dungeons.generation.room.Connector;
 import nl.hauntedmc.dungeons.generation.room.WhitelistEntry;
 import nl.hauntedmc.dungeons.gui.framework.buttons.Button;
 import nl.hauntedmc.dungeons.gui.framework.window.GuiInventory;
@@ -19,6 +17,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+
+import java.util.List;
 
 /**
  * Inventory menu builders for branching room editing.
@@ -46,10 +46,19 @@ public class RoomMenus {
         }
 
         GuiWindow tableMenu =
-                new GuiWindow(
+                EditorMenus.editorWindow(
                         "whitelist_" + dungeon.getWorldName() + "_" + room.getNamespace(),
                         54,
                         "&8Edit Room Whitelist");
+        tableMenu.setAccessCheck(
+                player -> {
+                    var session = RuntimeContext.playerSessions().get(player);
+                    return session != null
+                            && session.getInstance() != null
+                            && session.getInstance().getDungeon() == dungeon
+                            && nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard.editor(
+                                    player, session);
+                });
         tableMenu.setCancelClick(false);
         tableMenu.addOpenAction(
                 "load",
@@ -300,7 +309,7 @@ public class RoomMenus {
         }
 
         GuiWindow tableMenu =
-                new GuiWindow("connector_whitelist", 54, "&8Edit Connector Whitelist");
+                EditorMenus.editorWindow("connector_whitelist", 54, "&8Edit Connector Whitelist");
         tableMenu.setCancelClick(false);
         tableMenu.addOpenAction(
                 "load",

@@ -141,7 +141,8 @@ final class InstancePreparation implements PreparationRegistry.Pending {
                 && session.getPlayer() == player
                 && player.isOnline()
                 && session.isAwaitingDungeon()
-                && session.getInstance() == null;
+                && session.getInstance() == null
+                && !session.isObserving();
     }
 
     private boolean validateAdmission() {

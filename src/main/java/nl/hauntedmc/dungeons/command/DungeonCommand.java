@@ -71,6 +71,12 @@ import java.util.UUID;
  * keep their existing aliases while they are extracted incrementally.
  */
 public final class DungeonCommand implements TabExecutor {
+    private StaffCommandHandler staffCommandHandler;
+
+    public void setStaffCommandHandler(StaffCommandHandler handler) {
+        this.staffCommandHandler = handler;
+    }
+
     private final DungeonsPlugin plugin;
     private final PlayerSessionRegistry playerManager;
     private final DungeonRepository dungeonManager;
@@ -153,7 +159,21 @@ public final class DungeonCommand implements TabExecutor {
             return true;
         }
 
-        return this.handleCommand(sender, args);
+        try {
+            if (this.staffCommandHandler != null
+                    && this.staffCommandHandler.handleLegacy(sender, args)) return true;
+            return this.handleCommand(sender, args);
+        } catch (IllegalArgumentException rejected) {
+            sender.sendMessage(
+                    net.kyori.adventure.text.Component.text("[Dungeons] " + rejected.getMessage()));
+            return true;
+        } catch (RuntimeException failure) {
+            this.plugin
+                    .getSLF4JLogger()
+                    .error("Dungeon command failed for {}", sender.getName(), failure);
+            sender.sendMessage("[Dungeons] Change failed; check the server log before retrying.");
+            return true;
+        }
     }
 
     /**
@@ -169,6 +189,10 @@ public final class DungeonCommand implements TabExecutor {
             return null;
         }
 
+        if (this.staffCommandHandler != null
+                && args.length > 1
+                && args[0].equalsIgnoreCase("admin"))
+            return this.staffCommandHandler.handleTabComplete(sender, args);
         List<String> tabCompletes = this.handleTabComplete(sender, args);
         if (tabCompletes == null && args.length == 1) {
             return new ArrayList<>();
@@ -178,17 +202,28 @@ public final class DungeonCommand implements TabExecutor {
     }
 
     /**
-     * Runs handle command.
-     */
+         * Runs handle command.
+         */
     private boolean handleCommand(CommandSender sender, String[] args) {
         if (args.length == 0) {
             this.sendRootHelp(sender);
+            if (this.staffCommandHandler != null
+                    && nl.hauntedmc.dungeons.runtime.staff.StaffPermissions.allows(
+                            sender, "inspect", null))
+                sender.sendMessage(
+                        net.kyori.adventure.text.Component.text("[Staff dashboard: /dungeon admin]")
+                                .clickEvent(
+                                        net.kyori.adventure.text.event.ClickEvent.runCommand(
+                                                "/dungeon admin")));
             return true;
         }
 
         // Keep the first-level command dispatch in one switch so permissions, help behavior, and
         // root subcommand names stay easy to audit from a single place.
         return switch (args[0].toLowerCase(Locale.ROOT)) {
+            case "admin" ->
+                    this.staffCommandHandler == null
+                            || this.staffCommandHandler.handleCommand(sender, args);
             case "help" -> this.handleHelpCommand(sender, args);
             case "list" -> this.handleListCommand(sender, args);
             case "rewards" -> this.handleRewardsCommand(sender, args);
@@ -236,8 +271,8 @@ public final class DungeonCommand implements TabExecutor {
     }
 
     /**
-     * Runs handle tab complete.
-     */
+         * Runs handle tab complete.
+         */
     private List<String> handleTabComplete(CommandSender sender, String[] args) {
         if (args.length >= 1 && args[0].equalsIgnoreCase("config")) {
             return this.configCommandHandler.handleTabComplete(sender, args);
@@ -270,6 +305,9 @@ public final class DungeonCommand implements TabExecutor {
             }
 
             CommandArguments.addMatchingLiteralOptions(options, query, "help");
+            if (nl.hauntedmc.dungeons.runtime.staff.StaffPermissions.allows(
+                    sender, "inspect", null))
+                CommandArguments.addMatchingLiteralOptions(options, query, "admin");
             if (playerSender) {
                 CommandArguments.addMatchingLiteralOptions(options, query, "leave");
             }
@@ -816,7 +854,8 @@ public final class DungeonCommand implements TabExecutor {
             this.plugin
                     .getSLF4JLogger()
                     .error(
-                            "Failed to unload imported source world '{}' before copying it into a dungeon folder.",
+                            "Failed to unload imported source world '{}' before copying it into a"
+                                + " dungeon folder.",
                             worldName);
             this.runImportFailure(sender);
             return true;
@@ -830,7 +869,8 @@ public final class DungeonCommand implements TabExecutor {
                                 this.plugin
                                         .getSLF4JLogger()
                                         .error(
-                                                "Refusing to import world '{}' because the target dungeon folder '{}' already exists.",
+                                                "Refusing to import world '{}' because the target"
+                                                    + " dungeon folder '{}' already exists.",
                                                 worldName,
                                                 saveFolder.getAbsolutePath());
                                 this.runImportFailure(sender);
@@ -854,7 +894,8 @@ public final class DungeonCommand implements TabExecutor {
                                 this.plugin
                                         .getSLF4JLogger()
                                         .error(
-                                                "Failed to import world '{}' into dungeon folder '{}'.",
+                                                "Failed to import world '{}' into dungeon folder"
+                                                    + " '{}'.",
                                                 worldName,
                                                 saveFolder.getAbsolutePath(),
                                                 exception);
@@ -1017,8 +1058,8 @@ public final class DungeonCommand implements TabExecutor {
     }
 
     /**
-     * Runs handle save command.
-     */
+         * Runs handle save command.
+         */
     private boolean handleSaveCommand(CommandSender sender) {
         if (!(sender instanceof Player player)) {
             return false;
@@ -1325,6 +1366,8 @@ public final class DungeonCommand implements TabExecutor {
         dungeon.setSaveConfig("dungeon.enabled", enabled);
         if (!enabled) {
             this.clearQueuedStartsForDisabledDungeon(dungeon);
+            if (dungeon.getRuntime().staffOperations() != null)
+                dungeon.getRuntime().staffOperations().cancelStarts(dungeon.getWorldName());
         }
 
         LangUtils.sendMessage(
@@ -1983,7 +2026,8 @@ public final class DungeonCommand implements TabExecutor {
                                 this.plugin
                                         .getSLF4JLogger()
                                         .error(
-                                                "Refusing to create dungeon '{}' because the target folder '{}' already exists.",
+                                                "Refusing to create dungeon '{}' because the target"
+                                                    + " folder '{}' already exists.",
                                                 worldName,
                                                 saveFolder.getAbsolutePath());
                                 this.cleanupDirectory(worldFolder, "temporary world folder");
@@ -2031,7 +2075,8 @@ public final class DungeonCommand implements TabExecutor {
                                 this.plugin
                                         .getSLF4JLogger()
                                         .error(
-                                                "Failed to create dungeon '{}' from world folder '{}'.",
+                                                "Failed to create dungeon '{}' from world folder"
+                                                    + " '{}'.",
                                                 worldName,
                                                 worldFolder.getAbsolutePath(),
                                                 exception);
@@ -2068,7 +2113,9 @@ public final class DungeonCommand implements TabExecutor {
                                                     this.plugin
                                                             .getSLF4JLogger()
                                                             .warn(
-                                                                    "Dungeon creation failed for '{}': unknown dungeon type '{}'.",
+                                                                    "Dungeon creation failed for"
+                                                                        + " '{}': unknown dungeon"
+                                                                        + " type '{}'.",
                                                                     worldName,
                                                                     dungeonType);
                                                     return;
@@ -2288,7 +2335,7 @@ public final class DungeonCommand implements TabExecutor {
                                 "commands.dungeon.status.instance-line",
                                 false,
                                 LangUtils.placeholder(
-                                        "instance", instance.getInstanceWorld().getName())));
+                                        "instance", instance.getInstanceWorldName())));
                 if (instance.isEditInstance()) {
                     player.sendMessage(
                             LangUtils.getMessage(
@@ -2361,6 +2408,11 @@ public final class DungeonCommand implements TabExecutor {
         }
 
         DungeonPlayerSession playerSession = this.playerManager.get(player);
+        if (playerSession != null && playerSession.isObserving()) {
+            playerSession.stopObservation();
+            player.sendMessage("[Dungeons] Observation ended");
+            return true;
+        }
         if (playerSession.getInstance() == null) {
             DungeonQueueEntry queue = this.queueManager.getQueue(playerSession);
             if (queue != null) {

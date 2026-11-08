@@ -141,6 +141,8 @@ grep -Fq 'legacy_side:' "$migration_map/config.yml" || fail 'Named branch was no
 grep -Fq 'straightness: 0.65' "$dungeon_data/config_default.yml" || fail 'Generator template setting was not migrated'
 grep -Fq 'seal_open_connectors_with: AIR' "$dungeon_data/config_default.yml" || fail 'Connector setting was not migrated'
 
+printf 'dungeon admin maintenance config-migration on Acceptance configuration mutations\n' >&"$paper_input_fd"
+wait_for_log 'Maintenance on for config-migration'
 printf 'dungeon config config-migration branch.add command_side\n' >&"$paper_input_fd"
 wait_for_log 'branch.add.*command_side'
 grep -Fq 'command_side:' "$migration_map/config.yml" || fail 'Branch command did not save to config.yml'
@@ -158,6 +160,8 @@ wait_for_log 'layout.*branching'
 grep -Fq 'layout: branching' "$migration_map/config.yml" || fail 'Layout switch back was not saved'
 [[ ! -f "$migration_map/generation.yml" ]] || fail 'Commands recreated the legacy generation file'
 before_lines=$(wc -l <"$paper_log")
+printf 'dungeon admin maintenance config-migration off Acceptance configuration complete\n' >&"$paper_input_fd"
+wait_for_log 'Maintenance off for config-migration'
 printf 'dungeon help\n' >&"$paper_input_fd"
 local_deadline=$((SECONDS + 45))
 while ((SECONDS < local_deadline)); do

@@ -17,7 +17,6 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.PlayerInventory;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,6 +31,12 @@ public class GuiWindow implements Listener {
     private final int size;
     private final String display;
     private boolean cancelClick = true;
+    private java.util.function.Predicate<Player> accessCheck = player -> true;
+
+    public final void setAccessCheck(java.util.function.Predicate<Player> check) {
+        this.accessCheck = java.util.Objects.requireNonNull(check);
+    }
+
     private final HashMap<Player, GuiInventory> inventories;
     private final Set<Player> closing = new HashSet<>();
     private final HashMap<Integer, Button> buttons;
@@ -112,6 +117,10 @@ public class GuiWindow implements Listener {
 
     /** Opens this window for a player, creating a player snapshot when needed. */
     public final void open(Player player) {
+        if (!this.accessCheck.test(player)) {
+            player.sendMessage("[Dungeons] Access to this interface is no longer available.");
+            return;
+        }
         GuiInventory gui;
         if (this.inventories.containsKey(player) && !this.closing.contains(player)) {
             gui = this.inventories.get(player);
@@ -166,6 +175,10 @@ public class GuiWindow implements Listener {
         Player player = (Player) event.getWhoClicked();
         GuiInventory gui = this.inventories.get(player);
         if (gui != null) {
+            if (event.getInventory() == gui.inventory() && !this.accessCheck.test(player)) {
+                event.setCancelled(true);
+                return;
+            }
             boolean clickedManagedButton = gui.buttons().containsKey(event.getRawSlot());
             if ((event.getClick() == ClickType.SHIFT_LEFT
                             || event.getClick() == ClickType.SHIFT_RIGHT)
@@ -183,7 +196,7 @@ public class GuiWindow implements Listener {
                 int slot = event.getRawSlot();
                 Button button = gui.buttons().get(slot);
                 if (button != null) {
-                    button.click(event);
+                    if (this.accessCheck.test(player)) button.click(event);
                 }
             }
         }
@@ -192,26 +205,13 @@ public class GuiWindow implements Listener {
     /** Applies click-cancellation policy for this window inventory. */
     @EventHandler(priority = EventPriority.HIGHEST)
     protected void onClick(InventoryClickEvent event) {
-        if (!(event.getClickedInventory() instanceof PlayerInventory)) {
-            Player player = (Player) event.getWhoClicked();
-            GuiInventory gui = this.inventories.get(player);
-            if (gui != null) {
-                boolean clickedManagedButton = gui.buttons().containsKey(event.getRawSlot());
-                if ((event.getClick() == ClickType.SHIFT_LEFT
-                                || event.getClick() == ClickType.SHIFT_RIGHT)
-                        && event.getInventory() == gui.inventory()
-                        && this.cancelClick) {
-                    event.setCancelled(true);
-                }
-
-                if (event.getClickedInventory() == gui.inventory()
-                        || event.getInventory() == gui.inventory()) {
-                    if (this.cancelClick || clickedManagedButton) {
-                        event.setCancelled(true);
-                    }
-                }
-            }
-        }
+        Player player = (Player) event.getWhoClicked();
+        GuiInventory gui = this.inventories.get(player);
+        if (gui == null || event.getInventory() != gui.inventory()) return;
+        if (!this.accessCheck.test(player)
+                || this.cancelClick
+                || gui.buttons().containsKey(event.getRawSlot()))
+            event.setCancelled(true);
     }
 
     /** Prevents drag operations that modify this window inventory. */
@@ -223,7 +223,7 @@ public class GuiWindow implements Listener {
             if (event.getInventory() == gui.inventory()) {
                 boolean touchesManagedButton =
                         event.getRawSlots().stream().anyMatch(gui.buttons()::containsKey);
-                if (this.cancelClick || touchesManagedButton) {
+                if (!this.accessCheck.test(player) || this.cancelClick || touchesManagedButton) {
                     event.setCancelled(true);
                 }
             }
@@ -237,7 +237,10 @@ public class GuiWindow implements Listener {
         GuiInventory gui = this.inventories.get(player);
         if (gui != null) {
             if (event.getInventory() == gui.inventory()) {
-
+                if (!this.accessCheck.test(player)) {
+                    event.setCancelled(true);
+                    return;
+                }
                 for (Action<InventoryOpenEvent> action : this.openActions.values()) {
                     action.run(event);
                 }
@@ -255,7 +258,8 @@ public class GuiWindow implements Listener {
         try {
             // Save callbacks may inspect the view until they finish. Reentrant opens receive a
             // fresh view so the old close cannot remove a newly opened inventory.
-            for (Action<InventoryCloseEvent> action : this.closeActions.values()) action.run(event);
+            if (this.accessCheck.test(player))
+                for (Action<InventoryCloseEvent> action : this.closeActions.values()) action.run(event);
         } finally {
             this.inventories.remove(player, gui);
             this.closing.remove(player);

@@ -1,7 +1,7 @@
 package nl.hauntedmc.dungeons.model.dungeon;
 
-import nl.hauntedmc.dungeons.model.instance.EditableInstance;
 import nl.hauntedmc.dungeons.model.instance.DungeonInstance.DisposalState;
+import nl.hauntedmc.dungeons.model.instance.EditableInstance;
 import nl.hauntedmc.dungeons.runtime.instance.PreparationRegistry;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
@@ -25,6 +25,12 @@ final class EditorPreparation implements PreparationRegistry.Pending {
     private EditableInstance editor;
     private boolean created;
     private boolean admitted;
+    private final java.util.concurrent.CompletableFuture<Boolean> result =
+            new java.util.concurrent.CompletableFuture<>();
+
+    java.util.concurrent.CompletableFuture<Boolean> result() {
+        return result.copy();
+    }
 
     EditorPreparation(DungeonDefinition dungeon, UUID playerId, long timeoutSeconds) {
         this.dungeon = dungeon;
@@ -34,12 +40,25 @@ final class EditorPreparation implements PreparationRegistry.Pending {
 
     void start() {
         // A reload can replace the definition before a queued start reaches the owner thread.
-        if (dungeon.runtime().dungeonCatalog().get(dungeon.getWorldName()) != dungeon) return;
+        if (dungeon.runtime().dungeonCatalog().get(dungeon.getWorldName()) != dungeon) {
+            result.complete(false);
+            return;
+        }
         session = dungeon.playerSessions().get(playerId);
-        if (session == null || session.isExpired()) return;
+        if (session == null || session.isExpired()) {
+            result.complete(false);
+            return;
+        }
         player = session.getPlayer();
-        if (!player.isOnline() || session.getInstance() != null || session.isAwaitingDungeon()) return;
-        if (!dungeon.runtime().preparations().register(session, this)) return;
+        if (!player.isOnline() || session.getInstance() != null || session.isAwaitingDungeon()
+                || session.isObserving()) {
+            result.complete(false);
+            return;
+        }
+        if (!dungeon.runtime().preparations().register(session, this)) {
+            result.complete(false);
+            return;
+        }
         session.setAwaitingDungeon(true);
         try {
             if (remaining() == 0L) {
@@ -111,6 +130,11 @@ final class EditorPreparation implements PreparationRegistry.Pending {
             fail("instance.editor.open-failed");
             return;
         }
+        if (dungeon.getRuntime().staffOperations() != null
+                && !nl.hauntedmc.dungeons.runtime.staff.StaffPermissions.allows(player, "edit", dungeon.getWorldName())) {
+            fail("instance.editor.open-failed");
+            return;
+        }
         try {
             editor.addPlayer(session);
             admitted = session.getInstance() == editor;
@@ -118,6 +142,7 @@ final class EditorPreparation implements PreparationRegistry.Pending {
             if (admitted) {
                 dungeon.runtime().preparations().remove(session, this);
                 session.setAwaitingDungeon(false);
+                result.complete(true);
             } else cancel();
         }
     }
@@ -151,6 +176,7 @@ final class EditorPreparation implements PreparationRegistry.Pending {
 
     private void cleanup() {
         if (admitted) return;
+        result.complete(false);
         if (editor != null && session != null && session.getInstance() == editor)
             editor.removePlayer(session, true);
         // Only this request's creation can be discarded; never target a replacement editor.

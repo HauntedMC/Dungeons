@@ -40,7 +40,7 @@ import org.bukkit.scheduler.BukkitRunnable;
  * Base listener for one live dungeon instance world.
  *
  * <p>This class enforces shared world-entry, membership, spectator, and key-item rules for both
- * playable and editable instance types.</p>
+ * playable and editable instance types.
  */
 public class InstanceListener {
     private final DungeonInstance instance;
@@ -407,7 +407,8 @@ public class InstanceListener {
      * Returns whether a player currently has valid access to remain in this world.
      */
     private boolean hasAuthorizedWorldAccess(Player player, DungeonPlayerSession playerSession) {
-        return this.hasBypassJoinPermission(player)
+        return playerSession != null && playerSession.getObservingInstance() == this.instance
+                || this.hasBypassJoinPermission(player)
                 || playerSession != null && this.isCurrentInstanceMember(playerSession);
     }
 

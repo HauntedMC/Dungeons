@@ -60,6 +60,8 @@ final class CoreBootstrap {
      */
     void initializeManagers() {
         DungeonsPlugin plugin = this.runtime.environment().plugin();
+        this.runtime.setStaffOperations(
+                new nl.hauntedmc.dungeons.runtime.staff.StaffOperations(this.runtime));
         this.runtime.setPreparations(new PreparationRegistry());
         this.runtime.setGuiService(new GuiService(plugin));
         this.runtime.setPlayerSessions(new PlayerSessionRegistry(plugin));
@@ -242,7 +244,8 @@ final class CoreBootstrap {
                     .environment()
                     .logger()
                     .warn(
-                            "Skipping plugin config sync because the bundled config template is empty.");
+                            "Skipping plugin config sync because the bundled config template is"
+                                + " empty.");
             return;
         }
 

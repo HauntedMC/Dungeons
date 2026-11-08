@@ -1,8 +1,4 @@
 package nl.hauntedmc.dungeons.runtime.queue;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
@@ -21,11 +17,15 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
 /**
  * Coordinates queue creation, validation, and queue-to-instance startup.
  *
  * <p>The registry stores queue state, but this class owns the workflow rules around team
- * eligibility, required keys, and retrying queued starts as capacity becomes available.</p>
+ * eligibility, required keys, and retrying queued starts as capacity becomes available.
  */
 public final class DungeonQueueCoordinator {
     private final DungeonsPlugin plugin;
@@ -62,6 +62,21 @@ public final class DungeonQueueCoordinator {
      * Queues or starts a dungeon for a solo player or their active team.
      */
     public void sendToDungeon(Player player, String dungeonName, String difficulty) {
+        DungeonDefinition requested =
+                this.dungeonManager == null ? null : this.dungeonManager.get(dungeonName);
+        if (requested != null
+                && requested.getRuntime() != null
+                && requested.getRuntime().staffOperations() != null) {
+            String blocked =
+                    requested
+                            .getRuntime()
+                            .staffOperations()
+                            .entryBlock(player.getUniqueId(), dungeonName);
+            if (blocked != null) {
+                player.sendMessage("[Dungeons] " + blocked);
+                return;
+            }
+        }
         DungeonTeam team = this.teamManager.getTeam(player.getUniqueId());
         if (team != null) {
             if (!team.isLeader(player.getUniqueId())) {
@@ -87,7 +102,19 @@ public final class DungeonQueueCoordinator {
                 return false;
             }
 
-            if (dungeonPlayer.getInstance() != null) {
+            if (queue.getDungeon().getRuntime() != null
+                    && queue.getDungeon().getRuntime().staffOperations() != null) {
+                String blocked =
+                        queue.getDungeon()
+                                .getRuntime()
+                                .staffOperations()
+                                .entryBlock(playerId, queue.getDungeon().getWorldName());
+                if (blocked != null) {
+                    player.sendMessage("[Dungeons] " + blocked);
+                    return false;
+                }
+            }
+            if (dungeonPlayer.getInstance() != null || dungeonPlayer.isObserving()) {
                 LangUtils.sendMessage(player, "commands.play.already-in-dungeon-self");
                 return false;
             }
@@ -128,7 +155,8 @@ public final class DungeonQueueCoordinator {
             this.plugin
                     .getSLF4JLogger()
                     .warn(
-                            "Failed to queue player '{}' for dungeon '{}': player state or dungeon was missing.",
+                            "Failed to queue player '{}' for dungeon '{}': player state or dungeon"
+                                + " was missing.",
                             player.getName(),
                             dungeonName);
             return;
@@ -180,7 +208,8 @@ public final class DungeonQueueCoordinator {
             this.plugin
                     .getSLF4JLogger()
                     .warn(
-                            "Failed to queue team led by '{}' for dungeon '{}': player state or dungeon was missing.",
+                            "Failed to queue team led by '{}' for dungeon '{}': player state or"
+                                + " dungeon was missing.",
                             leaderName,
                             dungeonName);
             return;
@@ -279,7 +308,8 @@ public final class DungeonQueueCoordinator {
                 this.plugin
                         .getSLF4JLogger()
                         .warn(
-                                "Refunding stale reserved access key for player '{}' from dungeon '{}' before preparing '{}'.",
+                                "Refunding stale reserved access key for player '{}' from dungeon"
+                                    + " '{}' before preparing '{}'.",
                                 player.getName(),
                                 dungeonPlayer.getReservedAccessKeyDungeon(),
                                 dungeon.getWorldName());
@@ -343,7 +373,8 @@ public final class DungeonQueueCoordinator {
                 this.plugin
                         .getSLF4JLogger()
                         .warn(
-                                "Failed to reserve an access key for player '{}' while preparing dungeon '{}'.",
+                                "Failed to reserve an access key for player '{}' while preparing"
+                                    + " dungeon '{}'.",
                                 player.getName(),
                                 dungeon.getWorldName());
                 return false;
@@ -461,7 +492,7 @@ public final class DungeonQueueCoordinator {
             return false;
         }
 
-        if (dungeonPlayer.getInstance() != null) {
+        if (dungeonPlayer.getInstance() != null || dungeonPlayer.isObserving()) {
             LangUtils.sendMessage(player, "commands.play.already-in-dungeon-self");
             return false;
         }
@@ -887,7 +918,42 @@ public final class DungeonQueueCoordinator {
         return queue.getQueuedPlayer().getPlayer();
     }
 
+    /** Read-only explanations use the same requirements as launch validation. */
+    public List<String> explain(DungeonQueueEntry queue) {
+        var reasons = new ArrayList<String>();
+        var dungeon = queue.getDungeon();
+        if (!dungeon.isEnabled()) reasons.add("disabled or in maintenance");
+        if (dungeon.isSaving()) reasons.add("editor save in progress");
+        if (!dungeon.canEverFitTeamSize(queue.getPlayers().size()))
+            reasons.add("team exceeds dungeon capacity");
+        if (!dungeon.hasAvailableInstances()) reasons.add("dungeon instance limit");
+        if (this.activeInstanceManager.getMaxGlobalInstances() > 0
+                && this.activeInstanceManager.getRegisteredInstanceCount()
+                        >= this.activeInstanceManager.getMaxGlobalInstances())
+            reasons.add("global instance limit");
+        for (UUID id : queue.getPlayers()) {
+            var session = this.playerManager.get(id);
+            if (session == null || !session.getPlayer().isOnline()) {
+                reasons.add(id + " offline");
+                continue;
+            }
+            Player player = session.getPlayer();
+            if (session.getInstance() != null || session.isObserving())
+                reasons.add(player.getName() + " already in a run/observation");
+            if (queue.requiresAccessCooldown(id)
+                    && !hasAccessCooldownBypass(player)
+                    && dungeon.hasAccessCooldown(player))
+                reasons.add(player.getName() + " access cooldown");
+            if (queue.requiresAccessKey(id)
+                    && !session.hasReservedAccessKey(dungeon.getWorldName())
+                    && !hasRequiredAccessKey(dungeon, player))
+                reasons.add(player.getName() + " missing access key");
+        }
+        if (reasons.isEmpty()) reasons.add("waiting for admission validation or world preparation");
+        return List.copyOf(reasons);
+    }
+
     private boolean hasAccessCooldownBypass(@Nullable Player player) {
-        return player != null && CommandUtils.hasPermissionSilent(player, "dungeons.admin");
+        return player != null && CommandUtils.hasPermissionSilent(player, "dungeons.bypass.cooldown");
     }
 }

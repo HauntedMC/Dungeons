@@ -33,7 +33,7 @@ import java.util.List;
  * Mutable runtime state attached to a single player.
  *
  * <p>The session tracks inventory snapshots, active instance membership, editor state, queued
- * dungeon access, and the temporary hotbar menus used by the plugin UI.</p>
+ * dungeon access, and the temporary hotbar menus used by the plugin UI.
  */
 public final class DungeonPlayerSession {
     public enum EditorClipboardType {
@@ -45,6 +45,28 @@ public final class DungeonPlayerSession {
     private final DungeonsPlugin plugin;
     private Player player;
     private boolean expired;
+    private DungeonInstance observing;
+
+    public DungeonInstance getObservingInstance() {
+        return this.observing;
+    }
+
+    public boolean isObserving() {
+        return this.observing != null;
+    }
+
+    public void beginObservation(DungeonInstance target) {
+        if (this.instance != null || this.observing != null || this.awaitingDungeon)
+            throw new IllegalArgumentException("Leave your current run or queue before observing");
+        if (!this.prepareRecovery()) throw new IllegalStateException("Recovery checkpoint failed");
+        this.observing = target;
+    }
+
+    public boolean stopObservation() {
+        this.observing = null;
+        return !this.player.isOnline() || this.recoverPendingState();
+    }
+
     private DungeonInstance instance;
     private boolean awaitingDungeon;
     @Nullable private final File playerDataFile;
@@ -129,6 +151,24 @@ public final class DungeonPlayerSession {
         }
     }
 
+    public boolean addStaffRewards(java.util.UUID operation, ItemStack... items) {
+        this.requireActiveSession();
+        return this.recoveryJournal.addStaffRewards(operation, items);
+    }
+
+    public boolean hasUnresolvedRecovery() { return this.recoveryJournal.hasPendingTransaction(); }
+
+    public String recoveryStatus() {
+        return "recovery="
+                + this.recoveryJournal.hasRecovery()
+                + ", pending transaction="
+                + this.recoveryJournal.hasPendingTransaction()
+                + ", key escrow="
+                + this.recoveryJournal.hasKeyReservation()
+                + ", claimable stacks="
+                + this.recoveryJournal.rewards().size();
+    }
+
     public boolean isExpired() {
         return this.expired;
     }
@@ -142,6 +182,7 @@ public final class DungeonPlayerSession {
         if (this.expired) return true;
         if ((!shutdown && this.player.isOnline())
                 || this.instance != null
+                || this.observing != null
                 || this.awaitingDungeon
                 || this.isDisconnecting
                 || this.hasReservedAccessKey()) return false;
@@ -396,7 +437,7 @@ public final class DungeonPlayerSession {
     /** Replays unfinished operations after reconnect or plugin enable. */
     public boolean recoverPendingState() {
         this.requireActiveSession();
-        if (this.instance != null) return true;
+        if (this.instance != null || this.observing != null) return true;
         if (this.player.isDead()) return false;
         try {
             boolean restoring = this.recoveryJournal.hasRecovery();
@@ -881,6 +922,7 @@ public final class DungeonPlayerSession {
         if (this.player == null
                 || !this.player.isOnline()
                 || this.instance != null
+                || this.observing != null
                 || this.recoveryJournal.hasPendingTransaction()) return;
         try {
             this.recoveryJournal.deliverRefunds(this.player);

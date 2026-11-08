@@ -36,6 +36,7 @@ From clean `main`, run `./tools/release/update-version patch --pr` to open a rev
 
 ## Learn More
 
+- [Staff Operations](docs/STAFF_OPERATIONS.md)
 - [Configuration Guide](docs/CONFIGURATION.md)
 - [Documentation Index](docs/README.md)
 - [Architecture](docs/ARCHITECTURE.md)

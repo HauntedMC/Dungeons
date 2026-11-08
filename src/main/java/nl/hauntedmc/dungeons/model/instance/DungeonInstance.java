@@ -63,9 +63,16 @@ import java.util.concurrent.CountDownLatch;
  * Base runtime representation of a concrete dungeon world copy.
  *
  * <p>An instance owns the copied world folder, the live Bukkit world, the bound triggers and
- * functions, and the collection of players currently attached to that run.</p>
+ * functions, and the collection of players currently attached to that run.
  */
 public abstract class DungeonInstance {
+    private final UUID instanceId = UUID.randomUUID();
+
+    /** Stable across world load and unload; never reused by another instance. */
+    public UUID getInstanceId() {
+        return this.instanceId;
+    }
+
     protected int id;
     protected String instanceWorldName;
     protected final FileConfiguration config;
@@ -348,6 +355,8 @@ public abstract class DungeonInstance {
     }
 
     private boolean unloadInstanceWorld() {
+        if (this.runtime().staffOperations() != null)
+            this.runtime().staffOperations().stopObservers(this);
         try {
             if (Bukkit.unloadWorld(this.instanceWorld, false)) {
                 return true;
@@ -857,6 +866,24 @@ public abstract class DungeonInstance {
     /** Applies subclass state changes after a departure has been accepted. */
     protected void onPlayerRemovalAccepted(DungeonPlayerSession playerSession) {}
 
+    private final java.util.Map<UUID, DepartureCause> departureCauses = new java.util.HashMap<>();
+
+    public final void removePlayer(DungeonPlayerSession session, DepartureCause cause) {
+        UUID playerId = session.getPlayer().getUniqueId();
+        departureCauses.put(playerId, cause);
+        try {
+            this.removePlayer(session, true);
+        } finally {
+            departureCauses.remove(playerId);
+        }
+    }
+
+    protected boolean recovering(DungeonPlayerSession session) {
+        return departureCauses
+                .getOrDefault(session.getPlayer().getUniqueId(), DepartureCause.NORMAL)
+                .recovery();
+    }
+
     public void removePlayer(DungeonPlayerSession playerSession) {
         this.removePlayer(playerSession, true);
     }
@@ -868,7 +895,10 @@ public abstract class DungeonInstance {
                     && player.isOnline()
                     && playerSession.getSavedPosition() != null) {
                 playerSession.setInstance(null);
-                playerSession.completeDeparture(
+                if (this.recovering(playerSession)) {
+                    playerSession.recoverPendingState();
+                } else
+                    playerSession.completeDeparture(
                         this.isEditInstance()
                                 || !this.config.getBoolean("players.keep_on_entry.inventory", true),
                         this.isEditInstance()
@@ -879,8 +909,9 @@ public abstract class DungeonInstance {
             PlayerLeaveDungeonEvent leaveEvent = new PlayerLeaveDungeonEvent(this, playerSession);
             Bukkit.getPluginManager().callEvent(leaveEvent);
             if (force || !leaveEvent.isCancelled()) {
-                this.onPlayerRemovalAccepted(playerSession);
-                if (this.dungeon.isCooldownOnLeave()
+                if (!this.recovering(playerSession)) this.onPlayerRemovalAccepted(playerSession);
+                if (!this.recovering(playerSession)
+                        && this.dungeon.isCooldownOnLeave()
                         && this.dungeon.shouldApplyAccessCooldown(this, player.getUniqueId())) {
                     this.dungeon.addAccessCooldown(player);
                 }
@@ -893,13 +924,16 @@ public abstract class DungeonInstance {
                 playerSession.setInstance(null);
                 playerSession.setDungeonRespawn(null);
 
-                if (this.isPlayInstance()) {
+                if (this.isPlayInstance() && !this.recovering(playerSession)) {
                     this.transferProgressionItems(player);
                 }
 
                 player.updateInventory();
 
-                playerSession.completeDeparture(
+                if (this.recovering(playerSession)) {
+                    playerSession.recoverPendingState();
+                } else
+                    playerSession.completeDeparture(
                         this.isEditInstance()
                                 || !this.config.getBoolean("players.keep_on_entry.inventory", true),
                         this.isEditInstance()

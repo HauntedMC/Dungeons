@@ -6,8 +6,8 @@ import nl.hauntedmc.dungeons.model.dungeon.DungeonLoadException;
 import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
 import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
-import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.runtime.instance.PreparationRegistry;
+import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 
 import org.bukkit.Bukkit;
@@ -557,7 +557,8 @@ public class OpenDungeon extends StaticDungeon {
      * Performs should maintain warm instance.
      */
     private boolean shouldMaintainWarmInstance() {
-        return this.config.getBoolean("open.preload_world", false)
+        return this.isEnabled()
+                && this.config.getBoolean("open.preload_world", false)
                 && this.plugin().isEnabled()
                 && !this.isSaving()
                 && !this.isMarkedForDelete()

@@ -26,7 +26,7 @@ import java.util.Map;
  * Registry for discoverable {@link DungeonTrigger} implementations.
  *
  * <p>This registry builds editor metadata and wires trigger event handlers through a shared relay
- * listener so each active instance dispatches only to its own trigger copies.</p>
+ * listener so each active instance dispatches only to its own trigger copies.
  */
 public final class TriggerRegistry {
     private final DungeonsPlugin plugin;
@@ -67,7 +67,8 @@ public final class TriggerRegistry {
                 this.plugin
                         .getSLF4JLogger()
                         .warn(
-                                "Trigger '{}' does not expose a menu button and will not appear in the editor.",
+                                "Trigger '{}' does not expose a menu button and will not appear in"
+                                    + " the editor.",
                                 triggerClass.getSimpleName());
                 return;
             }
@@ -91,6 +92,9 @@ public final class TriggerRegistry {
                                     this.elementEventHandler,
                                     handler.priority(),
                                     (listener, event) -> {
+                                        if (nl.hauntedmc.dungeons.runtime.staff
+                                                .StaffObserverListener.isObserverEvent(event))
+                                            return;
                                         for (DungeonInstance instance :
                                                 this.activeInstanceManager.getActiveInstances()) {
                                             List<DungeonTrigger> elements =
@@ -116,7 +120,11 @@ public final class TriggerRegistry {
                                                             this.plugin
                                                                     .getSLF4JLogger()
                                                                     .error(
-                                                                            "Trigger listener '{}#{}' failed for event '{}' in instance '{}'.",
+                                                                            "Trigger listener"
+                                                                                + " '{}#{}' failed"
+                                                                                + " for event '{}'"
+                                                                                + " in instance"
+                                                                                + " '{}'.",
                                                                             triggerClass
                                                                                     .getSimpleName(),
                                                                             method.getName(),

@@ -209,7 +209,7 @@ class GameplayRulesContractTest {
     }
 
     @Test
-    void commandRulesMatchCaseInsensitiveCommandBoundariesAndRespectTheAdminBypass()
+    void commandRulesMatchCaseInsensitiveBoundariesAndRequireAnExplicitGameplayBypass()
             throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
             var state = new PlayerState();
@@ -233,7 +233,7 @@ class GameplayRulesContractTest {
                 listener.onCommand(event);
                 assertEquals(message.equals("/helpful"), event.isCancelled(), message);
             }
-            when(state.player.hasPermission("dungeons.admin")).thenReturn(true);
+            when(state.player.hasPermission("dungeons.bypass.commands")).thenReturn(true);
             var bypass = TestEvents.cancellable(PlayerCommandPreprocessEvent.class);
             when(bypass.getPlayer()).thenReturn(state.player);
             when(bypass.getMessage()).thenReturn("/blocked");

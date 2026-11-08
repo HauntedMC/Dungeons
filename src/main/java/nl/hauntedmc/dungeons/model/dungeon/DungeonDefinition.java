@@ -65,7 +65,7 @@ import java.util.function.Consumer;
  * Base model for a dungeon definition loaded from disk.
  *
  * <p>The dungeon object owns configuration-backed gameplay rules, persistence-backed player data,
- * and the collection of live instances spawned from the map.</p>
+ * and the collection of live instances spawned from the map.
  */
 public abstract class DungeonDefinition {
     private static final int DEFAULT_MAX_TEAM_SIZE = 4;
@@ -119,6 +119,7 @@ public abstract class DungeonDefinition {
     protected EditableInstance editSession;
     protected volatile boolean saving;
     protected volatile boolean markedForDelete;
+    private String durableConfiguration;
 
     /**
      * Loads a dungeon definition from disk or from a preloaded configuration snapshot.
@@ -191,6 +192,7 @@ public abstract class DungeonDefinition {
 
         this.instances = new ArrayList<>();
         this.cleanDeadInstances();
+        this.durableConfiguration = this.config.saveToString();
     }
 
     /**
@@ -297,7 +299,7 @@ public abstract class DungeonDefinition {
         }
 
         ConfigurationSection exitLocSect = this.config.getConfigurationSection("locations.exit");
-        this.exitLoc = exitLocSect == null ? null : LocationUtils.readLocation(exitLocSect);
+        this.exitLoc = exitLocSect == null ? null : LocationUtils.readExternalLocation(exitLocSect);
         if (this.exitLoc != null
                 && this.exitLoc.getWorld() == null
                 && !this.exitLoc.isWorldLoaded()) {
@@ -734,7 +736,7 @@ public abstract class DungeonDefinition {
             @Nullable String difficultyName,
             int currentGlobalInstances,
             int maxGlobalInstances) {
-        if (!this.enabled) {
+        if (!this.isEnabled()) {
             return false;
         }
 
@@ -865,7 +867,7 @@ public abstract class DungeonDefinition {
             String difficultyName,
             int requestedPlayers,
             @Nullable UUID startedTeamLeaderId) {
-        if (!this.enabled) {
+        if (!this.isEnabled()) {
             LangUtils.sendMessage(
                     player,
                     "commands.play.disabled",
@@ -925,12 +927,28 @@ public abstract class DungeonDefinition {
     }
 
     public void edit(UUID playerId) {
+        this.editAsync(playerId);
+    }
+
+    public java.util.concurrent.CompletableFuture<Boolean> editAsync(UUID playerId) {
+        if (this.runtime.staffOperations() != null) {
+            if (!this.runtime.staffOperations().maintenance(this.worldName)
+                    || this.instances.stream().anyMatch(i -> !i.isEditInstance())) {
+                Player player = Bukkit.getPlayer(playerId);
+                if (player != null)
+                    player.sendMessage(
+                            "[Dungeons] Enable maintenance and let play worlds drain before"
+                                + " editing.");
+                return java.util.concurrent.CompletableFuture.completedFuture(false);
+            }
+        }
         var preparation = new EditorPreparation(
                 this,
                 playerId,
                 PluginConfigView.getEditOpenTimeoutSeconds(this.plugin().getConfig()));
         if (Bukkit.isPrimaryThread()) preparation.start();
         else Bukkit.getScheduler().runTask(this.plugin(), preparation::start);
+        return preparation.result();
     }
 
     public final PlayableInstance createPlaySession(CountDownLatch latch) {
@@ -995,7 +1013,7 @@ public abstract class DungeonDefinition {
 
     public boolean shouldApplyAccessCooldown(@Nullable DungeonInstance instance, UUID playerId) {
         Player player = Bukkit.getPlayer(playerId);
-        if (player != null && CommandUtils.hasPermissionSilent(player, "dungeons.admin")) {
+        if (player != null && CommandUtils.hasPermissionSilent(player, "dungeons.bypass.cooldown")) {
             return false;
         }
 
@@ -1032,6 +1050,10 @@ public abstract class DungeonDefinition {
 
     public PlayerLootData getPlayerLootData(Player player) {
         return this.playerDataStore.getRewards(player.getUniqueId());
+    }
+
+    public DungeonPlayerDataStore playerDataStore() {
+        return this.playerDataStore;
     }
 
     public void loadCooldowns(UUID playerID) {
@@ -1476,7 +1498,7 @@ public abstract class DungeonDefinition {
         } else {
             Location target = exitLoc.clone();
             target.setWorld(null);
-            LocationUtils.writeLocation("locations.exit", this.config, target);
+            LocationUtils.writeExternalLocation("locations.exit", this.config, exitLoc);
         }
         this.saveConfig();
     }
@@ -1516,10 +1538,20 @@ public abstract class DungeonDefinition {
 
     public void saveConfig() {
         try {
-            this.config.save(new File(this.folder, "config.yml"));
-        } catch (IOException exception) {
-            this.logger()
-                    .error("Failed to save config for dungeon '{}'.", this.worldName, exception);
+            String snapshot = this.config.saveToString();
+            nl.hauntedmc.dungeons.config.ConfigurationFile.saveSnapshot(
+                    this.plugin(), new File(this.folder, "config.yml"), snapshot);
+            this.durableConfiguration = snapshot;
+        } catch (RuntimeException failure) {
+            if (this.durableConfiguration != null) {
+                try {
+                    this.config.loadFromString(this.durableConfiguration);
+                    this.refreshRuntimeSettings();
+        } catch (InvalidConfigurationException rollback) {
+                    failure.addSuppressed(rollback);
+                }
+            }
+            throw failure;
         }
     }
 
@@ -1555,7 +1587,9 @@ public abstract class DungeonDefinition {
     }
 
     public boolean isEnabled() {
-        return this.enabled;
+        return this.enabled
+                && (this.runtime.staffOperations() == null
+                        || !this.runtime.staffOperations().maintenance(this.worldName));
     }
 
     public int getMaxTeamSize() {

@@ -1,9 +1,4 @@
 package nl.hauntedmc.dungeons.runtime.queue;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
 import nl.hauntedmc.dungeons.content.instance.play.OpenInstance;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
@@ -15,10 +10,21 @@ import nl.hauntedmc.dungeons.runtime.team.TeamRequirementPolicy;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
+
 /**
  * Immutable queue intent plus mutable queued-member list for one pending dungeon start.
  */
 public class DungeonQueueEntry {
+    private final long queuedAt = System.nanoTime();
+
+    public long getWaitingSeconds() {
+        return java.util.concurrent.TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - queuedAt);
+    }
+
     private final DungeonPlayerSession queuedPlayer;
     private final DungeonDefinition dungeon;
     private final String difficulty;
