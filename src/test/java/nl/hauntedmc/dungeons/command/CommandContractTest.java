@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -233,6 +234,43 @@ class CommandContractTest {
                 assertTrue(Files.isRegularFile(target.resolve("config.yml")));
                 org.apache.commons.io.FileUtils.deleteDirectory(target.toFile());
             }
+        }
+    }
+
+    @Test
+    void creationCopiesTheUnloadedWorldBeforeLoadingAndConfiguringTheDungeon() throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var command = new CommandFixture(f);
+            command.permissions.add("dungeons.role.operator");
+            var source = Files.createDirectories(directory.resolve("temporary-world"));
+            Files.writeString(source.resolve("level.dat"), "generated world");
+            var world = mock(World.class);
+            when(world.getWorldFolder()).thenReturn(source.toFile());
+            when(world.getSpawnLocation()).thenReturn(new Location(world, 2, 72, 9));
+            f.paper.bukkit.when(() -> Bukkit.createWorld(any(WorldCreator.class))).thenReturn(world);
+            f.paper.bukkit.when(() -> Bukkit.unloadWorld(world, true)).thenReturn(true);
+            var created = new ArrayList<DungeonDefinition>();
+            when(command.catalog.loadDungeon(any(File.class), eq("static"), eq("")))
+                    .thenAnswer(call -> {
+                        var dungeon = new StaticDungeon(f.paper.runtime, call.getArgument(0),
+                                new YamlConfiguration());
+                        created.add(dungeon);
+                        return dungeon;
+                    });
+
+            command.execute("dungeon", "create", "created", "static");
+            assertTrue(created.isEmpty());
+            assertTrue(Files.exists(source));
+            assertEquals(1, f.scheduler.asynchronous.size());
+            f.scheduler.asynchronous.getFirst().run();
+            assertEquals("generated world",
+                    Files.readString(directory.resolve("dungeons/created/level.dat")));
+            assertFalse(Files.exists(source));
+            assertTrue(created.isEmpty());
+            f.scheduler.readyImmediate.remove().run();
+            assertEquals(1, created.size());
+            assertEquals("static", created.getFirst().getConfig().getString("dungeon.type"));
+            assertEquals(72, created.getFirst().getLobbySpawn().getY());
         }
     }
 
