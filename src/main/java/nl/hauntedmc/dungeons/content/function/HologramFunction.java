@@ -156,219 +156,10 @@ public class HologramFunction extends DungeonFunction {
      */
     @Override
     public void buildHotbarMenu() {
-        this.menu.addMenuItem(
-                new MenuItem() {
-                    /**
-                     * Builds button.
-                     */
-                    @Override
-                    public void buildButton() {
-                        this.button = new MenuButton(Material.COMPASS);
-                        this.button.setDisplayName("&d&lSet Location");
-                    }
-
-                    /**
-                     * Performs on select.
-                     */
-                    @Override
-                    public void onSelect(PlayerEvent event) {
-                        final Player player = event.getPlayer();
-                        if (HologramFunction.this.awaitingInput) {
-                            HologramFunction.this.awaitingInput = false;
-                            HologramFunction.this.hologramLoc = player.getLocation();
-                            HologramFunction.this.hologramLoc.setWorld(null);
-                            HologramFunction.this.hologramLoc.setY(
-                                    HologramFunction.this.hologramLoc.getY() + 1.75);
-                            LangUtils.sendMessage(
-                                    player, "editor.function.hologram.location-set-standing");
-                        } else {
-                            HologramFunction.this.awaitingInput = true;
-                            HologramFunction.this.inputWaiter =
-                                    new BukkitRunnable() {
-                                        /**
-                                         * Performs run.
-                                         */
-                                        public void run() {
-                                            HologramFunction.this.awaitingInput = false;
-                                            if (HologramFunction.this.particleIndicator != null) {
-                                                HologramFunction.this.particleIndicator.cancel();
-                                            }
-                                        }
-                                    };
-                            HologramFunction.this.inputWaiter.runTaskLater(
-                                    RuntimeContext.plugin(), 200L);
-                            if (HologramFunction.this.hologramLoc == null) {
-                                LangUtils.sendMessage(
-                                        player, "editor.function.hologram.current-location-none");
-                                LangUtils.sendMessage(
-                                        player,
-                                        "editor.function.hologram.click-again-set-location");
-                                return;
-                            }
-
-                            final Location targetLoc = HologramFunction.this.hologramLoc.clone();
-                            if (targetLoc.getWorld() == null
-                                    && HologramFunction.this.location != null) {
-                                targetLoc.setWorld(HologramFunction.this.location.getWorld());
-                            }
-                            HologramFunction.this.particleIndicator =
-                                    new BukkitRunnable() {
-                                        /**
-                                         * Performs run.
-                                         */
-                                        public void run() {
-                                            if (targetLoc.getWorld() != null) {
-                                                player.spawnParticle(
-                                                        Particle.END_ROD,
-                                                        targetLoc,
-                                                        4,
-                                                        0.1,
-                                                        0.1,
-                                                        0.1,
-                                                        0.0);
-                                            }
-                                        }
-                                    };
-                            HologramFunction.this.particleIndicator.runTaskTimer(
-                                    RuntimeContext.plugin(), 0L, 10L);
-                            LangUtils.sendMessage(
-                                    player,
-                                    "editor.function.hologram.current-location",
-                                    LangUtils.placeholder(
-                                            "x",
-                                            String.valueOf(
-                                                    MathUtils.round(
-                                                            HologramFunction.this.hologramLoc
-                                                                    .getX(),
-                                                            2))),
-                                    LangUtils.placeholder(
-                                            "y",
-                                            String.valueOf(
-                                                    MathUtils.round(
-                                                            HologramFunction.this.hologramLoc
-                                                                    .getY(),
-                                                            2))),
-                                    LangUtils.placeholder(
-                                            "z",
-                                            String.valueOf(
-                                                    MathUtils.round(
-                                                            HologramFunction.this.hologramLoc
-                                                                    .getZ(),
-                                                            2))));
-                            LangUtils.sendMessage(
-                                    player, "editor.function.hologram.click-again-set-location");
-                        }
-                    }
-                });
-        this.menu.addMenuItem(
-                new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
-                    @Override
-                    public void buildButton() {
-                        this.button = new MenuButton(Material.NAME_TAG);
-                        this.button.setDisplayName("&d&lHologram Message");
-                    }
-
-                    /**
-                     * Performs on select.
-                     */
-                    @Override
-                    public void onSelect(Player player) {
-                        if (HologramFunction.this.instance.getHologramManager() != null) {
-                            LangUtils.sendMessage(
-                                    player, "editor.function.hologram.ask-message-multiline");
-                        } else {
-                            LangUtils.sendMessage(player, "editor.function.hologram.ask-message");
-                        }
-
-                        LangUtils.sendMessage(
-                                player,
-                                "editor.function.hologram.current-message",
-                                LangUtils.placeholder(
-                                        "message", HologramFunction.this.getCleanMessage()));
-                    }
-
-                    /**
-                     * Performs on input.
-                     */
-                    @Override
-                    public void onInput(Player player, String message) {
-                        HologramFunction.this.message = message;
-                        LangUtils.sendMessage(
-                                player,
-                                "editor.function.hologram.message-set",
-                                LangUtils.placeholder(
-                                        "message", HologramFunction.this.getCleanMessage()));
-                    }
-                });
-        this.menu.addMenuItem(
-                new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
-                    @Override
-                    public void buildButton() {
-                        this.button = new MenuButton(Material.REPEATER);
-                        this.button.setDisplayName("&d&lView Distance");
-                        this.button.setAmount(HologramFunction.this.radius);
-                    }
-
-                    /**
-                     * Performs on select.
-                     */
-                    @Override
-                    public void onSelect(Player player) {
-                        LangUtils.sendMessage(player, "editor.function.hologram.ask-radius");
-                    }
-
-                    /**
-                     * Performs on input.
-                     */
-                    @Override
-                    public void onInput(Player player, String message) {
-                        Optional<Integer> value = InputUtils.readIntegerInput(player, message);
-                        HologramFunction.this.radius = value.orElse(HologramFunction.this.radius);
-                        if (value.isPresent()) {
-                            LangUtils.sendMessage(
-                                    player,
-                                    "editor.function.hologram.radius-set",
-                                    LangUtils.placeholder(
-                                            "radius",
-                                            String.valueOf(HologramFunction.this.radius)));
-                        }
-                    }
-                });
-        this.menu.addMenuItem(
-                new ToggleMenuItem() {
-                    /**
-                     * Builds button.
-                     */
-                    @Override
-                    public void buildButton() {
-                        this.button = new MenuButton(Material.STRUCTURE_VOID);
-                        this.button.setDisplayName("&d&lVisible by Default");
-                        this.button.setEnchanted(HologramFunction.this.visibleByDefault);
-                    }
-
-                    /**
-                     * Performs on select.
-                     */
-                    @Override
-                    public void onSelect(Player player) {
-                        if (!HologramFunction.this.visibleByDefault) {
-                            LangUtils.sendMessage(
-                                    player, "editor.function.hologram.default-visible");
-                        } else {
-                            LangUtils.sendMessage(
-                                    player, "editor.function.hologram.default-invisible");
-                        }
-
-                        HologramFunction.this.visibleByDefault =
-                                !HologramFunction.this.visibleByDefault;
-                    }
-                });
+        this.menu.addMenuItem(createSetLocationItem());
+        this.menu.addMenuItem(createHologramMessageItem());
+        this.menu.addMenuItem(createViewDistanceItem());
+        this.menu.addMenuItem(createVisibleByDefaultItem());
     }
 
     /**
@@ -397,5 +188,190 @@ public class HologramFunction extends DungeonFunction {
      */
     public boolean isVisible() {
         return this.visible;
+    }
+
+    private MenuItem createSetLocationItem() {
+        return new MenuItem() {
+            @Override
+            public void buildButton() {
+                this.button = new MenuButton(Material.COMPASS);
+                this.button.setDisplayName("&d&lSet Location");
+            }
+            @Override
+            public void onSelect(PlayerEvent event) {
+                final Player player = event.getPlayer();
+                if (HologramFunction.this.awaitingInput) {
+                    HologramFunction.this.awaitingInput = false;
+                    HologramFunction.this.hologramLoc = player.getLocation();
+                    HologramFunction.this.hologramLoc.setWorld(null);
+                    HologramFunction.this.hologramLoc.setY(
+                            HologramFunction.this.hologramLoc.getY() + 1.75);
+                    LangUtils.sendMessage(
+                            player, "editor.function.hologram.location-set-standing");
+                } else {
+                    HologramFunction.this.awaitingInput = true;
+                    HologramFunction.this.inputWaiter =
+                            new BukkitRunnable() {
+                                /**
+                                 * Performs run.
+                                 */
+                                public void run() {
+                                    HologramFunction.this.awaitingInput = false;
+                                    if (HologramFunction.this.particleIndicator != null) {
+                                        HologramFunction.this.particleIndicator.cancel();
+                                    }
+                                }
+                            };
+                    HologramFunction.this.inputWaiter.runTaskLater(
+                            RuntimeContext.plugin(), 200L);
+                    if (HologramFunction.this.hologramLoc == null) {
+                        LangUtils.sendMessage(
+                                player, "editor.function.hologram.current-location-none");
+                        LangUtils.sendMessage(
+                                player,
+                                "editor.function.hologram.click-again-set-location");
+                        return;
+                    }
+
+                    final Location targetLoc = HologramFunction.this.hologramLoc.clone();
+                    if (targetLoc.getWorld() == null
+                            && HologramFunction.this.location != null) {
+                        targetLoc.setWorld(HologramFunction.this.location.getWorld());
+                    }
+                    HologramFunction.this.particleIndicator =
+                            new BukkitRunnable() {
+                                /**
+                                 * Performs run.
+                                 */
+                                public void run() {
+                                    if (targetLoc.getWorld() != null) {
+                                        player.spawnParticle(
+                                                Particle.END_ROD,
+                                                targetLoc,
+                                                4,
+                                                0.1,
+                                                0.1,
+                                                0.1,
+                                                0.0);
+                                    }
+                                }
+                            };
+                    HologramFunction.this.particleIndicator.runTaskTimer(
+                            RuntimeContext.plugin(), 0L, 10L);
+                    LangUtils.sendMessage(
+                            player,
+                            "editor.function.hologram.current-location",
+                            LangUtils.placeholder(
+                                    "x",
+                                    String.valueOf(
+                                            MathUtils.round(
+                                                    HologramFunction.this.hologramLoc
+                                                            .getX(),
+                                                    2))),
+                            LangUtils.placeholder(
+                                    "y",
+                                    String.valueOf(
+                                            MathUtils.round(
+                                                    HologramFunction.this.hologramLoc
+                                                            .getY(),
+                                                    2))),
+                            LangUtils.placeholder(
+                                    "z",
+                                    String.valueOf(
+                                            MathUtils.round(
+                                                    HologramFunction.this.hologramLoc
+                                                            .getZ(),
+                                                    2))));
+                    LangUtils.sendMessage(
+                            player, "editor.function.hologram.click-again-set-location");
+                }
+            }
+        };
+    }
+
+    private MenuItem createHologramMessageItem() {
+        return new ChatMenuItem() {
+            @Override
+            public void buildButton() {
+                this.button = new MenuButton(Material.NAME_TAG);
+                this.button.setDisplayName("&d&lHologram Message");
+            }
+            @Override
+            public void onSelect(Player player) {
+                if (HologramFunction.this.instance.getHologramManager() != null) {
+                    LangUtils.sendMessage(
+                            player, "editor.function.hologram.ask-message-multiline");
+                } else {
+                    LangUtils.sendMessage(player, "editor.function.hologram.ask-message");
+                }
+
+                LangUtils.sendMessage(
+                        player,
+                        "editor.function.hologram.current-message",
+                        LangUtils.placeholder(
+                                "message", HologramFunction.this.getCleanMessage()));
+            }
+            @Override
+            public void onInput(Player player, String message) {
+                HologramFunction.this.message = message;
+                LangUtils.sendMessage(
+                        player,
+                        "editor.function.hologram.message-set",
+                        LangUtils.placeholder(
+                                "message", HologramFunction.this.getCleanMessage()));
+            }
+        };
+    }
+
+    private MenuItem createViewDistanceItem() {
+        return new ChatMenuItem() {
+            @Override
+            public void buildButton() {
+                this.button = new MenuButton(Material.REPEATER);
+                this.button.setDisplayName("&d&lView Distance");
+                this.button.setAmount(HologramFunction.this.radius);
+            }
+            @Override
+            public void onSelect(Player player) {
+                LangUtils.sendMessage(player, "editor.function.hologram.ask-radius");
+            }
+            @Override
+            public void onInput(Player player, String message) {
+                Optional<Integer> value = InputUtils.readIntegerInput(player, message);
+                HologramFunction.this.radius = value.orElse(HologramFunction.this.radius);
+                if (value.isPresent()) {
+                    LangUtils.sendMessage(
+                            player,
+                            "editor.function.hologram.radius-set",
+                            LangUtils.placeholder(
+                                    "radius",
+                                    String.valueOf(HologramFunction.this.radius)));
+                }
+            }
+        };
+    }
+
+    private MenuItem createVisibleByDefaultItem() {
+        return new ToggleMenuItem() {
+            @Override
+            public void buildButton() {
+                this.button = new MenuButton(Material.STRUCTURE_VOID);
+                this.button.setDisplayName("&d&lVisible by Default");
+                this.button.setEnchanted(HologramFunction.this.visibleByDefault);
+            }
+            @Override
+            public void onSelect(Player player) {
+                if (!HologramFunction.this.visibleByDefault) {
+                    LangUtils.sendMessage(
+                            player, "editor.function.hologram.default-visible");
+                } else {
+                    LangUtils.sendMessage(
+                            player, "editor.function.hologram.default-invisible");
+                }
+
+                HologramFunction.this.visibleByDefault =
+                        !HologramFunction.this.visibleByDefault;
+            }
+        };
     }
 }
