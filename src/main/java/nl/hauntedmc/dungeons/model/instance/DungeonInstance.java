@@ -194,11 +194,14 @@ public abstract class DungeonInstance {
                 () -> {
                     this.id = this.dungeon.getInstances().size();
                     File instFolder = this.getUniqueWorldName();
+                    // Paper converts legacy level.dat + DIM folders only from the world container.
+                    // Modern dimensions already use flat terrain storage and must skip old leftovers.
+                    boolean legacy = legacyTemplate(source);
                     FileUtils.copyDirectory(
                             source,
                             instFolder,
                             file ->
-                                    !List.of(
+                                    legacy || !List.of(
                                                     "level.dat",
                                                     "level.dat_old",
                                                     "DIM1",
@@ -216,12 +219,21 @@ public abstract class DungeonInstance {
                 });
     }
 
+    private static boolean legacyTemplate(File source) {
+        return new File(source, "level.dat").isFile()
+                && !new File(source, "data/minecraft/world_gen_settings.dat").isFile();
+    }
+
     protected File getUniqueWorldName() throws IOException {
-        return this.reserveWorldFolder();
+        return this.reserveWorldFolder(legacyTemplate(this.dungeon.getFolder()));
     }
 
     /** Reserves a name before asynchronous copies or generation can race another instance. */
     protected File reserveWorldFolder() throws IOException {
+        return this.reserveWorldFolder(false);
+    }
+
+    private File reserveWorldFolder(boolean legacy) throws IOException {
         synchronized (WorldUtils.class) {
             while (true) {
                 String name = this.getDungeon().getWorldName() + "_" + this.id;
@@ -230,7 +242,7 @@ public abstract class DungeonInstance {
                 if (!conflictingRoot.exists()
                         && !dimension.exists()
                         && Bukkit.getWorld(name) == null) {
-                    File destination = dimension;
+                    File destination = legacy ? conflictingRoot : dimension;
                     java.nio.file.Files.createDirectories(destination.toPath().getParent());
                     try {
                         java.nio.file.Files.createDirectory(destination.toPath());

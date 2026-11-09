@@ -5,7 +5,6 @@ import static org.mockito.Mockito.*;
 
 import nl.hauntedmc.dungeons.content.function.reward.LootTableRewardsFunction;
 import nl.hauntedmc.dungeons.content.reward.LootTable;
-import nl.hauntedmc.dungeons.gui.staff.StaffMenus;
 import nl.hauntedmc.dungeons.model.instance.*;
 import nl.hauntedmc.dungeons.runtime.player.StaffPlayerRecords;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueEntry;
@@ -23,7 +22,7 @@ class StaffCommandContractTest {
     @TempDir Path directory;
 
     private static StaffCommandHandler handler(StaffFixture f) {
-        return new StaffCommandHandler(f.runtime, f.lifecycle, ignored -> mock(StaffMenus.class));
+        return new StaffCommandHandler(f.runtime, f.lifecycle);
     }
 
     private static void execute(StaffCommandHandler h, StaffFixture f, String... args) {
@@ -78,7 +77,7 @@ class StaffCommandContractTest {
     }
 
     @Test
-    void everyPlayerInspectionRouteOpensTheExpectedMenuAndInvalidInputIsHandled() throws Exception {
+    void everyPlayerInspectionRouteUsesChatAndInvalidInputIsHandled() throws Exception {
         try (var f = new StaffFixture(directory)) {
             var h = handler(f);
             var p = f.player("Staff");
@@ -90,8 +89,7 @@ class StaffCommandContractTest {
             h.executeChecked(p.player, new String[] {"queues"});
             h.executeChecked(p.player, new String[] {"operations"});
             h.executeChecked(p.player, new String[] {"loot"});
-            verify(h.menus(), times(8))
-                    .open(eq(p.player), anyString(), anyString(), anyString(), anyInt());
+            verify(p.player, atLeastOnce()).sendMessage(any(net.kyori.adventure.text.Component.class));
             assertTrue(h.handleCommand(f.actor, new String[] {"no-such-command"}));
             assertThrows(
                     IllegalArgumentException.class, () -> execute(h, f, "overview", "--confirm"));

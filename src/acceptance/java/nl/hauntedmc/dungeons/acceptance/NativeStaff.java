@@ -85,9 +85,9 @@ final class NativeStaff {
                 new StaffOperations(test.runtime()).maintenance(dungeon.getWorldName()),
                 "Maintenance not persisted");
         ops.maintenance(console, dungeon.getWorldName(), false, "Acceptance complete");
-        // Use real Paper inventories/item metadata with only the network-facing player substituted.
-        var opened =
-                new java.util.concurrent.atomic.AtomicReference<org.bukkit.inventory.Inventory>();
+        // Staff routes must render chat output for players without opening inventories.
+        var opened = new java.util.concurrent.atomic.AtomicBoolean();
+        var playerOutput = new java.util.ArrayList<String>();
         java.util.UUID syntheticId = java.util.UUID.randomUUID();
         var player =
                 (org.bukkit.entity.Player)
@@ -97,30 +97,35 @@ final class NativeStaff {
                                 (proxy, method, args) ->
                                         switch (method.getName()) {
                                             case "getUniqueId" -> syntheticId;
-                                            case "getName" -> "StaffMenuAcceptance";
+                                            case "getName" -> "StaffCommandAcceptance";
                                             case "hashCode" -> System.identityHashCode(proxy);
                                             case "equals" -> proxy == args[0];
                                             case "hasPermission", "isOnline" -> true;
                                             case "isPermissionSet" -> false;
                                             case "openInventory" -> {
-                                                opened.set(
-                                                        (org.bukkit.inventory.Inventory) args[0]);
+                                                opened.set(true);
+                                                yield null;
+                                            }
+                                            case "sendMessage" -> {
+                                                for (Object arg : args) {
+                                                    if (arg instanceof String text) playerOutput.add(text);
+                                                    if (arg instanceof net.kyori.adventure.text.Component component)
+                                                        playerOutput.add(net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(component));
+                                                }
                                                 yield null;
                                             }
                                             default -> null;
                                         });
         var command = java.util.Objects.requireNonNull(Bukkit.getPluginCommand("dungeon"));
         command.execute(player, "dungeon", new String[] {"server"});
-        require(
-                opened.get() != null && opened.get().getSize() == 54,
-                "Native staff dashboard did not render");
-        require(
-                opened.get().getItem(0) != null && opened.get().getItem(0).hasItemMeta(),
-                "Dashboard metadata missing");
-        var dashboard = opened.get();
-        command.execute(
-                player, "dungeon", new String[] {"map", "info", dungeon.getWorldName()});
-        require(opened.get() != dashboard, "Dungeon detail screen did not open");
+        require(!opened.get(), "Staff status opened an inventory");
+        require(playerOutput.stream().anyMatch(line -> line.contains("Dungeons:")),
+                "Staff status did not render chat output");
+        playerOutput.clear();
+        command.execute(player, "dungeon", new String[] {"map", "info", dungeon.getWorldName()});
+        require(!opened.get(), "Map info opened an inventory");
+        require(playerOutput.stream().anyMatch(line -> line.contains(dungeon.getWorldName())),
+                "Map detail did not render chat output");
 
         var output = new java.util.ArrayList<String>();
         var sender =
