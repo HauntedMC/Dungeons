@@ -41,7 +41,6 @@ public final class DungeonTeamService implements Listener {
     private final Map<UUID, DungeonTeam> teamsById = new ConcurrentHashMap<>();
     private final Map<UUID, UUID> teamIdByMember = new ConcurrentHashMap<>();
     private final Map<UUID, TeamInvite> invitesByTarget = new ConcurrentHashMap<>();
-    private final Map<String, UUID> teamIdByInstanceWorld = new ConcurrentHashMap<>();
     private final Map<String, BukkitTask> disbandShutdownTasksByInstanceWorld =
             new ConcurrentHashMap<>();
     private final Set<UUID> dissolvingTeams = ConcurrentHashMap.newKeySet();
@@ -69,7 +68,6 @@ public final class DungeonTeamService implements Listener {
         this.teamsById.clear();
         this.teamIdByMember.clear();
         this.invitesByTarget.clear();
-        this.teamIdByInstanceWorld.clear();
         this.disbandShutdownTasksByInstanceWorld.clear();
         this.dissolvingTeams.clear();
     }
@@ -569,10 +567,10 @@ public final class DungeonTeamService implements Listener {
         }
 
         team.setStarted(true);
-        instance.setStartedTeamLeaderId(team.getLeaderId());
+        if (!(instance instanceof nl.hauntedmc.dungeons.content.instance.play.OpenInstance))
+            instance.setStartedTeamLeaderId(team.getLeaderId());
         team.setInstanceWorldName(instance.getInstanceWorld().getName());
         team.cancelExpiryTask();
-        this.teamIdByInstanceWorld.put(instance.getInstanceWorld().getName(), teamId);
         this.notifyTeam(team, "commands.team.started", instance.getInstanceWorld().getName());
         this.notifyTeam(team, "commands.team.started-hint");
     }
@@ -654,6 +652,8 @@ public final class DungeonTeamService implements Listener {
 
     /** Schedules delayed shutdown of an instance whose backing team disbanded. */
     private void scheduleDisbandShutdown(DungeonInstance instance) {
+        // A team owns its membership, never the lifetime of a shared public world.
+        if (instance instanceof nl.hauntedmc.dungeons.content.instance.play.OpenInstance) return;
         if (instance.getInstanceWorld() == null) {
             return;
         }
@@ -783,9 +783,6 @@ public final class DungeonTeamService implements Listener {
 
         team.cancelExpiryTask();
         this.teamsById.remove(team.getTeamId());
-        if (team.getInstanceWorldName() != null) {
-            this.teamIdByInstanceWorld.remove(team.getInstanceWorldName());
-        }
 
         for (UUID memberId : team.getMemberIds()) {
             this.teamIdByMember.remove(memberId);
@@ -961,14 +958,9 @@ public final class DungeonTeamService implements Listener {
             disbandShutdownTask.cancel();
         }
 
-        UUID teamId = this.teamIdByInstanceWorld.remove(instanceWorldName);
-        if (teamId == null) {
-            return;
-        }
-
-        DungeonTeam team = this.teamsById.get(teamId);
-        if (team != null) {
-            this.dissolveTeam(team, "commands.team.deleted-dungeon-ended", true);
+        for (DungeonTeam team : new ArrayList<>(this.teamsById.values())) {
+            if (team.isStarted() && instanceWorldName.equals(team.getInstanceWorldName()))
+                this.dissolveTeam(team, "commands.team.deleted-dungeon-ended", true);
         }
     }
 }

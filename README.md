@@ -17,6 +17,20 @@ Dungeons is a Paper plugin for creating, editing, and running configurable dunge
 
 The mandatory database integration is still in progress; gameplay persistence currently remains file-based.
 
+## Administration
+
+Use `/dungeon help` to discover commands; staff inspection and confirmations appear in chat.
+There is no admin dashboard inventory.
+
+- `/dungeon edit open <dungeon>` opens the world editor; an optional reason may follow the name.
+- `/dungeon edit save` saves changes, and `/dungeon edit close` leaves the editor.
+- `/dungeon help map` covers creation, imports, validation, settings, keys, backups and archives.
+- `/dungeon help instance`, `/dungeon help player`, `/dungeon help queue` and `/dungeon help server` cover runtime administration.
+- `/dungeon help loot` covers loot tables, including their content editor.
+
+Legacy world templates containing `level.dat` and `DIM1`/`DIM-1` terrain are copied intact
+for Paper conversion. Current dimension templates keep their flat terrain layout.
+
 ## Requirements
 
 - Java 25

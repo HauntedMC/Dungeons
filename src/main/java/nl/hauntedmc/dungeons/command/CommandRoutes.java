@@ -101,6 +101,7 @@ final class CommandRoutes {
         r("map settings <map> clear <setting>", "staff.edit", false, Handler.SETTINGS, "config <map> <setting> clear"),
         r("map settings <map> add <setting> *value", "staff.edit", false, Handler.SETTINGS, "config <map> <setting> add *value"),
         r("map settings <map> remove <setting> *value", "staff.edit", false, Handler.SETTINGS, "config <map> <setting> remove *value"),
+        r("edit open <map>", "staff.edit", true, Handler.STAFF, "edit <map> editor-command"),
         r("edit open <map> *reason", "staff.edit", true, Handler.STAFF, "edit <map> *reason"),
         r("edit save", "staff.edit", true, Handler.EDIT, "edit save"),
         r("edit close", "staff.edit", true, Handler.EDIT, "edit close"),
