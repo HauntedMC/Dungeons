@@ -38,7 +38,7 @@ class ResourceBootstrapContractTest {
                     .saveConfig();
             var messages = new YamlConfiguration();
             messages.set("general.prefix", "[Custom]");
-            messages.set("commands.root.help", "Operator help {player}");
+            messages.set("commands.play.usage", "Operator help {player}");
             messages.save(directory.resolve("messages.yml").toFile());
             var bootstrap = new CoreBootstrap(f.paper.runtime);
             bootstrap.initializeCoreState();
@@ -49,11 +49,11 @@ class ResourceBootstrapContractTest {
             assertEquals(
                     "Operator help Alex",
                     LangUtils.getMessage(
-                            "commands.root.help", false, LangUtils.placeholder("player", "Alex")));
+                            "commands.play.usage", false, LangUtils.placeholder("player", "Alex")));
             var loaded =
                     YamlConfiguration.loadConfiguration(directory.resolve("messages.yml").toFile());
             assertEquals("[Custom]", loaded.getString("general.prefix"));
-            assertNotNull(loaded.getString("commands.root.list"));
+            assertNotNull(loaded.getString("commands.list.line"));
             String previous = Files.readString(directory.resolve("messages.yml"));
             bootstrap.initializeCoreState();
             assertEquals(previous, Files.readString(directory.resolve("messages.yml")));

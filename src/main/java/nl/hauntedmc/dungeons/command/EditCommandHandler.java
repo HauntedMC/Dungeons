@@ -54,6 +54,14 @@ final class EditCommandHandler implements CommandHandler {
             case "save" -> this.handleSaveCommand(sender, args);
             case "lobby" -> this.handleLobbyCommand(sender, args);
             case "start" -> this.handleStartCommand(sender, args);
+            case "exit" -> {
+                if (!(sender instanceof Player player)) throw new IllegalArgumentException("Players only");
+                var session = this.playerManager.get(player);
+                if (!nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard.editor(player, session))
+                    throw new IllegalArgumentException("Open an authorized editor first");
+                session.getInstance().getDungeon().setExit(player.getLocation());
+                yield true;
+            }
             case "items" -> this.handleItemsCommand(sender, args);
             case "tools" -> this.handleToolsCommand(sender, args);
             case "signs" -> this.handleSignsCommand(sender, args);

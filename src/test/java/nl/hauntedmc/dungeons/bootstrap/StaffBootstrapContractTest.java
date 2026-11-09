@@ -36,7 +36,7 @@ class StaffBootstrapContractTest {
                     f.actor,
                     command,
                     "dungeon",
-                    new String[] {"admin", "archive", "crypt", "Retire"});
+                    new String[] {"map", "archive", "create", "crypt", "Retire"});
             assertTrue(f.run.dungeon.getFolder().exists());
 
             f.grants.add("*");
@@ -44,7 +44,7 @@ class StaffBootstrapContractTest {
                     f.actor,
                     command,
                     "dungeon",
-                    new String[] {"admin", "archive", "crypt", "Retire"});
+                    new String[] {"map", "archive", "create", "crypt", "Retire"});
             assertTrue(f.run.dungeon.getFolder().exists());
 
             String token = f.token();
@@ -52,7 +52,7 @@ class StaffBootstrapContractTest {
                     f.actor,
                     command,
                     "dungeon",
-                    new String[] {"admin", "archive", "crypt", "Retire", "--confirm", token});
+                    new String[] {"map", "archive", "create", "crypt", "Retire", "--confirm", token});
             f.flush();
             assertFalse(f.run.dungeon.getFolder().exists());
         }

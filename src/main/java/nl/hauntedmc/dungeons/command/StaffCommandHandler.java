@@ -177,9 +177,11 @@ public final class StaffCommandHandler implements CommandHandler {
             input.set(2, input.get(2).toLowerCase(Locale.ROOT));
         String[] a = input.toArray(String[]::new);
         if (action.equals("help")) {
-            for (var spec : SYNTAX)
-                if (allowsAnyScope(actor, spec.capability))
-                    tell(actor, "/dungeon admin " + spec.usage);
+            for (var route : CommandRoutes.ALL) {
+                if (route.permission().startsWith("staff.")
+                        && allowsAnyScope(actor, route.permission().substring(6)))
+                    tell(actor, "/dungeon " + route.usage());
+            }
             return;
         }
         switch (action) {
@@ -199,6 +201,11 @@ public final class StaffCommandHandler implements CommandHandler {
                                 reason(a, 2),
                                 () -> openEditor(p, definition));
                 tell(actor, "Editor operation " + operation.shortId() + ": " + operation.detail);
+            }
+            case "dashboard" -> {
+                StaffPermissions.require(actor, "inspect", null);
+                if (actor instanceof Player player) menus.open(player, "overview", "", "", 0);
+                else overview(actor);
             }
             case "overview" -> overview(actor);
             case "dungeons" -> {
@@ -299,11 +306,17 @@ public final class StaffCommandHandler implements CommandHandler {
                                 "Key "
                                         + (key + 1)
                                         + ": "
-                                        + dungeon.getAccessKeys().get(key).getItem().getType());
+                                        + dungeon.getAccessKeys().get(key).getItem().getType()
+                                        + " id=" + dungeon.getAccessKeys().get(key).getKeyId());
                 } else {
                     need(a, 6, "keys <dungeon> give <player> <key-id> <reason>");
                     if (!a[2].equals("give")) throw new IllegalArgumentException("Use give");
-                    var key = dungeon.getAccessKey(Integer.parseInt(a[4]));
+                    nl.hauntedmc.dungeons.model.dungeon.AccessKeyDefinition key = dungeon.getAccessKeys().stream()
+                            .filter(definition -> a[4].equals(definition.getKeyId())).findFirst().orElse(null);
+                    if (key == null) {
+                        try { key = dungeon.getAccessKey(Integer.parseInt(a[4])); }
+                        catch (NumberFormatException invalid) { throw new IllegalArgumentException("Unknown key ID"); }
+                    }
                     if (key == null) throw new IllegalArgumentException("Unknown key ID");
                     UUID player = playerId(a[3]);
                     String issuanceReason = reason(a, 5);
@@ -323,9 +336,28 @@ public final class StaffCommandHandler implements CommandHandler {
                 }
             }
             case "queues" -> {
-                StaffPermissions.require(actor, "inspect", null);
-                if (actor instanceof Player p) menus.open(p, "queues", "", "", 0);
-                else queueLines().forEach(line -> tell(actor, line));
+                String scope = a.length > 1 ? dungeon(a[1]).getWorldName() : null;
+                StaffPermissions.require(actor, "inspect", scope);
+                if (scope == null && actor instanceof Player p) menus.open(p, "queues", "", "", 0);
+                else runtime.queueRegistry().snapshotQueues().stream()
+                        .filter(queue -> scope == null || queue.getDungeon().getWorldName().equals(scope))
+                        .forEach(queue -> tell(actor, describeQueue(queue)));
+            }
+            case "queue-info", "queue-cancel" -> {
+                need(a, action.equals("queue-cancel") ? 3 : 2, "queue <id> [reason]");
+                var matches = runtime.queueRegistry().snapshotQueues().stream()
+                        .filter(queue -> queue.getAdmissionId().toString().startsWith(a[1])).toList();
+                if (matches.size() != 1) throw new IllegalArgumentException("Queue ID is unknown or ambiguous");
+                var queue = matches.getFirst();
+                StaffPermissions.require(actor, action.equals("queue-cancel") ? "queue" : "inspect", queue.getDungeon().getWorldName());
+                if (action.equals("queue-info")) tell(actor, describeQueue(queue));
+                else {
+                    String reason = reason(a, 2);
+                    if (!confirmed(actor, input, token, "queue-cancel", queue.getAdmissionId().toString(), queue.getPlayers().toString())) return;
+                    runtime.dungeonQueueCoordinator().discardQueue(queue);
+                    ops.audit(actor, "queue-cancel", queue.getAdmissionId().toString(), reason, "cancelled");
+                    tell(actor, "Queue cancelled; uncommitted keys returned through recovery");
+                }
             }
             case "maintenance" -> {
                 need(a, 4, "maintenance <dungeon|all> <on|off> <reason>");
@@ -335,8 +367,14 @@ public final class StaffCommandHandler implements CommandHandler {
                 ops.maintenance(actor, a[1], a[2].equals("on"), reason(a, 3));
                 tell(actor, "Maintenance " + a[2] + " for " + a[1] + ": " + ops.impact(a[1]));
             }
-            case "reload", "archive", "backup", "restore" ->
+            case "reload", "reload-all", "archive", "backup", "restore" ->
                     contentOperation(actor, a, input, token);
+            case "archive-info" -> {
+                need(a, 2, "map archive info <id>");
+                StaffPermissions.require(actor, "inspect", null);
+                tell(actor, "Archive " + a[1] + "; map=" + content.archivedDungeonName(a[1])
+                        + "; revision=" + content.archiveRevision(a[1]));
+            }
             case "archives" -> {
                 StaffPermissions.require(actor, "inspect", null);
                 content.archives().forEach(line -> tell(actor, line));
@@ -430,7 +468,7 @@ public final class StaffCommandHandler implements CommandHandler {
             }
             default ->
                     throw new IllegalArgumentException(
-                            "Unknown staff action. Use /dungeon admin help");
+                            "Unknown staff action. Use /dungeon help");
         }
     }
 
@@ -441,9 +479,9 @@ public final class StaffCommandHandler implements CommandHandler {
                 a[0].equals("restore") ? 4 : 3,
                 a[0] + " <dungeon> " + (a[0].equals("restore") ? "<backup-id> " : "") + "<reason>");
         String target = a[1];
-        String capability = a[0].equals("archive") ? "delete" : a[0];
+        String capability = a[0].equals("archive") ? "delete" : a[0].equals("reload-all") ? "reload" : a[0];
         boolean global = target.equals("all") || target.equals("config");
-        if (global && !a[0].equals("reload"))
+        if (global && !List.of("reload", "reload-all").contains(a[0]))
             throw new IllegalArgumentException("Select one dungeon");
         var d = global ? null : dungeon(target);
         StaffPermissions.require(actor, capability, global ? null : target);
@@ -472,7 +510,8 @@ public final class StaffCommandHandler implements CommandHandler {
                                         "Dungeon was replaced while waiting; request the operation"
                                                 + " again");
                             return switch (a[0]) {
-                                case "reload" -> {
+                                case "reload", "reload-all" -> {
+                                    if (a[0].equals("reload-all")) lifecycle.reloadConfigs();
                                     if (target.equals("config")) {
                                         lifecycle.reloadConfigs();
                                         yield CompletableFuture.completedFuture(
@@ -528,7 +567,7 @@ public final class StaffCommandHandler implements CommandHandler {
                 if (!(actor instanceof Player p))
                     throw new IllegalArgumentException("Players only");
                 ops.observe(p, instance);
-                tell(actor, "Observing. Return with /dungeon admin stop-observing");
+                tell(actor, "Observing. Return with /dungeon instance stop-observing");
             }
             case "retry" -> {
                 StaffPermissions.require(actor, "recovery", name);
@@ -829,7 +868,7 @@ public final class StaffCommandHandler implements CommandHandler {
             String revision) {
         UUID next = ops.confirm(actor, action, target, revision, String.join(" ", input), token);
         if (next == null) return true;
-        String command = "/dungeon admin " + String.join(" ", input) + " --confirm " + next;
+        String command = CommandRoutes.staffCommand(input) + " --confirm " + next;
         tell(actor, "Confirm " + action + " for " + target + ". Impact: " + ops.impact(target));
         actor.sendMessage(
                 Component.text("[Confirm within 30 seconds]")
@@ -853,7 +892,7 @@ public final class StaffCommandHandler implements CommandHandler {
                         + runtime.preparations().count(null)
                         + "; load problems: "
                         + runtime.dungeonCatalog().loadFailures().size());
-        tell(actor, "Use /dungeon admin help for actions");
+        tell(actor, "Use /dungeon help for actions");
     }
 
     public List<DungeonDefinition> sortedDungeons() {
@@ -897,6 +936,11 @@ public final class StaffCommandHandler implements CommandHandler {
         result.add("Instances: " + ops.impact(d.getWorldName()));
         if (result.size() == 1) result.add("No readiness problems found");
         return result;
+    }
+
+    private String describeQueue(nl.hauntedmc.dungeons.runtime.queue.DungeonQueueEntry queue) {
+        return queue.getAdmissionId() + " " + queue.getDungeon().getWorldName() + " " + queue.getDifficulty()
+                + "; players=" + queue.getPlayers().size() + "; waiting=" + queue.getWaitingSeconds() + "s";
     }
 
     public List<String> queueLines() {
@@ -990,7 +1034,7 @@ public final class StaffCommandHandler implements CommandHandler {
         var dungeon = runtime.dungeonCatalog().get(name);
         if (dungeon == null)
             throw new IllegalArgumentException(
-                    "Dungeon not loaded: " + name + ". Inspect /dungeon admin problems");
+                    "Dungeon not loaded: " + name + ". Inspect /dungeon server problems");
         return dungeon;
     }
 
@@ -1032,7 +1076,7 @@ public final class StaffCommandHandler implements CommandHandler {
     }
 
     private static void need(String[] a, int min, String usage) {
-        if (a.length < min) throw new IllegalArgumentException("Usage: /dungeon admin " + usage);
+        if (a.length < min) throw new IllegalArgumentException("Invalid arguments. Use /dungeon help for command syntax.");
     }
 
     public static void tell(CommandSender actor, String text) {

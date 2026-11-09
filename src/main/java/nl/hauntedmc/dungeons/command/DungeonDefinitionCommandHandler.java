@@ -76,7 +76,7 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
             case "disable" ->
                     this.handleSetDungeonEnabledCommand(
                             sender, CommandArguments.shiftArgs(args), false);
-            case "keys" -> this.handleKeysCommand(sender, args);
+            case "keys" -> this.handleAuditedKeys(sender, args);
             case "exit" -> this.handleExitCommand(sender, args);
             default -> {
                 CommandArguments.sendUsageList(sender, "commands.dungeon.help.lines");
@@ -143,6 +143,52 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
         }
 
         return options;
+    }
+
+    private boolean handleAuditedKeys(CommandSender sender, String[] raw) {
+        var input = new java.util.ArrayList<>(java.util.List.of(raw));
+        String token = null;
+        int confirmation = input.indexOf("--confirm");
+        if (confirmation >= 0) {
+            if (confirmation != input.size() - 2) throw new IllegalArgumentException("Use --confirm <token> at the end");
+            token = input.removeLast();
+            input.removeLast();
+        }
+        String[] args = input.toArray(String[]::new);
+        if (args.length < 5) throw new IllegalArgumentException("A key change requires a reason");
+        int reasonStart = args[2].equalsIgnoreCase("remove") ? 5 : 4;
+        if (args.length <= reasonStart) throw new IllegalArgumentException("A key change requires a reason");
+        var dungeon = this.dungeonManager.get(args[3]);
+        if (dungeon == null) throw new IllegalArgumentException("Dungeon not found");
+        nl.hauntedmc.dungeons.runtime.staff.StaffPermissions.require(sender, "keys", dungeon.getWorldName());
+        String reason = String.join(" ", java.util.Arrays.copyOfRange(args, reasonStart, args.length));
+        nl.hauntedmc.dungeons.runtime.staff.StaffOperations.requireReason(reason);
+        var before = dungeon.getAccessKeys().stream().map(key -> key.getKeyId()).toList();
+        var ops = dungeon.getRuntime().staffOperations();
+        if (ops != null) ops.requireContentWritable(dungeon.getWorldName());
+        if (args[2].equalsIgnoreCase("remove") || args[2].equalsIgnoreCase("clear")) {
+            if (ops == null) throw new IllegalStateException("Staff confirmation service unavailable");
+            var next = ops.confirm(sender, "key-" + args[2], dungeon.getWorldName(),
+                    dungeon.getDungeonId() + ":" + dungeon.getConfig().saveToString() + ":" + before,
+                    String.join(" ", input), token);
+            if (next != null) {
+                String command = CommandRoutes.canonicalCommand(CommandRoutes.Handler.MAP, input) + " --confirm " + next;
+                sender.sendMessage(net.kyori.adventure.text.Component.text("[Confirm key change within 30 seconds]")
+                        .clickEvent(net.kyori.adventure.text.event.ClickEvent.suggestCommand(command)));
+                return true;
+            }
+        }
+        String[] operation = java.util.Arrays.copyOf(args, reasonStart);
+        if (args[2].equalsIgnoreCase("remove")) {
+            for (int index = 0; index < dungeon.getAccessKeys().size(); index++) {
+                if (dungeon.getAccessKeys().get(index).getKeyId().equals(operation[4])) operation[4] = String.valueOf(index + 1);
+            }
+        }
+        boolean result = this.handleKeysCommand(sender, operation);
+        var after = dungeon.getAccessKeys().stream().map(key -> key.getKeyId()).toList();
+        if (ops != null) ops.audit(sender, "key-" + args[2], dungeon.getWorldName(), reason,
+                before.equals(after) ? "unchanged" : "updated");
+        return result;
     }
 
     /** Runs handle keys command. */
@@ -237,11 +283,7 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
     /** Runs handle set dungeon enabled command. */
     private boolean handleSetDungeonEnabledCommand(
             CommandSender sender, String[] args, boolean enabled) {
-        if (!CommandUtils.hasPermission(sender, "dungeons.role.operator")) {
-            return false;
-        }
-
-        if (args.length != 2) {
+        if (args.length < 3) {
             LangUtils.sendMessage(
                     sender,
                     enabled ? "commands.dungeon.enable.usage" : "commands.dungeon.disable.usage");
@@ -259,6 +301,7 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
             return true;
         }
 
+        nl.hauntedmc.dungeons.runtime.staff.StaffPermissions.require(sender, "edit", dungeon.getWorldName());
         if (dungeon.isEnabled() == enabled) {
             LangUtils.sendMessage(
                     sender,
@@ -269,7 +312,11 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
             return true;
         }
 
+        String reason = String.join(" ", java.util.Arrays.copyOfRange(args, 2, args.length));
+        nl.hauntedmc.dungeons.runtime.staff.StaffOperations.requireReason(reason);
         dungeon.setSaveConfig("dungeon.enabled", enabled);
+        if (dungeon.getRuntime().staffOperations() != null)
+            dungeon.getRuntime().staffOperations().audit(sender, enabled ? "enable" : "disable", dungeon.getWorldName(), reason, "updated");
         if (!enabled) {
             this.clearQueuedStartsForDisabledDungeon(dungeon);
             if (dungeon.getRuntime().staffOperations() != null)
@@ -325,10 +372,7 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
             return true;
         }
 
-        if (!CommandUtils.hasDungeonEditAccess(player, dungeon.getWorldName())) {
-            LangUtils.sendMessage(player, "commands.dungeon.keys.clear.no-permission");
-            return true;
-        }
+        nl.hauntedmc.dungeons.runtime.staff.StaffPermissions.require(player, "keys", dungeon.getWorldName());
 
         int removedCount = dungeon.removeAllAccessKeys();
         LangUtils.sendMessage(
@@ -354,10 +398,7 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
             return true;
         }
 
-        if (!CommandUtils.hasDungeonEditAccess(sender, dungeon.getWorldName())) {
-            LangUtils.sendMessage(sender, "commands.dungeon.keys.remove.no-permission");
-            return true;
-        }
+        nl.hauntedmc.dungeons.runtime.staff.StaffPermissions.require(sender, "keys", dungeon.getWorldName());
 
         if (args.length == 3) {
             Optional<Integer> parsedKeyId = InputUtils.readIntegerInput(sender, args[2]);
@@ -426,10 +467,7 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
             return true;
         }
 
-        if (!CommandUtils.hasDungeonEditAccess(player, dungeon.getWorldName())) {
-            LangUtils.sendMessage(player, "commands.dungeon.keys.add.no-permission");
-            return true;
-        }
+        nl.hauntedmc.dungeons.runtime.staff.StaffPermissions.require(player, "keys", dungeon.getWorldName());
 
         ItemStack heldItem = player.getInventory().getItemInMainHand();
         if (heldItem.getType() == Material.AIR) {
@@ -464,7 +502,7 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
 
     /** Runs handle dungeon list command. */
     private boolean handleDungeonListCommand(CommandSender sender, String[] args) {
-        if (!CommandUtils.hasPermission(sender, "dungeons.role.operator")) {
+        if (!CommandUtils.hasAnyDungeonEditAccess(sender)) {
             return false;
         }
 
@@ -505,7 +543,7 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
 
     /** Runs handle dungeon info command. */
     private boolean handleDungeonInfoCommand(CommandSender sender, String[] args) {
-        if (!CommandUtils.hasPermission(sender, "dungeons.role.operator")) {
+        if (!CommandUtils.hasAnyDungeonEditAccess(sender)) {
             return false;
         }
 

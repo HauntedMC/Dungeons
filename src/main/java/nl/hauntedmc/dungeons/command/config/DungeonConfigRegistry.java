@@ -26,7 +26,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
- * Registry of dungeon settings that can be edited through {@code /dungeon config}.
+ * Registry of dungeon settings that can be edited through {@code /dungeon map settings}.
  *
  * <p>The registry combines a static set of common settings with dynamic entries derived from the
  * current dungeon definition, such as difficulty presets and branching branch settings.

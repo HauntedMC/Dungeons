@@ -68,6 +68,7 @@ import java.util.function.Consumer;
 public abstract class DungeonDefinition {
     private static final int DEFAULT_MAX_TEAM_SIZE = 4;
     private final DungeonsRuntime runtime;
+    private final UUID dungeonId;
     protected final String worldName;
     protected final File folder;
     protected final FileConfiguration config;
@@ -132,6 +133,7 @@ public abstract class DungeonDefinition {
                     this.config.load(configFile);
                 }
             }
+            nl.hauntedmc.dungeons.runtime.dungeon.DungeonIdentity.existing(this.config);
             File configFile = new File(folder, "config.yml");
             if (!configFile.exists()) {
                 this.config.save(configFile);
@@ -150,6 +152,8 @@ public abstract class DungeonDefinition {
         }
 
         this.syncConfigWithDefaults();
+        this.dungeonId = nl.hauntedmc.dungeons.runtime.dungeon.DungeonIdentity.initialize(
+                this.plugin(), this.config, new File(folder, "config.yml"));
         this.loadRuntimeSettingsFromConfig();
         this.accessKeyService = new DungeonAccessKeyService(runtime, folder, () -> this.accessKeys);
         this.playerDataStore = new DungeonPlayerDataStore(this.plugin(), folder);
@@ -174,7 +178,8 @@ public abstract class DungeonDefinition {
             return;
         }
 
-        if (!ConfigSyncUtils.syncMissingAndObsolete(defaultConfig, this.config, Set.of("rules"))) {
+        if (!ConfigSyncUtils.syncMissingAndObsolete(defaultConfig, this.config,
+                Set.of("rules", "dungeon.id", "statistics.custom_metrics", "statistics.rankings"))) {
             return;
         }
 
@@ -191,6 +196,11 @@ public abstract class DungeonDefinition {
     /** Returns the runtime that owns this dungeon definition. */
     public final DungeonsRuntime getRuntime() {
         return this.runtime;
+    }
+
+    /** Persistent identity shared by copies of this map across server deployments. */
+    public final UUID getDungeonId() {
+        return this.dungeonId;
     }
 
     protected final DungeonsRuntime runtime() {
@@ -752,7 +762,7 @@ public abstract class DungeonDefinition {
                         addedBy == null ? null : addedBy.getUniqueId());
         this.accessKeys.add(accessKey);
         this.rebuildValidKeys();
-        this.saveAccessKeys("adding an access key");
+        this.saveAccessKeys();
         return accessKey;
     }
 
@@ -763,7 +773,7 @@ public abstract class DungeonDefinition {
         }
         this.accessKeys.clear();
         this.rebuildValidKeys();
-        this.saveAccessKeys("clearing access keys");
+        this.saveAccessKeys();
         return removedCount;
     }
 
@@ -784,7 +794,7 @@ public abstract class DungeonDefinition {
                 this.accessKeyService.revokeIssuedAccessKeysByDefinition(removedKeyId);
             }
             this.rebuildValidKeys();
-            this.saveAccessKeys("removing an access key");
+            this.saveAccessKeys();
         }
         return removedCount;
     }
@@ -798,7 +808,7 @@ public abstract class DungeonDefinition {
         AccessKeyDefinition removedKey = this.accessKeys.remove(index);
         this.accessKeyService.revokeIssuedAccessKeysByDefinition(removedKey.getKeyId());
         this.rebuildValidKeys();
-        this.saveAccessKeys("removing an access key");
+        this.saveAccessKeys();
         return true;
     }
 
@@ -885,22 +895,13 @@ public abstract class DungeonDefinition {
         return playerSession.completeReservedAccessKey(this.worldName, replacementKey);
     }
 
-    private void saveAccessKeys(String action) {
+    private void saveAccessKeys() {
         this.config.set("access.keys.items", this.accessKeys);
         if (this.config.get("access.keys.consume_on_entry") == null) {
             this.config.set("access.keys.consume_on_entry", true);
         }
 
-        try {
-            this.config.save(new File(this.folder, "config.yml"));
-        } catch (IOException exception) {
-            this.logger()
-                    .error(
-                            "Failed to save config while {} in dungeon '{}'.",
-                            action,
-                            this.worldName,
-                            exception);
-        }
+        this.saveConfig();
     }
 
     public int getFirstKeyAmount(Player player) {

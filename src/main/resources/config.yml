@@ -14,7 +14,7 @@ instances:
 commands:
   # int. Entries shown per page in paginated command output such as /dungeon list and /dungeon help.
   list_page_size: 10
-  # int. Seconds allowed between the first and second /dungeon dungeon delete command.
+  # int. Seconds allowed between the first and second /dungeon map delete command.
   delete_confirmation_seconds: 10
 
 access:
@@ -23,7 +23,7 @@ access:
     # False = skip per-copy token rotation and access_keys.yml state.
     unique_validation_enabled: false
     # bool. Applies when unique_validation_enabled = false.
-    # True = /dungeon dungeon keys add|give still stamp issued keys with stable plugin-owned metadata,
+    # True = /dungeon map keys add|give still stamp issued keys with stable plugin-owned metadata,
     # so ordinary copies of the same item no longer validate or stack with the dungeon key.
     # Untracked keys are rejected when this is enabled.
     metadata_validation_enabled: true

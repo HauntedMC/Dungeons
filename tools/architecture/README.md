@@ -3,7 +3,7 @@
 Run from the repository root using the project's JDK:
 
 ```bash
-java tools/architecture/SourceInventory.java > docs/REFACTORING_INVENTORY.tsv
+java tools/architecture/SourceInventory.java
 ```
 
 The tool uses the JDK parser, so it understands nested classes, anonymous callbacks,

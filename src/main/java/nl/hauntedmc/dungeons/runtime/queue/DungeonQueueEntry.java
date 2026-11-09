@@ -19,7 +19,10 @@ import java.util.UUID;
  * Immutable queue intent plus mutable queued-member list for one pending dungeon start.
  */
 public class DungeonQueueEntry {
+    private final UUID admissionId = UUID.randomUUID();
     private final long queuedAt = System.nanoTime();
+
+    public UUID getAdmissionId() { return this.admissionId; }
 
     public long getWaitingSeconds() {
         return java.util.concurrent.TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - queuedAt);

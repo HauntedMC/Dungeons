@@ -269,7 +269,7 @@ class StaffCommandContractTest {
                     h.handleTabComplete(f.actor, new String[] {"admin", "operation", ""}));
             f.messages.clear();
             execute(h, f, "help");
-            assertTrue(f.messages.stream().anyMatch(line -> line.contains("dungeon <name>")));
+            assertTrue(f.messages.stream().anyMatch(line -> line.contains("map info <map>")));
             assertThrows(
                     IllegalArgumentException.class,
                     () -> execute(h, f, "operation", hidden.shortId()));

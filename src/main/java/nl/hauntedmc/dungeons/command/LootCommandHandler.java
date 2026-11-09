@@ -30,6 +30,13 @@ final class LootCommandHandler implements CommandHandler {
     /** Runs handle command. */
     @Override
     public boolean handleCommand(CommandSender sender, String[] args) {
+        if (args.length == 3 && args[1].equalsIgnoreCase("info")) {
+            nl.hauntedmc.dungeons.runtime.staff.StaffPermissions.require(sender, "loot", null);
+            var table = this.lootTableManager.get(args[2]);
+            if (table == null) throw new IllegalArgumentException("Loot table not found");
+            sender.sendMessage("[Dungeons] " + table.getNamespace() + ": " + table.getMinItems() + "–" + table.getMaxItems() + " items");
+            return true;
+        }
         if (!(sender instanceof Player player)) {
             return true;
         }

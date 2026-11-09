@@ -22,7 +22,7 @@ cd Dungeons
 2. Keep the change focused on one clear problem.
 3. Add or update tests with the code change.
 4. Run local checks before opening a PR.
-5. Update docs when operator behavior or configuration expectations change.
+5. Update the README when operator behavior or configuration expectations change.
 
 ## Local Validation
 

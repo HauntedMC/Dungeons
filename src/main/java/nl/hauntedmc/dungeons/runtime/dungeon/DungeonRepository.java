@@ -99,7 +99,7 @@ public final class DungeonRepository {
             template.save(defaultConfig);
 
             this.runtime.defaultDungeonConfig().load(defaultConfig);
-        } catch (InvalidConfigurationException | IOException exception) {
+        } catch (InvalidConfigurationException | IOException | IllegalArgumentException exception) {
             this.runtime
                     .environment()
                     .logger()
@@ -171,6 +171,10 @@ public final class DungeonRepository {
             if (configFile.exists()) {
                 config = new YamlConfiguration();
                 config.load(configFile);
+                var candidateId = DungeonIdentity.existing(config);
+                if (candidateId != null && this.dungeons.values().stream().anyMatch(existing ->
+                        !existing.getWorldName().equals(folder.getName()) && candidateId.equals(existing.getDungeonId())))
+                    throw new IllegalArgumentException("Duplicate dungeon UUID: " + candidateId);
                 dungeonType = config.getString("dungeon.type", "static");
             }
 
@@ -228,7 +232,7 @@ public final class DungeonRepository {
 
             return dungeon;
 
-        } catch (InvalidConfigurationException | IOException exception) {
+        } catch (InvalidConfigurationException | IOException | IllegalArgumentException exception) {
             this.loadFailures.put(
                     folder.getName(), "Invalid or unreadable configuration; see server log");
             this.runtime
@@ -244,6 +248,11 @@ public final class DungeonRepository {
 
     /** Inserts or replaces a loaded dungeon in this catalogue. */
     public void put(DungeonDefinition dungeon) {
+        if (dungeon.getDungeonId() != null && this.dungeons.values().stream().anyMatch(existing ->
+                !existing.getWorldName().equals(dungeon.getWorldName())
+                        && dungeon.getDungeonId().equals(existing.getDungeonId()))) {
+            throw new IllegalArgumentException("Duplicate dungeon UUID: " + dungeon.getDungeonId());
+        }
         this.dungeons.put(dungeon.getWorldName(), dungeon);
     }
 
@@ -254,7 +263,16 @@ public final class DungeonRepository {
 
     /** Returns one loaded dungeon by world name, or null when absent. */
     public DungeonDefinition get(String dungeonName) {
-        return this.dungeons.get(dungeonName);
+        var named = this.dungeons.get(dungeonName);
+        if (named != null || dungeonName == null) return named;
+        try {
+            var id = java.util.UUID.fromString(dungeonName);
+            if (!id.toString().equalsIgnoreCase(dungeonName)) return null;
+            return this.dungeons.values().stream()
+                    .filter(dungeon -> id.equals(dungeon.getDungeonId())).findFirst().orElse(null);
+        } catch (IllegalArgumentException invalidId) {
+            return null;
+        }
     }
 
     /** Returns all loaded dungeons currently tracked in memory. */

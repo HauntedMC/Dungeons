@@ -15,8 +15,6 @@ import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueCoordinator;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry;
 import nl.hauntedmc.dungeons.runtime.rewards.LootTableRepository;
 import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
-import nl.hauntedmc.dungeons.util.command.CommandUtils;
-import nl.hauntedmc.dungeons.util.command.InputUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 
 import org.bukkit.command.CommandSender;
@@ -28,7 +26,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Optional;
 
 /**
  * Central Bukkit command executor for the plugin's root command.
@@ -133,283 +130,180 @@ public final class DungeonCommand implements TabExecutor {
             @NotNull String label,
             @NotNull String @NotNull [] args) {
         if (!sender.hasPermission(this.getPermissionNode())) {
-            return null;
+            return List.of();
         }
 
-        if (this.staffCommandHandler != null
-                && args.length > 1
-                && args[0].equalsIgnoreCase("admin"))
-            return this.staffCommandHandler.handleTabComplete(sender, args);
-        List<String> tabCompletes = this.handleTabComplete(sender, args);
-        if (tabCompletes == null && args.length == 1) {
-            return new ArrayList<>();
-        }
-
-        return tabCompletes;
+        return this.completeCanonical(sender, args);
     }
 
-    /** Runs handle command. */
     private boolean handleCommand(CommandSender sender, String[] args) {
         if (args.length == 0) {
-            this.sendRootHelp(sender);
-            if (this.staffCommandHandler != null
-                    && nl.hauntedmc.dungeons.runtime.staff.StaffPermissions.allows(
-                            sender, "inspect", null))
-                sender.sendMessage(
-                        net.kyori.adventure.text.Component.text("[Staff dashboard: /dungeon admin]")
-                                .clickEvent(
-                                        net.kyori.adventure.text.event.ClickEvent.runCommand(
-                                                "/dungeon admin")));
+            this.canonicalHelp(sender, new String[0]);
             return true;
         }
-
-        // Keep the first-level command dispatch in one switch so permissions, help behavior, and
-        // root subcommand names stay easy to audit from a single place.
-        return switch (args[0].toLowerCase(Locale.ROOT)) {
-            case "admin" ->
-                    this.staffCommandHandler == null
-                            || this.staffCommandHandler.handleCommand(sender, args);
-            case "help" -> this.handleHelpCommand(sender, args);
-            case "list" -> this.handleListCommand(sender, args);
-            case "rewards", "play", "stuck", "lives", "leave" ->
-                    this.gameplayCommands.handleCommand(sender, args);
-            case "team" -> this.teamCommandGroup.handleCommand(sender, args);
-            case "loot" -> this.lootCommandGroup.handleCommand(sender, args);
-            case "config" -> this.configCommandHandler.handleCommand(sender, args);
-            case "dungeon" -> this.dungeonCommandGroup.handleCommand(sender, args);
-            case "edit" -> this.editCommandGroup.handleCommand(sender, args);
-            case "debug" -> {
-                if (this.staffCommandHandler != null
-                        && (!(sender instanceof Player p)
-                                || !nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard.editor(
-                                        p, this.playerManager.get(p))))
-                    throw new IllegalArgumentException(
-                            "Diagnostics require an authorized editor session");
-                yield this.debugCommandGroup.handleCommand(sender, args);
-            }
-            default -> {
-                this.sendRootHelp(sender);
-                yield true;
-            }
-        };
-    }
-
-    /** Runs handle tab complete. */
-    private List<String> handleTabComplete(CommandSender sender, String[] args) {
-        if (args.length >= 1 && args[0].equalsIgnoreCase("config")) {
-            return this.configCommandHandler.handleTabComplete(sender, args);
-        }
-
-        boolean playerSender = sender instanceof Player;
-        List<String> options = new ArrayList<>();
-
-        if (args.length == 1) {
-            String query = args[0];
-            boolean canPlayFromHere =
-                    playerSender
-                            ? CommandUtils.hasPermissionSilent(sender, "dungeons.play")
-                                    || CommandUtils.hasPermissionSilent(
-                                            sender, "dungeons.play.send")
-                            : CommandUtils.hasPermissionSilent(sender, "dungeons.play.send");
-            if (this.canUseDiscoveryCommands(sender)) {
-                CommandArguments.addMatchingLiteralOptions(options, query, "list");
-            }
-            if (canPlayFromHere) {
-                CommandArguments.addMatchingLiteralOptions(options, query, "play");
-            }
-
-            if (playerSender && CommandUtils.hasPermissionSilent(sender, "dungeons.play")) {
-                CommandArguments.addMatchingLiteralOptions(options, query, "team");
-            }
-
-            if (playerSender && CommandUtils.hasPermissionSilent(sender, "dungeons.stuck")) {
-                CommandArguments.addMatchingLiteralOptions(options, query, "stuck");
-            }
-
-            CommandArguments.addMatchingLiteralOptions(options, query, "help");
-            if (nl.hauntedmc.dungeons.runtime.staff.StaffPermissions.allows(
-                    sender, "inspect", null))
-                CommandArguments.addMatchingLiteralOptions(options, query, "admin");
-            if (playerSender) {
-                CommandArguments.addMatchingLiteralOptions(options, query, "leave");
-            }
-
-            if (playerSender && CommandUtils.hasPermissionSilent(sender, "dungeons.lives")) {
-                CommandArguments.addMatchingLiteralOptions(options, query, "lives");
-            }
-
-            if (playerSender && CommandUtils.hasPermissionSilent(sender, "dungeons.rewards")) {
-                CommandArguments.addMatchingLiteralOptions(options, query, "rewards");
-            }
-
-            if (CommandUtils.hasAnyDungeonEditAccess(sender)) {
-                CommandArguments.addMatchingLiteralOptions(options, query, "config");
-                if (playerSender) {
-                    CommandArguments.addMatchingLiteralOptions(options, query, "edit");
-                }
-            }
-
-            if (playerSender && CommandUtils.hasPermissionSilent(sender, "dungeons.staff.loot")) {
-                CommandArguments.addMatchingLiteralOptions(options, query, "loot");
-            }
-
-            if (CommandUtils.hasPermissionSilent(sender, "dungeons.role.operator")) {
-                CommandArguments.addMatchingLiteralOptions(options, query, "dungeon");
-                if (playerSender) {
-                    CommandArguments.addMatchingLiteralOptions(options, query, "debug");
-                }
-            }
-
-            return options;
-        }
-
-        String root = args[0].toLowerCase(Locale.ROOT);
-        // Nested command groups own their second-level completions so each branch can evolve
-        // without
-        // making the root completion logic unreadable.
-        return switch (root) {
-            case "help" -> args.length == 2 ? List.of("<page>") : List.of();
-            case "list" ->
-                    this.canUseDiscoveryCommands(sender)
-                            ? this.completeListCommand(args)
-                            : List.of();
-            case "play" ->
-                    this.canTabCompletePlay(sender, playerSender)
-                            ? this.gameplayCommands.handleTabComplete(sender, args)
-                            : List.of();
-            case "team" ->
-                    playerSender && CommandUtils.hasPermissionSilent(sender, "dungeons.play")
-                            ? this.teamCommandGroup.handleTabComplete(sender, args)
-                            : List.of();
-            case "loot" ->
-                    playerSender && CommandUtils.hasPermissionSilent(sender, "dungeons.staff.loot")
-                            ? this.lootCommandGroup.handleTabComplete(sender, args)
-                            : List.of();
-            case "dungeon" ->
-                    CommandUtils.hasPermissionSilent(sender, "dungeons.role.operator")
-                            ? this.dungeonCommandGroup.handleTabComplete(sender, args)
-                            : List.of();
-            case "edit" ->
-                    playerSender && CommandUtils.hasAnyDungeonEditAccess(sender)
-                            ? this.editCommandGroup.handleTabComplete(sender, args)
-                            : List.of();
-            case "debug" ->
-                    playerSender
-                                    && CommandUtils.hasPermissionSilent(
-                                            sender, "dungeons.role.operator")
-                            ? this.debugCommandGroup.handleTabComplete(sender, args)
-                            : List.of();
-            default -> List.of();
-        };
-    }
-
-    /** Runs complete list command. */
-    private List<String> completeListCommand(String[] args) {
-        List<String> options = new ArrayList<>();
-        if (args.length == 2) {
-            DungeonCompletions.addMatchingDungeonNames(this.dungeonManager, options, args[1]);
-            CommandArguments.addMatchingLiteralOptions(options, args[1], "1", "2", "3");
-        } else if (args.length == 3) {
-            CommandArguments.addMatchingLiteralOptions(options, args[2], "1", "2", "3", "4", "5");
-        }
-
-        return options;
-    }
-
-    /** Returns whether it can tab complete play. */
-    private boolean canTabCompletePlay(CommandSender sender, boolean playerSender) {
-        return playerSender
-                ? CommandUtils.hasPermissionSilent(sender, "dungeons.play")
-                        || CommandUtils.hasPermissionSilent(sender, "dungeons.play.send")
-                : CommandUtils.hasPermissionSilent(sender, "dungeons.play.send");
-    }
-
-    /** Returns whether it can use discovery commands. */
-    private boolean canUseDiscoveryCommands(CommandSender sender) {
-        if (CommandUtils.hasPermissionSilent(sender, "dungeons.role.operator")) {
+        if (args[0].equalsIgnoreCase("help")) {
+            this.canonicalHelp(sender, java.util.Arrays.copyOfRange(args, 1, args.length));
             return true;
         }
-
-        return sender instanceof Player
-                ? CommandUtils.hasPermissionSilent(sender, "dungeons.play")
-                        || CommandUtils.hasPermissionSilent(sender, "dungeons.play.send")
-                : CommandUtils.hasPermissionSilent(sender, "dungeons.play.send");
-    }
-
-    /** Runs send root help. */
-    private void sendRootHelp(CommandSender sender) {
-        boolean playerSender = sender instanceof Player;
-        sender.sendMessage(
-                LangUtils.getMessage(
-                        "commands.root.header",
-                        false,
-                        LangUtils.placeholder(
-                                "version",
-                                this.plugin.getPluginMeta().getVersion().split("-")[0])));
-        LangUtils.sendMessage(sender, "commands.root.help");
-        boolean canPlayFromHere =
-                playerSender
-                        ? CommandUtils.hasPermissionSilent(sender, "dungeons.play")
-                                || CommandUtils.hasPermissionSilent(sender, "dungeons.play.send")
-                        : CommandUtils.hasPermissionSilent(sender, "dungeons.play.send");
-        if (this.canUseDiscoveryCommands(sender)) {
-            LangUtils.sendMessage(sender, "commands.root.list");
-        }
-        if (canPlayFromHere) {
-            LangUtils.sendMessage(sender, "commands.root.play");
-        }
-        if (playerSender && CommandUtils.hasPermissionSilent(sender, "dungeons.play")) {
-            LangUtils.sendMessage(sender, "commands.root.team");
-        }
-        if (playerSender) {
-            LangUtils.sendMessage(sender, "commands.root.leave");
-        }
-        if (playerSender && CommandUtils.hasPermissionSilent(sender, "dungeons.stuck")) {
-            LangUtils.sendMessage(sender, "commands.root.stuck");
-        }
-        if (playerSender && CommandUtils.hasPermissionSilent(sender, "dungeons.lives")) {
-            LangUtils.sendMessage(sender, "commands.root.lives");
-        }
-        if (playerSender && CommandUtils.hasPermissionSilent(sender, "dungeons.rewards")) {
-            LangUtils.sendMessage(sender, "commands.root.rewards");
-        }
-        if (CommandUtils.hasAnyDungeonEditAccess(sender)) {
-            LangUtils.sendMessage(sender, "commands.root.config");
-            if (playerSender) {
-                LangUtils.sendMessage(sender, "commands.root.edit");
+        for (var route : CommandRoutes.ALL) {
+            var values = route.match(args);
+            if (values == null) continue;
+            if (values.containsKey("map") && !route.syntax().startsWith("map create ")
+                    && !route.syntax().startsWith("map import ")) {
+                var resolved = this.dungeonManager.get(values.get("map").getFirst());
+                if (resolved != null) values.put("map", List.of(resolved.getWorldName()));
             }
-        }
-        if (playerSender && CommandUtils.hasPermissionSilent(sender, "dungeons.staff.loot")) {
-            LangUtils.sendMessage(sender, "commands.root.loot");
-        }
-        if (CommandUtils.hasPermissionSilent(sender, "dungeons.role.operator")) {
-            LangUtils.sendMessage(sender, "commands.root.dungeon");
-            if (playerSender) {
-                LangUtils.sendMessage(sender, "commands.root.debug");
+            if (!this.allowed(sender, route, values)) {
+                LangUtils.sendMessage(sender, "general.errors.no-permission");
+                return true;
             }
+            String[] operation = route.arguments(values);
+            return switch (route.handler()) {
+                case GAMEPLAY -> this.gameplayCommands.handleCommand(sender, operation);
+                case TEAM -> this.teamCommandGroup.handleCommand(sender, operation);
+                case MAP -> this.dungeonCommandGroup.handleCommand(sender, operation);
+                case SETTINGS -> this.configCommandHandler.handleCommand(sender, operation);
+                case EDIT -> this.editCommandGroup.handleCommand(sender, operation);
+                case DEBUG -> {
+                    if (!(sender instanceof Player player)
+                            || !nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard.editor(
+                                    player, this.playerManager.get(player)))
+                        throw new IllegalArgumentException("Open an authorized editor first");
+                    yield this.debugCommandGroup.handleCommand(sender, operation);
+                }
+                case LOOT -> this.lootCommandGroup.handleCommand(sender, operation);
+                case STAFF -> {
+                    if (this.staffCommandHandler == null) throw new IllegalStateException("Staff services unavailable");
+                    yield this.staffCommandHandler.handleCommand(sender, operation);
+                }
+                case DISCOVERY -> operation[0].equals("info")
+                        ? this.publicInfo(sender, operation[1]) : this.handleListCommand(sender, operation);
+                case QUERY -> throw new IllegalStateException("Database query services unavailable");
+            };
         }
-    }
-
-    /** Returns the permission node. */
-    private String getPermissionNode() {
-        return "dungeons.core";
-    }
-
-    /** Returns whether console friendly. */
-    private boolean isConsoleFriendly() {
-        return true;
-    }
-
-    /** Runs handle help command. */
-    private boolean handleHelpCommand(CommandSender sender, String[] args) {
-        if (args.length == 2) {
-            Optional<Integer> helpPage = InputUtils.readIntegerInput(sender, args[1]);
-            CommandUtils.displayHelpMenu(sender, helpPage.orElse(1));
+        // A bare semantic group shows its own help. Removed groups have no executable route.
+        if (CommandRoutes.ALL.stream().anyMatch(route -> route.syntax().startsWith(args[0].toLowerCase(Locale.ROOT) + " "))) {
+            this.canonicalHelp(sender, args);
         } else {
-            CommandUtils.displayHelpMenu(sender, 1);
+            sender.sendMessage("[Dungeons] Unknown command. Use /dungeon help.");
         }
-
         return true;
+    }
+
+    private boolean allowed(CommandSender sender, CommandRoutes.Route route,
+            java.util.Map<String, List<String>> values) {
+        if (route.playerOnly() && !(sender instanceof Player)) return false;
+        if (!route.permission().startsWith("staff.")) {
+            return sender.hasPermission("dungeons." + route.permission());
+        }
+        String capability = route.permission().substring(6);
+        var map = values.get("map");
+        if (map != null) {
+            var dungeon = this.dungeonManager.get(map.getFirst());
+            String scope = dungeon == null ? map.getFirst() : dungeon.getWorldName();
+            if (!scope.equals("all") && !scope.equals("current")) {
+                return nl.hauntedmc.dungeons.runtime.staff.StaffPermissions.allows(sender, capability, scope);
+            }
+        }
+        if (nl.hauntedmc.dungeons.runtime.staff.StaffPermissions.allows(sender, capability, null)) return true;
+        if (route.syntax().startsWith("server") || route.syntax().startsWith("loot ")
+                || route.syntax().startsWith("map archive ") || route.syntax().equals("instance list")
+                || route.syntax().equals("queue list") || capability.equals("compensate")) return false;
+        return this.dungeonManager.getLoadedDungeons().stream().anyMatch(dungeon ->
+                nl.hauntedmc.dungeons.runtime.staff.StaffPermissions.allows(sender, capability, dungeon.getWorldName()));
+    }
+
+    private void canonicalHelp(CommandSender sender, String[] path) {
+        String prefix = String.join(" ", path).toLowerCase(Locale.ROOT);
+        sender.sendMessage("[Dungeons] " + (prefix.isBlank() ? "Commands" : prefix));
+        var lines = new java.util.LinkedHashSet<String>();
+        for (var route : CommandRoutes.ALL) {
+            String[] pattern = route.syntax().split(" ");
+            if (path.length > pattern.length) continue;
+            var values = new java.util.LinkedHashMap<String, List<String>>();
+            boolean matches = true;
+            for (int index = 0; index < path.length; index++) {
+                String part = pattern[index];
+                if (part.startsWith("<")) values.put(part.substring(1, part.length() - 1), List.of(path[index]));
+                else if (part.startsWith("*")) break;
+                else if (!part.toLowerCase(Locale.ROOT).startsWith(path[index].toLowerCase(Locale.ROOT))) {
+                    matches = false;
+                    break;
+                }
+            }
+            if (!matches || !this.allowed(sender, route, values)) continue;
+            String usage = route.usage();
+            for (var value : values.entrySet()) usage = usage.replace("<" + value.getKey() + ">", value.getValue().getFirst());
+            if (prefix.isBlank()) {
+                String root = usage.split(" ")[0];
+                if (List.of("map", "edit", "loot", "player", "instance", "queue", "server", "team").contains(root))
+                    usage = root + " … (use /dungeon help " + root + ")";
+            }
+            lines.add("/dungeon " + usage);
+        }
+        if (lines.isEmpty()) sender.sendMessage("No accessible commands match this path.");
+        else lines.forEach(sender::sendMessage);
+    }
+
+    private List<String> completeCanonical(CommandSender sender, String[] args) {
+        if (args.length > 1 && args[0].equalsIgnoreCase("help"))
+            return this.completeCanonical(sender, java.util.Arrays.copyOfRange(args, 1, args.length));
+        var suggestions = new java.util.TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
+        if (args.length == 0) return List.of();
+        if (args.length == 1) suggestions.add("help");
+        for (var route : CommandRoutes.ALL) {
+            String[] pattern = route.syntax().split(" ");
+            if (args.length > pattern.length) continue;
+            var values = new java.util.LinkedHashMap<String, List<String>>();
+            boolean matches = true;
+            for (int index = 0; index < args.length - 1; index++) {
+                String part = pattern[index];
+                if (part.startsWith("<")) values.put(part.substring(1, part.length() - 1), List.of(args[index]));
+                else if (!part.equalsIgnoreCase(args[index])) { matches = false; break; }
+            }
+            if (!matches || !this.allowed(sender, route, values)) continue;
+            String next = pattern[args.length - 1];
+            if (!next.startsWith("<") && !next.startsWith("*")) suggestions.add(next);
+            else if (next.equals("<map>")) {
+                for (var dungeon : this.dungeonManager.getLoadedDungeons()) {
+                    var candidate = new java.util.LinkedHashMap<>(values);
+                    candidate.put("map", List.of(dungeon.getWorldName()));
+                    if (this.allowed(sender, route, candidate)) suggestions.add(dungeon.getWorldName());
+                }
+            } else if (next.equals("<player>")) {
+                org.bukkit.Bukkit.getOnlinePlayers().forEach(player -> suggestions.add(player.getName()));
+            } else if (next.equals("<difficulty>") && values.containsKey("map")) {
+                var dungeon = this.dungeonManager.get(values.get("map").getFirst());
+                if (dungeon != null) suggestions.addAll(dungeon.getDifficultyLevels().keySet());
+            } else if (next.equals("<setting>") && values.containsKey("map")) {
+                var dungeon = this.dungeonManager.get(values.get("map").getFirst());
+                if (dungeon != null) suggestions.addAll(nl.hauntedmc.dungeons.command.config.DungeonConfigRegistry.getKeys(dungeon, ""));
+            } else if (next.equals("<table>")) {
+                suggestions.addAll(this.lootCommandGroup.handleTabComplete(sender, new String[] {"loot", "edit", ""}));
+            } else if (next.equals("<environment>")) suggestions.addAll(List.of("normal", "nether", "the_end"));
+            else if (next.equals("<type>")) suggestions.addAll(List.of("static", "branching", "open"));
+            else if (next.equals("<state>")) suggestions.addAll(List.of("on", "off"));
+            else if (next.equals("<target>")) suggestions.addAll(List.of("config", "maps", "all"));
+        }
+        String query = args[args.length - 1].toLowerCase(Locale.ROOT);
+        return suggestions.stream().filter(value -> value.toLowerCase(Locale.ROOT).startsWith(query)).toList();
+    }
+
+    private boolean publicInfo(CommandSender sender, String name) {
+        var dungeon = this.dungeonManager.get(name);
+        if (dungeon == null) throw new IllegalArgumentException("Unknown dungeon: " + name);
+        sender.sendMessage("[Dungeons] " + dungeon.getDisplayName() + " (" + dungeon.getWorldName() + ")");
+        sender.sendMessage("Type: " + this.output.getDungeonTypeName(dungeon)
+                + "; team limit: " + dungeon.getMaxTeamSize()
+                + "; difficulties: " + this.output.formatDungeonDifficulties(dungeon));
+        sender.sendMessage("Available: " + dungeon.isEnabled() + "; keys required: " + !dungeon.getAccessKeys().isEmpty());
+        return true;
+    }
+
+    private String getPermissionNode() { return "dungeons.core"; }
+    private boolean isConsoleFriendly() { return true; }
+    private boolean canUseDiscoveryCommands(CommandSender sender) {
+        return sender.hasPermission("dungeons.play") || sender.hasPermission("dungeons.play.send");
     }
 
     /** Runs handle list command. */

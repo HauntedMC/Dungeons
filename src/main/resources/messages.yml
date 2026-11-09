@@ -23,37 +23,6 @@ general:
       - '&7Gebruik dit item om rooms te selecteren'
       - '&7en branching room instellingen te bewerken.'
 commands:
-  root:
-    header: <#5E55AD>-= Dungeons versie {version} =-
-    help: '&d/dungeon help &7Open de command help pagina''s.'
-    list: '&d/dungeon list [filter] [page] &7Bekijk beschikbare dungeons.'
-    play: '&d/dungeon play <dungeon>[:difficulty] [player] &7Start een dungeon run.'
-    team: '&d/dungeon team <create|invite|kick|revoke|accept|deny|leave|delete|info> &7Beheer tijdelijke dungeon teams.'
-    leave: '&d/dungeon leave &7Verlaat je huidige dungeon of queue.'
-    stuck: '&d/dungeon stuck &7Ga terug naar je laatste checkpoint.'
-    lives: '&d/dungeon lives &7Toon je resterende levens.'
-    rewards: '&d/dungeon rewards &7Open je openstaande beloningen.'
-    config: '&d/dungeon config <dungeon> list &7Bekijk live map en generator instellingen.'
-    edit: '&d/dungeon edit ... &7Werk in de huidige editor sessie.'
-    loot: '&d/dungeon loot <create|edit|list> &7Beheer loot tables.'
-    dungeon: '&d/dungeon dungeon ... &7Beheer opgeslagen dungeon definities.'
-    debug: '&d/dungeon debug ... &7Gebruik debug tools voor instances.'
-  help:
-    header: <#5E55AD>-= Dungeons versie {version} =-
-    footer: <#5E55AD>-= Pagina {page} van {total_pages} =-
-    help: '&a/dungeon help &b[pagina] &f| &eToon dit help menu.'
-    list: '&a/dungeon list &b[filter] [pagina] &f| &eBekijk beschikbare dungeons.'
-    play: '&a/dungeon play &6<dungeon>[:difficulty] [player] &f| &eStart een dungeon run.'
-    team: '&a/dungeon team ... &f| &eBeheer tijdelijke dungeon teams.'
-    leave: '&a/dungeon leave &f| &eVerlaat de huidige dungeon of queue.'
-    stuck: '&a/dungeon stuck &f| &eStuur jezelf veilig naar je laatste checkpoint.'
-    lives: '&a/dungeon lives &f| &eToon hoeveel levens je nog hebt.'
-    rewards: '&a/dungeon rewards &f| &eOpen je openstaande dungeon beloningen.'
-    config: '&a/dungeon config &6<dungeon> ... &f| &eBekijk of wijzig live dungeon instellingen.'
-    edit: '&a/dungeon edit ... &f| &eWerk in de huidige dungeon editor sessie.'
-    loot: '&a/dungeon loot ... &f| &eBeheer loot tables.'
-    dungeon: '&a/dungeon dungeon ... &f| &eBeheer opgeslagen dungeon definities.'
-    debug: '&a/dungeon debug ... &f| &eGebruik debug tools voor instances.'
   list:
     usage: '&a/dungeon list &b[filter] [pagina] &f| &eBekijk beschikbare dungeons.'
     header: <#5E55AD>-= Beschikbare Dungeons =-
@@ -62,7 +31,7 @@ commands:
     footer: <#5E55AD>-= Pagina {page} van {total_pages} =-
     default-difficulty: standaard
   play:
-    usage: '&a/dungeon play &6<dungeon>[:difficulty] [player] &f| &eStart een dungeon run voor de speler.'
+    usage: '&a/dungeon play &6<dungeon> [difficulty] &f| &eStart een dungeon run voor de speler.'
     console-needs-player: '&cDe console moet een speler opgeven.'
     player-not-found: '&cSpeler ''&6{player}&c'' is niet online of bestaat niet.'
     already-in-queue: '&cDie speler staat al in de dungeon queue.'
@@ -104,11 +73,11 @@ commands:
       - '&a/dungeon team create &f| &eMaak een tijdelijk dungeon team.'
       - '&a/dungeon team invite &6<player> &f| &eNodig een speler uit voor je team.'
       - '&a/dungeon team kick &6<player> &f| &eZet een teamlid uit je team zolang jullie niet in een dungeon zitten.'
-      - '&a/dungeon team revoke &6<player> &f| &eTrek een openstaande invite in.'
+      - '&a/dungeon team cancel-invite &6<player> &f| &eTrek een openstaande invite in.'
       - '&a/dungeon team accept &f| &eAccepteer je openstaande invite.'
-      - '&a/dungeon team deny &f| &eWeiger je openstaande invite.'
+      - '&a/dungeon team decline &f| &eWeiger je openstaande invite.'
       - '&a/dungeon team leave &f| &eVerlaat een team waar je lid van bent.'
-      - '&a/dungeon team delete &f| &eVerwijder je team als leider.'
+      - '&a/dungeon team disband &f| &eVerwijder je team als leider.'
       - '&a/dungeon team info &f| &eToon je huidige team.'
     unknown-subcommand: '&cOnbekend team subcommand.'
     no-team: '&cJe hebt geen dungeon team.'
@@ -130,7 +99,7 @@ commands:
       target-busy: '&cDie speler zit al in een dungeon, queue, of wordt al naar een dungeon gestuurd.'
       sent: '&a&d{player}&a is uitgenodigd voor je dungeon team.'
       received: '&d{player}&a heeft je uitgenodigd voor een dungeon team.'
-      how-to-respond: '&7Gebruik &d/dungeon team accept &7om toe te treden of &d/dungeon team deny &7om te weigeren.'
+      how-to-respond: '&7Gebruik &d/dungeon team accept &7om toe te treden of &d/dungeon team decline &7om te weigeren.'
       none: '&cJe hebt geen openstaande dungeon team invite.'
       expired: '&cDie dungeon team invite is verlopen.'
       team-missing: '&cDat dungeon team bestaat niet meer.'
@@ -147,7 +116,7 @@ commands:
       removed-self: '&cJe bent uit het dungeon team gezet.'
       removed-other: '&e{player} is uit het dungeon team gezet.'
     revoke:
-      usage: '&a/dungeon team revoke &6<player> &f| &eTrek een openstaande invite in.'
+      usage: '&a/dungeon team cancel-invite &6<player> &f| &eTrek een openstaande invite in.'
       only-leader: '&cAlleen de team leider kan invites intrekken.'
       no-invite: '&cEr staat geen openstaande invite voor die speler vanuit jouw team.'
       success: '&aDe dungeon team invite voor &d{player}&a is ingetrokken.'
@@ -162,7 +131,7 @@ commands:
     deleted-by-leader: '&cHet dungeon team is verwijderd door de leider.'
     leave:
       leader-cannot-leave: '&cJe bent de team leider en kunt je eigen team niet verlaten.'
-      leader-started-hint: '&7Gebruik &d/dungeon leave &7om de run te stoppen, of &d/dungeon team delete &7voordat de dungeon start.'
+      leader-started-hint: '&7Gebruik &d/dungeon leave &7om de run te stoppen, of &d/dungeon team disband &7voordat de dungeon start.'
       self: '&aJe hebt het dungeon team verlaten.'
       other: '&e{player} heeft het dungeon team verlaten.'
       started-self: '&eJe hebt het dungeon team verlaten en kunt deze run niet opnieuw joinen.'
@@ -172,8 +141,8 @@ commands:
       members: '&dLeden: &f{members}'
       state: '&dStatus: &f{state}'
       dungeon: '&dDungeon: &f{dungeon} &7({difficulty})'
-      leader-controls-started: '&dLeider opties: &fGebruik /dungeon leave of /dungeon team delete om zelf te vertrekken en het team te ontbinden.'
-      leader-controls-idle: '&dLeider opties: &fGebruik /dungeon team delete om het team te verwijderen.'
+      leader-controls-started: '&dLeider opties: &fGebruik /dungeon leave of /dungeon team disband om zelf te vertrekken en het team te ontbinden.'
+      leader-controls-idle: '&dLeider opties: &fGebruik /dungeon team disband om het team te verwijderen.'
       member-controls-started: '&dLid opties: &fGebruik /dungeon team leave om het team en de run te verlaten.'
       member-controls-idle: '&dLid opties: &fGebruik /dungeon team leave om het team te verlaten.'
       states:
@@ -211,15 +180,15 @@ commands:
     help:
       header: <#5E55AD>-= Dungeon Config Help =-
       lines:
-      - '&d/dungeon config <dungeon> list [filter] &7Bekijk bewerkbare map en generator instellingen.'
-      - '&d/dungeon config <dungeon> <setting> &7Lees de huidige waarde.'
-      - '&d/dungeon config <dungeon> <setting> <value> &7Schrijf een nieuwe waarde weg.'
-      - '&d/dungeon config <dungeon> <regel> inherit &7Verwijder de override en gebruik de globale regel.'
-      - '&7Voorbeelden: &d/dungeon config current display-name &6&lCrypt'
-      - '&7             &d/dungeon config current spawn-mobs false'
-      - '&7             &d/dungeon config current layout branching'
-      - '&7             &d/dungeon config current exit-location here'
-    unknown-setting: '&cOnbekende bewerkbare instelling ''&6{setting}&c''. Gebruik &6/dungeon config {dungeon} list&c.'
+      - '&d/dungeon map settings <dungeon> list [filter] &7Bekijk bewerkbare map en generator instellingen.'
+      - '&d/dungeon map settings <dungeon> get <setting> &7Lees de huidige waarde.'
+      - '&d/dungeon map settings <dungeon> set <setting> <value> &7Schrijf een nieuwe waarde weg.'
+      - '&d/dungeon map settings <dungeon> inherit <regel> &7Verwijder de override en gebruik de globale regel.'
+      - '&7Voorbeelden: &d/dungeon map settings current set display-name &6&lCrypt'
+      - '&7             &d/dungeon map settings current set spawn-mobs false'
+      - '&7             &d/dungeon map settings current set layout branching'
+      - '&7             &d/dungeon map settings current set exit-location here'
+    unknown-setting: '&cOnbekende bewerkbare instelling ''&6{setting}&c''. Gebruik &6/dungeon map settings {dungeon} list&c.'
     location-player-only: '&cLocatie instellingen kunnen alleen door een speler met &6here&c worden gezet.'
     updated: '&a{setting}&a voor &6{dungeon}&a is bijgewerkt naar &e{value}&a.'
     updated-live: '&7Deze wijziging is direct live in de bewerkte map staat.'
@@ -227,30 +196,30 @@ commands:
     inherited-value: '{value} (globaal)'
     setting-value: '&d{setting} &8= &f{value} &7| {description}'
     list-header: '<#5E55AD>-= Dungeon Config: {dungeon} =-'
-    list-usage: '&7Gebruik &d/dungeon config {dungeon} <setting> <value>&7 om een instelling te wijzigen.'
-    list-shortcut: '&7Snelkoppeling: &d/dungeon config current list &7werkt terwijl je in de dungeon editor zit.'
+    list-usage: '&7Gebruik &d/dungeon map settings {dungeon} set <setting> <value>&7 om een instelling te wijzigen.'
+    list-shortcut: '&7Snelkoppeling: &d/dungeon map settings current list &7werkt terwijl je in de dungeon editor zit.'
     setting-line: ' &d{setting} &8= &f{value} &7| {description}'
     no-match: '&cGeen bewerkbare instellingen gevonden voor die filter.'
     invalid-value: '&cOngeldige waarde voor &6{setting}&c. {reason}'
   dungeon:
     help:
       lines:
-      - '&a/dungeon dungeon create &6<name> [type] [generator] &f| &eMaak een nieuwe dungeon.'
-      - '&a/dungeon dungeon import &6<world> [type] &f| &eImporteer een world als dungeon.'
-      - '&a/dungeon dungeon enable &6<dungeon> &f| &eSchakel een dungeon in voor spelen.'
-      - '&a/dungeon dungeon disable &6<dungeon> &f| &eSchakel een dungeon uit voor spelen.'
-      - '&a/dungeon dungeon list &b[filter] [pagina] &f| &eBekijk opgeslagen dungeons.'
-      - '&a/dungeon dungeon info &6<dungeon> &f| &eToon statische dungeon info.'
-      - '&a/dungeon dungeon keys <add|remove|clear|list|give> &6<dungeon> &f| &eBeheer access keys.'
-      - '&a/dungeon dungeon exit set &6<dungeon> &f| &eStel de exit locatie in.'
+      - '&a/dungeon map create &6<name> <type> [--generator <generator>] &f| &eMaak een nieuwe dungeon.'
+      - '&a/dungeon map import &6<world> <name> [--environment <environment>] &f| &eImporteer een world als dungeon.'
+      - '&a/dungeon map enable &6<dungeon> <reason> &f| &eSchakel een dungeon in voor spelen.'
+      - '&a/dungeon map disable &6<dungeon> <reason> &f| &eSchakel een dungeon uit voor spelen.'
+      - '&a/dungeon map list &b[filter] [pagina] &f| &eBekijk opgeslagen dungeons.'
+      - '&a/dungeon map info &6<dungeon> &f| &eToon statische dungeon info.'
+      - '&a/dungeon map keys <add|remove|clear|list|give> &6<dungeon> &f| &eBeheer access keys.'
+      - '&a/dungeon map exit set &6<dungeon> &f| &eStel de exit locatie in.'
     create:
-      usage: '&a/dungeon dungeon create &6<name> [type] [generator] &f| &eMaak een nieuwe lege dungeon.'
+      usage: '&a/dungeon map create &6<name> <type> [--generator <generator>] &f| &eMaak een nieuwe lege dungeon.'
       already-exists: '&cEr bestaat al een dungeon met die naam.'
       world-conflict: '&cDe naam ''&6{world}&c'' is al in gebruik door een server world(folder). Kies een andere dungeonnaam.'
       failed-to-create: '&cAanmaken van de dungeon is mislukt. Controleer de console voor details.'
       success: '&aDungeon &6{dungeon}&a is aangemaakt.'
     import:
-      usage: '&a/dungeon dungeon import &6<world> &b[type] &f| &eImporteer een world als dungeon.'
+      usage: '&a/dungeon map import &6<world> <name> [--environment <environment>] &f| &eImporteer een world als dungeon.'
       already-exists: '&cEr bestaat al een dungeon met de naam ''&6{world}&c''.'
       world-not-found: '&cWorld ''&6{world}&c'' kon niet worden gevonden.'
       world-loaded: '&cWorld ''&6{world}&c'' is momenteel geladen. Unload die world eerst voor je hem importeert.'
@@ -258,7 +227,7 @@ commands:
       failed: '&cImporteren van de dungeon is mislukt. Controleer de console voor details.'
       success: '&aWorld &6{world}&a is succesvol geïmporteerd als dungeon.'
     delete:
-      usage: '&a/dungeon dungeon delete &6<dungeon> &f| &eVerwijder een dungeon. Gebruik het nogmaals om te bevestigen.'
+      usage: '&a/dungeon map archive create &6<dungeon> <reason> &f| &eVerwijder een dungeon. Gebruik het nogmaals om te bevestigen.'
       dungeon-not-found: '&cDungeon ''&6{dungeon}&c'' bestaat niet.'
       edit-in-progress: '&cDeze dungeon wordt momenteel bewerkt en kan nu niet verwijderd worden.'
       delete-warning: '&eJe staat op het punt deze dungeon te verwijderen.'
@@ -266,7 +235,7 @@ commands:
       notification: '&cDe dungeon waarin je zat is verwijderd.'
       success: '&aDungeon &6{dungeon}&a is verwijderd.'
     reload:
-      usage: '&a/dungeon dungeon reload &b[dungeon|all] &f| &eHerlaad configs of een dungeon.'
+      usage: '&a/dungeon map reload &b<dungeon> <reason> &f| &eHerlaad configs of een dungeon.'
       failed: '&cHerladen mislukt of al bezig. De huidige dungeondata blijft behouden; controleer de console.'
       config-reloading: '&eConfigs worden herladen...'
       config-reloaded: '&aConfigs zijn herladen.'
@@ -279,23 +248,23 @@ commands:
       reload-dungeon-confirm: '&eGebruik hetzelfde command opnieuw om het herladen te forceren.'
       reloaded-by-admin: '&cDe dungeon is herladen door een admin.'
     enable:
-      usage: '&a/dungeon dungeon enable &6<dungeon> &f| &eSchakel een dungeon in voor spelen.'
+      usage: '&a/dungeon map enable &6<dungeon> <reason> &f| &eSchakel een dungeon in voor spelen.'
       dungeon-not-found: '&cDungeon ''&6{dungeon}&c'' bestaat niet.'
       already-enabled: '&eDungeon ''&6{dungeon}&e'' is al ingeschakeld.'
       success: '&aDungeon ''&6{dungeon}&a'' is nu ingeschakeld voor spelen.'
     disable:
-      usage: '&a/dungeon dungeon disable &6<dungeon> &f| &eSchakel een dungeon uit voor spelen.'
+      usage: '&a/dungeon map disable &6<dungeon> <reason> &f| &eSchakel een dungeon uit voor spelen.'
       dungeon-not-found: '&cDungeon ''&6{dungeon}&c'' bestaat niet.'
       already-disabled: '&eDungeon ''&6{dungeon}&e'' is al uitgeschakeld.'
       success: '&aDungeon ''&6{dungeon}&a'' is nu uitgeschakeld voor spelen.'
     list:
-      usage: '&a/dungeon dungeon list &b[filter] [pagina] &f| &eBekijk opgeslagen dungeons.'
+      usage: '&a/dungeon map list &b[filter] [pagina] &f| &eBekijk opgeslagen dungeons.'
       header: <#5E55AD>-= Dungeon Definities =-
       line: ' &d{dungeon} &8• &f{display} &8• &ftype {type} &8• &finstances {instances} &8• &fteam {team_size} &8• &fdifficulties {difficulties}'
       no-match: '&cGeen dungeons gevonden voor die filter.'
       footer: <#5E55AD>-= Pagina {page} van {total_pages} =-
     info:
-      usage: '&a/dungeon dungeon info &6<dungeon> &f| &eToon statische dungeon info.'
+      usage: '&a/dungeon map info &6<dungeon> &f| &eToon statische dungeon info.'
       header: <#5E55AD>---[ {dungeon} INFO ]---
       display: '&dDisplay naam: &f{display}'
       type: '&dType: &f{type}'
@@ -313,7 +282,7 @@ commands:
         enabled: ingeschakeld
         disabled: uitgeschakeld
     status:
-      usage: '&a/dungeon dungeon status &b[dungeon] &f| &eToon info over actieve dungeon instances.'
+      usage: '&a/dungeon instance list &b[dungeon] &f| &eToon info over actieve dungeon instances.'
       global-header: <#5E55AD>-= Dungeons versie {version} =-
       total-instances: '&dActieve instances: &f{count}'
       total-players: '&dSpelers in instances: &f{count}'
@@ -328,14 +297,14 @@ commands:
       player-line: '&6 • {player}'
     keys:
       add:
-        usage: '&a/dungeon dungeon keys add &6<dungeon> &f| &eMaak het item in je hand een access key.'
+        usage: '&a/dungeon map keys add &6<dungeon> <reason> &f| &eMaak het item in je hand een access key.'
         dungeon-not-found: '&cDungeon ''&6{dungeon}&c'' bestaat niet.'
         no-permission: '&cJe hebt geen permissie om deze dungeon te bewerken.'
         no-held-item: '&cJe moet een item in je hand hebben.'
         issue-failed: '&cAccess key &6#{id}&c is toegevoegd, maar de fysieke key kon niet veilig worden uitgegeven.'
         success: '&aHet item in je hand is toegevoegd als access key &6#{id}&a.'
       remove:
-        usage: '&a/dungeon dungeon keys remove &6<dungeon> [id] &f| &eVerwijder een access key via item in hand of key id.'
+        usage: '&a/dungeon map keys remove &6<dungeon> <key-id> <reason> &f| &eVerwijder een access key via item in hand of key id.'
         dungeon-not-found: '&cDungeon ''&6{dungeon}&c'' bestaat niet.'
         no-permission: '&cJe hebt geen permissie om deze dungeon te bewerken.'
         no-held-item: '&cJe moet een item in je hand hebben.'
@@ -344,12 +313,12 @@ commands:
         no-key-found: '&cEr is geen bijpassende access key gevonden.'
         no-key-found-detail: '&cEr is voor deze dungeon geen access key gevonden die overeenkomt met het item in je hand.'
       clear:
-        usage: '&a/dungeon dungeon keys clear &6<dungeon> &f| &eVerwijder alle access keys.'
+        usage: '&a/dungeon map keys clear &6<dungeon> <reason> &f| &eVerwijder alle access keys.'
         dungeon-not-found: '&cDungeon ''&6{dungeon}&c'' bestaat niet.'
         no-permission: '&cJe hebt geen permissie om deze dungeon te bewerken.'
         success: '&aAlle access keys zijn verwijderd. Totaal: &6{count}&a.'
       list:
-        usage: '&a/dungeon dungeon keys list &6<dungeon> &b[pagina] &f| &eBekijk geconfigureerde access keys.'
+        usage: '&a/dungeon map keys list &6<dungeon> &f| &eBekijk geconfigureerde access keys.'
         dungeon-not-found: '&cDungeon ''&6{dungeon}&c'' bestaat niet.'
         header: '<#5E55AD>---[ ACCESS KEYS: {dungeon} ]---'
         line: ' &6#{id} &8• &f{item} &7x{amount} &8• &f{material} &8• &7toegevoegd {added_at} door {added_by}'
@@ -358,7 +327,7 @@ commands:
         labels:
           unknown: onbekend
       give:
-        usage: '&a/dungeon dungeon keys give &6<dungeon> <player> <id> [aantal] &f| &eGeef een geconfigureerde access key.'
+        usage: '&a/dungeon map keys give &6<dungeon> <player> <key-id> <reason> &f| &eGeef een geconfigureerde access key.'
         dungeon-not-found: '&cDungeon ''&6{dungeon}&c'' bestaat niet.'
         player-not-found: '&cSpeler ''&6{player}&c'' is niet online of bestaat niet.'
         invalid-key: '&cAccess key &6#{id}&c bestaat niet voor dungeon &6{dungeon}&c.'
@@ -368,7 +337,7 @@ commands:
         target: '&eJe hebt &6{copies}x &f{item}&e ontvangen als access key voor dungeon &6{dungeon}&e (key &6#{id}&e).'
     exit:
       set:
-        usage: '&a/dungeon dungeon exit set &6<dungeon> &f| &eStel de exit locatie van de dungeon in.'
+        usage: '&a/dungeon map exit set &6<dungeon> &f| &eStel de exit locatie van de dungeon in.'
         dungeon-not-found: '&cDungeon ''&6{dungeon}&c'' bestaat niet.'
         success: '&aExit locatie ingesteld op &f{x}, {y}, {z}&a met yaw &f{yaw}&a.'
   edit:
@@ -376,8 +345,8 @@ commands:
       lines:
       - '&a/dungeon edit close &f| &eSluit je huidige edit sessie.'
       - '&a/dungeon edit save &f| &eSla de huidige edit sessie op.'
-      - '&a/dungeon edit lobby set &f| &eStel de lobby spawn in.'
-      - '&a/dungeon edit start set &f| &eStel de start spawn in.'
+      - '&a/dungeon edit location lobby set &f| &eStel de lobby spawn in.'
+      - '&a/dungeon edit location start set &f| &eStel de start spawn in.'
       - '&a/dungeon edit items <ban|unban|mark-dungeon> &f| &eBeheer items in de editor.'
       - '&a/dungeon edit tools <function|room> &f| &eHerstel editor tools.'
       - '&a/dungeon edit signs clean &f| &eVerwijder function signs.'
@@ -398,12 +367,12 @@ commands:
       failed: '&cOpslaan van dungeon ''&6{dungeon}&c'' is mislukt. Controleer de console voor details.'
     lobby:
       set:
-        usage: '&a/dungeon edit lobby set &f| &eStel de lobby spawn van de dungeon in.'
+        usage: '&a/dungeon edit location lobby set &f| &eStel de lobby spawn van de dungeon in.'
         not-in-dungeon: '&cJe zit niet in een dungeon editor.'
         success: '&aLobby spawn ingesteld op &f{x}, {y}, {z}&a met yaw &f{yaw}&a.'
     start:
       set:
-        usage: '&a/dungeon edit start set &f| &eStel de start spawn van de dungeon in.'
+        usage: '&a/dungeon edit location start set &f| &eStel de start spawn van de dungeon in.'
         not-in-dungeon: '&cJe zit niet in een dungeon editor.'
         not-editing: '&cJe bent momenteel geen dungeon aan het bewerken.'
         success: '&aStart spawn ingesteld op &f{x}, {y}, {z}&a met yaw &f{yaw}&a.'
@@ -436,13 +405,13 @@ commands:
         success: '&a{count} sign(s) verwijderd.'
   debug:
     map:
-      usage: '&a/dungeon debug map &f| &eGeef jezelf de map van je huidige dungeon instance.'
+      usage: '&a/dungeon edit test map &f| &eGeef jezelf de map van je huidige dungeon instance.'
       not-in-dungeon: '&cJe zit niet in een actieve dungeon instance.'
       success: '&aDe kaart van je huidige dungeon instance is in je inventory geplaatst.'
     help:
       lines:
-      - '&a/dungeon debug doors test &6<door> &f| &eToggle een specifieke deur in de huidige room.'
-      - '&a/dungeon debug doors test-all &f| &eToggle alle geldige deuren in de huidige room.'
+      - '&a/dungeon edit test doors &6<door> &f| &eToggle een specifieke deur in de huidige room.'
+      - '&a/dungeon edit test doors all &f| &eToggle alle geldige deuren in de huidige room.'
 instance:
   lifecycle:
     loading: '&eDungeon &6{dungeon}&e wordt geladen...'
@@ -522,9 +491,9 @@ editor:
     autosave-failed: '&cAutosave mislukt. Controleer de console.'
     status-line: '&7Edit mode actief. Slot {function_slot} en {room_slot} zijn gereserveerd voor de function tool en room tool.'
     tip-edit-existing: '&7Tip: plaats een block op een bestaande function en klik er met de function tool op om die te bewerken.'
-    tip-config-list: '&7Tip: gebruik /dungeon config current list om live map en generator instellingen te bekijken.'
+    tip-config-list: '&7Tip: gebruik /dungeon map settings current list om live map en generator instellingen te bekijken.'
     actionbar-menu: '&dEditor menu &8• &7Rechtsklik selecteert &8• &7Linksklik alternatief &8• &7Q terug &8• &7F sluiten'
-    actionbar-status: '&dEdit mode actief &8• &7Slot {function_slot} en {room_slot} zijn gereserveerd &8• &7/dungeon config current list'
+    actionbar-status: '&dEdit mode actief &8• &7Slot {function_slot} en {room_slot} zijn gereserveerd &8• &7/dungeon map settings current list'
     function-outside-room: '&cJe kunt hier geen function plaatsen omdat deze buiten een room ligt.'
     function-select: '&aSelecteer een function om hier te plaatsen.'
     function-selected: '&aFunction geselecteerd: &f{function}'

@@ -13,9 +13,9 @@ Dungeons is a Paper plugin for creating, editing, and running configurable dunge
 2. Start the server once to generate runtime files under `plugins/Dungeons/`.
 3. Configure global settings in `plugins/Dungeons/config.yml`.
 4. Create or edit dungeon content with `/dungeon` editor commands.
-5. Start a run with `/dungeon play <dungeon>[:difficulty]`.
+5. Start a run with `/dungeon play <dungeon> [difficulty]`.
 
-Fresh installations only: see the [supported storage and command contract](docs/CLEAN_INSTALLS.md).
+The mandatory database integration is still in progress; gameplay persistence currently remains file-based.
 
 ## Requirements
 
@@ -36,14 +36,7 @@ Output jar: `target/Dungeons-<version>.jar`
 
 From clean `main`, run `./tools/release/update-version patch --pr` to open a reviewed version PR. CI tests the PR; after merge, GitHub Actions publishes the Maven package, verifies that it resolves, and creates the tag and downloadable release jar with a SHA-256 checksum. See [release tooling](tools/release/README.md).
 
-## Learn More
-
-- [Staff Operations](docs/STAFF_OPERATIONS.md)
-- [Configuration Guide](docs/CONFIGURATION.md)
-- [Documentation Index](docs/README.md)
-- [Architecture](docs/ARCHITECTURE.md)
-- [Development Notes](docs/DEVELOPMENT.md)
-- [Contributing](CONTRIBUTING.md)
+See [Contributing](CONTRIBUTING.md) for development guidelines.
 
 ## Community
 

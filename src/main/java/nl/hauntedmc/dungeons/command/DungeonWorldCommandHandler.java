@@ -3,7 +3,6 @@ package nl.hauntedmc.dungeons.command;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
-import nl.hauntedmc.dungeons.util.command.CommandUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 
 import org.apache.commons.io.FileUtils;
@@ -33,16 +32,15 @@ final class DungeonWorldCommandHandler {
 
     /** Runs handle import command. */
     boolean handleImportCommand(CommandSender sender, String[] args) {
-        if (!CommandUtils.hasPermission(sender, "dungeons.role.operator")) {
-            return false;
-        }
-
-        if (args.length != 2 && args.length != 3) {
+        if (args.length != 3 && args.length != 4) {
             LangUtils.sendMessage(sender, "commands.dungeon.import.usage");
             return true;
         }
 
         String worldName = args[1].trim();
+        String mapName = args[2].trim();
+        nl.hauntedmc.dungeons.runtime.staff.StaffPermissions.require(sender, "edit", mapName);
+        if (!this.isSafeImportWorldName(mapName)) throw new IllegalArgumentException("Invalid dungeon name");
         if (!this.isSafeImportWorldName(worldName)) {
             LangUtils.sendMessage(
                     sender,
@@ -51,7 +49,7 @@ final class DungeonWorldCommandHandler {
             return true;
         }
 
-        if (this.dungeonManager.get(worldName) != null) {
+        if (this.dungeonManager.get(mapName) != null) {
             LangUtils.sendMessage(
                     sender,
                     "commands.dungeon.import.already-exists",
@@ -78,7 +76,7 @@ final class DungeonWorldCommandHandler {
 
         File saveFolder;
         try {
-            saveFolder = this.resolveDungeonSaveFolder(worldName);
+            saveFolder = this.resolveDungeonSaveFolder(mapName);
         } catch (IOException exception) {
             this.plugin
                     .getSLF4JLogger()
@@ -99,15 +97,15 @@ final class DungeonWorldCommandHandler {
         }
 
         WorldCreator importer = new WorldCreator(worldName);
-        if (args.length == 3) {
+        if (args.length == 4) {
             try {
-                Environment dimension = Environment.valueOf(args[2].toUpperCase(Locale.ROOT));
+                Environment dimension = Environment.valueOf(args[3].toUpperCase(Locale.ROOT));
                 importer.environment(dimension);
             } catch (IllegalArgumentException exception) {
                 LangUtils.sendMessage(
                         sender,
                         "commands.dungeon.import.invalid-dimension",
-                        LangUtils.placeholder("dimension", args[2].toUpperCase(Locale.ROOT)));
+                        LangUtils.placeholder("dimension", args[3].toUpperCase(Locale.ROOT)));
                 return true;
             }
         }
@@ -158,9 +156,8 @@ final class DungeonWorldCommandHandler {
             return false;
         }
 
-        if (!CommandUtils.hasPermission(sender, "dungeons.role.operator")) {
-            return false;
-        }
+        if (args.length > 1)
+            nl.hauntedmc.dungeons.runtime.staff.StaffPermissions.require(sender, "edit", args[1]);
 
         if (args.length < 2 || args.length > 4) {
             LangUtils.sendMessage(player, "commands.dungeon.create.usage");

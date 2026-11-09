@@ -1,4 +1,6 @@
 dungeon:
+  # Assigned once per map. Leave blank in this shared template.
+  id: ''
   # string: STATIC | BRANCHING | OPEN
   type: STATIC
   # bool. Enables this dungeon for playable runs.
@@ -124,7 +126,7 @@ access:
     leader_only: false
     # list of access-key definitions. When plugin config access.keys.unique_validation_enabled = true,
     # issued physical keys are tracked separately in access_keys.yml.
-    # Prefer editing this with /dungeon dungeon keys add.
+    # Prefer editing this with /dungeon map keys add.
     items: []
 
 difficulty:

@@ -36,6 +36,36 @@ class RepositoryContractTest {
     @TempDir Path directory;
 
     @Test
+    void invalidUuidIsRejectedBeforeDefaultsRewriteTheMap() throws Exception {
+        try (var fixture = new Fixture(directory)) {
+            Path folder = Files.createDirectory(directory.resolve("invalid-id"));
+            String original = "# Operator content must remain byte-for-byte intact\ndungeon:\n  type: static\n  id: broken\n";
+            Path config = folder.resolve("config.yml");
+            Files.writeString(config, original);
+            assertNull(fixture.repository.loadDungeon(folder.toFile()));
+            assertEquals(original, Files.readString(config));
+            assertFalse(Files.exists(folder.resolve("players")));
+        }
+    }
+
+    @Test
+    void duplicateDungeonIdentitiesAreIsolatedAndIdsResolveWithoutRenamingMaps() throws Exception {
+        try (var fixture = new Fixture(directory)) {
+            var shared = UUID.randomUUID();
+            for (String name : java.util.List.of("first", "duplicate", "healthy")) {
+                Path folder = Files.createDirectory(directory.resolve(name));
+                Files.writeString(folder.resolve("config.yml"), "dungeon:\n  type: static\n  id: '"
+                        + (name.equals("healthy") ? UUID.randomUUID() : shared) + "'\n");
+            }
+            fixture.scheduler.jobs.getFirst().run();
+            assertEquals(2, fixture.repository.getLoadedDungeons().size());
+            assertNotNull(fixture.repository.get("healthy"));
+            assertNotNull(fixture.repository.get(shared.toString()));
+            assertEquals(1, fixture.repository.loadFailures().size());
+        }
+    }
+
+    @Test
     void malformedDungeonReloadRetainsTheWorkingDefinitionUntilAReplacementLoads()
             throws Exception {
         try (var fixture = new Fixture(directory)) {
