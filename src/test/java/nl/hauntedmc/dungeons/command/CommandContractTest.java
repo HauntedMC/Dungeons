@@ -40,6 +40,21 @@ class CommandContractTest {
     @TempDir Path directory;
 
     @Test
+    void editorOpenWithoutReasonDispatchesAndCompletesScopedDungeonNames() throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var command = new CommandFixture(f);
+            command.permissions.add("dungeons.staff.edit.crypt");
+            var staff = mock(StaffCommandHandler.class);
+            command.root.setStaffCommandHandler(staff);
+            command.execute("edit", "open", "crypt");
+            verify(staff).handleCommand(eq(command.caller.player),
+                    org.mockito.AdditionalMatchers.aryEq(new String[] {"edit", "crypt", "editor-command"}));
+            assertEquals(List.of("crypt"), command.root.onTabComplete(command.caller.player,
+                    mock(Command.class), "dungeon", new String[] {"edit", "open", ""}));
+        }
+    }
+
+    @Test
     void keyDefinitionChangesUseTheirOwnCapabilityAndConfirmTheExactMapIdentity() throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
             var command = new CommandFixture(f);

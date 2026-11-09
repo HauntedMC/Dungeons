@@ -18,6 +18,23 @@ import java.util.concurrent.TimeUnit;
 class WorldStartupContractTest {
     @TempDir Path directory;
 
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"region", "DIM-1/region", "DIM1/region"})
+    void legacyTemplatesKeepTerrainAndMetadataForPaperConversion(String terrain) throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            Path source = f.dungeon.getFolder().toPath();
+            Files.writeString(source.resolve("level.dat"), "legacy metadata");
+            Files.createDirectories(source.resolve(terrain));
+            Files.writeString(source.resolve(terrain).resolve("r.0.0.mca"), "original terrain");
+            f.run.copyMapToWorldsFolder();
+            Path copy = directory.resolve("crypt_0");
+            assertEquals("legacy metadata", Files.readString(copy.resolve("level.dat")));
+            assertEquals("original terrain", Files.readString(copy.resolve(terrain).resolve("r.0.0.mca")));
+            assertEquals("original terrain", Files.readString(source.resolve(terrain).resolve("r.0.0.mca")));
+            assertFalse(Files.exists(directory.resolve("world/dimensions/minecraft/crypt_0")));
+        }
+    }
+
     @Test
     void restartPreservesBothFoldersOfAnUncommittedEditorButCleansOrdinaryRuns() throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {

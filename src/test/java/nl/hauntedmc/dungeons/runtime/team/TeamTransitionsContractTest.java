@@ -46,6 +46,35 @@ class TeamTransitionsContractTest {
     }
 
     @Test
+    void openWorldNeverBelongsToOneTeamOrShutsDownOnLeaderDeparture() throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var service = service(f);
+            var open = mock(nl.hauntedmc.dungeons.content.instance.play.OpenInstance.class);
+            when(open.getInstanceWorld()).thenReturn(f.world);
+            when(open.getInstanceWorldName()).thenReturn("crypt_0");
+            var first = player(f);
+            var second = player(f);
+            service.handleCreateTeam(first.player);
+            service.handleCreateTeam(second.player);
+            var firstTeam = service.getTeam(first.player.getUniqueId());
+            var secondTeam = service.getTeam(second.player.getUniqueId());
+            service.markStarted(firstTeam.getTeamId(), open);
+            service.markStarted(secondTeam.getTeamId(), open);
+            service.onPlayerLeaveDungeon(new PlayerLeaveDungeonEvent(open,
+                    f.paper.runtime.playerSessions().get(first.player)));
+            f.scheduler.immediate.getLast().run();
+            assertNull(service.getTeam(first.player.getUniqueId()));
+            assertSame(secondTeam, service.getTeam(second.player.getUniqueId()));
+            verify(open, never()).setStartedTeamLeaderId(any());
+            verify(open, never()).scheduleEmptyCleanup();
+            verify(open, never()).dispose();
+            assertTrue(f.scheduler.jobs.stream().noneMatch(job -> job.period == 20));
+            service.onDungeonDispose(new DungeonDisposeEvent(open));
+            assertNull(service.getTeam(second.player.getUniqueId()));
+        }
+    }
+
+    @Test
     void revokedDeniedAndDissolvedInvitesCannotBeAcceptedAndKicksKeepMembershipIndexesConsistent()
             throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {

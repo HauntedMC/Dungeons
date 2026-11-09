@@ -4,7 +4,6 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 
 import nl.hauntedmc.dungeons.bootstrap.LifecycleCoordinator;
-import nl.hauntedmc.dungeons.gui.staff.StaffMenus;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.model.instance.*;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
@@ -83,27 +82,14 @@ public final class StaffCommandHandler implements CommandHandler {
     private final DungeonsRuntime runtime;
     private final LifecycleCoordinator lifecycle;
     private final StaffOperations ops;
-    private final StaffMenus menus;
     private final StaffContentStorage content;
 
     public StaffCommandHandler(DungeonsRuntime runtime, LifecycleCoordinator lifecycle) {
-        this(runtime, lifecycle, handler -> new StaffMenus(runtime, handler));
-    }
-
-    StaffCommandHandler(
-            DungeonsRuntime runtime,
-            LifecycleCoordinator lifecycle,
-            java.util.function.Function<StaffCommandHandler, StaffMenus> menuFactory) {
         this.runtime = runtime;
         this.lifecycle = lifecycle;
         this.ops = runtime.staffOperations();
         this.content = new StaffContentStorage(runtime);
-        this.menus = menuFactory.apply(this);
         this.ops.start();
-    }
-
-    public StaffMenus menus() {
-        return menus;
     }
 
     private CompletableFuture<String> openEditor(Player player, DungeonDefinition dungeon) {
@@ -151,7 +137,7 @@ public final class StaffCommandHandler implements CommandHandler {
         return true;
     }
 
-    /** UI prompts keep validation failures visible and allow a corrected response. */
+    /** Executes a staff operation, preserving validation errors for the caller. */
     public void executeChecked(CommandSender actor, String[] args) {
         execute(actor, new ArrayList<>(Arrays.asList(args)));
     }
@@ -167,8 +153,7 @@ public final class StaffCommandHandler implements CommandHandler {
             input.removeLast();
         }
         if (input.isEmpty()) {
-            if (actor instanceof Player player) menus.open(player, "overview", "", "", 0);
-            else overview(actor);
+            overview(actor);
             return;
         }
         String action = input.getFirst().toLowerCase(Locale.ROOT);
@@ -204,15 +189,14 @@ public final class StaffCommandHandler implements CommandHandler {
             }
             case "dashboard" -> {
                 StaffPermissions.require(actor, "inspect", null);
-                if (actor instanceof Player player) menus.open(player, "overview", "", "", 0);
-                else overview(actor);
+                overview(actor);
             }
             case "overview" -> overview(actor);
             case "dungeons" -> {
                 StaffPermissions.require(actor, "inspect", null);
-                if (actor instanceof Player p)
-                    menus.open(p, "dungeons", "", a.length > 1 ? a[1] : "", 0);
-                else for (var d : sortedDungeons()) tell(actor, describe(d));
+                for (var d : sortedDungeons())
+                    if (a.length == 1 || d.getWorldName().toLowerCase(Locale.ROOT)
+                            .contains(a[1].toLowerCase(Locale.ROOT))) tell(actor, describe(d));
             }
             case "dungeon" -> {
                 need(a, 2, "dungeon <name> [validate]");
@@ -220,8 +204,6 @@ public final class StaffCommandHandler implements CommandHandler {
                 StaffPermissions.require(actor, "inspect", d.getWorldName());
                 if (a.length > 2 && a[2].equalsIgnoreCase("validate"))
                     validation(d).forEach(line -> tell(actor, line));
-                else if (actor instanceof Player p)
-                    menus.open(p, "dungeon", d.getWorldName(), "", 0);
                 else {
                     tell(actor, describe(d));
                     validation(d).forEach(line -> tell(actor, line));
@@ -230,8 +212,7 @@ public final class StaffCommandHandler implements CommandHandler {
             case "instances" -> {
                 String target = a.length > 1 ? a[1] : "all";
                 StaffPermissions.require(actor, "inspect", target.equals("all") ? null : target);
-                if (actor instanceof Player p) menus.open(p, "instances", target, "", 0);
-                else ops.instances(target).forEach(i -> tell(actor, describe(i)));
+                ops.instances(target).forEach(i -> tell(actor, describe(i)));
             }
             case "instance" -> instance(actor, a, input, token);
             case "player" -> player(actor, a, input, token);
@@ -253,11 +234,9 @@ public final class StaffCommandHandler implements CommandHandler {
             case "loot" -> {
                 StaffPermissions.require(actor, "loot", null);
                 if (a.length == 1) {
-                    if (actor instanceof Player p) menus.open(p, "loot", "", "", 0);
-                    else
-                        runtime.lootTableRepository()
-                                .getTables()
-                                .forEach(table -> tell(actor, table.getNamespace()));
+                    runtime.lootTableRepository()
+                            .getTables()
+                            .forEach(table -> tell(actor, table.getNamespace()));
                 } else if (actor instanceof Player p) {
                     var table = runtime.lootTableRepository().get(a[1]);
                     if (table == null || !runtime.lootTableEditor().open(table, p))
@@ -338,8 +317,7 @@ public final class StaffCommandHandler implements CommandHandler {
             case "queues" -> {
                 String scope = a.length > 1 ? dungeon(a[1]).getWorldName() : null;
                 StaffPermissions.require(actor, "inspect", scope);
-                if (scope == null && actor instanceof Player p) menus.open(p, "queues", "", "", 0);
-                else runtime.queueRegistry().snapshotQueues().stream()
+                runtime.queueRegistry().snapshotQueues().stream()
                         .filter(queue -> scope == null || queue.getDungeon().getWorldName().equals(scope))
                         .forEach(queue -> tell(actor, describeQueue(queue)));
             }
@@ -403,22 +381,20 @@ public final class StaffCommandHandler implements CommandHandler {
             }
             case "operations" -> {
                 StaffPermissions.require(actor, "inspect", null);
-                if (actor instanceof Player p) menus.open(p, "operations", "", "", 0);
-                else
-                    ops.operations()
-                            .forEach(
-                                    o ->
-                                            tell(
-                                                    actor,
-                                                    o.shortId()
-                                                            + " "
-                                                            + o.action
-                                                            + " "
-                                                            + o.target
-                                                            + " "
-                                                            + o.state
-                                                            + ": "
-                                                            + o.detail));
+                ops.operations()
+                        .forEach(
+                                o ->
+                                        tell(
+                                                actor,
+                                                o.shortId()
+                                                        + " "
+                                                        + o.action
+                                                        + " "
+                                                        + o.target
+                                                        + " "
+                                                        + o.state
+                                                        + ": "
+                                                        + o.detail));
             }
             case "operation" -> {
                 need(a, 2, "operation <id>");
@@ -557,9 +533,7 @@ public final class StaffCommandHandler implements CommandHandler {
         String name = instance.getDungeon().getWorldName();
         if (a.length == 2) {
             StaffPermissions.require(actor, "inspect", name);
-            if (actor instanceof Player p)
-                menus.open(p, "instance", instance.getInstanceId().toString(), "", 0);
-            else tell(actor, describe(instance));
+            tell(actor, describe(instance));
             return;
         }
         switch (a[2]) {
@@ -678,8 +652,7 @@ public final class StaffCommandHandler implements CommandHandler {
         String scope = playerScope(session);
         if (a.length == 2) {
             StaffPermissions.require(actor, "inspect", scope);
-            if (actor instanceof Player p) menus.open(p, "player", id.toString(), "", 0);
-            else playerLines(actor, id).forEach(line -> tell(actor, line));
+            playerLines(actor, id).forEach(line -> tell(actor, line));
             return;
         }
         String capability =
@@ -873,8 +846,7 @@ public final class StaffCommandHandler implements CommandHandler {
         actor.sendMessage(
                 Component.text("[Confirm within 30 seconds]")
                         .clickEvent(ClickEvent.suggestCommand(command)));
-        if (actor instanceof Player p) menus.confirm(p, command);
-        else tell(actor, command);
+        tell(actor, command);
         return false;
     }
 
