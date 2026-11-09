@@ -40,6 +40,62 @@ class IssuedKeyLedgerContractTest {
     @TempDir Path directory;
 
     @Test
+    void failedKeyDefinitionSaveReportsFailureAndRestoresThePreviousConfiguration() throws Exception {
+        try (var paper = new PaperBoundary()) {
+            when(paper.plugin.namespace()).thenReturn("dungeons");
+            paper.config.set("access.keys.unique_validation_enabled", false);
+            paper.config.set("access.keys.metadata_validation_enabled", true);
+            var dungeon = paper.dungeon(directory.resolve("key-save"), new YamlConfiguration());
+            var configFile = dungeon.getFolder().toPath().resolve("config.yml");
+            String durable = Files.readString(configFile);
+            Files.delete(configFile);
+            Files.createDirectory(configFile);
+            Files.writeString(configFile.resolve("obstacle"), "keep");
+            try {
+                org.junit.jupiter.api.Assertions.assertThrows(java.io.UncheckedIOException.class,
+                        () -> dungeon.addAccessKey(item(new HashMap<>()), null));
+                assertTrue(dungeon.getAccessKeys().isEmpty());
+                assertTrue(dungeon.getValidKeys().isEmpty());
+                assertNull(dungeon.getConfig().get("access.keys.items"));
+                assertEquals("keep", Files.readString(configFile.resolve("obstacle")));
+            } finally {
+                Files.delete(configFile.resolve("obstacle"));
+                Files.delete(configFile);
+                Files.writeString(configFile, durable);
+            }
+            var added = dungeon.addAccessKey(item(new HashMap<>()), null);
+            assertEquals(1, dungeon.getAccessKeys().size());
+            assertTrue(Files.readString(configFile).contains(added.getKeyId()));
+        }
+    }
+
+    @Test
+    void metadataOnlyKeysSurviveIdAssignmentWithoutNewTagsOrAReadableUniqueLedger() throws Exception {
+        try (var paper = new PaperBoundary()) {
+            when(paper.plugin.namespace()).thenReturn("dungeons");
+            paper.config.set("access.keys.unique_validation_enabled", false);
+            paper.config.set("access.keys.metadata_validation_enabled", true);
+            var definition = new AccessKeyDefinition(Map.of("KeyId", "existing-definition", "Item", item(new HashMap<>())));
+            var original = item(new HashMap<>(Map.of(new NamespacedKey("dungeons", "dungeon_access_key_id"), "existing-definition")));
+            Files.writeString(directory.resolve("access_keys.yml"), "broken: [unused");
+            var config = new YamlConfiguration();
+            var id = nl.hauntedmc.dungeons.runtime.dungeon.DungeonIdentity.initialize(
+                    paper.plugin, config, directory.resolve("config.yml").toFile());
+            var service = new nl.hauntedmc.dungeons.runtime.dungeon.DungeonAccessKeyService(
+                    paper.runtime, directory.toFile(), () -> List.of(definition));
+            assertNotNull(service.isValidKey(original));
+            ItemUtils.tagDungeonAccessKeyInstance(original, UUID.randomUUID().toString());
+            assertNotNull(service.isValidKey(original));
+            assertEquals("existing-definition", definition.getKeyId());
+            var restored = new YamlConfiguration();
+            restored.load(directory.resolve("config.yml").toFile());
+            assertEquals(id, nl.hauntedmc.dungeons.runtime.dungeon.DungeonIdentity.initialize(
+                    paper.plugin, restored, directory.resolve("config.yml").toFile()));
+            assertEquals("broken: [unused", Files.readString(directory.resolve("access_keys.yml")));
+        }
+    }
+
+    @Test
     void failedLedgerReplacementCannotReportConsumptionOrChangeTheWorkingLedger() throws Exception {
         try (var fixture = new Fixture(directory)) {
             var key = fixture.dungeon.issueAccessKey(1);

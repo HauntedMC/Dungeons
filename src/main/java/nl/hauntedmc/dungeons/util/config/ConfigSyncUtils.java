@@ -26,6 +26,12 @@ public final class ConfigSyncUtils {
     /** Synchronizes a tree while leaving the specified top-level keys untouched. */
     public static boolean syncMissingAndObsolete(
             ConfigurationSection template, ConfigurationSection target, Set<String> excludedKeys) {
+        return syncTree(template, target, excludedKeys, "");
+    }
+
+    private static boolean syncTree(
+            ConfigurationSection template, ConfigurationSection target,
+            Set<String> excludedKeys, String prefix) {
         if (template == null || target == null) {
             return false;
         }
@@ -33,7 +39,7 @@ public final class ConfigSyncUtils {
         boolean changed = false;
 
         for (String key : new ArrayList<>(target.getKeys(false))) {
-            if (excludedKeys.contains(key)) {
+            if (excludedKeys.contains(prefix + key)) {
                 continue;
             }
             if (!template.contains(key)) {
@@ -46,7 +52,7 @@ public final class ConfigSyncUtils {
         }
 
         for (String key : template.getKeys(false)) {
-            if (excludedKeys.contains(key)) {
+            if (excludedKeys.contains(prefix + key)) {
                 continue;
             }
             Object templateValue = template.get(key);
@@ -61,7 +67,7 @@ public final class ConfigSyncUtils {
                     changed = true;
                 }
 
-                changed |= syncMissingAndObsolete(templateSection, targetSection);
+                changed |= syncTree(templateSection, targetSection, excludedKeys, prefix + key + ".");
                 continue;
             }
 

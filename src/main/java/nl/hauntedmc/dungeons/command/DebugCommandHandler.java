@@ -6,7 +6,6 @@ import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
 import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
-import nl.hauntedmc.dungeons.util.command.CommandUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 
 import org.bukkit.command.CommandSender;
@@ -61,6 +60,13 @@ final class DebugCommandHandler implements CommandHandler {
         return options;
     }
 
+    private boolean canDiagnose(CommandSender sender) {
+        if (!(sender instanceof Player player)) return false;
+        var session = this.playerManager.get(player);
+        var dungeon = session == null || session.getInstance() == null ? null : session.getInstance().getDungeon();
+        return dungeon != null && nl.hauntedmc.dungeons.runtime.staff.StaffPermissions.allows(sender, "diagnostics", dungeon.getWorldName());
+    }
+
     /** Runs handle test door command. */
     boolean handleTestDoorCommand(CommandSender sender, String[] args) {
         if (args.length != 2) {
@@ -71,7 +77,7 @@ final class DebugCommandHandler implements CommandHandler {
             return false;
         }
 
-        if (!CommandUtils.hasPermission(sender, "dungeons.role.operator")) {
+        if (!this.canDiagnose(sender)) {
             return false;
         }
 
@@ -100,7 +106,7 @@ final class DebugCommandHandler implements CommandHandler {
             return false;
         }
 
-        if (!CommandUtils.hasPermission(sender, "dungeons.role.operator")) {
+        if (!this.canDiagnose(sender)) {
             return false;
         }
 
@@ -134,7 +140,7 @@ final class DebugCommandHandler implements CommandHandler {
             return false;
         }
 
-        if (!CommandUtils.hasPermission(sender, "dungeons.role.operator")) {
+        if (!this.canDiagnose(sender)) {
             return false;
         }
 

@@ -120,25 +120,25 @@ wait_for_log 'Enabling Dungeons'
 [[ -d "$work_directory/paper/plugins/Dungeons" ]] || fail 'Plugin did not initialize its data directory'
 wait_for_log "Loaded dungeon 'current-config' successfully"
 grep -Fq 'straightness: 0.8' "$current_map/config.yml" || fail 'Current generator configuration was not loaded'
-printf 'dungeon admin maintenance current-config on Acceptance configuration mutations\n' >&"$paper_input_fd"
+printf 'dungeon map maintenance current-config on Acceptance configuration mutations\n' >&"$paper_input_fd"
 wait_for_log 'Maintenance on for current-config'
-printf 'dungeon config current-config branch.add command_side\n' >&"$paper_input_fd"
+printf 'dungeon map settings current-config set branch.add command_side\n' >&"$paper_input_fd"
 wait_for_log 'branch.add.*command_side'
 grep -Fq 'command_side:' "$current_map/config.yml" || fail 'Branch command did not save to config.yml'
-printf 'dungeon config current-config branch.command_side.straightness 0.75\n' >&"$paper_input_fd"
+printf 'dungeon map settings current-config set branch.command_side.straightness 0.75\n' >&"$paper_input_fd"
 wait_for_log 'branch.command_side.straightness.*0.75'
 grep -Fq 'straightness: 0.75' "$current_map/config.yml" || fail 'Named branch edit was not saved'
-printf 'dungeon config current-config branch.remove command_side\n' >&"$paper_input_fd"
+printf 'dungeon map settings current-config set branch.remove command_side\n' >&"$paper_input_fd"
 wait_for_log 'branch.remove.*command_side'
 if grep -Fq 'command_side:' "$current_map/config.yml"; then fail 'Branch removal was not saved'; fi
-printf 'dungeon config current-config layout minecrafty\n' >&"$paper_input_fd"
+printf 'dungeon map settings current-config set layout minecrafty\n' >&"$paper_input_fd"
 wait_for_log 'layout.*minecrafty'
 grep -Fq 'layout: minecrafty' "$current_map/config.yml" || fail 'Layout command did not save to config.yml'
-printf 'dungeon config current-config layout branching\n' >&"$paper_input_fd"
+printf 'dungeon map settings current-config set layout branching\n' >&"$paper_input_fd"
 wait_for_log 'layout.*branching'
 grep -Fq 'layout: branching' "$current_map/config.yml" || fail 'Layout switch back was not saved'
 before_lines=$(wc -l <"$paper_log")
-printf 'dungeon admin maintenance current-config off Acceptance configuration complete\n' >&"$paper_input_fd"
+printf 'dungeon map maintenance current-config off Acceptance configuration complete\n' >&"$paper_input_fd"
 wait_for_log 'Maintenance off for current-config'
 printf 'dungeon help\n' >&"$paper_input_fd"
 local_deadline=$((SECONDS + 45))

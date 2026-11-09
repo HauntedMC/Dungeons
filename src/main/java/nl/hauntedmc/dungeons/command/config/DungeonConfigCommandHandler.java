@@ -28,7 +28,7 @@ import java.util.Locale;
 import java.util.Set;
 
 /**
- * Command handler for {@code /dungeon config}.
+ * Command handler for {@code /dungeon map settings}.
  *
  * <p>The handler resolves a target dungeon, looks up the referenced setting in {@link
  * DungeonConfigRegistry}, validates user input based on the setting's declared {@link
@@ -49,13 +49,8 @@ public final class DungeonConfigCommandHandler {
         this.activeInstanceManager = activeInstanceManager;
     }
 
-    /** Handles {@code /dungeon config} command execution. */
+    /** Handles {@code /dungeon map settings} command execution. */
     public boolean handleCommand(CommandSender sender, String[] args) {
-        if (!CommandUtils.hasAnyDungeonEditAccess(sender)) {
-            LangUtils.sendMessage(sender, "general.errors.no-permission");
-            return true;
-        }
-
         if (args.length < 2) {
             this.sendUsage(sender);
             return true;
@@ -109,7 +104,7 @@ public final class DungeonConfigCommandHandler {
         return this.applySetting(sender, dungeon, entry, this.joinArgs(args, 3));
     }
 
-    /** Produces tab completions for {@code /dungeon config}. */
+    /** Produces tab completions for {@code /dungeon map settings}. */
     public List<String> handleTabComplete(CommandSender sender, String[] args) {
         List<String> options = new ArrayList<>();
         if (!CommandUtils.hasAnyDungeonEditAccess(sender)) {
@@ -183,6 +178,24 @@ public final class DungeonConfigCommandHandler {
 
         if (this.isRuleSetting(entry) && rawValue.equalsIgnoreCase("inherit")) {
             return this.persistValue(sender, dungeon, entry, null);
+        }
+
+        if (rawValue.startsWith("add ") || rawValue.startsWith("remove ")) {
+            boolean add = rawValue.startsWith("add ");
+            String supplied = rawValue.substring(add ? 4 : 7).trim();
+            List<String> changes = switch (entry.getValueType()) {
+                case MATERIAL_LIST -> this.parseMaterialList(supplied);
+                case ENTITY_TYPE_LIST -> this.parseEntityTypeList(supplied);
+                case STRING_LIST -> this.parseStringList(supplied);
+                default -> null;
+            };
+            if (changes == null || changes.isEmpty())
+                return this.sendInvalidValue(sender, entry, "add/remove requires a list setting and valid values");
+            var candidate = new java.util.ArrayList<>(dungeon.getConfig().getStringList(entry.getPath()));
+            if (add) {
+                for (String change : changes) if (!candidate.contains(change)) candidate.add(change);
+            } else candidate.removeAll(changes);
+            return this.persistValue(sender, dungeon, entry, candidate);
         }
 
         // Branch creation and deletion mutate a structured subsection rather than a single scalar

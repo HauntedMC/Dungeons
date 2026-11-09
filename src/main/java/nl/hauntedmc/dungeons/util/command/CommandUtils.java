@@ -2,15 +2,12 @@ package nl.hauntedmc.dungeons.util.command;
 
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
-import nl.hauntedmc.dungeons.util.config.PluginConfigView;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 
 import org.bukkit.command.CommandSender;
 
-import java.util.ArrayList;
-import java.util.List;
 
-/** Command permission and help-menu utility helpers. */
+/** Command permission helpers. */
 public final class CommandUtils {
 
     /** Utility class. */
@@ -55,83 +52,4 @@ public final class CommandUtils {
         return false;
     }
 
-    /** Renders paginated help lines based on sender permissions and sender type. */
-    public static void displayHelpMenu(CommandSender sender, int page) {
-        if (page > 0) {
-            page--;
-        }
-
-        sender.sendMessage(
-                LangUtils.getMessage(
-                        "commands.help.header",
-                        false,
-                        LangUtils.placeholder("version", RuntimeContext.version())));
-        List<String> helpInfo = new ArrayList<>();
-        boolean playerSender = sender instanceof org.bukkit.entity.Player;
-        boolean dungeonEditPerm = hasAnyDungeonEditAccess(sender);
-        boolean dungeonAdminPerm = hasPermissionSilent(sender, "dungeons.role.operator");
-        boolean playPerm = hasPermissionSilent(sender, "dungeons.play");
-        boolean playSendPerm = hasPermissionSilent(sender, "dungeons.play.send");
-
-        helpInfo.add(LangUtils.getMessage("commands.help.help", false));
-        if (dungeonAdminPerm
-                || (playerSender && (playPerm || playSendPerm))
-                || (!playerSender && playSendPerm)) {
-            helpInfo.add(LangUtils.getMessage("commands.help.list", false));
-        }
-        if ((playerSender && (playPerm || playSendPerm)) || (!playerSender && playSendPerm)) {
-            helpInfo.add(LangUtils.getMessage("commands.help.play", false));
-        }
-        if (playerSender && playPerm) {
-            helpInfo.add(LangUtils.getMessage("commands.help.team", false));
-        }
-        if (playerSender) {
-            helpInfo.add(LangUtils.getMessage("commands.help.leave", false));
-        }
-        if (playerSender && hasPermissionSilent(sender, "dungeons.stuck")) {
-            helpInfo.add(LangUtils.getMessage("commands.help.stuck", false));
-        }
-        if (playerSender && hasPermissionSilent(sender, "dungeons.lives")) {
-            helpInfo.add(LangUtils.getMessage("commands.help.lives", false));
-        }
-        if (playerSender && hasPermissionSilent(sender, "dungeons.rewards")) {
-            helpInfo.add(LangUtils.getMessage("commands.help.rewards", false));
-        }
-        if (dungeonEditPerm) {
-            helpInfo.add(LangUtils.getMessage("commands.help.config", false));
-            if (playerSender) {
-                helpInfo.add(LangUtils.getMessage("commands.help.edit", false));
-            }
-        }
-        if (playerSender && hasPermissionSilent(sender, "dungeons.staff.loot")) {
-            helpInfo.add(LangUtils.getMessage("commands.help.loot", false));
-        }
-        if (dungeonAdminPerm) {
-            helpInfo.add(LangUtils.getMessage("commands.help.dungeon", false));
-            if (playerSender) {
-                helpInfo.add(LangUtils.getMessage("commands.help.debug", false));
-            }
-        }
-
-        int pageSize = PluginConfigView.getCommandListPageSize(RuntimeContext.config());
-        int totalPages = Math.max(1, (int) Math.ceil(helpInfo.size() / (double) pageSize));
-        if (page >= totalPages) {
-            page = totalPages - 1;
-        }
-
-        if (page < 0) {
-            page = 0;
-        }
-
-        for (int i = page * pageSize; i < (page + 1) * pageSize && i < helpInfo.size(); i++) {
-            sender.sendMessage(helpInfo.get(i));
-        }
-
-        sender.sendMessage(
-                LangUtils.getMessage(
-                        "commands.help.footer",
-                        false,
-                        LangUtils.placeholder("page", String.valueOf(page + 1)),
-                        LangUtils.placeholder("total_pages", String.valueOf(totalPages))));
-    }
 }

@@ -26,7 +26,7 @@ final class NativeStaff {
                 console.hasPermission("dungeons.role.operator"),
                 "Console cannot use operator preset");
         require(
-                Bukkit.dispatchCommand(console, "dungeon admin overview"),
+                Bukkit.dispatchCommand(console, "dungeon server status"),
                 "Staff command not bound");
         var permissible =
                 new org.bukkit.permissions.PermissibleBase(
@@ -110,7 +110,7 @@ final class NativeStaff {
                                             default -> null;
                                         });
         var command = java.util.Objects.requireNonNull(Bukkit.getPluginCommand("dungeon"));
-        command.execute(player, "dungeon", new String[] {"admin"});
+        command.execute(player, "dungeon", new String[] {"server"});
         require(
                 opened.get() != null && opened.get().getSize() == 54,
                 "Native staff dashboard did not render");
@@ -119,7 +119,7 @@ final class NativeStaff {
                 "Dashboard metadata missing");
         var dashboard = opened.get();
         command.execute(
-                player, "dungeon", new String[] {"admin", "dungeon", dungeon.getWorldName()});
+                player, "dungeon", new String[] {"map", "info", dungeon.getWorldName()});
         require(opened.get() != dashboard, "Dungeon detail screen did not open");
 
         var output = new java.util.ArrayList<String>();
@@ -155,14 +155,14 @@ final class NativeStaff {
                                             default -> null;
                                         });
         String[] compensation = {
-            "admin", "compensate", syntheticId.toString(), "DIAMOND", "3", "Native compensation"
+            "player", syntheticId.toString(), "compensate", "DIAMOND", "3", "Native compensation"
         };
         command.execute(sender, "dungeon", compensation);
         String confirmation =
                 output.stream()
                         .filter(
                                 line ->
-                                        line.contains("/dungeon admin ")
+                                        line.contains("/dungeon player ")
                                                 && line.contains("--confirm "))
                         .reduce((a, b) -> b)
                         .orElseThrow();
@@ -181,6 +181,39 @@ final class NativeStaff {
                         .contains("claimable stacks=1"),
                 "Confirmation replay duplicated native compensation");
 
+        verifyExistingMapIdentityAndMetadataKeys(test, dungeon);
         return CompletableFuture.completedFuture(null);
     }
+    private static void verifyExistingMapIdentityAndMetadataKeys(AcceptancePlugin test,
+            nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition dungeon) throws Exception {
+        var settings = test.runtime().config();
+        Object unique = settings.get("access.keys.unique_validation_enabled");
+        Object metadata = settings.get("access.keys.metadata_validation_enabled");
+        try {
+            settings.set("access.keys.unique_validation_enabled", false);
+            settings.set("access.keys.metadata_validation_enabled", true);
+            var definition = dungeon.addAccessKey(new org.bukkit.inventory.ItemStack(org.bukkit.Material.PAPER), null);
+            var existing = nl.hauntedmc.dungeons.util.item.ItemUtils.tagDungeonAccessKey(
+                    new org.bukkit.inventory.ItemStack(org.bukkit.Material.PAPER), definition.getKeyId());
+            var file = new java.io.File(dungeon.getFolder(), "config.yml");
+            var before = new org.bukkit.configuration.file.YamlConfiguration();
+            before.load(file);
+            before.set("dungeon.id", null);
+            before.save(file);
+            java.nio.file.Files.writeString(dungeon.getFolder().toPath().resolve("access_keys.yml"), "unused: [broken");
+            var upgraded = test.runtime().dungeonCatalog().loadDungeon(dungeon.getFolder());
+            require(upgraded != null, "Missing map ID or unused ledger broke upgrade");
+            java.util.UUID assigned = upgraded.getDungeonId();
+            require(assigned != null, "Map UUID was not assigned");
+            require(upgraded.isValidKey(existing) != null, "Existing metadata key rejected after ID assignment");
+            var reloaded = test.runtime().dungeonCatalog().loadDungeon(upgraded.getFolder());
+            require(reloaded != null && assigned.equals(reloaded.getDungeonId()), "Reload changed the assigned UUID");
+            require(reloaded.getAccessKeys().getFirst().getKeyId().equals(definition.getKeyId()), "Upgrade changed key-definition identity");
+            require(reloaded.isValidKey(existing) != null, "Reload rejected an existing metadata-only key");
+        } finally {
+            settings.set("access.keys.unique_validation_enabled", unique);
+            settings.set("access.keys.metadata_validation_enabled", metadata);
+        }
+    }
+
 }
