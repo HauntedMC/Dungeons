@@ -323,14 +323,22 @@ class PreparationContractTest {
             var waiting = runWaiter(f, executor);
             var creation = f.scheduler.readyImmediate.poll(2, TimeUnit.SECONDS);
             assertNotNull(creation);
+            var creationReturned = new CountDownLatch(1);
             dungeon.beforeReturn =
                     () ->
-                            doThrow(new IllegalStateException("scheduler stopped"))
+                            doAnswer(call -> {
+                                        // Reject on the worker only after owner-thread publication
+                                        // returns. Otherwise create() may legitimately drain the
+                                        // cancellation in its finally block before this assertion.
+                                        assertTrue(creationReturned.await(2, TimeUnit.SECONDS));
+                                        throw new IllegalStateException("scheduler stopped");
+                                    })
                                     .when(f.scheduler.scheduler)
                                     .runTask(
                                             any(org.bukkit.plugin.Plugin.class),
                                             any(Runnable.class));
             creation.run();
+            creationReturned.countDown();
             waiting.get(2, TimeUnit.SECONDS);
             assertTrue(
                     session.isAwaitingDungeon(), "Worker cannot mutate owner-thread player state");
