@@ -25,6 +25,7 @@ final class ListenerBootstrap {
      */
     void registerCoreListeners() {
         DungeonsPlugin plugin = this.runtime.environment().plugin();
+        Bukkit.getPluginManager().registerEvents(new nl.hauntedmc.dungeons.listener.DatabaseLoginListener(this.runtime), plugin);
         Bukkit.getPluginManager().registerEvents(this.runtime.playerSessions(), plugin);
         this.runtime.playerSessions().start(this.runtime);
         Bukkit.getPluginManager()

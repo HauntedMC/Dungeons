@@ -29,6 +29,7 @@ public final class PlayerSessionRegistry implements Listener {
     private final HashMap<UUID, Long> disconnected = new HashMap<>();
     private final LongSupplier clock;
     private Predicate<DungeonPlayerSession> retained = session -> false;
+    private java.util.function.Consumer<UUID> releaseCachedState = ignored -> {};
     private BukkitTask sweepTask;
     private boolean closed;
 
@@ -46,6 +47,10 @@ public final class PlayerSessionRegistry implements Listener {
         requireOwnerThread();
         if (closed) throw new IllegalStateException("Session registry has shut down");
         if (sweepTask != null) return;
+        releaseCachedState = id -> {
+            if (runtime.hasDungeonCatalog())
+                for (var dungeon : runtime.dungeonCatalog().getLoadedDungeons()) dungeon.playerDataStore().evictPlayer(id);
+        };
         retained =
                 session ->
                         runtime.preparations().contains(session)
@@ -154,6 +159,10 @@ public final class PlayerSessionRegistry implements Listener {
             if (!session.expire(shutdown)) return false;
             players.remove(id, session);
             disconnected.remove(id);
+            try { releaseCachedState.accept(id); }
+            catch (RuntimeException failure) {
+                plugin.getSLF4JLogger().error("Could not release cached dungeon records for expired player {}", id, failure);
+            }
             return true;
         } catch (RuntimeException failure) {
             plugin.getSLF4JLogger()

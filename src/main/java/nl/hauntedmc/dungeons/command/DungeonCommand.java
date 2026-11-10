@@ -108,6 +108,8 @@ public final class DungeonCommand implements TabExecutor {
         }
 
         try {
+            if (!nl.hauntedmc.dungeons.runtime.RuntimeContext.runtime().database().ready())
+                throw new IllegalArgumentException("Dungeons database is unavailable");
             return this.handleCommand(sender, args);
         } catch (IllegalArgumentException rejected) {
             sender.sendMessage(
@@ -157,6 +159,8 @@ public final class DungeonCommand implements TabExecutor {
                 LangUtils.sendMessage(sender, "general.errors.no-permission");
                 return true;
             }
+            if (route.playerOnly() && sender instanceof Player player)
+                nl.hauntedmc.dungeons.runtime.RuntimeContext.runtime().stateStore().requirePlayerReady(player.getUniqueId());
             String[] operation = route.arguments(values);
             return switch (route.handler()) {
                 case GAMEPLAY -> this.gameplayCommands.handleCommand(sender, operation);

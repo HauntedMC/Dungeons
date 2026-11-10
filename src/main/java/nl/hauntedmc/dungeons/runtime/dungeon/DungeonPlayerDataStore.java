@@ -8,61 +8,48 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
-import java.nio.file.Files;
 import java.util.*;
 
 /** Owns one dungeon's player records and cooldown indexes, independent of worlds and editor UI. */
 public final class DungeonPlayerDataStore {
     private final Plugin plugin;
-    private final File directory;
+    private final String scope;
+    private final nl.hauntedmc.dungeons.persistence.StateStore store;
+    private final Map<UUID, nl.hauntedmc.dungeons.persistence.StateDocument> documents = new HashMap<>();
     private final Map<UUID, ConfigurationFile> records = new LinkedHashMap<>();
     private final Map<UUID, PlayerLootData> rewards = new LinkedHashMap<>();
     private final Map<UUID, Date> access = new HashMap<>();
     private final Set<UUID> readOnly = new HashSet<>();
 
-    public DungeonPlayerDataStore(Plugin plugin, File dungeonFolder) {
+    public DungeonPlayerDataStore(Plugin plugin, UUID dungeonId) {
         requireOwnerThread();
         this.plugin = plugin;
-        this.directory = new File(dungeonFolder, "players");
+        this.scope = "dungeon-progress/" + dungeonId;
+        this.store = nl.hauntedmc.dungeons.runtime.RuntimeContext.runtime().stateStore();
+    }
+
+    private void load(UUID id) {
+        requireOwnerThread();
+        if (records.containsKey(id)) return;
         try {
-            Files.createDirectories(this.directory.toPath());
-            File[] files = this.directory.listFiles();
-            if (files == null) throw new java.io.IOException("Cannot list " + this.directory);
-            for (File file : files) {
-                if (!file.isFile() || !file.getName().endsWith(".yml")) continue;
-                UUID id;
-                try {
-                    id = UUID.fromString(file.getName().substring(0, file.getName().length() - 4));
-                } catch (IllegalArgumentException invalidName) {
-                    plugin.getSLF4JLogger()
-                            .warn("Ignoring player data with an invalid UUID filename '{}'.", file);
-                    continue;
-                }
-                try {
-                    var candidate = new ConfigurationFile(plugin);
-                    ConfigurationFile.loadSnapshot(candidate, file);
-                    records.put(id, candidate);
-                    loadCooldowns(id);
-                } catch (Exception failure) {
-                    readOnly.add(id);
-                    plugin.getSLF4JLogger()
-                            .error(
-                                    "Failed to load dungeon player data '{}'; writes to this record"
-                                            + " are blocked.",
-                                    file,
-                                    failure);
-                }
-            }
-        } catch (java.io.IOException failure) {
-            throw new java.io.UncheckedIOException(
-                    "Cannot initialize dungeon player storage " + directory, failure);
+            var candidate = new ConfigurationFile(plugin);
+            document(id).loadInto(candidate);
+            records.put(id, candidate);
+            loadCooldowns(id);
+        } catch (org.bukkit.configuration.InvalidConfigurationException failure) {
+            throw new IllegalStateException("Invalid database dungeon progression " + id, failure);
         }
+    }
+
+    private nl.hauntedmc.dungeons.persistence.StateDocument document(UUID id) {
+        return documents.computeIfAbsent(id, ignored -> store.document(
+                new nl.hauntedmc.dungeons.persistence.StateStore.Key(scope, id.toString(), id)));
     }
 
     /** Rebuilds indexes idempotently without duplicating records. */
     public void loadCooldowns(UUID id) {
         requireOwnerThread();
+        if (!records.containsKey(id)) { load(id); return; }
         var data = records.get(id);
         if (data == null) return;
         if (data.get("Finished") != null && !(data.get("Finished") instanceof Boolean)) {
@@ -71,7 +58,7 @@ public final class DungeonPlayerDataStore {
                     .warn(
                             "Invalid completion state for player '{}' in '{}'; writes are blocked.",
                             id,
-                            directory);
+                            scope);
         }
         Object value = data.get("RewardsInfo");
         if (value instanceof PlayerLootData loot && id.equals(loot.getPlayerId()))
@@ -85,7 +72,7 @@ public final class DungeonPlayerDataStore {
                                 "Invalid reward cooldown data for player '{}' in '{}'; other fields"
                                         + " remain readable and writes are blocked.",
                                 id,
-                                directory);
+                                scope);
             }
         }
         Object reset = data.get("AccessCooldown");
@@ -100,7 +87,7 @@ public final class DungeonPlayerDataStore {
                                 "Invalid access cooldown for player '{}' in '{}'; writes are"
                                         + " blocked.",
                                 id,
-                                directory);
+                                scope);
             }
         }
     }
@@ -109,26 +96,31 @@ public final class DungeonPlayerDataStore {
         requireOwnerThread();
         if (readOnly.contains(id))
             throw new IllegalStateException(
-                    "Repair and reload unreadable dungeon player record " + target(id));
+                    "Repair and reload unreadable dungeon player record " + scope + "/" + id);
     }
 
     private ConfigurationFile record(UUID id) {
+        load(id);
         requireWritable(id);
         return records.computeIfAbsent(id, ignored -> new ConfigurationFile(plugin));
     }
 
     public void setAccessCooldown(UUID id, Date reset) {
+        load(id);
         requireWritable(id);
-        access.put(id, new Date(reset.getTime()));
+        correct(id, candidate -> candidate.set("AccessCooldown", reset.getTime()));
     }
 
     public boolean clearAccessCooldown(UUID id) {
+        load(id);
         requireWritable(id);
-        return access.remove(id) != null;
+        if (!access.containsKey(id)) return false;
+        correct(id, candidate -> candidate.set("AccessCooldown", null));
+        return true;
     }
 
     public boolean hasAccessCooldown(UUID id) {
-        requireOwnerThread();
+        load(id);
         Date reset = access.get(id);
         if (reset != null && System.currentTimeMillis() > reset.getTime()) {
             access.remove(id);
@@ -142,11 +134,12 @@ public final class DungeonPlayerDataStore {
     }
 
     public @Nullable PlayerLootData getRewards(UUID id) {
-        requireOwnerThread();
+        load(id);
         return rewards.get(id);
     }
 
     private PlayerLootData rewards(Player player) {
+        load(player.getUniqueId());
         requireWritable(player.getUniqueId());
         return rewards.computeIfAbsent(player.getUniqueId(), ignored -> new PlayerLootData(player));
     }
@@ -170,26 +163,28 @@ public final class DungeonPlayerDataStore {
         data.set("RewardsInfo", rewards(player));
         Date reset = access.get(id);
         data.set("AccessCooldown", reset == null ? null : reset.getTime());
+        save(player);
     }
 
     public void save(Player player) {
         UUID id = player.getUniqueId();
-        // ConfigurationFile captures on the owning thread and uses the shared atomic writer.
-        record(id).save(target(id));
+        // Capture the YAML codec on the owning thread; the database owns durability.
+        document(id).save(record(id).saveToString());
     }
 
     public boolean isCompleted(UUID id) {
-        requireOwnerThread();
+        load(id);
         var data = records.get(id);
         return data != null && data.getBoolean("Finished", false);
     }
 
     public void setCompleted(UUID id, boolean completed) {
-        record(id).set("Finished", completed);
+        correct(id, candidate -> candidate.set("Finished", completed));
     }
 
     /** Captures staged indexes, writes the candidate, then commits indexes after durability. */
     public void correct(UUID id, java.util.function.Consumer<ConfigurationFile> change) {
+        load(id);
         requireWritable(id);
         var candidate = new ConfigurationFile(plugin);
         try {
@@ -199,12 +194,22 @@ public final class DungeonPlayerDataStore {
             candidate.set("AccessCooldown", reset == null ? null : reset.getTime());
             if (rewards.containsKey(id)) candidate.set("RewardsInfo", rewards.get(id));
             change.accept(candidate);
-            candidate.save(target(id));
+            document(id).save(candidate.saveToString());
             records.put(id, candidate);
             loadCooldowns(id);
         } catch (org.bukkit.configuration.InvalidConfigurationException failure) {
             throw new IllegalStateException("Cannot stage player correction", failure);
         }
+    }
+
+    /** Release decoded owner state after the session has durably expired; database rows remain. */
+    public void evictPlayer(UUID id) {
+        requireOwnerThread();
+        documents.remove(id);
+        records.remove(id);
+        rewards.remove(id);
+        access.remove(id);
+        readOnly.remove(id);
     }
 
     public boolean isReadOnly(UUID id) {
@@ -227,7 +232,4 @@ public final class DungeonPlayerDataStore {
         }
     }
 
-    private File target(UUID id) {
-        return new File(directory, id + ".yml");
-    }
 }

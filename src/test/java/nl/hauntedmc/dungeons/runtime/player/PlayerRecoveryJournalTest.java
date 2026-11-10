@@ -22,20 +22,20 @@ class PlayerRecoveryJournalTest {
         try (var paper = new PaperBoundary()) {
             var before = new PlayerState();
             var path = directory.resolve("escrow.yml");
-            var journal = new PlayerRecoveryJournal(path);
+            var journal = new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path));
             doThrow(new IllegalStateException("native save failed")).when(before.player).saveData();
             assertThrows(
                     IllegalStateException.class,
                     () -> journal.reserveKey(before.player, "crypt", PlayerState.stack(1)));
             var reconnected = new PlayerState();
             reconnected.contents[0] = PlayerState.stack(1); // native data predates key removal
-            var restarted = new PlayerRecoveryJournal(path);
+            var restarted = new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path));
             assertTrue(restarted.recover(reconnected.player));
             restarted.deliverRefunds(reconnected.player);
             assertEquals(1, reconnected.contents[0].getAmount());
             assertFalse(restarted.hasKeyReservation());
             assertTrue(restarted.rewards().isEmpty());
-            new PlayerRecoveryJournal(path).recover(reconnected.player);
+            new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path)).recover(reconnected.player);
             assertEquals(1, reconnected.contents[0].getAmount());
         }
     }
@@ -45,9 +45,9 @@ class PlayerRecoveryJournalTest {
         try (var paper = new PaperBoundary()) {
             var player = new PlayerState();
             var path = directory.resolve("escrow.yml");
-            var journal = new PlayerRecoveryJournal(path);
+            var journal = new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path));
             journal.reserveKey(player.player, "crypt", PlayerState.stack(1));
-            var restarted = new PlayerRecoveryJournal(path);
+            var restarted = new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path));
             assertTrue(restarted.hasKeyReservation());
             restarted.recover(player.player);
             restarted.deliverRefunds(player.player);
@@ -55,7 +55,7 @@ class PlayerRecoveryJournalTest {
             player.contents[0] = null; // the next reservation removes the key again
             restarted.reserveKey(player.player, "crypt", PlayerState.stack(1));
             assertTrue(restarted.settleKey(false, null));
-            var consumed = new PlayerRecoveryJournal(path);
+            var consumed = new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path));
             consumed.recover(player.player);
             consumed.deliverRefunds(player.player);
             assertNull(player.contents[0]);
@@ -68,14 +68,14 @@ class PlayerRecoveryJournalTest {
         try (var paper = new PaperBoundary()) {
             var player = new PlayerState();
             var path = directory.resolve("invalid.yml");
-            var journal = new PlayerRecoveryJournal(path);
+            var journal = new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path));
             player.contents = new org.bukkit.inventory.ItemStack[36];
             assertThrows(IllegalArgumentException.class, () -> journal.begin(player.player));
             assertFalse(journal.hasRecovery());
             assertFalse(Files.exists(path));
             player.contents = new org.bukkit.inventory.ItemStack[43];
             journal.begin(player.player);
-            assertTrue(new PlayerRecoveryJournal(path).hasRecovery());
+            assertTrue(new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path)).hasRecovery());
         }
     }
 
@@ -83,8 +83,8 @@ class PlayerRecoveryJournalTest {
     void unsupportedJournalAndInventoryFormatsAreRejected() throws Exception {
         try (var paper = new PaperBoundary()) {
             var file = directory.resolve("unsupported.yml");
-            Files.writeString(file, "version: 1\n");
-            assertThrows(IllegalStateException.class, () -> new PlayerRecoveryJournal(file));
+            paper.state.journal(file, "version: 1\n");
+            assertThrows(IllegalStateException.class, () -> new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(file)));
             assertThrows(
                     IllegalArgumentException.class,
                     () ->
@@ -109,11 +109,11 @@ class PlayerRecoveryJournalTest {
                     .when(() -> Bukkit.getWorld(player.originWorld.getUID()))
                     .thenReturn(player.originWorld);
             var path = directory.resolve("modern.yml");
-            var journal = new PlayerRecoveryJournal(path);
+            var journal = new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path));
             journal.begin(player.player);
             assertEquals(43, journal.originalSnapshot(player.player).contents().length);
             player.inventory.clear();
-            var restarted = new PlayerRecoveryJournal(path);
+            var restarted = new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path));
             assertTrue(restarted.recover(player.player));
             assertEquals(2, player.contents[41].getAmount());
             assertEquals(3, player.contents[42].getAmount());
@@ -122,7 +122,7 @@ class PlayerRecoveryJournalTest {
             assertTrue(restarted.claim(player.player, reward));
             assertEquals(7, player.contents[0].getAmount());
             assertEquals(3, player.contents[42].getAmount());
-            assertTrue(new PlayerRecoveryJournal(path).rewards().isEmpty());
+            assertTrue(new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path)).rewards().isEmpty());
         }
     }
 
@@ -131,7 +131,7 @@ class PlayerRecoveryJournalTest {
         try (var paper = new PaperBoundary()) {
             var player = new PlayerState();
             var path = directory.resolve("recovery.yml");
-            var journal = new PlayerRecoveryJournal(path);
+            var journal = new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path));
             var reward = PlayerState.stack(7);
             journal.addRewards(reward);
             when(player.player.isOnline()).thenReturn(false);
@@ -141,10 +141,10 @@ class PlayerRecoveryJournalTest {
             assertFalse(journal.claim(player.player, reward));
             verify(player.player, never()).saveData();
             assertNull(player.contents[0]);
-            assertEquals(7, new PlayerRecoveryJournal(path).rewards().getFirst().getAmount());
+            assertEquals(7, new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path)).rewards().getFirst().getAmount());
             when(player.player.isDead()).thenReturn(false);
             assertTrue(journal.claim(player.player, reward));
-            assertTrue(new PlayerRecoveryJournal(path).rewards().isEmpty());
+            assertTrue(new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path)).rewards().isEmpty());
             assertEquals(7, player.contents[0].getAmount());
         }
     }
@@ -161,14 +161,14 @@ class PlayerRecoveryJournalTest {
             player.contents[40] = PlayerState.stack(3);
             player.armor[0] = PlayerState.stack(2);
             var path = directory.resolve("recovery.yml");
-            new PlayerRecoveryJournal(path).begin(player.player);
+            new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path)).begin(player.player);
             player.inventory.clear();
             player.gameMode = GameMode.CREATIVE;
             player.exp = 0;
             player.level = 0;
             player.health = 1;
             player.food = 0;
-            var restarted = new PlayerRecoveryJournal(path);
+            var restarted = new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path));
             assertTrue(restarted.recover(player.player));
             assertEquals(7, player.contents[0].getAmount());
             assertEquals(3, player.contents[40].getAmount());
@@ -180,7 +180,7 @@ class PlayerRecoveryJournalTest {
             assertEquals(9, player.food);
             verify(player.player).saveData();
             player.contents[0].setAmount(1);
-            new PlayerRecoveryJournal(path).recover(player.player);
+            new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path)).recover(player.player);
             assertEquals(1, player.contents[0].getAmount());
         }
     }
@@ -194,8 +194,7 @@ class PlayerRecoveryJournalTest {
             player.contents[0] = PlayerState.stack(8);
             Path journal =
                     directory.resolve("players/" + player.player.getUniqueId() + ".recovery.yml");
-            Files.createDirectory(journal);
-            Files.writeString(journal.resolve("keep"), "keep");
+            f.paper.state.failWrites = true;
             f.run.addPlayer(session);
             assertNull(session.getInstance());
             assertFalse(f.run.getPlayers().contains(session));
@@ -213,13 +212,13 @@ class PlayerRecoveryJournalTest {
             paper.bukkit
                     .when(() -> Bukkit.getWorld(player.originWorld.getUID()))
                     .thenReturn(player.originWorld);
-            var journal = new PlayerRecoveryJournal(path);
+            var journal = new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path));
             journal.begin(player.player);
             when(player.player.teleport(
                             any(Location.class), eq(PlayerTeleportEvent.TeleportCause.PLUGIN)))
                     .thenReturn(false);
             assertThrows(IllegalStateException.class, () -> journal.recover(player.player));
-            assertTrue(new PlayerRecoveryJournal(path).hasRecovery());
+            assertTrue(new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path)).hasRecovery());
             verify(player.player, never()).saveData();
         }
     }
@@ -229,17 +228,17 @@ class PlayerRecoveryJournalTest {
         try (var paper = new PaperBoundary()) {
             var player = new PlayerState();
             var path = directory.resolve("recovery.yml");
-            var journal = new PlayerRecoveryJournal(path);
+            var journal = new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path));
             player.vanillaDead = true;
             assertThrows(IllegalStateException.class, () -> journal.begin(player.player));
             assertFalse(Files.exists(path));
             player.vanillaDead = false;
             journal.begin(player.player);
             assertThrows(NullPointerException.class, () -> journal.recover(player.player));
-            assertTrue(new PlayerRecoveryJournal(path).hasRecovery());
-            Files.writeString(path, "version: 1\nrecovery: broken\n");
-            assertThrows(IllegalStateException.class, () -> new PlayerRecoveryJournal(path));
-            assertEquals("version: 1\nrecovery: broken\n", Files.readString(path));
+            assertTrue(new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path)).hasRecovery());
+            paper.state.journal(path, "version: 1\nrecovery: broken\n");
+            assertThrows(IllegalStateException.class, () -> new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path)));
+            assertEquals("version: 1\nrecovery: broken\n", paper.state.payload("player-recovery", nl.hauntedmc.dungeons.support.TestStateStore.player(path).toString()));
         }
     }
 
@@ -248,19 +247,19 @@ class PlayerRecoveryJournalTest {
         try (var paper = new PaperBoundary()) {
             var player = new PlayerState();
             var path = directory.resolve("recovery.yml");
-            var journal = new PlayerRecoveryJournal(path);
+            var journal = new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path));
             journal.addRewards(PlayerState.stack(20));
             for (int slot = 0; slot < 36; slot++) player.contents[slot] = PlayerState.stack(64);
             player.contents[0].setAmount(60);
-            var restarted = new PlayerRecoveryJournal(path);
+            var restarted = new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path));
             assertTrue(restarted.claim(player.player, restarted.rewards().getFirst()));
             assertEquals(64, player.contents[0].getAmount());
-            assertEquals(16, new PlayerRecoveryJournal(path).rewards().getFirst().getAmount());
+            assertEquals(16, new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path)).rewards().getFirst().getAmount());
             assertFalse(restarted.claim(player.player, PlayerState.stack(20)));
             assertFalse(restarted.claim(player.player, restarted.rewards().getFirst()));
             player.contents[1] = null;
             assertTrue(restarted.claim(player.player, restarted.rewards().getFirst()));
-            assertTrue(new PlayerRecoveryJournal(path).rewards().isEmpty());
+            assertTrue(new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path)).rewards().isEmpty());
             assertEquals(16, player.contents[1].getAmount());
         }
     }
@@ -270,17 +269,17 @@ class PlayerRecoveryJournalTest {
         try (var paper = new PaperBoundary()) {
             var path = directory.resolve("recovery.yml");
             var player = new PlayerState();
-            var journal = new PlayerRecoveryJournal(path);
+            var journal = new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path));
             journal.addRewards(PlayerState.stack(5));
             doThrow(new IllegalStateException("save failed")).when(player.player).saveData();
             assertThrows(
                     IllegalStateException.class,
                     () -> journal.claim(player.player, journal.rewards().getFirst()));
             var reconnect = new PlayerState();
-            new PlayerRecoveryJournal(path).recover(reconnect.player);
+            new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path)).recover(reconnect.player);
             assertEquals(5, reconnect.contents[0].getAmount());
-            assertTrue(new PlayerRecoveryJournal(path).rewards().isEmpty());
-            new PlayerRecoveryJournal(path).recover(reconnect.player);
+            assertTrue(new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path)).rewards().isEmpty());
+            new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path)).recover(reconnect.player);
             assertEquals(5, reconnect.contents[0].getAmount());
         }
     }
@@ -291,31 +290,26 @@ class PlayerRecoveryJournalTest {
         try (var paper = new PaperBoundary()) {
             var path = directory.resolve("recovery.yml");
             var player = new PlayerState();
-            var journal = new PlayerRecoveryJournal(path);
+            var journal = new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path));
             journal.addRewards(PlayerState.stack(5));
             byte[][] durableJournal = {null};
             doAnswer(
                             call -> {
-                                durableJournal[0] = Files.readAllBytes(path);
-                                Files.delete(path);
-                                Files.createDirectory(path);
-                                Files.writeString(path.resolve("obstacle"), "keep");
+                                paper.state.failWrites = true;
                                 return null;
                             })
                     .when(player.player)
                     .saveData();
             assertThrows(
-                    java.io.UncheckedIOException.class,
+                    RuntimeException.class,
                     () -> journal.claim(player.player, journal.rewards().getFirst()));
-            Files.delete(path.resolve("obstacle"));
-            Files.delete(path);
-            Files.write(path, durableJournal[0]);
+            paper.state.failWrites = false;
             // Simulate saved marker loaded on reconnect. Subsequent gameplay must not be
             // overwritten.
             player.contents[0].setAmount(2);
-            new PlayerRecoveryJournal(path).recover(player.player);
+            new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path)).recover(player.player);
             assertEquals(2, player.contents[0].getAmount());
-            assertTrue(new PlayerRecoveryJournal(path).rewards().isEmpty());
+            assertTrue(new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path)).rewards().isEmpty());
             verify(player.player, times(1)).saveData();
         }
     }
@@ -325,11 +319,11 @@ class PlayerRecoveryJournalTest {
         try (var paper = new PaperBoundary()) {
             var player = new PlayerState();
             var path = directory.resolve("recovery.yml");
-            var journal = new PlayerRecoveryJournal(path);
+            var journal = new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path));
             journal.begin(player.player);
             player.contents[0] = PlayerState.stack(9);
             journal.acknowledgeDeparture(player.player);
-            new PlayerRecoveryJournal(path).recover(player.player);
+            new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path)).recover(player.player);
             assertEquals(9, player.contents[0].getAmount());
             assertFalse(journal.hasRecovery());
         }

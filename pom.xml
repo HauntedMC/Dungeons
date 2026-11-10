@@ -219,6 +219,27 @@
                         <artifactId>maven-dependency-plugin</artifactId>
                         <executions>
                             <execution>
+                                <id>acceptance-database-plugins</id>
+                                <phase>generate-test-resources</phase>
+                                <goals><goal>copy</goal></goals>
+                                <configuration><artifactItems>
+                                    <artifactItem>
+                                        <groupId>nl.hauntedmc.dataprovider</groupId>
+                                        <artifactId>dataprovider-platform-paper</artifactId>
+                                        <version>3.5.2</version><classifier>bundled</classifier><type>jar</type>
+                                        <outputDirectory>${project.build.directory}/acceptance-plugins</outputDirectory>
+                                        <destFileName>DataProvider.jar</destFileName>
+                                    </artifactItem>
+                                    <artifactItem>
+                                        <groupId>nl.hauntedmc.dataregistry</groupId>
+                                        <artifactId>dataregistry-platform-paper</artifactId>
+                                        <version>1.19.2</version><classifier>bundled</classifier><type>jar</type>
+                                        <outputDirectory>${project.build.directory}/acceptance-plugins</outputDirectory>
+                                        <destFileName>DataRegistry.jar</destFileName>
+                                    </artifactItem>
+                                </artifactItems></configuration>
+                            </execution>
+                            <execution>
                                 <id>acceptance-classpath</id>
                                 <phase>generate-test-resources</phase>
                                 <goals><goal>build-classpath</goal></goals>

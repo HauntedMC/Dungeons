@@ -9,27 +9,27 @@ Dungeons is a Paper plugin for creating, editing, and running configurable dunge
 
 ## Quick Start
 
-1. Place `Dungeons-<version>.jar` in your server `plugins/` directory.
-2. Start the server once to generate runtime files under `plugins/Dungeons/`.
-3. Configure global settings in `plugins/Dungeons/config.yml`.
+1. Install DataProvider, DataRegistry and `Dungeons-<version>.jar` in `plugins/`.
+2. Configure DataProvider's MySQL connection and DataRegistry, then set Dungeons' connection and stable server identity below.
+3. Start the server. Dungeons enables only after the database, schema and exclusive server lease are ready.
 4. Create or edit dungeon content with `/dungeon` editor commands.
 5. Start a run with `/dungeon play <dungeon> [difficulty]`.
 
-Database integration is still in progress; gameplay persistence currently remains file-based.
-
 ## Database configuration
 
-The optional database foundation uses the public DataProvider ORM API. No SQL scripts need to be
-installed or executed. Missing consumer settings are added to existing `config.yml` files;
-custom connection names are preserved.
+Database persistence is mandatory. DataProvider owns credentials, pools, timeouts and ORM policy;
+DataRegistry owns canonical player identities. Select a named MySQL connection that contains
+DataRegistry's `player_entity` table and grants Dungeons access. No SQL files need to be installed.
+Missing consumer settings are added to existing configurations; custom connection names are preserved.
 
 Dungeons `config.yml`:
 
 ```yaml
 database:
-  enabled: false
   connection-id: player_data_rw
+  startup-timeout-seconds: 30
   shutdown-timeout-seconds: 10
+  operation-timeout-ms: 1000
 runtime:
   server-id: ''
 ```
@@ -41,33 +41,40 @@ orm:
   schema_mode: update
 ```
 
-DataProvider 3.5.2 ignores the legacy schema-mode argument on consumer factory calls. Dungeons uses
-`createConfiguredOrmContext` and deliberately has no local mode override. Remove any experimental
-`database.orm.schema-mode` or `database.schema-mode` setting from Dungeons; startup rejects these
-instead of pretending they control the provider.
+Dungeons uses `createConfiguredOrmContext`. Configure ORM policy in DataProvider; local
+`database.orm.schema-mode` and `database.schema-mode` overrides are unsupported.
+`update` creates/updates the mapped schema, `validate` checks it without DDL, and `none` skips ORM DDL.
+Dungeons always independently verifies required tables, column types/widths/nullability, InnoDB
+engines, primary keys, indexes and foreign-key rules. An absent or incompatible schema prevents boot.
+**Do not use destructive `create` mode** on the shared database: its mappings include a minimal
+canonical-player reference. Update/validate preserve canonical rows and the existing player table.
 
-To initialize the foundation, enable DataProvider and DataRegistry, set `database.enabled: true`,
-and select a named MySQL connection that points to the database containing DataRegistry's
-`player_entity`. Credentials, pool sizes, timeouts and ORM policy belong to DataProvider.
-`update` creates/updates the mapped schema, `validate` checks mapped types without DDL, and `none`
-skips ORM DDL. Use these modes for the shared database; **do not use destructive `create` mode**.
-The ORM mapping includes a minimal read-only canonical-player reference for foreign keys, so schema
-creation mode is inappropriate for this shared database. Update/validate preserve canonical player
-rows and the complete existing player table definition, covered by MySQL integration tests.
+DataRegistry supplies backend identity. Set `runtime.server-id` if DataRegistry publishes none;
+if both are set, they must match. Give every concurrent backend a distinct, stable identity.
+Snapshots belong to this server identity and the dungeon's persistent UUID. Restart after changing
+connection or identity settings. DataRegistry must provision a player's identity before dungeon gameplay;
+Dungeons never invents canonical player rows. Player writes also verify the numeric ID and UUID
+on the selected database connection before changing state. First-time backend joins remain allowed so
+DataRegistry can complete its join initialization; commands that require a player session wait for the active identity.
 
-Startup also checks required tables, column types/widths/nullability, InnoDB engines, primary keys,
-declared indexes, unique keys, and foreign-key delete/update rules without issuing DDL. Schema errors prevent readiness. A database
-initialization failure or lost lease disables the enabled consumer on the server thread, drains
-admitted work, closes ORM, and unregisters its provider. Shutdown waits at most the configured time;
-remaining cleanup continues on its worker. `/dungeon server status` reports cached database state
-without querying the database. One-connection pools are supported.
+Progression, completion, cooldowns, save points, rewards, recovery journals, unique-key ledgers,
+staff state and audit events use the database. Legacy local gameplay files are ignored; there is
+no import, migration or file fallback. Content definitions, world templates and content backups
+remain files. Back up the database as well as content. Vanilla player saves remain necessary to
+checkpoint inventory transactions against their database recovery receipts.
 
-Backend identity comes from DataRegistry, or `runtime.server-id` when it publishes none. If both
-are set they must match. Restart after changing database settings. Enabling this foundation
-initializes ORM and the server lease; it does not import or replace file-based gameplay data.
-Gameplay progression, rewards and staff operations still use files; end-to-end database gameplay
-persistence is not complete. Native Paper acceptance currently covers disabled-foundation startup;
-enabled database behavior is covered by public-API lifecycle tests and real MySQL/DataProvider ORM tests.
+SQL executes on provider workers. Async login prefetch warms immutable player snapshots; dungeon
+progress is loaded on demand. Owner-thread inventory operations wait for a bounded durability
+barrier before applying effects. Revision checks and checksums reject stale or corrupt snapshots;
+key settlement and its player recovery receipt commit together. A timeout closes admission even
+when the commit outcome is ambiguous: cleanup drains admitted work, and the next boot reloads the
+durable database state. No write is silently redirected to local storage.
+
+Unavailable persistence or a lost server lease disables Dungeons. Shutdown waits at most the
+configured deadline; cleanup continues on its worker. `/dungeon server status` reads cached health
+without issuing SQL. One-connection pools are supported. Native Paper acceptance runs the real
+DataProvider/DataRegistry stack, rejects invalid connection/schema boots, and verifies healthy boot
+and cold-restart recovery; MySQL integration tests cover schema ownership and transactional failures.
 
 ## Administration
 
@@ -87,6 +94,7 @@ for Paper conversion. Current dimension templates keep their flat terrain layout
 
 - Java 25
 - Paper 26.x
+- DataProvider 3.5.2 and DataRegistry 1.19.2, configured with MySQL
 
 ## Build From Source
 

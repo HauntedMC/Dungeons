@@ -26,6 +26,7 @@ import java.util.List;
 public final class PaperBoundary implements AutoCloseable {
     public final DungeonsPlugin plugin = mock(DungeonsPlugin.class);
     public final YamlConfiguration config = new YamlConfiguration();
+    public final TestStateStore state = new TestStateStore();
     public final DungeonsRuntime runtime = new DungeonsRuntime(plugin);
     public final MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class);
     public final MockedStatic<nl.hauntedmc.dungeons.util.entity.EntityUtils> entities =
@@ -53,6 +54,12 @@ public final class PaperBoundary implements AutoCloseable {
         when(plugin.getConfig()).thenReturn(config);
         when(plugin.getSLF4JLogger()).thenReturn(LoggerFactory.getLogger("CoreContractTests"));
         runtime.setConfig(config);
+        runtime.setStateStore(state);
+        var database = mock(nl.hauntedmc.dungeons.persistence.DatabaseLifecycle.class);
+        when(database.ready()).thenReturn(true);
+        when(database.state()).thenReturn(nl.hauntedmc.dungeons.persistence.DungeonDatabase.State.READY);
+        when(database.problem()).thenReturn("");
+        runtime.setDatabase(database);
         runtime.setActiveInstances(
                 new nl.hauntedmc.dungeons.runtime.instance.ActiveInstanceRegistry(plugin));
         RuntimeContext.initialize(runtime);

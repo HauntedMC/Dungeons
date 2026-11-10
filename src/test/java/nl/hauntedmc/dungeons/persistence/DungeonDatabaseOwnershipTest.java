@@ -63,6 +63,9 @@ class DungeonDatabaseOwnershipTest {
             when(statement.executeQuery(anyString())).thenReturn(result);
             when(result.getMetaData()).thenReturn(metadata);
             when(metadata.getColumnType(1)).thenReturn(Types.BIGINT);
+            when(metadata.getColumnType(2)).thenReturn(Types.VARCHAR);
+            when(metadata.getPrecision(2)).thenReturn(36);
+            when(metadata.isNullable(2)).thenReturn(ResultSetMetaData.columnNoNulls);
             when(metadata.isSigned(1)).thenReturn(true);
             when(metadata.isNullable(1)).thenReturn(ResultSetMetaData.columnNoNulls);
             when(api.createConfiguredOrmContext(eq(source), any(), any(Class[].class))).thenReturn(orm);

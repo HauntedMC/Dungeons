@@ -89,6 +89,7 @@ final class NativeStaff {
         var opened = new java.util.concurrent.atomic.AtomicBoolean();
         var playerOutput = new java.util.ArrayList<String>();
         java.util.UUID syntheticId = java.util.UUID.randomUUID();
+        test.seedPlayer(syntheticId);
         var player =
                 (org.bukkit.entity.Player)
                         java.lang.reflect.Proxy.newProxyInstance(

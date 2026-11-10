@@ -9,13 +9,13 @@ import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
-/** ORM schema for the database foundation. JDBC repositories share these exact table/column names. */
+/** ORM schema for mandatory database persistence. JDBC repositories share these exact table/column names. */
 public final class DungeonEntities {
     private DungeonEntities() {}
 
     public static Class<?>[] types() {
         return new Class<?>[] {
-            PlayerReference.class, Server.class, Definition.class, Deployment.class, Team.class, TeamMember.class, Admission.class, Run.class, Participation.class, Event.class, PlayerProgress.class, Cooldown.class, PlayerGuard.class, KeyDefinition.class, KeyInstance.class, RewardGrant.class, Delivery.class, StaffOperation.class, Maintenance.class, Restriction.class, PlayerStats.class, Stats.class, MetricDefinition.class, ParticipationMetric.class, PlayerMetric.class, KeyReservation.class
+            StateDocumentRow.class, PlayerReference.class, Server.class, Definition.class, Deployment.class, Team.class, TeamMember.class, Admission.class, Run.class, Participation.class, Event.class, PlayerProgress.class, Cooldown.class, PlayerGuard.class, KeyDefinition.class, KeyInstance.class, RewardGrant.class, Delivery.class, StaffOperation.class, Maintenance.class, Restriction.class, PlayerStats.class, Stats.class, MetricDefinition.class, ParticipationMetric.class, PlayerMetric.class, KeyReservation.class
         };
     }
 
@@ -940,4 +940,50 @@ public final class DungeonEntities {
         @JoinColumns(value = {@JoinColumn(name = "server_id", referencedColumnName = "server_id", insertable = false, updatable = false)}, foreignKey = @ForeignKey(name = "fk_dungeon_key_reservation_1"))
         protected Server reference1;
     }
+    @Entity(name = "DungeonStateDocument")
+    @Table(name = "dungeon_state_document", indexes = {@Index(name = "ix_state_player", columnList = "server_id,player_id")})
+    @IdClass(StateDocumentRow.Key.class)
+    public static class StateDocumentRow {
+        public StateDocumentRow() {}
+        @Id @Column(name = "server_id", nullable = false, columnDefinition = "VARCHAR(96)")
+        protected String server_id;
+        @Id @Column(name = "scope", nullable = false, columnDefinition = "VARCHAR(128)")
+        protected String scope;
+        @Id @Column(name = "record_id", nullable = false, columnDefinition = "VARCHAR(96)")
+        protected String record_id;
+        @Column(name = "player_id", columnDefinition = "BIGINT")
+        protected Long player_id;
+        @Column(name = "revision", nullable = false, columnDefinition = "BIGINT")
+        protected Long revision;
+        @Column(name = "payload", nullable = false, columnDefinition = "MEDIUMTEXT")
+        protected String payload;
+        @Column(name = "checksum", nullable = false, columnDefinition = "CHAR(64)")
+        protected String checksum;
+        @Column(name = "operation_id", columnDefinition = "CHAR(36)")
+        protected String operation_id;
+        @Column(name = "updated_at", nullable = false, columnDefinition = "DATETIME(3)")
+        protected LocalDateTime updated_at;
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumns(value = {@JoinColumn(name = "player_id", referencedColumnName = "id", insertable = false, updatable = false)},
+                foreignKey = @ForeignKey(name = "fk_dungeon_state_player"))
+        @OnDelete(action = OnDeleteAction.CASCADE)
+        protected PlayerReference player;
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumns(value = {@JoinColumn(name = "server_id", referencedColumnName = "server_id", insertable = false, updatable = false)},
+                foreignKey = @ForeignKey(name = "fk_dungeon_state_server"))
+        protected Server server;
+        public static class Key implements Serializable {
+            private static final long serialVersionUID = 1L;
+            public String server_id;
+            public String scope;
+            public String record_id;
+            public Key() {}
+            @Override public boolean equals(Object other) {
+                return other instanceof Key key && Objects.equals(server_id, key.server_id)
+                        && Objects.equals(scope, key.scope) && Objects.equals(record_id, key.record_id);
+            }
+            @Override public int hashCode() { return Objects.hash(server_id, scope, record_id); }
+        }
+    }
+
 }

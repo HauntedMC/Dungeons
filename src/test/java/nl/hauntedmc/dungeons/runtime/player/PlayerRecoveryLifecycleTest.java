@@ -29,8 +29,8 @@ class PlayerRecoveryLifecycleTest {
             doThrow(new IllegalStateException("native save failed")).when(state.player).saveData();
             assertTrue(session.refundReservedAccessKey());
             var file = directory.resolve("players/" + state.player.getUniqueId() + ".recovery.yml");
-            assertTrue(java.nio.file.Files.exists(file));
-            var persisted = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(file.toFile());
+            assertFalse(f.paper.state.payload("player-recovery", state.player.getUniqueId().toString()).isEmpty());
+            var persisted = f.paper.state.yaml("player-recovery", state.player.getUniqueId().toString());
             assertTrue(persisted.contains("delivery"));
             state.contents[0] = PlayerState.stack(3); // state loaded from the last native save
             doNothing().when(state.player).saveData();
@@ -64,7 +64,7 @@ class PlayerRecoveryLifecycleTest {
             reconstructed.restoreCapturedHotbar();
             Path path =
                     directory.resolve("players/" + player.player.getUniqueId() + ".recovery.yml");
-            assertTrue(new PlayerRecoveryJournal(path).hasRecovery());
+            assertTrue(new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path)).hasRecovery());
             reconstructed.completeDeparture(true, true);
             assertEquals(8, player.contents[0].getAmount());
             assertEquals(GameMode.SURVIVAL, player.gameMode);
@@ -94,7 +94,7 @@ class PlayerRecoveryLifecycleTest {
             session.restoreCapturedHotbar();
             Path path =
                     directory.resolve("players/" + player.player.getUniqueId() + ".recovery.yml");
-            assertTrue(new PlayerRecoveryJournal(path).hasRecovery());
+            assertTrue(new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path)).hasRecovery());
             assertTrue(session.isEditMode());
             session.setChatListening(true);
             var listener =
@@ -113,7 +113,7 @@ class PlayerRecoveryLifecycleTest {
             assertFalse(session.isChatListening());
             assertNull(session.getSavedHotbar());
             assertNull(session.getCurrentHotbar());
-            assertFalse(new PlayerRecoveryJournal(path).hasRecovery());
+            assertFalse(new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path)).hasRecovery());
             player.contents[0].setAmount(3);
             session.restoreCapturedHotbar();
             session.restoreInventory();
@@ -193,11 +193,11 @@ class PlayerRecoveryLifecycleTest {
             Path path =
                     directory.resolve("players/" + player.player.getUniqueId() + ".recovery.yml");
             Files.createDirectories(path.getParent());
-            Files.writeString(path, "broken: [");
+            f.paper.state.journal(path, "broken: [");
             assertThrows(
                     IllegalStateException.class,
                     () -> f.paper.runtime.playerSessions().put(player.player));
-            assertEquals("broken: [", Files.readString(path));
+            assertEquals("broken: [", f.paper.state.payload("player-recovery", player.player.getUniqueId().toString()));
             verify(player.player).kick(any(net.kyori.adventure.text.Component.class));
             assertNull(f.paper.runtime.playerSessions().get(player.player));
         }

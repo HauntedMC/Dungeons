@@ -50,22 +50,22 @@ public final class DungeonsApplication {
             this.initializeCoreState();
             var databaseSettings = nl.hauntedmc.dungeons.persistence.DatabaseSettings.read(
                     this.runtime.environment().plugin().getConfig());
-            if (databaseSettings.enabled())
-                nl.hauntedmc.dungeons.persistence.DatabaseLifecycle.requireDependencies(
-                        this.runtime.environment().plugin());
+            nl.hauntedmc.dungeons.persistence.DatabaseLifecycle.requireDependencies(
+                    this.runtime.environment().plugin());
+            this.database = new nl.hauntedmc.dungeons.persistence.DatabaseLifecycle(
+                    this.runtime.environment().plugin());
+            this.runtime.setDatabase(this.database);
+            this.database.awaitReady(databaseSettings.startupTimeoutSeconds());
+            this.runtime.setStateStore(new nl.hauntedmc.dungeons.persistence.DatabaseStateStore(
+                    this.database.database(), databaseSettings.operationTimeoutMillis()));
+            this.started = true;
             this.initializeRuntimeServices();
             this.registerRuntimeTypes();
             this.initializeContentManagers();
+            if (!this.database.ready()) throw new IllegalStateException("Database became unavailable during startup");
             this.bindBukkitIntegrations();
             this.initializeUserInterfaces();
             this.restoreRuntimeState();
-            // The runtime graph is now complete and must be cleaned even if database startup fails.
-            this.started = true;
-            if (databaseSettings.enabled()) {
-                this.database = new nl.hauntedmc.dungeons.persistence.DatabaseLifecycle(
-                        this.runtime.environment().plugin());
-                this.runtime.setDatabase(this.database);
-            }
             this.logStartupSummary();
         } catch (RuntimeException | Error exception) {
             try { this.stop(); }
@@ -88,6 +88,7 @@ public final class DungeonsApplication {
             } finally {
                 this.database = null;
                 this.runtime.setDatabase(null);
+                this.runtime.setStateStore(null);
                 this.started = false;
                 RuntimeContext.clear();
             }

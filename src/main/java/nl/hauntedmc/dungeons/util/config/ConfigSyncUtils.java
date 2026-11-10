@@ -57,7 +57,10 @@ public final class ConfigSyncUtils {
             }
             Object templateValue = template.get(key);
             if (templateValue instanceof ConfigurationSection templateSection) {
-                ConfigurationSection targetSection = target.getConfigurationSection(key);
+                // Bukkit attaches bundled defaults to live configs. Inherited sections must be
+                // copied into the actual tree rather than edited through the defaults object.
+                ConfigurationSection targetSection = target.contains(key, true)
+                        ? target.getConfigurationSection(key) : null;
                 if (targetSection == null) {
                     if (target.contains(key)) {
                         target.set(key, null);
@@ -72,14 +75,14 @@ public final class ConfigSyncUtils {
             }
 
             if (templateValue == null) {
-                if (!target.contains(key)) {
+                if (!target.contains(key, true)) {
                     target.set(key, null);
                     changed = true;
                 }
                 continue;
             }
 
-            if (!target.contains(key) || target.isConfigurationSection(key)) {
+            if (!target.contains(key, true) || target.isConfigurationSection(key)) {
                 target.set(key, copyValue(templateValue));
                 changed = true;
             }

@@ -219,9 +219,7 @@ class StaffOperationsContractTest {
             store.correct(id, record -> record.set("Finished", true));
             assertTrue(store.isCompleted(id));
             Path target = f.run.dungeon.getFolder().toPath().resolve("players/" + id + ".yml");
-            Files.delete(target);
-            Files.createDirectory(target);
-            Files.writeString(target.resolve("obstacle"), "keep");
+            f.run.paper.state.failWrites = true;
             assertThrows(
                     RuntimeException.class,
                     () -> store.correct(id, record -> record.set("Finished", false)));
@@ -301,10 +299,9 @@ class StaffOperationsContractTest {
             assertTrue(restored.isDone());
             restored.join();
             assertEquals("original content", Files.readString(source.resolve("content.txt")));
-            assertEquals("current: updated\n", Files.readString(source.resolve("access_keys.yml")));
-            var record = new YamlConfiguration();
-            record.load(source.resolve("players/" + player + ".yml").toFile());
-            assertFalse(record.getBoolean("Finished"));
+            assertFalse(Files.exists(source.resolve("access_keys.yml")));
+            assertFalse(Files.exists(source.resolve("players/" + player + ".yml")));
+            assertFalse(f.run.dungeon.playerDataStore().isCompleted(player));
         }
     }
 

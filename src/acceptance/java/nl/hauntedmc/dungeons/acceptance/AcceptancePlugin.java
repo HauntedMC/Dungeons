@@ -36,6 +36,26 @@ public final class AcceptancePlugin extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        if (java.nio.file.Files.exists(getDataFolder().toPath().resolve("expect-database-failure"))) {
+            var dungeon = Bukkit.getPluginManager().getPlugin("Dungeons");
+            if (dungeon != null && dungeon.isEnabled()) {
+                getLogger().severe("DUNGEONS_ACCEPTANCE_FAIL database failure still enabled Dungeons");
+                return;
+            }
+            if (dungeon != null) {
+                try {
+                    Class<?> bridge = Class.forName("nl.hauntedmc.dungeons.runtime.RuntimeContext", false, dungeon.getClass().getClassLoader());
+                    var field = bridge.getDeclaredField("runtime");
+                    field.setAccessible(true);
+                    if (field.get(null) != null) {
+                        getLogger().severe("DUNGEONS_ACCEPTANCE_FAIL failed startup retained a runtime");
+                        return;
+                    }
+                } catch (ReflectiveOperationException failure) { throw new IllegalStateException(failure); }
+            }
+            getLogger().info("DUNGEONS_DATABASE_REJECTED");
+            return;
+        }
         Objects.requireNonNull(getCommand("dungeonsacceptance")).setExecutor(this::runCommand);
     }
 
@@ -43,8 +63,27 @@ public final class AcceptancePlugin extends JavaPlugin {
         return RuntimeContext.runtime();
     }
 
+    void seedPlayer(java.util.UUID id) throws Exception {
+        runtime().database().database().transaction(connection -> {
+            nl.hauntedmc.dungeons.persistence.DungeonSql.update(connection,
+                    "INSERT INTO player_entity(uuid,username) VALUES(?,?) ON DUPLICATE KEY UPDATE uuid=uuid",
+                    id, "Fixture" + id.toString().substring(0, 8));
+            return null;
+        }).get(5, java.util.concurrent.TimeUnit.SECONDS);
+    }
+
     private boolean runCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof org.bukkit.command.ConsoleCommandSender) || running) return false;
+        if (args.length == 1 && args[0].equals("database-down")) {
+            var dungeon = Bukkit.getPluginManager().getPlugin("Dungeons");
+            require(dungeon != null && !dungeon.isEnabled(), "Database outage left Dungeons enabled");
+            boolean cleared = false;
+            try { RuntimeContext.runtime(); }
+            catch (IllegalStateException expected) { cleared = true; }
+            require(cleared, "Database outage retained the runtime bridge");
+            getLogger().info("DUNGEONS_DATABASE_OUTAGE_CLOSED");
+            return true;
+        }
         if (args.length != 1 || !(args[0].equals("run") || args[0].equals("restart"))) return false;
         running = true;
         List<Scenario> scenarios =

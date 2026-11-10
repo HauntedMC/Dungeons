@@ -4,7 +4,6 @@ import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 
 import org.bukkit.inventory.ItemStack;
 
-import java.io.File;
 import java.util.UUID;
 
 /** Offline support uses the same validated journal and never rewrites native player files. */
@@ -12,11 +11,7 @@ public final class StaffPlayerRecords {
     private StaffPlayerRecords() {}
 
     private static PlayerRecoveryJournal journal(DungeonsRuntime runtime, UUID id) {
-        return new PlayerRecoveryJournal(
-                new File(
-                                runtime.environment().plugin().getDataFolder(),
-                                "players/" + id + ".recovery.yml")
-                        .toPath());
+        return new PlayerRecoveryJournal(id);
     }
 
     public static String inspect(DungeonsRuntime runtime, UUID id) {

@@ -11,13 +11,16 @@ work_directory="${DUNGEONS_ACCEPTANCE_WORK_DIRECTORY:-$(mktemp -d)}"
 keep_work_directory="${DUNGEONS_ACCEPTANCE_KEEP_WORK_DIRECTORY:-false}"
 paper_pid=""
 paper_input_fd=""
+expect_database_failure=false
 paper_log="$work_directory/paper/paper.log"
 
 fail() { echo "Dungeons acceptance failure: $*" >&2; exit 1; }
 wait_for_log() {
   local expected=$1 deadline=$((SECONDS + 300))
   while ((SECONDS < deadline)); do
-    if grep -Eq 'DUNGEONS_ACCEPTANCE_FAIL|Exception in thread|Error occurred while enabling|Could not load plugin' "$paper_log" 2>/dev/null; then
+    if grep -Eq 'DUNGEONS_ACCEPTANCE_FAIL' "$paper_log" 2>/dev/null || {
+      [[ "$expect_database_failure" != true ]] && grep -Eq 'Exception in thread|Error occurred while enabling|Could not load plugin' "$paper_log" 2>/dev/null;
+    }; then
       fail "Paper reported a plugin failure while waiting for $expected"
     fi
     grep -Eq -- "$expected" "$paper_log" 2>/dev/null && return
@@ -80,6 +83,19 @@ cleanup() {
 }
 trap cleanup EXIT
 
+if [[ -z "${DUNGEONS_ACCEPTANCE_DB_PORT:-}" ]]; then
+  mkdir -p "$work_directory/database-host"
+  "$JAVA_HOME/bin/javac" --release 25 -cp "$acceptance_classpath" -d "$work_directory/database-host" \
+    "$root_directory/src/acceptance/java/nl/hauntedmc/dungeons/acceptance/AcceptanceDatabase.java"
+  "$JAVA_HOME/bin/java" -cp "$work_directory/database-host:$acceptance_classpath" \
+    nl.hauntedmc.dungeons.acceptance.AcceptanceDatabase "${BASH_SOURCE[0]}" "$work_directory"
+  exit
+fi
+
+: "${DUNGEONS_ACCEPTANCE_DB_HOST:?Missing MySQL host}"
+: "${DUNGEONS_ACCEPTANCE_REDIS_HOST:?Missing Redis host}"
+: "${DUNGEONS_ACCEPTANCE_REDIS_PORT:?Missing Redis port}"
+
 for command in curl sha256sum java javac jar python3; do command -v "$command" >/dev/null || fail "Missing $command"; done
 [[ -f "$artifact" ]] || fail "Missing jar: $artifact"
 [[ -n "$acceptance_classpath" ]] || fail 'Empty acceptance compilation classpath'
@@ -99,6 +115,74 @@ else
 fi
 [[ "$(sha256sum "$work_directory/paper/paper.jar" | cut -d ' ' -f1)" == "$paper_sha256" ]] || fail 'Paper runtime checksum mismatch'
 cp "$artifact" "$work_directory/paper/plugins/Dungeons.jar"
+cp "$root_directory/target/acceptance-plugins/DataProvider.jar" "$work_directory/paper/plugins/DataProvider.jar"
+cp "$root_directory/target/acceptance-plugins/DataRegistry.jar" "$work_directory/paper/plugins/DataRegistry.jar"
+printf 'Multi-Release: true\n\n' >"$work_directory/multi-release.mf"
+jar --update --file "$work_directory/paper/plugins/DataProvider.jar" --manifest "$work_directory/multi-release.mf" >/dev/null 2>&1
+mkdir -p "$work_directory/paper/plugins/DataProvider/databases" "$work_directory/paper/plugins/DataRegistry" "$work_directory/paper/plugins/Dungeons"
+cat >"$work_directory/paper/plugins/DataProvider/config.yml" <<'YAML'
+orm:
+  schema_mode: update
+databases:
+  mysql:
+    enabled: true
+  mongodb:
+    enabled: false
+  redis:
+    enabled: true
+  redis_messaging:
+    enabled: false
+YAML
+cat >"$work_directory/paper/plugins/DataProvider/databases/mysql.yml" <<YAML
+player_data_rw:
+  access:
+    owner_plugin: DataRegistry
+    shared_with: [Dungeons, DungeonsAcceptance]
+  host: "$DUNGEONS_ACCEPTANCE_DB_HOST"
+  port: $DUNGEONS_ACCEPTANCE_DB_PORT
+  database: minecraft
+  username: dungeons
+  password: acceptance-mysql
+  ssl_mode: DISABLED
+  pool_size: 6
+  min_idle: 0
+  connection_timeout_ms: 3000
+  validation_timeout_ms: 1000
+  connect_timeout_ms: 3000
+  socket_timeout_ms: 3000
+YAML
+cat >"$work_directory/paper/plugins/DataProvider/databases/redis.yml" <<YAML
+network_sessions:
+  access:
+    owner_plugin: DataRegistry
+    shared_with: []
+  host: "$DUNGEONS_ACCEPTANCE_REDIS_HOST"
+  port: $DUNGEONS_ACCEPTANCE_REDIS_PORT
+  user: default
+  password: acceptance-redis
+  network_namespace: dungeons-acceptance
+  pool:
+    connections: 2
+    min_idle: 0
+    max_idle: 2
+  connection_timeout_ms: 2000
+  socket_timeout_ms: 2000
+YAML
+python3 - "$work_directory/paper/plugins/DataRegistry.jar" "$work_directory/paper/plugins/DataRegistry/config.yml" <<'PYCONFIG'
+import sys, zipfile
+from pathlib import Path
+with zipfile.ZipFile(sys.argv[1]) as jar:
+    Path(sys.argv[2]).write_bytes(jar.read('config.yml'))
+PYCONFIG
+cat >"$work_directory/paper/plugins/Dungeons/config.yml" <<'YAML'
+database:
+  connection-id: player_data_rw
+  startup-timeout-seconds: 30
+  operation-timeout-ms: 3000
+runtime:
+  server-id: acceptance-dungeons
+YAML
+
 # Exercise a current-format dungeon on a fresh installation.
 dungeon_data="$work_directory/paper/plugins/Dungeons/dungeons"
 current_map="$dungeon_data/current-config"
@@ -115,6 +199,23 @@ YAML
 printf 'eula=true\n' >"$work_directory/paper/eula.txt"
 printf 'server-port=0\nlevel-type=minecraft:flat\n' >"$work_directory/paper/server.properties"
 mkfifo "$work_directory/paper/console.in"
+# Failed database startup must not publish the runtime or enable the Dungeons consumer.
+mkdir -p "$work_directory/paper/plugins/DungeonsAcceptance"
+touch "$work_directory/paper/plugins/DungeonsAcceptance/expect-database-failure"
+sed -i 's/connection-id: player_data_rw/connection-id: missing_dungeons_profile/' "$work_directory/paper/plugins/Dungeons/config.yml"
+expect_database_failure=true
+start_server database-unavailable.log
+wait_for_log DUNGEONS_DATABASE_REJECTED
+stop_server
+# DataRegistry's schema exists now, but Dungeons' schema must fail provider validate mode.
+sed -i 's/connection-id: missing_dungeons_profile/connection-id: player_data_rw/' "$work_directory/paper/plugins/Dungeons/config.yml"
+sed -i 's/schema_mode: update/schema_mode: validate/' "$work_directory/paper/plugins/DataProvider/config.yml"
+start_server database-invalid-schema.log
+wait_for_log DUNGEONS_DATABASE_REJECTED
+stop_server
+sed -i 's/schema_mode: validate/schema_mode: update/' "$work_directory/paper/plugins/DataProvider/config.yml"
+rm "$work_directory/paper/plugins/DungeonsAcceptance/expect-database-failure"
+expect_database_failure=false
 start_server paper.log
 wait_for_log 'Enabling Dungeons'
 [[ -d "$work_directory/paper/plugins/Dungeons" ]] || fail 'Plugin did not initialize its data directory'
@@ -152,10 +253,15 @@ while ((SECONDS < local_deadline)); do
     printf 'dungeonsacceptance restart\n' >&"$paper_input_fd"
     wait_for_log 'DUNGEONS_ACCEPTANCE_COMPLETE phase=restart '
     check_report restart
+    cp "$paper_log" "$work_directory/paper/healthy-restart.log"
+    touch "$work_directory/stop-database"
+    wait_for_log 'Disabling Dungeons'
+    printf 'dungeonsacceptance database-down\n' >&"$paper_input_fd"
+    wait_for_log DUNGEONS_DATABASE_OUTAGE_CLOSED
     stop_server || fail 'Restarted Paper process did not shut down cleanly'
     # NativeDisposal deliberately cancels exactly one unload for this isolated test dungeon.
     # Keep rejecting every other runtime error, including disposal failures for other worlds.
-    if grep -Eh 'DUNGEONS_ACCEPTANCE_FAIL|Error occurred while (enabling|disabling)|Task .* for Dungeons .* generated an exception|\[Dungeons\].*(Failed|failed)' "$work_directory"/paper/*.log \
+    if grep -Eh 'DUNGEONS_ACCEPTANCE_FAIL|Error occurred while (enabling|disabling)|Task .* for Dungeons .* generated an exception|\[Dungeons\].*(Failed|failed)' "$work_directory/paper/paper.log" "$work_directory/paper/healthy-restart.log" \
       | grep -Ev "\[Dungeons\] Instance disposal failed for 'acceptance_unload_retry_[0-9]+' in dungeon 'acceptance_unload_retry'; retaining registration and files\. Call disposeAsync\(\) to retry\.$"; then
       fail 'Paper logged an unexpected dungeon runtime or lifecycle error'
     fi

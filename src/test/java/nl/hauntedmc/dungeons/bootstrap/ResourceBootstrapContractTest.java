@@ -45,7 +45,7 @@ class ResourceBootstrapContractTest {
             assertEquals(7, f.paper.runtime.config().getInt("commands.list_page_size"));
             assertEquals(10, f.paper.runtime.config().getInt("instances.max_active"));
             assertTrue(Files.isDirectory(directory.resolve("dungeons")));
-            assertTrue(Files.isDirectory(directory.resolve("players")));
+            assertFalse(Files.exists(directory.resolve("players")));
             assertEquals(
                     "Operator help Alex",
                     LangUtils.getMessage(

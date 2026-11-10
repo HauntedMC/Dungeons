@@ -177,15 +177,13 @@ final class CoreBootstrap {
     }
 
     /**
-     * Ensures the plugin data folders used by dungeon and player persistence exist.
+     * Ensures the dungeon content folder exists; gameplay state belongs to the database.
      */
     private void ensureDataDirectories() {
         File dungeonFiles =
                 new File(this.runtime.environment().plugin().getDataFolder(), "dungeons");
         this.runtime.setDungeonFiles(dungeonFiles);
         this.createDirectory(dungeonFiles);
-        this.createDirectory(
-                new File(this.runtime.environment().plugin().getDataFolder(), "players"));
     }
 
     /**

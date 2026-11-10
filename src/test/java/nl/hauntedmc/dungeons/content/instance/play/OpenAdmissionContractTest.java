@@ -53,8 +53,7 @@ class OpenAdmissionContractTest {
             var state = new PlayerState();
             var session = f.session(state);
             var record = directory.resolve("players/" + state.player.getUniqueId() + ".recovery.yml");
-            Files.createDirectories(record);
-            Files.writeString(record.resolve("obstacle"), "retain");
+            f.paper.state.failWrites = true;
             session.setAwaitingDungeon(true);
             assertFalse(dungeon.prepareInstance(state.player, "DEFAULT", 1, null));
             assertNull(session.getInstance());

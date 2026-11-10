@@ -7,31 +7,26 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
 import java.util.*;
 import java.util.function.Consumer;
 
 /**
- * Synchronous write-ahead journal. All operations run on the server thread. A transaction is
+ * Database write-ahead journal. All operations run on the server thread. A transaction is
  * acknowledged only after its marker and resulting inventory are saved in vanilla player data.
  */
 final class PlayerRecoveryJournal {
     private static final NamespacedKey APPLIED =
             new NamespacedKey("dungeons", "player_transaction");
-    private final Path file;
+    private final nl.hauntedmc.dungeons.persistence.StateDocument document;
     private YamlConfiguration state;
 
-    PlayerRecoveryJournal(Path file) {
-        this.file = file.toAbsolutePath().normalize();
+    PlayerRecoveryJournal(java.util.UUID playerId) {
+        this.document = nl.hauntedmc.dungeons.runtime.RuntimeContext.runtime().stateStore().document(
+                new nl.hauntedmc.dungeons.persistence.StateStore.Key("player-recovery", playerId.toString(), playerId));
         state = new YamlConfiguration();
-        if (Files.exists(file)) {
-            try {
-                state.load(file.toFile());
+        try {
+            document.loadInto(state);
+            if (!state.getKeys(false).isEmpty()) {
                 if (state.getInt("version") != 2)
                     throw new IllegalArgumentException("Unknown recovery journal version");
                 rewards();
@@ -49,10 +44,9 @@ final class PlayerRecoveryJournal {
                             PlayerRecoverySnapshot.decode(
                                     Objects.requireNonNull(state.getList("delivery.contents"))));
                 }
-            } catch (Exception failure) {
-                throw new IllegalStateException(
-                        "Cannot load player recovery journal " + file, failure);
             }
+        } catch (Exception failure) {
+            throw new IllegalStateException("Cannot load database player recovery journal " + playerId, failure);
         }
     }
 
@@ -80,20 +74,31 @@ final class PlayerRecoveryJournal {
     boolean settleKey(boolean refundOriginal, ItemStack replacement) {
         requireServerThread();
         if (!state.contains("key-reservation")) return false;
-        var refunds = items("refunds");
-        if (refundOriginal)
-            refunds.add(
-                    PlayerRecoverySnapshot.decode(
-                            Objects.requireNonNull(state.getList("key-reservation.item")))[0]);
-        else if (replacement != null) refunds.add(replacement.clone());
-        commit(
-                next -> {
-                    next.set("key-reservation", null);
-                    next.set(
-                            "refunds",
-                            PlayerRecoverySnapshot.encode(refunds.toArray(ItemStack[]::new)));
-                });
+        var prepared = prepareKeySettlement(refundOriginal, replacement);
+        nl.hauntedmc.dungeons.persistence.StateDocument.commitTogether(prepared.write());
+        prepared.publish().run();
         return true;
+    }
+
+    record Settlement(nl.hauntedmc.dungeons.persistence.StateDocument.Prepared write, Runnable publish) {}
+
+    Settlement prepareKeySettlement(boolean refundOriginal, ItemStack replacement) {
+        requireServerThread();
+        if (!hasKeyReservation()) throw new IllegalStateException("Missing durable key reservation");
+        var refunds = items("refunds");
+        if (refundOriginal) refunds.add(PlayerRecoverySnapshot.decode(
+                Objects.requireNonNull(state.getList("key-reservation.item")))[0]);
+        else if (replacement != null) refunds.add(replacement.clone());
+        try {
+            var next = new YamlConfiguration();
+            next.loadFromString(state.saveToString());
+            next.set("version", 2);
+            next.set("key-reservation", null);
+            next.set("refunds", PlayerRecoverySnapshot.encode(refunds.toArray(ItemStack[]::new)));
+            return new Settlement(document.prepare(next.saveToString()), () -> state = next);
+        } catch (org.bukkit.configuration.InvalidConfigurationException failure) {
+            throw new IllegalStateException("Cannot stage key recovery", failure);
+        }
     }
 
     boolean hasKeyReservation() {
@@ -351,39 +356,15 @@ final class PlayerRecoveryJournal {
     }
 
     private void commit(Consumer<YamlConfiguration> mutation) {
-        Path temporary = null;
         try {
             var next = new YamlConfiguration();
             next.loadFromString(state.saveToString());
             next.set("version", 2);
             mutation.accept(next);
-            byte[] bytes = next.saveToString().getBytes(StandardCharsets.UTF_8);
-            Files.createDirectories(file.toAbsolutePath().getParent());
-            temporary = Files.createTempFile(file.toAbsolutePath().getParent(), ".player-", ".tmp");
-            try (var channel = FileChannel.open(temporary, StandardOpenOption.WRITE)) {
-                var buffer = ByteBuffer.wrap(bytes);
-                while (buffer.hasRemaining()) channel.write(buffer);
-                channel.force(true);
-            }
-            Files.move(
-                    temporary,
-                    file,
-                    StandardCopyOption.ATOMIC_MOVE,
-                    StandardCopyOption.REPLACE_EXISTING);
+            document.save(next.saveToString());
             state = next;
-        } catch (IOException failure) {
-            throw new UncheckedIOException(
-                    "Cannot persist player recovery journal " + file, failure);
         } catch (org.bukkit.configuration.InvalidConfigurationException failure) {
             throw new IllegalStateException(failure);
-        } finally {
-            if (temporary != null) {
-                try {
-                    Files.deleteIfExists(temporary);
-                } catch (IOException ignored) {
-                    /* Preserve primary failure. */
-                }
-            }
         }
     }
 }
