@@ -865,10 +865,8 @@ public final class StaffCommandHandler implements CommandHandler {
                         + "; load problems: "
                         + runtime.dungeonCatalog().loadFailures().size());
         var database = runtime.database();
-        tell(actor, database == null ? "Database foundation: disabled; gameplay persistence: files"
-                : "Database foundation: " + database.state() + "; ready=" + database.ready()
-                        + (database.problem().isBlank() ? "" : "; " + database.problem())
-                        + "; gameplay persistence: files");
+        tell(actor, "Database: " + database.state() + "; ready=" + database.ready()
+                + (database.problem().isBlank() ? "" : "; " + database.problem()));
         tell(actor, "Use /dungeon help for actions");
     }
 

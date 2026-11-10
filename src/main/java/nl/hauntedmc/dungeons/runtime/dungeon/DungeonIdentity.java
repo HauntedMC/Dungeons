@@ -31,7 +31,16 @@ public final class DungeonIdentity {
         UUID existing = existing(config);
         if (existing != null) return existing;
         Object stored = config.get("dungeon.id");
-        UUID id = UUID.randomUUID();
+        UUID id = null;
+        if (destination.isFile()) {
+            var persisted = new org.bukkit.configuration.file.YamlConfiguration();
+            try { ConfigurationFile.loadSnapshot(persisted, destination); }
+            catch (java.io.IOException | org.bukkit.configuration.InvalidConfigurationException failure) {
+                throw new IllegalStateException("Cannot recover existing dungeon identity", failure);
+            }
+            id = existing(persisted);
+        }
+        if (id == null) id = UUID.randomUUID();
         config.set("dungeon.id", id.toString());
         try {
             ConfigurationFile.saveSnapshot(plugin, destination, config.saveToString());

@@ -1,11 +1,13 @@
-# Database foundation settings. Gameplay persistence currently remains file-based.
+# Database is required. Gameplay state is stored here; local gameplay files are ignored.
 # Restart the server after changing these settings; /dungeon server reload does not reconnect.
 database:
-  # Enable schema initialization and the server lease. Requires DataProvider and DataRegistry.
-  enabled: false
   # Named MySQL connection in DataProvider, using the same database as DataRegistry player_entity.
   # Credentials and pool settings stay in DataProvider's configuration.
   connection-id: player_data_rw
+  # Bounded plugin-enable wait before any dungeons, commands or players are initialized.
+  startup-timeout-seconds: 30
+  # Deadline for durability barriers. Failure closes database admission; ambiguous writes are drained.
+  operation-timeout-ms: 1000
   # ORM policy is authoritative in DataProvider/config.yml: orm.schema_mode: update
   # Use update, validate or none for this shared database; do not use destructive create mode.
   # Maximum time shutdown waits on the server thread; remaining cleanup continues asynchronously.

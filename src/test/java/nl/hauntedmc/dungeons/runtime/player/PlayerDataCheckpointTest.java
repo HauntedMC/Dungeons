@@ -21,7 +21,7 @@ class PlayerDataCheckpointTest {
             var player = new PlayerState();
             player.contents[0] = PlayerState.stack(4);
             var file = directory.resolve("recovery.yml");
-            var journal = new PlayerRecoveryJournal(file);
+            var journal = new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(file));
             paper.checkpoints.when(PlayerDataCheckpoint::requireStorage)
                     .thenThrow(new UncheckedIOException(new java.io.IOException("unsupported storage adapter")));
             assertThrows(UncheckedIOException.class, () -> journal.begin(player.player));
@@ -69,7 +69,7 @@ class PlayerDataCheckpointTest {
         try (var paper = new PaperBoundary()) {
             var path = directory.resolve("recovery.yml");
             var player = new PlayerState();
-            var journal = new PlayerRecoveryJournal(path);
+            var journal = new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path));
             journal.addRewards(PlayerState.stack(5));
             paper.checkpoints
                     .when(() -> PlayerDataCheckpoint.verify(eq(player.player), anyString()))
@@ -79,7 +79,7 @@ class PlayerDataCheckpointTest {
             assertThrows(
                     UncheckedIOException.class,
                     () -> journal.claim(player.player, journal.rewards().getFirst()));
-            assertTrue(new PlayerRecoveryJournal(path).hasPendingTransaction());
+            assertTrue(new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path)).hasPendingTransaction());
             assertNull(
                     player.player
                             .getPersistentDataContainer()
@@ -87,7 +87,7 @@ class PlayerDataCheckpointTest {
                                     new org.bukkit.NamespacedKey("dungeons", "player_transaction"),
                                     org.bukkit.persistence.PersistentDataType.STRING));
             var reconnected = new PlayerState();
-            new PlayerRecoveryJournal(path).recover(reconnected.player);
+            new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path)).recover(reconnected.player);
             assertEquals(5, reconnected.contents[0].getAmount());
         }
     }

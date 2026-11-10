@@ -13,7 +13,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.io.File;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
@@ -70,7 +69,7 @@ public final class StaffOperations implements AutoCloseable {
 
     private final java.util.function.LongSupplier clock;
     private final DungeonsRuntime runtime;
-    private final File stateFile;
+    private final nl.hauntedmc.dungeons.persistence.StateDocument document;
     private final YamlConfiguration state = new YamlConfiguration();
     private final Map<String, Confirmation> confirmations = new HashMap<>();
     private final LinkedHashMap<UUID, Operation> operations = new LinkedHashMap<>();
@@ -93,14 +92,11 @@ public final class StaffOperations implements AutoCloseable {
     StaffOperations(DungeonsRuntime runtime, java.util.function.LongSupplier clock) {
         this.clock = clock;
         this.runtime = runtime;
-        this.stateFile = new File(runtime.environment().plugin().getDataFolder(), "staff.yml");
-        if (stateFile.exists()) {
-            try {
-                ConfigurationFile.loadSnapshot(state, stateFile);
-            } catch (Exception failure) {
-                throw new IllegalStateException(
-                        "Cannot load staff state; admissions must remain stopped", failure);
-            }
+        this.document = runtime.stateStore().document(new nl.hauntedmc.dungeons.persistence.StateStore.Key("staff-state", "server", null));
+        try {
+            document.loadInto(state);
+        } catch (org.bukkit.configuration.InvalidConfigurationException failure) {
+            throw new IllegalStateException("Cannot load database staff state; admissions must remain stopped", failure);
         }
         for (String section : List.of("maintenance", "restrictions", "operations"))
             if (state.contains(section) && !state.isConfigurationSection(section))
@@ -623,28 +619,7 @@ public final class StaffOperations implements AutoCloseable {
                         + safe(outcome)
                         + "\n";
         runtime.environment().logger().info(line.strip());
-        File log = new File(runtime.environment().plugin().getDataFolder(), "staff-audit.log");
-        ConfigurationFile.filesystemAsync(
-                        runtime.environment().plugin(),
-                        log,
-                        () -> {
-                            Files.createDirectories(log.toPath().getParent());
-                            Files.writeString(
-                                    log.toPath(),
-                                    line,
-                                    StandardCharsets.UTF_8,
-                                    java.nio.file.StandardOpenOption.CREATE,
-                                    java.nio.file.StandardOpenOption.APPEND);
-                            return true;
-                        })
-                .exceptionally(
-                        failure -> {
-                            runtime.environment()
-                                    .logger()
-                                    .error("Staff audit could not be persisted", failure);
-                            owner(() -> problem("Staff audit storage failed; check server log"));
-                            return false;
-                        });
+        runtime.stateStore().await(runtime.stateStore().audit(line));
     }
 
     public void problem(String detail) {
@@ -679,8 +654,7 @@ public final class StaffOperations implements AutoCloseable {
             throw new IllegalStateException(impossible);
         }
         change.accept(candidate);
-        ConfigurationFile.saveSnapshot(
-                runtime.environment().plugin(), stateFile, candidate.saveToString());
+        document.save(candidate.saveToString());
         try {
             state.loadFromString(candidate.saveToString());
         } catch (org.bukkit.configuration.InvalidConfigurationException impossible) {

@@ -12,6 +12,12 @@ class ApplicationFailureTest {
         var original = new IllegalStateException("late startup failure");
         var cleanup = new IllegalStateException("cleanup failure");
         try (var paper = new PaperBoundary();
+                var database = mockConstruction(nl.hauntedmc.dungeons.persistence.DatabaseLifecycle.class,
+                        (mock, context) -> {
+                            when(mock.database()).thenReturn(mock(nl.hauntedmc.dungeons.persistence.DungeonDatabase.class));
+                            when(mock.ready()).thenReturn(true);
+                        });
+                var dependencies = mockStatic(nl.hauntedmc.dungeons.persistence.DatabaseLifecycle.class);
                 var core = mockConstruction(CoreBootstrap.class,
                         (mock, context) -> doThrow(original).when(mock).logStartupSummary());
                 var registry = mockConstruction(RegistryBootstrap.class);

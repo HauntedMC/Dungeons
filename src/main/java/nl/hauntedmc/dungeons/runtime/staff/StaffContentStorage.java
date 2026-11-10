@@ -152,12 +152,6 @@ public final class StaffContentStorage {
         rejectLinks(copy.toPath());
         FileUtils.copyDirectory(
                 copy, swap.staging, file -> !RUNTIME_FILES.contains(file.getName()));
-        for (String name : List.of("players", "access_keys.yml")) {
-            File current = new File(swap.live, name);
-            File preserved = new File(swap.staging, name);
-            if (current.isDirectory()) FileUtils.copyDirectory(current, preserved);
-            else if (current.isFile()) FileUtils.copyFile(current, preserved);
-        }
         Files.createDirectories(swap.previous.toPath().getParent());
         Files.move(swap.live.toPath(), swap.previous.toPath(), StandardCopyOption.ATOMIC_MOVE);
         try {

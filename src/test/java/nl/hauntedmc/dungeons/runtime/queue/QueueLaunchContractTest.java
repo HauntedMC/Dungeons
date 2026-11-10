@@ -45,9 +45,7 @@ class QueueLaunchContractTest {
             var session = f.player();
             var inventory = f.giveKey(session);
             when(f.dungeon.reserveIssuedAccessKey(any())).thenReturn(true);
-            var journal = java.nio.file.Files.createDirectories(directory.resolve(
-                    "players/" + session.getPlayer().getUniqueId() + ".recovery.yml"));
-            java.nio.file.Files.writeString(journal.resolve("obstacle"), "keep");
+            f.paper.state.failWrites = true;
             f.coordinator.sendToDungeon(session.getPlayer(), "crypt", "hard");
             assertEquals(2, inventory.getContents()[0].getAmount());
             assertFalse(session.hasReservedAccessKey());

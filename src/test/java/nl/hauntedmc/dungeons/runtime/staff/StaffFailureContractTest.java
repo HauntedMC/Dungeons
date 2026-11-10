@@ -91,10 +91,7 @@ class StaffFailureContractTest {
                                 applied.set(true);
                                 return CompletableFuture.completedFuture("done");
                             });
-            Path state = directory.resolve("staff.yml");
-            Files.delete(state);
-            Files.createDirectory(state);
-            Files.writeString(state.resolve("obstacle"), "keep");
+            f.run.paper.state.failWrites = true;
             players.clear();
             f.runtime.activeInstances().unregisterActiveInstance(world);
             assertDoesNotThrow(f::tick);
@@ -113,10 +110,7 @@ class StaffFailureContractTest {
             var operation =
                     f.ops.drain(f.actor, "reload", "reload", "crypt", "Repair", () -> completion);
             assertEquals(StaffOperations.State.RUNNING, operation.state);
-            Path state = directory.resolve("staff.yml");
-            Files.delete(state);
-            Files.createDirectory(state);
-            Files.writeString(state.resolve("obstacle"), "keep");
+            f.run.paper.state.failWrites = true;
             assertDoesNotThrow(f.ops::close);
             completion.complete("late success");
             assertEquals(StaffOperations.State.CANCELLED, operation.state);

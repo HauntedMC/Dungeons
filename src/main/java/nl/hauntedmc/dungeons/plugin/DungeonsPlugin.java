@@ -13,13 +13,20 @@ import org.jetbrains.annotations.Nullable;
  * integration points such as {@link #getDefaultWorldGenerator(String, String)} to live on the
  * concrete {@link JavaPlugin} subclass.
  */
-public final class DungeonsPlugin extends JavaPlugin {
+public final class DungeonsPlugin extends JavaPlugin implements org.bukkit.event.Listener {
     private final DungeonsApplication application = new DungeonsApplication(this);
 
     /** Delegates plugin startup to the application composition root. */
     @Override
     public void onEnable() {
         this.application.start();
+        getServer().getPluginManager().registerEvents(this, this);
+    }
+
+    /** Drain while DataProvider still permits work, before its NORMAL disable observer fences us. */
+    @org.bukkit.event.EventHandler(priority = org.bukkit.event.EventPriority.LOWEST)
+    public void beforeDisable(org.bukkit.event.server.PluginDisableEvent event) {
+        if (event.getPlugin() == this) this.application.stop();
     }
 
     /** Delegates plugin shutdown to the application composition root. */

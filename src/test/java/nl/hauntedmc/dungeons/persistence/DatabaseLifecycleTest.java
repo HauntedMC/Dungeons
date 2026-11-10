@@ -108,4 +108,34 @@ class DatabaseLifecycleTest {
         verify(f.heartbeat).cancel();
         pending.complete(null);
     }
+    @Test void startupWaitsForReadinessAndClosesFailedOrIncompleteInitialization() {
+        var success = new Fixture();
+        when(success.database.ready()).thenReturn(true);
+        var lifecycle = new DatabaseLifecycle(success.plugin, success.database, 1);
+        assertDoesNotThrow(() -> lifecycle.awaitReady(1));
+        verify(success.database, never()).closeAsync();
+        lifecycle.close();
+
+        for (boolean exceptional : new boolean[] {false, true}) {
+            var failure = new Fixture();
+            if (exceptional) when(failure.database.start()).thenReturn(CompletableFuture.failedFuture(new IllegalStateException("schema invalid")));
+            var rejected = new DatabaseLifecycle(failure.plugin, failure.database, 1);
+            assertThrows(IllegalStateException.class, () -> rejected.awaitReady(1));
+            assertFalse(rejected.ready());
+            verify(failure.database).closeAsync();
+        }
+    }
+    @Test void startupTimeoutReleasesOwnershipWithoutCancellingAmbiguousInitialization() {
+        var f = new Fixture();
+        var pending = new CompletableFuture<Void>();
+        when(f.database.start()).thenReturn(pending);
+        var lifecycle = new DatabaseLifecycle(f.plugin, f.database, 1);
+        assertTimeout(java.time.Duration.ofSeconds(3),
+                () -> assertThrows(IllegalStateException.class, () -> lifecycle.awaitReady(1)));
+        verify(f.database).closeAsync();
+        assertFalse(pending.isDone());
+        pending.complete(null);
+        assertFalse(lifecycle.ready());
+    }
+
 }

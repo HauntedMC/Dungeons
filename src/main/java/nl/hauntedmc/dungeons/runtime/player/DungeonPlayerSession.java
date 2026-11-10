@@ -23,8 +23,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -69,7 +67,7 @@ public final class DungeonPlayerSession {
 
     private DungeonInstance instance;
     private boolean awaitingDungeon;
-    @Nullable private final File playerDataFile;
+    private final nl.hauntedmc.dungeons.persistence.StateDocument playerDocument;
     private final ConfigurationFile playerData;
     private List<String> completedDungeons = new ArrayList<>();
     private GameMode savedGameMode;
@@ -125,27 +123,15 @@ public final class DungeonPlayerSession {
         this.hotbarHistory = new ArrayList<>();
         this.savedGameMode = Bukkit.getDefaultGameMode();
         this.playerData = new ConfigurationFile(plugin);
-        this.playerDataFile =
-                new File(plugin.getDataFolder(), "players/" + player.getUniqueId() + ".yml");
-
-        this.recoveryJournal =
-                new PlayerRecoveryJournal(
-                        new File(
-                                        plugin.getDataFolder(),
-                                        "players/" + player.getUniqueId() + ".recovery.yml")
-                                .toPath());
-
+        this.playerDocument = nl.hauntedmc.dungeons.runtime.RuntimeContext.runtime().stateStore().document(
+                new nl.hauntedmc.dungeons.persistence.StateStore.Key("player-profile", player.getUniqueId().toString(), player.getUniqueId()));
+        this.recoveryJournal = new PlayerRecoveryJournal(player.getUniqueId());
         try {
-            java.nio.file.Files.createDirectories(this.playerDataFile.toPath().getParent());
-            try {
-                ConfigurationFile.loadSnapshot(this.playerData, this.playerDataFile);
-            } catch (java.nio.file.NoSuchFileException absent) {
-                // A new player has no global data yet. Never replace an unreadable existing file.
-            }
+            this.playerDocument.loadInto(this.playerData);
             this.completedDungeons = this.playerData.getStringList("CompletedDungeons");
-        } catch (IOException | org.bukkit.configuration.InvalidConfigurationException failure) {
+        } catch (org.bukkit.configuration.InvalidConfigurationException failure) {
             throw new IllegalStateException(
-                    "Cannot load player data " + this.playerDataFile, failure);
+                    "Cannot load database player data " + player.getUniqueId(), failure);
         }
     }
 
@@ -189,7 +175,7 @@ public final class DungeonPlayerSession {
         this.persistPendingAccessKeyRefunds();
         this.recoveryJournal.checkpoint();
         this.playerData.set("CompletedDungeons", new ArrayList<>(this.completedDungeons));
-        this.playerData.save(this.playerDataFile);
+        this.playerDocument.save(this.playerData.saveToString());
         // Recovery and rewards remain in the journal; none are acknowledged or delivered here.
         this.expired = true;
         this.clearRecoveredState();
@@ -667,40 +653,50 @@ public final class DungeonPlayerSession {
         this.savedPosition = loc;
     }
 
-    public void setDungeonFinished(StaticDungeon dungeon) {
+    private void updateProfile(java.util.function.Consumer<org.bukkit.configuration.file.YamlConfiguration> change) {
         this.requireActiveSession();
-        if (!this.completedDungeons.contains(dungeon.getWorldName())) {
-            this.completedDungeons.add(dungeon.getWorldName());
+        var candidate = new org.bukkit.configuration.file.YamlConfiguration();
+        try {
+            candidate.loadFromString(this.playerData.saveToString());
+            change.accept(candidate);
+            this.playerDocument.save(candidate.saveToString());
+            this.playerData.loadFromString(candidate.saveToString());
+            this.completedDungeons = new ArrayList<>(this.playerData.getStringList("CompletedDungeons"));
+        } catch (org.bukkit.configuration.InvalidConfigurationException failure) {
+            throw new IllegalStateException("Cannot stage player profile", failure);
         }
+    }
 
-        this.playerData.set("CompletedDungeons", this.completedDungeons);
-        this.playerData.save(this.playerDataFile);
+    public void setDungeonFinished(StaticDungeon dungeon) {
+        this.updateProfile(candidate -> {
+            var completed = new ArrayList<>(candidate.getStringList("CompletedDungeons"));
+            if (!completed.contains(dungeon.getWorldName())) completed.add(dungeon.getWorldName());
+            candidate.set("CompletedDungeons", completed);
+        });
     }
 
     public void setDungeonUnfinished(StaticDungeon dungeon) {
-        this.requireActiveSession();
-        this.completedDungeons.remove(dungeon.getWorldName());
-        this.playerData.set("CompletedDungeons", this.completedDungeons);
-        this.playerData.save(this.playerDataFile);
+        this.updateProfile(candidate -> {
+            var completed = new ArrayList<>(candidate.getStringList("CompletedDungeons"));
+            completed.remove(dungeon.getWorldName());
+            candidate.set("CompletedDungeons", completed);
+        });
     }
 
     public void setDungeonSavePoint(Location loc, String dungeon) {
-        this.requireActiveSession();
-        loc = loc.clone();
-        loc.setWorld(null);
-        this.playerData.set("SavePoints." + dungeon, loc);
-        this.playerData.save(this.playerDataFile);
+        Location saved = loc.clone();
+        saved.setWorld(null);
+        this.updateProfile(candidate -> candidate.set("SavePoints." + dungeon, saved));
     }
 
     @Nullable
     public Location getDungeonSavePoint(String dungeon) {
-        return this.playerData.getLocation("SavePoints." + dungeon);
+        Location saved = this.playerData.getLocation("SavePoints." + dungeon);
+        return saved == null ? null : saved.clone();
     }
 
     public void clearDungeonSavePoint(String dungeon) {
-        this.requireActiveSession();
-        this.playerData.set("SavePoints." + dungeon, null);
-        this.playerData.save(this.playerDataFile);
+        this.updateProfile(candidate -> candidate.set("SavePoints." + dungeon, null));
     }
 
     public void queueReload() {
@@ -830,6 +826,20 @@ public final class DungeonPlayerSession {
         }
 
         return this.reservedAccessKey == null ? null : this.reservedAccessKey.clone();
+    }
+
+    public boolean settleReservedAccessKey(String dungeonName,
+            nl.hauntedmc.dungeons.runtime.dungeon.DungeonAccessKeyService.Settlement ledger, boolean refund) {
+        this.requireActiveSession();
+        if (!this.hasReservedAccessKey(dungeonName) || !ledger.valid()) return false;
+        var journal = this.recoveryJournal.prepareKeySettlement(refund, ledger.replacement());
+        nl.hauntedmc.dungeons.persistence.StateDocument.commitTogether(ledger.write(), journal.write());
+        ledger.publish().run();
+        journal.publish().run();
+        this.reservedAccessKeyDungeon = null;
+        this.reservedAccessKey = null;
+        this.flushPendingAccessKeyRefund();
+        return true;
     }
 
     public boolean completeReservedAccessKey(

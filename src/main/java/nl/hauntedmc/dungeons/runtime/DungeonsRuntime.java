@@ -32,7 +32,10 @@ import java.util.Objects;
 public final class DungeonsRuntime {
     private nl.hauntedmc.dungeons.persistence.DatabaseLifecycle database;
 
-    public nl.hauntedmc.dungeons.persistence.DatabaseLifecycle database() { return database; }
+    private nl.hauntedmc.dungeons.persistence.StateStore stateStore;
+    public nl.hauntedmc.dungeons.persistence.StateStore stateStore() { return requireInitialized(stateStore, "stateStore"); }
+    public void setStateStore(nl.hauntedmc.dungeons.persistence.StateStore store) { this.stateStore = store; }
+    public nl.hauntedmc.dungeons.persistence.DatabaseLifecycle database() { return requireInitialized(database, "database"); }
     public void setDatabase(nl.hauntedmc.dungeons.persistence.DatabaseLifecycle database) { this.database = database; }
 
     private nl.hauntedmc.dungeons.runtime.staff.StaffOperations staffOperations;
@@ -190,6 +193,12 @@ public final class DungeonsRuntime {
     }
 
     /** Returns the loaded dungeon catalogue. */
+    public boolean hasPlayerSessions() { return this.playerSessions != null; }
+    public boolean hasActiveInstances() { return this.activeInstances != null; }
+    public boolean hasTeamService() { return this.teamService != null; }
+    public boolean hasQueueRegistry() { return this.queueRegistry != null; }
+    public boolean hasDungeonCatalog() { return this.dungeonRepository != null; }
+
     public DungeonRepository dungeonCatalog() {
         return this.requireInitialized(this.dungeonRepository, "dungeonRepository");
     }

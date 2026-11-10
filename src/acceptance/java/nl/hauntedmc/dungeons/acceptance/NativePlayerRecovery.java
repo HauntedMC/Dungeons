@@ -28,6 +28,16 @@ final class NativePlayerRecovery {
         PlayerInventory inventory = nativeInventory();
         test.getLogger().info("Native player inventory slots: " + inventory.getSize());
         UUID id = UUID.randomUUID();
+        // A standalone Paper backend creates canonical identities after join, not pre-login.
+        // Prefetch must probe the database without rejecting or inventing a first-time identity.
+        test.runtime().stateStore().prefetch(id).get(5, java.util.concurrent.TimeUnit.SECONDS);
+        require(test.runtime().database().database().players().findIdentity(id).toCompletableFuture()
+                .get(5, java.util.concurrent.TimeUnit.SECONDS).isEmpty(), "Dungeons invented a canonical identity");
+        boolean waiting = false;
+        try { test.runtime().stateStore().requirePlayerReady(id); }
+        catch (IllegalArgumentException expected) { waiting = true; }
+        require(waiting, "First-time gameplay was admitted before identity readiness");
+        test.seedPlayer(id);
         Player nativePlayer = nativePlayer(id);
         var pdc = nativePlayer.getPersistentDataContainer();
         var attribute =
@@ -217,6 +227,10 @@ final class NativePlayerRecovery {
                                     again = new DungeonPlayerSession(test.runtime().environment().plugin(), player);
                                     require(again.recoverPendingState(), "Reconnect failed after a completed departure");
                                 }
+                                again.addReward(new ItemStack(Material.AMETHYST_SHARD, 7));
+                                try {
+                                    java.nio.file.Files.writeString(test.getDataFolder().toPath().resolve("database-player.txt"), id.toString());
+                                } catch (java.io.IOException failure) { throw new java.util.concurrent.CompletionException(failure); }
                                 test.getLogger().info("Native save/load and three entry/departure/reconnect cycles passed");
                             } finally {
                                 test.runtime()

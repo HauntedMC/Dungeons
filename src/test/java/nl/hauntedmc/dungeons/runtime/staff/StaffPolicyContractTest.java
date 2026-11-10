@@ -179,7 +179,7 @@ class StaffPolicyContractTest {
                             "restrictions: []\n",
                             "maintenance:\n  crypt: false\n",
                             "restrictions:\n  bad-uuid: {}\n")) {
-                Files.writeString(directory.resolve("staff.yml"), text);
+                f.run.paper.state.seed("staff-state", "server", null, text);
                 assertThrows(RuntimeException.class, () -> new StaffOperations(f.runtime), text);
             }
             assertThrows(IllegalArgumentException.class, () -> StaffOperations.requireReason(" "));

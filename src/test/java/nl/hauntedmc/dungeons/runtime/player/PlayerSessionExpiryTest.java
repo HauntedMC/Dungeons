@@ -14,7 +14,6 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import java.io.IOException;
 import java.nio.file.*;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -95,6 +94,31 @@ class PlayerSessionExpiryTest {
     }
 
     @Test
+    void sessionExpiryReleasesDecodedDungeonRecordsAndReconnectReadsDurableState() throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var clock = new AtomicLong();
+            var registry = registry(f, clock);
+            f.paper.runtime.setQueueRegistry(new DungeonQueueRegistry(registry, f.paper.runtime.activeInstances()));
+            var catalog = mock(nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository.class);
+            when(catalog.getLoadedDungeons()).thenReturn(java.util.List.of(f.dungeon));
+            f.paper.runtime.setDungeonCatalog(catalog);
+            registry.start(f.paper.runtime);
+            var player = new PlayerState();
+            registry.put(player.player);
+            var id = player.player.getUniqueId();
+            var progress = f.dungeon.playerDataStore();
+            progress.setCompleted(id, true);
+            player.online = false;
+            registry.disconnected(player.player);
+            clock.set(TimeUnit.SECONDS.toNanos(2));
+            assertEquals(1, registry.expireOfflineSessions());
+            // Simulate a durable correction after eviction, before the next connection.
+            f.paper.state.seed("dungeon-progress/" + f.dungeon.getDungeonId(), id.toString(), id, "Finished: false\n");
+            assertFalse(progress.isCompleted(id));
+        }
+    }
+
+    @Test
     void activeRunsRemainPinnedAndReconnectRebindsTheSameSessionBeforeNormalListeners()
             throws Exception {
         var settings = new YamlConfiguration();
@@ -168,10 +192,7 @@ class PlayerSessionExpiryTest {
             assertEquals(16, amount(state));
             assertTrue(recreated.getRewardItems().isEmpty());
             assertTrue(
-                    Files.readString(
-                                    directory.resolve(
-                                            "players/" + state.player.getUniqueId() + ".yml"))
-                            .contains("crypt"));
+                    f.paper.state.payload("player-profile", state.player.getUniqueId().toString()).contains("crypt"));
         }
     }
 
@@ -246,15 +267,9 @@ class PlayerSessionExpiryTest {
             session.setActiveFunction(mock(DungeonFunction.class));
             var target = directory.resolve("players/" + failedPlayer.getUniqueId() + ".yml");
             clock.set(TimeUnit.SECONDS.toNanos(2));
-            try (var files = mockStatic(Files.class, CALLS_REAL_METHODS)) {
-                files.when(
-                                () ->
-                                        Files.move(
-                                                any(Path.class),
-                                                eq(target),
-                                                eq(StandardCopyOption.ATOMIC_MOVE),
-                                                eq(StandardCopyOption.REPLACE_EXISTING)))
-                        .thenThrow(new IOException("unwritable player data"));
+            var failedKey = new nl.hauntedmc.dungeons.persistence.StateStore.Key("player-profile", failedPlayer.getUniqueId().toString(), failedPlayer.getUniqueId());
+            f.paper.state.failedWrites.add(failedKey);
+            try {
                 assertEquals(7, registry.expireOfflineSessions());
                 assertEquals(5, registry.size());
                 assertEquals(4, registry.expireOfflineSessions());
@@ -262,7 +277,7 @@ class PlayerSessionExpiryTest {
                 assertSame(session, registry.get(failedPlayer));
                 assertFalse(session.isExpired());
                 assertNotNull(session.getActiveFunction());
-            }
+            } finally { f.paper.state.failedWrites.remove(failedKey); }
             assertEquals(1, registry.expireOfflineSessions());
             assertTrue(session.isExpired());
             assertNull(session.getActiveFunction());
@@ -314,10 +329,10 @@ class PlayerSessionExpiryTest {
             var state = new PlayerState();
             var file = directory.resolve("players/" + state.player.getUniqueId() + ".yml");
             Files.createDirectories(file.getParent());
-            Files.writeString(file, "CompletedDungeons: [broken\n");
+            f.paper.state.seed("player-profile", state.player.getUniqueId().toString(), state.player.getUniqueId(), "CompletedDungeons: [broken\n");
             assertThrows(IllegalStateException.class, () -> registry.put(state.player));
             assertEquals(0, registry.size());
-            assertEquals("CompletedDungeons: [broken\n", Files.readString(file));
+            assertEquals("CompletedDungeons: [broken\n", f.paper.state.payload("player-profile", state.player.getUniqueId().toString()));
         }
     }
 }

@@ -151,12 +151,12 @@ public abstract class DungeonDefinition {
             throw failure;
         }
 
-        this.syncConfigWithDefaults();
         this.dungeonId = nl.hauntedmc.dungeons.runtime.dungeon.DungeonIdentity.initialize(
                 this.plugin(), this.config, new File(folder, "config.yml"));
+        this.syncConfigWithDefaults();
         this.loadRuntimeSettingsFromConfig();
-        this.accessKeyService = new DungeonAccessKeyService(runtime, folder, () -> this.accessKeys);
-        this.playerDataStore = new DungeonPlayerDataStore(this.plugin(), folder);
+        this.accessKeyService = new DungeonAccessKeyService(runtime, folder, this.dungeonId, () -> this.accessKeys);
+        this.playerDataStore = new DungeonPlayerDataStore(this.plugin(), this.dungeonId);
 
         this.instances = new ArrayList<>();
         this.cleanDeadInstances();
@@ -553,6 +553,7 @@ public abstract class DungeonDefinition {
     }
 
     public java.util.concurrent.CompletableFuture<Boolean> editAsync(UUID playerId) {
+        if (!this.runtime.database().ready()) return java.util.concurrent.CompletableFuture.completedFuture(false);
         if (this.runtime.staffOperations() != null) {
             if (!this.runtime.staffOperations().maintenance(this.worldName)
                     || this.instances.stream().anyMatch(i -> !i.isEditInstance())) {
@@ -852,11 +853,9 @@ public abstract class DungeonDefinition {
         }
 
         ItemStack reservedKey = playerSession.getReservedAccessKey(this.worldName);
-        if (reservedKey != null && reservedKey.getType() != Material.AIR) {
-            this.releaseReservedAccessKey(reservedKey);
-        }
-
-        return playerSession.refundReservedAccessKey(this.worldName);
+        if (reservedKey == null || reservedKey.getType().isAir()) return false;
+        var settlement = this.accessKeyService.prepareSettlement(reservedKey, true, false);
+        return playerSession.settleReservedAccessKey(this.worldName, settlement, true);
     }
 
     public boolean completeReservedAccessKey(@Nullable DungeonPlayerSession playerSession) {
@@ -876,23 +875,9 @@ public abstract class DungeonDefinition {
             return false;
         }
 
-        ItemStack replacementKey = null;
-        boolean finalized =
-                this.config.getBoolean("access.keys.consume_on_entry", true)
-                        ? this.consumeAccessKey(reservedKey)
-                        : (replacementKey = this.rotateAccessKey(reservedKey)) != null;
-        if (!finalized) {
-            Player reservedKeyOwner = playerSession.getPlayer();
-            this.logger()
-                    .warn(
-                            "Failed to finalize reserved access key usage for player '{}' in"
-                                    + " dungeon '{}'.",
-                            reservedKeyOwner == null ? "unknown" : reservedKeyOwner.getName(),
-                            this.worldName);
-            return false;
-        }
-
-        return playerSession.completeReservedAccessKey(this.worldName, replacementKey);
+        var settlement = this.accessKeyService.prepareSettlement(reservedKey, false,
+                this.config.getBoolean("access.keys.consume_on_entry", true));
+        return playerSession.settleReservedAccessKey(this.worldName, settlement, false);
     }
 
     private void saveAccessKeys() {
@@ -1053,7 +1038,7 @@ public abstract class DungeonDefinition {
     }
 
     public boolean isEnabled() {
-        return this.enabled
+        return this.enabled && this.runtime.database().ready()
                 && (this.runtime.staffOperations() == null
                         || !this.runtime.staffOperations().maintenance(this.worldName));
     }

@@ -60,11 +60,14 @@ public final class LifecycleCoordinator {
                             .error("Failed to close loot editors", failure);
                 }
             }
-            this.runCleanup("pending admissions", () -> this.runtime.preparations().shutdown());
-            this.runCleanup("queued starts", () -> this.discardQueuedStarts(null));
-            this.runCleanup("reserved access keys", () -> this.refundOutstandingReservedKeys(null));
+            if (this.runtime.preparations() != null)
+                this.runCleanup("pending admissions", () -> this.runtime.preparations().shutdown());
+            if (this.runtime.hasQueueRegistry())
+                this.runCleanup("queued starts", () -> this.discardQueuedStarts(null));
+            if (this.runtime.hasPlayerSessions())
+                this.runCleanup("reserved access keys", () -> this.refundOutstandingReservedKeys(null));
 
-            for (Player player : Bukkit.getOnlinePlayers()) {
+            for (Player player : this.runtime.hasPlayerSessions() ? Bukkit.getOnlinePlayers() : java.util.List.<Player>of()) {
                 try {
                     DungeonPlayerSession playerSession = this.runtime.playerSessions().get(player);
                     if (playerSession == null) {
@@ -94,7 +97,7 @@ public final class LifecycleCoordinator {
                 }
             }
 
-            if (this.runtime.teamService() != null) {
+            if (this.runtime.hasTeamService()) {
                 this.runCleanup("team service", () -> this.runtime.teamService().shutdown());
             }
 
@@ -117,7 +120,7 @@ public final class LifecycleCoordinator {
             }
         } finally {
             try {
-                this.runtime.playerSessions().shutdown();
+                if (this.runtime.hasPlayerSessions()) this.runtime.playerSessions().shutdown();
             } catch (RuntimeException failure) {
                 this.runtime
                         .environment()
@@ -143,12 +146,12 @@ public final class LifecycleCoordinator {
 
     private java.util.Set<DungeonInstance> managedInstances() {
         var instances = new java.util.LinkedHashSet<DungeonInstance>();
-        if (this.runtime.dungeonCatalog() != null) {
+        if (this.runtime.hasDungeonCatalog()) {
             for (DungeonDefinition dungeon : this.runtime.dungeonCatalog().getLoadedDungeons()) {
                 instances.addAll(dungeon.getInstances());
             }
         }
-        if (this.runtime.activeInstances() != null) {
+        if (this.runtime.hasActiveInstances()) {
             instances.addAll(this.runtime.activeInstances().getActiveInstances());
         }
         return instances;

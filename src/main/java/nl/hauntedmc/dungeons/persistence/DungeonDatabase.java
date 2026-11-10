@@ -106,6 +106,8 @@ public final class DungeonDatabase implements AutoCloseable {
         return startup.copy();
     }
 
+    public void unavailable(Throwable failure) { fail(java.util.Objects.requireNonNull(failure)); }
+
     public void onFailure(Consumer<Throwable> handler) { this.failureHandler = handler; }
     public State state() { return state; }
     public String problem() { return problem; }

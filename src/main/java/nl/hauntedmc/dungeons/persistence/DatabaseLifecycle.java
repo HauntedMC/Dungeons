@@ -5,13 +5,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
-/** Fail-closed startup and bounded shutdown for the enabled database foundation. */
+/** Mandatory database startup barrier and bounded shutdown. */
 public final class DatabaseLifecycle implements AutoCloseable {
     private final DungeonsPlugin plugin;
     private final DungeonDatabase database;
     private final int shutdownTimeoutSeconds;
     private final AtomicBoolean closed = new AtomicBoolean();
     private BukkitTask heartbeat;
+    private java.util.concurrent.CompletableFuture<Void> startup;
 
     public DatabaseLifecycle(DungeonsPlugin plugin) {
         this(plugin, connect(plugin), DatabaseSettings.read(plugin.getConfig()).shutdownTimeoutSeconds());
@@ -26,8 +27,9 @@ public final class DatabaseLifecycle implements AutoCloseable {
             heartbeat = plugin.getServer().getScheduler().runTaskTimerAsynchronously(plugin, () -> {
                 if (!closed.get() && database.state() == DungeonDatabase.State.READY) database.heartbeat();
             }, 100L, 100L);
-            database.start().thenRun(() -> {
-                if (!closed.get()) plugin.getSLF4JLogger().info("Dungeons database foundation ready for {}.", database.serverId());
+            startup = database.start();
+            startup.thenRun(() -> {
+                if (!closed.get() && database.ready()) plugin.getSLF4JLogger().info("Dungeons database ready for {}.", database.serverId());
             });
         } catch (RuntimeException | Error failure) {
             closed.set(true);
@@ -42,7 +44,7 @@ public final class DatabaseLifecycle implements AutoCloseable {
     public static void requireDependencies(DungeonsPlugin plugin) {
         for (String dependency : java.util.List.of("DataProvider", "DataRegistry")) {
             if (!plugin.getServer().getPluginManager().isPluginEnabled(dependency))
-                throw new IllegalStateException("database.enabled requires the enabled " + dependency + " plugin");
+                throw new IllegalStateException("Dungeons requires the enabled " + dependency + " plugin");
         }
     }
 
@@ -60,6 +62,22 @@ public final class DatabaseLifecycle implements AutoCloseable {
             });
         } catch (RuntimeException rejected) {
             plugin.getSLF4JLogger().error("Could not schedule database failure shutdown; database admission remains closed.", rejected);
+        }
+    }
+
+    public DungeonDatabase database() { return database; }
+
+    public void awaitReady(int timeoutSeconds) {
+        try {
+            startup.get(timeoutSeconds, TimeUnit.SECONDS);
+            if (!ready()) { close(); throw new IllegalStateException("Database startup did not become ready"); }
+        } catch (InterruptedException failure) {
+            Thread.currentThread().interrupt();
+            close();
+            throw new IllegalStateException("Interrupted while starting Dungeons database", failure);
+        } catch (java.util.concurrent.ExecutionException | java.util.concurrent.TimeoutException failure) {
+            close();
+            throw new IllegalStateException("Dungeons cannot start without a valid, available database", failure);
         }
     }
 

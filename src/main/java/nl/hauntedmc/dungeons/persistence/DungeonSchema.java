@@ -25,11 +25,15 @@ public final class DungeonSchema {
         // Release this borrow before ORM initialization; even a one-connection pool must work.
         try (var connection = source.getConnection()) {
             try (var statement = connection.createStatement();
-                    var result = statement.executeQuery("SELECT id FROM player_entity WHERE 1=0")) {
+                    var result = statement.executeQuery("SELECT id,uuid FROM player_entity WHERE 1=0")) {
                 var metadata = result.getMetaData();
                 if (metadata.getColumnType(1) != java.sql.Types.BIGINT || !metadata.isSigned(1)
                         || metadata.isNullable(1) != java.sql.ResultSetMetaData.columnNoNulls)
                     throw new SQLException("DataRegistry player_entity.id must be a non-null signed BIGINT");
+                int uuidType = metadata.getColumnType(2);
+                if ((uuidType != java.sql.Types.CHAR && uuidType != java.sql.Types.VARCHAR)
+                        || metadata.getPrecision(2) < 36 || metadata.isNullable(2) != java.sql.ResultSetMetaData.columnNoNulls)
+                    throw new SQLException("DataRegistry player_entity.uuid must be a non-null UUID string");
             }
         }
         var context = java.util.Objects.requireNonNull(

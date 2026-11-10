@@ -46,6 +46,8 @@ final class DatabaseTestHost implements AutoCloseable {
 
     final DungeonDatabase database;
     final PlayerData players = mock(PlayerData.class);
+    final java.util.concurrent.atomic.AtomicBoolean failBeforeCommit = new java.util.concurrent.atomic.AtomicBoolean();
+    final java.util.concurrent.atomic.AtomicBoolean failAfterCommit = new java.util.concurrent.atomic.AtomicBoolean();
     final AtomicInteger transactions = new AtomicInteger();
     final AtomicReference<CompletableFuture<Object>> deferred = new AtomicReference<>();
     private final AtomicReference<QueryGate> gate = new AtomicReference<>();
@@ -67,7 +69,9 @@ final class DatabaseTestHost implements AutoCloseable {
                     connection.setAutoCommit(false);
                     try {
                         Object result = callback.doInTransaction(observed(connection));
+                        if (failBeforeCommit.compareAndSet(true, false)) throw new java.sql.SQLTransientConnectionException("Connection lost before commit");
                         connection.commit();
+                        if (failAfterCommit.compareAndSet(true, false)) throw new java.sql.SQLTransientConnectionException("Commit response lost");
                         return result;
                     } catch (Exception failure) {
                         connection.rollback();

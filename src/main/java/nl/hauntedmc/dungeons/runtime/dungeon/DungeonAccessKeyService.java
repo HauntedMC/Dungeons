@@ -7,14 +7,12 @@ import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Nullable;
 import org.yaml.snakeyaml.error.YAMLException;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -33,8 +31,8 @@ public final class DungeonAccessKeyService {
     private final DungeonsRuntime runtime;
     private final String worldName;
     private final Supplier<List<AccessKeyDefinition>> definitions;
-    private final File accessKeyStateFile;
-    private final FileConfiguration accessKeyStateConfig;
+    private final nl.hauntedmc.dungeons.persistence.StateDocument document;
+    private final YamlConfiguration accessKeyStateConfig;
     private Map<String, String> issuedAccessKeyInstances;
     private Map<String, String> durableIssuedKeys = Map.of();
     private Set<String> durableReservedKeys = Set.of();
@@ -42,14 +40,16 @@ public final class DungeonAccessKeyService {
     private Set<String> reservedAccessKeyInstances;
     private Set<String> invalidatedAccessKeyInstances;
     private boolean accessKeyStateLoaded;
+    private boolean planningSettlement;
     private @Nullable Boolean uniqueAccessKeyValidationEnabled;
 
-    public DungeonAccessKeyService(DungeonsRuntime runtime, File folder,
+    public DungeonAccessKeyService(DungeonsRuntime runtime, File folder, UUID dungeonId,
             Supplier<List<AccessKeyDefinition>> definitions) throws DungeonLoadException {
         this.runtime = runtime;
         this.worldName = folder.getName();
         this.definitions = definitions;
-        this.accessKeyStateFile = new File(folder, "access_keys.yml");
+        this.document = runtime.stateStore().document(new nl.hauntedmc.dungeons.persistence.StateStore.Key(
+                "key-ledger", dungeonId.toString(), null));
         this.accessKeyStateConfig = new YamlConfiguration();
         this.issuedAccessKeyInstances = new LinkedHashMap<>();
         this.reservedAccessKeyInstances = new LinkedHashSet<>();
@@ -71,13 +71,9 @@ public final class DungeonAccessKeyService {
             return;
         }
 
-        if (!this.accessKeyStateFile.exists()) {
-            this.accessKeyStateLoaded = true;
-            return;
-        }
-
         try {
-            this.accessKeyStateConfig.load(this.accessKeyStateFile);
+            this.document.refresh();
+            this.document.loadInto(this.accessKeyStateConfig);
             boolean hadPersistedReservations =
                     !this.accessKeyStateConfig.getStringList("reserved_instance_ids").isEmpty();
             Object rawIssuedInstances = this.accessKeyStateConfig.get("issued_instances");
@@ -108,17 +104,11 @@ public final class DungeonAccessKeyService {
             if (hadPersistedReservations) {
                 this.saveAccessKeyState();
             }
-        } catch (IOException exception) {
-            throw new DungeonLoadException(
-                    "Access of access_keys.yml file failed!",
-                    false,
-                    "There may be another process accessing the file, or we may not have"
-                            + " permission.");
         } catch (InvalidConfigurationException
                 | IllegalArgumentException
                 | YAMLException exception) {
             throw new DungeonLoadException(
-                    "Dungeon access key state has invalid YAML! See error below...", true);
+                    "Database dungeon access key state is invalid! See error below...", true);
         }
     }
 
@@ -129,7 +119,7 @@ public final class DungeonAccessKeyService {
     }
 
     private void saveAccessKeyState() {
-        if (!this.usesUniqueAccessKeyValidation()) return;
+        if (!this.usesUniqueAccessKeyValidation() || this.planningSettlement) return;
         var candidate = new YamlConfiguration();
         try {
             candidate.loadFromString(this.accessKeyStateConfig.saveToString());
@@ -139,8 +129,7 @@ public final class DungeonAccessKeyService {
             candidate.set(
                     "invalidated_instance_ids",
                     new ArrayList<>(this.invalidatedAccessKeyInstances));
-            nl.hauntedmc.dungeons.config.ConfigurationFile.saveSnapshot(
-                    this.runtime.environment().plugin(), this.accessKeyStateFile, candidate.saveToString());
+            this.document.save(candidate.saveToString());
             this.rememberKeyLedger();
         } catch (InvalidConfigurationException | RuntimeException failure) {
             this.issuedAccessKeyInstances.clear();
@@ -449,6 +438,56 @@ public final class DungeonAccessKeyService {
 
         AccessKeyDefinition accessKey = this.findAccessKeyByStableId(keyId);
         return accessKey != null && accessKey.matches(item);
+    }
+
+    /** A candidate ledger change; publication is allowed only after the joint journal commit. */
+    public record Settlement(boolean valid, @Nullable ItemStack replacement,
+            nl.hauntedmc.dungeons.persistence.StateDocument.Prepared write, Runnable publish) {}
+
+    public synchronized Settlement prepareSettlement(ItemStack item, boolean refund, boolean consume) {
+        if (this.usesUniqueAccessKeyValidation()) this.ensureUniqueAccessKeyStateLoaded();
+        var issued = new LinkedHashMap<>(this.issuedAccessKeyInstances);
+        var reserved = new LinkedHashSet<>(this.reservedAccessKeyInstances);
+        var invalidated = new LinkedHashSet<>(this.invalidatedAccessKeyInstances);
+        this.planningSettlement = true;
+        try {
+            ItemStack replacement = null;
+            boolean valid;
+            if (refund) {
+                // A reservation may already have been released (for example by startup cleanup).
+                // The journal still owns the escrowed item and must be able to return it.
+                this.releaseReservedAccessKey(item);
+                valid = true;
+            } else valid = consume ? this.consumeAccessKey(item) : (replacement = this.rotateAccessKey(item)) != null;
+            if (!valid) return new Settlement(false, null, null, () -> {});
+            var nextIssued = new LinkedHashMap<>(this.issuedAccessKeyInstances);
+            var nextReserved = new LinkedHashSet<>(this.reservedAccessKeyInstances);
+            var nextInvalidated = new LinkedHashSet<>(this.invalidatedAccessKeyInstances);
+            nl.hauntedmc.dungeons.persistence.StateDocument.Prepared write = null;
+            if (this.usesUniqueAccessKeyValidation()) {
+                var candidate = new YamlConfiguration();
+                candidate.loadFromString(this.accessKeyStateConfig.saveToString());
+                candidate.set("issued_instances", nextIssued);
+                candidate.set("reserved_instance_ids", new ArrayList<>(nextReserved));
+                candidate.set("invalidated_instance_ids", new ArrayList<>(nextInvalidated));
+                write = this.document.prepare(candidate.saveToString());
+            }
+            return new Settlement(true, replacement, write, () -> {
+                synchronized (this) {
+                    this.issuedAccessKeyInstances = nextIssued;
+                    this.reservedAccessKeyInstances = nextReserved;
+                    this.invalidatedAccessKeyInstances = nextInvalidated;
+                    this.rememberKeyLedger();
+                }
+            });
+        } catch (InvalidConfigurationException failure) {
+            throw new IllegalStateException("Cannot stage access key settlement", failure);
+        } finally {
+            this.planningSettlement = false;
+            this.issuedAccessKeyInstances = issued;
+            this.reservedAccessKeyInstances = reserved;
+            this.invalidatedAccessKeyInstances = invalidated;
+        }
     }
 
     public synchronized boolean consumeAccessKey(@Nullable ItemStack item) {

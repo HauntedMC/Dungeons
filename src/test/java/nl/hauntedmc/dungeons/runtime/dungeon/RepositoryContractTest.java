@@ -147,8 +147,7 @@ class RepositoryContractTest {
             fixture.scheduler.jobs.getFirst().run();
             var dungeon = fixture.repository.get("healthy");
             assertNotNull(dungeon);
-            assertEquals(
-                    4102444800000L, dungeon.playerDataStore().getAccessCooldown(validId).getTime());
+            assertNull(dungeon.playerDataStore().getAccessCooldown(validId));
             assertNull(dungeon.playerDataStore().getAccessCooldown(brokenId));
             assertEquals("operator: notes\n", Files.readString(players.resolve("notes.yml")));
             assertEquals(
@@ -169,6 +168,9 @@ class RepositoryContractTest {
                     "RewardsInfo: invalid-record\nFinished: true\nAccessCooldown: 4102444800000\n";
             Path data = players.resolve(playerId + ".yml");
             Files.writeString(data, saved);
+            var mapId = UUID.randomUUID();
+            Files.writeString(folder.resolve("config.yml"), "dungeon:\n  type: static\n  id: " + mapId + "\n");
+            fixture.paper.state.seed("dungeon-progress/" + mapId, playerId.toString(), playerId, saved);
             fixture.scheduler.jobs.getFirst().run();
             var dungeon = fixture.repository.get("healthy");
             assertNotNull(dungeon);

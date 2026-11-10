@@ -811,7 +811,14 @@ public abstract class DungeonInstance {
     }
 
     public void addPlayer(DungeonPlayerSession playerSession) {
-        if (this.disposing || this.loadFailed) return;
+        if (this.disposing || this.loadFailed || !this.getRuntime().database().ready()) return;
+        try {
+            this.getRuntime().stateStore().requirePlayerReady(playerSession.getPlayer().getUniqueId());
+        } catch (IllegalStateException | IllegalArgumentException notReady) {
+            playerSession.getPlayer().sendMessage(net.kyori.adventure.text.Component.text(
+                    "[Dungeons] Player data is unavailable; try again shortly."));
+            return;
+        }
         if (playerSession.getInstance() != null && playerSession.getInstance() != this) {
             return;
         }

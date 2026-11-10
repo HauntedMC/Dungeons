@@ -82,7 +82,7 @@ class IssuedKeyLedgerContractTest {
             var id = nl.hauntedmc.dungeons.runtime.dungeon.DungeonIdentity.initialize(
                     paper.plugin, config, directory.resolve("config.yml").toFile());
             var service = new nl.hauntedmc.dungeons.runtime.dungeon.DungeonAccessKeyService(
-                    paper.runtime, directory.toFile(), () -> List.of(definition));
+                    paper.runtime, directory.toFile(), id, () -> List.of(definition));
             assertNotNull(service.isValidKey(original));
             ItemUtils.tagDungeonAccessKeyInstance(original, UUID.randomUUID().toString());
             assertNotNull(service.isValidKey(original));
@@ -99,16 +99,12 @@ class IssuedKeyLedgerContractTest {
     void failedLedgerReplacementCannotReportConsumptionOrChangeTheWorkingLedger() throws Exception {
         try (var fixture = new Fixture(directory)) {
             var key = fixture.dungeon.issueAccessKey(1);
-            String document = Files.readString(fixture.stateFile);
-            Files.delete(fixture.stateFile);
-            Files.createDirectory(fixture.stateFile);
-            Files.writeString(fixture.stateFile.resolve("obstacle"), "keep");
+            String document = fixture.paper.state.payload("key-ledger", fixture.dungeon.getDungeonId().toString());
+            fixture.paper.state.failWrites = true;
             org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class,
                     () -> fixture.dungeon.consumeAccessKey(key));
             assertNotNull(fixture.dungeon.isValidKey(key));
-            Files.delete(fixture.stateFile.resolve("obstacle"));
-            Files.delete(fixture.stateFile);
-            Files.writeString(fixture.stateFile, document);
+            fixture.paper.state.failWrites = false;
             assertNotNull(fixture.reload().isValidKey(key));
             assertTrue(fixture.dungeon.consumeAccessKey(key));
             assertNull(fixture.reload().isValidKey(key));
@@ -144,7 +140,7 @@ class IssuedKeyLedgerContractTest {
             assertNull(restored.isValidKey(first));
             assertFalse(restored.reserveIssuedAccessKey(duplicate));
             assertNotNull(restored.isValidKey(second));
-            var saved = YamlConfiguration.loadConfiguration(fixture.stateFile.toFile());
+            var saved = fixture.saved();
             assertEquals(List.of(consumedId), saved.getStringList("invalidated_instance_ids"));
             assertTrue(saved.getStringList("reserved_instance_ids").isEmpty());
             assertEquals(
@@ -163,14 +159,14 @@ class IssuedKeyLedgerContractTest {
             String interruptedId = ItemUtils.getDungeonAccessKeyInstanceId(interrupted);
             assertEquals(
                     List.of(interruptedId),
-                    YamlConfiguration.loadConfiguration(fixture.stateFile.toFile())
+                    fixture.saved()
                             .getStringList("reserved_instance_ids"));
             var restored = fixture.reload();
             assertNotNull(restored.isValidKey(interrupted));
             assertFalse(restored.isReservedAccessKey(interrupted));
             assertNull(restored.isValidKey(consumed));
             assertTrue(
-                    YamlConfiguration.loadConfiguration(fixture.stateFile.toFile())
+                    fixture.saved()
                             .getStringList("reserved_instance_ids")
                             .isEmpty());
             assertTrue(restored.reserveIssuedAccessKey(interrupted));
@@ -205,7 +201,7 @@ class IssuedKeyLedgerContractTest {
             assertNull(reinstalledDefinition.isValidKey(original));
             assertNull(reinstalledDefinition.isValidKey(replacement));
             assertNull(reinstalledDefinition.isValidKey(other));
-            var saved = YamlConfiguration.loadConfiguration(fixture.stateFile.toFile());
+            var saved = fixture.saved();
             assertTrue(saved.getConfigurationSection("issued_instances").getKeys(false).isEmpty());
             assertTrue(saved.getStringList("reserved_instance_ids").isEmpty());
             assertEquals(3, saved.getStringList("invalidated_instance_ids").size());
@@ -217,11 +213,10 @@ class IssuedKeyLedgerContractTest {
             throws Exception {
         try (var fixture = new Fixture(directory)) {
             String broken = "issued_instances: [unfinished";
-            Files.writeString(fixture.stateFile, broken);
+            fixture.paper.state.seed("key-ledger", fixture.dungeon.getDungeonId().toString(), null, broken);
             assertNull(fixture.dungeon.issueAccessKey(1));
-            assertEquals(broken, Files.readString(fixture.stateFile));
-            Files.writeString(
-                    fixture.stateFile,
+            assertEquals(broken, fixture.paper.state.payload("key-ledger", fixture.dungeon.getDungeonId().toString()));
+            fixture.paper.state.seed("key-ledger", fixture.dungeon.getDungeonId().toString(), null,
                     "issued_instances: {}\nreserved_instance_ids: []\ninvalidated_instance_ids: []\n");
             var issued = fixture.dungeon.issueAccessKey(1);
             assertNotNull(issued);
@@ -253,6 +248,35 @@ class IssuedKeyLedgerContractTest {
         }
     }
 
+    @Test
+    void jointSettlementDoesNotRotateTheWorkingLedgerWhenTheRecoveryWriteFails() throws Exception {
+        try (var fixture = new Fixture(directory)) {
+            var service = new nl.hauntedmc.dungeons.runtime.dungeon.DungeonAccessKeyService(
+                    fixture.paper.runtime, fixture.folder.toFile(), fixture.dungeon.getDungeonId(), () -> List.of(fixture.definition));
+            var key = service.issueAccessKey(fixture.definition);
+            assertTrue(service.reserveIssuedAccessKey(key));
+            var journalKey = new nl.hauntedmc.dungeons.persistence.StateStore.Key("player-recovery-test", "atomic", null);
+            var journal = fixture.paper.state.document(journalKey);
+            var settlement = service.prepareSettlement(key, false, false);
+            assertTrue(settlement.valid());
+            assertTrue(service.isReservedAccessKey(key));
+            fixture.paper.state.failedWrites.add(journalKey);
+            org.junit.jupiter.api.Assertions.assertThrows(RuntimeException.class, () ->
+                    nl.hauntedmc.dungeons.persistence.StateDocument.commitTogether(settlement.write(), journal.prepare("replacement")));
+            assertTrue(service.isReservedAccessKey(key));
+            assertFalse(fixture.paper.state.payload("key-ledger", fixture.dungeon.getDungeonId().toString())
+                    .contains(ItemUtils.getDungeonAccessKeyInstanceId(settlement.replacement())));
+            assertEquals(0, journal.revision());
+            fixture.paper.state.failedWrites.clear();
+            nl.hauntedmc.dungeons.persistence.StateDocument.commitTogether(settlement.write(), journal.prepare("replacement"));
+            settlement.publish().run();
+            assertFalse(service.isReservedAccessKey(key));
+            assertNull(service.isValidKey(key));
+            assertNotNull(service.isValidKey(settlement.replacement()));
+            assertEquals(1, journal.revision());
+        }
+    }
+
     static final class Fixture implements AutoCloseable {
         final PaperBoundary paper = new PaperBoundary();
         final Path folder;
@@ -270,6 +294,7 @@ class IssuedKeyLedgerContractTest {
             dungeon = reload();
         }
 
+        YamlConfiguration saved() { return paper.state.yaml("key-ledger", dungeon.getDungeonId().toString()); }
         LedgerDungeon reload() throws Exception {
             paper.config.set("access.keys.unique_validation_enabled", false);
             paper.runtime.setDefaultDungeonConfig(new YamlConfiguration());
