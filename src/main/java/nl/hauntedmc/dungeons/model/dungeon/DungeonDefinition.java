@@ -567,7 +567,7 @@ public abstract class DungeonDefinition {
                 Player player = Bukkit.getPlayer(playerId);
                 if (player != null)
                     LangUtils.sendRaw(player,
-                            "[Dungeons] Enable maintenance and let play worlds drain before"
+                            "Enable maintenance and let play worlds drain before"
                                     + " editing.");
                 return CompletableFuture.completedFuture(false);
             }

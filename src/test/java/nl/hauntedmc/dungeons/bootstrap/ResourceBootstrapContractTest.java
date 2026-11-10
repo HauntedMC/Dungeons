@@ -43,10 +43,16 @@ class ResourceBootstrapContractTest {
             assertFalse(Files.exists(directory.resolve("players")));
             assertEquals(
                     "Operator help Alex",
-                    ComponentUtils.plainText(ComponentUtils.component(LangUtils.getMessage(
-                            "commands.play.usage", false, LangUtils.placeholder("player", "Alex")))));
+                    ComponentUtils.plainText(
+                            LangUtils.component(
+                                    "commands.play.usage",
+                                    null,
+                                    false,
+                                    LangUtils.placeholder("player", "Alex"))));
+            assertFalse(Files.exists(directory.resolve("messages.yml")));
             var loaded =
-                    YamlConfiguration.loadConfiguration(directory.resolve("lang/messages.yml").toFile());
+                    YamlConfiguration.loadConfiguration(
+                            directory.resolve("lang/messages.yml").toFile());
             assertEquals("[Custom]", loaded.getString("general.prefix"));
             assertNotNull(loaded.getString("commands.list.line"));
             String previous = Files.readString(directory.resolve("lang/messages.yml"));

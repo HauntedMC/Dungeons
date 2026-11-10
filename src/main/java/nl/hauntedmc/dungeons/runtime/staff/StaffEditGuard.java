@@ -41,7 +41,7 @@ public final class StaffEditGuard {
                 StaffPermissions.require(player, "scripts", instance.getDungeon().getWorldName());
             return true;
         } catch (IllegalArgumentException | IllegalStateException failure) {
-            LangUtils.sendRaw(player, "[Dungeons] " + failure.getMessage());
+            LangUtils.sendRaw(player, failure.getMessage());
             return false;
         }
     }

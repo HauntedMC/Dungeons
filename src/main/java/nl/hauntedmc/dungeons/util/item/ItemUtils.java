@@ -19,7 +19,6 @@ import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /** Item utility helpers for editor tools, key items, and reward transfers. */
@@ -61,12 +60,8 @@ public final class ItemUtils {
     public static ItemStack getFunctionTool() {
         ItemStack tool = new ItemStack(RuntimeContext.functionBuilderMaterial());
         ItemMeta meta = tool.getItemMeta();
-        List<String> lore =
-                new ArrayList<>(LangUtils.getMessageList("general.items.function-tool.lore"));
-        meta.lore(ComponentUtils.components(lore));
-        meta.itemName(
-                ComponentUtils.component(
-                        LangUtils.getMessage("general.items.function-tool.name", false)));
+        meta.lore(LangUtils.components("general.items.function-tool.lore", null));
+        meta.itemName(LangUtils.component("general.items.function-tool.name", null, false));
         meta.addAttributeModifier(
                 Attribute.BLOCK_INTERACTION_RANGE,
                 new AttributeModifier(
@@ -90,12 +85,8 @@ public final class ItemUtils {
     public static ItemStack getRoomTool() {
         ItemStack tool = new ItemStack(RuntimeContext.roomEditorMaterial());
         ItemMeta meta = tool.getItemMeta();
-        List<String> lore =
-                new ArrayList<>(LangUtils.getMessageList("general.items.room-tool.lore"));
-        meta.lore(ComponentUtils.components(lore));
-        meta.itemName(
-                ComponentUtils.component(
-                        LangUtils.getMessage("general.items.room-tool.name", false)));
+        meta.lore(LangUtils.components("general.items.room-tool.lore", null));
+        meta.itemName(LangUtils.component("general.items.room-tool.name", null, false));
         meta.addAttributeModifier(
                 Attribute.BLOCK_INTERACTION_RANGE,
                 new AttributeModifier(
@@ -148,9 +139,7 @@ public final class ItemUtils {
         PersistentDataContainer data = meta.getPersistentDataContainer();
         NamespacedKey keyData = new NamespacedKey(RuntimeContext.plugin(), DUNGEON_KEY_TAG);
         data.set(keyData, PersistentDataType.INTEGER, 1);
-        meta.displayName(
-                ComponentUtils.component(
-                        LangUtils.getMessage("general.items.dungeon-key.name", false)));
+        meta.displayName(LangUtils.component("general.items.dungeon-key.name", null, false));
         key.setItemMeta(meta);
         return key;
     }

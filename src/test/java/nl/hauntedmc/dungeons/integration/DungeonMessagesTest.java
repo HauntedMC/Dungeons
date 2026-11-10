@@ -16,13 +16,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mockito;
 
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 class DungeonMessagesTest {
     @TempDir Path directory;
@@ -80,11 +77,11 @@ class DungeonMessagesTest {
         Files.writeString(
                 directory.resolve("messages.yml"),
                 "general:\n  prefix: '[Custom]'\ncustom:\n  welcome: 'Hello {name}'\n");
-        DungeonMessages.importLegacy(directory);
+        var messages = messages();
         Files.writeString(
                 directory.resolve("lang/messages_EN.yml"),
                 "custom:\n  welcome: 'Welcome {name}'\n");
-        var messages = messages();
+        messages.reloadLocalizationQuietly();
         var audience = Mockito.mock(Player.class);
         assertEquals(
                 "Welcome Alex",
@@ -105,7 +102,8 @@ class DungeonMessagesTest {
                 ComponentUtils.plainText(
                         messages.message(
                                 "custom.welcome", audience, false, Map.of("name", "Alex"))));
-        assertTrue(Files.readString(directory.resolve("messages.yml")).contains("Hello"));
+        assertFalse(Files.exists(directory.resolve("messages.yml")));
+        assertTrue(Files.readString(directory.resolve("lang/messages.yml")).contains("Hello"));
     }
 
     @Test
@@ -153,29 +151,60 @@ class DungeonMessagesTest {
     }
 
     @Test
-    void importingStockMessagesAdoptsThePaletteWithoutReplacingCustomEdits() throws Exception {
-        var stock =
-                YamlConfiguration.loadConfiguration(
-                        new InputStreamReader(
-                                Objects.requireNonNull(
-                                        getClass().getResourceAsStream("/messages.yml")),
-                                StandardCharsets.UTF_8));
-        stock.set("general.errors.no-permission", "Operator custom text");
-        stock.save(directory.resolve("messages.yml").toFile());
-        String original = Files.readString(directory.resolve("messages.yml"));
-        DungeonMessages.importLegacy(directory);
+    void legacyRelocationKeepsCustomizationsAndUsesOnlyOneBundledDefaultResource()
+            throws Exception {
+        Files.writeString(
+                directory.resolve("messages.yml"),
+                "general:\n"
+                    + "  prefix: '&3[Custom]'\n"
+                    + "  errors:\n"
+                    + "    no-permission: 'Operator custom text'\n");
+        messages();
         var migrated =
                 YamlConfiguration.loadConfiguration(
                         directory.resolve("lang/messages.yml").toFile());
-        assertTrue(migrated.getString("general.prefix").contains("<HauntedMC:Brand>"));
+        assertEquals("&3[Custom]", migrated.getString("general.prefix"));
         assertEquals("Operator custom text", migrated.getString("general.errors.no-permission"));
-        assertEquals(original, Files.readString(directory.resolve("messages.yml")));
+        assertFalse(Files.exists(directory.resolve("messages.yml")));
+        assertNull(getClass().getResource("/messages.yml"));
+        assertNotNull(migrated.getString("commands.list.line"));
         migrated.set("general.prefix", "Second custom prefix");
         migrated.save(directory.resolve("lang/messages.yml").toFile());
-        DungeonMessages.importLegacy(directory);
+        messages();
         assertTrue(
                 Files.readString(directory.resolve("lang/messages.yml"))
                         .contains("Second custom prefix"));
+    }
+
+    @Test
+    void anExistingCanonicalFileWinsAndTheOldFileIsArchivedWithoutBeingOverwritten()
+            throws Exception {
+        Files.createDirectories(directory.resolve("lang"));
+        Files.writeString(
+                directory.resolve("lang/messages.yml"), "general:\n  prefix: '[Current]'\n");
+        String old = "general:\n  prefix: '[Old]'\ncustom: 'Keep this backup'\n";
+        Files.writeString(directory.resolve("messages.yml"), old);
+        var messages = messages();
+        assertEquals("[Current] ", ComponentUtils.plainText(messages.prefix(null)));
+        assertFalse(Files.exists(directory.resolve("messages.yml")));
+        try (var backups = Files.list(directory.resolve("backups"))) {
+            var paths = backups.toList();
+            assertEquals(1, paths.size());
+            assertEquals(old, Files.readString(paths.getFirst()));
+        }
+        messages();
+        try (var backups = Files.list(directory.resolve("backups"))) {
+            assertEquals(1, backups.count());
+        }
+    }
+
+    @Test
+    void aFailedRelocationKeepsTheOriginalContents() throws Exception {
+        String old = "general:\n  prefix: '[Old]'\n";
+        Files.writeString(directory.resolve("messages.yml"), old);
+        Files.writeString(directory.resolve("lang"), "Blocked directory");
+        assertThrows(IllegalStateException.class, this::messages);
+        assertEquals(old, Files.readString(directory.resolve("messages.yml")));
     }
 
     private static boolean hasClick(Component component) {

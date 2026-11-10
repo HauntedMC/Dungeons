@@ -122,7 +122,7 @@ public class GuiWindow implements Listener {
     /** Opens this window for a player, creating a player snapshot when needed. */
     public final void open(Player player) {
         if (!this.accessCheck.test(player)) {
-            LangUtils.sendRaw(player, "[Dungeons] Access to this interface is no longer available.");
+            LangUtils.sendRaw(player, "Access to this interface is no longer available.");
             return;
         }
         GuiInventory gui;

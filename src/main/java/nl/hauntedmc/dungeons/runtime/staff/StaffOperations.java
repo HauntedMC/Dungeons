@@ -556,8 +556,7 @@ public final class StaffOperations implements AutoCloseable {
                 op.reason,
                 op.shortId() + " " + op.state + " " + op.detail);
         LangUtils.sendRaw(pendingWork.actor,
-                "[Dungeons] "
-                        + op.shortId()
+                op.shortId()
                         + " "
                         + op.state
                         + ": "

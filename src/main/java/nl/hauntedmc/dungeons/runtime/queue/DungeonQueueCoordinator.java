@@ -75,7 +75,7 @@ public final class DungeonQueueCoordinator {
                             .staffOperations()
                             .entryBlock(player.getUniqueId(), dungeonName);
             if (blocked != null) {
-                LangUtils.sendRaw(player, "[Dungeons] " + blocked);
+                LangUtils.sendRaw(player, blocked);
                 return;
             }
         }
@@ -112,7 +112,7 @@ public final class DungeonQueueCoordinator {
                                 .staffOperations()
                                 .entryBlock(playerId, queue.getDungeon().getWorldName());
                 if (blocked != null) {
-                    LangUtils.sendRaw(player, "[Dungeons] " + blocked);
+                    LangUtils.sendRaw(player, blocked);
                     return false;
                 }
             }

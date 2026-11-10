@@ -12,12 +12,18 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongSupplier;
 
 /** Bounded, identity-bound language snapshots. No SQL or future waits occur on message delivery. */
 public final class RegistryProfiles implements AutoCloseable {
+    private static final int MAX_PROFILES = 4096;
+    private static final long QUERY_TIMEOUT_SECONDS = 5;
+    private static final long RETRY_NANOS = TimeUnit.SECONDS.toNanos(5);
+    private static final long PROFILE_NANOS = TimeUnit.SECONDS.toNanos(30);
+
     private record Profile(long playerId, Language language, long expires) {}
 
     private final PlayerData players;
@@ -38,82 +44,67 @@ public final class RegistryProfiles implements AutoCloseable {
 
     public synchronized void refresh(UUID id) {
         if (closed
-                || pending.size() >= 4096
-                || profiles.size() >= 4096 && !profiles.containsKey(id)
-                || retryAfter.size() >= 4096 && !retryAfter.containsKey(id)) return;
+                || pending.size() >= MAX_PROFILES
+                || profiles.size() >= MAX_PROFILES && !profiles.containsKey(id)
+                || retryAfter.size() >= MAX_PROFILES && !retryAfter.containsKey(id)) return;
         Long retry = retryAfter.get(id);
         if (retry != null && clock.getAsLong() - retry < 0) return;
         Object token = new Object();
         if (pending.putIfAbsent(id, token) != null) return;
         try {
-            players.whenReady(id)
-                    .thenCompose(
-                            identity -> {
-                                if (identity.isEmpty())
-                                    return CompletableFuture.<Profile>completedFuture(
-                                            new Profile(
-                                                    0,
-                                                    null,
-                                                    clock.getAsLong()
-                                                            + TimeUnit.SECONDS.toNanos(5)));
-                                PlayerIdentity current = identity.get();
-                                if (!id.equals(current.uuid()))
-                                    throw new IllegalStateException("Identity mismatch");
-                                if (!players.supports(DataRegistryFeature.LANGUAGE))
-                                    return CompletableFuture.completedFuture(
-                                            new Profile(
-                                                    current.playerId(),
-                                                    null,
-                                                    clock.getAsLong()
-                                                            + TimeUnit.SECONDS.toNanos(30)));
-                                return players.findLanguageForIdentity(current.playerId(), id)
-                                        .thenApply(
-                                                language ->
-                                                        new Profile(
-                                                                current.playerId(),
-                                                                language.filter(
-                                                                                value ->
-                                                                                        value
-                                                                                                        .playerId()
-                                                                                                == current
-                                                                                                        .playerId())
-                                                                        .map(
-                                                                                value ->
-                                                                                        Language
-                                                                                                .fromCode(
-                                                                                                        value
-                                                                                                                .effectiveLanguage())
-                                                                                                .filter(
-                                                                                                        Language
-                                                                                                                ::isLocalizable)
-                                                                                                .orElse(
-                                                                                                        null))
-                                                                        .orElse(null),
-                                                                clock.getAsLong()
-                                                                        + TimeUnit.SECONDS.toNanos(
-                                                                                30)));
-                            })
+            resolveProfile(id)
                     .toCompletableFuture()
-                    .orTimeout(5, TimeUnit.SECONDS)
-                    .whenComplete(
-                            (profile, failure) -> {
-                                synchronized (this) {
-                                    if (pending.remove(id, token) && !closed) {
-                                        if (failure == null && profile != null) {
-                                            profiles.put(id, profile);
-                                            retryAfter.remove(id);
-                                        } else
-                                            retryAfter.put(
-                                                    id,
-                                                    clock.getAsLong()
-                                                            + TimeUnit.SECONDS.toNanos(5));
-                                    }
-                                }
-                            });
+                    .orTimeout(QUERY_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    .whenComplete((profile, failure) -> finishRefresh(id, token, profile, failure));
         } catch (RuntimeException failure) {
-            if (pending.remove(id, token))
-                retryAfter.put(id, clock.getAsLong() + TimeUnit.SECONDS.toNanos(5));
+            finishRefresh(id, token, null, failure);
         }
+    }
+
+    private CompletionStage<Profile> resolveProfile(UUID id) {
+        return players.whenReady(id)
+                .thenCompose(
+                        identity ->
+                                identity.isEmpty()
+                                        ? CompletableFuture.completedFuture(
+                                                new Profile(
+                                                        0, null, clock.getAsLong() + RETRY_NANOS))
+                                        : resolveLanguage(id, identity.get()));
+    }
+
+    private CompletionStage<Profile> resolveLanguage(UUID id, PlayerIdentity identity) {
+        if (!id.equals(identity.uuid())) throw new IllegalStateException("Identity mismatch");
+        if (!players.supports(DataRegistryFeature.LANGUAGE)) {
+            return CompletableFuture.completedFuture(
+                    new Profile(identity.playerId(), null, clock.getAsLong() + PROFILE_NANOS));
+        }
+        return players.findLanguageForIdentity(identity.playerId(), id)
+                .thenApply(
+                        settings -> {
+                            Language language =
+                                    settings.filter(
+                                                    value ->
+                                                            value.playerId() == identity.playerId())
+                                            .flatMap(
+                                                    value ->
+                                                            Language.fromCode(
+                                                                    value.effectiveLanguage()))
+                                            .filter(Language::isLocalizable)
+                                            .orElse(null);
+                            return new Profile(
+                                    identity.playerId(),
+                                    language,
+                                    clock.getAsLong() + PROFILE_NANOS);
+                        });
+    }
+
+    private synchronized void finishRefresh(
+            UUID id, Object token, Profile profile, Throwable failure) {
+        if (!pending.remove(id, token) || closed) return;
+        if (failure == null && profile != null) {
+            profiles.put(id, profile);
+            retryAfter.remove(id);
+        } else retryAfter.put(id, clock.getAsLong() + RETRY_NANOS);
     }
 
     public Language language(Player player) {

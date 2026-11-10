@@ -97,7 +97,7 @@ public final class DungeonPrivacy implements AutoCloseable {
                                                     || settings.get(id) == null)
                                                 throw new IllegalStateException(
                                                         "DataRegistry returned incomplete privacy"
-                                                            + " settings");
+                                                                + " settings");
                                             if (settings.get(id) == PlayerDataVisibility.PUBLIC)
                                                 visible.add(id);
                                         }

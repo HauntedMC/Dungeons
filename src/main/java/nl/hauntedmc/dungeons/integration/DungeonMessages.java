@@ -13,21 +13,12 @@ import nl.hauntedmc.featureframework.toolkit.log.FrameworkLogger;
 import nl.hauntedmc.theme.HauntedMcColor;
 import nl.hauntedmc.theme.featureframework.HauntedMcTheme;
 
-import org.bukkit.configuration.InvalidConfigurationException;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
@@ -38,13 +29,12 @@ import java.util.regex.Pattern;
 public final class DungeonMessages extends ComponentLocalization {
     private static final Pattern PLACEHOLDER = Pattern.compile("\\{([a-zA-Z0-9_.-]+)}");
     private final Map<String, Component> staticMessages =
-            Collections.synchronizedMap(
-                    new LinkedHashMap<>(128, 0.75f, true) {
-                        @Override
-                        protected boolean removeEldestEntry(Map.Entry<String, Component> entry) {
-                            return size() > 512;
-                        }
-                    });
+            new LinkedHashMap<>(128, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<String, Component> entry) {
+                    return size() > 512;
+                }
+            };
     private final ConfigService files;
     private final Function<Audience, Language> languages;
 
@@ -53,7 +43,7 @@ public final class DungeonMessages extends ComponentLocalization {
             ClassLoader resources,
             FrameworkLogger logger,
             Function<Audience, Language> languages) {
-        this(new ConfigService(directory, logger, resources), resources, logger, languages);
+        this(MessageResources.open(directory, resources, logger), resources, logger, languages);
     }
 
     private DungeonMessages(
@@ -73,65 +63,51 @@ public final class DungeonMessages extends ComponentLocalization {
         this.languages = languages;
     }
 
-    public static void importLegacy(Path directory) {
-        Path legacy = directory.resolve("messages.yml");
-        Path destination = directory.resolve("lang/messages.yml");
-        if (!Files.isRegularFile(legacy) || Files.exists(destination)) return;
-        try {
-            Files.createDirectories(destination.getParent());
-            var existing = new YamlConfiguration();
-            existing.load(legacy.toFile());
-            try (var oldInput =
-                            DungeonMessages.class
-                                    .getClassLoader()
-                                    .getResourceAsStream("messages.yml");
-                    var newInput =
-                            DungeonMessages.class
-                                    .getClassLoader()
-                                    .getResourceAsStream("lang/messages.yml")) {
-                if (oldInput != null && newInput != null) {
-                    var oldDefaults =
-                            YamlConfiguration.loadConfiguration(
-                                    new InputStreamReader(oldInput, StandardCharsets.UTF_8));
-                    var newDefaults =
-                            YamlConfiguration.loadConfiguration(
-                                    new InputStreamReader(newInput, StandardCharsets.UTF_8));
-                    for (String key : oldDefaults.getKeys(true)) {
-                        if (!oldDefaults.isConfigurationSection(key)
-                                && Objects.equals(existing.get(key), oldDefaults.get(key)))
-                            existing.set(key, newDefaults.get(key));
-                    }
-                }
-            }
-            Path temporary = Files.createTempFile(destination.getParent(), "messages-", ".tmp");
-            try {
-                Files.writeString(temporary, existing.saveToString(), StandardCharsets.UTF_8);
-                Files.move(temporary, destination, StandardCopyOption.ATOMIC_MOVE);
-            } finally {
-                Files.deleteIfExists(temporary);
-            }
-        } catch (IOException | InvalidConfigurationException failure) {
-            throw new IllegalStateException("Cannot import customized dungeon messages", failure);
+    @Override
+    public synchronized void reloadLocalization() {
+        refreshFiles();
+        super.reloadLocalization();
+        staticMessages.clear();
+    }
+
+    @Override
+    public synchronized void reloadLocalizationQuietly() {
+        refreshFiles();
+        super.reloadLocalizationQuietly();
+        staticMessages.clear();
+    }
+
+    private void refreshFiles() {
+        // Read operator edits before the framework merges defaults into its cached documents.
+        // Otherwise a missing bundled key can cause a stale snapshot to overwrite those edits.
+        files.reloadIfCached(MessageResources.DEFAULT_MESSAGES);
+        for (Language language : Language.localizableValues()) {
+            files.reloadIfCached(MessageResources.translation(language));
         }
     }
 
     public String template(String key, Audience audience) {
-        return store().message(key, audience == null ? null : languages.apply(audience));
+        return store().message(key, languageFor(audience));
     }
 
     public boolean contains(String key) {
-        return files.view("lang/messages.yml", true).get(key, Object.class) != null;
+        return files.view(MessageResources.DEFAULT_MESSAGES, true).contains(key);
     }
 
     public List<String> lines(String key, Audience audience) {
-        Language language = audience == null ? null : languages.apply(audience);
+        Language language = languageFor(audience);
         if (language != null) {
-            List<?> translated =
-                    files.view("lang/" + language.getFileName(), true).get(key, List.class);
-            if (translated != null) return translated.stream().map(String::valueOf).toList();
+            var translated =
+                    files.view(MessageResources.translation(language), true)
+                            .getList(key, String.class);
+            if (translated != null) return List.copyOf(translated);
         }
-        List<?> lines = files.view("lang/messages.yml", true).get(key, List.class);
-        return lines == null ? List.of() : lines.stream().map(String::valueOf).toList();
+        var lines = files.view(MessageResources.DEFAULT_MESSAGES, true).getList(key, String.class);
+        return lines == null ? List.of() : List.copyOf(lines);
+    }
+
+    private Language languageFor(Audience audience) {
+        return audience instanceof Player ? languages.apply(audience) : null;
     }
 
     public Component message(String key, Audience audience, boolean prefix, Map<String, ?> values) {
@@ -143,7 +119,7 @@ public final class DungeonMessages extends ComponentLocalization {
         return render(template("general.prefix", audience), Map.of()).append(Component.space());
     }
 
-    public Component render(String template, Map<String, ?> values) {
+    public synchronized Component render(String template, Map<String, ?> values) {
         if (template == null || template.isEmpty()) return Component.empty();
         if (values == null) values = Map.of();
         // One-character sentinels survive gradients/rainbows, which split text into individual

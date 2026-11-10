@@ -83,10 +83,12 @@ matching ServerFeatures and ProxyFeatures. These are libraries, so no additional
 needed. The shared classes retain their public package identities; DataProvider/DataRegistry APIs
 and Adventure stay provided by the server.
 
-Messages now live in `lang/messages.yml`. On the first boot, an existing root `messages.yml` is
-imported without deleting it: unchanged stock values adopt the HauntedMC palette, customized
-values survive. Subsequent edits belong in `lang/messages.yml`. Missing bundled keys are merged;
-custom keys and translations are retained. Restart or `/dungeon server reload` reloads messages.
+`lang/messages.yml` is the single default message resource. Existing installations move the old
+root `messages.yml` there once, preserving their text and formatting. If both files already exist,
+the canonical `lang/messages.yml` stays authoritative and the old file moves to
+`backups/messages-legacy-<id>.yml`. Fresh installs never create a root message file. Missing bundled
+keys are merged; custom keys and translations are retained. Restart or use
+`/dungeon server reload config <reason>` to reload messages.
 
 Templates accept legacy formatting, MiniMessage and `<HauntedMC:Brand>`, `<HauntedMC:Success>`,
 `<HauntedMC:Warning>`, `<HauntedMC:Error>` and the other shared theme items. Placeholder strings are
@@ -100,6 +102,14 @@ per connected player and refreshed after 30 seconds. Reconnect and shutdown disc
 results. Overrides in `lang/messages_EN.yml` and `lang/messages_NL.yml` use the player's resolved
 network preference, falling back to client locale and then the bundled Dutch defaults when a key
 has no translation. Message delivery never waits for a language query or performs SQL.
+
+The bundled [`lang/messages_EN.yml`](src/main/resources/lang/messages_EN.yml) is an active example:
+it is copied to `plugins/Dungeons/lang/messages_EN.yml` automatically. It contains English scalar
+messages, placeholders, theme tags and a complete translated team-help list. It deliberately
+overrides only some keys; the remaining messages fall back to `lang/messages.yml`. Edit that file
+for EN players, or `lang/messages_NL.yml` for NL-specific overrides. Supported language codes are
+EN and NL; DataRegistry owns the player's effective language choice. The default file is also
+used for console output and shared inventory templates without a player language context.
 
 DataProvider connections belong to the `dungeons.gameplay` scope, which closes only Dungeons'
 resources after admitted writes drain and ORM closes. Online identity lookups use DataRegistry's

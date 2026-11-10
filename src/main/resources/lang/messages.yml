@@ -1,3 +1,6 @@
+# Default messages and Dutch fallback for every untranslated key.
+# Language-specific overrides belong in messages_EN.yml or messages_NL.yml beside this file.
+# Scalar messages and complete lists can be overridden independently.
 general:
   labels:
     none: geen

@@ -101,7 +101,7 @@ final class GameplayCommandHandler implements CommandHandler {
         DungeonPlayerSession playerSession = this.playerManager.get(player);
         if (playerSession != null && playerSession.isObserving()) {
             playerSession.stopObservation();
-            LangUtils.sendRaw(player, "[Dungeons] Observation ended");
+            LangUtils.sendRaw(player, "Observation ended");
             return true;
         }
         if (playerSession.getInstance() == null) {

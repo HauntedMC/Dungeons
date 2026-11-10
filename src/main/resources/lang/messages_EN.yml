@@ -1,0 +1,60 @@
+# Active example translation for FeatureFramework's EN language.
+# Dungeons copies this file to plugins/Dungeons/lang/messages_EN.yml on first boot.
+# DataRegistry's effective language takes precedence over the Minecraft client locale.
+# This is a partial override: omitted keys use lang/messages.yml (Dutch by default).
+# Keep {placeholders} unchanged. HauntedMC theme tags work in every language.
+# Reload changes with /dungeon server reload config <reason>.
+
+general:
+  labels:
+    none: none
+    'yes': 'yes'
+    'no': 'no'
+    default-difficulty: default
+  errors:
+    no-permission: '<HauntedMC:Error>You do not have permission to do that.'
+    players-only: '<HauntedMC:Error>Only players can do that.'
+
+commands:
+  list:
+    usage: '<HauntedMC:Success>/dungeon list <HauntedMC:Accent>[filter] [page] <HauntedMC:Text>| <HauntedMC:Warning>Show available dungeons.'
+    header: '<HauntedMC:Brand>-= Available Dungeons =-'
+    line: ' <HauntedMC:Social>{dungeon} <HauntedMC:Muted>• <HauntedMC:Text>{display} <HauntedMC:Muted>• <HauntedMC:Text>team {team_size} <HauntedMC:Muted>• <HauntedMC:Text>difficulties {difficulties}'
+    no-match: '<HauntedMC:Error>No dungeons match that filter.'
+    footer: '<HauntedMC:Brand>-= Page {page} of {total_pages} =-'
+    default-difficulty: default
+  play:
+    usage: '<HauntedMC:Success>/dungeon play <HauntedMC:Warning><dungeon> [difficulty] <HauntedMC:Text>| <HauntedMC:Warning>Start a dungeon run.'
+    dungeon-not-found: '<HauntedMC:Error>Dungeon ''<HauntedMC:Warning>{dungeon}<HauntedMC:Error>'' does not exist.'
+    disabled: '<HauntedMC:Error>Dungeon ''<HauntedMC:Warning>{dungeon}<HauntedMC:Error>'' is currently unavailable.'
+    already-in-queue: '<HauntedMC:Error>That player is already queued for a dungeon.'
+    already-in-dungeon: '<HauntedMC:Error>That player is already in a dungeon.'
+    already-in-dungeon-self: '<HauntedMC:Error>You are already in a dungeon.'
+    instances-full: '<HauntedMC:Error>No dungeon instance is currently available.'
+    how-to-cancel: '<HauntedMC:Muted>Use <HauntedMC:Social>/dungeon leave <HauntedMC:Muted>to leave the queue.'
+    on-cooldown: '<HauntedMC:Error>You still have an access cooldown for <HauntedMC:Warning>{dungeon}<HauntedMC:Error>.'
+    missing-key: '<HauntedMC:Error>You do not have the required key for <HauntedMC:Warning>{dungeon}<HauntedMC:Error>.'
+  leave:
+    left-dungeon: '<HauntedMC:Success>You left dungeon <HauntedMC:Warning>{dungeon}<HauntedMC:Success>.'
+    left-queue: '<HauntedMC:Success>You left the dungeon queue.'
+    not-in-dungeon: '<HauntedMC:Error>You are not in a dungeon or queue.'
+  lives:
+    not-in-dungeon: '<HauntedMC:Error>You are not in a dungeon.'
+    infinite-lives: '<HauntedMC:Success>You have unlimited lives in this dungeon.'
+    lives-remaining: '<HauntedMC:Success>You have <HauntedMC:Warning>{lives}<HauntedMC:Success> lives remaining.'
+  rewards:
+    usage: '<HauntedMC:Success>/dungeon rewards <HauntedMC:Text>| <HauntedMC:Warning>Claim your pending dungeon rewards.'
+    empty: '<HauntedMC:Muted>You have no pending dungeon rewards.'
+  team:
+    help:
+      # Lists replace the entire default list, so keep all supported team commands.
+      lines:
+      - '<HauntedMC:Success>/dungeon team create <HauntedMC:Text>| <HauntedMC:Warning>Create a temporary dungeon team.'
+      - '<HauntedMC:Success>/dungeon team invite <HauntedMC:Warning><player> <HauntedMC:Text>| <HauntedMC:Warning>Invite a player to your team.'
+      - '<HauntedMC:Success>/dungeon team kick <HauntedMC:Warning><player> <HauntedMC:Text>| <HauntedMC:Warning>Remove a member before the team queues or starts.'
+      - '<HauntedMC:Success>/dungeon team cancel-invite <HauntedMC:Warning><player> <HauntedMC:Text>| <HauntedMC:Warning>Cancel an open invitation.'
+      - '<HauntedMC:Success>/dungeon team accept <HauntedMC:Text>| <HauntedMC:Warning>Accept your invitation.'
+      - '<HauntedMC:Success>/dungeon team decline <HauntedMC:Text>| <HauntedMC:Warning>Decline your invitation.'
+      - '<HauntedMC:Success>/dungeon team leave <HauntedMC:Text>| <HauntedMC:Warning>Leave your team.'
+      - '<HauntedMC:Success>/dungeon team disband <HauntedMC:Text>| <HauntedMC:Warning>Disband your team as its leader.'
+      - '<HauntedMC:Success>/dungeon team info <HauntedMC:Text>| <HauntedMC:Warning>Show your current team.'

@@ -21,13 +21,14 @@ import java.util.Map;
 
 /** HauntedMC localization boundary; legacy string accessors remain for Bukkit model/UI codecs. */
 public final class LangUtils {
+    private static final Component DEFAULT_PREFIX =
+            Component.text("[Dungeons] ", HauntedMcColor.BRAND.textColor());
     private static volatile DungeonMessages messages;
 
     private LangUtils() {}
 
     public static void initialize() {
         var plugin = RuntimeContext.plugin();
-        DungeonMessages.importLegacy(plugin.getDataFolder().toPath());
         messages =
                 new DungeonMessages(
                         plugin.getDataFolder().toPath(),
@@ -58,10 +59,6 @@ public final class LangUtils {
 
     public static void clear() {
         messages = null;
-    }
-
-    public static boolean contains(String key) {
-        return messages != null && messages.contains(key);
     }
 
     public static LangPlaceholder placeholder(String name, Object value) {
@@ -100,32 +97,27 @@ public final class LangUtils {
     }
 
     public static Component notice(String text) {
-        var current = messages;
-        Component body =
-                Component.text(
-                        text == null ? "" : text.replaceFirst("^\\[Dungeons]\\s*", ""),
-                        HauntedMcColor.TEXT.textColor());
-        return current == null
-                ? Component.text("[Dungeons] ", HauntedMcColor.BRAND.textColor()).append(body)
-                : current.prefix(null).append(body);
+        return notice(Component.text(text == null ? "" : text));
     }
 
     public static Component notice(Component text) {
+        return notice(text, null);
+    }
+
+    private static Component notice(Component text, Audience audience) {
         Component body =
                 (text == null ? Component.empty() : text)
                         .colorIfAbsent(HauntedMcColor.TEXT.textColor());
         var current = messages;
-        return current == null
-                ? Component.text("[Dungeons] ", HauntedMcColor.BRAND.textColor()).append(body)
-                : current.prefix(null).append(body);
+        return (current == null ? DEFAULT_PREFIX : current.prefix(audience)).append(body);
     }
 
     public static void sendRaw(CommandSender target, Component text) {
-        target.sendMessage(notice(text));
+        target.sendMessage(notice(text, target));
     }
 
     public static void sendRaw(CommandSender target, String text) {
-        target.sendMessage(notice(text));
+        target.sendMessage(notice(Component.text(text == null ? "" : text), target));
     }
 
     public static void sendMessage(CommandSender target, String key) {
@@ -137,28 +129,9 @@ public final class LangUtils {
         if (!message.equals(Component.empty())) target.sendMessage(message);
     }
 
-    public static String getMessage(String key) {
-        return getMessage(key, true);
-    }
-
+    /** Legacy string boundary for inventory title APIs; delivery uses components directly. */
     public static String getMessage(String key, boolean prefix) {
-        return getMessage(key, prefix, Map.of());
-    }
-
-    public static String getMessage(String key, LangPlaceholder... values) {
-        return getMessage(key, true, values);
-    }
-
-    public static String getMessage(String key, boolean prefix, LangPlaceholder... values) {
-        return getMessage(key, prefix, values(values));
-    }
-
-    public static String getMessage(String key, Map<String, ?> values) {
-        return getMessage(key, true, values);
-    }
-
-    public static String getMessage(String key, boolean prefix, Map<String, ?> values) {
-        return ComponentUtils.serialize(component(key, null, prefix, values));
+        return ComponentUtils.serialize(component(key, null, prefix));
     }
 
     public static void sendActionBar(Player target, String key) {
@@ -175,26 +148,17 @@ public final class LangUtils {
 
     public static void sendMessageList(
             CommandSender target, String key, LangPlaceholder... values) {
+        for (Component line : components(key, target, values)) target.sendMessage(line);
+    }
+
+    public static List<Component> components(
+            String key, Audience audience, LangPlaceholder... values) {
         var current = messages;
-        if (current != null)
-            for (String line : current.lines(key, target))
-                target.sendMessage(current.render(line, values(values)));
-    }
-
-    public static List<String> getMessageList(String key) {
-        return getMessageList(key, Map.of());
-    }
-
-    public static List<String> getMessageList(String key, LangPlaceholder... values) {
-        return getMessageList(key, values(values));
-    }
-
-    public static List<String> getMessageList(String key, Map<String, ?> values) {
-        var current = messages;
+        var replacements = values(values);
         return current == null
                 ? List.of()
-                : current.lines(key, null).stream()
-                        .map(line -> ComponentUtils.serialize(current.render(line, values)))
+                : current.lines(key, audience).stream()
+                        .map(line -> current.render(line, replacements))
                         .toList();
     }
 }

@@ -172,8 +172,6 @@ final class CoreBootstrap {
     private void initializePluginState() {
         DungeonsPlugin plugin = this.runtime.environment().plugin();
         plugin.saveDefaultConfig();
-        this.syncPluginConfigWithDefaults(plugin);
-        this.runtime.setConfig(plugin.getConfig());
         this.runtime.setDefaultDungeonConfig(new YamlConfiguration());
         this.runtime.setLogPrefix("[Dungeons] ");
     }

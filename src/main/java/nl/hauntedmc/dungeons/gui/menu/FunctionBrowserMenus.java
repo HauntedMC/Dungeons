@@ -158,7 +158,7 @@ final class FunctionBrowserMenus {
                                                         "scripts",
                                                         instance.getDungeon().getWorldName());
                                     } catch (IllegalArgumentException denied) {
-                                        LangUtils.sendRaw(player, "[Dungeons] " + denied.getMessage());
+                                        LangUtils.sendRaw(player, denied.getMessage());
                                         return;
                                     }
                                 }

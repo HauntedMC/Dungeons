@@ -125,14 +125,13 @@ public final class DungeonCommand implements TabExecutor {
                 throw new IllegalArgumentException("Dungeons database is unavailable");
             return this.handleCommand(sender, args);
         } catch (IllegalArgumentException rejected) {
-            LangUtils.sendRaw(sender,
-                    Component.text("[Dungeons] " + rejected.getMessage()));
+            LangUtils.sendRaw(sender, rejected.getMessage());
             return true;
         } catch (RuntimeException failure) {
             this.plugin
                     .getSLF4JLogger()
                     .error("Dungeon command failed for {}", sender.getName(), failure);
-            LangUtils.sendRaw(sender, "[Dungeons] Change failed; check the server log before retrying.");
+            LangUtils.sendRaw(sender, "Change failed; check the server log before retrying.");
             return true;
         }
     }
@@ -202,7 +201,7 @@ public final class DungeonCommand implements TabExecutor {
         if (CommandRoutes.ALL.stream().anyMatch(route -> route.syntax().startsWith(args[0].toLowerCase(Locale.ROOT) + " "))) {
             this.canonicalHelp(sender, args);
         } else {
-            LangUtils.sendRaw(sender, "[Dungeons] Unknown command. Use /dungeon help.");
+            LangUtils.sendRaw(sender, "Unknown command. Use /dungeon help.");
         }
         return true;
     }
@@ -232,7 +231,7 @@ public final class DungeonCommand implements TabExecutor {
 
     private void canonicalHelp(CommandSender sender, String[] path) {
         String prefix = String.join(" ", path).toLowerCase(Locale.ROOT);
-        LangUtils.sendRaw(sender, "[Dungeons] " + (prefix.isBlank() ? "Commands" : prefix));
+        LangUtils.sendRaw(sender, prefix.isBlank() ? "Commands" : prefix);
         var lines = new LinkedHashSet<String>();
         for (var route : CommandRoutes.ALL) {
             String[] pattern = route.syntax().split(" ");

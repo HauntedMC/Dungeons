@@ -106,6 +106,7 @@ public final class AcceptancePlugin extends JavaPlugin {
                                         () -> NativeRestart.verify(this)))
                         : List.of(
                                 new Scenario("packaged-bootstrap", this::bootstrap),
+                                new Scenario("native-localization-resources", () -> NativeLocalization.run(this)),
                                 new Scenario("native-privacy-disclosure", () -> NativePrivacy.run(this)),
                                 new Scenario(
                                         "native-staff-operations", () -> NativeStaff.run(this)),

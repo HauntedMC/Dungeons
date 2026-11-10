@@ -37,7 +37,7 @@ final class LootCommandHandler implements CommandHandler {
             StaffPermissions.require(sender, "loot", null);
             var table = this.lootTableManager.get(args[2]);
             if (table == null) throw new IllegalArgumentException("Loot table not found");
-            LangUtils.sendRaw(sender, "[Dungeons] " + table.getNamespace() + ": " + table.getMinItems() + "–" + table.getMaxItems() + " items");
+            LangUtils.sendRaw(sender, table.getNamespace() + ": " + table.getMinItems() + "–" + table.getMaxItems() + " items");
             return true;
         }
         if (!(sender instanceof Player player)) {
