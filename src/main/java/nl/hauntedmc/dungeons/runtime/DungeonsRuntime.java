@@ -30,6 +30,11 @@ import java.util.Objects;
  * runtime graph remains in the composition root.
  */
 public final class DungeonsRuntime {
+    private nl.hauntedmc.dungeons.persistence.DatabaseLifecycle database;
+
+    public nl.hauntedmc.dungeons.persistence.DatabaseLifecycle database() { return database; }
+    public void setDatabase(nl.hauntedmc.dungeons.persistence.DatabaseLifecycle database) { this.database = database; }
+
     private nl.hauntedmc.dungeons.runtime.staff.StaffOperations staffOperations;
 
     public nl.hauntedmc.dungeons.runtime.staff.StaffOperations staffOperations() {

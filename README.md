@@ -15,7 +15,59 @@ Dungeons is a Paper plugin for creating, editing, and running configurable dunge
 4. Create or edit dungeon content with `/dungeon` editor commands.
 5. Start a run with `/dungeon play <dungeon> [difficulty]`.
 
-The mandatory database integration is still in progress; gameplay persistence currently remains file-based.
+Database integration is still in progress; gameplay persistence currently remains file-based.
+
+## Database configuration
+
+The optional database foundation uses the public DataProvider ORM API. No SQL scripts need to be
+installed or executed. Missing consumer settings are added to existing `config.yml` files;
+custom connection names are preserved.
+
+Dungeons `config.yml`:
+
+```yaml
+database:
+  enabled: false
+  connection-id: player_data_rw
+  shutdown-timeout-seconds: 10
+runtime:
+  server-id: ''
+```
+
+DataProvider `config.yml` (authoritative ORM policy for consumers):
+
+```yaml
+orm:
+  schema_mode: update
+```
+
+DataProvider 3.5.2 ignores the legacy schema-mode argument on consumer factory calls. Dungeons uses
+`createConfiguredOrmContext` and deliberately has no local mode override. Remove any experimental
+`database.orm.schema-mode` or `database.schema-mode` setting from Dungeons; startup rejects these
+instead of pretending they control the provider.
+
+To initialize the foundation, enable DataProvider and DataRegistry, set `database.enabled: true`,
+and select a named MySQL connection that points to the database containing DataRegistry's
+`player_entity`. Credentials, pool sizes, timeouts and ORM policy belong to DataProvider.
+`update` creates/updates the mapped schema, `validate` checks mapped types without DDL, and `none`
+skips ORM DDL. Use these modes for the shared database; **do not use destructive `create` mode**.
+The ORM mapping includes a minimal read-only canonical-player reference for foreign keys, so schema
+creation mode is inappropriate for this shared database. Update/validate preserve canonical player
+rows and the complete existing player table definition, covered by MySQL integration tests.
+
+Startup also checks required tables, column types/widths/nullability, InnoDB engines, primary keys,
+declared indexes, unique keys, and foreign-key delete/update rules without issuing DDL. Schema errors prevent readiness. A database
+initialization failure or lost lease disables the enabled consumer on the server thread, drains
+admitted work, closes ORM, and unregisters its provider. Shutdown waits at most the configured time;
+remaining cleanup continues on its worker. `/dungeon server status` reports cached database state
+without querying the database. One-connection pools are supported.
+
+Backend identity comes from DataRegistry, or `runtime.server-id` when it publishes none. If both
+are set they must match. Restart after changing database settings. Enabling this foundation
+initializes ORM and the server lease; it does not import or replace file-based gameplay data.
+Gameplay progression, rewards and staff operations still use files; end-to-end database gameplay
+persistence is not complete. Native Paper acceptance currently covers disabled-foundation startup;
+enabled database behavior is covered by public-API lifecycle tests and real MySQL/DataProvider ORM tests.
 
 ## Administration
 

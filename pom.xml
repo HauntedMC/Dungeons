@@ -124,6 +124,13 @@
             <artifactId>mockito-core</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Exercise the actual ORM implementation at the public factory boundary in tests only. -->
+        <dependency>
+            <groupId>nl.hauntedmc.dataprovider</groupId>
+            <artifactId>dataprovider-core</artifactId>
+            <version>3.5.2</version>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>

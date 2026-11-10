@@ -26,7 +26,8 @@ public final class DungeonDatabase implements AutoCloseable {
     private final String serverId;
     private final UUID bootId = UUID.randomUUID();
     private final ServerLease lease;
-    private final boolean migrate;
+    private final nl.hauntedmc.dataprovider.logging.LoggerAdapter ormLogger;
+    private volatile nl.hauntedmc.dataprovider.api.orm.ORMContext orm;
     private final ThreadPoolExecutor initializer;
     private volatile State state = State.STARTING;
     private volatile String problem = "Initializing database";
@@ -40,6 +41,7 @@ public final class DungeonDatabase implements AutoCloseable {
     private volatile boolean leaseAcquired;
 
     public DungeonDatabase(DungeonsPlugin plugin) {
+        var settings = DatabaseSettings.read(plugin.getConfig());
         var registration = plugin.getServer().getServicesManager().getRegistration(DataProviderAPI.class);
         if (registration == null) throw new IllegalStateException("DataProvider API is unavailable");
         this.api = registration.getProvider().forPlugin(plugin);
@@ -58,12 +60,13 @@ public final class DungeonDatabase implements AutoCloseable {
             throw new IllegalArgumentException("Set a stable runtime.server-id or DataRegistry backend service-name");
         }
         this.lease = new ServerLease(serverId, bootId);
-        this.connectionId = plugin.getConfig().getString("database.connection-id", "player_data_rw");
-        String schemaMode = plugin.getConfig().getString("database.schema-mode", "migrate");
-        if (!List.of("migrate", "validate").contains(schemaMode)) {
-            throw new IllegalArgumentException("database.schema-mode must be migrate or validate");
-        }
-        this.migrate = schemaMode.equals("migrate");
+        this.connectionId = settings.connectionId();
+        this.ormLogger = (level, message, failure) -> plugin.getLogger().log(
+                switch (level) {
+                    case INFO -> java.util.logging.Level.INFO;
+                    case WARN -> java.util.logging.Level.WARNING;
+                    case ERROR -> java.util.logging.Level.SEVERE;
+                }, message, failure);
         this.initializer = new ThreadPoolExecutor(1, 1, 0, TimeUnit.SECONDS,
                 new ArrayBlockingQueue<>(8), task -> {
                     var thread = new Thread(task, "Dungeons-database-lifecycle");
@@ -78,10 +81,9 @@ public final class DungeonDatabase implements AutoCloseable {
         startup = CompletableFuture.runAsync(() -> {
             try {
                 this.provider = api.registerDatabaseOrThrow(DatabaseType.MYSQL, connectionId, RelationalDatabaseProvider.class);
-                try (var connection = provider.getDataSource().getConnection()) {
-                    connection.setAutoCommit(true);
-                    DungeonSchema.initialize(connection, migrate);
-                }
+                if (state == State.CLOSED) return;
+                this.orm = DungeonSchema.open(api, provider.getDataSource(), ormLogger);
+                if (state == State.CLOSED) return;
                 // Lease acquisition is on the lifecycle worker, never the server thread.
                 long requestedAt = System.nanoTime();
                 provider.getDataAccess().executeTransactionally(connection -> {
@@ -96,7 +98,7 @@ public final class DungeonDatabase implements AutoCloseable {
                     state = State.READY;
                     problem = "";
                 }
-            } catch (RuntimeException | java.sql.SQLException | java.io.IOException failure) {
+            } catch (Throwable failure) {
                 fail(failure);
                 throw new java.util.concurrent.CompletionException(failure);
             }
@@ -138,14 +140,13 @@ public final class DungeonDatabase implements AutoCloseable {
 
     private <T> CompletableFuture<T> track(CompletableFuture<T> operation) {
         pending.add(operation);
-        operation.whenComplete((ignored, failure) -> {
+        return operation.whenComplete((ignored, failure) -> {
             pending.remove(operation);
             var seen = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<Throwable, Boolean>());
             for (Throwable cause = failure; cause != null && seen.add(cause); cause = cause.getCause()) {
                 if (cause instanceof ServerLease.Lost) { fail(failure); break; }
             }
-        });
-        return operation.copy();
+        }).copy();
     }
 
     public synchronized CompletableFuture<Void> heartbeat() {
@@ -173,7 +174,12 @@ public final class DungeonDatabase implements AutoCloseable {
         synchronized (this) {
             if (state == State.CLOSED || state == State.UNAVAILABLE) return;
             state = State.UNAVAILABLE;
-            problem = failure.getMessage() == null ? failure.getClass().getSimpleName() : failure.getMessage();
+            Throwable detail = failure;
+            while ((detail instanceof java.util.concurrent.CompletionException
+                    || detail instanceof java.util.concurrent.ExecutionException) && detail.getCause() != null)
+                detail = detail.getCause();
+            problem = detail.getMessage() == null ? detail.getClass().getSimpleName() : detail.getMessage();
+            cleanupAsync();
         }
         try { failureHandler.accept(failure); }
         catch (RuntimeException observerFailure) {
@@ -187,22 +193,44 @@ public final class DungeonDatabase implements AutoCloseable {
     }
 
     public synchronized CompletableFuture<Void> closeAsync() {
-        if (closing != null) return closing.copy();
         state = State.CLOSED;
+        return cleanupAsync().copy();
+    }
+
+    private synchronized CompletableFuture<Void> cleanupAsync() {
+        if (closing != null) return closing;
         var admitted = CompletableFuture.allOf(pending.toArray(CompletableFuture[]::new));
         closing = CompletableFuture.runAsync(() -> {
-            // Drain admitted database work only. No worker waits for a Bukkit callback.
+            // Drain on the lifecycle worker. No database worker waits for a Bukkit callback.
             admitted.handle((ignored, failure) -> null).join();
+            Throwable failure = null;
             try {
                 if (leaseAcquired) provider.getDataAccess().executeTransactionally(connection -> {
                     lease.release(connection);
                     return null;
                 }).join();
-            } finally {
-                if (provider != null) api.unregisterDatabase(DatabaseType.MYSQL, connectionId);
+            } catch (Throwable releaseFailure) {
+                failure = releaseFailure;
             }
+            try {
+                if (orm != null) orm.close();
+            } catch (Throwable ormFailure) {
+                failure = append(failure, ormFailure);
+            }
+            try {
+                if (provider != null) api.unregisterDatabase(DatabaseType.MYSQL, connectionId);
+            } catch (Throwable unregisterFailure) {
+                failure = append(failure, unregisterFailure);
+            }
+            if (failure != null) throw new java.util.concurrent.CompletionException(failure);
         }, initializer);
         initializer.shutdown();
-        return closing.copy();
+        return closing;
+    }
+
+    private static Throwable append(Throwable primary, Throwable next) {
+        if (primary == null) return next;
+        if (primary != next) primary.addSuppressed(next);
+        return primary;
     }
 }

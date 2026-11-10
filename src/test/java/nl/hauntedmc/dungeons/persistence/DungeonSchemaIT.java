@@ -11,22 +11,21 @@ import org.testcontainers.mysql.MySQLContainer;
 
 class DungeonSchemaIT {
     @Test
-    void migratesResumesValidatesAndPreservesSharedHistoryWhenAPlayerIsDeleted() throws Exception {
+    void ormUpdatesValidatesAndPreservesSharedHistoryWhenAPlayerIsDeleted() throws Exception {
         try (var mysql = new MySQLContainer("mysql:8.4")) {
             mysql.start();
             try (Connection connection = DriverManager.getConnection(mysql.getJdbcUrl(), mysql.getUsername(), mysql.getPassword())) {
-                DungeonSql.update(connection, "CREATE TABLE player_entity(id BIGINT PRIMARY KEY,uuid CHAR(36) NOT NULL UNIQUE)");
-                DungeonSchema.initialize(connection, true);
-                DungeonSchema.initialize(connection, true);
-                DungeonSchema.initialize(connection, false);
-                assertEquals(2, DungeonSql.rows(connection, "SELECT * FROM dungeon_schema_history").size());
-                DungeonSql.update(connection, "UPDATE dungeon_schema_history SET completed=FALSE");
-                assertThrows(SQLException.class, () -> DungeonSchema.initialize(connection, false));
-                DungeonSchema.initialize(connection, true);
+                DungeonSql.update(connection, "CREATE TABLE player_entity(id BIGINT AUTO_INCREMENT PRIMARY KEY,uuid VARCHAR(36) NOT NULL UNIQUE,username VARCHAR(32) NOT NULL)");
+                var canonical = DungeonSql.rows(connection, "SHOW CREATE TABLE player_entity");
+                OrmTestSupport.initialize(mysql, "update");
+                assertEquals(canonical, DungeonSql.rows(connection, "SHOW CREATE TABLE player_entity"));
+                OrmTestSupport.initialize(mysql, "update");
+                OrmTestSupport.initialize(mysql, "validate");
+                assertTrue(DungeonSql.rows(connection, "SHOW TABLES LIKE 'dungeon_schema_history'").isEmpty());
                 var dungeon = UUID.randomUUID();
                 var run = UUID.randomUUID();
                 var boot = UUID.randomUUID();
-                DungeonSql.update(connection, "INSERT INTO player_entity VALUES(1,?),(2,?)", UUID.randomUUID(), UUID.randomUUID());
+                DungeonSql.update(connection, "INSERT INTO player_entity VALUES(1,?,'First'),(2,?,'Second')", UUID.randomUUID(), UUID.randomUUID());
                 DungeonSql.update(connection, "INSERT INTO dungeon_server(server_id,boot_id,epoch,lease_until) VALUES('test',?,1,UTC_TIMESTAMP(3))", boot);
                 DungeonSql.update(connection, "INSERT INTO dungeon_definition(dungeon_id) VALUES(?)", dungeon);
                 DungeonSql.update(connection, "INSERT INTO dungeon_run(run_id,server_id,boot_id,dungeon_id,world_name,dungeon_type,"
@@ -51,12 +50,48 @@ class DungeonSchemaIT {
                 second.check(connection);
                 second.release(connection);
                 verifyProviderLifecycle(mysql);
+                // A bounded one-connection pool must not deadlock ORM initialization.
+                var poolConfig = new com.zaxxer.hikari.HikariConfig();
+                poolConfig.setJdbcUrl(mysql.getJdbcUrl());
+                poolConfig.setUsername(mysql.getUsername());
+                poolConfig.setPassword(mysql.getPassword());
+                poolConfig.setMaximumPoolSize(1);
+                poolConfig.setConnectionTimeout(2000);
+                try (var pool = new com.zaxxer.hikari.HikariDataSource(poolConfig)) {
+                    // Exercise the real public facade, plugin binding and guarded DataSource,
+                    // rather than an adapter which might accidentally honor a consumer mode.
+                    var handler = org.mockito.Mockito.mock(nl.hauntedmc.dataprovider.core.DataProviderHandler.class);
+                    var identity = new nl.hauntedmc.dataprovider.core.identity.PluginIdentityRegistry()
+                            .register("dungeons", DungeonEntities.class.getClassLoader());
+                    org.mockito.Mockito.when(handler.issuePluginIdentity(org.mockito.ArgumentMatchers.any())).thenReturn(identity);
+                    org.mockito.Mockito.when(handler.getPluginId(identity)).thenReturn("dungeons");
+                    org.mockito.Mockito.when(handler.getConfiguredOrmSchemaMode(identity)).thenReturn("validate");
+                    var backend = org.mockito.Mockito.mock(nl.hauntedmc.dataprovider.database.relational.RelationalDatabaseProvider.class);
+                    org.mockito.Mockito.when(backend.getDataSource()).thenReturn(pool);
+                    org.mockito.Mockito.when(handler.registerDatabaseOrThrow(identity,
+                            nl.hauntedmc.dataprovider.database.DatabaseType.MYSQL, "canonical_rw")).thenReturn(backend);
+                    var api = new nl.hauntedmc.dataprovider.core.api.DefaultDataProviderApi(handler).forPlugin(new Object());
+                    var registered = api.registerDatabaseOrThrow(nl.hauntedmc.dataprovider.database.DatabaseType.MYSQL,
+                            "canonical_rw", nl.hauntedmc.dataprovider.database.relational.RelationalDatabaseProvider.class);
+                    try {
+                        try (var context = DungeonSchema.open(api, registered.getDataSource(), (level, message, error) -> {})) { }
+                        var beforeLegacyCall = DungeonSql.rows(connection, "SHOW CREATE TABLE player_entity");
+                        try (var context = api.createOrmContext(registered.getDataSource(),
+                                (level, message, error) -> {}, "create", DungeonEntities.types())) { }
+                        assertEquals(beforeLegacyCall, DungeonSql.rows(connection, "SHOW CREATE TABLE player_entity"));
+                        assertThrows(IllegalArgumentException.class,
+                                () -> DungeonSchema.open(api, pool, (level, message, error) -> {}));
+                    } finally {
+                        api.unregisterDatabase(nl.hauntedmc.dataprovider.database.DatabaseType.MYSQL, "canonical_rw");
+                    }
+                    org.mockito.Mockito.verify(handler).unregisterDatabase(identity,
+                            nl.hauntedmc.dataprovider.database.DatabaseType.MYSQL, "canonical_rw");
+                }
                 DungeonSql.update(connection, "ALTER TABLE dungeon_run DROP COLUMN exclusion_reason");
-                assertThrows(SQLException.class, () -> DungeonSchema.initialize(connection, false));
+                assertThrows(RuntimeException.class, () -> OrmTestSupport.initialize(mysql, "validate"));
                 DungeonSql.update(connection, "ALTER TABLE dungeon_run ADD exclusion_reason VARCHAR(256)");
-                DungeonSchema.initialize(connection, false);
-                DungeonSql.update(connection, "UPDATE dungeon_schema_history SET checksum=REPEAT('0',64)");
-                assertThrows(SQLException.class, () -> DungeonSchema.initialize(connection, true));
+                OrmTestSupport.initialize(mysql, "validate");
+
             }
         }
     }
@@ -87,6 +122,7 @@ class DungeonSchemaIT {
         org.mockito.Mockito.when(relational.getDataSource()).thenReturn(source);
         org.mockito.Mockito.when(relational.getDataAccess()).thenReturn(access);
         var api = org.mockito.Mockito.mock(nl.hauntedmc.dataprovider.api.DataProviderAPI.class);
+        OrmTestSupport.configure(api);
         var plugin = org.mockito.Mockito.mock(nl.hauntedmc.dungeons.plugin.DungeonsPlugin.class);
         org.mockito.Mockito.when(api.forPlugin(plugin)).thenReturn(api);
         org.mockito.Mockito.when(api.registerDatabaseOrThrow(nl.hauntedmc.dataprovider.database.DatabaseType.MYSQL,
