@@ -163,7 +163,7 @@ public final class AcceptancePlugin extends JavaPlugin {
                 runtime().dungeonCatalog().get("current-config") != null,
                 "Fresh dungeon is absent from the actual catalog");
         require(
-                runtime().functionRegistry().getRegisteredFunctions().size() == 33,
+                runtime().functionRegistry().getRegisteredFunctions().size() == 30,
                 "Unexpected function registry contents");
         require(
                 runtime().triggerRegistry().getRegisteredTriggers().size() == 14,
