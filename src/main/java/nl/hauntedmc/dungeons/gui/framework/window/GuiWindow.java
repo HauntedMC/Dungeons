@@ -4,6 +4,7 @@ import nl.hauntedmc.dungeons.gui.framework.GuiService;
 import nl.hauntedmc.dungeons.gui.framework.actions.Action;
 import nl.hauntedmc.dungeons.gui.framework.buttons.Button;
 import nl.hauntedmc.dungeons.gui.framework.text.GuiTextUtils;
+import nl.hauntedmc.dungeons.util.lang.LangUtils;
 
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -16,12 +17,15 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 
 /**
  * Registered inventory window with per-player state and click/open/close callbacks.
@@ -31,10 +35,10 @@ public class GuiWindow implements Listener {
     private final int size;
     private final String display;
     private boolean cancelClick = true;
-    private java.util.function.Predicate<Player> accessCheck = player -> true;
+    private Predicate<Player> accessCheck = player -> true;
 
-    public final void setAccessCheck(java.util.function.Predicate<Player> check) {
-        this.accessCheck = java.util.Objects.requireNonNull(check);
+    public final void setAccessCheck(Predicate<Player> check) {
+        this.accessCheck = Objects.requireNonNull(check);
     }
 
     private final HashMap<Player, GuiInventory> inventories;
@@ -118,7 +122,7 @@ public class GuiWindow implements Listener {
     /** Opens this window for a player, creating a player snapshot when needed. */
     public final void open(Player player) {
         if (!this.accessCheck.test(player)) {
-            player.sendMessage("[Dungeons] Access to this interface is no longer available.");
+            LangUtils.sendRaw(player, "[Dungeons] Access to this interface is no longer available.");
             return;
         }
         GuiInventory gui;
@@ -155,7 +159,7 @@ public class GuiWindow implements Listener {
 
     /** A quit must release cached views even if another plugin suppressed normal close handling. */
     @EventHandler(priority = EventPriority.MONITOR)
-    public void onPlayerQuit(org.bukkit.event.player.PlayerQuitEvent event) {
+    public void onPlayerQuit(PlayerQuitEvent event) {
         this.inventories.remove(event.getPlayer());
         this.closing.remove(event.getPlayer());
     }

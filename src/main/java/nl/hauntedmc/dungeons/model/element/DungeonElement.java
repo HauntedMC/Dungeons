@@ -7,6 +7,7 @@ import nl.hauntedmc.dungeons.listener.ElementHotbarListener;
 import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
+import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.metadata.PersistedFieldSupport;
 
 import org.bukkit.Bukkit;
@@ -74,7 +75,7 @@ public abstract class DungeonElement implements ConfigurationSerializable {
         return this.runtime() == null ? null : this.runtime().guiService();
     }
 
-    protected final nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession playerSession(
+    protected final DungeonPlayerSession playerSession(
             Player player) {
         return this.runtime() == null ? null : this.runtime().playerSessions().get(player);
     }

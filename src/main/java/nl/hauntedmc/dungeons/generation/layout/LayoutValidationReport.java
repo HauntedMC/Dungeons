@@ -1,9 +1,10 @@
 package nl.hauntedmc.dungeons.generation.layout;
 
+import nl.hauntedmc.dungeons.runtime.RuntimeContext;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 
 /**
  * Collects warnings and errors discovered while validating a layout configuration.

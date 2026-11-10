@@ -3,21 +3,31 @@ package nl.hauntedmc.dungeons.runtime.staff;
 import nl.hauntedmc.dungeons.config.ConfigurationFile;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
+import nl.hauntedmc.dungeons.persistence.StateDocument;
+import nl.hauntedmc.dungeons.persistence.StateStore;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
+import nl.hauntedmc.dungeons.util.lang.LangUtils;
 
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
+import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 /** Server-thread operations shared by staff interfaces. Maintenance survives process restarts. */
@@ -67,9 +77,9 @@ public final class StaffOperations implements AutoCloseable {
             CommandSender actor,
             Supplier<CompletableFuture<String>> work) {}
 
-    private final java.util.function.LongSupplier clock;
+    private final LongSupplier clock;
     private final DungeonsRuntime runtime;
-    private final nl.hauntedmc.dungeons.persistence.StateDocument document;
+    private final StateDocument document;
     private final YamlConfiguration state = new YamlConfiguration();
     private final Map<String, Confirmation> confirmations = new HashMap<>();
     private final LinkedHashMap<UUID, Operation> operations = new LinkedHashMap<>();
@@ -89,13 +99,13 @@ public final class StaffOperations implements AutoCloseable {
         this(runtime, System::nanoTime);
     }
 
-    StaffOperations(DungeonsRuntime runtime, java.util.function.LongSupplier clock) {
+    StaffOperations(DungeonsRuntime runtime, LongSupplier clock) {
         this.clock = clock;
         this.runtime = runtime;
-        this.document = runtime.stateStore().document(new nl.hauntedmc.dungeons.persistence.StateStore.Key("staff-state", "server", null));
+        this.document = runtime.stateStore().document(new StateStore.Key("staff-state", "server", null));
         try {
             document.loadInto(state);
-        } catch (org.bukkit.configuration.InvalidConfigurationException failure) {
+        } catch (InvalidConfigurationException failure) {
             throw new IllegalStateException("Cannot load database staff state; admissions must remain stopped", failure);
         }
         for (String section : List.of("maintenance", "restrictions", "operations"))
@@ -169,8 +179,8 @@ public final class StaffOperations implements AutoCloseable {
                     "Cancel the pending admission and settle reserved keys before observing");
         session.beginObservation(target);
         try {
-            actor.setGameMode(org.bukkit.GameMode.SPECTATOR);
-            org.bukkit.Location destination = target.getStartLoc();
+            actor.setGameMode(GameMode.SPECTATOR);
+            Location destination = target.getStartLoc();
             if (destination == null) destination = target.getInstanceWorld().getSpawnLocation();
             if (!actor.teleport(destination))
                 throw new IllegalStateException("Observation teleport rejected");
@@ -376,7 +386,7 @@ public final class StaffOperations implements AutoCloseable {
                         target,
                         revision,
                         parameters,
-                        clock.getAsLong() + java.util.concurrent.TimeUnit.SECONDS.toNanos(30),
+                        clock.getAsLong() + TimeUnit.SECONDS.toNanos(30),
                         next));
         return next;
     }
@@ -545,7 +555,7 @@ public final class StaffOperations implements AutoCloseable {
                 op.target,
                 op.reason,
                 op.shortId() + " " + op.state + " " + op.detail);
-        pendingWork.actor.sendMessage(
+        LangUtils.sendRaw(pendingWork.actor,
                 "[Dungeons] "
                         + op.shortId()
                         + " "
@@ -577,7 +587,7 @@ public final class StaffOperations implements AutoCloseable {
                                             .getCanonicalFile())
                     || Files.isSymbolicLink(root.toPath()))
                 throw new IllegalArgumentException("Unsafe dungeon archive destination");
-        } catch (java.io.IOException failure) {
+        } catch (IOException failure) {
             return CompletableFuture.failedFuture(failure);
         }
         String id = dungeon.getWorldName() + "-" + UUID.randomUUID();
@@ -646,18 +656,18 @@ public final class StaffOperations implements AutoCloseable {
                 });
     }
 
-    private void persist(java.util.function.Consumer<YamlConfiguration> change) {
+    private void persist(Consumer<YamlConfiguration> change) {
         var candidate = new YamlConfiguration();
         try {
             candidate.loadFromString(state.saveToString());
-        } catch (org.bukkit.configuration.InvalidConfigurationException impossible) {
+        } catch (InvalidConfigurationException impossible) {
             throw new IllegalStateException(impossible);
         }
         change.accept(candidate);
         document.save(candidate.saveToString());
         try {
             state.loadFromString(candidate.saveToString());
-        } catch (org.bukkit.configuration.InvalidConfigurationException impossible) {
+        } catch (InvalidConfigurationException impossible) {
             throw new IllegalStateException(impossible);
         }
     }

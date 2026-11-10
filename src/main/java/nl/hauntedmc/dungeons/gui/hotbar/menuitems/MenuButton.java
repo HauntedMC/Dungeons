@@ -1,12 +1,16 @@
 package nl.hauntedmc.dungeons.gui.hotbar.menuitems;
 
-import java.util.ArrayList;
-import java.util.List;
+import net.kyori.adventure.text.Component;
+
 import nl.hauntedmc.dungeons.util.text.ColorUtils;
 import nl.hauntedmc.dungeons.util.text.ComponentUtils;
+
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Renderable item backing one hotbar menu slot.
@@ -37,7 +41,7 @@ public class MenuButton {
     /** Appends one lore line to the button item. */
     public void addLore(String line) {
         ItemMeta meta = this.item.getItemMeta();
-        List<net.kyori.adventure.text.Component> lore = meta.lore();
+        List<Component> lore = meta.lore();
         if (lore == null) {
             lore = new ArrayList<>();
         }

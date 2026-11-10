@@ -2,7 +2,10 @@ package nl.hauntedmc.dungeons.runtime;
 
 import nl.hauntedmc.dungeons.gui.framework.GuiService;
 import nl.hauntedmc.dungeons.gui.loot.LootTableEditor;
+import nl.hauntedmc.dungeons.integration.RegistryProfiles;
 import nl.hauntedmc.dungeons.listener.EventRelayListener;
+import nl.hauntedmc.dungeons.persistence.DatabaseLifecycle;
+import nl.hauntedmc.dungeons.persistence.StateStore;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.registry.ConditionRegistry;
 import nl.hauntedmc.dungeons.registry.FunctionRegistry;
@@ -14,7 +17,9 @@ import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueCoordinator;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry;
 import nl.hauntedmc.dungeons.runtime.rewards.LootTableRepository;
+import nl.hauntedmc.dungeons.runtime.staff.StaffOperations;
 import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
+import nl.hauntedmc.featureframework.resource.FeatureResourceOwner;
 
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -30,21 +35,27 @@ import java.util.Objects;
  * runtime graph remains in the composition root.
  */
 public final class DungeonsRuntime {
-    private nl.hauntedmc.dungeons.persistence.DatabaseLifecycle database;
+    private FeatureResourceOwner resources = new FeatureResourceOwner();
+    public FeatureResourceOwner resources() { return resources; }
+    public void resetResources() { resources = new FeatureResourceOwner(); }
+    private RegistryProfiles profiles;
+    public RegistryProfiles profiles() { return profiles; }
+    public void setProfiles(RegistryProfiles value) { profiles = value; }
+    private DatabaseLifecycle database;
 
-    private nl.hauntedmc.dungeons.persistence.StateStore stateStore;
-    public nl.hauntedmc.dungeons.persistence.StateStore stateStore() { return requireInitialized(stateStore, "stateStore"); }
-    public void setStateStore(nl.hauntedmc.dungeons.persistence.StateStore store) { this.stateStore = store; }
-    public nl.hauntedmc.dungeons.persistence.DatabaseLifecycle database() { return requireInitialized(database, "database"); }
-    public void setDatabase(nl.hauntedmc.dungeons.persistence.DatabaseLifecycle database) { this.database = database; }
+    private StateStore stateStore;
+    public StateStore stateStore() { return requireInitialized(stateStore, "stateStore"); }
+    public void setStateStore(StateStore store) { this.stateStore = store; }
+    public DatabaseLifecycle database() { return requireInitialized(database, "database"); }
+    public void setDatabase(DatabaseLifecycle database) { this.database = database; }
 
-    private nl.hauntedmc.dungeons.runtime.staff.StaffOperations staffOperations;
+    private StaffOperations staffOperations;
 
-    public nl.hauntedmc.dungeons.runtime.staff.StaffOperations staffOperations() {
+    public StaffOperations staffOperations() {
         return this.staffOperations;
     }
 
-    public void setStaffOperations(nl.hauntedmc.dungeons.runtime.staff.StaffOperations operations) {
+    public void setStaffOperations(StaffOperations operations) {
         this.staffOperations = operations;
     }
 

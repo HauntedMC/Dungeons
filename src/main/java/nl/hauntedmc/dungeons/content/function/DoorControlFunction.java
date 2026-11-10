@@ -1,7 +1,5 @@
 package nl.hauntedmc.dungeons.content.function;
 
-import java.util.List;
-import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.content.trigger.KeyItemTrigger;
@@ -14,6 +12,7 @@ import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.event.InteractionUtils;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.data.Openable;
@@ -24,6 +23,9 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * Function that locks, unlocks, opens, or closes a door block at its location.
@@ -71,8 +73,7 @@ public class DoorControlFunction extends DungeonFunction {
     public void setLocked(boolean locked) {
         this.locked = locked;
         if (locked) {
-            this.instance.messagePlayers(
-                    LangUtils.getMessage("instance.play.functions.doors.lock"));
+            this.instance.messagePlayers("instance.play.functions.doors.lock");
             this.instance
                     .getInstanceWorld()
                     .playSound(
@@ -81,8 +82,7 @@ public class DoorControlFunction extends DungeonFunction {
                 this.closeDoor();
             }
         } else {
-            this.instance.messagePlayers(
-                    LangUtils.getMessage("instance.play.functions.doors.unlock"));
+            this.instance.messagePlayers("instance.play.functions.doors.unlock");
             this.instance
                     .getInstanceWorld()
                     .playSound(

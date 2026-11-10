@@ -15,6 +15,7 @@ import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3i;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -52,7 +53,7 @@ public class BranchingInstance extends PlayableInstance {
         try {
             // Generated runs reserve a native dimension directory.
             instFolder = this.reserveWorldFolder();
-        } catch (java.io.IOException exception) {
+        } catch (IOException exception) {
             this.loadFailed = true;
             this.logger()
                     .error(

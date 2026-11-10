@@ -12,6 +12,7 @@ import static org.mockito.Mockito.*;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
 import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
 import nl.hauntedmc.dungeons.content.instance.play.BranchingInstance;
+import nl.hauntedmc.dungeons.event.PlayerLeaveDungeonEvent;
 import nl.hauntedmc.dungeons.generation.layout.BranchingLayout;
 import nl.hauntedmc.dungeons.generation.layout.Layout;
 import nl.hauntedmc.dungeons.generation.room.InstanceRoom;
@@ -28,6 +29,8 @@ import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.EnderDragon;
+import org.bukkit.event.Event;
+import org.bukkit.plugin.Plugin;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
@@ -36,6 +39,7 @@ import java.nio.file.*;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 class PreparationContractTest {
     @TempDir Path directory;
@@ -65,13 +69,13 @@ class PreparationContractTest {
             doThrow(new IllegalStateException("entry task rejected"))
                     .when(f.scheduler.scheduler)
                     .runTaskLater(
-                            any(org.bukkit.plugin.Plugin.class), any(Runnable.class), anyLong());
+                            any(Plugin.class), any(Runnable.class), anyLong());
             var manager = Bukkit.getPluginManager();
             doAnswer(
                             call -> {
                                 if (call.getArgument(0)
                                         instanceof
-                                        nl.hauntedmc.dungeons.event.PlayerLeaveDungeonEvent) {
+                                        PlayerLeaveDungeonEvent) {
                                     // Player restoration invokes plugin events; cancellation may be
                                     // reentrant.
                                     f.paper.runtime.preparations().cancel(session);
@@ -79,7 +83,7 @@ class PreparationContractTest {
                                 return null;
                             })
                     .when(manager)
-                    .callEvent(any(org.bukkit.event.Event.class));
+                    .callEvent(any(Event.class));
             f.scheduler.readyImmediate.remove().run();
             assertNull(session.getInstance());
             assertFalse(session.isAwaitingDungeon());
@@ -135,7 +139,7 @@ class PreparationContractTest {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
             doThrow(new IllegalStateException("world initialization rejected"))
                     .when(f.scheduler.scheduler)
-                    .runTask(any(org.bukkit.plugin.Plugin.class), any(Runnable.class));
+                    .runTask(any(Plugin.class), any(Runnable.class));
             assertThrows(
                     IllegalStateException.class,
                     () -> f.dungeon.createPlaySession(new CountDownLatch(1), null));
@@ -250,7 +254,7 @@ class PreparationContractTest {
                 var executor = Executors.newSingleThreadExecutor()) {
             var dungeon = new PreparedDungeon(f, directory.resolve("interrupted"));
             var session = f.session(new PlayerState());
-            var thread = new java.util.concurrent.atomic.AtomicReference<Thread>();
+            var thread = new AtomicReference<Thread>();
             assertTrue(dungeon.prepareInstance(session.getPlayer(), "DEFAULT", 1, null));
             var waiting =
                     executor.submit(
@@ -291,7 +295,7 @@ class PreparationContractTest {
                     doThrow(new IllegalStateException("scheduler stopped"))
                             .when(f.scheduler.scheduler)
                             .runTaskAsynchronously(
-                                    any(org.bukkit.plugin.Plugin.class), any(Runnable.class));
+                                    any(Plugin.class), any(Runnable.class));
                 assertEquals(
                         !rejected,
                         dungeon.prepareInstance(session.getPlayer(), "DEFAULT", 1, null));
@@ -335,7 +339,7 @@ class PreparationContractTest {
                                     })
                                     .when(f.scheduler.scheduler)
                                     .runTask(
-                                            any(org.bukkit.plugin.Plugin.class),
+                                            any(Plugin.class),
                                             any(Runnable.class));
             creation.run();
             creationReturned.countDown();

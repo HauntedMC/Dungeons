@@ -1,9 +1,11 @@
 package nl.hauntedmc.dungeons.command;
 
-import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
+import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
 import nl.hauntedmc.dungeons.util.command.CommandUtils;
+
 import org.bukkit.command.CommandSender;
+
 import java.util.List;
 import java.util.Locale;
 
@@ -23,7 +25,7 @@ final class DungeonCompletions {
     }
 
     /** Adds matching editable dungeon names. */
-    static void addMatchingEditableDungeonNames(DungeonRepository dungeonManager, 
+    static void addMatchingEditableDungeonNames(DungeonRepository dungeonManager,
             CommandSender sender, List<String> options, String query) {
         String lowerQuery = query.toLowerCase(Locale.ROOT);
         for (DungeonDefinition dungeon : dungeonManager.getLoadedDungeons()) {

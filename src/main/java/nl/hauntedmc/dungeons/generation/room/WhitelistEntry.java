@@ -1,13 +1,15 @@
 package nl.hauntedmc.dungeons.generation.room;
 
-import java.util.Objects;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.annotation.TypeKey;
 import nl.hauntedmc.dungeons.config.ConfigSerializableModel;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
+
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Objects;
 
 /**
  * Weighted whitelist/blacklist entry that references a branching room.

@@ -1,10 +1,7 @@
 package nl.hauntedmc.dungeons.util.world;
 
-import java.awt.Color;
-import java.util.Map;
-import java.util.UUID;
-import java.util.WeakHashMap;
 import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
+
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -18,6 +15,11 @@ import org.bukkit.map.MapView;
 import org.bukkit.map.MapView.Scale;
 import org.bukkit.map.MinecraftFont;
 import org.jetbrains.annotations.NotNull;
+
+import java.awt.Color;
+import java.util.Map;
+import java.util.UUID;
+import java.util.WeakHashMap;
 
 /**
  * Live dungeon map renderer showing local floor geometry and player direction.

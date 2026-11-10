@@ -1,11 +1,13 @@
 package nl.hauntedmc.dungeons.model.element;
 
-import java.util.Collections;
-import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.TypeKey;
+
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.Collections;
+import java.util.Map;
 
 /**
  * Enumerates how a function resolves player targets from a trigger event.

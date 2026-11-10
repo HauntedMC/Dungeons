@@ -4,15 +4,19 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
+
 import org.bukkit.Server;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scheduler.BukkitTask;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.slf4j.Logger;
+
+import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
 class DatabaseLifecycleTest {
     static final class Fixture {
@@ -26,7 +30,7 @@ class DatabaseLifecycleTest {
             when(plugin.getServer()).thenReturn(server);
             when(server.getScheduler()).thenReturn(scheduler);
             when(server.getPluginManager()).thenReturn(plugins);
-            when(plugin.getSLF4JLogger()).thenReturn(mock(org.slf4j.Logger.class));
+            when(plugin.getSLF4JLogger()).thenReturn(mock(Logger.class));
             when(scheduler.runTaskTimerAsynchronously(eq(plugin), any(Runnable.class), eq(100L), eq(100L)))
                     .thenReturn(heartbeat);
             when(database.start()).thenReturn(CompletableFuture.completedFuture(null));
@@ -103,7 +107,7 @@ class DatabaseLifecycleTest {
         var pending = new CompletableFuture<Void>();
         when(f.database.closeAsync()).thenReturn(pending);
         var lifecycle = new DatabaseLifecycle(f.plugin, f.database, 1);
-        assertTimeout(java.time.Duration.ofSeconds(3), lifecycle::close);
+        assertTimeout(Duration.ofSeconds(3), lifecycle::close);
         assertFalse(pending.isDone());
         verify(f.heartbeat).cancel();
         pending.complete(null);
@@ -130,7 +134,7 @@ class DatabaseLifecycleTest {
         var pending = new CompletableFuture<Void>();
         when(f.database.start()).thenReturn(pending);
         var lifecycle = new DatabaseLifecycle(f.plugin, f.database, 1);
-        assertTimeout(java.time.Duration.ofSeconds(3),
+        assertTimeout(Duration.ofSeconds(3),
                 () -> assertThrows(IllegalStateException.class, () -> lifecycle.awaitReady(1)));
         verify(f.database).closeAsync();
         assertFalse(pending.isDone());

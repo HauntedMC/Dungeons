@@ -1,7 +1,5 @@
 package nl.hauntedmc.dungeons.world.generator;
 
-import java.util.List;
-import java.util.Random;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Biome;
@@ -11,6 +9,9 @@ import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.generator.WorldInfo;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
+import java.util.Random;
 
 /**
  * Simple chunk generator that fills generated chunks with one block type.

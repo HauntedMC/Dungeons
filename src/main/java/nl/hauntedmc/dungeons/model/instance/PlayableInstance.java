@@ -1,5 +1,6 @@
 package nl.hauntedmc.dungeons.model.instance;
 
+import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
 
 import nl.hauntedmc.dungeons.content.function.HologramFunction;
@@ -78,7 +79,7 @@ public abstract class PlayableInstance extends DungeonInstance {
     protected boolean started = false;
     protected boolean dungeonFinished = false;
     private Set<Entity> entities = Collections.newSetFromMap(new WeakHashMap<>());
-    private final Map<UUID, net.kyori.adventure.bossbar.BossBar> customDragonBossBars =
+    private final Map<UUID, BossBar> customDragonBossBars =
             new HashMap<>();
 
     /**
@@ -164,15 +165,12 @@ public abstract class PlayableInstance extends DungeonInstance {
                             if (timeLimit != 0) {
                                 PlayableInstance.this.timeLeft--;
                                 if (warningSeconds.contains(PlayableInstance.this.timeLeft)) {
-                                    PlayableInstance.this.messagePlayers(
-                                            PlayableInstance.this.getTimeLimitWarningMessage(
-                                                    PlayableInstance.this.timeLeft));
+                                    PlayableInstance.this.warnTimeLimit(PlayableInstance.this.timeLeft);
                                 }
 
                                 if (PlayableInstance.this.timeLeft <= 0) {
                                     PlayableInstance.this.messagePlayers(
-                                            LangUtils.getMessage(
-                                                    "instance.play.time-limit.times-up"));
+                                                    "instance.play.time-limit.times-up");
                                     this.cancel();
 
                                     for (DungeonPlayerSession playerSession :
@@ -201,7 +199,7 @@ public abstract class PlayableInstance extends DungeonInstance {
      */
     public void onStart() {}
 
-    private String getTimeLimitWarningMessage(int remainingSeconds) {
+    private void warnTimeLimit(int remainingSeconds) {
         String warningKey =
                 switch (remainingSeconds) {
                     case 600 -> "instance.play.time-limit.ten-minute-warning";
@@ -210,9 +208,9 @@ public abstract class PlayableInstance extends DungeonInstance {
                     default -> "instance.play.time-limit.warning";
                 };
 
-        return LangUtils.getMessage(
+        this.messagePlayers(
                 warningKey,
-                LangUtils.placeholder("dungeon", this.dungeon.getDisplayName()),
+                LangUtils.placeholder("dungeon", this.dungeon.getDisplayNameComponent()),
                 LangUtils.placeholder("time", TimeUtils.formatDuration(remainingSeconds * 1000L)));
     }
 
@@ -536,9 +534,8 @@ public abstract class PlayableInstance extends DungeonInstance {
             this.hideCustomDragonBossBars(player);
             if (!CommandUtils.hasPermissionSilent(player, "dungeons.vanish")) {
                 this.messagePlayers(
-                        LangUtils.getMessage(
                                 "instance.play.events.player-leave",
-                                LangUtils.placeholder("player", player.getName())));
+                                LangUtils.placeholder("player", player.getName()));
             }
 
             if (!this.recovering(playerSession)
@@ -782,7 +779,7 @@ public abstract class PlayableInstance extends DungeonInstance {
             return;
         }
 
-        net.kyori.adventure.bossbar.BossBar bossBar = this.createCustomDragonBossBar();
+        BossBar bossBar = this.createCustomDragonBossBar();
         this.customDragonBossBars.put(dragon.getUniqueId(), bossBar);
         this.showCustomDragonBossBars();
         this.updateCustomDragonBossBars();
@@ -795,10 +792,10 @@ public abstract class PlayableInstance extends DungeonInstance {
         this.discoverCustomDragonBossBars();
         List<UUID> staleBars = new ArrayList<>();
 
-        for (Entry<UUID, net.kyori.adventure.bossbar.BossBar> entry :
+        for (Entry<UUID, BossBar> entry :
                 this.customDragonBossBars.entrySet()) {
             Entity entity = Bukkit.getEntity(entry.getKey());
-            net.kyori.adventure.bossbar.BossBar bossBar = entry.getValue();
+            BossBar bossBar = entry.getValue();
             if (!(entity instanceof EnderDragon dragon)
                     || !dragon.isValid()
                     || dragon.isDead()
@@ -837,7 +834,7 @@ public abstract class PlayableInstance extends DungeonInstance {
 
         for (EnderDragon dragon : this.instanceWorld.getEntitiesByClass(EnderDragon.class)) {
             if (!this.customDragonBossBars.containsKey(dragon.getUniqueId())) {
-                net.kyori.adventure.bossbar.BossBar bossBar = this.createCustomDragonBossBar();
+                BossBar bossBar = this.createCustomDragonBossBar();
                 this.customDragonBossBars.put(dragon.getUniqueId(), bossBar);
                 this.showCustomDragonBossBars();
             }
@@ -857,7 +854,7 @@ public abstract class PlayableInstance extends DungeonInstance {
      * Adds one player to every tracked custom dragon boss bar.
      */
     private void showCustomDragonBossBars(Player player) {
-        for (net.kyori.adventure.bossbar.BossBar bossBar : this.customDragonBossBars.values()) {
+        for (BossBar bossBar : this.customDragonBossBars.values()) {
             player.showBossBar(bossBar);
         }
     }
@@ -866,7 +863,7 @@ public abstract class PlayableInstance extends DungeonInstance {
      * Removes one player from every tracked custom dragon boss bar.
      */
     private void hideCustomDragonBossBars(Player player) {
-        for (net.kyori.adventure.bossbar.BossBar bossBar : this.customDragonBossBars.values()) {
+        for (BossBar bossBar : this.customDragonBossBars.values()) {
             player.hideBossBar(bossBar);
         }
     }
@@ -875,7 +872,7 @@ public abstract class PlayableInstance extends DungeonInstance {
      * Clears all custom dragon boss bars owned by this instance.
      */
     private void clearCustomDragonBossBars() {
-        for (net.kyori.adventure.bossbar.BossBar bossBar : this.customDragonBossBars.values()) {
+        for (BossBar bossBar : this.customDragonBossBars.values()) {
             this.hideCustomDragonBossBarFromAll(bossBar);
         }
 
@@ -885,18 +882,18 @@ public abstract class PlayableInstance extends DungeonInstance {
     /**
      * Creates the modern Paper boss bar used for dungeon-managed dragons.
      */
-    private net.kyori.adventure.bossbar.BossBar createCustomDragonBossBar() {
-        return net.kyori.adventure.bossbar.BossBar.bossBar(
+    private BossBar createCustomDragonBossBar() {
+        return BossBar.bossBar(
                 Component.text("Ender Dragon"),
                 1.0F,
-                net.kyori.adventure.bossbar.BossBar.Color.PURPLE,
-                net.kyori.adventure.bossbar.BossBar.Overlay.PROGRESS);
+                BossBar.Color.PURPLE,
+                BossBar.Overlay.PROGRESS);
     }
 
     /**
      * Hides one tracked dragon bar from all players currently in this instance.
      */
-    private void hideCustomDragonBossBarFromAll(net.kyori.adventure.bossbar.BossBar bossBar) {
+    private void hideCustomDragonBossBarFromAll(BossBar bossBar) {
         for (DungeonPlayerSession playerSession : this.players) {
             playerSession.getPlayer().hideBossBar(bossBar);
         }

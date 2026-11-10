@@ -1,4 +1,5 @@
 package nl.hauntedmc.dungeons.gui.menu;
+import nl.hauntedmc.dungeons.content.function.CommandFunction;
 import nl.hauntedmc.dungeons.content.function.GiveItemFunction;
 import nl.hauntedmc.dungeons.content.function.meta.CompositeFunction;
 import nl.hauntedmc.dungeons.content.instance.edit.BranchingEditableInstance;
@@ -12,10 +13,12 @@ import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
 import nl.hauntedmc.dungeons.model.instance.EditableInstance;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
+import nl.hauntedmc.dungeons.runtime.staff.StaffPermissions;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.text.ColorUtils;
 import nl.hauntedmc.dungeons.util.text.TextUtils;
+
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -144,18 +147,18 @@ final class FunctionBrowserMenus {
                             EditableInstance instance =
                                     playerSession.getInstance().asEditInstance();
                             if (instance != null) {
-                                if (nl.hauntedmc.dungeons.content.function.CommandFunction.class
+                                if (CommandFunction.class
                                         .isAssignableFrom(
                                                 RuntimeContext.functionRegistry()
                                                         .getFunctionClass(functionName))) {
                                     try {
-                                        nl.hauntedmc.dungeons.runtime.staff.StaffPermissions
+                                        StaffPermissions
                                                 .require(
                                                         player,
                                                         "scripts",
                                                         instance.getDungeon().getWorldName());
                                     } catch (IllegalArgumentException denied) {
-                                        player.sendMessage("[Dungeons] " + denied.getMessage());
+                                        LangUtils.sendRaw(player, "[Dungeons] " + denied.getMessage());
                                         return;
                                     }
                                 }

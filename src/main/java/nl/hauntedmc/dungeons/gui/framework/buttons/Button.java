@@ -1,12 +1,10 @@
 package nl.hauntedmc.dungeons.gui.framework.buttons;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map.Entry;
 import net.kyori.adventure.text.Component;
+
 import nl.hauntedmc.dungeons.gui.framework.actions.Action;
 import nl.hauntedmc.dungeons.gui.framework.text.GuiTextUtils;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -14,6 +12,11 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map.Entry;
 
 /**
  * Clickable inventory button model used by GUI windows.

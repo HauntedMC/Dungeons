@@ -13,6 +13,7 @@ import nl.hauntedmc.dungeons.support.PaperBoundary;
 import org.bukkit.Bukkit;
 import org.bukkit.block.data.BlockData;
 import org.joml.Vector3i;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -54,7 +55,7 @@ class StructureFileContractTest {
             data(paper, "minecraft:stone");
             var file = directory.resolve("legacy.schem");
             Files.write(file, SchematicUtils.compress("minecraft:stone\n-3,5,8|0|null"));
-            org.junit.jupiter.api.Assertions.assertThrows(
+            Assertions.assertThrows(
                     IllegalArgumentException.class,
                     () -> SchematicUtils.loadStructurePiece(file.toFile()));
         }

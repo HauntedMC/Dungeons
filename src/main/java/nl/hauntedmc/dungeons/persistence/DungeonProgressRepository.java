@@ -1,5 +1,7 @@
 package nl.hauntedmc.dungeons.persistence;
 
+import nl.hauntedmc.dataregistry.api.player.PlayerIdentity;
+
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -8,13 +10,13 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
-import nl.hauntedmc.dataregistry.api.player.PlayerIdentity;
 
 /** Canonical-player-bound progression writes with optimistic revisions and durable retry receipts. */
 public final class DungeonProgressRepository {
@@ -53,7 +55,7 @@ public final class DungeonProgressRepository {
             if (!checkpointChanged && checkpoint != null) throw new IllegalArgumentException("Checkpoint change must be explicit");
             var sorted = new ArrayList<>(Objects.requireNonNull(cooldowns, "cooldowns"));
             sorted.sort(Comparator.comparing((CooldownChange change) -> change.key().type()).thenComparing(change -> change.key().sourceId()));
-            var seen = new java.util.HashSet<CooldownKey>();
+            var seen = new HashSet<CooldownKey>();
             for (var change : sorted) if (!seen.add(change.key())) throw new IllegalArgumentException("Duplicate cooldown change");
             cooldowns = List.copyOf(sorted);
             if (completed == null && !checkpointChanged && cooldowns.isEmpty()) throw new IllegalArgumentException("No progression changes requested");

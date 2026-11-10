@@ -1,5 +1,6 @@
 package nl.hauntedmc.dungeons.bootstrap;
 
+import nl.hauntedmc.dungeons.config.ConfigurationFile;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
@@ -13,6 +14,9 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -67,7 +71,7 @@ public final class LifecycleCoordinator {
             if (this.runtime.hasPlayerSessions())
                 this.runCleanup("reserved access keys", () -> this.refundOutstandingReservedKeys(null));
 
-            for (Player player : this.runtime.hasPlayerSessions() ? Bukkit.getOnlinePlayers() : java.util.List.<Player>of()) {
+            for (Player player : this.runtime.hasPlayerSessions() ? Bukkit.getOnlinePlayers() : List.<Player>of()) {
                 try {
                     DungeonPlayerSession playerSession = this.runtime.playerSessions().get(player);
                     if (playerSession == null) {
@@ -130,7 +134,7 @@ public final class LifecycleCoordinator {
                                 failure);
             } finally {
                 // This also executes owner-thread captures cancelled by Paper during disable.
-                nl.hauntedmc.dungeons.config.ConfigurationFile.flushPendingSaves();
+                ConfigurationFile.flushPendingSaves();
             }
         }
     }
@@ -144,8 +148,8 @@ public final class LifecycleCoordinator {
         }
     }
 
-    private java.util.Set<DungeonInstance> managedInstances() {
-        var instances = new java.util.LinkedHashSet<DungeonInstance>();
+    private Set<DungeonInstance> managedInstances() {
+        var instances = new LinkedHashSet<DungeonInstance>();
         if (this.runtime.hasDungeonCatalog()) {
             for (DungeonDefinition dungeon : this.runtime.dungeonCatalog().getLoadedDungeons()) {
                 instances.addAll(dungeon.getInstances());
@@ -227,7 +231,7 @@ public final class LifecycleCoordinator {
      */
     public CompletableFuture<Boolean> reloadAllDungeons() {
         if (!Bukkit.isPrimaryThread())
-            return nl.hauntedmc.dungeons.config.ConfigurationFile.onOwnerThread(
+            return ConfigurationFile.onOwnerThread(
                     this.runtime.environment().plugin(), this::reloadAllDungeons);
         if (this.reloadUnavailable()) return CompletableFuture.completedFuture(false);
         this.reloadAttempt = new CompletableFuture<>();
@@ -265,7 +269,7 @@ public final class LifecycleCoordinator {
      */
     public CompletableFuture<Boolean> reloadDungeon(DungeonDefinition dungeon) {
         if (!Bukkit.isPrimaryThread())
-            return nl.hauntedmc.dungeons.config.ConfigurationFile.onOwnerThread(
+            return ConfigurationFile.onOwnerThread(
                     this.runtime.environment().plugin(), () -> this.reloadDungeon(dungeon));
         if (this.reloadUnavailable()) return CompletableFuture.completedFuture(false);
         this.reloadAttempt = new CompletableFuture<>();
@@ -303,7 +307,6 @@ public final class LifecycleCoordinator {
         for (DungeonDefinition dungeon : this.runtime.dungeonCatalog().getLoadedDungeons()) {
             dungeon.refreshRuleSettings();
         }
-        LangUtils.initialize();
         if (!this.runtime.lootTableRepository().reload())
             throw new IllegalStateException("Plugin configuration refreshed, but loot reload failed; last working loot retained and editing blocked");
     }

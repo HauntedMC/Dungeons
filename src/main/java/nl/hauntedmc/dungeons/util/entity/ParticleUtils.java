@@ -1,6 +1,7 @@
 package nl.hauntedmc.dungeons.util.entity;
 
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;

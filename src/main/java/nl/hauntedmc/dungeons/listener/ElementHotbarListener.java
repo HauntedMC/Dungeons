@@ -4,6 +4,7 @@ import nl.hauntedmc.dungeons.event.HotbarSetEvent;
 import nl.hauntedmc.dungeons.model.element.DungeonElement;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
+
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 

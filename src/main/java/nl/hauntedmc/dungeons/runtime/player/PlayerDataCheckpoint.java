@@ -53,7 +53,7 @@ public final class PlayerDataCheckpoint {
         }
     }
 
-    static String readMarker(java.nio.file.Path file) throws IOException {
+    static String readMarker(Path file) throws IOException {
         var bukkit = NBT.readFile(file.toFile()).getCompound("BukkitValues");
         return bukkit == null ? null : bukkit.getString("dungeons:player_transaction");
     }

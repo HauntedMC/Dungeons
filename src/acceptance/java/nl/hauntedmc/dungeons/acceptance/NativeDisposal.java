@@ -11,7 +11,10 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.world.WorldUnloadEvent;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -104,14 +107,14 @@ final class NativeDisposal {
                         });
     }
 
-    private static boolean filesGone(java.nio.file.Path folder) {
+    private static boolean filesGone(Path folder) {
         if (Files.exists(folder)) return false;
         try (var entries = Files.list(folder.getParent())) {
             String retiredPrefix = folder.getFileName() + ".disposed-";
             return entries.noneMatch(
                     path -> path.getFileName().toString().startsWith(retiredPrefix));
-        } catch (java.io.IOException failure) {
-            throw new java.io.UncheckedIOException(failure);
+        } catch (IOException failure) {
+            throw new UncheckedIOException(failure);
         }
     }
 }

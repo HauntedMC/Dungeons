@@ -1,6 +1,5 @@
 package nl.hauntedmc.dungeons.content.trigger;
 
-import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.event.DungeonStartEvent;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
@@ -8,10 +7,13 @@ import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
 import nl.hauntedmc.dungeons.model.element.TriggerCategory;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.util.config.PluginConfigView;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.event.EventHandler;
+
+import java.util.Map;
 
 /**
  * Trigger that fires when the dungeon run starts.

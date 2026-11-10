@@ -18,6 +18,7 @@ import nl.hauntedmc.dungeons.util.config.DungeonConfigView;
 import nl.hauntedmc.dungeons.util.entity.EntityUtils;
 import nl.hauntedmc.dungeons.util.entity.HologramManager;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
+import nl.hauntedmc.dungeons.util.lang.LangPlaceholder;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.text.TextUtils;
 import nl.hauntedmc.dungeons.util.world.WorldUtils;
@@ -43,9 +44,11 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -55,9 +58,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 /**
  * Base runtime representation of a concrete dungeon world copy.
@@ -145,7 +151,7 @@ public abstract class DungeonInstance {
         return this.getEnvironment().plugin();
     }
 
-    protected final org.slf4j.Logger logger() {
+    protected final Logger logger() {
         return this.getEnvironment().logger();
     }
 
@@ -214,7 +220,7 @@ public abstract class DungeonInstance {
                                     "uid.dat",
                                     "data/paper/metadata.dat",
                                     "data/paper/metadata.dat_old")) {
-                        java.nio.file.Files.deleteIfExists(new File(instFolder, identity).toPath());
+                        Files.deleteIfExists(new File(instFolder, identity).toPath());
                     }
                 });
     }
@@ -243,9 +249,9 @@ public abstract class DungeonInstance {
                         && !dimension.exists()
                         && Bukkit.getWorld(name) == null) {
                     File destination = legacy ? conflictingRoot : dimension;
-                    java.nio.file.Files.createDirectories(destination.toPath().getParent());
+                    Files.createDirectories(destination.toPath().getParent());
                     try {
-                        java.nio.file.Files.createDirectory(destination.toPath());
+                        Files.createDirectory(destination.toPath());
                         if (this.isEditInstance()) {
                             Files.writeString(
                                     destination.toPath().resolve(WorldUtils.EDITOR_RECOVERY_MARKER),
@@ -254,7 +260,7 @@ public abstract class DungeonInstance {
                         this.instanceWorldName = name;
                         this.pendingFolderOwned = true;
                         return destination;
-                    } catch (java.nio.file.FileAlreadyExistsException collision) {
+                    } catch (FileAlreadyExistsException collision) {
                         // Another filesystem user claimed the name between checking and reserving.
                     }
                 }
@@ -568,7 +574,7 @@ public abstract class DungeonInstance {
             CompletableFuture<Boolean> prepared =
                     this.loadFailed
                             ? CompletableFuture.completedFuture(true)
-                            : java.util.Objects.requireNonNull(this.prepareDisposal());
+                            : Objects.requireNonNull(this.prepareDisposal());
             prepared.whenComplete((saved, failure) -> this.finishDisposal(attempt, saved, failure));
         } catch (Exception failure) {
             this.failDisposal(attempt, failure);
@@ -742,8 +748,8 @@ public abstract class DungeonInstance {
     }
 
     /** Persistence must succeed before runtime state or world files are released. */
-    protected java.util.concurrent.CompletableFuture<Boolean> prepareDisposal() {
-        return java.util.concurrent.CompletableFuture.completedFuture(true);
+    protected CompletableFuture<Boolean> prepareDisposal() {
+        return CompletableFuture.completedFuture(true);
     }
 
     protected void onDisposalComplete() {}
@@ -765,7 +771,7 @@ public abstract class DungeonInstance {
         }
         List<Path> retired = new ArrayList<>();
         for (Path source :
-                java.util.stream.Stream.of(
+                Stream.of(
                                 worldFolder,
                                 new File(Bukkit.getWorldContainer(), worldName),
                                 WorldUtils.dimensionFolder(worldName))
@@ -815,8 +821,7 @@ public abstract class DungeonInstance {
         try {
             this.getRuntime().stateStore().requirePlayerReady(playerSession.getPlayer().getUniqueId());
         } catch (IllegalStateException | IllegalArgumentException notReady) {
-            playerSession.getPlayer().sendMessage(net.kyori.adventure.text.Component.text(
-                    "[Dungeons] Player data is unavailable; try again shortly."));
+            LangUtils.sendRaw(playerSession.getPlayer(), "Player data is unavailable; try again shortly.");
             return;
         }
         if (playerSession.getInstance() != null && playerSession.getInstance() != this) {
@@ -874,7 +879,7 @@ public abstract class DungeonInstance {
     /** Applies subclass state changes after a departure has been accepted. */
     protected void onPlayerRemovalAccepted(DungeonPlayerSession playerSession) {}
 
-    private final java.util.Map<UUID, DepartureCause> departureCauses = new java.util.HashMap<>();
+    private final Map<UUID, DepartureCause> departureCauses = new HashMap<>();
 
     public final void removePlayer(DungeonPlayerSession session, DepartureCause cause) {
         UUID playerId = session.getPlayer().getUniqueId();
@@ -987,23 +992,21 @@ public abstract class DungeonInstance {
         if (target != null) {
             if (foundKeys) {
                 this.messagePlayers(
-                        LangUtils.getMessage(
                                 "instance.play.events.key-inheritance",
-                                LangUtils.placeholder("player", target.getName())));
+                                LangUtils.placeholder("player", target.getName()));
             }
 
             if (foundDungeonItems) {
                 this.messagePlayers(
-                        LangUtils.getMessage(
                                 "instance.play.events.dungeon-item-inheritance",
-                                LangUtils.placeholder("player", target.getName())));
+                                LangUtils.placeholder("player", target.getName()));
             }
         }
     }
 
-    public void messagePlayers(String message) {
+    public void messagePlayers(String key, LangPlaceholder... values) {
         for (DungeonPlayerSession playerSession : this.players) {
-            playerSession.getPlayer().sendMessage(message);
+            LangUtils.sendMessage(playerSession.getPlayer(), key, values);
         }
     }
 
@@ -1192,7 +1195,7 @@ public abstract class DungeonInstance {
         return this.startLocation;
     }
 
-    public boolean awaitInitialization(long timeout, java.util.concurrent.TimeUnit unit)
+    public boolean awaitInitialization(long timeout, TimeUnit unit)
             throws InterruptedException {
         return this.latch.await(timeout, unit);
     }

@@ -1,0 +1,970 @@
+general:
+  labels:
+    none: geen
+    'yes': ja
+    'no': nee
+    default-difficulty: standaard
+  prefix: "<HauntedMC:Brand>[Dungeons]<HauntedMC:Text>"
+  java-locale: nl-NL
+  errors:
+    no-permission: '<HauntedMC:Error>Je hebt hier geen permissie voor.'
+    players-only: '<HauntedMC:Error>Alleen spelers kunnen dit doen.'
+  items:
+    dungeon-key:
+      name: '<HauntedMC:Warning>Dungeon Key'
+    function-tool:
+      name: '<HauntedMC:Social>&lFunction Tool'
+      lore:
+      - '<HauntedMC:Muted>Gebruik dit item om functions te plaatsen'
+      - '<HauntedMC:Muted>of bestaande functions te bewerken.'
+    room-tool:
+      name: '<HauntedMC:Warning>&lRoom Tool'
+      lore:
+      - '<HauntedMC:Muted>Gebruik dit item om rooms te selecteren'
+      - '<HauntedMC:Muted>en branching room instellingen te bewerken.'
+commands:
+  list:
+    usage: '<HauntedMC:Success>/dungeon list <HauntedMC:Accent>[filter] [pagina] <HauntedMC:Text>| <HauntedMC:Warning>Bekijk beschikbare dungeons.'
+    header: <HauntedMC:Brand>-= Beschikbare Dungeons =-
+    line: ' <HauntedMC:Social>{dungeon} <HauntedMC:Muted>• <HauntedMC:Text>{display} <HauntedMC:Muted>• <HauntedMC:Text>team {team_size} <HauntedMC:Muted>• <HauntedMC:Text>difficulties {difficulties}'
+    no-match: '<HauntedMC:Error>Geen dungeons gevonden voor die filter.'
+    footer: <HauntedMC:Brand>-= Pagina {page} van {total_pages} =-
+    default-difficulty: standaard
+  play:
+    usage: '<HauntedMC:Success>/dungeon play <HauntedMC:Warning><dungeon> [difficulty] <HauntedMC:Text>| <HauntedMC:Warning>Start een dungeon run voor de speler.'
+    console-needs-player: '<HauntedMC:Error>De console moet een speler opgeven.'
+    player-not-found: '<HauntedMC:Error>Speler ''<HauntedMC:Warning>{player}<HauntedMC:Error>'' is niet online of bestaat niet.'
+    already-in-queue: '<HauntedMC:Error>Die speler staat al in de dungeon queue.'
+    already-in-dungeon: '<HauntedMC:Error>Die speler zit al in een dungeon.'
+    already-in-dungeon-self: '<HauntedMC:Error>Je zit al in een dungeon.'
+    dungeon-not-found: '<HauntedMC:Error>Dungeon ''<HauntedMC:Warning>{dungeon}<HauntedMC:Error>'' bestaat niet.'
+    disabled: '<HauntedMC:Error>Dungeon ''<HauntedMC:Warning>{dungeon}<HauntedMC:Error>'' is momenteel uitgeschakeld.'
+    instances-full: '<HauntedMC:Error>Er is momenteel geen vrije instance beschikbaar voor deze dungeon.'
+    how-to-cancel: '<HauntedMC:Muted>Gebruik <HauntedMC:Social>/dungeon leave <HauntedMC:Muted>om de queue te verlaten.'
+    on-cooldown: '<HauntedMC:Error>Je hebt nog access cooldown voor <HauntedMC:Warning>{dungeon}<HauntedMC:Error>.'
+    missing-key: '<HauntedMC:Error>Je hebt de benodigde key voor <HauntedMC:Warning>{dungeon}<HauntedMC:Error> niet.'
+    team:
+      only-leader-start: '<HauntedMC:Error>Alleen de team leider kan de dungeon starten.'
+      already-locked: '<HauntedMC:Error>Je team staat al in de wachtrij of draait al een dungeon.'
+      members-must-be-online: '<HauntedMC:Error>Alle teamleden moeten online zijn voordat je de dungeon kunt starten.'
+      members-must-be-free: '<HauntedMC:Error>Alle teamleden moeten vrij zijn voordat je de dungeon kunt starten.'
+      member-on-cooldown: '<HauntedMC:Error>{player} staat nog op access cooldown voor <HauntedMC:Warning>{dungeon}<HauntedMC:Error>.'
+      member-missing-key: '<HauntedMC:Error>{player} heeft de benodigde key voor <HauntedMC:Warning>{dungeon}<HauntedMC:Error> niet.'
+      team-too-large: '<HauntedMC:Error>Deze groep is te groot voor deze dungeon ({count}/{max} spelers).'
+      open-too-large: '<HauntedMC:Error>Deze groep is te groot voor een open dungeon instance ({count}/{max} spelers).'
+  leave:
+    left-dungeon: '<HauntedMC:Success>Je hebt dungeon <HauntedMC:Warning>{dungeon}<HauntedMC:Success> verlaten.'
+    left-queue: '<HauntedMC:Success>Je hebt de dungeon queue verlaten.'
+    not-in-dungeon: '<HauntedMC:Error>Je zit niet in een dungeon of queue.'
+  stuck:
+    usage: '<HauntedMC:Success>/dungeon stuck <HauntedMC:Text>| <HauntedMC:Warning>Stuur jezelf veilig naar je laatste checkpoint.'
+    not-in-dungeon: '<HauntedMC:Error>Je zit niet in een dungeon.'
+    success: '<HauntedMC:Success>Je wordt teruggestuurd naar je laatste checkpoint.'
+  lives:
+    not-in-dungeon: '<HauntedMC:Error>Je zit niet in een dungeon.'
+    infinite-lives: '<HauntedMC:Success>Je hebt oneindig veel levens in deze dungeon.'
+    lives-remaining: '<HauntedMC:Success>Je hebt nog <HauntedMC:Warning>{lives}<HauntedMC:Success> leven(s).'
+  rewards:
+    usage: '<HauntedMC:Success>/dungeon rewards <HauntedMC:Text>| <HauntedMC:Warning>Open je openstaande dungeon beloningen.'
+    empty: '<HauntedMC:Muted>Je hebt momenteel geen openstaande dungeon beloningen.'
+  team:
+    help:
+      lines:
+      - '<HauntedMC:Success>/dungeon team create <HauntedMC:Text>| <HauntedMC:Warning>Maak een tijdelijk dungeon team.'
+      - '<HauntedMC:Success>/dungeon team invite <HauntedMC:Warning><player> <HauntedMC:Text>| <HauntedMC:Warning>Nodig een speler uit voor je team.'
+      - '<HauntedMC:Success>/dungeon team kick <HauntedMC:Warning><player> <HauntedMC:Text>| <HauntedMC:Warning>Zet een teamlid uit je team zolang jullie niet in een dungeon zitten.'
+      - '<HauntedMC:Success>/dungeon team cancel-invite <HauntedMC:Warning><player> <HauntedMC:Text>| <HauntedMC:Warning>Trek een openstaande invite in.'
+      - '<HauntedMC:Success>/dungeon team accept <HauntedMC:Text>| <HauntedMC:Warning>Accepteer je openstaande invite.'
+      - '<HauntedMC:Success>/dungeon team decline <HauntedMC:Text>| <HauntedMC:Warning>Weiger je openstaande invite.'
+      - '<HauntedMC:Success>/dungeon team leave <HauntedMC:Text>| <HauntedMC:Warning>Verlaat een team waar je lid van bent.'
+      - '<HauntedMC:Success>/dungeon team disband <HauntedMC:Text>| <HauntedMC:Warning>Verwijder je team als leider.'
+      - '<HauntedMC:Success>/dungeon team info <HauntedMC:Text>| <HauntedMC:Warning>Toon je huidige team.'
+    unknown-subcommand: '<HauntedMC:Error>Onbekend team subcommand.'
+    no-team: '<HauntedMC:Error>Je hebt geen dungeon team.'
+    no-team-create-hint: '<HauntedMC:Error>Je hebt geen dungeon team. Maak er een met <HauntedMC:Social>/dungeon team create<HauntedMC:Error>.'
+    not-in-team: '<HauntedMC:Error>Je zit niet in een dungeon team.'
+    already-in-team: '<HauntedMC:Error>Je zit al in een dungeon team.'
+    locked: '<HauntedMC:Error>Je kunt het team niet meer aanpassen nadat het in de wachtrij staat of is gestart.'
+    create:
+      in-dungeon: '<HauntedMC:Error>Je kunt geen team maken terwijl je in een dungeon zit.'
+      in-queue: '<HauntedMC:Error>Je kunt geen team maken terwijl je in de dungeon queue staat of al onderweg bent naar een dungeon.'
+      success: '<HauntedMC:Success>Tijdelijk dungeon team aangemaakt. Nodig spelers uit met <HauntedMC:Social>/dungeon team invite <player><HauntedMC:Success>.'
+      expiry-info: '<HauntedMC:Muted>Als er niet op tijd een dungeon wordt gestart, wordt het team automatisch verwijderd.'
+    invite:
+      usage: '<HauntedMC:Success>/dungeon team invite <HauntedMC:Warning><player> <HauntedMC:Text>| <HauntedMC:Warning>Nodig een speler uit voor je tijdelijke dungeon team.'
+      only-leader: '<HauntedMC:Error>Alleen de team leider kan spelers uitnodigen.'
+      self: '<HauntedMC:Error>Je kunt jezelf niet uitnodigen.'
+      already-member: '<HauntedMC:Error>Die speler zit al in jouw team.'
+      target-in-team: '<HauntedMC:Error>Die speler zit al in een dungeon team.'
+      target-busy: '<HauntedMC:Error>Die speler zit al in een dungeon, queue, of wordt al naar een dungeon gestuurd.'
+      sent: '<HauntedMC:Success><HauntedMC:Social>{player}<HauntedMC:Success> is uitgenodigd voor je dungeon team.'
+      received: '<HauntedMC:Social>{player}<HauntedMC:Success> heeft je uitgenodigd voor een dungeon team.'
+      how-to-respond: '<HauntedMC:Muted>Gebruik <HauntedMC:Social>/dungeon team accept <HauntedMC:Muted>om toe te treden of <HauntedMC:Social>/dungeon team decline <HauntedMC:Muted>om te weigeren.'
+      none: '<HauntedMC:Error>Je hebt geen openstaande dungeon team invite.'
+      expired: '<HauntedMC:Error>Die dungeon team invite is verlopen.'
+      team-missing: '<HauntedMC:Error>Dat dungeon team bestaat niet meer.'
+      team-locked: '<HauntedMC:Error>Dat dungeon team staat al in de wachtrij of zit al in een dungeon.'
+      target-busy-self: '<HauntedMC:Error>Je kunt geen dungeon team accepteren terwijl je in een dungeon zit, in queue staat, of al onderweg bent naar een dungeon.'
+      denied-self: '<HauntedMC:Muted>Je hebt de dungeon team invite geweigerd.'
+      denied-other: '<HauntedMC:Error>{player} heeft je dungeon team invite geweigerd.'
+    kick:
+      usage: '<HauntedMC:Success>/dungeon team kick <HauntedMC:Warning><player> <HauntedMC:Text>| <HauntedMC:Warning>Zet een teamlid uit je team zolang jullie niet in een dungeon zitten.'
+      only-leader: '<HauntedMC:Error>Alleen de team leider kan teamleden verwijderen.'
+      self: '<HauntedMC:Error>Je kunt jezelf niet uit het team zetten.'
+      not-member: '<HauntedMC:Error>Die speler zit niet in jouw dungeon team.'
+      started: '<HauntedMC:Error>Je kunt geen teamleden verwijderen terwijl jullie in een dungeon zitten.'
+      removed-self: '<HauntedMC:Error>Je bent uit het dungeon team gezet.'
+      removed-other: '<HauntedMC:Warning>{player} is uit het dungeon team gezet.'
+    revoke:
+      usage: '<HauntedMC:Success>/dungeon team cancel-invite <HauntedMC:Warning><player> <HauntedMC:Text>| <HauntedMC:Warning>Trek een openstaande invite in.'
+      only-leader: '<HauntedMC:Error>Alleen de team leider kan invites intrekken.'
+      no-invite: '<HauntedMC:Error>Er staat geen openstaande invite voor die speler vanuit jouw team.'
+      success: '<HauntedMC:Success>De dungeon team invite voor <HauntedMC:Social>{player}<HauntedMC:Success> is ingetrokken.'
+      notified: '<HauntedMC:Warning>Je dungeon team invite van <HauntedMC:Social>{leader}<HauntedMC:Warning> is ingetrokken.'
+    member-joined: '<HauntedMC:Success>{player} is toegetreden tot het dungeon team.'
+    joined: '<HauntedMC:Success>Je bent toegetreden tot het dungeon team van <HauntedMC:Social>{leader}<HauntedMC:Success>.'
+    leave-hint: '<HauntedMC:Muted>Gebruik <HauntedMC:Social>/dungeon team leave <HauntedMC:Muted>als je het team later wilt verlaten.'
+    delete:
+      only-leader: '<HauntedMC:Error>Alleen de team leider kan het team verwijderen.'
+      started: '<HauntedMC:Error>Je team zit al in een dungeon. Gebruik <HauntedMC:Social>/dungeon leave <HauntedMC:Error>om de run als leider te stoppen.'
+      starting: '<HauntedMC:Error>Je team is al bezig met starten en kan niet meer aangepast worden.'
+    deleted-by-leader: '<HauntedMC:Error>Het dungeon team is verwijderd door de leider.'
+    leave:
+      leader-cannot-leave: '<HauntedMC:Error>Je bent de team leider en kunt je eigen team niet verlaten.'
+      leader-started-hint: '<HauntedMC:Muted>Gebruik <HauntedMC:Social>/dungeon leave <HauntedMC:Muted>om de run te stoppen, of <HauntedMC:Social>/dungeon team disband <HauntedMC:Muted>voordat de dungeon start.'
+      self: '<HauntedMC:Success>Je hebt het dungeon team verlaten.'
+      other: '<HauntedMC:Warning>{player} heeft het dungeon team verlaten.'
+      started-self: '<HauntedMC:Warning>Je hebt het dungeon team verlaten en kunt deze run niet opnieuw joinen.'
+      started-other: '<HauntedMC:Warning>{player} heeft het dungeon team verlaten.'
+    info:
+      leader: '<HauntedMC:Social>Team leider: <HauntedMC:Text>{leader}'
+      members: '<HauntedMC:Social>Leden: <HauntedMC:Text>{members}'
+      state: '<HauntedMC:Social>Status: <HauntedMC:Text>{state}'
+      dungeon: '<HauntedMC:Social>Dungeon: <HauntedMC:Text>{dungeon} <HauntedMC:Muted>({difficulty})'
+      leader-controls-started: '<HauntedMC:Social>Leider opties: <HauntedMC:Text>Gebruik /dungeon leave of /dungeon team disband om zelf te vertrekken en het team te ontbinden.'
+      leader-controls-idle: '<HauntedMC:Social>Leider opties: <HauntedMC:Text>Gebruik /dungeon team disband om het team te verwijderen.'
+      member-controls-started: '<HauntedMC:Social>Lid opties: <HauntedMC:Text>Gebruik /dungeon team leave om het team en de run te verlaten.'
+      member-controls-idle: '<HauntedMC:Social>Lid opties: <HauntedMC:Text>Gebruik /dungeon team leave om het team te verlaten.'
+      states:
+        running: actief
+        queued: in wachtrij
+        idle: gereed
+      labels:
+        default-difficulty: standaard
+    queued: '<HauntedMC:Success>Het team staat nu in de wachtrij voor <HauntedMC:Social>{dungeon}<HauntedMC:Success>. De leider neemt iedereen mee naar dezelfde instance.'
+    started: '<HauntedMC:Success>Je dungeon team is instance <HauntedMC:Social>{instance}<HauntedMC:Success> binnengegaan.'
+    started-hint: '<HauntedMC:Muted>Als de leider vertrekt of het team ontbindt, blijft de dungeon tijdelijk open voor de overgebleven spelers.'
+    expired: '<HauntedMC:Error>Je dungeon team is verlopen omdat er niet op tijd een dungeon is gestart.'
+    deleted-leader-offline: '<HauntedMC:Error>Het dungeon team is verwijderd omdat de leider offline ging.'
+    deleted-leader-left-dungeon: '<HauntedMC:Error>Het team is verwijderd omdat de leider de dungeon heeft verlaten.'
+    deleted-dungeon-ended: '<HauntedMC:Muted>Je tijdelijke dungeon team is verwijderd omdat de dungeon is geëindigd.'
+  loot:
+    save-failed: '<HauntedMC:Error>Loot tables konden niet worden opgeslagen. Controleer de console, herstel loottables.yml en laad opnieuw.'
+    usage: '<HauntedMC:Success>/dungeon loot <HauntedMC:Warning><create|edit|list> <HauntedMC:Text>| <HauntedMC:Warning>Beheer loot tables.'
+    create:
+      usage: '<HauntedMC:Success>/dungeon loot create <HauntedMC:Warning><name> <HauntedMC:Text>| <HauntedMC:Warning>Maak een nieuwe loot table.'
+      already-exists: '<HauntedMC:Error>Loot table ''<HauntedMC:Warning>{loot_table}<HauntedMC:Error>'' bestaat al.'
+      success: '<HauntedMC:Success>Loot table <HauntedMC:Warning>{loot_table}<HauntedMC:Success> is aangemaakt.'
+    edit:
+      usage: '<HauntedMC:Success>/dungeon loot edit <HauntedMC:Warning><loot table> <HauntedMC:Text>| <HauntedMC:Warning>Open de loot table editor.'
+      not-found: '<HauntedMC:Error>Loot table ''<HauntedMC:Warning>{loot_table}<HauntedMC:Error>'' bestaat niet.'
+      already-editing: '<HauntedMC:Error>Deze loot table wordt al door iemand anders bewerkt.'
+    list:
+      usage: '<HauntedMC:Success>/dungeon loot list <HauntedMC:Accent>[filter] [pagina] <HauntedMC:Text>| <HauntedMC:Warning>Bekijk bestaande loot tables.'
+      header: <HauntedMC:Brand>-= Loot Tables =-
+      line: ' <HauntedMC:Social>{loot_table} <HauntedMC:Muted>• <HauntedMC:Text>{min}-{max} items <HauntedMC:Muted>• <HauntedMC:Text>duplicates {duplicates} <HauntedMC:Muted>• <HauntedMC:Text>editor {editor}'
+      no-match: '<HauntedMC:Error>Geen loot tables gevonden voor die filter.'
+      footer: <HauntedMC:Brand>-= Pagina {page} van {total_pages} =-
+      no-editor: niemand
+  config:
+    help:
+      header: <HauntedMC:Brand>-= Dungeon Config Help =-
+      lines:
+      - '<HauntedMC:Social>/dungeon map settings <dungeon> list [filter] <HauntedMC:Muted>Bekijk bewerkbare map en generator instellingen.'
+      - '<HauntedMC:Social>/dungeon map settings <dungeon> get <setting> <HauntedMC:Muted>Lees de huidige waarde.'
+      - '<HauntedMC:Social>/dungeon map settings <dungeon> set <setting> <value> <HauntedMC:Muted>Schrijf een nieuwe waarde weg.'
+      - '<HauntedMC:Social>/dungeon map settings <dungeon> inherit <regel> <HauntedMC:Muted>Verwijder de override en gebruik de globale regel.'
+      - '<HauntedMC:Muted>Voorbeelden: <HauntedMC:Social>/dungeon map settings current set display-name <HauntedMC:Warning>&lCrypt'
+      - '<HauntedMC:Muted>             <HauntedMC:Social>/dungeon map settings current set spawn-mobs false'
+      - '<HauntedMC:Muted>             <HauntedMC:Social>/dungeon map settings current set layout branching'
+      - '<HauntedMC:Muted>             <HauntedMC:Social>/dungeon map settings current set exit-location here'
+    unknown-setting: '<HauntedMC:Error>Onbekende bewerkbare instelling ''<HauntedMC:Warning>{setting}<HauntedMC:Error>''. Gebruik <HauntedMC:Warning>/dungeon map settings {dungeon} list<HauntedMC:Error>.'
+    location-player-only: '<HauntedMC:Error>Locatie instellingen kunnen alleen door een speler met <HauntedMC:Warning>here<HauntedMC:Error> worden gezet.'
+    updated: '<HauntedMC:Success>{setting}<HauntedMC:Success> voor <HauntedMC:Warning>{dungeon}<HauntedMC:Success> is bijgewerkt naar <HauntedMC:Warning>{value}<HauntedMC:Success>.'
+    updated-live: '<HauntedMC:Muted>Deze wijziging is direct live in de bewerkte map staat.'
+    updated-runtime: '<HauntedMC:Muted>Nieuwe instances nemen dit direct over. Al geladen instances behouden hun huidige runtime staat.'
+    inherited-value: '{value} (globaal)'
+    setting-value: '<HauntedMC:Social>{setting} <HauntedMC:Muted>= <HauntedMC:Text>{value} <HauntedMC:Muted>| {description}'
+    list-header: '<HauntedMC:Brand>-= Dungeon Config: {dungeon} =-'
+    list-usage: '<HauntedMC:Muted>Gebruik <HauntedMC:Social>/dungeon map settings {dungeon} set <setting> <value><HauntedMC:Muted> om een instelling te wijzigen.'
+    list-shortcut: '<HauntedMC:Muted>Snelkoppeling: <HauntedMC:Social>/dungeon map settings current list <HauntedMC:Muted>werkt terwijl je in de dungeon editor zit.'
+    setting-line: ' <HauntedMC:Social>{setting} <HauntedMC:Muted>= <HauntedMC:Text>{value} <HauntedMC:Muted>| {description}'
+    no-match: '<HauntedMC:Error>Geen bewerkbare instellingen gevonden voor die filter.'
+    invalid-value: '<HauntedMC:Error>Ongeldige waarde voor <HauntedMC:Warning>{setting}<HauntedMC:Error>. {reason}'
+  dungeon:
+    help:
+      lines:
+      - '<HauntedMC:Success>/dungeon map create <HauntedMC:Warning><name> <type> [--generator <generator>] <HauntedMC:Text>| <HauntedMC:Warning>Maak een nieuwe dungeon.'
+      - '<HauntedMC:Success>/dungeon map import <HauntedMC:Warning><world> <name> [--environment <environment>] <HauntedMC:Text>| <HauntedMC:Warning>Importeer een world als dungeon.'
+      - '<HauntedMC:Success>/dungeon map enable <HauntedMC:Warning><dungeon> <reason> <HauntedMC:Text>| <HauntedMC:Warning>Schakel een dungeon in voor spelen.'
+      - '<HauntedMC:Success>/dungeon map disable <HauntedMC:Warning><dungeon> <reason> <HauntedMC:Text>| <HauntedMC:Warning>Schakel een dungeon uit voor spelen.'
+      - '<HauntedMC:Success>/dungeon map list <HauntedMC:Accent>[filter] [pagina] <HauntedMC:Text>| <HauntedMC:Warning>Bekijk opgeslagen dungeons.'
+      - '<HauntedMC:Success>/dungeon map info <HauntedMC:Warning><dungeon> <HauntedMC:Text>| <HauntedMC:Warning>Toon statische dungeon info.'
+      - '<HauntedMC:Success>/dungeon map keys <add|remove|clear|list|give> <HauntedMC:Warning><dungeon> <HauntedMC:Text>| <HauntedMC:Warning>Beheer access keys.'
+      - '<HauntedMC:Success>/dungeon map exit set <HauntedMC:Warning><dungeon> <HauntedMC:Text>| <HauntedMC:Warning>Stel de exit locatie in.'
+    create:
+      usage: '<HauntedMC:Success>/dungeon map create <HauntedMC:Warning><name> <type> [--generator <generator>] <HauntedMC:Text>| <HauntedMC:Warning>Maak een nieuwe lege dungeon.'
+      already-exists: '<HauntedMC:Error>Er bestaat al een dungeon met die naam.'
+      world-conflict: '<HauntedMC:Error>De naam ''<HauntedMC:Warning>{world}<HauntedMC:Error>'' is al in gebruik door een server world(folder). Kies een andere dungeonnaam.'
+      failed-to-create: '<HauntedMC:Error>Aanmaken van de dungeon is mislukt. Controleer de console voor details.'
+      success: '<HauntedMC:Success>Dungeon <HauntedMC:Warning>{dungeon}<HauntedMC:Success> is aangemaakt.'
+    import:
+      usage: '<HauntedMC:Success>/dungeon map import <HauntedMC:Warning><world> <name> [--environment <environment>] <HauntedMC:Text>| <HauntedMC:Warning>Importeer een world als dungeon.'
+      already-exists: '<HauntedMC:Error>Er bestaat al een dungeon met de naam ''<HauntedMC:Warning>{world}<HauntedMC:Error>''.'
+      world-not-found: '<HauntedMC:Error>World ''<HauntedMC:Warning>{world}<HauntedMC:Error>'' kon niet worden gevonden.'
+      world-loaded: '<HauntedMC:Error>World ''<HauntedMC:Warning>{world}<HauntedMC:Error>'' is momenteel geladen. Unload die world eerst voor je hem importeert.'
+      invalid-dimension: '<HauntedMC:Error>Dimensie ''<HauntedMC:Warning>{dimension}<HauntedMC:Error>'' is ongeldig.'
+      failed: '<HauntedMC:Error>Importeren van de dungeon is mislukt. Controleer de console voor details.'
+      success: '<HauntedMC:Success>World <HauntedMC:Warning>{world}<HauntedMC:Success> is succesvol geïmporteerd als dungeon.'
+    delete:
+      usage: '<HauntedMC:Success>/dungeon map archive create <HauntedMC:Warning><dungeon> <reason> <HauntedMC:Text>| <HauntedMC:Warning>Verwijder een dungeon. Gebruik het nogmaals om te bevestigen.'
+      dungeon-not-found: '<HauntedMC:Error>Dungeon ''<HauntedMC:Warning>{dungeon}<HauntedMC:Error>'' bestaat niet.'
+      edit-in-progress: '<HauntedMC:Error>Deze dungeon wordt momenteel bewerkt en kan nu niet verwijderd worden.'
+      delete-warning: '<HauntedMC:Warning>Je staat op het punt deze dungeon te verwijderen.'
+      delete-confirm: '<HauntedMC:Warning>Gebruik hetzelfde command opnieuw binnen {seconds} seconden om te bevestigen.'
+      notification: '<HauntedMC:Error>De dungeon waarin je zat is verwijderd.'
+      success: '<HauntedMC:Success>Dungeon <HauntedMC:Warning>{dungeon}<HauntedMC:Success> is verwijderd.'
+    reload:
+      usage: '<HauntedMC:Success>/dungeon map reload <HauntedMC:Accent><dungeon> <reason> <HauntedMC:Text>| <HauntedMC:Warning>Herlaad configs of een dungeon.'
+      failed: '<HauntedMC:Error>Herladen mislukt of al bezig. De huidige dungeondata blijft behouden; controleer de console.'
+      config-reloading: '<HauntedMC:Warning>Configs worden herladen...'
+      config-reloaded: '<HauntedMC:Success>Configs zijn herladen.'
+      all-dungeons-reloading: '<HauntedMC:Warning>Alle dungeons worden herladen...'
+      all-dungeons-reloaded: '<HauntedMC:Success>Alle dungeons zijn herladen.'
+      dungeon-not-found: '<HauntedMC:Error>Dungeon ''<HauntedMC:Warning>{dungeon}<HauntedMC:Error>'' bestaat niet.'
+      dungeon-reloading: '<HauntedMC:Warning>Dungeon <HauntedMC:Warning>{dungeon}<HauntedMC:Warning> wordt herladen...'
+      dungeon-reloaded: '<HauntedMC:Success>Dungeon <HauntedMC:Warning>{dungeon}<HauntedMC:Success> is herladen.'
+      reload-dungeon-warning: '<HauntedMC:Warning>Er draaien nog actieve instances van <HauntedMC:Warning>{dungeon}<HauntedMC:Warning>.'
+      reload-dungeon-confirm: '<HauntedMC:Warning>Gebruik hetzelfde command opnieuw om het herladen te forceren.'
+      reloaded-by-admin: '<HauntedMC:Error>De dungeon is herladen door een admin.'
+    enable:
+      usage: '<HauntedMC:Success>/dungeon map enable <HauntedMC:Warning><dungeon> <reason> <HauntedMC:Text>| <HauntedMC:Warning>Schakel een dungeon in voor spelen.'
+      dungeon-not-found: '<HauntedMC:Error>Dungeon ''<HauntedMC:Warning>{dungeon}<HauntedMC:Error>'' bestaat niet.'
+      already-enabled: '<HauntedMC:Warning>Dungeon ''<HauntedMC:Warning>{dungeon}<HauntedMC:Warning>'' is al ingeschakeld.'
+      success: '<HauntedMC:Success>Dungeon ''<HauntedMC:Warning>{dungeon}<HauntedMC:Success>'' is nu ingeschakeld voor spelen.'
+    disable:
+      usage: '<HauntedMC:Success>/dungeon map disable <HauntedMC:Warning><dungeon> <reason> <HauntedMC:Text>| <HauntedMC:Warning>Schakel een dungeon uit voor spelen.'
+      dungeon-not-found: '<HauntedMC:Error>Dungeon ''<HauntedMC:Warning>{dungeon}<HauntedMC:Error>'' bestaat niet.'
+      already-disabled: '<HauntedMC:Warning>Dungeon ''<HauntedMC:Warning>{dungeon}<HauntedMC:Warning>'' is al uitgeschakeld.'
+      success: '<HauntedMC:Success>Dungeon ''<HauntedMC:Warning>{dungeon}<HauntedMC:Success>'' is nu uitgeschakeld voor spelen.'
+    list:
+      usage: '<HauntedMC:Success>/dungeon map list <HauntedMC:Accent>[filter] [pagina] <HauntedMC:Text>| <HauntedMC:Warning>Bekijk opgeslagen dungeons.'
+      header: <HauntedMC:Brand>-= Dungeon Definities =-
+      line: ' <HauntedMC:Social>{dungeon} <HauntedMC:Muted>• <HauntedMC:Text>{display} <HauntedMC:Muted>• <HauntedMC:Text>type {type} <HauntedMC:Muted>• <HauntedMC:Text>instances {instances} <HauntedMC:Muted>• <HauntedMC:Text>team {team_size} <HauntedMC:Muted>• <HauntedMC:Text>difficulties {difficulties}'
+      no-match: '<HauntedMC:Error>Geen dungeons gevonden voor die filter.'
+      footer: <HauntedMC:Brand>-= Pagina {page} van {total_pages} =-
+    info:
+      usage: '<HauntedMC:Success>/dungeon map info <HauntedMC:Warning><dungeon> <HauntedMC:Text>| <HauntedMC:Warning>Toon statische dungeon info.'
+      header: <HauntedMC:Brand>---[ {dungeon} INFO ]---
+      display: '<HauntedMC:Social>Display naam: <HauntedMC:Text>{display}'
+      type: '<HauntedMC:Social>Type: <HauntedMC:Text>{type}'
+      team-size: '<HauntedMC:Social>Max team grootte: <HauntedMC:Text>{team_size}'
+      instances: '<HauntedMC:Social>Actieve instances: <HauntedMC:Text>{count}'
+      locations: '<HauntedMC:Social>Locaties: <HauntedMC:Text>lobby={lobby} <HauntedMC:Muted>• <HauntedMC:Text>start={start} <HauntedMC:Muted>• <HauntedMC:Text>exit={exit}'
+      difficulties: '<HauntedMC:Social>Difficulties: <HauntedMC:Text>{difficulties}'
+      keys: '<HauntedMC:Social>Access keys: <HauntedMC:Text>{count}'
+      enabled: '<HauntedMC:Social>Speelbaar: <HauntedMC:Text>{state}'
+      access-cooldown: '<HauntedMC:Social>Access cooldown: <HauntedMC:Text>{state}'
+      edit-session: '<HauntedMC:Social>Editor open: <HauntedMC:Text>{state}'
+      labels:
+        set: ingesteld
+        not-set: ontbreekt
+        enabled: ingeschakeld
+        disabled: uitgeschakeld
+    status:
+      usage: '<HauntedMC:Success>/dungeon instance list <HauntedMC:Accent>[dungeon] <HauntedMC:Text>| <HauntedMC:Warning>Toon info over actieve dungeon instances.'
+      global-header: <HauntedMC:Brand>-= Dungeons versie {version} =-
+      total-instances: '<HauntedMC:Social>Actieve instances: <HauntedMC:Text>{count}'
+      total-players: '<HauntedMC:Social>Spelers in instances: <HauntedMC:Text>{count}'
+      dungeon-section-header: ' <HauntedMC:Brand>[ {dungeon} ]'
+      dungeon-instances: '<HauntedMC:Social>Instances: <HauntedMC:Text>{count}'
+      dungeon-players: '<HauntedMC:Social>Spelers: <HauntedMC:Text>{count}'
+      dungeon-not-found: '<HauntedMC:Error>Dungeon ''<HauntedMC:Warning>{dungeon}<HauntedMC:Error>'' bestaat niet.'
+      dungeon-header: <HauntedMC:Brand>---[ {dungeon} STATUS ]---
+      none-loaded: '<HauntedMC:Muted>Er zijn geen instances van deze dungeon geladen.'
+      instance-line: ' <HauntedMC:Warning>[ {instance} ]'
+      edit-session-label: '<HauntedMC:Warning>EDIT SESSIE'
+      player-line: '<HauntedMC:Warning> • {player}'
+    keys:
+      add:
+        usage: '<HauntedMC:Success>/dungeon map keys add <HauntedMC:Warning><dungeon> <reason> <HauntedMC:Text>| <HauntedMC:Warning>Maak het item in je hand een access key.'
+        dungeon-not-found: '<HauntedMC:Error>Dungeon ''<HauntedMC:Warning>{dungeon}<HauntedMC:Error>'' bestaat niet.'
+        no-permission: '<HauntedMC:Error>Je hebt geen permissie om deze dungeon te bewerken.'
+        no-held-item: '<HauntedMC:Error>Je moet een item in je hand hebben.'
+        issue-failed: '<HauntedMC:Error>Access key <HauntedMC:Warning>#{id}<HauntedMC:Error> is toegevoegd, maar de fysieke key kon niet veilig worden uitgegeven.'
+        success: '<HauntedMC:Success>Het item in je hand is toegevoegd als access key <HauntedMC:Warning>#{id}<HauntedMC:Success>.'
+      remove:
+        usage: '<HauntedMC:Success>/dungeon map keys remove <HauntedMC:Warning><dungeon> <key-id> <reason> <HauntedMC:Text>| <HauntedMC:Warning>Verwijder een access key via item in hand of key id.'
+        dungeon-not-found: '<HauntedMC:Error>Dungeon ''<HauntedMC:Warning>{dungeon}<HauntedMC:Error>'' bestaat niet.'
+        no-permission: '<HauntedMC:Error>Je hebt geen permissie om deze dungeon te bewerken.'
+        no-held-item: '<HauntedMC:Error>Je moet een item in je hand hebben.'
+        success: '<HauntedMC:Success>{count} access key(s) zijn verwijderd.'
+        invalid-key: '<HauntedMC:Error>Access key <HauntedMC:Warning>#{id}<HauntedMC:Error> bestaat niet voor dungeon <HauntedMC:Warning>{dungeon}<HauntedMC:Error>.'
+        no-key-found: '<HauntedMC:Error>Er is geen bijpassende access key gevonden.'
+        no-key-found-detail: '<HauntedMC:Error>Er is voor deze dungeon geen access key gevonden die overeenkomt met het item in je hand.'
+      clear:
+        usage: '<HauntedMC:Success>/dungeon map keys clear <HauntedMC:Warning><dungeon> <reason> <HauntedMC:Text>| <HauntedMC:Warning>Verwijder alle access keys.'
+        dungeon-not-found: '<HauntedMC:Error>Dungeon ''<HauntedMC:Warning>{dungeon}<HauntedMC:Error>'' bestaat niet.'
+        no-permission: '<HauntedMC:Error>Je hebt geen permissie om deze dungeon te bewerken.'
+        success: '<HauntedMC:Success>Alle access keys zijn verwijderd. Totaal: <HauntedMC:Warning>{count}<HauntedMC:Success>.'
+      list:
+        usage: '<HauntedMC:Success>/dungeon map keys list <HauntedMC:Warning><dungeon> <HauntedMC:Text>| <HauntedMC:Warning>Bekijk geconfigureerde access keys.'
+        dungeon-not-found: '<HauntedMC:Error>Dungeon ''<HauntedMC:Warning>{dungeon}<HauntedMC:Error>'' bestaat niet.'
+        header: '<HauntedMC:Brand>---[ ACCESS KEYS: {dungeon} ]---'
+        line: ' <HauntedMC:Warning>#{id} <HauntedMC:Muted>• <HauntedMC:Text>{item} <HauntedMC:Muted>x{amount} <HauntedMC:Muted>• <HauntedMC:Text>{material} <HauntedMC:Muted>• <HauntedMC:Muted>toegevoegd {added_at} door {added_by}'
+        none: '<HauntedMC:Muted>Er zijn geen access keys voor deze dungeon.'
+        footer: <HauntedMC:Brand>-= Pagina {page} van {total_pages} =-
+        labels:
+          unknown: onbekend
+      give:
+        usage: '<HauntedMC:Success>/dungeon map keys give <HauntedMC:Warning><dungeon> <player> <key-id> <reason> <HauntedMC:Text>| <HauntedMC:Warning>Geef een geconfigureerde access key.'
+        dungeon-not-found: '<HauntedMC:Error>Dungeon ''<HauntedMC:Warning>{dungeon}<HauntedMC:Error>'' bestaat niet.'
+        player-not-found: '<HauntedMC:Error>Speler ''<HauntedMC:Warning>{player}<HauntedMC:Error>'' is niet online of bestaat niet.'
+        invalid-key: '<HauntedMC:Error>Access key <HauntedMC:Warning>#{id}<HauntedMC:Error> bestaat niet voor dungeon <HauntedMC:Warning>{dungeon}<HauntedMC:Error>.'
+        invalid-amount: '<HauntedMC:Error>Aantal moet minimaal 1 zijn.'
+        issue-failed: '<HauntedMC:Error>Access key <HauntedMC:Warning>#{id}<HauntedMC:Error> kon niet veilig worden uitgegeven voor dungeon <HauntedMC:Warning>{dungeon}<HauntedMC:Error>.'
+        success: '<HauntedMC:Success>Access key <HauntedMC:Warning>#{id}<HauntedMC:Success> (<HauntedMC:Text>{item}<HauntedMC:Success>) is <HauntedMC:Warning>{copies}x<HauntedMC:Success> gegeven aan <HauntedMC:Social>{player}<HauntedMC:Success> voor dungeon <HauntedMC:Warning>{dungeon}<HauntedMC:Success>.'
+        target: '<HauntedMC:Warning>Je hebt <HauntedMC:Warning>{copies}x <HauntedMC:Text>{item}<HauntedMC:Warning> ontvangen als access key voor dungeon <HauntedMC:Warning>{dungeon}<HauntedMC:Warning> (key <HauntedMC:Warning>#{id}<HauntedMC:Warning>).'
+    exit:
+      set:
+        usage: '<HauntedMC:Success>/dungeon map exit set <HauntedMC:Warning><dungeon> <HauntedMC:Text>| <HauntedMC:Warning>Stel de exit locatie van de dungeon in.'
+        dungeon-not-found: '<HauntedMC:Error>Dungeon ''<HauntedMC:Warning>{dungeon}<HauntedMC:Error>'' bestaat niet.'
+        success: '<HauntedMC:Success>Exit locatie ingesteld op <HauntedMC:Text>{x}, {y}, {z}<HauntedMC:Success> met yaw <HauntedMC:Text>{yaw}<HauntedMC:Success>.'
+  edit:
+    help:
+      lines:
+      - '<HauntedMC:Success>/dungeon edit close <HauntedMC:Text>| <HauntedMC:Warning>Sluit je huidige edit sessie.'
+      - '<HauntedMC:Success>/dungeon edit save <HauntedMC:Text>| <HauntedMC:Warning>Sla de huidige edit sessie op.'
+      - '<HauntedMC:Success>/dungeon edit location lobby set <HauntedMC:Text>| <HauntedMC:Warning>Stel de lobby spawn in.'
+      - '<HauntedMC:Success>/dungeon edit location start set <HauntedMC:Text>| <HauntedMC:Warning>Stel de start spawn in.'
+      - '<HauntedMC:Success>/dungeon edit items <ban|unban|mark-dungeon> <HauntedMC:Text>| <HauntedMC:Warning>Beheer items in de editor.'
+      - '<HauntedMC:Success>/dungeon edit tools <function|room> <HauntedMC:Text>| <HauntedMC:Warning>Herstel editor tools.'
+      - '<HauntedMC:Success>/dungeon edit signs clean <HauntedMC:Text>| <HauntedMC:Warning>Verwijder function signs.'
+    open:
+      usage: '<HauntedMC:Success>/dungeon edit open <HauntedMC:Warning><dungeon> <HauntedMC:Text>| <HauntedMC:Warning>Open een edit sessie van de dungeon.'
+      already-in-dungeon: '<HauntedMC:Error>Je zit al in een dungeon.'
+      dungeon-not-found: '<HauntedMC:Error>Dungeon ''<HauntedMC:Warning>{dungeon}<HauntedMC:Error>'' bestaat niet.'
+      loading: '<HauntedMC:Warning>Dungeon wordt geladen voor bewerken...'
+      no-permission: '<HauntedMC:Error>Je hebt geen permissie om deze dungeon te bewerken.'
+    close:
+      usage: '<HauntedMC:Success>/dungeon edit close <HauntedMC:Text>| <HauntedMC:Warning>Sluit je huidige edit sessie.'
+      not-in-editor: '<HauntedMC:Error>Je zit momenteel niet in een dungeon editor.'
+      success: '<HauntedMC:Success>Je editorsessie voor dungeon <HauntedMC:Warning>{dungeon}<HauntedMC:Success> is gesloten.'
+    save:
+      not-in-dungeon: '<HauntedMC:Error>Je zit niet in een dungeon editor.'
+      saving: '<HauntedMC:Warning>Dungeon wordt opgeslagen...'
+      success: '<HauntedMC:Success>Dungeon <HauntedMC:Warning>{dungeon}<HauntedMC:Success> is opgeslagen.'
+      failed: '<HauntedMC:Error>Opslaan van dungeon ''<HauntedMC:Warning>{dungeon}<HauntedMC:Error>'' is mislukt. Controleer de console voor details.'
+    lobby:
+      set:
+        usage: '<HauntedMC:Success>/dungeon edit location lobby set <HauntedMC:Text>| <HauntedMC:Warning>Stel de lobby spawn van de dungeon in.'
+        not-in-dungeon: '<HauntedMC:Error>Je zit niet in een dungeon editor.'
+        success: '<HauntedMC:Success>Lobby spawn ingesteld op <HauntedMC:Text>{x}, {y}, {z}<HauntedMC:Success> met yaw <HauntedMC:Text>{yaw}<HauntedMC:Success>.'
+    start:
+      set:
+        usage: '<HauntedMC:Success>/dungeon edit location start set <HauntedMC:Text>| <HauntedMC:Warning>Stel de start spawn van de dungeon in.'
+        not-in-dungeon: '<HauntedMC:Error>Je zit niet in een dungeon editor.'
+        not-editing: '<HauntedMC:Error>Je bent momenteel geen dungeon aan het bewerken.'
+        success: '<HauntedMC:Success>Start spawn ingesteld op <HauntedMC:Text>{x}, {y}, {z}<HauntedMC:Success> met yaw <HauntedMC:Text>{yaw}<HauntedMC:Success>.'
+    items:
+      ban:
+        usage: '<HauntedMC:Success>/dungeon edit items ban <HauntedMC:Text>| <HauntedMC:Warning>Blokkeer het item in je hand in deze dungeon.'
+        not-in-dungeon: '<HauntedMC:Error>Je zit niet in een dungeon editor.'
+        success: '<HauntedMC:Success>Het item in je hand is geblokkeerd in deze dungeon.'
+      unban:
+        usage: '<HauntedMC:Success>/dungeon edit items unban <HauntedMC:Text>| <HauntedMC:Warning>Hef de blokkade op voor het item in je hand.'
+        not-in-dungeon: '<HauntedMC:Error>Je zit niet in een dungeon editor.'
+        success: '<HauntedMC:Success>Het item in je hand is weer toegestaan in deze dungeon.'
+        not-banned: '<HauntedMC:Error>Dit item stond niet op de ban lijst.'
+      mark-dungeon:
+        usage: '<HauntedMC:Success>/dungeon edit items mark-dungeon <HauntedMC:Text>| <HauntedMC:Warning>Maak het item in je hand een dungeon item.'
+        not-in-dungeon: '<HauntedMC:Error>Je zit niet in een dungeon editor.'
+        success: '<HauntedMC:Success>Het item in je hand is nu een dungeon item.'
+    tools:
+      function:
+        not-in-dungeon: '<HauntedMC:Error>Je zit niet in de dungeon editor.'
+        restored: '<HauntedMC:Success>De function tool is hersteld naar slot <HauntedMC:Warning>{slot}<HauntedMC:Success>.'
+      room:
+        not-in-dungeon: '<HauntedMC:Error>Je zit niet in de dungeon editor.'
+        not-in-branching: '<HauntedMC:Error>De room tool werkt alleen in branching dungeons.'
+        restored: '<HauntedMC:Success>De room tool is hersteld naar slot <HauntedMC:Warning>{slot}<HauntedMC:Success>.'
+    signs:
+      clean:
+        usage: '<HauntedMC:Success>/dungeon edit signs clean <HauntedMC:Text>| <HauntedMC:Warning>Verwijder alle signs op function locaties.'
+        not-in-dungeon: '<HauntedMC:Error>Je zit momenteel niet in een dungeon editor.'
+        success: '<HauntedMC:Success>{count} sign(s) verwijderd.'
+  debug:
+    map:
+      usage: '<HauntedMC:Success>/dungeon edit test map <HauntedMC:Text>| <HauntedMC:Warning>Geef jezelf de map van je huidige dungeon instance.'
+      not-in-dungeon: '<HauntedMC:Error>Je zit niet in een actieve dungeon instance.'
+      success: '<HauntedMC:Success>De kaart van je huidige dungeon instance is in je inventory geplaatst.'
+    help:
+      lines:
+      - '<HauntedMC:Success>/dungeon edit test doors <HauntedMC:Warning><door> <HauntedMC:Text>| <HauntedMC:Warning>Toggle een specifieke deur in de huidige room.'
+      - '<HauntedMC:Success>/dungeon edit test doors all <HauntedMC:Text>| <HauntedMC:Warning>Toggle alle geldige deuren in de huidige room.'
+instance:
+  lifecycle:
+    loading: '<HauntedMC:Warning>Dungeon <HauntedMC:Warning>{dungeon}<HauntedMC:Warning> wordt geladen...'
+    entered: '<HauntedMC:Success>Je bent dungeon <HauntedMC:Warning>{dungeon}<HauntedMC:Success> binnengegaan.'
+    load-failed: '<HauntedMC:Error>Het laden van dungeon <HauntedMC:Warning>{dungeon}<HauntedMC:Error> is mislukt.'
+    load-timeout: '<HauntedMC:Error>Het laden van dungeon <HauntedMC:Warning>{dungeon}<HauntedMC:Error> duurde te lang.'
+    is-saving: '<HauntedMC:Error>Deze dungeon wordt momenteel al opgeslagen.'
+    stealth-join: '<HauntedMC:Muted>Je bent stilletjes de instance binnengegaan.'
+    entry-denied: '<HauntedMC:Error>Je hebt geen toegang tot deze dungeon instance.'
+  editor:
+    open-failed: '<HauntedMC:Error>De editorsessie voor dungeon <HauntedMC:Warning>{dungeon}<HauntedMC:Error> kon niet worden geopend.'
+    open-timeout: '<HauntedMC:Error>Het openen van de editorsessie voor dungeon <HauntedMC:Warning>{dungeon}<HauntedMC:Error> duurde te lang.'
+  play:
+    time-limit:
+      warning: '<HauntedMC:Warning>Nog {time} over in <HauntedMC:Warning>{dungeon}<HauntedMC:Warning>.'
+      ten-minute-warning: '<HauntedMC:Warning>Nog 10 minuten over in <HauntedMC:Warning>{dungeon}<HauntedMC:Warning>.'
+      five-minute-warning: '<HauntedMC:Warning>Nog 5 minuten over in <HauntedMC:Warning>{dungeon}<HauntedMC:Warning>.'
+      one-minute-warning: '<HauntedMC:Warning>Nog 1 minuut over in <HauntedMC:Warning>{dungeon}<HauntedMC:Warning>.'
+      times-up: '<HauntedMC:Error>De tijd is op.'
+    events:
+      player-returned: '<HauntedMC:Warning>{player} is teruggekeerd naar de dungeon.'
+      player-leave: '<HauntedMC:Warning>{player} heeft de dungeon verlaten.'
+      player-kicked: '<HauntedMC:Error>{player} is uit de dungeon verwijderd.'
+      team-disbanded-shutdown: '<HauntedMC:Error>Het dungeon team is ontbonden. Deze dungeon sluit over <HauntedMC:Warning>{seconds}<HauntedMC:Error> seconden. Gebruik <HauntedMC:Social>/dungeon leave <HauntedMC:Error>om veilig te vertrekken.'
+      team-disbanded-timeout: '<HauntedMC:Error>De uitlooptijd na het ontbinden van het team is verstreken. De dungeon wordt nu gesloten.'
+      life-lost: '<HauntedMC:Warning>{player} verloor een leven. <HauntedMC:Muted>Nog over: <HauntedMC:Text>{lives}'
+      all-lives-lost: '<HauntedMC:Error>{player} heeft alle levens verloren.'
+      all-lives-lost-and-spectating: '<HauntedMC:Error>{player} heeft alle levens verloren en spectate nu.'
+      all-lives-lost-and-spectating-auto-close: '<HauntedMC:Error>Iedereen spectate nu. De dungeon wordt gesloten.'
+      bucket-deny: '<HauntedMC:Error>Emmers zijn niet toegestaan in deze dungeon.'
+      chorus-fruit-deny: '<HauntedMC:Error>Chorus fruit is niet toegestaan in deze dungeon.'
+      command-deny: '<HauntedMC:Error>Dat command is niet toegestaan in deze dungeon.'
+      dungeon-item-inheritance: '<HauntedMC:Warning>Dungeon items zijn overgedragen aan {player}.'
+      key-inheritance: '<HauntedMC:Warning>Keys zijn overgedragen aan {player}.'
+      enderpearl-deny: '<HauntedMC:Error>Ender pearls zijn niet toegestaan in deze dungeon.'
+      item-banned: '<HauntedMC:Error>Dat item is niet toegestaan in deze dungeon.'
+      spectate-deny: '<HauntedMC:Error>Je kunt dat niet doen terwijl je spectate.'
+    functions:
+      checkpoint: '<HauntedMC:Success>Checkpoint opgeslagen.'
+      savepoint: '<HauntedMC:Success>Je bent teruggezet naar je savepoint.'
+      start-dungeon-ready: '<HauntedMC:Success>De dungeon is klaar om te starten.'
+      finish-dungeon: '<HauntedMC:Success>Dungeon <HauntedMC:Warning>{dungeon}<HauntedMC:Success> voltooid.'
+      item-dispenser: '<HauntedMC:Success>Je ontving <HauntedMC:Warning>{amount}x<HauntedMC:Success> <HauntedMC:Text>{item}<HauntedMC:Success>.'
+      keys:
+        key-player: '<HauntedMC:Warning>{player} ontving een dungeon key.'
+        key-ground: '<HauntedMC:Warning>Er is een dungeon key op de grond gevallen.'
+      lives-editor: '<HauntedMC:Success>Levens aangepast naar <HauntedMC:Warning>{lives}<HauntedMC:Success> ({operation}).'
+      doors:
+        lock: '<HauntedMC:Error>Deur vergrendeld.'
+        unlock: '<HauntedMC:Success>Deur ontgrendeld.'
+        locked: '<HauntedMC:Error>Deze deur is vergrendeld.'
+        locked-key: '<HauntedMC:Error>Deze deur is vergrendeld. Vereiste key: <HauntedMC:Text>{key}'
+      reviver:
+        infinite-uses: '<HauntedMC:Muted>Deze reviver kan onbeperkt worden gebruikt.'
+        no-uses: '<HauntedMC:Error>Deze reviver kan niet meer worden gebruikt.'
+        not-dead: '<HauntedMC:Error>Die speler is niet dood.'
+        not-in-dungeon: '<HauntedMC:Error>{player} zit niet in deze dungeon.'
+        revived: '<HauntedMC:Success>{player} is weer tot leven gewekt.'
+        uses-remaining: '<HauntedMC:Warning>Nog <HauntedMC:Warning>{uses}<HauntedMC:Warning> gebruik(en) over.'
+    rewards:
+      gui-name: '<HauntedMC:Social>Dungeon beloningen'
+      added-to-inv: '<HauntedMC:Success>Beloning direct aan je inventaris toegevoegd.'
+      added-to-rewards-inv: '<HauntedMC:Success>Beloning toegevoegd aan je beloningeninventaris.'
+      already-received: '<HauntedMC:Error>Je hebt deze beloning al ontvangen.'
+      cooldown-time: '<HauntedMC:Muted>Beloning weer beschikbaar op: <HauntedMC:Text>{time}'
+      invalid-loottable: '<HauntedMC:Error>De ingestelde loot table bestaat niet.'
+      unavailable: '<HauntedMC:Error>Je hebt nog beloningen op cooldown.'
+      xp-received: '<HauntedMC:Success>Je ontving <HauntedMC:Warning>{xp}<HauntedMC:Success> XP.'
+      levels-received: '<HauntedMC:Success>Je ontving <HauntedMC:Warning>{levels}<HauntedMC:Success> level(s).'
+      view-rewards-info: '<HauntedMC:Muted>Klik om je openstaande beloningen te bekijken.'
+      rewards-inv-info: '<HauntedMC:Muted>Open je inventaris met dungeon beloningen.'
+      unclaimed-rewards: '<HauntedMC:Warning>Je hebt nog openstaande dungeon beloningen.'
+editor:
+  session:
+    autosaving: '<HauntedMC:Warning>Autosave bezig...'
+    autosaved: '<HauntedMC:Success>Autosave voltooid.'
+    autosave-failed: '<HauntedMC:Error>Autosave mislukt. Controleer de console.'
+    status-line: '<HauntedMC:Muted>Edit mode actief. Slot {function_slot} en {room_slot} zijn gereserveerd voor de function tool en room tool.'
+    tip-edit-existing: '<HauntedMC:Muted>Tip: plaats een block op een bestaande function en klik er met de function tool op om die te bewerken.'
+    tip-config-list: '<HauntedMC:Muted>Tip: gebruik /dungeon map settings current list om live map en generator instellingen te bekijken.'
+    actionbar-menu: '<HauntedMC:Social>Editor menu <HauntedMC:Muted>• <HauntedMC:Muted>Rechtsklik selecteert <HauntedMC:Muted>• <HauntedMC:Muted>Linksklik alternatief <HauntedMC:Muted>• <HauntedMC:Muted>Q terug <HauntedMC:Muted>• <HauntedMC:Muted>F sluiten'
+    actionbar-status: '<HauntedMC:Social>Edit mode actief <HauntedMC:Muted>• <HauntedMC:Muted>Slot {function_slot} en {room_slot} zijn gereserveerd <HauntedMC:Muted>• <HauntedMC:Muted>/dungeon map settings current list'
+    function-outside-room: '<HauntedMC:Error>Je kunt hier geen function plaatsen omdat deze buiten een room ligt.'
+    function-select: '<HauntedMC:Success>Selecteer een function om hier te plaatsen.'
+    function-selected: '<HauntedMC:Success>Function geselecteerd: <HauntedMC:Text>{function}'
+    room-click-required: '<HauntedMC:Error>Klik twee hoeken aan om een room te selecteren.'
+    room-connectors-outside: '<HauntedMC:Error>Connectoren buiten rooms zijn niet toegestaan.'
+    room-create-cancelled: '<HauntedMC:Error>Room aanmaken geannuleerd.'
+    room-created: '<HauntedMC:Success>Room <HauntedMC:Warning>{room}<HauntedMC:Success> is aangemaakt.'
+    room-edit-cancelled: '<HauntedMC:Error>Room bewerken geannuleerd.'
+    room-edited: '<HauntedMC:Success>Room <HauntedMC:Warning>{room}<HauntedMC:Success> is bijgewerkt.'
+    room-exists: '<HauntedMC:Error>Daar bestaat al een room.'
+    room-name-request: '<HauntedMC:Warning>Typ een naam voor deze room in de chat.'
+    room-select-1: '<HauntedMC:Success>Eerste hoek van de room ingesteld.'
+    room-select-2: '<HauntedMC:Success>Tweede hoek van de room ingesteld.'
+    room-whitelist:
+      add-prompt: '<HauntedMC:Warning>Typ de naam van de room die je aan de whitelist wilt toevoegen.'
+      add-success: '<HauntedMC:Success>Room <HauntedMC:Warning>{room}<HauntedMC:Success> is aan de whitelist toegevoegd.'
+      add-not-found: '<HauntedMC:Error>Room <HauntedMC:Warning>{room}<HauntedMC:Error> bestaat niet.'
+      add-already-present: '<HauntedMC:Warning>Room <HauntedMC:Warning>{room}<HauntedMC:Warning> staat al in de whitelist.'
+      remove-prompt: '<HauntedMC:Warning>Klik op een room in de whitelist om die te verwijderen.'
+      remove-success: '<HauntedMC:Success>Room <HauntedMC:Warning>{room}<HauntedMC:Success> is uit de whitelist verwijderd.'
+    hotbar-controls:
+    - '<HauntedMC:Muted>Editor hotbar controls:'
+    - '<HauntedMC:Muted>Rechtsklik selecteert het gemarkeerde slot.'
+    - '<HauntedMC:Muted>Linksklik voert de klikactie van dat slot uit.'
+    - '<HauntedMC:Muted>Q gaat één menu terug.'
+    - '<HauntedMC:Muted>F sluit de editor hotbar.'
+    - '<HauntedMC:Muted>Tip: plaats een block op een bestaande function en klik er met de function tool op om die te bewerken.'
+    hotbar:
+      function-copied: '<HauntedMC:Warning>Function gekopieerd.'
+      function-cut: '<HauntedMC:Warning>Function geknipt.'
+      look-at-block-paste: '<HauntedMC:Error>Kijk naar een block om de function te plakken.'
+      function-already-here: '<HauntedMC:Error>Hier staat al een function.'
+      function-pasted: '<HauntedMC:Warning>Function op het aangeklikte block geplakt.'
+      function-cut-pasted: '<HauntedMC:Warning>Function geknipt en op het aangeklikte block geplakt.'
+      function-deleted: '<HauntedMC:Error>Function verwijderd.'
+      look-at-block-connector: '<HauntedMC:Error>Kijk naar een block om een connector te selecteren of aan te maken.'
+      block-not-in-room: '<HauntedMC:Error>Dit block ligt niet binnen de geselecteerde room.'
+      connector-edge-only: '<HauntedMC:Error>Room connectoren moeten aan de rand van een room geplaatst worden.'
+      connector-added: '<HauntedMC:Success>Room connector toegevoegd op de doel locatie.'
+      room-weight-prompt: '<HauntedMC:Warning>Hoe zwaar moet deze room meetellen? Hogere waarden maken de room waarschijnlijker.'
+      room-weight-current: '<HauntedMC:Warning>Huidige waarde: <HauntedMC:Warning>{weight}'
+      room-weight-set: '<HauntedMC:Success>Standaard weight van de room ingesteld op ''<HauntedMC:Warning>{weight}<HauntedMC:Success>''.'
+      room-weight-note: '<HauntedMC:Accent>Let op: je kunt connectoren ook een eigen weight per room geven.'
+      look-at-block-spawn: '<HauntedMC:Error>Kijk naar een block om de spawn van deze room te zetten of te verwijderen.'
+      room-spawn-removed: '<HauntedMC:Warning>De spawn van deze room is verwijderd.'
+      room-spawn-set: '<HauntedMC:Success>De spawn van deze room is gezet op het block waar je naar kijkt. Gebruik linksklik om de kijkrichting in te stellen.'
+      room-spawn-added-starting: '<HauntedMC:Accent>Deze room is ook toegevoegd aan de lijst met mogelijke start rooms.'
+      room-spawn-direction-set: '<HauntedMC:Success>Spawn richting ingesteld op ''<HauntedMC:Warning>{yaw}<HauntedMC:Success>'' graden.'
+      room-shrunk: '<HauntedMC:Success>Room 1 block verkleind richting {direction}.'
+      room-expanded: '<HauntedMC:Success>Room 1 block vergroot richting {direction}.'
+      room-delete-confirm: '<HauntedMC:Warning>Weet je zeker dat je deze room wilt verwijderen? Klik nogmaals om te bevestigen.'
+      room-deleted: '<HauntedMC:Error>De geselecteerde room is verwijderd.'
+      room-occurrences-prompt: '<HauntedMC:Warning>Hoe vaak moet deze room genereren? Ondersteunt ranges zoals 0-3 of 2+.'
+      room-occurrences-set: '<HauntedMC:Success>Generation limit voor deze room ingesteld op ''<HauntedMC:Warning>{occurrences}<HauntedMC:Success>'' kopieën.'
+      current-value: '<HauntedMC:Warning>Huidige waarde: <HauntedMC:Warning>{value}'
+      room-depth-prompt: '<HauntedMC:Warning>Hoe diep in de dungeon mag deze room genereren? Ondersteunt ranges zoals 0-3 of 2+.'
+      room-depth-set: '<HauntedMC:Success>Generation depth voor deze room ingesteld op ''<HauntedMC:Warning>{depth}<HauntedMC:Success>''.'
+      closed: '<HauntedMC:Warning>De editor hotbar is gesloten.'
+      went-back: '<HauntedMC:Warning>Eén editor menu teruggegaan.'
+  condition:
+    chance:
+      ask-chance: '<HauntedMC:Warning>Wat is de kans dat deze trigger afgaat? Gebruik een waarde tussen 0.0 en 1.0.'
+      chance-set: '<HauntedMC:Success>Kans ingesteld op ''<HauntedMC:Warning>{chance}<HauntedMC:Success>'''
+      current-chance: '<HauntedMC:Warning>Huidige kans: <HauntedMC:Warning>{chance}'
+    difficulty:
+      ask-difficulty: '<HauntedMC:Warning>Welk difficulty level moet worden gebruikt?'
+      current-difficulty: '<HauntedMC:Warning>Huidige vereiste difficulty: <HauntedMC:Warning>{difficulty}'
+      difficulty-set: '<HauntedMC:Success>Difficulty ingesteld op ''<HauntedMC:Warning>{difficulty}<HauntedMC:Success>'''
+    instance-variable:
+      ask-expression: '<HauntedMC:Warning>Welke expressie moet deze conditie controleren?'
+      examples: '<HauntedMC:Warning>Voorbeelden: "<variable_name> = 5", "<variable_name> < 8"'
+      expression-set: '<HauntedMC:Success>Expressie ingesteld op ''<HauntedMC:Warning>{expression}<HauntedMC:Success>'''
+    mob-within:
+      ask-count: '<HauntedMC:Warning>Hoeveel zijn er nodig?'
+      ask-mob: '<HauntedMC:Warning>Welk mobtype moet worden gebruikt?'
+      ask-radius: '<HauntedMC:Warning>Wat moet de straal in blokken zijn?'
+      count-set: '<HauntedMC:Success>Aantal ingesteld op ''<HauntedMC:Warning>{count}<HauntedMC:Success>'''
+      exact: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>vereist exact aantal<HauntedMC:Success>'''
+      invalid-mob: '<HauntedMC:Error>Ongeldig mobtype! Voer een geldige Bukkit entity type in.'
+      minimum: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>vereist minimaal aantal<HauntedMC:Success>'''
+      mob-set: '<HauntedMC:Success>Mob ingesteld op ''<HauntedMC:Warning>{mob}<HauntedMC:Success>'''
+      radius-set: '<HauntedMC:Success>Straal ingesteld op ''<HauntedMC:Warning>{radius}<HauntedMC:Success>'''
+    negated: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Condition <HauntedMC:Error>moet NIET <HauntedMC:Warning>waar zijn<HauntedMC:Success>'''
+    normal: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Condition <HauntedMC:Accent>moet <HauntedMC:Warning>waar zijn<HauntedMC:Success>'''
+    players-within:
+      ask-count: '<HauntedMC:Warning>Hoeveel zijn er nodig?'
+      ask-radius: '<HauntedMC:Warning>Wat moet de straal in blokken zijn?'
+      count-set: '<HauntedMC:Success>Aantal ingesteld op ''<HauntedMC:Warning>{count}<HauntedMC:Success>'''
+      exact: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>vereist exact aantal<HauntedMC:Success>'''
+      minimum: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>vereist minimaal aantal<HauntedMC:Success>'''
+      radius-set: '<HauntedMC:Success>Straal ingesteld op ''<HauntedMC:Warning>{radius}<HauntedMC:Success>'''
+    status:
+      ask-status: '<HauntedMC:Warning>Welke status moet de dungeon hebben?'
+      current-status: '<HauntedMC:Warning>Huidige vereiste status: <HauntedMC:Warning>{status}'
+      status-set: '<HauntedMC:Success>Status ingesteld op ''<HauntedMC:Warning>{status}<HauntedMC:Success>'''
+    time-elapsed:
+      ask-max: '<HauntedMC:Warning>Wat is het maximum?'
+      ask-min: '<HauntedMC:Warning>Wat is het minimum?'
+      current-time: '<HauntedMC:Warning>Huidige time: <HauntedMC:Warning>{time}'
+      max-set: '<HauntedMC:Success>Maximum ingesteld op ''<HauntedMC:Warning>{time}<HauntedMC:Success>'''
+      min-set: '<HauntedMC:Success>Minimum ingesteld op ''<HauntedMC:Warning>{time}<HauntedMC:Success>'''
+  function:
+    allow-block:
+      breaking-allowed: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Blokken breken toegestaan<HauntedMC:Success>'''
+      breaking-denied: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Blokken breken verboden<HauntedMC:Success>'''
+      buckets-allowed: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Buckets gebruiken toegestaan<HauntedMC:Success>'''
+      buckets-denied: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Buckets gebruiken verboden<HauntedMC:Success>'''
+      placing-allowed: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Blokken plaatsen toegestaan<HauntedMC:Success>'''
+      placing-denied: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Blokken plaatsen verboden<HauntedMC:Success>'''
+    block-editor:
+      ask-direction: '<HauntedMC:Warning>Welke richting moet het blok op kijken?'
+      ask-place-block: '<HauntedMC:Warning>Welk blok moet hier geplaatst worden?'
+      ask-remove-block: '<HauntedMC:Warning>Welk blok moet hier verwijderd worden? Gebruik ''ANY'' voor elk blok.'
+      axis-set: '<HauntedMC:Success>As ingesteld op ''<HauntedMC:Warning>{axis}<HauntedMC:Success>'''
+      block-set: '<HauntedMC:Success>Blok ingesteld op ''<HauntedMC:Warning>{block}<HauntedMC:Success>'''
+      current-block: '<HauntedMC:Warning>Huidig blok: <HauntedMC:Warning>{block}'
+      current-direction: '<HauntedMC:Warning>Huidige richting: <HauntedMC:Warning>{direction}'
+      direction-set: '<HauntedMC:Success>Richting ingesteld op ''<HauntedMC:Warning>{direction}<HauntedMC:Success>'''
+      invalid-direction: '<HauntedMC:Error>Je moet een geldige richting opgeven!'
+      invalid-material: '<HauntedMC:Error>Je moet een geldig block material opgeven!'
+      mode-place: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>function <HauntedMC:Accent>plaatst <HauntedMC:Warning>het opgegeven blok<HauntedMC:Success>'''
+      mode-remove: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>function <HauntedMC:Error>verwijdert <HauntedMC:Warning>het blok<HauntedMC:Success>'''
+      no-direction-for-block: '<HauntedMC:Error>Voor dit bloktype kun je geen richting instellen!'
+      no-direction-while-removing: '<HauntedMC:Error>Je kunt geen richting instellen terwijl je een blok verwijdert!'
+      valid-axis-directions: '<HauntedMC:Accent>Geldige richtingen voor dit bloktype zijn: X, Y, Z'
+      valid-materials-link: '<HauntedMC:Accent>Klik hier voor een lijst met geldige materialen.'
+      valid-directions-link: '<HauntedMC:Accent>Klik hier voor een lijst met geldige richtingen.'
+    checkpoint:
+      direction-set: '<HauntedMC:Success>Richting ingesteld op ''<HauntedMC:Warning>{yaw}<HauntedMC:Success>'''
+      disabled: '<HauntedMC:Error>&lUITGESCHAKELD'
+      enabled: '<HauntedMC:Success>&lINGESCHAKELD'
+      rejoin-note: '<HauntedMC:Accent>Als de speler vertrekt zonder de dungeon af te maken, start die de volgende keer hier.'
+    chunk-load:
+      ask-radius: '<HauntedMC:Warning>Wat moet de straal in blokken zijn?'
+      radius-set: '<HauntedMC:Success>Straal ingesteld op ''<HauntedMC:Warning>{radius}<HauntedMC:Success>'''
+    command:
+      ask-command: '<HauntedMC:Warning>Welk command moet deze function uitvoeren? Zonder de slash.'
+      command-set: '<HauntedMC:Success>Command ingesteld op ''<HauntedMC:Warning>{command}<HauntedMC:Success>'''
+      current-command: '<HauntedMC:Warning>Huidig command: <HauntedMC:Warning>{command}'
+      for-each-player: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Voer het command één keer per speler uit<HauntedMC:Success>'''
+      run-once: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Voer het command één keer uit<HauntedMC:Success>'''
+    delayed:
+      ask-delay: '<HauntedMC:Warning>Hoeveel ticks vertraging moet er zijn?'
+      delay-set: '<HauntedMC:Success>Vertraging ingesteld op ''<HauntedMC:Warning>{delay}<HauntedMC:Success>'' ticks.'
+      no-function: '<HauntedMC:Error>Je hebt nog geen function ingesteld!'
+    door-control:
+      auto: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Deur opent en sluit automatisch<HauntedMC:Success>'''
+      locked-default: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Deur standaard vergrendeld<HauntedMC:Success>'''
+      manual: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Deur opent en sluit niet automatisch<HauntedMC:Success>'''
+      unlocked-default: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Deur standaard ontgrendeld<HauntedMC:Success>'''
+    finish-dungeon:
+      leave-after: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Speler verlaat de dungeon na triggeren<HauntedMC:Success>'''
+      stay-after: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Speler blijft in de dungeon na triggeren<HauntedMC:Success>'''
+    give-item:
+      do-not-notify: '<HauntedMC:Success>Spelers <HauntedMC:Error>worden NIET <HauntedMC:Success>geïnformeerd wanneer ze het item ontvangen.'
+      drop-at-location: '<HauntedMC:Success>Gedrag ingesteld op ''<HauntedMC:Warning>Item wordt op deze locatie gedropt<HauntedMC:Success>'''
+      give-to-targets: '<HauntedMC:Success>Gedrag ingesteld op ''<HauntedMC:Warning>Item wordt aan de target speler(s) gegeven<HauntedMC:Success>'''
+      notify: '<HauntedMC:Success>Spelers <HauntedMC:Accent>worden <HauntedMC:Success>geïnformeerd wanneer ze het item ontvangen.'
+    hologram:
+      ask-message: '<HauntedMC:Warning>Welke message moet worden getoond?'
+      ask-message-multiline: '<HauntedMC:Warning>Welke message moet getoond worden? <HauntedMC:Accent>Gebruik \n voor nieuwe regels.'
+      ask-radius: '<HauntedMC:Warning>Wat moet de straal in blokken zijn?'
+      click-again-set-location: '<HauntedMC:Warning>Klik nog een keer om de locatie in te stellen op waar je nu staat.'
+      current-location: '<HauntedMC:Warning>Huidige locatie is <HauntedMC:Warning>X:{x}, Y:{y}, Z:{z}'
+      current-location-none: '<HauntedMC:Warning>Huidige locatie is <HauntedMC:Warning>GEEN'
+      current-message: '<HauntedMC:Warning>Huidige message:
+
+        <HauntedMC:Warning>{message}'
+      default-invisible: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Hologram is <HauntedMC:Error>ONZICHTBAAR <HauntedMC:Warning>standaard<HauntedMC:Success>'''
+      default-visible: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Hologram is <HauntedMC:Accent>ZICHTBAAR <HauntedMC:Warning>standaard<HauntedMC:Success>'''
+      location-set-standing: '<HauntedMC:Success>Locatie ingesteld op waar je nu staat!'
+      message-set: '<HauntedMC:Success>Message ingesteld op:
+
+        <HauntedMC:Warning>{message}'
+      radius-set: '<HauntedMC:Success>Straal ingesteld op ''<HauntedMC:Warning>{radius}<HauntedMC:Success>'''
+    instance-variable:
+      ask-name: '<HauntedMC:Warning>Wat is de naam?'
+      ask-value-add: '<HauntedMC:Warning>Hoeveel moeten we bij de variabele optellen?'
+      ask-value-set: '<HauntedMC:Warning>Waarop moet de variabele worden gezet?'
+      ask-value-subtract: '<HauntedMC:Warning>Hoeveel moeten we van de variabele aftrekken?'
+      current-name: '<HauntedMC:Warning>Huidige naam: <HauntedMC:Warning>{name}'
+      current-value: '<HauntedMC:Warning>Huidige waarde: <HauntedMC:Warning>{value}'
+      mode-set: '<HauntedMC:Success>Mode ingesteld op ''<HauntedMC:Warning>{mode}<HauntedMC:Success>'''
+      name-set: '<HauntedMC:Success>Naam ingesteld op ''<HauntedMC:Warning>{name}<HauntedMC:Success>'''
+      value-set: '<HauntedMC:Success>Waarde ingesteld op ''<HauntedMC:Warning>{value}<HauntedMC:Success>'''
+    lives:
+      amount-set: '<HauntedMC:Success>Lives ingesteld op ''<HauntedMC:Warning>{amount}<HauntedMC:Success>'''
+      ask-gain: '<HauntedMC:Warning>Hoeveel lives moet de speler erbij krijgen?'
+      ask-multiply: '<HauntedMC:Warning>Met hoeveel moeten we de lives van de speler vermenigvuldigen?'
+      ask-set: '<HauntedMC:Warning>Waarop moeten we de lives van de speler zetten?'
+      mode-set: '<HauntedMC:Success>Mode ingesteld op ''<HauntedMC:Warning>{mode}<HauntedMC:Success>'''
+    loot-table-rewards:
+      create-link: '<HauntedMC:Accent>Klik hier om deze loot table te maken!'
+      ask-exp: '<HauntedMC:Warning>Hoeveel EXP moet deze reward geven?'
+      ask-levels: '<HauntedMC:Warning>Hoeveel levels moet deze reward geven?'
+      ask-loot-table: '<HauntedMC:Warning>Wat is de unieke naam van de loot table?'
+      current-loot-table: '<HauntedMC:Warning>Huidige loot table: <HauntedMC:Warning>{loot_table}'
+      exp-set: '<HauntedMC:Success>EXP reward ingesteld op ''<HauntedMC:Warning>{xp}<HauntedMC:Success>'''
+      levels-set: '<HauntedMC:Success>Level reward ingesteld op ''<HauntedMC:Warning>{levels}<HauntedMC:Success>'''
+      loot-table-set: '<HauntedMC:Success>Loot table ingesteld op ''<HauntedMC:Warning>{loot_table}<HauntedMC:Success>'''
+      warning-no-spaces: '<HauntedMC:Error>WAARSCHUWING: Loot tables mogen geen spaties in hun naam hebben!'
+      warning-not-found: '<HauntedMC:Error>WAARSCHUWING: Er bestaat geen loot table met deze naam!'
+      warning-spaces-replaced: '<HauntedMC:Error>Alle spaties worden vervangen door underscores.'
+    message:
+      ask-message: '<HauntedMC:Warning>Welke message moet worden getoond?'
+      current-message: '<HauntedMC:Warning>Huidige message:
+
+        <HauntedMC:Warning>{message}'
+      message-set: '<HauntedMC:Success>Message ingesteld op:
+
+        <HauntedMC:Warning>{message}'
+      type-set: '<HauntedMC:Success>Type ingesteld op ''<HauntedMC:Warning>{type}<HauntedMC:Success>'''
+    multi:
+      max-functions-reached: '<HauntedMC:Error>Je kunt niet meer functions toevoegen!'
+    no-trigger: '<HauntedMC:Warning>Deze function heeft geen trigger!'
+    play-sound:
+      ask-category: '<HauntedMC:Warning>Welke sound category moet worden gebruikt?'
+      ask-pitch: '<HauntedMC:Warning>Welke pitch moet het geluid hebben?'
+      ask-sound: '<HauntedMC:Warning>Welk geluid moet worden afgespeeld?'
+      ask-volume: '<HauntedMC:Warning>Welk volume moet het geluid hebben?'
+      category-set: '<HauntedMC:Success>Sound category ingesteld op ''<HauntedMC:Warning>{category}<HauntedMC:Success>'''
+      current-category: '<HauntedMC:Warning>Huidige category: <HauntedMC:Warning>{category}'
+      current-pitch: '<HauntedMC:Warning>Huidige pitch: <HauntedMC:Warning>{pitch}'
+      current-sound: '<HauntedMC:Warning>Huidig geluid: <HauntedMC:Warning>{sound}'
+      current-volume: '<HauntedMC:Warning>Huidig volume: <HauntedMC:Warning>{volume}'
+      invalid-category: '<HauntedMC:Error>Ongeldige category! Geldige categories zijn:'
+      location-function: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Speel het geluid af op de <HauntedMC:Accent>function locatie<HauntedMC:Success>'''
+      location-player: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Speel het geluid af op de <HauntedMC:Accent>player locatie<HauntedMC:Success>'''
+      pitch-set: '<HauntedMC:Success>Pitch ingesteld op ''<HauntedMC:Warning>{pitch}<HauntedMC:Success>'''
+      sound-set: '<HauntedMC:Success>Geluid ingesteld op ''<HauntedMC:Warning>{sound}<HauntedMC:Success>'''
+      valid-categories: '<HauntedMC:Error>{categories}'
+      volume-set: '<HauntedMC:Success>Volume ingesteld op ''<HauntedMC:Warning>{volume}<HauntedMC:Success>'''
+    random-reward:
+      ask-max: '<HauntedMC:Warning>Wat is het maximum?'
+      ask-min: '<HauntedMC:Warning>Wat is het minimum?'
+      max-set: '<HauntedMC:Success>Maximum ingesteld op ''<HauntedMC:Warning>{max}<HauntedMC:Success>'''
+      min-set: '<HauntedMC:Success>Minimum ingesteld op ''<HauntedMC:Warning>{min}<HauntedMC:Success>'''
+    redstone-block:
+      ask-count: '<HauntedMC:Warning>Hoeveel zijn er nodig?'
+      ask-delay: '<HauntedMC:Warning>Hoeveel ticks vertraging moet er zijn?'
+      ask-rate: '<HauntedMC:Warning>Wat moet het interval zijn?'
+      count-set: '<HauntedMC:Success>Aantal ingesteld op ''<HauntedMC:Warning>{count}<HauntedMC:Success>'''
+      delay-set: '<HauntedMC:Success>Vertraging ingesteld op ''<HauntedMC:Warning>{delay}<HauntedMC:Success>'' ticks.'
+      rate-set: '<HauntedMC:Success>Rate ingesteld op ''<HauntedMC:Warning>{rate}<HauntedMC:Success>'''
+    remote-trigger:
+      ask-range: '<HauntedMC:Warning>Hoe ver reikt het signaal? Gebruik 0 voor oneindig.'
+      ask-signal: '<HauntedMC:Warning>Wat is de naam van het signaal?'
+      current-range: '<HauntedMC:Warning>Huidig bereik: <HauntedMC:Warning>{range}'
+      current-signal: '<HauntedMC:Warning>Huidige signaalnaam: <HauntedMC:Warning>{signal}'
+      range-set: '<HauntedMC:Success>Bereik ingesteld op ''<HauntedMC:Warning>{range}<HauntedMC:Success>'''
+      signal-set: '<HauntedMC:Success>Signaalnaam ingesteld op ''<HauntedMC:Warning>{signal}<HauntedMC:Success>'''
+    repeater:
+      ask-delay: '<HauntedMC:Warning>Hoeveel ticks vertraging moet er zijn?'
+      ask-max-repeats: '<HauntedMC:Warning>Hoeveel keer moet de function maximaal draaien?'
+      ask-rate: '<HauntedMC:Warning>Wat moet het interval zijn?'
+      delay-set: '<HauntedMC:Success>Vertraging ingesteld op ''<HauntedMC:Warning>{delay}<HauntedMC:Success>'' ticks.'
+      interval-set: '<HauntedMC:Success>Interval ingesteld op ''<HauntedMC:Warning>{interval}<HauntedMC:Success>'' ticks tussen elke uitvoering.'
+      max-repeats-set: '<HauntedMC:Success>Maximaal aantal herhalingen ingesteld op ''<HauntedMC:Warning>{max_repeats}<HauntedMC:Success>'''
+      no-function: '<HauntedMC:Error>Je hebt nog geen function ingesteld!'
+    revive-player:
+      ask-lives-after: '<HauntedMC:Warning>Hoeveel lives moet de speler hebben na het reviven?'
+      ask-max-revives: '<HauntedMC:Warning>Hoe vaak kunnen spelers deze reviver gebruiken? Gebruik 0 voor oneindig.'
+      lives-after-set: '<HauntedMC:Success>Lives na revival ingesteld op ''<HauntedMC:Warning>{lives}<HauntedMC:Success>'''
+      max-revives-set: '<HauntedMC:Success>Maximum revives ingesteld op ''<HauntedMC:Warning>{max_revives}<HauntedMC:Success>'''
+    reward:
+      ask-cooldown-minutes: '<HauntedMC:Warning>Hoe lang moet de cooldown zijn in minuten?'
+      ask-exp: '<HauntedMC:Warning>Hoeveel EXP moet deze reward geven?'
+      ask-levels: '<HauntedMC:Warning>Hoeveel levels moet deze reward geven?'
+      ask-reset-hour: '<HauntedMC:Warning>Op welk uur van de dag moet de reward resetten?'
+      ask-reset-monthday: '<HauntedMC:Warning>Op welke dag van de maand moet de reward resetten?'
+      ask-reset-weekday: '<HauntedMC:Warning>Op welke dag van de week moet de reward resetten?'
+      cooldown-disabled: '<HauntedMC:Success>Cooldown uitgeschakeld.'
+      cooldown-enabled: '<HauntedMC:Success>Cooldown ingeschakeld!'
+      cooldown-time-set: '<HauntedMC:Success>Cooldown tijd ingesteld op ''<HauntedMC:Warning>{time}<HauntedMC:Success>'''
+      cooldown-type-set: '<HauntedMC:Success>Cooldown type ingesteld op ''<HauntedMC:Warning>{type}<HauntedMC:Success>'''
+      custom-cooldown-disabled: '<HauntedMC:Success>Custom reward cooldown uitgeschakeld.'
+      custom-cooldown-enabled: '<HauntedMC:Success>Custom reward cooldown ingeschakeld!'
+      exp-set: '<HauntedMC:Success>EXP reward ingesteld op ''<HauntedMC:Warning>{xp}<HauntedMC:Success>'''
+      levels-set: '<HauntedMC:Success>Level reward ingesteld op ''<HauntedMC:Warning>{levels}<HauntedMC:Success>'''
+      reset-day-set: '<HauntedMC:Success>Reset dag ingesteld op ''<HauntedMC:Warning>{day}<HauntedMC:Success>'''
+      saved: '<HauntedMC:Success>Rewards opgeslagen!'
+    room-door:
+      action-set: '<HauntedMC:Success>Deur actie ingesteld op ''<HauntedMC:Warning>{action}<HauntedMC:Success>'''
+      ask-door-name: '<HauntedMC:Warning>Wat is de naam van de deur?'
+      current-door: '<HauntedMC:Warning>Huidige deur: <HauntedMC:Warning>{door}'
+      do-not-keep-entrance-open: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Houd ingang niet open<HauntedMC:Success>'''
+      door-set: '<HauntedMC:Success>Deur ingesteld op ''<HauntedMC:Warning>{door}<HauntedMC:Success>'''
+      enter-all: '<HauntedMC:Warning>Voer ''<HauntedMC:Warning>all<HauntedMC:Warning>'' in voor alle levende spelers in de dungeon.'
+      keep-entrance-open: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Houd ingang open<HauntedMC:Success>'''
+      warning-door-not-found: '<HauntedMC:Error>Let op! Er is geen deur met die naam in deze room. Weet je zeker dat je hem goed hebt ingevoerd?'
+    sequence:
+      loops: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>sequence loopt wanneer hij klaar is<HauntedMC:Success>'''
+      no-loop: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>sequence loopt NIET wanneer hij klaar is<HauntedMC:Success>'''
+    set-difficulty:
+      ask-difficulty: '<HauntedMC:Warning>Welk difficulty level moet worden gebruikt?'
+      current-difficulty: '<HauntedMC:Warning>Huidige vereiste difficulty: <HauntedMC:Warning>{difficulty}'
+      difficulty-set: '<HauntedMC:Success>Difficulty ingesteld op ''<HauntedMC:Warning>{difficulty}<HauntedMC:Success>'''
+    set-status:
+      ask-status: '<HauntedMC:Warning>Welke status moet de dungeon hebben?'
+      current-status: '<HauntedMC:Warning>Huidige vereiste status: <HauntedMC:Warning>{status}'
+      status-set: '<HauntedMC:Success>Status ingesteld op ''<HauntedMC:Warning>{status}<HauntedMC:Success>'''
+    spawn-mob:
+      ask-count: '<HauntedMC:Warning>Hoeveel zijn er nodig?'
+      ask-delay: '<HauntedMC:Warning>Hoeveel ticks vertraging moet er zijn?'
+      ask-interval: '<HauntedMC:Warning>Hoeveel ticks moet de vertraging tussen spawns zijn?'
+      ask-mob: '<HauntedMC:Warning>Welk mobtype moet worden gebruikt?'
+      count-set: '<HauntedMC:Success>Aantal ingesteld op ''<HauntedMC:Warning>{count}<HauntedMC:Success>'''
+      current-mob: '<HauntedMC:Warning>Huidige mob: <HauntedMC:Warning>{mob}'
+      delay-set: '<HauntedMC:Success>Vertraging ingesteld op ''<HauntedMC:Warning>{delay}<HauntedMC:Success>'' ticks.'
+      direction-set: '<HauntedMC:Success>Richting ingesteld op ''<HauntedMC:Warning>{yaw}<HauntedMC:Success>'''
+      interval-set: '<HauntedMC:Success>Interval ingesteld op ''<HauntedMC:Warning>{interval}<HauntedMC:Success>'' ticks tussen elke uitvoering.'
+      invalid-mob: '<HauntedMC:Error>Ongeldig mobtype! Voer een geldige Bukkit entity type in.'
+      mob-set: '<HauntedMC:Success>Mob ingesteld op ''<HauntedMC:Warning>{mob}<HauntedMC:Success>'''
+    target-type-set: '<HauntedMC:Success>Target type ingesteld op ''<HauntedMC:Warning>{target_type}<HauntedMC:Success>'''
+    teleport:
+      click-again-set-location: '<HauntedMC:Warning>Klik nog een keer om de locatie in te stellen op waar je nu staat.'
+      current-location: '<HauntedMC:Warning>Huidige locatie is <HauntedMC:Warning>X:{x}, Y:{y}, Z:{z}'
+      current-location-none: '<HauntedMC:Warning>Huidige locatie is <HauntedMC:Warning>GEEN'
+      location-set-standing: '<HauntedMC:Success>Locatie ingesteld op waar je nu staat!'
+    title:
+      ask-fade-in: '<HauntedMC:Warning>Hoeveel ticks moet de title nodig hebben om in te faden?'
+      ask-fade-out: '<HauntedMC:Warning>Hoeveel ticks moet de title nodig hebben om uit te faden?'
+      ask-stay: '<HauntedMC:Warning>Hoeveel ticks moet de title zichtbaar blijven?'
+      ask-subtitle: '<HauntedMC:Warning>Wat moet de subtitel zijn?'
+      ask-title: '<HauntedMC:Warning>Wat moet de titel zijn?'
+      current-subtitle: '<HauntedMC:Warning>Huidige subtitel: <HauntedMC:Warning>{subtitle}'
+      current-title: '<HauntedMC:Warning>Huidige titel: <HauntedMC:Warning>{title}'
+      fade-in-set: '<HauntedMC:Success>Fade in tijd ingesteld op ''<HauntedMC:Warning>{fade_in}<HauntedMC:Success>'''
+      fade-out-set: '<HauntedMC:Success>Fade out tijd ingesteld op ''<HauntedMC:Warning>{fade_out}<HauntedMC:Success>'''
+      stay-set: '<HauntedMC:Success>Title duur ingesteld op ''<HauntedMC:Warning>{stay}<HauntedMC:Success>'''
+      subtitle-set: '<HauntedMC:Success>Subtitel ingesteld op ''<HauntedMC:Warning>{subtitle}<HauntedMC:Success>'''
+      title-set: '<HauntedMC:Success>Titel ingesteld op ''<HauntedMC:Warning>{title}<HauntedMC:Success>'''
+  layout:
+    connector-door:
+      ask-name: '<HauntedMC:Warning>Wat is de naam?'
+      block-added: '<HauntedMC:Success>Deurblok toegevoegd aan de lijst met deurblokken.'
+      block-removed: '<HauntedMC:Error>Deurblok verwijderd uit de lijst met deurblokken.'
+      current-name: '<HauntedMC:Warning>Huidige naam: <HauntedMC:Warning>{name}'
+      name-note: '<HauntedMC:Accent>Let op: je kunt deze naam gebruiken om de deur te openen en te sluiten met functions en mechanics!'
+      name-set: '<HauntedMC:Success>Naam ingesteld op ''<HauntedMC:Warning>{name}<HauntedMC:Success>'''
+      open-menu-info: '<HauntedMC:Accent>Bouw en configureer een custom deur voor gebruik met functions en mechanics!'
+      sound-disabled: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Speel GEEN geluid af wanneer de deur opent of sluit<HauntedMC:Success>'''
+      sound-enabled: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Speel geluid af wanneer de deur opent of sluit<HauntedMC:Success>'''
+      start-closed: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Deur start <HauntedMC:Error>GESLOTEN<HauntedMC:Success>'''
+      start-open: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Deur start <HauntedMC:Accent>OPEN <HauntedMC:Warning>als er een aangrenzende room is<HauntedMC:Success>'''
+    connector:
+      already-here: '<HauntedMC:Error>Hier zit al een connector!'
+      copied: '<HauntedMC:Warning>Connector gekopieerd!'
+      cut: '<HauntedMC:Warning>Connector geknipt!'
+      cut-pasted: '<HauntedMC:Warning>Connector geknipt en geplakt naar het aangeklikte blok!'
+      delete-confirm: '<HauntedMC:Warning>Weet je zeker dat je deze connector wilt verwijderen? Klik nog een keer om te bevestigen.'
+      must-be-on-edge: '<HauntedMC:Error>Room connectors moeten aan de rand van een room worden geplaatst!'
+      no-selection: '<HauntedMC:Error>Selecteer eerst een connector om te kopieren of verplaatsen.'
+      pasted: '<HauntedMC:Warning>Connector geplakt op het aangeklikte blok!'
+      removed: '<HauntedMC:Error>Connector verwijderd.'
+    minecrafty:
+      ask-success-chance: '<HauntedMC:Warning>Hoe groot is de kans dat een room op deze connector genereert? Gebruik 0.0 tot 100.00.'
+      current-success-chance: '<HauntedMC:Warning>Huidige kans: <HauntedMC:Warning>{chance}%'
+      success-chance-note: '<HauntedMC:Accent>Let op: 100% is geen garantie. Rooms hebben nog steeds genoeg ruimte nodig om te kunnen genereren.'
+      success-chance-set: '<HauntedMC:Success>Genereerkans ingesteld op ''<HauntedMC:Warning>{chance}%<HauntedMC:Success>'''
+  trigger:
+    block-detector:
+      valid-materials-link: '<HauntedMC:Accent>Klik hier voor een lijst met geldige materialen.'
+      ask-block: '<HauntedMC:Warning>Welk blok moet hier geplaatst of gebroken worden? Gebruik ''ANY'' voor elk blok.'
+      block-set: '<HauntedMC:Success>Blok ingesteld op ''<HauntedMC:Warning>{block}<HauntedMC:Success>'''
+      current-block: '<HauntedMC:Warning>Huidig blok: <HauntedMC:Warning>{block}'
+      invalid-material: '<HauntedMC:Error>Je moet een geldig block material opgeven!'
+      on-break: '<HauntedMC:Success>Detector ingesteld op ''<HauntedMC:Warning>trigger bij <HauntedMC:Accent>breken<HauntedMC:Success>'''
+      on-place: '<HauntedMC:Success>Detector ingesteld op ''<HauntedMC:Warning>trigger bij <HauntedMC:Accent>plaatsen<HauntedMC:Success>'''
+    chat:
+      allow-repeat: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Opnieuw triggeren toegestaan<HauntedMC:Success>'''
+      ask-text: '<HauntedMC:Warning>Welke tekst moet de speler in chat typen?'
+      case-insensitive: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Hoofdletters maken niet uit<HauntedMC:Success>'''
+      case-sensitive: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Hoofdletters moeten overeenkomen<HauntedMC:Success>'''
+      current-text: '<HauntedMC:Warning>Huidige tekst: <HauntedMC:Warning>{text}'
+      match-contains: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Message moet de vereiste tekst bevatten<HauntedMC:Success>'''
+      match-exact: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Message moet exact overeenkomen<HauntedMC:Success>'''
+      prevent-repeat: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Opnieuw triggeren voorkomen<HauntedMC:Success>'''
+      text-set: '<HauntedMC:Success>Vereiste tekst ingesteld op ''<HauntedMC:Warning>{text}<HauntedMC:Success>'''
+    distance:
+      allow-repeat: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Opnieuw triggeren toegestaan<HauntedMC:Success>'''
+      allow-repeat-note: '<HauntedMC:Accent>Dit betekent dat hij alleen opnieuw triggert wanneer opnieuw het minimum aantal vereiste spelers wordt gedetecteerd.'
+      ask-player-count: '<HauntedMC:Warning>Hoeveel spelers moeten binnen bereik zijn?'
+      ask-radius: '<HauntedMC:Warning>Wat moet de straal in blokken zijn?'
+      behaviour-all-in-range: '<HauntedMC:Success>Gedrag ingesteld op ''<HauntedMC:Warning>trigger voor elke speler binnen bereik<HauntedMC:Success>'''
+      behaviour-nearest: '<HauntedMC:Success>Gedrag ingesteld op ''<HauntedMC:Warning>trigger voor de dichtstbijzijnde speler<HauntedMC:Success>'''
+      count-set: '<HauntedMC:Success>Aantal ingesteld op ''<HauntedMC:Warning>{count}<HauntedMC:Success>'''
+      count-set-all: '<HauntedMC:Success>Aantal spelers ingesteld op ''<HauntedMC:Warning>iedereen aanwezig<HauntedMC:Success>'''
+      enter-all: '<HauntedMC:Warning>Voer ''<HauntedMC:Warning>all<HauntedMC:Warning>'' in voor alle levende spelers in de dungeon.'
+      prevent-repeat: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Opnieuw triggeren voorkomen<HauntedMC:Success>'''
+      radius-set: '<HauntedMC:Success>Straal ingesteld op ''<HauntedMC:Warning>{radius}<HauntedMC:Success>'''
+    gate:
+      max-triggers-reached: '<HauntedMC:Error>Je kunt niet meer triggers aan deze gate toevoegen!'
+    interact:
+      allow-repeat: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Opnieuw triggeren toegestaan<HauntedMC:Success>'''
+      prevent-repeat: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Opnieuw triggeren voorkomen<HauntedMC:Success>'''
+    key-item:
+      allow-repeat: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Opnieuw triggeren toegestaan<HauntedMC:Success>'''
+      click-type-set: '<HauntedMC:Success>Vereist click type ingesteld op ''<HauntedMC:Warning>{click_type}<HauntedMC:Success>'''
+      consume: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>item <HauntedMC:Accent>wordt <HauntedMC:Warning>verbruikt bij gebruik<HauntedMC:Success>'''
+      do-not-consume: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>item <HauntedMC:Error>wordt NIET <HauntedMC:Warning>verbruikt bij gebruik<HauntedMC:Success>'''
+      prevent-repeat: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Opnieuw triggeren voorkomen<HauntedMC:Success>'''
+      use-anywhere: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>item <HauntedMC:Accent>kan <HauntedMC:Warning>overal gebruikt worden<HauntedMC:Success>'''
+      use-here-only: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>item <HauntedMC:Error>moet <HauntedMC:Warning>bij deze function gebruikt worden<HauntedMC:Success>'''
+    leave-dungeon:
+      allow-leave: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Speler mag de dungeon verlaten<HauntedMC:Success>'''
+      allow-repeat: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Opnieuw triggeren toegestaan<HauntedMC:Success>'''
+      block-leave: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Speler mag de dungeon niet verlaten<HauntedMC:Success>'''
+      prevent-repeat: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Opnieuw triggeren voorkomen<HauntedMC:Success>'''
+    max-conditions-reached: '<HauntedMC:Error>Je kunt niet meer conditions aan deze trigger toevoegen!'
+    mob-death:
+      allow-repeat: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Opnieuw triggeren toegestaan<HauntedMC:Success>'''
+      ask-count: '<HauntedMC:Warning>Hoeveel zijn er nodig?'
+      ask-mob: '<HauntedMC:Warning>Welk mobtype moet worden gebruikt?'
+      ask-radius: '<HauntedMC:Warning>Wat moet de straal in blokken zijn?'
+      count-set: '<HauntedMC:Success>Aantal ingesteld op ''<HauntedMC:Warning>{count}<HauntedMC:Success>'''
+      current-mob: '<HauntedMC:Warning>Huidige mob: <HauntedMC:Warning>{mob}'
+      current-radius: '<HauntedMC:Warning>Huidige straal: <HauntedMC:Warning>{radius}'
+      mob-set: '<HauntedMC:Success>Mob ingesteld op ''<HauntedMC:Warning>{mob}<HauntedMC:Success>'''
+      prevent-repeat: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Opnieuw triggeren voorkomen<HauntedMC:Success>'''
+      radius-set: '<HauntedMC:Success>Straal ingesteld op ''<HauntedMC:Warning>{radius}<HauntedMC:Success>'''
+    player-death:
+      allow-repeat: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Opnieuw triggeren toegestaan<HauntedMC:Success>'''
+      ask-count: '<HauntedMC:Warning>Hoeveel zijn er nodig?'
+      count-all: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Tel alle player deaths mee<HauntedMC:Success>'''
+      count-one-per-player: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Tel maximaal één death per speler<HauntedMC:Success>'''
+      count-set: '<HauntedMC:Success>Aantal ingesteld op ''<HauntedMC:Warning>{count}<HauntedMC:Success>'''
+      prevent-repeat: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Opnieuw triggeren voorkomen<HauntedMC:Success>'''
+    redstone:
+      allow-repeat: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Opnieuw triggeren toegestaan<HauntedMC:Success>'''
+      prevent-repeat: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Opnieuw triggeren voorkomen<HauntedMC:Success>'''
+    remote:
+      allow-repeat: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Opnieuw triggeren toegestaan<HauntedMC:Success>'''
+      ask-signal: '<HauntedMC:Warning>Wat is de naam van het signaal?'
+      current-signal: '<HauntedMC:Warning>Huidige signaalnaam: <HauntedMC:Warning>{signal}'
+      prevent-repeat: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Opnieuw triggeren voorkomen<HauntedMC:Success>'''
+      require-conditions-now: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Conditions moeten waar zijn op het moment van triggeren<HauntedMC:Success>'''
+      signal-set: '<HauntedMC:Success>Signaalnaam ingesteld op ''<HauntedMC:Warning>{signal}<HauntedMC:Success>'''
+      wait-after-trigger: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Wacht op conditions na het triggeren<HauntedMC:Success>'''
+    room-door-change:
+      allow-repeat: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Opnieuw triggeren toegestaan<HauntedMC:Success>'''
+      ask-door: '<HauntedMC:Warning>Wat is de naam van de deur die deze trigger activeert? Gebruik ''any'' voor elke deur.'
+      current-door: '<HauntedMC:Warning>Huidige deur: <HauntedMC:Warning>{door}'
+      door-set: '<HauntedMC:Success>Deur ingesteld op ''<HauntedMC:Warning>{door}<HauntedMC:Success>'''
+      on-close: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Trigger wanneer deze deur <HauntedMC:Error>SLUIT<HauntedMC:Success>'''
+      on-open: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Trigger wanneer deze deur <HauntedMC:Accent>OPENT<HauntedMC:Success>'''
+      prevent-repeat: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>Opnieuw triggeren voorkomen<HauntedMC:Success>'''
+    same-room-not-required: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>trigger mag van overal komen<HauntedMC:Success>'''
+    same-room-required: '<HauntedMC:Success>Geschakeld naar ''<HauntedMC:Warning>trigger moet uit dezelfde room komen<HauntedMC:Success>'''
+menus:
+  common:
+    empty-slot: '<HauntedMC:Muted>Leeg slot'
+  difficulty-select:
+    title: '<HauntedMC:Social>Selecteer difficulty'
+  functions:
+    branching-only: '<HauntedMC:Error>Deze functions zijn alleen beschikbaar in branching dungeons.'
+    requires-trigger: '<HauntedMC:Error>Deze function heeft een trigger nodig!'
+  items:
+    saved-for-function: '<HauntedMC:Success>Item opgeslagen voor deze function!'
+    saved-for-trigger: '<HauntedMC:Success>Item opgeslagen voor deze trigger!'
+  remove:
+    condition-from-trigger: '<HauntedMC:Error>Condition {name} verwijderd van de trigger.'
+    function: '<HauntedMC:Error>Function {name} verwijderd.'
+    trigger: '<HauntedMC:Error>Trigger {name} verwijderd.'
+  rooms:
+    no-functionality-here: '<HauntedMC:Error>Hier zit nog geen functionaliteit op. Deze knop kan later worden vervangen door uitleg.'
+  triggers:
+    branching-only: '<HauntedMC:Error>Deze triggers zijn alleen beschikbaar in branching dungeons.'
+input:
+  invalid-decimal: '<HauntedMC:Error>Voer een geldig getal in. Bijvoorbeeld 1.2, 7.5 of 42.'
+  invalid-integer: '<HauntedMC:Error>Voer een geldig geheel getal in. Bijvoorbeeld 1, 7 of 42.'
+
+internal:
+  render: "{text}"

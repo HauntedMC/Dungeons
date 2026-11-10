@@ -1,8 +1,11 @@
 package nl.hauntedmc.dungeons.acceptance;
 
-import java.nio.file.Path;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.mysql.MySQLContainer;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.concurrent.TimeUnit;
 
 /** Owns real disposable backends for all native Paper boots, including cold restart. */
 public final class AcceptanceDatabase {
@@ -23,8 +26,8 @@ public final class AcceptanceDatabase {
             env.put("DUNGEONS_ACCEPTANCE_WORK_DIRECTORY", args[1]);
             var child = process.start();
             boolean databaseStopped = false;
-            while (!child.waitFor(1, java.util.concurrent.TimeUnit.SECONDS)) {
-                if (!databaseStopped && java.nio.file.Files.exists(Path.of(args[1], "stop-database"))) {
+            while (!child.waitFor(1, TimeUnit.SECONDS)) {
+                if (!databaseStopped && Files.exists(Path.of(args[1], "stop-database"))) {
                     mysql.stop();
                     databaseStopped = true;
                 }

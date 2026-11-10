@@ -1,9 +1,12 @@
 package nl.hauntedmc.dungeons.command;
 
+import net.kyori.adventure.text.Component;
+
 import nl.hauntedmc.dungeons.command.CommandOutput.FilterPageQuery;
 import nl.hauntedmc.dungeons.content.reward.LootTable;
 import nl.hauntedmc.dungeons.gui.loot.LootTableEditor;
 import nl.hauntedmc.dungeons.runtime.rewards.LootTableRepository;
+import nl.hauntedmc.dungeons.runtime.staff.StaffPermissions;
 import nl.hauntedmc.dungeons.util.command.CommandUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 
@@ -31,10 +34,10 @@ final class LootCommandHandler implements CommandHandler {
     @Override
     public boolean handleCommand(CommandSender sender, String[] args) {
         if (args.length == 3 && args[1].equalsIgnoreCase("info")) {
-            nl.hauntedmc.dungeons.runtime.staff.StaffPermissions.require(sender, "loot", null);
+            StaffPermissions.require(sender, "loot", null);
             var table = this.lootTableManager.get(args[2]);
             if (table == null) throw new IllegalArgumentException("Loot table not found");
-            sender.sendMessage("[Dungeons] " + table.getNamespace() + ": " + table.getMinItems() + "–" + table.getMaxItems() + " items");
+            LangUtils.sendRaw(sender, "[Dungeons] " + table.getNamespace() + ": " + table.getMinItems() + "–" + table.getMaxItems() + " items");
             return true;
         }
         if (!(sender instanceof Player player)) {
@@ -155,7 +158,7 @@ final class LootCommandHandler implements CommandHandler {
                         String.CASE_INSENSITIVE_ORDER.compare(
                                 left.getNamespace(), right.getNamespace()));
 
-        List<String> lines = new ArrayList<>();
+        List<Component> lines = new ArrayList<>();
         String filter = query.filter().toLowerCase(Locale.ROOT);
         for (LootTable table : tables) {
             if (!filter.isBlank()
@@ -164,26 +167,25 @@ final class LootCommandHandler implements CommandHandler {
             }
 
             Player activeEditor = this.editor.getEditor(table);
-            String editor =
+            Component editor =
                     activeEditor == null
-                            ? LangUtils.getMessage("commands.loot.list.no-editor", false)
-                            : activeEditor.getName();
+                            ? LangUtils.component("commands.loot.list.no-editor", player, false)
+                            : Component.text(activeEditor.getName());
             lines.add(
-                    LangUtils.getMessage(
-                            "commands.loot.list.line",
-                            false,
+                    LangUtils.component(
+                            "commands.loot.list.line", player, false,
                             LangUtils.placeholder("loot_table", table.getNamespace()),
                             LangUtils.placeholder("min", String.valueOf(table.getMinItems())),
                             LangUtils.placeholder("max", String.valueOf(table.getMaxItems())),
                             LangUtils.placeholder(
                                     "duplicates",
-                                    this.output.formatYesNoState(table.isAllowDuplicates())),
+                                    this.output.formatYesNoState(player, table.isAllowDuplicates())),
                             LangUtils.placeholder("editor", editor)));
         }
 
         this.output.sendPaginatedLines(
                 player,
-                LangUtils.getMessage("commands.loot.list.header", false),
+                LangUtils.component("commands.loot.list.header", player, false),
                 lines,
                 "commands.loot.list.no-match",
                 "commands.loot.list.footer",

@@ -2,20 +2,34 @@ package nl.hauntedmc.dungeons.persistence;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinColumns;
 import jakarta.persistence.Table;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HexFormat;
-import java.util.LinkedHashMap;
-import java.util.List;
-import javax.sql.DataSource;
+
 import nl.hauntedmc.dataprovider.api.DataProviderAPI;
 import nl.hauntedmc.dataprovider.api.orm.ORMContext;
 import nl.hauntedmc.dataprovider.logging.LoggerAdapter;
+
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.sql.Connection;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Types;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.HexFormat;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.regex.Pattern;
+
+import javax.sql.DataSource;
 
 /** DataProvider owns ORM policy. DataRegistry retains ownership of canonical player identities. */
 public final class DungeonSchema {
@@ -27,16 +41,16 @@ public final class DungeonSchema {
             try (var statement = connection.createStatement();
                     var result = statement.executeQuery("SELECT id,uuid FROM player_entity WHERE 1=0")) {
                 var metadata = result.getMetaData();
-                if (metadata.getColumnType(1) != java.sql.Types.BIGINT || !metadata.isSigned(1)
-                        || metadata.isNullable(1) != java.sql.ResultSetMetaData.columnNoNulls)
+                if (metadata.getColumnType(1) != Types.BIGINT || !metadata.isSigned(1)
+                        || metadata.isNullable(1) != ResultSetMetaData.columnNoNulls)
                     throw new SQLException("DataRegistry player_entity.id must be a non-null signed BIGINT");
                 int uuidType = metadata.getColumnType(2);
-                if ((uuidType != java.sql.Types.CHAR && uuidType != java.sql.Types.VARCHAR)
-                        || metadata.getPrecision(2) < 36 || metadata.isNullable(2) != java.sql.ResultSetMetaData.columnNoNulls)
+                if ((uuidType != Types.CHAR && uuidType != Types.VARCHAR)
+                        || metadata.getPrecision(2) < 36 || metadata.isNullable(2) != ResultSetMetaData.columnNoNulls)
                     throw new SQLException("DataRegistry player_entity.uuid must be a non-null UUID string");
             }
         }
-        var context = java.util.Objects.requireNonNull(
+        var context = Objects.requireNonNull(
                 api.createConfiguredOrmContext(source, logger, DungeonEntities.types()),
                 "DataProvider returned no ORM context");
         try {
@@ -63,7 +77,7 @@ public final class DungeonSchema {
             if (engine.size() != 1 || !"InnoDB".equalsIgnoreCase((String) engine.getFirst().get("engine")))
                 throw new SQLException("Dungeons requires an InnoDB table: " + table.name());
             var columns = new ArrayList<String>();
-            var primary = new java.util.HashSet<String>();
+            var primary = new HashSet<String>();
             var definitions = new ArrayList<Column>();
             for (var field : entity.getDeclaredFields()) {
                 var column = field.getAnnotation(Column.class);
@@ -81,7 +95,7 @@ public final class DungeonSchema {
                     verifyColumn(metadata, index + 1, definitions.get(index), table.name());
             }
             var indexes = new LinkedHashMap<String, List<String>>();
-            var unique = new java.util.HashSet<String>();
+            var unique = new HashSet<String>();
             for (var row : DungeonSql.rows(connection, "SELECT INDEX_NAME AS name,COLUMN_NAME AS col,NON_UNIQUE AS non_unique"
                     + " FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=?"
                     + " AND SUB_PART IS NULL AND IS_VISIBLE='YES' ORDER BY INDEX_NAME,SEQ_IN_INDEX", table.name())) {
@@ -89,10 +103,10 @@ public final class DungeonSchema {
                 indexes.computeIfAbsent(name, ignored -> new ArrayList<>()).add((String) row.get("col"));
                 if (((Number) row.get("non_unique")).intValue() == 0) unique.add(name);
             }
-            if (!primary.equals(new java.util.HashSet<>(indexes.getOrDefault("PRIMARY", List.of()))))
+            if (!primary.equals(new HashSet<>(indexes.getOrDefault("PRIMARY", List.of()))))
                 throw new SQLException("Incompatible primary key: " + table.name());
             for (var index : table.indexes()) {
-                var expected = java.util.Arrays.stream(index.columnList().split(",")).map(String::trim).toList();
+                var expected = Arrays.stream(index.columnList().split(",")).map(String::trim).toList();
                 if (!expected.equals(indexes.get(index.name())) || index.unique() && !unique.contains(index.name()))
                     throw new SQLException("Missing or incompatible index: " + table.name() + "." + index.name());
             }
@@ -104,30 +118,30 @@ public final class DungeonSchema {
         }
     }
 
-    private static void verifyColumn(java.sql.ResultSetMetaData metadata, int index, Column column,
+    private static void verifyColumn(ResultSetMetaData metadata, int index, Column column,
             String table) throws SQLException {
         String definition = column.columnDefinition();
         String type = definition.replaceAll("\\(.*", "");
         int actual = metadata.getColumnType(index);
         boolean valid = switch (type) {
-            case "CHAR" -> actual == java.sql.Types.CHAR;
-            case "VARCHAR" -> actual == java.sql.Types.VARCHAR;
-            case "BIGINT" -> actual == java.sql.Types.BIGINT && metadata.isSigned(index);
-            case "INT" -> actual == java.sql.Types.INTEGER && metadata.isSigned(index);
-            case "BOOLEAN" -> actual == java.sql.Types.BOOLEAN || actual == java.sql.Types.BIT || actual == java.sql.Types.TINYINT;
-            case "DATETIME" -> actual == java.sql.Types.TIMESTAMP;
-            case "DECIMAL" -> actual == java.sql.Types.DECIMAL;
-            case "TEXT", "MEDIUMTEXT" -> actual == java.sql.Types.LONGVARCHAR;
-            case "MEDIUMBLOB" -> actual == java.sql.Types.LONGVARBINARY;
+            case "CHAR" -> actual == Types.CHAR;
+            case "VARCHAR" -> actual == Types.VARCHAR;
+            case "BIGINT" -> actual == Types.BIGINT && metadata.isSigned(index);
+            case "INT" -> actual == Types.INTEGER && metadata.isSigned(index);
+            case "BOOLEAN" -> actual == Types.BOOLEAN || actual == Types.BIT || actual == Types.TINYINT;
+            case "DATETIME" -> actual == Types.TIMESTAMP;
+            case "DECIMAL" -> actual == Types.DECIMAL;
+            case "TEXT", "MEDIUMTEXT" -> actual == Types.LONGVARCHAR;
+            case "MEDIUMBLOB" -> actual == Types.LONGVARBINARY;
             default -> false;
         };
-        var dimensions = java.util.regex.Pattern.compile("[A-Z]+\\((\\d+)(?:,(\\d+))?\\)").matcher(definition);
-        if (dimensions.matches() && java.util.Set.of("CHAR", "VARCHAR", "DECIMAL").contains(type)) {
+        var dimensions = Pattern.compile("[A-Z]+\\((\\d+)(?:,(\\d+))?\\)").matcher(definition);
+        if (dimensions.matches() && Set.of("CHAR", "VARCHAR", "DECIMAL").contains(type)) {
             valid &= metadata.getPrecision(index) == Integer.parseInt(dimensions.group(1));
             if (type.equals("DECIMAL")) valid &= metadata.getScale(index) == Integer.parseInt(dimensions.group(2));
         }
         valid &= metadata.isNullable(index) == (column.nullable()
-                ? java.sql.ResultSetMetaData.columnNullable : java.sql.ResultSetMetaData.columnNoNulls);
+                ? ResultSetMetaData.columnNullable : ResultSetMetaData.columnNoNulls);
         if (!valid) throw new SQLException("Incompatible column: " + table + "." + column.name());
     }
 
@@ -152,10 +166,10 @@ public final class DungeonSchema {
             var joins = field.getAnnotation(JoinColumns.class);
             if (joins == null) continue;
             var target = field.getType().getAnnotation(Table.class).name();
-            var columns = java.util.Arrays.stream(joins.value()).map(jakarta.persistence.JoinColumn::name).toList();
-            var references = java.util.Arrays.stream(joins.value()).map(jakarta.persistence.JoinColumn::referencedColumnName).toList();
-            var onDelete = field.getAnnotation(org.hibernate.annotations.OnDelete.class);
-            String rule = onDelete != null && onDelete.action() == org.hibernate.annotations.OnDeleteAction.CASCADE ? "CASCADE" : "RESTRICT";
+            var columns = Arrays.stream(joins.value()).map(JoinColumn::name).toList();
+            var references = Arrays.stream(joins.value()).map(JoinColumn::referencedColumnName).toList();
+            var onDelete = field.getAnnotation(OnDelete.class);
+            String rule = onDelete != null && onDelete.action() == OnDeleteAction.CASCADE ? "CASCADE" : "RESTRICT";
             if (!actual.containsValue(new ForeignKey(columns, target, references, rule, "RESTRICT")))
                 throw new SQLException("Missing or incompatible foreign key: " + table + " -> " + target);
         }

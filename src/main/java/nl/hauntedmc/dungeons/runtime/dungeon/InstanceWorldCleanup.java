@@ -1,33 +1,39 @@
 package nl.hauntedmc.dungeons.runtime.dungeon;
 
+import nl.hauntedmc.dungeons.util.world.WorldUtils;
+
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
+import org.slf4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Locale;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 /** Removes only unloaded instance folders owned by one dungeon, preserving editor recovery. */
 public final class InstanceWorldCleanup {
     private final String dungeonName;
-    private final org.slf4j.Logger logger;
+    private final Logger logger;
 
-    public InstanceWorldCleanup(String dungeonName, org.slf4j.Logger logger) {
+    public InstanceWorldCleanup(String dungeonName, Logger logger) {
         this.dungeonName = dungeonName;
         this.logger = logger;
     }
 
     public void clean() {
         File[] worlds =
-                java.util.stream.Stream.of(
+                Stream.of(
                                 Bukkit.getWorldContainer(),
-                                nl.hauntedmc.dungeons.util.world.WorldUtils.dimensionRoot())
+                                WorldUtils.dimensionRoot())
                         .flatMap(
                                 root -> {
                                     File[] children = root.listFiles();
                                     return children == null
-                                            ? java.util.stream.Stream.<File>empty()
-                                            : java.util.Arrays.stream(children);
+                                            ? Stream.<File>empty()
+                                            : Arrays.stream(children);
                                 })
                         .toArray(File[]::new);
         if (worlds != null) {
@@ -57,14 +63,14 @@ public final class InstanceWorldCleanup {
     private boolean hasEditorRecovery(String worldName) {
         // Retired folders were detached only after a successful final save and unload.
         if (worldName.contains(".disposed-")) return false;
-        return java.util.stream.Stream.of(
+        return Stream.of(
                         new File(Bukkit.getWorldContainer(), worldName),
-                        nl.hauntedmc.dungeons.util.world.WorldUtils.dimensionFolder(worldName))
+                        WorldUtils.dimensionFolder(worldName))
                 .anyMatch(
                         folder ->
                                 new File(
                                                 folder,
-                                                nl.hauntedmc.dungeons.util.world.WorldUtils
+                                                WorldUtils
                                                         .EDITOR_RECOVERY_MARKER)
                                         .exists());
     }
@@ -73,8 +79,8 @@ public final class InstanceWorldCleanup {
         String worldName = worldFolder.getName();
         String prefix = this.dungeonName + "_";
         if (!worldName
-                .toLowerCase(java.util.Locale.ROOT)
-                .startsWith(prefix.toLowerCase(java.util.Locale.ROOT))) {
+                .toLowerCase(Locale.ROOT)
+                .startsWith(prefix.toLowerCase(Locale.ROOT))) {
             return false;
         }
 

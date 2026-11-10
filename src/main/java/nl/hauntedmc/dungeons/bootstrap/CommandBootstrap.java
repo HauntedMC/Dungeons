@@ -1,6 +1,7 @@
 package nl.hauntedmc.dungeons.bootstrap;
 
 import nl.hauntedmc.dungeons.command.DungeonCommand;
+import nl.hauntedmc.dungeons.command.StaffCommandHandler;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 
 /**
@@ -38,7 +39,7 @@ final class CommandBootstrap {
                 this.runtime.guiService(),
                 "dungeon");
         command.setStaffCommandHandler(
-                new nl.hauntedmc.dungeons.command.StaffCommandHandler(
+                new StaffCommandHandler(
                         this.runtime, this.lifecycleCoordinator));
     }
 }

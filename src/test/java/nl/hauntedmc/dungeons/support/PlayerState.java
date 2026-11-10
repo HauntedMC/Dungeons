@@ -13,6 +13,8 @@ import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.*;
+import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
 
 import java.util.*;
 
@@ -36,12 +38,12 @@ public final class PlayerState {
         when(location.getWorld().getName()).thenReturn("overworld");
         when(location.getWorld().getUID()).thenReturn(UUID.randomUUID());
         when(player.getUniqueId()).thenReturn(UUID.randomUUID());
-        var persistent = mock(org.bukkit.persistence.PersistentDataContainer.class);
+        var persistent = mock(PersistentDataContainer.class);
         var data = new HashMap<NamespacedKey, String>();
         when(player.getPersistentDataContainer()).thenReturn(persistent);
         when(persistent.get(
                         any(NamespacedKey.class),
-                        eq(org.bukkit.persistence.PersistentDataType.STRING)))
+                        eq(PersistentDataType.STRING)))
                 .thenAnswer(c -> data.get(c.getArgument(0)));
         doAnswer(
                         c -> {
@@ -51,7 +53,7 @@ public final class PlayerState {
                 .when(persistent)
                 .set(
                         any(NamespacedKey.class),
-                        eq(org.bukkit.persistence.PersistentDataType.STRING),
+                        eq(PersistentDataType.STRING),
                         any(String.class));
         doAnswer(
                         c -> {

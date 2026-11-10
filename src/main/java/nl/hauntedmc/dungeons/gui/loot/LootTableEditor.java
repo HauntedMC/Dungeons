@@ -4,6 +4,7 @@ import nl.hauntedmc.dungeons.content.reward.LootTable;
 import nl.hauntedmc.dungeons.content.reward.LootTableItem;
 import nl.hauntedmc.dungeons.gui.framework.GuiService;
 import nl.hauntedmc.dungeons.runtime.rewards.LootTableRepository;
+import nl.hauntedmc.dungeons.runtime.staff.StaffPermissions;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 
 import org.bukkit.Bukkit;
@@ -14,6 +15,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -82,7 +84,7 @@ public final class LootTableEditor implements Listener, AutoCloseable {
         requireOwnerThread();
         if (this.closed
                 || !(player.hasPermission("dungeons.staff.loot")
-                        || nl.hauntedmc.dungeons.runtime.staff.StaffPermissions.allows(
+                        || StaffPermissions.allows(
                                 player, "loot", null))
                 || !this.repository.isWritable()
                 || this.repository.get(table.getNamespace()) != table) return false;
@@ -98,7 +100,7 @@ public final class LootTableEditor implements Listener, AutoCloseable {
         requireOwnerThread();
         return !this.closed
                 && (player.hasPermission("dungeons.staff.loot")
-                        || nl.hauntedmc.dungeons.runtime.staff.StaffPermissions.allows(
+                        || StaffPermissions.allows(
                                 player, "loot", null))
                 && this.repository.isWritable()
                 && this.repository.get(table.getNamespace()) == table
@@ -153,7 +155,7 @@ public final class LootTableEditor implements Listener, AutoCloseable {
     }
 
     private void invalidateReplacedTables() {
-        for (var entry : java.util.List.copyOf(this.windows.entrySet())) {
+        for (var entry : List.copyOf(this.windows.entrySet())) {
             Windows stale = entry.getValue();
             if (this.repository.get(entry.getKey()) == stale.table) continue;
             retire(entry.getKey(), stale);
@@ -176,7 +178,7 @@ public final class LootTableEditor implements Listener, AutoCloseable {
     public void onQuit(PlayerQuitEvent event) {
         UUID id = event.getPlayer().getUniqueId();
         try {
-            for (var entry : java.util.List.copyOf(this.windows.entrySet())) {
+            for (var entry : List.copyOf(this.windows.entrySet())) {
                 if (id.equals(this.editors.get(entry.getKey())))
                     closed(entry.getValue().table, event.getPlayer());
             }
@@ -198,7 +200,7 @@ public final class LootTableEditor implements Listener, AutoCloseable {
         } finally {
             this.closed = true;
             if (this.unsubscribe != null) this.unsubscribe.run();
-            for (var entry : java.util.List.copyOf(this.windows.entrySet())) {
+            for (var entry : List.copyOf(this.windows.entrySet())) {
                 retire(entry.getKey(), entry.getValue());
             }
             this.editors.clear();

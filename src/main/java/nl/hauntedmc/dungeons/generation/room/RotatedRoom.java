@@ -21,6 +21,7 @@ import org.bukkit.block.data.type.Wall;
 import org.bukkit.block.data.type.Wall.Height;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
+import org.slf4j.Logger;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -172,7 +173,7 @@ public class RotatedRoom {
         return schematic;
     }
 
-    private org.slf4j.Logger logger() {
+    private Logger logger() {
         return this.origin.getDungeon().getEnvironment().logger();
     }
 

@@ -6,23 +6,40 @@ import static org.mockito.Mockito.*;
 import nl.hauntedmc.dungeons.support.CapturedScheduler;
 import nl.hauntedmc.dungeons.support.PaperBoundary;
 
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.IllegalPluginAccessException;
 import org.bukkit.plugin.Plugin;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Proxy;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 class ConfigurationFileTest {
     @TempDir Path directory;
 
     @Test
-    @org.junit.jupiter.api.Timeout(10)
+    @Timeout(10)
     void filesystemOperationsShareCanonicalOrderAndShutdownNeverRunsTheirActionsOnTheOwner()
             throws Exception {
         Thread owner = Thread.currentThread();
@@ -30,7 +47,7 @@ class ConfigurationFileTest {
             var scheduler = new CapturedScheduler(paper);
             when(paper.plugin.isEnabled()).thenReturn(true);
             Path template = Files.createDirectory(directory.resolve("template"));
-            var order = new java.util.concurrent.CopyOnWriteArrayList<Integer>();
+            var order = new CopyOnWriteArrayList<Integer>();
             var first =
                     ConfigurationFile.filesystemAsync(
                             paper.plugin,
@@ -56,9 +73,9 @@ class ConfigurationFileTest {
             ConfigurationFile.flushPendingSaves();
             assertTrue(first.join());
             assertTrue(second.join());
-            assertEquals(java.util.List.of(1, 2), order);
+            assertEquals(List.of(1, 2), order);
             scheduler.asynchronous.getFirst().run();
-            assertEquals(java.util.List.of(1, 2), order);
+            assertEquals(List.of(1, 2), order);
         }
     }
 
@@ -83,13 +100,13 @@ class ConfigurationFileTest {
     }
 
     @Test
-    @org.junit.jupiter.api.Timeout(10)
+    @Timeout(10)
     void activeWorkerAndSynchronousWriterPreserveOneDestinationOrderAcrossThreads()
             throws Exception {
-        var entered = new java.util.concurrent.CountDownLatch(1);
-        var release = new java.util.concurrent.CountDownLatch(1);
+        var entered = new CountDownLatch(1);
+        var release = new CountDownLatch(1);
         try (var paper = new PaperBoundary();
-                var executor = java.util.concurrent.Executors.newFixedThreadPool(2)) {
+                var executor = Executors.newFixedThreadPool(2)) {
             var scheduler = new CapturedScheduler(paper);
             when(paper.plugin.isEnabled()).thenReturn(true);
             var file = directory.resolve("concurrent.yml");
@@ -138,30 +155,30 @@ class ConfigurationFileTest {
         var config = new ConfigurationFile(disabledPlugin());
         var file = directory.resolve("atomic.yml");
         Files.writeString(file, "value: previous\n");
-        var channel = mock(java.nio.channels.FileChannel.class);
-        when(channel.write(any(java.nio.ByteBuffer.class)))
+        var channel = mock(FileChannel.class);
+        when(channel.write(any(ByteBuffer.class)))
                 .thenAnswer(
                         call -> {
-                            java.nio.ByteBuffer bytes = call.getArgument(0);
+                            ByteBuffer bytes = call.getArgument(0);
                             int written = bytes.remaining();
                             bytes.position(bytes.limit());
                             return written;
                         });
-        doThrow(new java.io.IOException("disk full")).when(channel).force(true);
-        try (var channels = mockStatic(java.nio.channels.FileChannel.class)) {
+        doThrow(new IOException("disk full")).when(channel).force(true);
+        try (var channels = mockStatic(FileChannel.class)) {
             channels.when(
                             () ->
-                                    java.nio.channels.FileChannel.open(
+                                    FileChannel.open(
                                             any(Path.class),
-                                            eq(java.nio.file.StandardOpenOption.WRITE)))
+                                            eq(StandardOpenOption.WRITE)))
                     .thenReturn(channel);
             config.set("value", "replacement");
             assertFalse(config.saveAsync(file.toFile()).join());
-            assertThrows(java.io.UncheckedIOException.class, () -> config.save(file.toFile()));
+            assertThrows(UncheckedIOException.class, () -> config.save(file.toFile()));
         }
         assertEquals("value: previous\n", Files.readString(file));
         try (var files = Files.list(directory)) {
-            assertEquals(java.util.List.of(file), files.toList());
+            assertEquals(List.of(file), files.toList());
         }
     }
 
@@ -170,20 +187,20 @@ class ConfigurationFileTest {
         try (var paper = new PaperBoundary()) {
             var scheduler = new CapturedScheduler(paper);
             when(paper.plugin.isEnabled()).thenReturn(true);
-            var serializations = new java.util.concurrent.atomic.AtomicInteger();
+            var serializations = new AtomicInteger();
             var config =
                     new ConfigurationFile(paper.plugin) {
                         @Override
                         public String saveToString() {
-                            assertTrue(org.bukkit.Bukkit.isPrimaryThread());
+                            assertTrue(Bukkit.isPrimaryThread());
                             serializations.incrementAndGet();
                             return super.saveToString();
                         }
                     };
-            var nested = new java.util.HashMap<String, Object>();
+            var nested = new HashMap<String, Object>();
             nested.put("value", "original");
-            var location = new org.bukkit.Location(null, 1, 2, 3);
-            config.set("nested", java.util.List.of(nested));
+            var location = new Location(null, 1, 2, 3);
+            config.set("nested", List.of(nested));
             config.set("location", location);
             var file = directory.resolve("snapshot.yml");
             var saved = config.saveAsync(file.toFile());
@@ -191,7 +208,7 @@ class ConfigurationFileTest {
             nested.put("value", "modified");
             location.setX(99);
             config.set("later", true);
-            paper.bukkit.when(org.bukkit.Bukkit::isPrimaryThread).thenReturn(false);
+            paper.bukkit.when(Bukkit::isPrimaryThread).thenReturn(false);
             scheduler.asynchronous.getFirst().run();
             assertTrue(saved.join());
             assertEquals(1, serializations.get());
@@ -213,7 +230,7 @@ class ConfigurationFileTest {
             first.set("value", "first");
             second.set("value", "second");
             var file = directory.resolve("ordered.yml");
-            var observed = new java.util.ArrayList<String>();
+            var observed = new ArrayList<String>();
             var one = first.saveAsync(file.toFile());
             one.thenRun(() -> observed.add(read(file)));
             var two = second.saveAsync(directory.resolve("unused/../ordered.yml").toFile());
@@ -222,7 +239,7 @@ class ConfigurationFileTest {
             scheduler.asynchronous.getFirst().run();
             assertTrue(one.join());
             assertTrue(two.join());
-            assertEquals(java.util.List.of("value: first\n", "value: second\n"), observed);
+            assertEquals(List.of("value: first\n", "value: second\n"), observed);
             assertEquals("value: second\n", Files.readString(file));
         }
     }
@@ -269,7 +286,7 @@ class ConfigurationFileTest {
             reader.load(directory.resolve("one.yml").toFile());
             assertTrue(one.join());
             assertEquals(1, reader.getInt("value"));
-            var ordinary = new org.bukkit.configuration.file.YamlConfiguration();
+            var ordinary = new YamlConfiguration();
             first.set("value", 3);
             var third = first.saveAsync(directory.resolve("one.yml").toFile());
             ConfigurationFile.loadSnapshot(ordinary, directory.resolve("one.yml").toFile());
@@ -284,24 +301,24 @@ class ConfigurationFileTest {
         try (var paper = new PaperBoundary()) {
             var scheduler = new CapturedScheduler(paper);
             when(paper.plugin.isEnabled()).thenReturn(true);
-            var captures = new java.util.concurrent.atomic.AtomicInteger();
+            var captures = new AtomicInteger();
             var config =
                     new ConfigurationFile(paper.plugin) {
                         @Override
                         public String saveToString() {
-                            assertTrue(org.bukkit.Bukkit.isPrimaryThread());
+                            assertTrue(Bukkit.isPrimaryThread());
                             captures.incrementAndGet();
                             return super.saveToString();
                         }
                     };
             config.set("value", 1);
-            paper.bukkit.when(org.bukkit.Bukkit::isPrimaryThread).thenReturn(false);
+            paper.bukkit.when(Bukkit::isPrimaryThread).thenReturn(false);
             var file = directory.resolve("shutdown.yml");
             var saved = config.saveAsync(file.toFile());
             assertEquals(0, captures.get());
             assertFalse(saved.isDone());
             when(paper.plugin.isEnabled()).thenReturn(false);
-            paper.bukkit.when(org.bukkit.Bukkit::isPrimaryThread).thenReturn(true);
+            paper.bukkit.when(Bukkit::isPrimaryThread).thenReturn(true);
             config.set("value", 2);
             ConfigurationFile.flushPendingSaves();
             assertTrue(saved.join());
@@ -349,8 +366,8 @@ class ConfigurationFileTest {
                         try {
                             Files.delete(file.resolve("obstacle"));
                             Files.delete(file);
-                        } catch (java.io.IOException failure) {
-                            throw new java.io.UncheckedIOException(failure);
+                        } catch (IOException failure) {
+                            throw new UncheckedIOException(failure);
                         }
                     });
             config.set("value", 2);
@@ -360,7 +377,7 @@ class ConfigurationFileTest {
             assertTrue(second.join());
             assertEquals("value: 2\n", Files.readString(file));
             try (var files = Files.list(directory)) {
-                assertEquals(java.util.List.of(file), files.toList());
+                assertEquals(List.of(file), files.toList());
             }
         }
     }
@@ -374,8 +391,8 @@ class ConfigurationFileTest {
             var alias = directory.resolve("alias");
             try {
                 Files.createSymbolicLink(alias, real);
-            } catch (UnsupportedOperationException | java.io.IOException unsupported) {
-                org.junit.jupiter.api.Assumptions.abort("Symlinks unavailable");
+            } catch (UnsupportedOperationException | IOException unsupported) {
+                Assumptions.abort("Symlinks unavailable");
             }
             var config = new ConfigurationFile(paper.plugin);
             config.set("value", 1);
@@ -394,8 +411,8 @@ class ConfigurationFileTest {
     private static String read(Path file) {
         try {
             return Files.readString(file);
-        } catch (java.io.IOException failure) {
-            throw new java.io.UncheckedIOException(failure);
+        } catch (IOException failure) {
+            throw new UncheckedIOException(failure);
         }
     }
 

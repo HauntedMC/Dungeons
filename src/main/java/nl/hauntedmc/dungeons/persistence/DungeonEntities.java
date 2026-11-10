@@ -1,13 +1,16 @@
 package nl.hauntedmc.dungeons.persistence;
 
 import jakarta.persistence.*;
+
+import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.Immutable;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Objects;
-import org.hibernate.annotations.ColumnDefault;
-import org.hibernate.annotations.OnDelete;
-import org.hibernate.annotations.OnDeleteAction;
 
 /** ORM schema for mandatory database persistence. JDBC repositories share these exact table/column names. */
 public final class DungeonEntities {
@@ -22,7 +25,7 @@ public final class DungeonEntities {
     /** Read-only reference to the existing DataRegistry identity; never creates player identities. */
     @Entity(name = "DungeonPlayerReference")
     @Table(name = "player_entity")
-    @org.hibernate.annotations.Immutable
+    @Immutable
     public static class PlayerReference {
         @Id @Column(name = "id", nullable = false, columnDefinition = "BIGINT")
         protected Long id;

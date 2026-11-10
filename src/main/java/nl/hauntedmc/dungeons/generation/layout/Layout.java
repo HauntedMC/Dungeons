@@ -19,6 +19,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.util.BoundingBox;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -114,7 +115,7 @@ public abstract class Layout implements Cloneable {
         return this.dungeon.getRuntime();
     }
 
-    protected final org.slf4j.Logger logger() {
+    protected final Logger logger() {
         return this.dungeon.getEnvironment().logger();
     }
 

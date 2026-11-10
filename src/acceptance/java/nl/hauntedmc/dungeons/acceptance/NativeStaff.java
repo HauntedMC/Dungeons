@@ -2,11 +2,33 @@ package nl.hauntedmc.dungeons.acceptance;
 
 import static nl.hauntedmc.dungeons.acceptance.AcceptancePlugin.require;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+
+import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
+import nl.hauntedmc.dungeons.runtime.player.StaffPlayerRecords;
 import nl.hauntedmc.dungeons.runtime.staff.StaffOperations;
+import nl.hauntedmc.dungeons.runtime.staff.StaffPermissions;
+import nl.hauntedmc.dungeons.util.item.ItemUtils;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.permissions.PermissibleBase;
+import org.bukkit.permissions.ServerOperator;
 
+import java.io.File;
+import java.lang.reflect.Proxy;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Verifies packaged permissions, command binding and persisted admission policy on native Paper.
@@ -14,8 +36,8 @@ import java.util.concurrent.CompletableFuture;
 final class NativeStaff {
     private NativeStaff() {}
 
-    static java.util.concurrent.CompletionStage<Void> run(AcceptancePlugin test) throws Exception {
-        java.nio.file.Files.createDirectories(test.getDataFolder().toPath());
+    static CompletionStage<Void> run(AcceptancePlugin test) throws Exception {
+        Files.createDirectories(test.getDataFolder().toPath());
         var ops = test.runtime().staffOperations();
         require(ops != null, "Staff operations not composed");
         require(
@@ -29,8 +51,8 @@ final class NativeStaff {
                 Bukkit.dispatchCommand(console, "dungeon server status"),
                 "Staff command not bound");
         var permissible =
-                new org.bukkit.permissions.PermissibleBase(
-                        new org.bukkit.permissions.ServerOperator() {
+                new PermissibleBase(
+                        new ServerOperator() {
                             public boolean isOp() {
                                 return false;
                             }
@@ -41,10 +63,10 @@ final class NativeStaff {
                         });
         var attachment = permissible.addAttachment(test);
         var scoped =
-                (org.bukkit.command.CommandSender)
-                        java.lang.reflect.Proxy.newProxyInstance(
-                                org.bukkit.command.CommandSender.class.getClassLoader(),
-                                new Class<?>[] {org.bukkit.command.CommandSender.class},
+                (CommandSender)
+                        Proxy.newProxyInstance(
+                                CommandSender.class.getClassLoader(),
+                                new Class<?>[] {CommandSender.class},
                                 (proxy, method, args) ->
                                         switch (method.getName()) {
                                             case "hasPermission" ->
@@ -56,7 +78,7 @@ final class NativeStaff {
         try {
             attachment.setPermission("dungeons.staff.edit.crypt", true);
             require(
-                    nl.hauntedmc.dungeons.runtime.staff.StaffPermissions.allows(
+                    StaffPermissions.allows(
                             scoped, "edit", "crypt"),
                     "Scoped grant is hidden by Bukkit defaults");
             attachment.setPermission("dungeons.role.builder", true);
@@ -71,7 +93,7 @@ final class NativeStaff {
                     "Builder preset bypassed gameplay commands");
             attachment.setPermission("dungeons.staff.edit.crypt", false);
             require(
-                    !nl.hauntedmc.dungeons.runtime.staff.StaffPermissions.allows(
+                    !StaffPermissions.allows(
                             scoped, "edit", "crypt"),
                     "Scoped denial did not override preset");
         } finally {
@@ -86,15 +108,15 @@ final class NativeStaff {
                 "Maintenance not persisted");
         ops.maintenance(console, dungeon.getWorldName(), false, "Acceptance complete");
         // Staff routes must render chat output for players without opening inventories.
-        var opened = new java.util.concurrent.atomic.AtomicBoolean();
-        var playerOutput = new java.util.ArrayList<String>();
-        java.util.UUID syntheticId = java.util.UUID.randomUUID();
+        var opened = new AtomicBoolean();
+        var playerOutput = new ArrayList<String>();
+        UUID syntheticId = UUID.randomUUID();
         test.seedPlayer(syntheticId);
         var player =
-                (org.bukkit.entity.Player)
-                        java.lang.reflect.Proxy.newProxyInstance(
-                                org.bukkit.entity.Player.class.getClassLoader(),
-                                new Class<?>[] {org.bukkit.entity.Player.class},
+                (Player)
+                        Proxy.newProxyInstance(
+                                Player.class.getClassLoader(),
+                                new Class<?>[] {Player.class},
                                 (proxy, method, args) ->
                                         switch (method.getName()) {
                                             case "getUniqueId" -> syntheticId;
@@ -110,14 +132,14 @@ final class NativeStaff {
                                             case "sendMessage" -> {
                                                 for (Object arg : args) {
                                                     if (arg instanceof String text) playerOutput.add(text);
-                                                    if (arg instanceof net.kyori.adventure.text.Component component)
-                                                        playerOutput.add(net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(component));
+                                                    if (arg instanceof Component component)
+                                                        playerOutput.add(PlainTextComponentSerializer.plainText().serialize(component));
                                                 }
                                                 yield null;
                                             }
                                             default -> null;
                                         });
-        var command = java.util.Objects.requireNonNull(Bukkit.getPluginCommand("dungeon"));
+        var command = Objects.requireNonNull(Bukkit.getPluginCommand("dungeon"));
         command.execute(player, "dungeon", new String[] {"server"});
         require(!opened.get(), "Staff status opened an inventory");
         require(playerOutput.stream().anyMatch(line -> line.contains("Dungeons:")),
@@ -128,12 +150,12 @@ final class NativeStaff {
         require(playerOutput.stream().anyMatch(line -> line.contains(dungeon.getWorldName())),
                 "Map detail did not render chat output");
 
-        var output = new java.util.ArrayList<String>();
+        var output = new ArrayList<String>();
         var sender =
-                (org.bukkit.command.CommandSender)
-                        java.lang.reflect.Proxy.newProxyInstance(
-                                org.bukkit.command.CommandSender.class.getClassLoader(),
-                                new Class<?>[] {org.bukkit.command.CommandSender.class},
+                (CommandSender)
+                        Proxy.newProxyInstance(
+                                CommandSender.class.getClassLoader(),
+                                new Class<?>[] {CommandSender.class},
                                 (proxy, method, args) ->
                                         switch (method.getName()) {
                                             case "getName" -> "NativeStaffCorrections";
@@ -147,7 +169,7 @@ final class NativeStaff {
                                                         output.add(text);
                                                     else if (arg
                                                             instanceof
-                                                            net.kyori.adventure.text.Component
+                                                            Component
                                                                     component)
                                                         output.add(
                                                                 net.kyori.adventure.text.serializer
@@ -176,13 +198,13 @@ final class NativeStaff {
                 confirmation.substring(confirmation.indexOf("/dungeon ") + 9).split(" ");
         command.execute(sender, "dungeon", confirmed);
         require(
-                nl.hauntedmc.dungeons.runtime.player.StaffPlayerRecords.inspect(
+                StaffPlayerRecords.inspect(
                                 test.runtime(), syntheticId)
                         .contains("claimable stacks=1"),
                 "Native compensation was not persisted");
         command.execute(sender, "dungeon", confirmed);
         require(
-                nl.hauntedmc.dungeons.runtime.player.StaffPlayerRecords.inspect(
+                StaffPlayerRecords.inspect(
                                 test.runtime(), syntheticId)
                         .contains("claimable stacks=1"),
                 "Confirmation replay duplicated native compensation");
@@ -191,25 +213,25 @@ final class NativeStaff {
         return CompletableFuture.completedFuture(null);
     }
     private static void verifyExistingMapIdentityAndMetadataKeys(AcceptancePlugin test,
-            nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition dungeon) throws Exception {
+            DungeonDefinition dungeon) throws Exception {
         var settings = test.runtime().config();
         Object unique = settings.get("access.keys.unique_validation_enabled");
         Object metadata = settings.get("access.keys.metadata_validation_enabled");
         try {
             settings.set("access.keys.unique_validation_enabled", false);
             settings.set("access.keys.metadata_validation_enabled", true);
-            var definition = dungeon.addAccessKey(new org.bukkit.inventory.ItemStack(org.bukkit.Material.PAPER), null);
-            var existing = nl.hauntedmc.dungeons.util.item.ItemUtils.tagDungeonAccessKey(
-                    new org.bukkit.inventory.ItemStack(org.bukkit.Material.PAPER), definition.getKeyId());
-            var file = new java.io.File(dungeon.getFolder(), "config.yml");
-            var before = new org.bukkit.configuration.file.YamlConfiguration();
+            var definition = dungeon.addAccessKey(new ItemStack(Material.PAPER), null);
+            var existing = ItemUtils.tagDungeonAccessKey(
+                    new ItemStack(Material.PAPER), definition.getKeyId());
+            var file = new File(dungeon.getFolder(), "config.yml");
+            var before = new YamlConfiguration();
             before.load(file);
             before.set("dungeon.id", null);
             before.save(file);
-            java.nio.file.Files.writeString(dungeon.getFolder().toPath().resolve("access_keys.yml"), "unused: [broken");
+            Files.writeString(dungeon.getFolder().toPath().resolve("access_keys.yml"), "unused: [broken");
             var upgraded = test.runtime().dungeonCatalog().loadDungeon(dungeon.getFolder());
             require(upgraded != null, "Missing map ID or unused ledger broke upgrade");
-            java.util.UUID assigned = upgraded.getDungeonId();
+            UUID assigned = upgraded.getDungeonId();
             require(assigned != null, "Map UUID was not assigned");
             require(upgraded.isValidKey(existing) != null, "Existing metadata key rejected after ID assignment");
             var reloaded = test.runtime().dungeonCatalog().loadDungeon(upgraded.getFolder());

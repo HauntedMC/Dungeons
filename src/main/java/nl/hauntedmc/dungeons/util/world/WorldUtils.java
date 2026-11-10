@@ -1,5 +1,6 @@
 package nl.hauntedmc.dungeons.util.world;
 
+import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -114,7 +115,7 @@ public final class WorldUtils {
                 var from = source.resolve(entry);
                 var to = snapshot.resolve(entry);
                 if (Files.isDirectory(from)) {
-                    org.apache.commons.io.FileUtils.copyDirectory(from.toFile(), to.toFile());
+                    FileUtils.copyDirectory(from.toFile(), to.toFile());
                 } else if (Files.exists(from)) {
                     Files.copy(from, to);
                 }
@@ -160,7 +161,7 @@ public final class WorldUtils {
             if (publishing) publication.unlock();
             if (!retainBackup) {
                 try {
-                    org.apache.commons.io.FileUtils.deleteDirectory(staging.toFile());
+                    FileUtils.deleteDirectory(staging.toFile());
                 } catch (IOException cleanup) {
                     if (primaryFailure != null) primaryFailure.addSuppressed(cleanup);
                     else throw cleanup;

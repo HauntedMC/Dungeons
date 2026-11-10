@@ -4,6 +4,8 @@ import static org.mockito.Mockito.*;
 
 import net.kyori.adventure.text.Component;
 
+import nl.hauntedmc.dungeons.util.text.ComponentUtils;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.inventory.*;
@@ -113,7 +115,7 @@ public final class StaffGuiBoundary implements AutoCloseable {
         ItemStack item = contents.getOrDefault(top, Map.of()).get(slot);
         return item == null
                 ? ""
-                : nl.hauntedmc.dungeons.util.text.ComponentUtils.plainText(
+                : ComponentUtils.plainText(
                         item.getItemMeta().displayName());
     }
 

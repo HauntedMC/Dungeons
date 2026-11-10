@@ -2,6 +2,7 @@ package nl.hauntedmc.dungeons.gui.framework;
 
 import nl.hauntedmc.dungeons.gui.framework.window.GuiWindow;
 import nl.hauntedmc.dungeons.gui.framework.window.GuiWindowRegistry;
+
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 

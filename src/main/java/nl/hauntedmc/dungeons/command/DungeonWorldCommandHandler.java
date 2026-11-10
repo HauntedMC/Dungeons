@@ -3,7 +3,9 @@ package nl.hauntedmc.dungeons.command;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
+import nl.hauntedmc.dungeons.runtime.staff.StaffPermissions;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+import nl.hauntedmc.dungeons.util.world.WorldUtils;
 
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
@@ -39,7 +41,7 @@ final class DungeonWorldCommandHandler {
 
         String worldName = args[1].trim();
         String mapName = args[2].trim();
-        nl.hauntedmc.dungeons.runtime.staff.StaffPermissions.require(sender, "edit", mapName);
+        StaffPermissions.require(sender, "edit", mapName);
         if (!this.isSafeImportWorldName(mapName)) throw new IllegalArgumentException("Invalid dungeon name");
         if (!this.isSafeImportWorldName(worldName)) {
             LangUtils.sendMessage(
@@ -57,7 +59,7 @@ final class DungeonWorldCommandHandler {
             return true;
         }
 
-        File importFolder = nl.hauntedmc.dungeons.util.world.WorldUtils.dimensionFolder(worldName);
+        File importFolder = WorldUtils.dimensionFolder(worldName);
         if (!importFolder.isDirectory()) {
             LangUtils.sendMessage(
                     sender,
@@ -157,7 +159,7 @@ final class DungeonWorldCommandHandler {
         }
 
         if (args.length > 1)
-            nl.hauntedmc.dungeons.runtime.staff.StaffPermissions.require(sender, "edit", args[1]);
+            StaffPermissions.require(sender, "edit", args[1]);
 
         if (args.length < 2 || args.length > 4) {
             LangUtils.sendMessage(player, "commands.dungeon.create.usage");
@@ -222,7 +224,7 @@ final class DungeonWorldCommandHandler {
                             exception);
             if (Bukkit.getWorld(tempWorldName) == null) {
                 this.cleanupDirectoryAsync(
-                        nl.hauntedmc.dungeons.util.world.WorldUtils.dimensionFolder(tempWorldName),
+                        WorldUtils.dimensionFolder(tempWorldName),
                         "failed temporary dimension");
                 this.cleanupDirectoryAsync(
                         new File(Bukkit.getWorldContainer(), tempWorldName),
@@ -277,7 +279,7 @@ final class DungeonWorldCommandHandler {
 
         try {
             return this.resolveSafeChildDirectory(Bukkit.getWorldContainer(), worldName).exists()
-                    || nl.hauntedmc.dungeons.util.world.WorldUtils.dimensionFolder(worldName)
+                    || WorldUtils.dimensionFolder(worldName)
                             .exists();
         } catch (IOException exception) {
             this.plugin
@@ -303,7 +305,7 @@ final class DungeonWorldCommandHandler {
             File worldFolder = new File(Bukkit.getWorldContainer(), candidate);
             if (Bukkit.getWorld(candidate) == null
                     && !worldFolder.exists()
-                    && !nl.hauntedmc.dungeons.util.world.WorldUtils.dimensionFolder(candidate)
+                    && !WorldUtils.dimensionFolder(candidate)
                             .exists()) {
                 return candidate;
             }

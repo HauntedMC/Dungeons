@@ -24,6 +24,8 @@ import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
 import nl.hauntedmc.dungeons.runtime.team.DungeonTeam;
 import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
 import nl.hauntedmc.dungeons.support.PaperBoundary;
+import nl.hauntedmc.dungeons.support.PlayerState;
+import nl.hauntedmc.dungeons.support.TaggedItems;
 
 import org.bukkit.Material;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -34,7 +36,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 
 class QueueLaunchContractTest {
     @TempDir Path directory;
@@ -205,7 +209,7 @@ class QueueLaunchContractTest {
         final DungeonQueueCoordinator coordinator =
                 new DungeonQueueCoordinator(paper.plugin, sessions, capacity, queues, teams);
         final YamlConfiguration settings = new YamlConfiguration();
-        final java.util.Map<Player, nl.hauntedmc.dungeons.support.PlayerState> states = new java.util.IdentityHashMap<>();
+        final Map<Player, PlayerState> states = new IdentityHashMap<>();
 
         Fixture(Path directory) {
             when(paper.plugin.getDataFolder()).thenReturn(directory.toFile());
@@ -238,11 +242,11 @@ class QueueLaunchContractTest {
         }
 
         static ItemStack item(int amount) {
-            return nl.hauntedmc.dungeons.support.TaggedItems.stack(mock(Material.class), amount, java.util.Map.of());
+            return TaggedItems.stack(mock(Material.class), amount, Map.of());
         }
 
         DungeonPlayerSession player() {
-            var state = new nl.hauntedmc.dungeons.support.PlayerState();
+            var state = new PlayerState();
             states.put(state.player, state);
             return sessions.put(state.player);
         }

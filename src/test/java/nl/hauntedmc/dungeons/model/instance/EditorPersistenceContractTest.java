@@ -22,14 +22,20 @@ import nl.hauntedmc.dungeons.event.PlayerLeaveDungeonEvent;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.support.*;
 import nl.hauntedmc.dungeons.util.entity.EntityUtils;
+import nl.hauntedmc.dungeons.util.entity.HologramManager;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
 
 import org.bukkit.*;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.event.Event;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.Plugin;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.*;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +45,7 @@ class EditorPersistenceContractTest {
     @TempDir Path directory;
 
     @Test
-    @org.junit.jupiter.api.Timeout(10)
+    @Timeout(10)
     void blockedFilesystemWorkDoesNotBlockTheOwnerOrAllowOverlappingSaves() throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration());
                 var executor = Executors.newSingleThreadExecutor()) {
@@ -66,15 +72,15 @@ class EditorPersistenceContractTest {
             var editor =
                     new Editor(f) {
                         @Override
-                        protected void saveWorldFiles(java.io.File source, java.io.File target)
-                                throws java.io.IOException {
+                        protected void saveWorldFiles(File source, File target)
+                                throws IOException {
                             assertFalse(owner == Thread.currentThread());
                             entered.countDown();
                             try {
                                 if (!release.await(3, TimeUnit.SECONDS))
-                                    throw new java.io.IOException("test release timed out");
+                                    throw new IOException("test release timed out");
                             } catch (InterruptedException failure) {
-                                throw new java.io.IOException(failure);
+                                throw new IOException(failure);
                             }
                             super.saveWorldFiles(source, target);
                         }
@@ -348,7 +354,7 @@ class EditorPersistenceContractTest {
                                 return null;
                             })
                     .when(manager)
-                    .callEvent(any(org.bukkit.event.Event.class));
+                    .callEvent(any(Event.class));
             editor.removePlayer(session, false);
             assertSame(editor, session.getInstance());
             assertTrue(session.isEditMode());
@@ -490,7 +496,7 @@ class EditorPersistenceContractTest {
             f.paper.bukkit.when(Bukkit::isPrimaryThread).thenReturn(false);
             doThrow(new IllegalStateException("scheduler stopped"))
                     .when(f.scheduler.scheduler)
-                    .runTask(any(org.bukkit.plugin.Plugin.class), any(Runnable.class));
+                    .runTask(any(Plugin.class), any(Runnable.class));
             var latch = new CountDownLatch(1);
             var result = assertDoesNotThrow(() -> editor.saveWorldAsync(latch));
             assertFalse(result.get(1, TimeUnit.SECONDS));
@@ -668,7 +674,7 @@ class EditorPersistenceContractTest {
             doThrow(new IllegalStateException("scheduler stopped"))
                     .when(f.scheduler.scheduler)
                     .runTaskAsynchronously(
-                            any(org.bukkit.plugin.Plugin.class), any(Runnable.class));
+                            any(Plugin.class), any(Runnable.class));
             var editor = new Editor(f);
             var result = editor.saveWorldAsync();
             assertFalse(result.get(1, TimeUnit.SECONDS));
@@ -711,7 +717,7 @@ class EditorPersistenceContractTest {
             throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
             var editor = new Editor(f);
-            editor.hologramManager = mock(nl.hauntedmc.dungeons.util.entity.HologramManager.class);
+            editor.hologramManager = mock(HologramManager.class);
             doThrow(new IllegalStateException("partial display removal"))
                     .when(editor.hologramManager)
                     .captureAndClearHolograms();

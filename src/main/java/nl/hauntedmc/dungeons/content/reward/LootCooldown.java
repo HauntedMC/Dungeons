@@ -1,14 +1,16 @@
 package nl.hauntedmc.dungeons.content.reward;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.TypeKey;
 import nl.hauntedmc.dungeons.content.function.reward.RewardFunction;
+
 import org.bukkit.Location;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Per-location cooldown record for a reward function.

@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
+import nl.hauntedmc.dungeons.content.instance.play.OpenInstance;
 import nl.hauntedmc.dungeons.event.DungeonDisposeEvent;
 import nl.hauntedmc.dungeons.event.PlayerLeaveDungeonEvent;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry;
@@ -13,9 +14,11 @@ import nl.hauntedmc.dungeons.support.*;
 
 import org.bukkit.*;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.event.Event;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.Mockito;
 
 import java.nio.file.Path;
 import java.util.*;
@@ -49,7 +52,7 @@ class TeamTransitionsContractTest {
     void openWorldNeverBelongsToOneTeamOrShutsDownOnLeaderDeparture() throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
             var service = service(f);
-            var open = mock(nl.hauntedmc.dungeons.content.instance.play.OpenInstance.class);
+            var open = mock(OpenInstance.class);
             when(open.getInstanceWorld()).thenReturn(f.world);
             when(open.getInstanceWorldName()).thenReturn("crypt_0");
             var first = player(f);
@@ -267,16 +270,16 @@ class TeamTransitionsContractTest {
                     f.run.addPlayer(session);
                     service.markStarted(team.getTeamId(), f.run);
                     var manager = Bukkit.getPluginManager();
-                    org.mockito.Mockito.doAnswer(
+                    Mockito.doAnswer(
                                     c -> {
                                         if (c.getArgument(0)
                                                 instanceof
-                                                nl.hauntedmc.dungeons.event.PlayerLeaveDungeonEvent
+                                                PlayerLeaveDungeonEvent
                                                         event) service.onPlayerLeaveDungeon(event);
                                         return null;
                                     })
                             .when(manager)
-                            .callEvent(org.mockito.Mockito.any(org.bukkit.event.Event.class));
+                            .callEvent(Mockito.any(Event.class));
                 }
                 assertTrue(service.handleLeaveTeam(member.player));
                 assertNull(service.getTeam(member.player.getUniqueId()));

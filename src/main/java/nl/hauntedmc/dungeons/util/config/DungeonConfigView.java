@@ -1,9 +1,10 @@
 package nl.hauntedmc.dungeons.util.config;
 
+import org.bukkit.configuration.file.FileConfiguration;
+
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import org.bukkit.configuration.file.FileConfiguration;
 
 /**
  * Typed view helpers for per-dungeon configuration values with bundled-default fallbacks.

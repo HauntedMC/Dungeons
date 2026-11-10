@@ -1,10 +1,14 @@
 package nl.hauntedmc.dungeons.support;
 
-import java.nio.file.Path;
+import nl.hauntedmc.dungeons.persistence.StateStore;
+
+import org.bukkit.configuration.InvalidConfigurationException;
+import org.bukkit.configuration.file.YamlConfiguration;
+
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import nl.hauntedmc.dungeons.persistence.StateStore;
 
 /** In-memory database boundary for owner-thread gameplay tests; never reads or writes local state. */
 public final class TestStateStore implements StateStore {
@@ -52,10 +56,10 @@ public final class TestStateStore implements StateStore {
         UUID id = player(key);
         seed("player-recovery", id.toString(), id, payload);
     }
-    public org.bukkit.configuration.file.YamlConfiguration yaml(String scope, String record) {
-        var yaml = new org.bukkit.configuration.file.YamlConfiguration();
+    public YamlConfiguration yaml(String scope, String record) {
+        var yaml = new YamlConfiguration();
         try { yaml.loadFromString(payload(scope, record)); }
-        catch (org.bukkit.configuration.InvalidConfigurationException failure) { throw new IllegalStateException(failure); }
+        catch (InvalidConfigurationException failure) { throw new IllegalStateException(failure); }
         return yaml;
     }
     public static UUID player(Path key) {

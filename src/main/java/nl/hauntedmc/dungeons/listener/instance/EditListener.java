@@ -1,6 +1,7 @@
 package nl.hauntedmc.dungeons.listener.instance;
 
 import nl.hauntedmc.dungeons.model.instance.EditableInstance;
+
 import org.bukkit.entity.EntityType;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.CreatureSpawnEvent;

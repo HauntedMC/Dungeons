@@ -1,6 +1,11 @@
 package nl.hauntedmc.dungeons.plugin;
 
 import nl.hauntedmc.dungeons.bootstrap.DungeonsApplication;
+
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.server.PluginDisableEvent;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
@@ -13,7 +18,7 @@ import org.jetbrains.annotations.Nullable;
  * integration points such as {@link #getDefaultWorldGenerator(String, String)} to live on the
  * concrete {@link JavaPlugin} subclass.
  */
-public final class DungeonsPlugin extends JavaPlugin implements org.bukkit.event.Listener {
+public final class DungeonsPlugin extends JavaPlugin implements Listener {
     private final DungeonsApplication application = new DungeonsApplication(this);
 
     /** Delegates plugin startup to the application composition root. */
@@ -24,8 +29,8 @@ public final class DungeonsPlugin extends JavaPlugin implements org.bukkit.event
     }
 
     /** Drain while DataProvider still permits work, before its NORMAL disable observer fences us. */
-    @org.bukkit.event.EventHandler(priority = org.bukkit.event.EventPriority.LOWEST)
-    public void beforeDisable(org.bukkit.event.server.PluginDisableEvent event) {
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void beforeDisable(PluginDisableEvent event) {
         if (event.getPlugin() == this) this.application.stop();
     }
 

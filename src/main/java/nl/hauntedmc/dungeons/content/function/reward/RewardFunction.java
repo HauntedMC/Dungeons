@@ -1,6 +1,5 @@
 package nl.hauntedmc.dungeons.content.function.reward;
 
-import nl.hauntedmc.dungeons.util.time.TimeUtils;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.EditorHidden;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
@@ -26,6 +25,7 @@ import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+import nl.hauntedmc.dungeons.util.time.TimeUtils;
 
 import org.bukkit.Location;
 import org.bukkit.Material;

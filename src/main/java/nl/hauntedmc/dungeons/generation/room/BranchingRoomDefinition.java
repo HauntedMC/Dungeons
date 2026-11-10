@@ -25,14 +25,17 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.entity.Player;
 import org.bukkit.util.BoundingBox;
+import org.slf4j.Logger;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 
 /**
  * Persistent definition of one branching room template.
@@ -73,7 +76,7 @@ public class BranchingRoomDefinition {
         return this.dungeon.getEnvironment().plugin();
     }
 
-    private org.slf4j.Logger logger() {
+    private Logger logger() {
         return this.dungeon.getEnvironment().logger();
     }
 
@@ -587,8 +590,8 @@ public class BranchingRoomDefinition {
     }
 
     private CompletableFuture<Boolean> saveOnOwnerThread(
-            java.util.function.Supplier<CompletableFuture<Boolean>> capture) {
-        return nl.hauntedmc.dungeons.config.ConfigurationFile.onOwnerThread(this.plugin(), capture);
+            Supplier<CompletableFuture<Boolean>> capture) {
+        return ConfigurationFile.onOwnerThread(this.plugin(), capture);
     }
 
     private synchronized CompletableFuture<Boolean> captureRoomSave() {
@@ -734,7 +737,7 @@ public class BranchingRoomDefinition {
 
     private CompletableFuture<Void> writeSchematicAsync(StructurePiece capturedSchematic) {
         File destination = this.schemFile;
-        return nl.hauntedmc.dungeons.config.ConfigurationFile.filesystemAsync(
+        return ConfigurationFile.filesystemAsync(
                 this.plugin(),
                 destination,
                 () -> {
@@ -755,7 +758,7 @@ public class BranchingRoomDefinition {
                             this.plugin(),
                             destination,
                             () -> {
-                                java.nio.file.Files.deleteIfExists(destination.toPath());
+                                Files.deleteIfExists(destination.toPath());
                                 return null;
                             })
                     .whenComplete(

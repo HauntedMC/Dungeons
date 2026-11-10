@@ -3,10 +3,14 @@ package nl.hauntedmc.dungeons.runtime.player;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import net.kyori.adventure.text.Component;
+
 import nl.hauntedmc.dungeons.listener.DungeonListener;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry;
 import nl.hauntedmc.dungeons.support.*;
+import nl.hauntedmc.dungeons.support.TestStateStore;
 import nl.hauntedmc.dungeons.util.entity.EntityUtils;
+import nl.hauntedmc.dungeons.util.item.ItemUtils;
 
 import org.bukkit.*;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -21,7 +25,7 @@ class PlayerRecoveryLifecycleTest {
 
     @Test
     void onlineRefundSurvivesPlayerSaveFailureAndReconnectWithoutDuplication() throws Exception {
-        try (var f = new RunFixture(directory, new org.bukkit.configuration.file.YamlConfiguration())) {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
             var state = new PlayerState();
             state.contents[0] = PlayerState.stack(3);
             var session = f.session(state);
@@ -64,7 +68,7 @@ class PlayerRecoveryLifecycleTest {
             reconstructed.restoreCapturedHotbar();
             Path path =
                     directory.resolve("players/" + player.player.getUniqueId() + ".recovery.yml");
-            assertTrue(new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path)).hasRecovery());
+            assertTrue(new PlayerRecoveryJournal(TestStateStore.player(path)).hasRecovery());
             reconstructed.completeDeparture(true, true);
             assertEquals(8, player.contents[0].getAmount());
             assertEquals(GameMode.SURVIVAL, player.gameMode);
@@ -79,7 +83,7 @@ class PlayerRecoveryLifecycleTest {
             throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration());
                 var menus = new HeadlessInventoryMenus();
-                var tools = mockStatic(nl.hauntedmc.dungeons.util.item.ItemUtils.class)) {
+                var tools = mockStatic(ItemUtils.class)) {
             var player = new PlayerState();
             var session = f.session(player);
             f.paper
@@ -94,7 +98,7 @@ class PlayerRecoveryLifecycleTest {
             session.restoreCapturedHotbar();
             Path path =
                     directory.resolve("players/" + player.player.getUniqueId() + ".recovery.yml");
-            assertTrue(new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path)).hasRecovery());
+            assertTrue(new PlayerRecoveryJournal(TestStateStore.player(path)).hasRecovery());
             assertTrue(session.isEditMode());
             session.setChatListening(true);
             var listener =
@@ -113,7 +117,7 @@ class PlayerRecoveryLifecycleTest {
             assertFalse(session.isChatListening());
             assertNull(session.getSavedHotbar());
             assertNull(session.getCurrentHotbar());
-            assertFalse(new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path)).hasRecovery());
+            assertFalse(new PlayerRecoveryJournal(TestStateStore.player(path)).hasRecovery());
             player.contents[0].setAmount(3);
             session.restoreCapturedHotbar();
             session.restoreInventory();
@@ -176,7 +180,7 @@ class PlayerRecoveryLifecycleTest {
             when(event.getPlayer()).thenReturn(player.player);
             listener.onPlayerJoin(event);
             assertNull(player.contents[0]);
-            verify(player.player, never()).kick(any(net.kyori.adventure.text.Component.class));
+            verify(player.player, never()).kick(any(Component.class));
             var respawn = mock(PlayerRespawnEvent.class);
             when(respawn.getPlayer()).thenReturn(player.player);
             listener.onRecoveryRespawn(respawn);
@@ -198,7 +202,7 @@ class PlayerRecoveryLifecycleTest {
                     IllegalStateException.class,
                     () -> f.paper.runtime.playerSessions().put(player.player));
             assertEquals("broken: [", f.paper.state.payload("player-recovery", player.player.getUniqueId().toString()));
-            verify(player.player).kick(any(net.kyori.adventure.text.Component.class));
+            verify(player.player).kick(any(Component.class));
             assertNull(f.paper.runtime.playerSessions().get(player.player));
         }
     }

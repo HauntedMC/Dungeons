@@ -1,11 +1,12 @@
 package nl.hauntedmc.dungeons.runtime.team;
 
+import org.bukkit.scheduler.BukkitTask;
+
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import org.bukkit.scheduler.BukkitTask;
 
 /**
  * Mutable team aggregate used for grouped dungeon queueing and started-run tracking.

@@ -2,10 +2,22 @@ package nl.hauntedmc.dungeons.acceptance;
 
 import static nl.hauntedmc.dungeons.acceptance.AcceptancePlugin.require;
 
-import org.bukkit.GameRules;
-import org.bukkit.Material;
-import org.bukkit.block.Chest;
+import nl.hauntedmc.dungeons.content.function.CommandFunction;
+import nl.hauntedmc.dungeons.event.TriggerFireEvent;
+import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
+import nl.hauntedmc.dungeons.util.world.GameRuleUtils;
 
+import org.bukkit.GameRules;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.World;
+import org.bukkit.block.Chest;
+import org.bukkit.configuration.InvalidConfigurationException;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.EnderDragon;
+import org.bukkit.entity.Minecart;
+
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 final class WorldLifecycle {
@@ -73,9 +85,9 @@ final class WorldLifecycle {
                                                 }));
     }
 
-    private static void verifyGameRulePersistence(org.bukkit.World world) {
-        var saved = new org.bukkit.configuration.file.YamlConfiguration();
-        nl.hauntedmc.dungeons.util.world.GameRuleUtils.capture(world, saved);
+    private static void verifyGameRulePersistence(World world) {
+        var saved = new YamlConfiguration();
+        GameRuleUtils.capture(world, saved);
         var mobRule = GameRules.SPAWN_MOBS;
         var tickRule = GameRules.RANDOM_TICK_SPEED;
         boolean originalMobs = world.getGameRuleValue(mobRule);
@@ -83,9 +95,9 @@ final class WorldLifecycle {
         try {
             world.setGameRule(mobRule, !originalMobs);
             world.setGameRule(tickRule, originalTicks + 1);
-            var loaded = new org.bukkit.configuration.file.YamlConfiguration();
+            var loaded = new YamlConfiguration();
             loaded.loadFromString(saved.saveToString());
-            nl.hauntedmc.dungeons.util.world.GameRuleUtils.apply(world, loaded);
+            GameRuleUtils.apply(world, loaded);
             require(
                     world.getGameRuleValue(mobRule) == originalMobs,
                     "Boolean gamerule did not survive YAML persistence");
@@ -97,12 +109,12 @@ final class WorldLifecycle {
             }
             boolean rejected = false;
             try {
-                nl.hauntedmc.dungeons.util.world.GameRuleUtils.apply(world, saved);
+                GameRuleUtils.apply(world, saved);
             } catch (IllegalArgumentException expected) {
                 rejected = true;
             }
             require(rejected, "Untyped gamerule strings must be rejected");
-        } catch (org.bukkit.configuration.InvalidConfigurationException exception) {
+        } catch (InvalidConfigurationException exception) {
             throw new IllegalStateException(exception);
         } finally {
             world.setGameRule(mobRule, originalMobs);
@@ -111,28 +123,28 @@ final class WorldLifecycle {
     }
 
     private static CompletionStage<Void> verifyConsoleSummons(
-            AcceptancePlugin test, nl.hauntedmc.dungeons.model.instance.PlayableInstance run) {
+            AcceptancePlugin test, PlayableInstance run) {
         var world = run.getInstanceWorld();
-        var command = new nl.hauntedmc.dungeons.content.function.CommandFunction();
+        var command = new CommandFunction();
         command.setInstance(run);
-        command.setLocation(new org.bukkit.Location(world, -15, 82, -4));
+        command.setLocation(new Location(world, -15, 82, -4));
         command.setCommandType(2);
         command.setCommand("summon minecraft:ender_dragon ~ ~ ~ {DragonPhase:4}");
-        var event = new nl.hauntedmc.dungeons.event.TriggerFireEvent(run, null);
-        command.runFunction(event, java.util.List.of());
+        var event = new TriggerFireEvent(run, null);
+        command.runFunction(event, List.of());
         command.setCommand(
                 "summon minecraft:minecart 35.5 69.0 -38.5"
                         + " {Passengers:[{id:\"minecraft:endermite\"}]}");
-        command.runFunction(event, java.util.List.of());
+        command.runFunction(event, List.of());
         // Simulate players keeping these chunks active after the startup commands.
         world.setChunkForceLoaded(-1, -1, true);
         world.setChunkForceLoaded(2, -3, true);
         return test.await(
                 "dragon and minecart passenger console summons",
                 () ->
-                        !world.getEntitiesByClass(org.bukkit.entity.EnderDragon.class).isEmpty()
+                        !world.getEntitiesByClass(EnderDragon.class).isEmpty()
                                 && world
-                                        .getEntitiesByClass(org.bukkit.entity.Minecart.class)
+                                        .getEntitiesByClass(Minecart.class)
                                         .stream()
                                         .anyMatch(
                                                 cart ->

@@ -4,11 +4,16 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 
 import nl.hauntedmc.dungeons.bootstrap.LifecycleCoordinator;
+import nl.hauntedmc.dungeons.config.ConfigurationFile;
+import nl.hauntedmc.dungeons.model.dungeon.AccessKeyDefinition;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
+import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.instance.*;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import nl.hauntedmc.dungeons.runtime.player.*;
+import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueEntry;
 import nl.hauntedmc.dungeons.runtime.staff.*;
+import nl.hauntedmc.dungeons.util.lang.LangUtils;
 
 import org.bukkit.*;
 import org.bukkit.command.CommandSender;
@@ -17,6 +22,7 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.regex.Pattern;
 
 /** Staff commands and inventory actions invoke the same capability-checked operations. */
 public final class StaffCommandHandler implements CommandHandler {
@@ -99,7 +105,7 @@ public final class StaffCommandHandler implements CommandHandler {
         return content.backup(dungeon)
                 .thenCompose(
                         backup ->
-                                nl.hauntedmc.dungeons.config.ConfigurationFile.onOwnerThread(
+                                ConfigurationFile.onOwnerThread(
                                                 runtime.environment().plugin(),
                                                 () -> {
                                                     StaffPermissions.require(player, "edit", name);
@@ -290,7 +296,7 @@ public final class StaffCommandHandler implements CommandHandler {
                 } else {
                     need(a, 6, "keys <dungeon> give <player> <key-id> <reason>");
                     if (!a[2].equals("give")) throw new IllegalArgumentException("Use give");
-                    nl.hauntedmc.dungeons.model.dungeon.AccessKeyDefinition key = dungeon.getAccessKeys().stream()
+                    AccessKeyDefinition key = dungeon.getAccessKeys().stream()
                             .filter(definition -> a[4].equals(definition.getKeyId())).findFirst().orElse(null);
                     if (key == null) {
                         try { key = dungeon.getAccessKey(Integer.parseInt(a[4])); }
@@ -843,7 +849,7 @@ public final class StaffCommandHandler implements CommandHandler {
         if (next == null) return true;
         String command = CommandRoutes.staffCommand(input) + " --confirm " + next;
         tell(actor, "Confirm " + action + " for " + target + ". Impact: " + ops.impact(target));
-        actor.sendMessage(
+        LangUtils.sendRaw(actor,
                 Component.text("[Confirm within 30 seconds]")
                         .clickEvent(ClickEvent.suggestCommand(command)));
         tell(actor, command);
@@ -887,7 +893,7 @@ public final class StaffCommandHandler implements CommandHandler {
                 value -> {
                     if (value
                                     instanceof
-                                    nl.hauntedmc.dungeons.model.element.DungeonFunction function
+                                    DungeonFunction function
                             && function.getTrigger() == null
                             && function.getParentFunction() == null)
                         result.add("WARNING: Function has no trigger: " + function.getNamespace());
@@ -913,7 +919,7 @@ public final class StaffCommandHandler implements CommandHandler {
         return result;
     }
 
-    private String describeQueue(nl.hauntedmc.dungeons.runtime.queue.DungeonQueueEntry queue) {
+    private String describeQueue(DungeonQueueEntry queue) {
         return queue.getAdmissionId() + " " + queue.getDungeon().getWorldName() + " " + queue.getDifficulty()
                 + "; players=" + queue.getPlayers().size() + "; waiting=" + queue.getWaitingSeconds() + "s";
     }
@@ -1027,7 +1033,7 @@ public final class StaffCommandHandler implements CommandHandler {
 
     public static long duration(String input) {
         var matcher =
-                java.util.regex.Pattern.compile("(?i)([1-9][0-9]{0,8})(s|m|h|d|w)").matcher(input);
+                Pattern.compile("(?i)([1-9][0-9]{0,8})(s|m|h|d|w)").matcher(input);
         if (!matcher.matches())
             throw new IllegalArgumentException("Use a positive duration, e.g. 30m, 2h, 7d");
         long unit =
@@ -1055,7 +1061,7 @@ public final class StaffCommandHandler implements CommandHandler {
     }
 
     public static void tell(CommandSender actor, String text) {
-        actor.sendMessage(Component.text("[Dungeons] " + text));
+        LangUtils.sendRaw(actor, text);
     }
 
     @Override

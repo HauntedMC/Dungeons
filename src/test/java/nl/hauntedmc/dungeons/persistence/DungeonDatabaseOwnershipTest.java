@@ -4,10 +4,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-import java.sql.*;
-import java.util.concurrent.*;
-import javax.sql.DataSource;
 import nl.hauntedmc.dataprovider.api.DataProviderAPI;
+import nl.hauntedmc.dataprovider.api.DataProviderScope;
 import nl.hauntedmc.dataprovider.api.orm.ORMContext;
 import nl.hauntedmc.dataprovider.database.DatabaseType;
 import nl.hauntedmc.dataprovider.database.relational.RelationalDataAccess;
@@ -15,17 +13,24 @@ import nl.hauntedmc.dataprovider.database.relational.RelationalDatabaseProvider;
 import nl.hauntedmc.dataregistry.api.DataRegistryApi;
 import nl.hauntedmc.dataregistry.api.DataRegistryApiProvider;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
+
 import org.bukkit.Server;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
+import java.sql.*;
+import java.util.concurrent.*;
+
+import javax.sql.DataSource;
+
 @Timeout(10)
 class DungeonDatabaseOwnershipTest {
     static final class Fixture {
         final DungeonsPlugin plugin = mock(DungeonsPlugin.class);
         final DataProviderAPI api = mock(DataProviderAPI.class);
+        final DataProviderScope scope = mock(DataProviderScope.class);
         final DataSource source = mock(DataSource.class);
         final RelationalDatabaseProvider provider = mock(RelationalDatabaseProvider.class);
         final RelationalDataAccess access = mock(RelationalDataAccess.class);
@@ -50,7 +55,8 @@ class DungeonDatabaseOwnershipTest {
             config.set("runtime.server-id", "test-backend");
             config.set("database.connection-id", "custom_rw");
             when(api.forPlugin(plugin)).thenReturn(api);
-            when(api.registerDatabaseOrThrow(DatabaseType.MYSQL, "custom_rw", RelationalDatabaseProvider.class)).thenReturn(provider);
+            when(api.scope("dungeons.gameplay")).thenReturn(scope);
+            when(scope.registerDatabaseOrThrow(DatabaseType.MYSQL, "custom_rw", RelationalDatabaseProvider.class)).thenReturn(provider);
             when(provider.getDataSource()).thenReturn(source);
             when(provider.getDataAccess()).thenReturn(access);
             when(access.executeTransactionally(any())).thenReturn(CompletableFuture.completedFuture(null));
@@ -80,7 +86,7 @@ class DungeonDatabaseOwnershipTest {
         assertEquals(DungeonDatabase.State.UNAVAILABLE, database.state());
         assertEquals("database offline", database.problem());
         database.closeAsync().get(2, TimeUnit.SECONDS);
-        verify(f.api).unregisterDatabase(DatabaseType.MYSQL, "custom_rw");
+        verify(f.scope).close();
         verify(f.api, never()).createConfiguredOrmContext(any(), any(), any(Class[].class));
     }
 
@@ -90,9 +96,9 @@ class DungeonDatabaseOwnershipTest {
         database.start().get(2, TimeUnit.SECONDS);
         assertTrue(database.ready());
         database.closeAsync().get(2, TimeUnit.SECONDS);
-        var order = inOrder(f.orm, f.api);
+        var order = inOrder(f.orm, f.scope);
         order.verify(f.orm).close();
-        order.verify(f.api).unregisterDatabase(DatabaseType.MYSQL, "custom_rw");
+        order.verify(f.scope).close();
         verify(f.api, never()).createOrmContext(any(), any(), anyString(), any(Class[].class));
     }
 
@@ -100,7 +106,7 @@ class DungeonDatabaseOwnershipTest {
         var f = new Fixture();
         var registered = new CountDownLatch(1);
         var proceed = new CountDownLatch(1);
-        when(f.api.registerDatabaseOrThrow(DatabaseType.MYSQL, "custom_rw", RelationalDatabaseProvider.class))
+        when(f.scope.registerDatabaseOrThrow(DatabaseType.MYSQL, "custom_rw", RelationalDatabaseProvider.class))
                 .thenAnswer(call -> { registered.countDown(); assertTrue(proceed.await(2, TimeUnit.SECONDS)); return f.provider; });
         var database = new DungeonDatabase(f.plugin);
         database.start();
@@ -110,7 +116,7 @@ class DungeonDatabaseOwnershipTest {
         proceed.countDown();
         closing.get(2, TimeUnit.SECONDS);
         verify(f.api, never()).createConfiguredOrmContext(any(), any(), any(Class[].class));
-        verify(f.api).unregisterDatabase(DatabaseType.MYSQL, "custom_rw");
+        verify(f.scope).close();
         assertFalse(database.ready());
     }
 
@@ -120,11 +126,11 @@ class DungeonDatabaseOwnershipTest {
         database.start().get(2, TimeUnit.SECONDS);
         when(f.access.executeTransactionally(any())).thenReturn(CompletableFuture.failedFuture(new SQLException("lease release")));
         doThrow(new IllegalStateException("orm close")).when(f.orm).close();
-        doThrow(new IllegalStateException("provider close")).when(f.api).unregisterDatabase(DatabaseType.MYSQL, "custom_rw");
+        doThrow(new IllegalStateException("provider close")).when(f.scope).close();
         var failure = assertThrows(ExecutionException.class, () -> database.closeAsync().get(2, TimeUnit.SECONDS));
         assertEquals(2, failure.getCause().getSuppressed().length);
         verify(f.orm).close();
-        verify(f.api).unregisterDatabase(DatabaseType.MYSQL, "custom_rw");
+        verify(f.scope).close();
         assertEquals(DungeonDatabase.State.CLOSED, database.state());
     }
 
@@ -136,6 +142,6 @@ class DungeonDatabaseOwnershipTest {
         assertThrows(ExecutionException.class, () -> database.start().get(2, TimeUnit.SECONDS));
         assertEquals(DungeonDatabase.State.UNAVAILABLE, database.state());
         database.closeAsync().get(2, TimeUnit.SECONDS);
-        verify(f.api).unregisterDatabase(DatabaseType.MYSQL, "custom_rw");
+        verify(f.scope).close();
     }
 }

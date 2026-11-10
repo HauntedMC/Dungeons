@@ -5,8 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 import nl.hauntedmc.dungeons.event.DungeonEndEvent;
@@ -35,6 +35,7 @@ import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -541,7 +542,7 @@ class PlayerRunContractTest {
             f.paper.bukkit.verify(
                     () ->
                             Bukkit.dispatchCommand(
-                                    org.mockito.Mockito.eq(console), commands.capture()),
+                                    Mockito.eq(console), commands.capture()),
                     times(6));
             assertEquals(
                     List.of(

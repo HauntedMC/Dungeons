@@ -1,20 +1,32 @@
 package nl.hauntedmc.dungeons.persistence;
 
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import nl.hauntedmc.dataprovider.api.DataProviderAPI;
+import nl.hauntedmc.dataprovider.api.DataProviderScope;
+import nl.hauntedmc.dataprovider.api.orm.ORMContext;
 import nl.hauntedmc.dataprovider.database.DatabaseType;
 import nl.hauntedmc.dataprovider.database.relational.RelationalDatabaseProvider;
 import nl.hauntedmc.dataprovider.database.relational.TransactionCallback;
+import nl.hauntedmc.dataprovider.logging.LoggerAdapter;
 import nl.hauntedmc.dataregistry.api.DataRegistryApiProvider;
 import nl.hauntedmc.dataregistry.api.player.PlayerData;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
+
+import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.logging.Level;
 
 /** Owns one plugin lifecycle's provider registration, schema and fenced server identity. */
 public final class DungeonDatabase implements AutoCloseable {
@@ -26,15 +38,16 @@ public final class DungeonDatabase implements AutoCloseable {
     private final String serverId;
     private final UUID bootId = UUID.randomUUID();
     private final ServerLease lease;
-    private final nl.hauntedmc.dataprovider.logging.LoggerAdapter ormLogger;
-    private volatile nl.hauntedmc.dataprovider.api.orm.ORMContext orm;
+    private final LoggerAdapter ormLogger;
+    private volatile ORMContext orm;
     private final ThreadPoolExecutor initializer;
     private volatile State state = State.STARTING;
     private volatile String problem = "Initializing database";
     private volatile RelationalDatabaseProvider provider;
+    private volatile DataProviderScope scope;
     private volatile long leaseDeadline;
     private volatile Consumer<Throwable> failureHandler = ignored -> {};
-    private final java.util.Set<CompletableFuture<?>> pending = java.util.concurrent.ConcurrentHashMap.newKeySet();
+    private final Set<CompletableFuture<?>> pending = ConcurrentHashMap.newKeySet();
     private CompletableFuture<Void> startup;
     private CompletableFuture<Void> closing;
     private CompletableFuture<Void> renewal;
@@ -63,9 +76,9 @@ public final class DungeonDatabase implements AutoCloseable {
         this.connectionId = settings.connectionId();
         this.ormLogger = (level, message, failure) -> plugin.getLogger().log(
                 switch (level) {
-                    case INFO -> java.util.logging.Level.INFO;
-                    case WARN -> java.util.logging.Level.WARNING;
-                    case ERROR -> java.util.logging.Level.SEVERE;
+                    case INFO -> Level.INFO;
+                    case WARN -> Level.WARNING;
+                    case ERROR -> Level.SEVERE;
                 }, message, failure);
         this.initializer = new ThreadPoolExecutor(1, 1, 0, TimeUnit.SECONDS,
                 new ArrayBlockingQueue<>(8), task -> {
@@ -80,7 +93,8 @@ public final class DungeonDatabase implements AutoCloseable {
         if (startup != null) return startup.copy();
         startup = CompletableFuture.runAsync(() -> {
             try {
-                this.provider = api.registerDatabaseOrThrow(DatabaseType.MYSQL, connectionId, RelationalDatabaseProvider.class);
+                this.scope = api.scope("dungeons.gameplay");
+                this.provider = scope.registerDatabaseOrThrow(DatabaseType.MYSQL, connectionId, RelationalDatabaseProvider.class);
                 if (state == State.CLOSED) return;
                 this.orm = DungeonSchema.open(api, provider.getDataSource(), ormLogger);
                 if (state == State.CLOSED) return;
@@ -100,13 +114,13 @@ public final class DungeonDatabase implements AutoCloseable {
                 }
             } catch (Throwable failure) {
                 fail(failure);
-                throw new java.util.concurrent.CompletionException(failure);
+                throw new CompletionException(failure);
             }
         }, initializer);
         return startup.copy();
     }
 
-    public void unavailable(Throwable failure) { fail(java.util.Objects.requireNonNull(failure)); }
+    public void unavailable(Throwable failure) { fail(Objects.requireNonNull(failure)); }
 
     public void onFailure(Consumer<Throwable> handler) { this.failureHandler = handler; }
     public State state() { return state; }
@@ -144,7 +158,7 @@ public final class DungeonDatabase implements AutoCloseable {
         pending.add(operation);
         return operation.whenComplete((ignored, failure) -> {
             pending.remove(operation);
-            var seen = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<Throwable, Boolean>());
+            var seen = Collections.newSetFromMap(new IdentityHashMap<Throwable, Boolean>());
             for (Throwable cause = failure; cause != null && seen.add(cause); cause = cause.getCause()) {
                 if (cause instanceof ServerLease.Lost) { fail(failure); break; }
             }
@@ -177,8 +191,8 @@ public final class DungeonDatabase implements AutoCloseable {
             if (state == State.CLOSED || state == State.UNAVAILABLE) return;
             state = State.UNAVAILABLE;
             Throwable detail = failure;
-            while ((detail instanceof java.util.concurrent.CompletionException
-                    || detail instanceof java.util.concurrent.ExecutionException) && detail.getCause() != null)
+            while ((detail instanceof CompletionException
+                    || detail instanceof ExecutionException) && detail.getCause() != null)
                 detail = detail.getCause();
             problem = detail.getMessage() == null ? detail.getClass().getSimpleName() : detail.getMessage();
             cleanupAsync();
@@ -220,11 +234,11 @@ public final class DungeonDatabase implements AutoCloseable {
                 failure = append(failure, ormFailure);
             }
             try {
-                if (provider != null) api.unregisterDatabase(DatabaseType.MYSQL, connectionId);
+                if (scope != null) scope.close();
             } catch (Throwable unregisterFailure) {
                 failure = append(failure, unregisterFailure);
             }
-            if (failure != null) throw new java.util.concurrent.CompletionException(failure);
+            if (failure != null) throw new CompletionException(failure);
         }, initializer);
         initializer.shutdown();
         return closing;

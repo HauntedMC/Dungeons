@@ -3,9 +3,13 @@ package nl.hauntedmc.dungeons.runtime.staff;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 
+import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
 import org.bukkit.event.*;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityEvent;
 import org.bukkit.event.player.*;
 
 /**
@@ -22,10 +26,10 @@ public final class StaffObserverListener implements Listener {
         if (event.isAsynchronous()) return false;
         Player player = null;
         if (event instanceof PlayerEvent playerEvent) player = playerEvent.getPlayer();
-        else if (event instanceof org.bukkit.event.entity.EntityEvent entityEvent
+        else if (event instanceof EntityEvent entityEvent
                 && entityEvent.getEntity() instanceof Player target) player = target;
         if (observing(player)) return true;
-        return event instanceof org.bukkit.event.entity.EntityDamageByEntityEvent damage
+        return event instanceof EntityDamageByEntityEvent damage
                 && damage.getDamager() instanceof Player source
                 && observing(source);
     }
@@ -56,7 +60,7 @@ public final class StaffObserverListener implements Listener {
         var session = runtime.playerSessions().get(event.getPlayer());
         if (session != null
                 && session.isObserving()
-                && event.getNewGameMode() != org.bukkit.GameMode.SPECTATOR)
+                && event.getNewGameMode() != GameMode.SPECTATOR)
             event.setCancelled(true);
     }
 
@@ -64,7 +68,7 @@ public final class StaffObserverListener implements Listener {
     public void respawn(PlayerRespawnEvent event) {
         var session = runtime.playerSessions().get(event.getPlayer());
         if (session != null && session.isObserving())
-            org.bukkit.Bukkit.getScheduler()
+            Bukkit.getScheduler()
                     .runTask(
                             runtime.environment().plugin(),
                             () -> {

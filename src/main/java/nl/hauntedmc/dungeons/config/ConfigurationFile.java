@@ -17,8 +17,13 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
 /**
  * Project-specific YAML configuration wrapper.
@@ -47,8 +52,8 @@ public class ConfigurationFile extends YamlConfiguration {
         return saveAsync(this.plugin, this, file);
     }
 
-    private static final java.util.Set<SnapshotRequest> PENDING_CAPTURES =
-            java.util.concurrent.ConcurrentHashMap.newKeySet();
+    private static final Set<SnapshotRequest> PENDING_CAPTURES =
+            ConcurrentHashMap.newKeySet();
 
     /** Uses the same snapshot protocol for ordinary Bukkit YAML configurations. */
     public static CompletableFuture<Boolean> saveAsync(
@@ -78,7 +83,7 @@ public class ConfigurationFile extends YamlConfiguration {
      * Caller cancellation cannot cancel an admitted operation.
      */
     public static <T> CompletableFuture<T> filesystemAsync(
-            Plugin plugin, File destination, java.util.concurrent.Callable<T> action) {
+            Plugin plugin, File destination, Callable<T> action) {
         try {
             return ConfigurationIoQueue.filesystemAsync(
                     ConfigurationIoQueue.destination(destination), action, plugin);
@@ -89,7 +94,7 @@ public class ConfigurationFile extends YamlConfiguration {
 
     /** Executes configuration/model capture on the owner thread, including shutdown draining. */
     public static CompletableFuture<Boolean> onOwnerThread(
-            Plugin plugin, java.util.function.Supplier<CompletableFuture<Boolean>> capture) {
+            Plugin plugin, Supplier<CompletableFuture<Boolean>> capture) {
         var request = new SnapshotRequest(plugin, capture);
         try {
             if (plugin.isEnabled() && !Bukkit.isPrimaryThread()) {
@@ -115,13 +120,13 @@ public class ConfigurationFile extends YamlConfiguration {
 
     private static final class SnapshotRequest {
         final Plugin plugin;
-        final java.util.function.Supplier<CompletableFuture<Boolean>> action;
+        final Supplier<CompletableFuture<Boolean>> action;
         final CompletableFuture<Boolean> result = new CompletableFuture<>();
-        final java.util.concurrent.atomic.AtomicBoolean claimed =
-                new java.util.concurrent.atomic.AtomicBoolean();
+        final AtomicBoolean claimed =
+                new AtomicBoolean();
 
         SnapshotRequest(
-                Plugin plugin, java.util.function.Supplier<CompletableFuture<Boolean>> action) {
+                Plugin plugin, Supplier<CompletableFuture<Boolean>> action) {
             this.plugin = plugin;
             this.action = action;
         }

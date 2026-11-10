@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 import nl.hauntedmc.dungeons.config.ConfigurationFile;
 import nl.hauntedmc.dungeons.model.instance.*;
 import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
+import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.runtime.player.StaffPlayerRecords;
 import nl.hauntedmc.dungeons.runtime.queue.*;
 import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
@@ -17,9 +18,11 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.File;
 import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.*;
 
 class StaffOperationsContractTest {
@@ -40,7 +43,7 @@ class StaffOperationsContractTest {
             assertNotNull(
                     ops.confirm(f.actor, "archive", "crypt", "v2", "reason", token.toString()));
             token = ops.confirm(f.actor, "archive", "crypt", "v1", "reason", null);
-            now.addAndGet(java.util.concurrent.TimeUnit.SECONDS.toNanos(31));
+            now.addAndGet(TimeUnit.SECONDS.toNanos(31));
             assertNotNull(
                     ops.confirm(f.actor, "archive", "crypt", "v1", "reason", token.toString()));
             token = ops.confirm(f.actor, "archive", "crypt", "v1", "reason", null);
@@ -78,7 +81,7 @@ class StaffOperationsContractTest {
             var instance = mock(DungeonInstance.class);
             when(instance.getDungeon()).thenReturn(f.run.dungeon);
             var participants =
-                    new ArrayList<nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession>();
+                    new ArrayList<DungeonPlayerSession>();
             participants.add(f.run.session(new PlayerState()));
             when(instance.getPlayers()).thenReturn(participants);
             var disposal = new CompletableFuture<Boolean>();
@@ -283,7 +286,7 @@ class StaffOperationsContractTest {
                     .playerDataStore()
                     .correct(player, record -> record.set("Finished", false));
             Files.writeString(source.resolve("access_keys.yml"), "current: updated\n");
-            when(f.run.paper.runtime.dungeonCatalog().loadDungeon(any(java.io.File.class)))
+            when(f.run.paper.runtime.dungeonCatalog().loadDungeon(any(File.class)))
                     .thenReturn(f.run.dungeon);
             for (int count = 0; count < 9; count++) {
                 var extra = storage.backup(f.run.dungeon);

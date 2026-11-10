@@ -1,9 +1,10 @@
 package nl.hauntedmc.dungeons.util.instance;
 
+import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
+
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
 
 /**
  * Helpers for parsing and evaluating instance variable placeholders.

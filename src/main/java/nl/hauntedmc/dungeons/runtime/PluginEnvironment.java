@@ -1,6 +1,7 @@
 package nl.hauntedmc.dungeons.runtime;
 
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
+
 import org.bukkit.NamespacedKey;
 import org.slf4j.Logger;
 

@@ -2,19 +2,8 @@ package nl.hauntedmc.dungeons.persistence;
 
 import static org.mockito.Mockito.*;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Proxy;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-import javax.sql.DataSource;
 import nl.hauntedmc.dataprovider.api.DataProviderAPI;
+import nl.hauntedmc.dataprovider.api.DataProviderScope;
 import nl.hauntedmc.dataprovider.database.DatabaseType;
 import nl.hauntedmc.dataprovider.database.relational.RelationalDataAccess;
 import nl.hauntedmc.dataprovider.database.relational.RelationalDatabaseProvider;
@@ -23,6 +12,7 @@ import nl.hauntedmc.dataregistry.api.DataRegistryApi;
 import nl.hauntedmc.dataregistry.api.DataRegistryApiProvider;
 import nl.hauntedmc.dataregistry.api.player.PlayerData;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
+
 import org.bukkit.Server;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.Plugin;
@@ -30,6 +20,24 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.ServicesManager;
 import org.testcontainers.mysql.MySQLContainer;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Proxy;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLTransientConnectionException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+
+import javax.sql.DataSource;
 
 /** Public-provider adapter with real MySQL transactions and deterministic scheduling gates. */
 final class DatabaseTestHost implements AutoCloseable {
@@ -46,12 +54,12 @@ final class DatabaseTestHost implements AutoCloseable {
 
     final DungeonDatabase database;
     final PlayerData players = mock(PlayerData.class);
-    final java.util.concurrent.atomic.AtomicBoolean failBeforeCommit = new java.util.concurrent.atomic.AtomicBoolean();
-    final java.util.concurrent.atomic.AtomicBoolean failAfterCommit = new java.util.concurrent.atomic.AtomicBoolean();
+    final AtomicBoolean failBeforeCommit = new AtomicBoolean();
+    final AtomicBoolean failAfterCommit = new AtomicBoolean();
     final AtomicInteger transactions = new AtomicInteger();
     final AtomicReference<CompletableFuture<Object>> deferred = new AtomicReference<>();
     private final AtomicReference<QueryGate> gate = new AtomicReference<>();
-    private final java.util.concurrent.ExecutorService workers = Executors.newFixedThreadPool(4);
+    private final ExecutorService workers = Executors.newFixedThreadPool(4);
 
     @SuppressWarnings("unchecked")
     DatabaseTestHost(MySQLContainer mysql, String name) throws Exception {
@@ -69,16 +77,16 @@ final class DatabaseTestHost implements AutoCloseable {
                     connection.setAutoCommit(false);
                     try {
                         Object result = callback.doInTransaction(observed(connection));
-                        if (failBeforeCommit.compareAndSet(true, false)) throw new java.sql.SQLTransientConnectionException("Connection lost before commit");
+                        if (failBeforeCommit.compareAndSet(true, false)) throw new SQLTransientConnectionException("Connection lost before commit");
                         connection.commit();
-                        if (failAfterCommit.compareAndSet(true, false)) throw new java.sql.SQLTransientConnectionException("Commit response lost");
+                        if (failAfterCommit.compareAndSet(true, false)) throw new SQLTransientConnectionException("Commit response lost");
                         return result;
                     } catch (Exception failure) {
                         connection.rollback();
                         throw failure;
                     }
                 } catch (Exception failure) {
-                    throw new java.util.concurrent.CompletionException(failure);
+                    throw new CompletionException(failure);
                 }
             }, workers);
         });
@@ -89,7 +97,9 @@ final class DatabaseTestHost implements AutoCloseable {
         OrmTestSupport.configure(api);
         var plugin = mock(DungeonsPlugin.class);
         when(api.forPlugin(plugin)).thenReturn(api);
-        when(api.registerDatabaseOrThrow(DatabaseType.MYSQL, "player_data_rw", RelationalDatabaseProvider.class)).thenReturn(relational);
+        var scope = mock(DataProviderScope.class);
+        when(api.scope("dungeons.gameplay")).thenReturn(scope);
+        when(scope.registerDatabaseOrThrow(DatabaseType.MYSQL, "player_data_rw", RelationalDatabaseProvider.class)).thenReturn(relational);
         var server = mock(Server.class);
         var services = mock(ServicesManager.class);
         RegisteredServiceProvider<DataProviderAPI> registration = mock(RegisteredServiceProvider.class);

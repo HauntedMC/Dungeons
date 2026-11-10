@@ -4,18 +4,24 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
+import nl.hauntedmc.dungeons.persistence.StateStore;
+import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
 import nl.hauntedmc.dungeons.runtime.instance.PreparationRegistry;
+import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueEntry;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry;
 import nl.hauntedmc.dungeons.support.*;
 
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.*;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -31,8 +37,8 @@ class PlayerSessionExpiryTest {
 
     static int amount(PlayerState state) {
         return Arrays.stream(state.contents)
-                .filter(java.util.Objects::nonNull)
-                .mapToInt(org.bukkit.inventory.ItemStack::getAmount)
+                .filter(Objects::nonNull)
+                .mapToInt(ItemStack::getAmount)
                 .sum();
     }
 
@@ -99,8 +105,8 @@ class PlayerSessionExpiryTest {
             var clock = new AtomicLong();
             var registry = registry(f, clock);
             f.paper.runtime.setQueueRegistry(new DungeonQueueRegistry(registry, f.paper.runtime.activeInstances()));
-            var catalog = mock(nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository.class);
-            when(catalog.getLoadedDungeons()).thenReturn(java.util.List.of(f.dungeon));
+            var catalog = mock(DungeonRepository.class);
+            when(catalog.getLoadedDungeons()).thenReturn(List.of(f.dungeon));
             f.paper.runtime.setDungeonCatalog(catalog);
             registry.start(f.paper.runtime);
             var player = new PlayerState();
@@ -267,7 +273,7 @@ class PlayerSessionExpiryTest {
             session.setActiveFunction(mock(DungeonFunction.class));
             var target = directory.resolve("players/" + failedPlayer.getUniqueId() + ".yml");
             clock.set(TimeUnit.SECONDS.toNanos(2));
-            var failedKey = new nl.hauntedmc.dungeons.persistence.StateStore.Key("player-profile", failedPlayer.getUniqueId().toString(), failedPlayer.getUniqueId());
+            var failedKey = new StateStore.Key("player-profile", failedPlayer.getUniqueId().toString(), failedPlayer.getUniqueId());
             f.paper.state.failedWrites.add(failedKey);
             try {
                 assertEquals(7, registry.expireOfflineSessions());
@@ -311,7 +317,7 @@ class PlayerSessionExpiryTest {
             state.online = false;
             assertEquals(0, registry.expireOfflineSessions());
             assertTrue(session.refundReservedAccessKey());
-            var queue = mock(nl.hauntedmc.dungeons.runtime.queue.DungeonQueueEntry.class);
+            var queue = mock(DungeonQueueEntry.class);
             when(queues.getQueue(session)).thenReturn(queue);
             assertEquals(0, registry.expireOfflineSessions());
             when(queues.getQueue(session)).thenReturn(null);

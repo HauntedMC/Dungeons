@@ -1,5 +1,6 @@
 package nl.hauntedmc.dungeons.content.dungeon;
 
+import nl.hauntedmc.dungeons.config.ConfigurationFile;
 import nl.hauntedmc.dungeons.content.instance.play.StaticInstance;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonLoadException;
@@ -18,6 +19,7 @@ import org.yaml.snakeyaml.error.YAMLException;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -133,12 +135,12 @@ public class StaticDungeon extends DungeonDefinition {
      */
     @Override
     public void saveFunctions() {
-        nl.hauntedmc.dungeons.config.ConfigurationFile.onOwnerThread(
+        ConfigurationFile.onOwnerThread(
                 this.plugin(),
                 () -> {
                     YamlConfiguration functionsYaml = new YamlConfiguration();
                     functionsYaml.set("Functions", new ArrayList<>(this.functions.values()));
-                    return nl.hauntedmc.dungeons.config.ConfigurationFile.saveAsync(
+                    return ConfigurationFile.saveAsync(
                             this.plugin(), functionsYaml, new File(this.folder, "functions.yml"));
                 });
     }
@@ -150,7 +152,7 @@ public class StaticDungeon extends DungeonDefinition {
         YamlConfiguration functionsYaml = new YamlConfiguration();
         File loadFile = new File(this.folder, "functions.yml");
         try {
-            nl.hauntedmc.dungeons.config.ConfigurationFile.loadSnapshot(functionsYaml, loadFile);
+            ConfigurationFile.loadSnapshot(functionsYaml, loadFile);
             List<?> functions = functionsYaml.getList("Functions");
             if (functions == null || functions.isEmpty()) {
                 return;
@@ -160,7 +162,7 @@ public class StaticDungeon extends DungeonDefinition {
             for (Object function : functions) {
                 this.loadFunctionSafely(function, index++);
             }
-        } catch (java.nio.file.NoSuchFileException absent) {
+        } catch (NoSuchFileException absent) {
             return;
         } catch (IOException exception) {
             throw new DungeonLoadException(

@@ -1,9 +1,7 @@
 package nl.hauntedmc.dungeons.content.trigger;
 
 import io.papermc.paper.event.player.AsyncChatEvent;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ExecutionException;
+
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.content.instance.play.BranchingInstance;
@@ -17,6 +15,7 @@ import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.text.ComponentUtils;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -24,6 +23,11 @@ import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+
+import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Trigger that reacts to matching chat messages from players in the instance.
@@ -116,8 +120,8 @@ public class ChatTrigger extends DungeonTrigger {
             return message.contains(this.text);
         }
 
-        return message.toLowerCase(java.util.Locale.ROOT)
-                .contains(this.text.toLowerCase(java.util.Locale.ROOT));
+        return message.toLowerCase(Locale.ROOT)
+                .contains(this.text.toLowerCase(Locale.ROOT));
     }
 
     /**

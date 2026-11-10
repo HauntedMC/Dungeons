@@ -1,5 +1,6 @@
 package nl.hauntedmc.dungeons.content.instance.edit;
 
+import nl.hauntedmc.dungeons.config.ConfigurationFile;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
 import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
 import nl.hauntedmc.dungeons.generation.room.Connector;
@@ -215,7 +216,7 @@ public class BranchingEditableInstance extends EditableInstance {
      * Saves gamerules async.
      */
     private CompletableFuture<Boolean> saveGamerulesAsync() {
-        return nl.hauntedmc.dungeons.config.ConfigurationFile.saveAsync(
+        return ConfigurationFile.saveAsync(
                 this.plugin(),
                 this.dungeon.getRuleConfig(),
                 new File(this.dungeon.getFolder(), "gamerules.yml"));

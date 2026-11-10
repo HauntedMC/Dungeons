@@ -2,12 +2,16 @@ package nl.hauntedmc.dungeons.persistence;
 
 import static org.mockito.Mockito.*;
 
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
+import net.kyori.adventure.text.Component;
+
 import nl.hauntedmc.dungeons.listener.DatabaseLoginListener;
 import nl.hauntedmc.dungeons.support.PaperBoundary;
+
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.junit.jupiter.api.Test;
+
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 class DatabaseLoginListenerTest {
     @Test void loginRequiresHealthyPersistenceAndCanonicalPrefetchBeforeAdmission() {
@@ -22,10 +26,10 @@ class DatabaseLoginListenerTest {
             when(store.prefetch(id)).thenReturn(CompletableFuture.completedFuture(null));
             listener.onLogin(event);
             verify(store).prefetch(id);
-            verify(event, never()).disallow(any(AsyncPlayerPreLoginEvent.Result.class), any(net.kyori.adventure.text.Component.class));
+            verify(event, never()).disallow(any(AsyncPlayerPreLoginEvent.Result.class), any(Component.class));
             when(store.prefetch(id)).thenReturn(CompletableFuture.failedFuture(new IllegalStateException("Identity not ready")));
             listener.onLogin(event);
-            verify(event).disallow(eq(AsyncPlayerPreLoginEvent.Result.KICK_OTHER), any(net.kyori.adventure.text.Component.class));
+            verify(event).disallow(eq(AsyncPlayerPreLoginEvent.Result.KICK_OTHER), any(Component.class));
             verify(paper.runtime.database(), never()).close();
         }
     }
@@ -42,7 +46,7 @@ class DatabaseLoginListenerTest {
             when(paper.runtime.database().ready()).thenReturn(false);
             listener.onLogin(event);
             verifyNoInteractions(store);
-            verify(event).disallow(eq(AsyncPlayerPreLoginEvent.Result.KICK_OTHER), any(net.kyori.adventure.text.Component.class));
+            verify(event).disallow(eq(AsyncPlayerPreLoginEvent.Result.KICK_OTHER), any(Component.class));
         }
     }
 }

@@ -1,9 +1,11 @@
 package nl.hauntedmc.dungeons.gui.framework.window;
 
+import nl.hauntedmc.dungeons.gui.framework.buttons.Button;
+
+import org.bukkit.inventory.Inventory;
+
 import java.util.HashMap;
 import java.util.Map;
-import nl.hauntedmc.dungeons.gui.framework.buttons.Button;
-import org.bukkit.inventory.Inventory;
 
 /**
  * Per-player inventory snapshot for a {@link GuiWindow}.

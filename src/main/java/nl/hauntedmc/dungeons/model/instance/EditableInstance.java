@@ -1,5 +1,6 @@
 package nl.hauntedmc.dungeons.model.instance;
 
+import nl.hauntedmc.dungeons.config.ConfigurationFile;
 import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
 import nl.hauntedmc.dungeons.content.trigger.InteractTrigger;
 import nl.hauntedmc.dungeons.listener.instance.EditListener;
@@ -11,8 +12,8 @@ import nl.hauntedmc.dungeons.util.config.PluginConfigView;
 import nl.hauntedmc.dungeons.util.entity.EntityUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.text.ColorUtils;
-import nl.hauntedmc.dungeons.util.text.ComponentUtils;
 import nl.hauntedmc.dungeons.util.text.TextUtils;
+import nl.hauntedmc.dungeons.util.world.WorldUtils;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -214,11 +215,7 @@ public class EditableInstance extends DungeonInstance {
         }
 
         for (DungeonPlayerSession playerSession : this.players) {
-            playerSession
-                    .getPlayer()
-                    .sendActionBar(
-                            ComponentUtils.component(
-                                    LangUtils.getMessage("editor.session.autosaving")));
+            LangUtils.sendActionBar(playerSession.getPlayer(), "editor.session.autosaving");
         }
 
         this.saveWorldAsync()
@@ -241,10 +238,7 @@ public class EditableInstance extends DungeonInstance {
 
                                                     if (throwable == null
                                                             && Boolean.TRUE.equals(success)) {
-                                                        player.sendActionBar(
-                                                                ComponentUtils.component(
-                                                                        LangUtils.getMessage(
-                                                                                "editor.session.autosaved")));
+                                                        LangUtils.sendActionBar(player, "editor.session.autosaved");
                                                     } else {
                                                         LangUtils.sendActionBar(
                                                                 player,
@@ -324,7 +318,7 @@ public class EditableInstance extends DungeonInstance {
         if (metadata.isDone() && !Boolean.TRUE.equals(metadata.join())) return metadata;
         CompletableFuture<Boolean> additional = this.onCommitWorldAsync(world);
         CompletableFuture<Boolean> files =
-                nl.hauntedmc.dungeons.config.ConfigurationFile.filesystemAsync(
+                ConfigurationFile.filesystemAsync(
                         this.plugin(),
                         target,
                         () -> {
@@ -341,7 +335,7 @@ public class EditableInstance extends DungeonInstance {
 
     /** Filesystem phase. Runs on a worker and must not access Bukkit or mutable editor state. */
     protected void saveWorldFiles(File source, File target) throws IOException {
-        nl.hauntedmc.dungeons.util.world.WorldUtils.saveTemplate(source, target);
+        WorldUtils.saveTemplate(source, target);
     }
 
     /**
@@ -351,7 +345,7 @@ public class EditableInstance extends DungeonInstance {
         YamlConfiguration functionsYaml = new YamlConfiguration();
         File saveFile = new File(this.dungeon.getFolder(), "functions.yml");
         functionsYaml.set("Functions", new ArrayList<>(this.dungeon.getFunctions().values()));
-        return nl.hauntedmc.dungeons.config.ConfigurationFile.saveAsync(
+        return ConfigurationFile.saveAsync(
                 this.plugin(), functionsYaml, saveFile);
     }
 

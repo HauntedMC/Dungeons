@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import nl.hauntedmc.dungeons.config.ConfigSerializableModel;
+import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
 import nl.hauntedmc.dungeons.event.DungeonStartEvent;
 import nl.hauntedmc.dungeons.generation.room.Connector;
 import nl.hauntedmc.dungeons.generation.room.ConnectorDoor;
@@ -39,6 +40,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 class RegistryContractTest {
@@ -46,15 +49,15 @@ class RegistryContractTest {
 
     @Test
     void dungeonNamesAreIndependentOfTheServerLocale() throws Exception {
-        var previousLocale = java.util.Locale.getDefault();
+        var previousLocale = Locale.getDefault();
         try (var registry = new StaticMapSnapshot(DungeonTypeRegistry.class, "types")) {
-            java.util.Locale.setDefault(java.util.Locale.forLanguageTag("tr-TR"));
+            Locale.setDefault(Locale.forLanguageTag("tr-TR"));
             DungeonTypeRegistry.register(
-                    nl.hauntedmc.dungeons.content.dungeon.StaticDungeon.class, "STATIC");
+                    StaticDungeon.class, "STATIC");
             assertTrue(DungeonTypeRegistry.getDungeonTypes().containsKey("static"));
             assertFalse(DungeonTypeRegistry.getDungeonTypes().containsKey("instance"));
         } finally {
-            java.util.Locale.setDefault(previousLocale);
+            Locale.setDefault(previousLocale);
         }
     }
 
@@ -147,7 +150,7 @@ class RegistryContractTest {
             executor.getValue()
                     .execute(
                             runtime.instanceEventHandler(),
-                            new DungeonStartEvent(healthy, java.util.List.of()));
+                            new DungeonStartEvent(healthy, List.of()));
             verify(block, times(3)).getWorld();
         }
     }

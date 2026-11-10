@@ -1,13 +1,14 @@
 package nl.hauntedmc.dungeons.util.config;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Supplier;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Supplier;
 
 /** Dungeon YAML with per-setting global rule fallbacks that are never written to the map file. */
 public final class DungeonRuleConfiguration extends YamlConfiguration {

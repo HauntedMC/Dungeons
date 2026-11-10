@@ -6,11 +6,13 @@ import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
+import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
@@ -99,7 +101,7 @@ public final class StaffContentStorage {
         File copy = child(new File(root, "backups/" + dungeon.getWorldName()), id);
         if (!copy.isDirectory()) throw new IllegalArgumentException("Backup not found");
         try {
-            var config = new org.bukkit.configuration.file.YamlConfiguration();
+            var config = new YamlConfiguration();
             ConfigurationFile.loadSnapshot(config, new File(copy, "config.yml"));
         } catch (Exception failure) {
             throw new IllegalArgumentException("Backup configuration is unreadable", failure);
@@ -298,7 +300,7 @@ public final class StaffContentStorage {
     }
 
     private <T> CompletableFuture<T> filesystem(
-            File file, java.util.concurrent.Callable<T> action) {
+            File file, Callable<T> action) {
         return ConfigurationFile.filesystemAsync(runtime.environment().plugin(), file, action);
     }
 

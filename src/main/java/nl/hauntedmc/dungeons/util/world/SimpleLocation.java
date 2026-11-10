@@ -11,6 +11,8 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.util.Vector;
 
+import java.util.Objects;
+
 /** Lightweight serializable location value with plugin-defined cardinal direction. */
 @TypeKey(id = "dungeons.serializable.simple_location")
 @SerializableAs("dungeons.serializable.simple_location")
@@ -142,7 +144,7 @@ public class SimpleLocation implements Cloneable, ConfigSerializableModel {
     /** Hashes the coordinates used by equality. */
     @Override
     public int hashCode() {
-        return java.util.Objects.hash(x == 0 ? 0.0 : x, y == 0 ? 0.0 : y, z == 0 ? 0.0 : z);
+        return Objects.hash(x == 0 ? 0.0 : x, y == 0 ? 0.0 : y, z == 0 ? 0.0 : z);
     }
 
     /** Returns the X coordinate. */

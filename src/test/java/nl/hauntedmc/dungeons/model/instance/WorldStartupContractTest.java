@@ -10,16 +10,21 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.SpawnCategory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 
 import java.nio.file.*;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 class WorldStartupContractTest {
     @TempDir Path directory;
 
-    @org.junit.jupiter.params.ParameterizedTest
-    @org.junit.jupiter.params.provider.ValueSource(strings = {"region", "DIM-1/region", "DIM1/region"})
+    @ParameterizedTest
+    @ValueSource(strings = {"region", "DIM-1/region", "DIM1/region"})
     void legacyTemplatesKeepTerrainAndMetadataForPaperConversion(String terrain) throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
             Path source = f.dungeon.getFolder().toPath();
@@ -50,7 +55,7 @@ class WorldStartupContractTest {
             assertEquals("last edits", Files.readString(modern.resolve("edits")));
             assertFalse(Files.exists(stale));
             var editor =
-                    new EditableInstance(f.dungeon, new java.util.concurrent.CountDownLatch(1));
+                    new EditableInstance(f.dungeon, new CountDownLatch(1));
             var reserved = editor.reserveWorldFolder().toPath();
             assertTrue(Files.exists(reserved.resolve(".dungeons-editor-recovery")));
         }
@@ -62,19 +67,19 @@ class WorldStartupContractTest {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
             var retired =
                     Files.createDirectories(
-                            directory.resolve("crypt_4.disposed-" + java.util.UUID.randomUUID()));
+                            directory.resolve("crypt_4.disposed-" + UUID.randomUUID()));
             var malformed =
                     Files.createDirectories(directory.resolve("crypt_4.disposed-not-a-uuid"));
             var live =
                     Files.createDirectories(
-                            directory.resolve("crypt_5.disposed-" + java.util.UUID.randomUUID()));
+                            directory.resolve("crypt_5.disposed-" + UUID.randomUUID()));
             Files.writeString(retired.resolve("level.dat"), "retired");
             Files.writeString(retired.resolve(".dungeons-editor-recovery"), "committed editor");
             Files.writeString(malformed.resolve("keep"), "unrelated");
             Files.writeString(live.resolve("keep"), "loaded");
             var loaded = mock(World.class);
             when(loaded.getName()).thenReturn(live.getFileName().toString());
-            f.paper.bukkit.when(Bukkit::getWorlds).thenReturn(java.util.List.of(loaded));
+            f.paper.bukkit.when(Bukkit::getWorlds).thenReturn(List.of(loaded));
             f.paper.dungeon(directory.resolve("crypt"), new YamlConfiguration());
             assertFalse(Files.exists(retired));
             assertEquals("unrelated", Files.readString(malformed.resolve("keep")));
@@ -109,7 +114,7 @@ class WorldStartupContractTest {
             Path template = f.dungeon.getFolder().toPath();
             Files.writeString(template.resolve("keep.mca"), "template");
             f.run.cleanWorldFiles(
-                    new java.util.concurrent.CountDownLatch(0), migrated.toFile(), "crypt_0");
+                    new CountDownLatch(0), migrated.toFile(), "crypt_0");
             assertFalse(Files.exists(directory.resolve("crypt_0")));
             assertFalse(Files.exists(migrated));
             assertEquals("template", Files.readString(template.resolve("keep.mca")));

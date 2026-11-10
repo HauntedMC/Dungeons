@@ -104,9 +104,8 @@ public class PlayListener extends InstanceListener {
                 tracker.cancel();
                 if (!CommandUtils.hasPermissionSilent(player, "dungeons.vanish")) {
                     this.instance.messagePlayers(
-                            LangUtils.getMessage(
                                     "instance.play.events.player-returned",
-                                    LangUtils.placeholder("player", player.getName())));
+                                    LangUtils.placeholder("player", player.getName()));
                 }
             }
         }
@@ -143,9 +142,8 @@ public class PlayListener extends InstanceListener {
                         this.instance.getPlayerLives().put(player.getUniqueId(), --lives);
                         if (lives <= 0) {
                             this.instance.messagePlayers(
-                                    LangUtils.getMessage(
                                             "instance.play.events.all-lives-lost",
-                                            LangUtils.placeholder("player", player.getName())));
+                                            LangUtils.placeholder("player", player.getName()));
                             this.instance.getLivingPlayers().remove(playerSession);
                             // Transfer progression items now; departure waits until respawn allows
                             // teleporting.
@@ -182,18 +180,16 @@ public class PlayListener extends InstanceListener {
                             if (target != null) {
                                 if (foundKeys) {
                                     this.instance.messagePlayers(
-                                            LangUtils.getMessage(
                                                     "instance.play.events.key-inheritance",
                                                     LangUtils.placeholder(
-                                                            "player", target.getName())));
+                                                            "player", target.getName()));
                                 }
 
                                 if (foundDungeonItems) {
                                     this.instance.messagePlayers(
-                                            LangUtils.getMessage(
                                                     "instance.play.events.dungeon-item-inheritance",
                                                     LangUtils.placeholder(
-                                                            "player", target.getName())));
+                                                            "player", target.getName()));
                                 }
                             }
 
@@ -209,10 +205,9 @@ public class PlayListener extends InstanceListener {
                         }
 
                         this.instance.messagePlayers(
-                                LangUtils.getMessage(
                                         "instance.play.events.life-lost",
                                         LangUtils.placeholder("player", player.getName()),
-                                        LangUtils.placeholder("lives", String.valueOf(lives))));
+                                        LangUtils.placeholder("lives", String.valueOf(lives)));
                     }
                 }
             }
@@ -248,8 +243,7 @@ public class PlayListener extends InstanceListener {
                                     .getConfig()
                                     .getBoolean("players.close_when_everyone_spectates", true)) {
                                 this.instance.messagePlayers(
-                                        LangUtils.getMessage(
-                                                "instance.play.events.all-lives-lost-and-spectating-auto-close"));
+                                                "instance.play.events.all-lives-lost-and-spectating-auto-close");
                                 Bukkit.getScheduler()
                                         .runTaskLater(
                                                 RuntimeContext.plugin(),
@@ -262,8 +256,7 @@ public class PlayListener extends InstanceListener {
                                                 1L);
                             } else {
                                 this.instance.messagePlayers(
-                                        LangUtils.getMessage(
-                                                "instance.play.events.all-lives-lost-and-spectating"));
+                                                "instance.play.events.all-lives-lost-and-spectating");
                             }
                         }
                     } else {

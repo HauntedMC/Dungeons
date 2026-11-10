@@ -1,11 +1,26 @@
 package nl.hauntedmc.dungeons.persistence;
 
+import nl.hauntedmc.dataregistry.api.player.PlayerIdentity;
+
 import java.nio.charset.StandardCharsets;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.TreeMap;
 import java.util.UUID;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /** Lease-fenced state snapshots with optimistic revisions, checksums and idempotent commit receipts. */
 public final class DatabaseStateStore implements StateStore {
@@ -15,7 +30,7 @@ public final class DatabaseStateStore implements StateStore {
     private final int timeoutMillis;
 
     public DatabaseStateStore(DungeonDatabase database, int timeoutMillis) {
-        this.database = java.util.Objects.requireNonNull(database);
+        this.database = Objects.requireNonNull(database);
         this.timeoutMillis = timeoutMillis;
     }
     @Override public void requireReady() {
@@ -29,7 +44,7 @@ public final class DatabaseStateStore implements StateStore {
     @Override public CompletableFuture<Void> prefetch(UUID player) {
         requireReady();
         var read = cache.beginPlayer(player);
-        return database.players().findIdentity(player).thenCompose(identity -> {
+        return identity(player).thenCompose(identity -> {
             // Paper's DataRegistry can provision first-time identities after PlayerJoinEvent.
             // Do not prevent that join. Still probe our fenced connection before allowing it.
             if (identity.isEmpty()) return database.transaction(connection -> Map.<Key, Snapshot>of())
@@ -74,40 +89,39 @@ public final class DatabaseStateStore implements StateStore {
             return Map.copyOf(result);
         });
     }
-    @Override public CompletableFuture<java.util.List<Snapshot>> saveAll(java.util.List<Write> requested) {
-        final java.util.List<Write> writes = java.util.List.copyOf(requested);
-        var keys = new java.util.HashSet<String>();
+    @Override public CompletableFuture<List<Snapshot>> saveAll(List<Write> requested) {
+        final List<Write> writes = List.copyOf(requested);
+        var keys = new HashSet<String>();
         for (var write : writes) {
             if (write.key() == null || !keys.add(write.key().scope() + "\n" + write.key().record()) || write.revision() < 0 || write.operation() == null
                     || write.payload() == null || write.payload().getBytes(StandardCharsets.UTF_8).length > MAX_BYTES)
                 return CompletableFuture.failedFuture(new IllegalArgumentException("Invalid, duplicate or oversized gameplay snapshot"));
         }
         var reads = new LinkedHashMap<Key, StateSnapshotCache.Read>();
-        var identities = new LinkedHashMap<Key, CompletableFuture<Long>>();
+        var identities = new LinkedHashMap<UUID, CompletableFuture<Long>>();
         for (var write : writes) {
             var key = write.key();
             reads.put(key, cache.begin(key));
-            identities.put(key, key.player() == null ? CompletableFuture.completedFuture(null)
-                    : database.players().findIdentity(key.player()).thenApply(identity -> {
-                        var current = identity.orElseThrow(() -> new IllegalArgumentException("DataRegistry identity is unavailable for " + key.player()));
-                        if (!key.player().equals(current.uuid())) throw new IllegalArgumentException("Canonical player identity mismatch");
-                        return current.playerId();
-                    }).toCompletableFuture());
+            if (key.player() != null) identities.computeIfAbsent(key.player(), id -> identity(id).thenApply(identity -> {
+                var current = identity.orElseThrow(() -> new IllegalArgumentException("DataRegistry identity is unavailable for " + id));
+                if (!id.equals(current.uuid())) throw new IllegalArgumentException("Canonical player identity mismatch");
+                return current.playerId();
+            }).toCompletableFuture());
         }
         return CompletableFuture.allOf(identities.values().toArray(CompletableFuture[]::new))
                 .thenCompose(ignored -> database.transaction(connection -> {
                     // Verify UUIDs on the selected connection too: a wrong database may contain
                     // the same numeric IDs for different players. Lock parents before child rows.
-                    var players = new java.util.TreeMap<UUID, Long>();
+                    var players = new TreeMap<UUID, Long>();
                     writes.forEach(write -> {
-                        if (write.key().player() != null) players.put(write.key().player(), identities.get(write.key()).join());
+                        if (write.key().player() != null) players.put(write.key().player(), identities.get(write.key().player()).join());
                     });
                     for (var player : players.entrySet()) requireCanonicalPlayer(connection, player.getKey(), player.getValue());
                     var results = new LinkedHashMap<Key, Snapshot>();
                     // Every multi-document writer acquires row locks in the same order.
-                    for (var write : writes.stream().sorted(java.util.Comparator
+                    for (var write : writes.stream().sorted(Comparator
                             .comparing((Write value) -> value.key().scope()).thenComparing(value -> value.key().record())).toList())
-                        results.put(write.key(), write(connection, write, identities.get(write.key()).join()));
+                        results.put(write.key(), write(connection, write, write.key().player() == null ? null : identities.get(write.key().player()).join()));
                     return writes.stream().map(value -> results.get(value.key())).toList();
                 })).thenApply(results -> {
                     for (int index = 0; index < writes.size(); index++)
@@ -115,7 +129,11 @@ public final class DatabaseStateStore implements StateStore {
                     return results;
                 });
     }
-    private void requireCanonicalPlayer(java.sql.Connection connection, UUID player, long playerId) throws java.sql.SQLException {
+    private CompletionStage<Optional<PlayerIdentity>> identity(UUID player) {
+        var active = database.players().findActiveIdentityCached(player).filter(value -> player.equals(value.uuid()));
+        return active.isPresent() ? CompletableFuture.completedFuture(active) : database.players().findIdentity(player);
+    }
+    private void requireCanonicalPlayer(Connection connection, UUID player, long playerId) throws SQLException {
         var rows = DungeonSql.rows(connection, "SELECT uuid FROM player_entity WHERE id=? FOR SHARE", playerId);
         if (rows.isEmpty()) throw new IllegalArgumentException("Player identity is no longer available");
         if (!player.toString().equalsIgnoreCase((String) rows.getFirst().get("uuid"))) {
@@ -124,7 +142,7 @@ public final class DatabaseStateStore implements StateStore {
             throw failure;
         }
     }
-    private Snapshot write(java.sql.Connection connection, Write write, Long playerId) throws java.sql.SQLException {
+    private Snapshot write(Connection connection, Write write, Long playerId) throws SQLException {
         var key = write.key();
         String checksum = checksum(key, playerId, write.payload());
         // Inserting revision zero also serializes first writers. Rollback leaves no empty row.
@@ -158,7 +176,7 @@ public final class DatabaseStateStore implements StateStore {
     }
     private String checksum(Key key, Object player, String payload) {
         String bound = database.serverId() + "\n" + key.scope() + "\n" + key.record() + "\n"
-                + java.util.Objects.toString(player, "") + "\n" + payload;
+                + Objects.toString(player, "") + "\n" + payload;
         return DungeonSchema.checksum(bound.getBytes(StandardCharsets.UTF_8));
     }
     private Snapshot decode(Key key, Map<String, Object> row) {
@@ -179,9 +197,9 @@ public final class DatabaseStateStore implements StateStore {
             Thread.currentThread().interrupt();
             database.unavailable(failure);
             throw new IllegalStateException("Interrupted gameplay persistence", failure);
-        } catch (java.util.concurrent.ExecutionException | java.util.concurrent.TimeoutException | java.util.concurrent.CancellationException failure) {
+        } catch (ExecutionException | TimeoutException | CancellationException failure) {
             Throwable cause = failure;
-            while ((cause instanceof java.util.concurrent.ExecutionException || cause instanceof java.util.concurrent.CompletionException)
+            while ((cause instanceof ExecutionException || cause instanceof CompletionException)
                     && cause.getCause() != null) cause = cause.getCause();
             if (cause instanceof IllegalArgumentException rejected) throw rejected;
             database.unavailable(failure);

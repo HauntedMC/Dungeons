@@ -9,6 +9,8 @@ import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.text.ColorUtils;
+import nl.hauntedmc.dungeons.util.text.ComponentUtils;
+
 import org.bukkit.entity.Player;
 
 import java.lang.reflect.InvocationTargetException;
@@ -154,7 +156,7 @@ final class ConditionEditorMenus {
                             LangUtils.sendMessage(
                                     clickPlayer,
                                     "menus.remove.condition-from-trigger",
-                                    LangUtils.placeholder("name", menuButton.getDisplayName()));
+                                    LangUtils.placeholder("name", ComponentUtils.component(menuButton.getDisplayName())));
                             reloadConditionsRemovalGui(gui, clickPlayer);
                         });
                 guiInv.setButton(slot, button);

@@ -3,19 +3,25 @@ package nl.hauntedmc.dungeons.runtime.dungeon;
 import nl.hauntedmc.dungeons.config.ConfigurationFile;
 import nl.hauntedmc.dungeons.content.function.reward.RewardFunction;
 import nl.hauntedmc.dungeons.content.reward.PlayerLootData;
+import nl.hauntedmc.dungeons.persistence.StateDocument;
+import nl.hauntedmc.dungeons.persistence.StateStore;
+import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 
+import org.bukkit.Bukkit;
+import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 /** Owns one dungeon's player records and cooldown indexes, independent of worlds and editor UI. */
 public final class DungeonPlayerDataStore {
     private final Plugin plugin;
     private final String scope;
-    private final nl.hauntedmc.dungeons.persistence.StateStore store;
-    private final Map<UUID, nl.hauntedmc.dungeons.persistence.StateDocument> documents = new HashMap<>();
+    private final StateStore store;
+    private final Map<UUID, StateDocument> documents = new HashMap<>();
     private final Map<UUID, ConfigurationFile> records = new LinkedHashMap<>();
     private final Map<UUID, PlayerLootData> rewards = new LinkedHashMap<>();
     private final Map<UUID, Date> access = new HashMap<>();
@@ -25,7 +31,7 @@ public final class DungeonPlayerDataStore {
         requireOwnerThread();
         this.plugin = plugin;
         this.scope = "dungeon-progress/" + dungeonId;
-        this.store = nl.hauntedmc.dungeons.runtime.RuntimeContext.runtime().stateStore();
+        this.store = RuntimeContext.runtime().stateStore();
     }
 
     private void load(UUID id) {
@@ -36,14 +42,14 @@ public final class DungeonPlayerDataStore {
             document(id).loadInto(candidate);
             records.put(id, candidate);
             loadCooldowns(id);
-        } catch (org.bukkit.configuration.InvalidConfigurationException failure) {
+        } catch (InvalidConfigurationException failure) {
             throw new IllegalStateException("Invalid database dungeon progression " + id, failure);
         }
     }
 
-    private nl.hauntedmc.dungeons.persistence.StateDocument document(UUID id) {
+    private StateDocument document(UUID id) {
         return documents.computeIfAbsent(id, ignored -> store.document(
-                new nl.hauntedmc.dungeons.persistence.StateStore.Key(scope, id.toString(), id)));
+                new StateStore.Key(scope, id.toString(), id)));
     }
 
     /** Rebuilds indexes idempotently without duplicating records. */
@@ -183,7 +189,7 @@ public final class DungeonPlayerDataStore {
     }
 
     /** Captures staged indexes, writes the candidate, then commits indexes after durability. */
-    public void correct(UUID id, java.util.function.Consumer<ConfigurationFile> change) {
+    public void correct(UUID id, Consumer<ConfigurationFile> change) {
         load(id);
         requireWritable(id);
         var candidate = new ConfigurationFile(plugin);
@@ -197,7 +203,7 @@ public final class DungeonPlayerDataStore {
             document(id).save(candidate.saveToString());
             records.put(id, candidate);
             loadCooldowns(id);
-        } catch (org.bukkit.configuration.InvalidConfigurationException failure) {
+        } catch (InvalidConfigurationException failure) {
             throw new IllegalStateException("Cannot stage player correction", failure);
         }
     }
@@ -227,7 +233,7 @@ public final class DungeonPlayerDataStore {
     }
 
     private static void requireOwnerThread() {
-        if (org.bukkit.Bukkit.getServer() != null && !org.bukkit.Bukkit.isPrimaryThread()) {
+        if (Bukkit.getServer() != null && !Bukkit.isPrimaryThread()) {
             throw new IllegalStateException("Dungeon player records require the server thread");
         }
     }

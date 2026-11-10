@@ -1,7 +1,5 @@
 package nl.hauntedmc.dungeons.content.trigger;
 
-import java.util.Locale;
-import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ChatMenuItem;
@@ -11,8 +9,8 @@ import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
 import nl.hauntedmc.dungeons.model.element.TriggerCategory;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
-import nl.hauntedmc.dungeons.util.text.ColorUtils;
 import nl.hauntedmc.dungeons.util.text.MessageUtils;
+
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -23,6 +21,9 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+
+import java.util.Locale;
+import java.util.Map;
 
 /**
  * Trigger that listens for block placement or breaking at one exact location.
@@ -217,9 +218,7 @@ public class BlockDetectorTrigger extends DungeonTrigger {
                                     player, "editor.trigger.block-detector.invalid-material");
                             MessageUtils.sendClickableLink(
                                     player,
-                                    RuntimeContext.logPrefix()
-                                            + ColorUtils.colorize(
-                                                    "&bClick here to view a list of valid materials."),
+                                    LangUtils.component("editor.trigger.block-detector.valid-materials-link", player, true),
                                     "https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Material.html");
                         }
                     }

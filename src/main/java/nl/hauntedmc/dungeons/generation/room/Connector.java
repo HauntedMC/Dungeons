@@ -1,16 +1,18 @@
 package nl.hauntedmc.dungeons.generation.room;
 
-import java.util.ArrayList;
-import java.util.List;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.annotation.TypeKey;
 import nl.hauntedmc.dungeons.config.ConfigSerializableModel;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
 import nl.hauntedmc.dungeons.util.world.SimpleLocation;
+
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.util.Vector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Branching connector describing where one room may attach to another.

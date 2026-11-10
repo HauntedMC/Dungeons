@@ -12,6 +12,7 @@ import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.ReentrantLock;
@@ -67,7 +68,7 @@ final class ConfigurationIoQueue {
                                         interrupted = true;
                                     }
                                 }
-                            } catch (java.util.concurrent.ExecutionException failure) {
+                            } catch (ExecutionException failure) {
                                 Throwable cause = failure.getCause();
                                 if (cause instanceof Exception exception) throw exception;
                                 if (cause instanceof Error error) throw error;

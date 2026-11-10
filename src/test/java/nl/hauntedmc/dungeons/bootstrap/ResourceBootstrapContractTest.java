@@ -5,6 +5,7 @@ import static org.mockito.Mockito.*;
 
 import nl.hauntedmc.dungeons.support.*;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+import nl.hauntedmc.dungeons.util.text.ComponentUtils;
 
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
@@ -18,12 +19,6 @@ class ResourceBootstrapContractTest {
     @Test
     void bootstrapSynchronizesBundledConfigAndLanguageWithoutReplacingOperatorEditsAndCanRepeat()
             throws Exception {
-        var diskField = LangUtils.class.getDeclaredField("messagesYaml");
-        diskField.setAccessible(true);
-        var jarField = LangUtils.class.getDeclaredField("jarMessages");
-        jarField.setAccessible(true);
-        var oldDisk = diskField.get(null);
-        var oldJar = jarField.get(null);
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
             when(f.paper.plugin.getResource(anyString()))
                     .thenAnswer(
@@ -48,19 +43,18 @@ class ResourceBootstrapContractTest {
             assertFalse(Files.exists(directory.resolve("players")));
             assertEquals(
                     "Operator help Alex",
-                    LangUtils.getMessage(
-                            "commands.play.usage", false, LangUtils.placeholder("player", "Alex")));
+                    ComponentUtils.plainText(ComponentUtils.component(LangUtils.getMessage(
+                            "commands.play.usage", false, LangUtils.placeholder("player", "Alex")))));
             var loaded =
-                    YamlConfiguration.loadConfiguration(directory.resolve("messages.yml").toFile());
+                    YamlConfiguration.loadConfiguration(directory.resolve("lang/messages.yml").toFile());
             assertEquals("[Custom]", loaded.getString("general.prefix"));
             assertNotNull(loaded.getString("commands.list.line"));
-            String previous = Files.readString(directory.resolve("messages.yml"));
+            String previous = Files.readString(directory.resolve("lang/messages.yml"));
             bootstrap.initializeCoreState();
-            assertEquals(previous, Files.readString(directory.resolve("messages.yml")));
+            assertEquals(previous, Files.readString(directory.resolve("lang/messages.yml")));
             verify(f.paper.plugin, times(1)).saveConfig();
         } finally {
-            diskField.set(null, oldDisk);
-            jarField.set(null, oldJar);
+            LangUtils.clear();
         }
     }
 }

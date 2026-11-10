@@ -1,5 +1,7 @@
 package nl.hauntedmc.dungeons.util.text;
 
+import org.bukkit.Color;
+
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -39,8 +41,8 @@ public final class ColorUtils {
     }
 
     /** Converts a {@code #RRGGBB} string to Bukkit color. */
-    public static org.bukkit.Color hexToColor(String colorStr) {
-        return org.bukkit.Color.fromRGB(
+    public static Color hexToColor(String colorStr) {
+        return Color.fromRGB(
                 Integer.valueOf(colorStr.substring(1, 3), 16),
                 Integer.valueOf(colorStr.substring(3, 5), 16),
                 Integer.valueOf(colorStr.substring(5, 7), 16));

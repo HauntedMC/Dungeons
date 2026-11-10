@@ -9,7 +9,11 @@ import nl.hauntedmc.dungeons.generation.room.ConnectorDoor;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
 import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
+import nl.hauntedmc.dungeons.persistence.StateDocument;
+import nl.hauntedmc.dungeons.persistence.StateStore;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
+import nl.hauntedmc.dungeons.runtime.RuntimeContext;
+import nl.hauntedmc.dungeons.runtime.dungeon.DungeonAccessKeyService;
 import nl.hauntedmc.dungeons.util.config.PluginConfigView;
 import nl.hauntedmc.dungeons.util.entity.EntityUtils;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
@@ -18,7 +22,10 @@ import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.configuration.InvalidConfigurationException;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.jetbrains.annotations.Nullable;
@@ -26,6 +33,8 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
+import java.util.function.Consumer;
 
 /**
  * Mutable runtime state attached to a single player.
@@ -67,7 +76,7 @@ public final class DungeonPlayerSession {
 
     private DungeonInstance instance;
     private boolean awaitingDungeon;
-    private final nl.hauntedmc.dungeons.persistence.StateDocument playerDocument;
+    private final StateDocument playerDocument;
     private final ConfigurationFile playerData;
     private List<String> completedDungeons = new ArrayList<>();
     private GameMode savedGameMode;
@@ -123,19 +132,19 @@ public final class DungeonPlayerSession {
         this.hotbarHistory = new ArrayList<>();
         this.savedGameMode = Bukkit.getDefaultGameMode();
         this.playerData = new ConfigurationFile(plugin);
-        this.playerDocument = nl.hauntedmc.dungeons.runtime.RuntimeContext.runtime().stateStore().document(
-                new nl.hauntedmc.dungeons.persistence.StateStore.Key("player-profile", player.getUniqueId().toString(), player.getUniqueId()));
+        this.playerDocument = RuntimeContext.runtime().stateStore().document(
+                new StateStore.Key("player-profile", player.getUniqueId().toString(), player.getUniqueId()));
         this.recoveryJournal = new PlayerRecoveryJournal(player.getUniqueId());
         try {
             this.playerDocument.loadInto(this.playerData);
             this.completedDungeons = this.playerData.getStringList("CompletedDungeons");
-        } catch (org.bukkit.configuration.InvalidConfigurationException failure) {
+        } catch (InvalidConfigurationException failure) {
             throw new IllegalStateException(
                     "Cannot load database player data " + player.getUniqueId(), failure);
         }
     }
 
-    public boolean addStaffRewards(java.util.UUID operation, ItemStack... items) {
+    public boolean addStaffRewards(UUID operation, ItemStack... items) {
         this.requireActiveSession();
         return this.recoveryJournal.addStaffRewards(operation, items);
     }
@@ -441,7 +450,7 @@ public final class DungeonPlayerSession {
             if (this.savedPosition != null
                     && !this.player.teleport(
                             this.savedPosition,
-                            org.bukkit.event.player.PlayerTeleportEvent.TeleportCause.PLUGIN)) {
+                            PlayerTeleportEvent.TeleportCause.PLUGIN)) {
                 throw new IllegalStateException("Return teleport rejected");
             }
             if (restoreItems) this.restoreInventory();
@@ -503,7 +512,7 @@ public final class DungeonPlayerSession {
                         failure);
         // Do not let gameplay change an inventory whose transaction is awaiting acknowledgement.
         this.player.kick(
-                net.kyori.adventure.text.Component.text(
+                LangUtils.notice(
                         "Your player data could not be safely saved. Please reconnect or contact an"
                                 + " administrator."));
     }
@@ -653,16 +662,16 @@ public final class DungeonPlayerSession {
         this.savedPosition = loc;
     }
 
-    private void updateProfile(java.util.function.Consumer<org.bukkit.configuration.file.YamlConfiguration> change) {
+    private void updateProfile(Consumer<YamlConfiguration> change) {
         this.requireActiveSession();
-        var candidate = new org.bukkit.configuration.file.YamlConfiguration();
+        var candidate = new YamlConfiguration();
         try {
             candidate.loadFromString(this.playerData.saveToString());
             change.accept(candidate);
             this.playerDocument.save(candidate.saveToString());
             this.playerData.loadFromString(candidate.saveToString());
             this.completedDungeons = new ArrayList<>(this.playerData.getStringList("CompletedDungeons"));
-        } catch (org.bukkit.configuration.InvalidConfigurationException failure) {
+        } catch (InvalidConfigurationException failure) {
             throw new IllegalStateException("Cannot stage player profile", failure);
         }
     }
@@ -829,11 +838,11 @@ public final class DungeonPlayerSession {
     }
 
     public boolean settleReservedAccessKey(String dungeonName,
-            nl.hauntedmc.dungeons.runtime.dungeon.DungeonAccessKeyService.Settlement ledger, boolean refund) {
+            DungeonAccessKeyService.Settlement ledger, boolean refund) {
         this.requireActiveSession();
         if (!this.hasReservedAccessKey(dungeonName) || !ledger.valid()) return false;
         var journal = this.recoveryJournal.prepareKeySettlement(refund, ledger.replacement());
-        nl.hauntedmc.dungeons.persistence.StateDocument.commitTogether(ledger.write(), journal.write());
+        StateDocument.commitTogether(ledger.write(), journal.write());
         ledger.publish().run();
         journal.publish().run();
         this.reservedAccessKeyDungeon = null;

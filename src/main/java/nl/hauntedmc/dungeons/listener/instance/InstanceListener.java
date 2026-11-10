@@ -14,6 +14,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
@@ -132,10 +133,9 @@ public class InstanceListener {
                                         if (!CommandUtils.hasPermissionSilent(
                                                 player, "dungeons.vanish")) {
                                             InstanceListener.this.instance.messagePlayers(
-                                                    LangUtils.getMessage(
                                                             "instance.play.events.player-kicked",
                                                             LangUtils.placeholder(
-                                                                    "player", player.getName())));
+                                                                    "player", player.getName()));
                                         }
 
                                         InstanceListener.this.instance.removePlayer(playerSession);
@@ -427,7 +427,7 @@ public class InstanceListener {
             return respawnLocation.clone();
         }
 
-        for (org.bukkit.World world : Bukkit.getWorlds()) {
+        for (World world : Bukkit.getWorlds()) {
             if (world != this.instance.getInstanceWorld()) {
                 return world.getSpawnLocation().clone();
             }

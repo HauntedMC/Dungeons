@@ -11,15 +11,20 @@ import static org.mockito.Mockito.*;
 import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
 import nl.hauntedmc.dungeons.content.instance.play.StaticInstance;
 import nl.hauntedmc.dungeons.event.DungeonDisposeEvent;
+import nl.hauntedmc.dungeons.listener.instance.InstanceListener;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.runtime.instance.ActiveInstanceRegistry;
+import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.support.CapturedScheduler;
 import nl.hauntedmc.dungeons.support.PaperBoundary;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.plugin.Plugin;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -59,7 +64,7 @@ class RunDisposalContractTest {
             doThrow(new IllegalStateException("scheduler stopped"))
                     .when(scheduler.scheduler)
                     .runTaskLater(
-                            any(org.bukkit.plugin.Plugin.class), any(Runnable.class), anyLong());
+                            any(Plugin.class), any(Runnable.class), anyLong());
             paper.bukkit.when(() -> Bukkit.unloadWorld(world, false)).thenReturn(true);
             assertDoesNotThrow(run::scheduleEmptyCleanup);
             assertEquals(DungeonInstance.DisposalState.DISPOSED, run.getDisposalState());
@@ -95,7 +100,7 @@ class RunDisposalContractTest {
         try (var paper = new PaperBoundary()) {
             var run = run(paper);
             World world = run.getInstanceWorld();
-            var listener = mock(nl.hauntedmc.dungeons.listener.instance.InstanceListener.class);
+            var listener = mock(InstanceListener.class);
             run.listener = listener;
             paper.bukkit.when(() -> Bukkit.unloadWorld(world, false)).thenReturn(false);
             assertFalse(run.disposeAsync().join());
@@ -133,7 +138,7 @@ class RunDisposalContractTest {
                 var run = run(paper);
                 World world = run.getInstanceWorld();
                 var function = mock(DungeonFunction.class);
-                run.getFunctions().put(new org.bukkit.Location(world, 0, 1, 0), function);
+                run.getFunctions().put(new Location(world, 0, 1, 0), function);
                 if (throwing)
                     paper.bukkit
                             .when(() -> Bukkit.unloadWorld(world, false))
@@ -142,7 +147,7 @@ class RunDisposalContractTest {
                 assertFalse(run.disposeAsync().join());
                 assertEquals(
                         DungeonInstance.DisposalState.RETRYABLE_FAILURE, run.getDisposalState());
-                org.junit.jupiter.api.Assertions.assertNotNull(run.getDisposalFailure());
+                Assertions.assertNotNull(run.getDisposalFailure());
                 assertTrue(run.getDungeon().getInstances().contains(run));
                 assertEquals(1, paper.runtime.activeInstances().getRegisteredInstanceCount());
                 assertSame(
@@ -153,7 +158,7 @@ class RunDisposalContractTest {
                 assertFalse(run.isStarted());
                 verify(Bukkit.getPluginManager(), never())
                         .callEvent(any(DungeonDisposeEvent.class));
-                var player = mock(nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession.class);
+                var player = mock(DungeonPlayerSession.class);
                 run.addPlayer(player);
                 verifyNoInteractions(player);
                 paper.bukkit.when(() -> Bukkit.unloadWorld(world, false)).thenReturn(true);
@@ -255,7 +260,7 @@ class RunDisposalContractTest {
             when(paper.plugin.isEnabled()).thenReturn(true);
             doThrow(new IllegalStateException("scheduler stopped"))
                     .when(scheduler.scheduler)
-                    .runTask(any(org.bukkit.plugin.Plugin.class), any(Runnable.class));
+                    .runTask(any(Plugin.class), any(Runnable.class));
             assertFalse(run.disposeAsync().join());
             assertEquals(0, run.hooks);
             assertEquals(1, paper.runtime.activeInstances().getRegisteredInstanceCount());
@@ -402,7 +407,7 @@ class RunDisposalContractTest {
                 doThrow(new IllegalStateException("Plugin is disabled"))
                         .when(scheduler.scheduler)
                         .runTaskLater(
-                                any(org.bukkit.plugin.Plugin.class),
+                                any(Plugin.class),
                                 any(Runnable.class),
                                 anyLong());
                 paper.bukkit.when(() -> Bukkit.unloadWorld(world, false)).thenReturn(unload);

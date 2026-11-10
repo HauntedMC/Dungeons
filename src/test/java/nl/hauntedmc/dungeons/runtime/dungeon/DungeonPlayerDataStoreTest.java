@@ -2,10 +2,16 @@ package nl.hauntedmc.dungeons.runtime.dungeon;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
-import java.util.*;
+
+import nl.hauntedmc.dungeons.content.reward.PlayerLootData;
 import nl.hauntedmc.dungeons.support.*;
+
+import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.junit.jupiter.api.Test;
+
+import java.util.*;
 
 class DungeonPlayerDataStoreTest {
     @Test void malformedDatabaseRecordsCannotBeReplacedByEmptySaves() {
@@ -41,12 +47,12 @@ class DungeonPlayerDataStoreTest {
         }
     }
     @Test void cooldownIndexesAreIdempotentAndMismatchedOwnersAreProtected() throws Exception {
-        try (var aliases = new StaticMapSnapshot(org.bukkit.configuration.serialization.ConfigurationSerialization.class, "aliases");
+        try (var aliases = new StaticMapSnapshot(ConfigurationSerialization.class, "aliases");
                 var paper = new PaperBoundary()) {
-            org.bukkit.configuration.serialization.ConfigurationSerialization.registerClass(nl.hauntedmc.dungeons.content.reward.PlayerLootData.class);
+            ConfigurationSerialization.registerClass(PlayerLootData.class);
             var player = new PlayerState().player;
             var data = new YamlConfiguration();
-            data.set("RewardsInfo", new nl.hauntedmc.dungeons.content.reward.PlayerLootData(player));
+            data.set("RewardsInfo", new PlayerLootData(player));
             UUID dungeon = UUID.randomUUID();
             String scope = "dungeon-progress/" + dungeon;
             paper.state.seed(scope, player.getUniqueId().toString(), player.getUniqueId(), data.saveToString());
@@ -68,7 +74,7 @@ class DungeonPlayerDataStoreTest {
             long expected = date.getTime();
             store.setAccessCooldown(id, date); date.setTime(0); store.getAccessCooldown(id).setTime(0);
             assertEquals(expected, store.getAccessCooldown(id).getTime());
-            paper.bukkit.when(org.bukkit.Bukkit::isPrimaryThread).thenReturn(false);
+            paper.bukkit.when(Bukkit::isPrimaryThread).thenReturn(false);
             assertThrows(IllegalStateException.class, () -> store.setCompleted(id, true));
         }
     }
