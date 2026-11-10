@@ -6,7 +6,6 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
-import nl.hauntedmc.dungeons.runtime.player.StaffPlayerRecords;
 import nl.hauntedmc.dungeons.runtime.staff.StaffOperations;
 import nl.hauntedmc.dungeons.runtime.staff.StaffPermissions;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
@@ -182,33 +181,6 @@ final class NativeStaff {
                                             }
                                             default -> null;
                                         });
-        String[] compensation = {
-            "player", syntheticId.toString(), "compensate", "DIAMOND", "3", "Native compensation"
-        };
-        command.execute(sender, "dungeon", compensation);
-        String confirmation =
-                output.stream()
-                        .filter(
-                                line ->
-                                        line.contains("/dungeon player ")
-                                                && line.contains("--confirm "))
-                        .reduce((a, b) -> b)
-                        .orElseThrow();
-        String[] confirmed =
-                confirmation.substring(confirmation.indexOf("/dungeon ") + 9).split(" ");
-        command.execute(sender, "dungeon", confirmed);
-        require(
-                StaffPlayerRecords.inspect(
-                                test.runtime(), syntheticId)
-                        .contains("claimable stacks=1"),
-                "Native compensation was not persisted");
-        command.execute(sender, "dungeon", confirmed);
-        require(
-                StaffPlayerRecords.inspect(
-                                test.runtime(), syntheticId)
-                        .contains("claimable stacks=1"),
-                "Confirmation replay duplicated native compensation");
-
         verifyExistingMapIdentityAndMetadataKeys(test, dungeon);
         return CompletableFuture.completedFuture(null);
     }

@@ -7,7 +7,6 @@ import nl.hauntedmc.dungeons.command.CommandOutput.FilterPageQuery;
 import nl.hauntedmc.dungeons.command.config.DungeonConfigCommandHandler;
 import nl.hauntedmc.dungeons.command.config.DungeonConfigRegistry;
 import nl.hauntedmc.dungeons.gui.framework.GuiService;
-import nl.hauntedmc.dungeons.gui.loot.LootTableEditor;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.registry.FunctionRegistry;
@@ -17,7 +16,6 @@ import nl.hauntedmc.dungeons.runtime.instance.ActiveInstanceRegistry;
 import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueCoordinator;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry;
-import nl.hauntedmc.dungeons.runtime.rewards.LootTableRepository;
 import nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard;
 import nl.hauntedmc.dungeons.runtime.staff.StaffPermissions;
 import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
@@ -59,7 +57,7 @@ public final class DungeonCommand implements TabExecutor {
     private final CommandOutput output;
     private final DungeonConfigCommandHandler configCommandHandler;
     private final CommandHandler teamCommandGroup;
-    private final CommandHandler lootCommandGroup;
+
     private final CommandHandler dungeonCommandGroup;
     private final CommandHandler editCommandGroup;
     private final DebugCommandHandler debugCommandGroup;
@@ -74,8 +72,6 @@ public final class DungeonCommand implements TabExecutor {
             DungeonQueueCoordinator dungeonQueueCoordinator,
             DungeonQueueRegistry queueManager,
             DungeonTeamService teamManager,
-            LootTableRepository lootTableManager,
-            LootTableEditor lootEditor,
             FunctionRegistry functionManager,
             LifecycleCoordinator lifecycleCoordinator,
             GuiService guiService,
@@ -90,7 +86,6 @@ public final class DungeonCommand implements TabExecutor {
                         dungeonManager, playerManager, activeInstanceManager);
         this.output = new CommandOutput(plugin, dungeonManager);
         this.teamCommandGroup = new TeamCommandHandler(teamManager);
-        this.lootCommandGroup = new LootCommandHandler(lootTableManager, lootEditor, this.output);
         this.dungeonCommandGroup = new DungeonDefinitionCommandHandler(
                         dungeonManager, playerManager, queueManager, dungeonQueueCoordinator,
                         this.output, new DungeonWorldCommandHandler(plugin, dungeonManager));
@@ -187,7 +182,6 @@ public final class DungeonCommand implements TabExecutor {
                         throw new IllegalArgumentException("Open an authorized editor first");
                     yield this.debugCommandGroup.handleCommand(sender, operation);
                 }
-                case LOOT -> this.lootCommandGroup.handleCommand(sender, operation);
                 case STAFF -> {
                     if (this.staffCommandHandler == null) throw new IllegalStateException("Staff services unavailable");
                     yield this.staffCommandHandler.handleCommand(sender, operation);
@@ -222,9 +216,9 @@ public final class DungeonCommand implements TabExecutor {
             }
         }
         if (StaffPermissions.allows(sender, capability, null)) return true;
-        if (route.syntax().startsWith("server") || route.syntax().startsWith("loot ")
+        if (route.syntax().startsWith("server")
                 || route.syntax().startsWith("map archive ") || route.syntax().equals("instance list")
-                || route.syntax().equals("queue list") || capability.equals("compensate")) return false;
+                || route.syntax().equals("queue list")) return false;
         return this.dungeonManager.getLoadedDungeons().stream().anyMatch(dungeon ->
                 StaffPermissions.allows(sender, capability, dungeon.getWorldName()));
     }
@@ -252,7 +246,7 @@ public final class DungeonCommand implements TabExecutor {
             for (var value : values.entrySet()) usage = usage.replace("<" + value.getKey() + ">", value.getValue().getFirst());
             if (prefix.isBlank()) {
                 String root = usage.split(" ")[0];
-                if (List.of("map", "edit", "loot", "player", "instance", "queue", "server", "team").contains(root))
+                if (List.of("map", "edit", "player", "instance", "queue", "server", "team").contains(root))
                     usage = root + " … (use /dungeon help " + root + ")";
             }
             lines.add("/dungeon " + usage);
@@ -294,8 +288,6 @@ public final class DungeonCommand implements TabExecutor {
             } else if (next.equals("<setting>") && values.containsKey("map")) {
                 var dungeon = this.dungeonManager.get(values.get("map").getFirst());
                 if (dungeon != null) suggestions.addAll(DungeonConfigRegistry.getKeys(dungeon, ""));
-            } else if (next.equals("<table>")) {
-                suggestions.addAll(this.lootCommandGroup.handleTabComplete(sender, new String[] {"loot", "edit", ""}));
             } else if (next.equals("<environment>")) suggestions.addAll(List.of("normal", "nether", "the_end"));
             else if (next.equals("<type>")) suggestions.addAll(List.of("static", "branching", "open"));
             else if (next.equals("<state>")) suggestions.addAll(List.of("on", "off"));

@@ -286,7 +286,7 @@ public class BranchingDungeon extends DungeonDefinition {
                                 root);
 
                 String rootMessage = root.getMessage();
-                if (rootMessage != null && !rootMessage.contains("LootTableRewardsFunction")) {
+                if (rootMessage != null) {
                     this.logger()
                             .warn(
                                     "Reason for skipping room '{}' in dungeon '{}': {}",

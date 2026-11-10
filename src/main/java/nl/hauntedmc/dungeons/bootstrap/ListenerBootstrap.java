@@ -43,7 +43,6 @@ final class ListenerBootstrap {
         register(new HotbarMenuListener(plugin, this.runtime.playerSessions()));
         register(this.runtime.queueRegistry());
         register(this.runtime.teamService());
-        register(this.runtime.lootTableEditor());
     }
     private void register(Listener listener) {
         this.runtime.resources().ownIngress(listener, HandlerList::unregisterAll);

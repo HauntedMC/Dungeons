@@ -74,7 +74,7 @@ class PlayerDataCheckpointTest {
             var path = directory.resolve("recovery.yml");
             var player = new PlayerState();
             var journal = new PlayerRecoveryJournal(TestStateStore.player(path));
-            journal.addRewards(PlayerState.stack(5));
+            journal.addRefunds(PlayerState.stack(5));
             paper.checkpoints
                     .when(() -> PlayerDataCheckpoint.verify(eq(player.player), anyString()))
                     .thenThrow(
@@ -82,7 +82,7 @@ class PlayerDataCheckpointTest {
                                     new IOException("native save missing")));
             assertThrows(
                     UncheckedIOException.class,
-                    () -> journal.claim(player.player, journal.rewards().getFirst()));
+                    () -> journal.deliverRefund(player.player, journal.refunds().getFirst()));
             assertTrue(new PlayerRecoveryJournal(TestStateStore.player(path)).hasPendingTransaction());
             assertNull(
                     player.player

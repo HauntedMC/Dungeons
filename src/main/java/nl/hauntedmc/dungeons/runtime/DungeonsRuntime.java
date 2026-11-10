@@ -1,7 +1,6 @@
 package nl.hauntedmc.dungeons.runtime;
 
 import nl.hauntedmc.dungeons.gui.framework.GuiService;
-import nl.hauntedmc.dungeons.gui.loot.LootTableEditor;
 import nl.hauntedmc.dungeons.integration.RegistryProfiles;
 import nl.hauntedmc.dungeons.listener.EventRelayListener;
 import nl.hauntedmc.dungeons.persistence.DatabaseLifecycle;
@@ -16,7 +15,6 @@ import nl.hauntedmc.dungeons.runtime.instance.PreparationRegistry;
 import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueCoordinator;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry;
-import nl.hauntedmc.dungeons.runtime.rewards.LootTableRepository;
 import nl.hauntedmc.dungeons.runtime.staff.StaffOperations;
 import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
 import nl.hauntedmc.featureframework.resource.FeatureResourceOwner;
@@ -80,8 +78,6 @@ public final class DungeonsRuntime {
     private ConditionRegistry conditionRegistry;
     private DungeonQueueRegistry queueRegistry;
     private DungeonTeamService teamService;
-    private LootTableRepository lootTableRepository;
-    private LootTableEditor lootTableEditor;
 
     /** Creates runtime state for one plugin lifecycle. */
     public DungeonsRuntime(DungeonsPlugin plugin) {
@@ -267,24 +263,6 @@ public final class DungeonsRuntime {
     /** Bootstrap-only mutator for the team domain service. */
     public void setTeamService(DungeonTeamService teamService) {
         this.teamService = teamService;
-    }
-
-    public LootTableEditor lootTableEditor() {
-        return this.lootTableEditor;
-    }
-
-    public void setLootTableEditor(LootTableEditor editor) {
-        this.lootTableEditor = editor;
-    }
-
-    /** Returns the loot-table repository. */
-    public LootTableRepository lootTableRepository() {
-        return this.requireInitialized(this.lootTableRepository, "lootTableRepository");
-    }
-
-    /** Bootstrap-only mutator for the loot-table repository. */
-    public void setLootTableRepository(LootTableRepository lootTableRepository) {
-        this.lootTableRepository = lootTableRepository;
     }
 
     /** Listener bridge used for element-scoped event dispatch. */

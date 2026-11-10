@@ -7,7 +7,7 @@ import java.util.Map;
 
 /** Canonical public syntax. Internal operation arguments are not registered public aliases. */
 final class CommandRoutes {
-    enum Handler { GAMEPLAY, TEAM, MAP, SETTINGS, EDIT, DEBUG, LOOT, STAFF, QUERY, DISCOVERY }
+    enum Handler { GAMEPLAY, TEAM, MAP, SETTINGS, EDIT, DEBUG, STAFF, QUERY, DISCOVERY }
 
     record Route(String syntax, String permission, boolean playerOnly, Handler handler, String operation) {
         Map<String, List<String>> match(String[] arguments) {
@@ -58,7 +58,6 @@ final class CommandRoutes {
         r("leave", "play", true, Handler.GAMEPLAY, "leave"),
         r("lives", "lives", true, Handler.GAMEPLAY, "lives"),
         r("stuck", "stuck", true, Handler.GAMEPLAY, "stuck"),
-        r("rewards", "rewards", true, Handler.GAMEPLAY, "rewards"),
         r("team", "play", true, Handler.TEAM, "team info"),
         r("team create", "play", true, Handler.TEAM, "team create"),
         r("team invite <player>", "play", true, Handler.TEAM, "team invite <player>"),
@@ -117,11 +116,6 @@ final class CommandRoutes {
         r("edit test map", "staff.diagnostics", true, Handler.DEBUG, "debug map"),
         r("edit test doors all", "staff.diagnostics", true, Handler.DEBUG, "debug doors test-all"),
         r("edit test doors <door>", "staff.diagnostics", true, Handler.DEBUG, "debug doors test <door>"),
-        r("loot list", "staff.loot", false, Handler.STAFF, "loot"),
-        r("loot info <table>", "staff.loot", false, Handler.LOOT, "loot info <table>"),
-        r("loot create <table>", "staff.loot", true, Handler.LOOT, "loot create <table>"),
-        r("loot edit <table>", "staff.loot", true, Handler.LOOT, "loot edit <table>"),
-        r("loot delete <table> *reason", "staff.loot", false, Handler.STAFF, "loot-remove <table> *reason"),
         r("player <player> send <map> --difficulty <difficulty> *reason", "play.send", false, Handler.GAMEPLAY, "send <player> <map> --difficulty <difficulty> *reason"),
         r("player <player> send <map> *reason", "play.send", false, Handler.GAMEPLAY, "send <player> <map> *reason"),
         r("player <player> info", "staff.inspect", false, Handler.STAFF, "player <player>"),
@@ -130,11 +124,9 @@ final class CommandRoutes {
         r("player <player> recover *reason", "staff.recovery", false, Handler.STAFF, "player <player> recover *reason"),
         r("player <player> revive *reason", "staff.lives", false, Handler.STAFF, "player <player> revive *reason"),
         r("player <player> lives <count> *reason", "staff.lives", false, Handler.STAFF, "player <player> lives <count> *reason"),
-        r("player <player> compensate <material> <amount> *reason", "staff.compensate", false, Handler.STAFF, "compensate <player> <material> <amount> *reason"),
         r("player <player> completion <map> set *reason", "staff.progression", false, Handler.STAFF, "completion <player> <map> true *reason"),
         r("player <player> completion <map> clear *reason", "staff.progression", false, Handler.STAFF, "completion <player> <map> false *reason"),
         r("player <player> cooldown access <map> <value> *reason", "staff.cooldown", false, Handler.STAFF, "cooldown <player> <map> <value> *reason"),
-        r("player <player> cooldown rewards <map> clear *reason", "staff.cooldown", false, Handler.STAFF, "loot-cooldown <player> <map> clear *reason"),
         r("player <player> restriction <map> <value> *reason", "staff.restrict", false, Handler.STAFF, "restrict <player> <map> <value> *reason"),
         r("instance list", "staff.inspect", false, Handler.STAFF, "instances"),
         r("instance list <map>", "staff.inspect", false, Handler.STAFF, "instances <map>"),

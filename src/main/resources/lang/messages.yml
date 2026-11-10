@@ -67,9 +67,6 @@ commands:
     not-in-dungeon: '<HauntedMC:Error>Je zit niet in een dungeon.'
     infinite-lives: '<HauntedMC:Success>Je hebt oneindig veel levens in deze dungeon.'
     lives-remaining: '<HauntedMC:Success>Je hebt nog <HauntedMC:Warning>{lives}<HauntedMC:Success> leven(s).'
-  rewards:
-    usage: '<HauntedMC:Success>/dungeon rewards <HauntedMC:Text>| <HauntedMC:Warning>Open je openstaande dungeon beloningen.'
-    empty: '<HauntedMC:Muted>Je hebt momenteel geen openstaande dungeon beloningen.'
   team:
     help:
       lines:
@@ -161,24 +158,6 @@ commands:
     deleted-leader-offline: '<HauntedMC:Error>Het dungeon team is verwijderd omdat de leider offline ging.'
     deleted-leader-left-dungeon: '<HauntedMC:Error>Het team is verwijderd omdat de leider de dungeon heeft verlaten.'
     deleted-dungeon-ended: '<HauntedMC:Muted>Je tijdelijke dungeon team is verwijderd omdat de dungeon is geëindigd.'
-  loot:
-    save-failed: '<HauntedMC:Error>Loot tables konden niet worden opgeslagen. Controleer de console, herstel loottables.yml en laad opnieuw.'
-    usage: '<HauntedMC:Success>/dungeon loot <HauntedMC:Warning><create|edit|list> <HauntedMC:Text>| <HauntedMC:Warning>Beheer loot tables.'
-    create:
-      usage: '<HauntedMC:Success>/dungeon loot create <HauntedMC:Warning><name> <HauntedMC:Text>| <HauntedMC:Warning>Maak een nieuwe loot table.'
-      already-exists: '<HauntedMC:Error>Loot table ''<HauntedMC:Warning>{loot_table}<HauntedMC:Error>'' bestaat al.'
-      success: '<HauntedMC:Success>Loot table <HauntedMC:Warning>{loot_table}<HauntedMC:Success> is aangemaakt.'
-    edit:
-      usage: '<HauntedMC:Success>/dungeon loot edit <HauntedMC:Warning><loot table> <HauntedMC:Text>| <HauntedMC:Warning>Open de loot table editor.'
-      not-found: '<HauntedMC:Error>Loot table ''<HauntedMC:Warning>{loot_table}<HauntedMC:Error>'' bestaat niet.'
-      already-editing: '<HauntedMC:Error>Deze loot table wordt al door iemand anders bewerkt.'
-    list:
-      usage: '<HauntedMC:Success>/dungeon loot list <HauntedMC:Accent>[filter] [pagina] <HauntedMC:Text>| <HauntedMC:Warning>Bekijk bestaande loot tables.'
-      header: <HauntedMC:Brand>-= Loot Tables =-
-      line: ' <HauntedMC:Social>{loot_table} <HauntedMC:Muted>• <HauntedMC:Text>{min}-{max} items <HauntedMC:Muted>• <HauntedMC:Text>duplicates {duplicates} <HauntedMC:Muted>• <HauntedMC:Text>editor {editor}'
-      no-match: '<HauntedMC:Error>Geen loot tables gevonden voor die filter.'
-      footer: <HauntedMC:Brand>-= Pagina {page} van {total_pages} =-
-      no-editor: niemand
   config:
     help:
       header: <HauntedMC:Brand>-= Dungeon Config Help =-
@@ -474,19 +453,6 @@ instance:
         not-in-dungeon: '<HauntedMC:Error>{player} zit niet in deze dungeon.'
         revived: '<HauntedMC:Success>{player} is weer tot leven gewekt.'
         uses-remaining: '<HauntedMC:Warning>Nog <HauntedMC:Warning>{uses}<HauntedMC:Warning> gebruik(en) over.'
-    rewards:
-      gui-name: '<HauntedMC:Social>Dungeon beloningen'
-      added-to-inv: '<HauntedMC:Success>Beloning direct aan je inventaris toegevoegd.'
-      added-to-rewards-inv: '<HauntedMC:Success>Beloning toegevoegd aan je beloningeninventaris.'
-      already-received: '<HauntedMC:Error>Je hebt deze beloning al ontvangen.'
-      cooldown-time: '<HauntedMC:Muted>Beloning weer beschikbaar op: <HauntedMC:Text>{time}'
-      invalid-loottable: '<HauntedMC:Error>De ingestelde loot table bestaat niet.'
-      unavailable: '<HauntedMC:Error>Je hebt nog beloningen op cooldown.'
-      xp-received: '<HauntedMC:Success>Je ontving <HauntedMC:Warning>{xp}<HauntedMC:Success> XP.'
-      levels-received: '<HauntedMC:Success>Je ontving <HauntedMC:Warning>{levels}<HauntedMC:Success> level(s).'
-      view-rewards-info: '<HauntedMC:Muted>Klik om je openstaande beloningen te bekijken.'
-      rewards-inv-info: '<HauntedMC:Muted>Open je inventaris met dungeon beloningen.'
-      unclaimed-rewards: '<HauntedMC:Warning>Je hebt nog openstaande dungeon beloningen.'
 editor:
   session:
     autosaving: '<HauntedMC:Warning>Autosave bezig...'
@@ -688,18 +654,6 @@ editor:
       ask-multiply: '<HauntedMC:Warning>Met hoeveel moeten we de lives van de speler vermenigvuldigen?'
       ask-set: '<HauntedMC:Warning>Waarop moeten we de lives van de speler zetten?'
       mode-set: '<HauntedMC:Success>Mode ingesteld op ''<HauntedMC:Warning>{mode}<HauntedMC:Success>'''
-    loot-table-rewards:
-      create-link: '<HauntedMC:Accent>Klik hier om deze loot table te maken!'
-      ask-exp: '<HauntedMC:Warning>Hoeveel EXP moet deze reward geven?'
-      ask-levels: '<HauntedMC:Warning>Hoeveel levels moet deze reward geven?'
-      ask-loot-table: '<HauntedMC:Warning>Wat is de unieke naam van de loot table?'
-      current-loot-table: '<HauntedMC:Warning>Huidige loot table: <HauntedMC:Warning>{loot_table}'
-      exp-set: '<HauntedMC:Success>EXP reward ingesteld op ''<HauntedMC:Warning>{xp}<HauntedMC:Success>'''
-      levels-set: '<HauntedMC:Success>Level reward ingesteld op ''<HauntedMC:Warning>{levels}<HauntedMC:Success>'''
-      loot-table-set: '<HauntedMC:Success>Loot table ingesteld op ''<HauntedMC:Warning>{loot_table}<HauntedMC:Success>'''
-      warning-no-spaces: '<HauntedMC:Error>WAARSCHUWING: Loot tables mogen geen spaties in hun naam hebben!'
-      warning-not-found: '<HauntedMC:Error>WAARSCHUWING: Er bestaat geen loot table met deze naam!'
-      warning-spaces-replaced: '<HauntedMC:Error>Alle spaties worden vervangen door underscores.'
     message:
       ask-message: '<HauntedMC:Warning>Welke message moet worden getoond?'
       current-message: '<HauntedMC:Warning>Huidige message:
@@ -729,11 +683,6 @@ editor:
       sound-set: '<HauntedMC:Success>Geluid ingesteld op ''<HauntedMC:Warning>{sound}<HauntedMC:Success>'''
       valid-categories: '<HauntedMC:Error>{categories}'
       volume-set: '<HauntedMC:Success>Volume ingesteld op ''<HauntedMC:Warning>{volume}<HauntedMC:Success>'''
-    random-reward:
-      ask-max: '<HauntedMC:Warning>Wat is het maximum?'
-      ask-min: '<HauntedMC:Warning>Wat is het minimum?'
-      max-set: '<HauntedMC:Success>Maximum ingesteld op ''<HauntedMC:Warning>{max}<HauntedMC:Success>'''
-      min-set: '<HauntedMC:Success>Minimum ingesteld op ''<HauntedMC:Warning>{min}<HauntedMC:Success>'''
     redstone-block:
       ask-count: '<HauntedMC:Warning>Hoeveel zijn er nodig?'
       ask-delay: '<HauntedMC:Warning>Hoeveel ticks vertraging moet er zijn?'
@@ -761,23 +710,6 @@ editor:
       ask-max-revives: '<HauntedMC:Warning>Hoe vaak kunnen spelers deze reviver gebruiken? Gebruik 0 voor oneindig.'
       lives-after-set: '<HauntedMC:Success>Lives na revival ingesteld op ''<HauntedMC:Warning>{lives}<HauntedMC:Success>'''
       max-revives-set: '<HauntedMC:Success>Maximum revives ingesteld op ''<HauntedMC:Warning>{max_revives}<HauntedMC:Success>'''
-    reward:
-      ask-cooldown-minutes: '<HauntedMC:Warning>Hoe lang moet de cooldown zijn in minuten?'
-      ask-exp: '<HauntedMC:Warning>Hoeveel EXP moet deze reward geven?'
-      ask-levels: '<HauntedMC:Warning>Hoeveel levels moet deze reward geven?'
-      ask-reset-hour: '<HauntedMC:Warning>Op welk uur van de dag moet de reward resetten?'
-      ask-reset-monthday: '<HauntedMC:Warning>Op welke dag van de maand moet de reward resetten?'
-      ask-reset-weekday: '<HauntedMC:Warning>Op welke dag van de week moet de reward resetten?'
-      cooldown-disabled: '<HauntedMC:Success>Cooldown uitgeschakeld.'
-      cooldown-enabled: '<HauntedMC:Success>Cooldown ingeschakeld!'
-      cooldown-time-set: '<HauntedMC:Success>Cooldown tijd ingesteld op ''<HauntedMC:Warning>{time}<HauntedMC:Success>'''
-      cooldown-type-set: '<HauntedMC:Success>Cooldown type ingesteld op ''<HauntedMC:Warning>{type}<HauntedMC:Success>'''
-      custom-cooldown-disabled: '<HauntedMC:Success>Custom reward cooldown uitgeschakeld.'
-      custom-cooldown-enabled: '<HauntedMC:Success>Custom reward cooldown ingeschakeld!'
-      exp-set: '<HauntedMC:Success>EXP reward ingesteld op ''<HauntedMC:Warning>{xp}<HauntedMC:Success>'''
-      levels-set: '<HauntedMC:Success>Level reward ingesteld op ''<HauntedMC:Warning>{levels}<HauntedMC:Success>'''
-      reset-day-set: '<HauntedMC:Success>Reset dag ingesteld op ''<HauntedMC:Warning>{day}<HauntedMC:Success>'''
-      saved: '<HauntedMC:Success>Rewards opgeslagen!'
     room-door:
       action-set: '<HauntedMC:Success>Deur actie ingesteld op ''<HauntedMC:Warning>{action}<HauntedMC:Success>'''
       ask-door-name: '<HauntedMC:Warning>Wat is de naam van de deur?'

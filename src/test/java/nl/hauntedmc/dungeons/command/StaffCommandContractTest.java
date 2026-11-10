@@ -5,11 +5,7 @@ import static org.mockito.Mockito.*;
 
 import net.kyori.adventure.text.Component;
 
-import nl.hauntedmc.dungeons.content.function.reward.LootTableRewardsFunction;
-import nl.hauntedmc.dungeons.content.reward.LootTable;
-import nl.hauntedmc.dungeons.model.dungeon.AccessKeyDefinition;
 import nl.hauntedmc.dungeons.model.instance.*;
-import nl.hauntedmc.dungeons.runtime.player.StaffPlayerRecords;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueEntry;
 import nl.hauntedmc.dungeons.runtime.staff.StaffContentStorage;
 import nl.hauntedmc.dungeons.runtime.staff.StaffOperations;
@@ -63,7 +59,6 @@ class StaffCommandContractTest {
                             new String[] {"problems"},
                             new String[] {"archives"},
                             new String[] {"backups", "crypt"},
-                            new String[] {"loot"},
                             new String[] {"keys", "crypt"}))
                 assertDoesNotThrow(() -> execute(h, f, args), Arrays.toString(args));
             assertFalse(f.messages.isEmpty());
@@ -93,7 +88,6 @@ class StaffCommandContractTest {
             h.executeChecked(p.player, new String[] {"player", p.player.getUniqueId().toString()});
             h.executeChecked(p.player, new String[] {"queues"});
             h.executeChecked(p.player, new String[] {"operations"});
-            h.executeChecked(p.player, new String[] {"loot"});
             verify(p.player, atLeastOnce()).sendMessage(any(Component.class));
             assertTrue(h.handleCommand(f.actor, new String[] {"no-such-command"}));
             assertThrows(
@@ -131,7 +125,6 @@ class StaffCommandContractTest {
             assertNotNull(f.run.dungeon.playerDataStore().getAccessCooldown(id));
             confirm(h, f, "cooldown", id.toString(), "crypt", "clear", "Repair");
             assertNull(f.run.dungeon.playerDataStore().getAccessCooldown(id));
-            confirm(h, f, "loot-cooldown", id.toString(), "crypt", "clear", "Repair");
             assertThrows(
                     IllegalArgumentException.class,
                     () -> execute(h, f, "completion", id.toString(), "crypt", "maybe", "Repair"));
@@ -423,108 +416,6 @@ class StaffCommandContractTest {
             assertNotEquals(token, f.token());
             f.run.run.getPlayers().clear();
             f.run.run.getPlayers().add(original);
-        }
-    }
-
-    @Test
-    void destructiveCommandsValidateReasonsBeforeConfirmingOrRemovingAnything() throws Exception {
-        try (var f = new StaffFixture(directory)) {
-            var h = handler(f);
-            var table = new LootTable("unused");
-            when(f.runtime.lootTableRepository().get("unused")).thenReturn(table);
-            assertThrows(
-                    IllegalArgumentException.class,
-                    () -> execute(h, f, "loot-remove", "unused", "a".repeat(257)));
-            verify(f.runtime.lootTableRepository(), never()).remove(anyString());
-            when(f.runtime.lootTableRepository().remove("unused")).thenReturn(true);
-            confirm(h, f, "loot-remove", "unused", "Retired");
-            verify(f.runtime.lootTableRepository()).remove("unused");
-            var reward = new LootTableRewardsFunction(Map.of("loottableName", "unused"));
-            reward.initializeFields();
-            f.run.dungeon.getFunctions().put(new Location(null, 1, 2, 3), reward);
-            assertThrows(
-                    IllegalArgumentException.class,
-                    () -> execute(h, f, "loot-remove", "unused", "Retired"));
-        }
-    }
-
-    @Test
-    void compensationAndKeyIssuancePersistOnlineAndOfflineWithoutReplayingAConfirmation()
-            throws Exception {
-        try (var f = new StaffFixture(directory)) {
-            var h = handler(f);
-            var online = f.player("Recipient");
-            try (var items = new StaffGuiBoundary(f, online);
-                    var materials = mockStatic(Material.class, CALLS_REAL_METHODS)) {
-                var material = mock(Material.class);
-                when(material.isItem()).thenReturn(true);
-                when(material.getMaxStackSize()).thenReturn(64);
-                materials.when(() -> Material.matchMaterial("TOKEN")).thenReturn(material);
-                UUID offline = UUID.randomUUID();
-                confirm(h, f, "compensate", offline.toString(), "TOKEN", "3", "Verified loss");
-                assertTrue(
-                        StaffPlayerRecords.inspect(f.runtime, offline)
-                                .contains("claimable stacks=1"));
-                String token = f.token();
-                execute(
-                        h,
-                        f,
-                        "compensate",
-                        offline.toString(),
-                        "TOKEN",
-                        "3",
-                        "Verified loss",
-                        "--confirm",
-                        token);
-                assertTrue(
-                        StaffPlayerRecords.inspect(f.runtime, offline)
-                                .contains("claimable stacks=1"));
-                confirm(
-                        h,
-                        f,
-                        "compensate",
-                        online.player.getUniqueId().toString(),
-                        "TOKEN",
-                        "2",
-                        "Verified loss");
-                assertTrue(
-                        StaffPlayerRecords.inspect(f.runtime, online.player.getUniqueId())
-                                .contains("claimable stacks=1"));
-                var definition = spy(f.run.dungeon);
-                var key = mock(AccessKeyDefinition.class);
-                var issued = PlayerState.stack(1);
-                when(key.getItem()).thenReturn(issued);
-                doReturn(key).when(definition).getAccessKey(1);
-                doReturn(List.of(key)).when(definition).getAccessKeys();
-                doReturn(issued).when(definition).issueAccessKey(key);
-                f.catalog.put("crypt", definition);
-                assertThrows(
-                        IllegalArgumentException.class,
-                        () ->
-                                execute(
-                                        h,
-                                        f,
-                                        "keys",
-                                        "crypt",
-                                        "give",
-                                        online.player.getUniqueId().toString(),
-                                        "1",
-                                        "a".repeat(257)));
-                verify(definition, never()).issueAccessKey(any());
-                confirm(
-                        h,
-                        f,
-                        "keys",
-                        "crypt",
-                        "give",
-                        online.player.getUniqueId().toString(),
-                        "1",
-                        "Replacement key");
-                verify(definition).issueAccessKey(key);
-                assertTrue(
-                        StaffPlayerRecords.inspect(f.runtime, online.player.getUniqueId())
-                                .contains("claimable stacks=2"));
-            }
         }
     }
 

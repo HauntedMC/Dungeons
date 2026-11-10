@@ -8,11 +8,9 @@ import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import nl.hauntedmc.dungeons.bootstrap.LifecycleCoordinator;
 import nl.hauntedmc.dungeons.config.ConfigurationFile;
 import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
-import nl.hauntedmc.dungeons.gui.loot.LootTableEditor;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
 import nl.hauntedmc.dungeons.runtime.queue.*;
-import nl.hauntedmc.dungeons.runtime.rewards.LootTableRepository;
 import nl.hauntedmc.dungeons.runtime.staff.StaffOperations;
 import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
 
@@ -75,11 +73,7 @@ public final class StaffFixture implements AutoCloseable {
                 .remove(any());
         runtime.setDungeonCatalog(repository);
         coordinator.setDungeonCatalog(repository);
-        var loot = mock(LootTableRepository.class);
-        when(loot.getTables()).thenReturn(List.of());
-        when(loot.isWritable()).thenReturn(true);
-        runtime.setLootTableRepository(loot);
-        runtime.setLootTableEditor(mock(LootTableEditor.class));
+
         when(actor.getName()).thenReturn("Staff");
         when(actor.hasPermission(anyString()))
                 .thenAnswer(

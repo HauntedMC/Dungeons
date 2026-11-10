@@ -21,7 +21,7 @@ import org.bukkit.persistence.PersistentDataType;
 
 import java.util.List;
 
-/** Item utility helpers for editor tools, key items, and reward transfers. */
+/** Item utility helpers for editor tools, key items and inventory transfers. */
 public final class ItemUtils {
     private ItemUtils() {}
 

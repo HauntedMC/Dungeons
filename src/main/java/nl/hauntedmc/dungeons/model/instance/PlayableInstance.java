@@ -4,8 +4,6 @@ import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
 
 import nl.hauntedmc.dungeons.content.function.HologramFunction;
-import nl.hauntedmc.dungeons.content.function.reward.RewardFunction;
-import nl.hauntedmc.dungeons.content.reward.PlayerLootData;
 import nl.hauntedmc.dungeons.content.variable.VariableStore;
 import nl.hauntedmc.dungeons.event.DungeonStartEvent;
 import nl.hauntedmc.dungeons.listener.instance.PlayListener;
@@ -42,7 +40,6 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -57,7 +54,7 @@ import java.util.concurrent.CountDownLatch;
 /**
  * Base runtime instance for playable dungeon runs.
  *
- * <p>This instance type owns match lifecycle state such as participants, lives, rewards, and run
+ * <p>This instance type owns match lifecycle state such as participants, lives and run
  * timers.
  */
 public abstract class PlayableInstance extends DungeonInstance {
@@ -72,8 +69,7 @@ public abstract class PlayableInstance extends DungeonInstance {
     protected int participants = 0;
     protected final Map<UUID, Integer> playerLives = new HashMap<>();
     protected final Map<UUID, BukkitRunnable> offlineTrackers = new HashMap<>();
-    protected final Map<UUID, List<ItemStack>> rewardInventories = new HashMap<>();
-    protected final Map<UUID, Boolean> receivedRewards = new HashMap<>();
+
     protected Location lobbyLocation;
     private final VariableStore instanceVariables;
     protected boolean started = false;
@@ -244,7 +240,6 @@ public abstract class PlayableInstance extends DungeonInstance {
         }
 
         this.playerLives.clear();
-        this.rewardInventories.clear();
         this.clearCustomDragonBossBars();
         this.disposeEntities();
     }
@@ -314,9 +309,7 @@ public abstract class PlayableInstance extends DungeonInstance {
                 loc.setWorld(this.instanceWorld);
                 newFunction.enable(this, loc);
                 this.functions.put(loc, newFunction);
-                if (newFunction instanceof RewardFunction rewardFunction) {
-                    this.rewardFunctions.put(newFunction.getLocation(), rewardFunction);
-                }
+
             } catch (Throwable throwable) {
                 if (newFunction != null && newFunction.getInstance() == this) {
                     try {
@@ -415,11 +408,6 @@ public abstract class PlayableInstance extends DungeonInstance {
                             2L);
         }
 
-        PlayerLootData lootData = this.dungeon.getPlayerLootData(player);
-        if (lootData != null) {
-            lootData.checkCooldowns();
-        }
-
         try {
             GameMode gamemode =
                     GameMode.valueOf(
@@ -516,7 +504,7 @@ public abstract class PlayableInstance extends DungeonInstance {
     }
 
     /**
-     * Removes a player from the run and applies reward/cooldown persistence.
+     * Removes a player from the run and applies cooldown persistence.
      */
     @Override
     public void removePlayer(DungeonPlayerSession playerSession, boolean force) {
@@ -538,21 +526,8 @@ public abstract class PlayableInstance extends DungeonInstance {
                                 LangUtils.placeholder("player", player.getName()));
             }
 
-            if (!this.recovering(playerSession)
-                    && !this.dungeon.isCooldownsPerReward()
-                    && this.receivedRewards.getOrDefault(player.getUniqueId(), false)) {
-                for (RewardFunction function : this.rewardFunctions.values()) {
-                    if (function.overrideCooldown()) {
-                        this.dungeon.addLootCooldown(player, function, function.getCooldownTime());
-                    } else {
-                        this.dungeon.addLootCooldown(player, function);
-                    }
-                }
-            }
-
             this.dungeon.saveCooldowns(player);
             this.dungeon.savePlayerData(player);
-            this.rewardInventories.remove(player.getUniqueId());
 
             for (Entry<Location, DungeonFunction> pair : this.functions.entrySet()) {
                 DungeonFunction dungeonFunction = pair.getValue();
@@ -561,40 +536,6 @@ public abstract class PlayableInstance extends DungeonInstance {
                     trigger.getPlayersTriggered().remove(player.getUniqueId());
                 }
             }
-        }
-    }
-
-    /**
-     * Records whether this player has already claimed run rewards.
-     */
-    public void setReceivedRewards(Player player, boolean received) {
-        this.receivedRewards.put(player.getUniqueId(), received);
-    }
-
-    /**
-     * Queues reward items for later delivery to a player session.
-     */
-    public void addPlayerReward(Player player, ItemStack... items) {
-        this.rewardInventories.putIfAbsent(player.getUniqueId(), new ArrayList<>());
-        List<ItemStack> rewards = this.rewardInventories.get(player.getUniqueId());
-        this.playerSessions().get(player).addReward(items);
-        rewards.addAll(Arrays.asList(items));
-    }
-
-    /**
-     * Pushes queued rewards into the player's claimable reward list.
-     */
-    public void pushPlayerRewards(Player player) {
-        // Rewards become durable when earned, so finishing never moves or duplicates them.
-        this.rewardInventories.remove(player.getUniqueId());
-    }
-
-    /**
-     * Applies cooldown bookkeeping for all reward functions for one player.
-     */
-    public void applyLootCooldowns(Player player) {
-        for (RewardFunction rewardFunction : this.rewardFunctions.values()) {
-            rewardFunction.processCooldown(player);
         }
     }
 
@@ -730,13 +671,6 @@ public abstract class PlayableInstance extends DungeonInstance {
      */
     public Map<UUID, BukkitRunnable> getOfflineTrackers() {
         return this.offlineTrackers;
-    }
-
-    /**
-     * Returns queued reward inventories keyed by player id.
-     */
-    public Map<UUID, List<ItemStack>> getRewardInventories() {
-        return this.rewardInventories;
     }
 
     /**

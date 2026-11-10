@@ -54,16 +54,7 @@ public final class LifecycleCoordinator {
                     .environment()
                     .logger()
                     .info("Cleaning up active dungeons and player state.");
-            if (this.runtime.lootTableEditor() != null) {
-                try {
-                    this.runtime.lootTableEditor().close();
-                } catch (RuntimeException failure) {
-                    this.runtime
-                            .environment()
-                            .logger()
-                            .error("Failed to close loot editors", failure);
-                }
-            }
+
             if (this.runtime.preparations() != null)
                 this.runCleanup("pending admissions", () -> this.runtime.preparations().shutdown());
             if (this.runtime.hasQueueRegistry())
@@ -307,8 +298,6 @@ public final class LifecycleCoordinator {
         for (DungeonDefinition dungeon : this.runtime.dungeonCatalog().getLoadedDungeons()) {
             dungeon.refreshRuleSettings();
         }
-        if (!this.runtime.lootTableRepository().reload())
-            throw new IllegalStateException("Plugin configuration refreshed, but loot reload failed; last working loot retained and editing blocked");
     }
 
     /**

@@ -237,16 +237,12 @@ public class StaticDungeon extends DungeonDefinition {
                         "You may need to change or delete this function!");
         if (exception.getCause() != null) {
             ex.addMessage("Error: " + exception.getCause().getMessage());
-            if (!exception.getCause().getMessage().contains("LootTableRewardsFunction")) {
-                ex.addMessage(
-                        "This usually happens if the element belonged to another plugin that is no longer present!");
-            }
+            ex.addMessage(
+                    "This usually happens if the element belonged to another plugin that is no longer present!");
         } else {
             ex.addMessage("&c├─ Error: " + exception.getMessage());
-            if (!exception.getMessage().contains("LootTableRewardsFunction")) {
-                ex.addMessage(
-                        "&c└─ This usually happens if the element belonged to another plugin that is no longer present!");
-            }
+            ex.addMessage(
+                    "&c└─ This usually happens if the element belonged to another plugin that is no longer present!");
         }
         return ex;
     }

@@ -19,7 +19,7 @@ import java.util.Map;
 
 class ItemTransferContractTest {
     @Test
-    void partialInventoryAcceptanceDropsOnlyTheRemainderSoRewardsAndRefundsCannotDuplicateItems() {
+    void partialInventoryAcceptanceDropsOnlyTheRemainderSoTransfersCannotDuplicateItems() {
         Player player = mock(Player.class);
         var inventory = mock(PlayerInventory.class);
         var world = mock(World.class);

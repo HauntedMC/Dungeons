@@ -32,8 +32,6 @@ final class CommandBootstrap {
                 this.runtime.dungeonQueueCoordinator(),
                 this.runtime.queueRegistry(),
                 this.runtime.teamService(),
-                this.runtime.lootTableRepository(),
-                this.runtime.lootTableEditor(),
                 this.runtime.functionRegistry(),
                 this.lifecycleCoordinator,
                 this.runtime.guiService(),

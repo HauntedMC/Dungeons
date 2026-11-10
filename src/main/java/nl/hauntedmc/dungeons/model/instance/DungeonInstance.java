@@ -1,6 +1,5 @@
 package nl.hauntedmc.dungeons.model.instance;
 
-import nl.hauntedmc.dungeons.content.function.reward.RewardFunction;
 import nl.hauntedmc.dungeons.event.DungeonDisposeEvent;
 import nl.hauntedmc.dungeons.event.DungeonEndEvent;
 import nl.hauntedmc.dungeons.event.PlayerLeaveDungeonEvent;
@@ -86,7 +85,7 @@ public abstract class DungeonInstance {
     protected World instanceWorld;
     protected InstanceListener listener;
     protected final Map<Location, DungeonFunction> functions = new HashMap<>();
-    protected final Map<Location, RewardFunction> rewardFunctions = new HashMap<>();
+
     protected HologramManager hologramManager;
     private final Map<Class<? extends DungeonTrigger>, List<DungeonTrigger>> triggerListeners =
             new HashMap<>();
@@ -635,7 +634,7 @@ public abstract class DungeonInstance {
     private void completeDisposal(CompletableFuture<Boolean> attempt, File folder, String name) {
         List<Path> retired = folder == null ? List.of() : this.detachWorldFiles(folder, name);
         this.functions.clear();
-        this.rewardFunctions.clear();
+
         this.triggerListeners.clear();
         this.functionListeners.clear();
         this.listener = null;
@@ -1169,10 +1168,6 @@ public abstract class DungeonInstance {
 
     public Map<Location, DungeonFunction> getFunctions() {
         return this.functions;
-    }
-
-    public Map<Location, RewardFunction> getRewardFunctions() {
-        return this.rewardFunctions;
     }
 
     public HologramManager getHologramManager() {

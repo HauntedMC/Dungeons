@@ -23,16 +23,15 @@ public final class StaffPlayerRecords {
                 + ", pending transaction="
                 + journal.hasPendingTransaction()
                 + ", key escrow="
-                + journal.hasKeyReservation()
-                + ", claimable stacks="
-                + journal.rewards().size();
+                + journal.hasKeyReservation();
     }
 
-    public static boolean compensate(
+    public static boolean deliverKey(
             DungeonsRuntime runtime, UUID id, UUID operation, ItemStack item) {
         var session = runtime.playerSessions().get(id);
-        return session != null
-                ? session.addStaffRewards(operation, item)
-                : journal(runtime, id).addStaffRewards(operation, item);
+        if (session == null) return journal(runtime, id).addStaffRefunds(operation, item);
+        boolean added = session.addStaffRefunds(operation, item);
+        session.flushPendingAccessKeyRefund();
+        return added;
     }
 }

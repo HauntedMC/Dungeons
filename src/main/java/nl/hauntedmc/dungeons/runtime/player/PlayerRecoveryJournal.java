@@ -35,7 +35,7 @@ final class PlayerRecoveryJournal {
             if (!state.getKeys(false).isEmpty()) {
                 if (state.getInt("version") != 2)
                     throw new IllegalArgumentException("Unknown recovery journal version");
-                rewards();
+                items("refunds");
                 if (state.contains("key-reservation")) {
                     if (state.getString("key-reservation.dungeon", "").isBlank()
                             || items("key-reservation.item").size() != 1)
@@ -126,7 +126,7 @@ final class PlayerRecoveryJournal {
             throw new IllegalStateException("Player must respawn before state replacement");
         }
         if (hasPendingTransaction())
-            throw new IllegalStateException("Player has unfinished recovery or reward delivery");
+            throw new IllegalStateException("Player has unfinished recovery or key delivery");
         PlayerRecoverySnapshot snapshot = PlayerRecoverySnapshot.capture(player);
         commit(
                 next -> {
@@ -149,10 +149,8 @@ final class PlayerRecoveryJournal {
         return snapshot;
     }
 
-    List<ItemStack> rewards() {
-        var result = items("rewards");
-        result.addAll(items("refunds"));
-        return result;
+    List<ItemStack> refunds() {
+        return items("refunds");
     }
 
     private List<ItemStack> items(String path) {
@@ -193,46 +191,32 @@ final class PlayerRecoveryJournal {
                                 PlayerRecoverySnapshot.encode(refunds.toArray(ItemStack[]::new))));
     }
 
-    /** Automatically returns reserved keys; overflow remains durably claimable as a reward. */
+    /** Automatically returns reserved keys; overflow remains queued for automatic delivery. */
     void deliverRefunds(Player player) {
         requireServerThread();
         if (hasPendingTransaction()) return;
-        for (ItemStack refund : items("refunds")) claim(player, refund, "refunds");
+        for (ItemStack refund : items("refunds")) deliverRefund(player, refund);
     }
 
-    void addRewards(ItemStack... items) {
-        requireServerThread();
-        List<ItemStack> rewards = items("rewards");
-        for (ItemStack item : items)
-            if (item != null && !item.getType().isAir() && item.getAmount() > 0)
-                rewards.add(item.clone());
-        commit(
-                next ->
-                        next.set(
-                                "rewards",
-                                PlayerRecoverySnapshot.encode(rewards.toArray(ItemStack[]::new))));
-    }
-
-    boolean addStaffRewards(UUID operation, ItemStack... incoming) {
+    boolean addStaffRefunds(UUID operation, ItemStack... incoming) {
         requireServerThread();
         String receipt = "staff-receipts." + operation;
         if (state.contains(receipt)) return false;
-        var rewards = items("rewards");
+        var refunds = items("refunds");
         for (ItemStack item : incoming) {
             if (item == null || item.getType().isAir() || item.getAmount() < 1)
-                throw new IllegalArgumentException("Invalid compensation item");
-            rewards.add(item.clone());
+                throw new IllegalArgumentException("Invalid key item");
+            refunds.add(item.clone());
         }
         commit(
                 next -> {
                     next.set(
-                            "rewards",
-                            PlayerRecoverySnapshot.encode(rewards.toArray(ItemStack[]::new)));
+                            "refunds",
+                            PlayerRecoverySnapshot.encode(refunds.toArray(ItemStack[]::new)));
                     next.set(receipt, System.currentTimeMillis());
                 });
         return true;
     }
-
     boolean recover(Player player) {
         requireServerThread();
         // A crash during reservation can precede the native inventory removal checkpoint.
@@ -265,29 +249,24 @@ final class PlayerRecoveryJournal {
         commit(next -> next.set("recovery", null));
     }
 
-    boolean claim(Player player, ItemStack requested) {
-        if (claim(player, requested, "rewards")) return true;
-        return claim(player, requested, "refunds");
-    }
-
-    private boolean claim(Player player, ItemStack requested, String source) {
+    boolean deliverRefund(Player player, ItemStack requested) {
         requireServerThread();
         // Offline saves may silently do nothing, and respawn can replace a dead player's inventory.
-        // Keep both the reward and any unfinished delivery journal untouched until a live claim.
+        // Keep both the refund and any unfinished delivery journal untouched until the player is alive.
         if (!player.isOnline() || player.isDead() || player.getHealth() <= 0) return false;
         if (hasRecovery()) return false;
         finishDelivery(player);
-        List<ItemStack> rewards = items(source);
+        List<ItemStack> refunds = items("refunds");
         int index = -1;
-        for (int i = 0; i < rewards.size(); i++) {
-            ItemStack reward = rewards.get(i);
-            if (reward.getAmount() == requested.getAmount() && reward.isSimilar(requested)) {
+        for (int i = 0; i < refunds.size(); i++) {
+            ItemStack refund = refunds.get(i);
+            if (refund.getAmount() == requested.getAmount() && refund.isSimilar(requested)) {
                 index = i;
                 break;
             }
         }
-        if (index < 0) return false; // stale GUI click
-        ItemStack item = rewards.get(index);
+        if (index < 0) return false; // already delivered
+        ItemStack item = refunds.get(index);
         ItemStack[] contents = PlayerRecoverySnapshot.copy(player.getInventory().getContents());
         int remaining = item.getAmount();
         for (int slot = 0; slot < 36 && remaining > 0; slot++) {
@@ -310,13 +289,13 @@ final class PlayerRecoveryJournal {
             }
         }
         if (remaining == item.getAmount()) return false;
-        if (remaining == 0) rewards.remove(index);
-        else rewards.get(index).setAmount(remaining);
+        if (remaining == 0) refunds.remove(index);
+        else refunds.get(index).setAmount(remaining);
         commit(
                 next -> {
                     next.set(
-                            source,
-                            PlayerRecoverySnapshot.encode(rewards.toArray(ItemStack[]::new)));
+                            "refunds",
+                            PlayerRecoverySnapshot.encode(refunds.toArray(ItemStack[]::new)));
                     next.set("delivery.id", UUID.randomUUID().toString());
                     next.set("delivery.contents", PlayerRecoverySnapshot.encode(contents));
                 });

@@ -107,7 +107,7 @@ class BundledTranslationTest {
         var player = mock(Player.class);
         assertEquals("Operator English", english.template("general.errors.no-permission", player));
         assertTrue(english.lines("commands.team.help.lines", player).isEmpty());
-        assertTrue(english.template("commands.rewards.empty", player).contains("no pending"));
+        assertTrue(english.template("commands.play.usage", player).contains("/dungeon"));
         Files.writeString(
                 directory.resolve("lang/messages_EN.yml"),
                 "general:\n  errors:\n    no-permission: 'Edited English'\n");

@@ -20,17 +20,14 @@ dungeons.function.hologram,nl.hauntedmc.dungeons.content.function.HologramFuncti
 dungeons.function.instance_variable,nl.hauntedmc.dungeons.content.function.variable.InstanceVariableFunction
 dungeons.function.leave_dungeon,nl.hauntedmc.dungeons.content.function.LeaveDungeonFunction
 dungeons.function.lives,nl.hauntedmc.dungeons.content.function.LivesFunction
-dungeons.function.loot_table_rewards,nl.hauntedmc.dungeons.content.function.reward.LootTableRewardsFunction
 dungeons.function.message,nl.hauntedmc.dungeons.content.function.MessageFunction
 dungeons.function.multi,nl.hauntedmc.dungeons.content.function.meta.CompositeFunction
 dungeons.function.play_sound,nl.hauntedmc.dungeons.content.function.PlaySoundFunction
 dungeons.function.random,nl.hauntedmc.dungeons.content.function.meta.RandomFunction
-dungeons.function.random_reward,nl.hauntedmc.dungeons.content.function.reward.RandomRewardFunction
 dungeons.function.redstone_block,nl.hauntedmc.dungeons.content.function.RedstoneBlockFunction
 dungeons.function.remote_trigger,nl.hauntedmc.dungeons.content.function.RemoteTriggerFunction
 dungeons.function.repeater,nl.hauntedmc.dungeons.content.function.meta.RepeaterFunction
 dungeons.function.revive_player,nl.hauntedmc.dungeons.content.function.RevivePlayerFunction
-dungeons.function.reward,nl.hauntedmc.dungeons.content.function.reward.RewardFunction
 dungeons.function.room_door,nl.hauntedmc.dungeons.content.function.room.RoomDoorFunction
 dungeons.function.sequence,nl.hauntedmc.dungeons.content.function.meta.SequenceFunction
 dungeons.function.set_difficulty,nl.hauntedmc.dungeons.content.function.SetDifficultyFunction

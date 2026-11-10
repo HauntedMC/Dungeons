@@ -1,8 +1,6 @@
 package nl.hauntedmc.dungeons.runtime.dungeon;
 
 import nl.hauntedmc.dungeons.config.ConfigurationFile;
-import nl.hauntedmc.dungeons.content.function.reward.RewardFunction;
-import nl.hauntedmc.dungeons.content.reward.PlayerLootData;
 import nl.hauntedmc.dungeons.persistence.StateDocument;
 import nl.hauntedmc.dungeons.persistence.StateStore;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
@@ -23,7 +21,7 @@ public final class DungeonPlayerDataStore {
     private final StateStore store;
     private final Map<UUID, StateDocument> documents = new HashMap<>();
     private final Map<UUID, ConfigurationFile> records = new LinkedHashMap<>();
-    private final Map<UUID, PlayerLootData> rewards = new LinkedHashMap<>();
+
     private final Map<UUID, Date> access = new HashMap<>();
     private final Set<UUID> readOnly = new HashSet<>();
 
@@ -65,21 +63,6 @@ public final class DungeonPlayerDataStore {
                             "Invalid completion state for player '{}' in '{}'; writes are blocked.",
                             id,
                             scope);
-        }
-        Object value = data.get("RewardsInfo");
-        if (value instanceof PlayerLootData loot && id.equals(loot.getPlayerId()))
-            rewards.put(id, loot);
-        else {
-            rewards.remove(id);
-            if (value != null) {
-                readOnly.add(id);
-                plugin.getSLF4JLogger()
-                        .warn(
-                                "Invalid reward cooldown data for player '{}' in '{}'; other fields"
-                                        + " remain readable and writes are blocked.",
-                                id,
-                                scope);
-            }
         }
         Object reset = data.get("AccessCooldown");
         if (reset instanceof Long || reset instanceof Integer)
@@ -139,34 +122,9 @@ public final class DungeonPlayerDataStore {
         return hasAccessCooldown(id) ? new Date(access.get(id).getTime()) : null;
     }
 
-    public @Nullable PlayerLootData getRewards(UUID id) {
-        load(id);
-        return rewards.get(id);
-    }
-
-    private PlayerLootData rewards(Player player) {
-        load(player.getUniqueId());
-        requireWritable(player.getUniqueId());
-        return rewards.computeIfAbsent(player.getUniqueId(), ignored -> new PlayerLootData(player));
-    }
-
-    public void addLootCooldown(Player player, RewardFunction reward, Date reset) {
-        rewards(player).addLootCooldown(reward, reset);
-    }
-
-    public boolean hasLootCooldown(Player player, RewardFunction reward) {
-        return rewards(player).hasLootOnCooldown(reward);
-    }
-
-    public List<PlayerLootData> getLootCooldowns() {
-        requireOwnerThread();
-        return List.copyOf(rewards.values());
-    }
-
     public void stageCooldowns(Player player) {
         UUID id = player.getUniqueId();
         var data = record(id);
-        data.set("RewardsInfo", rewards(player));
         Date reset = access.get(id);
         data.set("AccessCooldown", reset == null ? null : reset.getTime());
         save(player);
@@ -198,7 +156,6 @@ public final class DungeonPlayerDataStore {
             if (existing != null) candidate.loadFromString(existing.saveToString());
             Date reset = access.get(id);
             candidate.set("AccessCooldown", reset == null ? null : reset.getTime());
-            if (rewards.containsKey(id)) candidate.set("RewardsInfo", rewards.get(id));
             change.accept(candidate);
             document(id).save(candidate.saveToString());
             records.put(id, candidate);
@@ -213,7 +170,6 @@ public final class DungeonPlayerDataStore {
         requireOwnerThread();
         documents.remove(id);
         records.remove(id);
-        rewards.remove(id);
         access.remove(id);
         readOnly.remove(id);
     }
@@ -226,8 +182,7 @@ public final class DungeonPlayerDataStore {
         var result = new LinkedHashMap<String, Object>();
         result.put("completed", isCompleted(id));
         result.put("access cooldown", Objects.toString(getAccessCooldown(id), "none"));
-        result.put(
-                "reward cooldowns", rewards.containsKey(id) && rewards.get(id).hasLootOnCooldown());
+
         result.put("protected record", readOnly.contains(id));
         return Map.copyOf(result);
     }

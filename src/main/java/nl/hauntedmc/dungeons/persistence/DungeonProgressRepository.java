@@ -20,7 +20,7 @@ import java.util.function.Supplier;
 
 /** Canonical-player-bound progression writes with optimistic revisions and durable retry receipts. */
 public final class DungeonProgressRepository {
-    public enum CooldownType { ACCESS, REWARD }
+    public enum CooldownType { ACCESS }
     public record CooldownKey(CooldownType type, String sourceId) {
         public CooldownKey {
             Objects.requireNonNull(type, "type");
@@ -80,8 +80,8 @@ public final class DungeonProgressRepository {
             var rows = DungeonSql.rows(connection, "SELECT p.revision,p.completed,p.first_completed_at,p.last_completed_at,"
                     + "p.checkpoint,p.checkpoint_fingerprint,c.cooldown_type,c.source_id,c.expires_at"
                     + " FROM dungeon_definition d LEFT JOIN dungeon_player_progress p ON p.dungeon_id=d.dungeon_id AND p.player_id=?"
-                    + " LEFT JOIN dungeon_cooldown c ON c.dungeon_id=d.dungeon_id AND c.player_id=? AND c.expires_at>UTC_TIMESTAMP(3)"
-                    + " WHERE d.dungeon_id=?", identity.playerId(), identity.playerId(), dungeonId);
+                    + " LEFT JOIN dungeon_cooldown c ON c.dungeon_id=d.dungeon_id AND c.player_id=? AND c.expires_at>UTC_TIMESTAMP(3) AND c.cooldown_type=?"
+                    + " WHERE d.dungeon_id=?", identity.playerId(), identity.playerId(), CooldownType.ACCESS.name(), dungeonId);
             if (rows.isEmpty()) throw new IllegalArgumentException("Unknown dungeon identity");
             var first = rows.getFirst();
             var cooldowns = new HashMap<CooldownKey, Instant>();

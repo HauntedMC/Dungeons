@@ -1,4 +1,4 @@
-package nl.hauntedmc.dungeons.content.reward;
+package nl.hauntedmc.dungeons.model.cooldown;
 
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -6,7 +6,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
 /**
- * Named cooldown cadences used by reward functions.
+ * Named cooldown cadences used by access checks.
  *
  * <p>Each constant stores the {@link ChronoUnit} unit it advances and the default amount used when
  * no explicit override is supplied.
@@ -59,16 +59,5 @@ public enum CooldownPeriod {
                 date.toInstant().atZone(ZoneId.systemDefault()).plus(amount, this.period).toInstant());
     }
 
-    /**
-     * Creates a value from index.
-     */
-    public static CooldownPeriod fromIndex(int index) {
-        return switch (index) {
-            case 1 -> HOURLY;
-            case 2 -> DAILY;
-            case 3 -> WEEKLY;
-            case 4 -> MONTHLY;
-            default -> TIMER;
-        };
-    }
+
 }

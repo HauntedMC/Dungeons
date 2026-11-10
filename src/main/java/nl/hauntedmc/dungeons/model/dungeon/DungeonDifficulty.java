@@ -1,7 +1,6 @@
 package nl.hauntedmc.dungeons.model.dungeon;
 
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
-import nl.hauntedmc.dungeons.util.math.RangedNumber;
 import nl.hauntedmc.dungeons.util.text.ComponentUtils;
 
 import org.bukkit.Material;
@@ -22,7 +21,6 @@ public class DungeonDifficulty {
     private final double mobHealthScale;
     private final double mobSpawnScale;
     private final double mobDamageScale;
-    private final RangedNumber bonusLoot;
 
     /**
      * Creates a difficulty definition from one named config section.
@@ -32,7 +30,6 @@ public class DungeonDifficulty {
         this.mobHealthScale = config.getDouble("scaling.mob_health", 0.0);
         this.mobSpawnScale = config.getDouble("scaling.mob_count", 0.0);
         this.mobDamageScale = config.getDouble("scaling.mob_damage", 0.0);
-        this.bonusLoot = new RangedNumber(config.getString("scaling.bonus_loot", "0"));
 
         try {
             Material mat = Material.valueOf(config.getString("icon.material", "STICK"));
@@ -97,10 +94,4 @@ public class DungeonDifficulty {
         return this.mobDamageScale;
     }
 
-    /**
-     * Returns the bonus loot roll range for this difficulty.
-     */
-    public RangedNumber getBonusLoot() {
-        return this.bonusLoot;
-    }
 }

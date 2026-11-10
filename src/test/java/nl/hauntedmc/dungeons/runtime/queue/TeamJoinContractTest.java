@@ -95,7 +95,6 @@ class TeamJoinContractTest {
             sessions.get(offline.player).flushPendingAccessKeyRefund();
             sessions.get(offline.player).flushPendingAccessKeyRefund();
             assertEquals(1, offline.contents[0].getAmount());
-            assertTrue(sessions.get(offline.player).getRewardItems().isEmpty());
         }
     }
 
