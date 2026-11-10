@@ -10,7 +10,6 @@ import nl.hauntedmc.dungeons.runtime.instance.ActiveInstanceRegistry;
 import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueCoordinator;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry;
-import nl.hauntedmc.dungeons.runtime.rewards.LootTableRepository;
 import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
 import nl.hauntedmc.dungeons.util.config.PluginConfigView;
 
@@ -150,8 +149,4 @@ public final class RuntimeContext {
         return runtime().teamService();
     }
 
-    /** Returns the loot table repository. */
-    public static LootTableRepository lootTableRepository() {
-        return runtime().lootTableRepository();
-    }
 }

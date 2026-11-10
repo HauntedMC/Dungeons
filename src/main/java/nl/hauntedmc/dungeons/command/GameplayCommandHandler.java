@@ -57,7 +57,6 @@ final class GameplayCommandHandler implements CommandHandler {
             case "leave" -> this.handleLeaveCommand(sender);
             case "lives" -> this.handleLivesCommand(sender);
             case "stuck" -> this.handleStuckCommand(sender, args);
-            case "rewards" -> this.handleRewardsCommand(sender, args);
             default -> false;
         };
     }
@@ -65,31 +64,6 @@ final class GameplayCommandHandler implements CommandHandler {
     @Override
     public List<String> handleTabComplete(CommandSender sender, String[] args) {
         return args[0].equalsIgnoreCase("play") ? this.completePlayCommand(sender, args) : List.of();
-    }
-
-    /** Runs handle rewards command. */
-    private boolean handleRewardsCommand(CommandSender sender, String[] args) {
-        if (!(sender instanceof Player player)) {
-            return false;
-        }
-
-        if (!CommandUtils.hasPermission(sender, "dungeons.rewards")) {
-            return false;
-        }
-
-        if (args.length != 1) {
-            LangUtils.sendMessage(player, "commands.rewards.usage");
-            return true;
-        }
-
-        DungeonPlayerSession playerSession = this.playerManager.get(player);
-        if (playerSession == null || playerSession.getRewardItems().isEmpty()) {
-            LangUtils.sendMessage(player, "commands.rewards.empty");
-            return true;
-        }
-
-        this.guiService.openGui(player, "rewards");
-        return true;
     }
 
     /** Runs handle leave command. */

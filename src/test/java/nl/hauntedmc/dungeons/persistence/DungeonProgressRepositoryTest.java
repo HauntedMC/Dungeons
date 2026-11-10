@@ -7,26 +7,8 @@ import nl.hauntedmc.dungeons.persistence.DungeonProgressRepository.*;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 
 class DungeonProgressRepositoryTest {
-    @Test void changesRejectAmbiguousOperationsAndHaveDeterministicCooldownOrdering() {
-        var access = new CooldownChange(new CooldownKey(CooldownType.ACCESS, ""), null);
-        var reward = new CooldownChange(new CooldownKey(CooldownType.REWARD, "reward:chest-1"), Instant.EPOCH);
-        var mutable = new ArrayList<>(List.of(reward, access));
-        var first = new Changes(null, true, null, mutable);
-        mutable.clear();
-        assertEquals(new Changes(null, true, null, List.of(access, reward)), first,
-                "Equivalent requests must generate the same retry digest regardless of input order");
-        assertThrows(IllegalArgumentException.class, () -> new Changes(null, false, null, List.of()));
-        assertThrows(IllegalArgumentException.class, () -> new Changes(true, false, null, List.of(access, access)));
-        assertThrows(IllegalArgumentException.class,
-                () -> new Changes(null, false, new Checkpoint("checkpoint", "a".repeat(64)), List.of()));
-        assertThrows(IllegalArgumentException.class, () -> new CooldownKey(CooldownType.ACCESS, "chest"));
-        assertThrows(IllegalArgumentException.class, () -> new CooldownKey(CooldownType.REWARD, "Variable Case"));
-        assertThrows(IllegalArgumentException.class, () -> new CooldownKey(CooldownType.REWARD, "a".repeat(97)));
-    }
 
     @Test void checkpointLimitsUseDatabaseByteCapacityAndRequireAContentFingerprint() {
         String payload = "界".repeat(20_000);

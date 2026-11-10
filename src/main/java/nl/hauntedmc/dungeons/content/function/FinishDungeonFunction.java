@@ -24,7 +24,7 @@ import org.bukkit.entity.Player;
 import java.util.List;
 import java.util.Map;
 
-/**
+    /**
  * Function that marks a run as finished for the targeted players.
  */
 @AutoRegister(id = "dungeons.function.finish_dungeon")
@@ -85,8 +85,6 @@ public class FinishDungeonFunction extends DungeonFunction {
                         player,
                         "instance.play.functions.finish-dungeon",
                         LangUtils.placeholder("dungeon", instance.getDungeon().getDisplayNameComponent()));
-                instance.applyLootCooldowns(player);
-                instance.pushPlayerRewards(player);
                 DungeonDefinition dungeon = instance.getDungeon();
                 if (!dungeon.hasPlayerCompletedDungeon(player)) {
                     dungeon.setPlayerCompletedDungeon(player);

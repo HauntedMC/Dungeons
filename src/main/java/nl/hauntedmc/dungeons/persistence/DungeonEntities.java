@@ -18,7 +18,7 @@ public final class DungeonEntities {
 
     public static Class<?>[] types() {
         return new Class<?>[] {
-            StateDocumentRow.class, PlayerReference.class, Server.class, Definition.class, Deployment.class, Team.class, TeamMember.class, Admission.class, Run.class, Participation.class, Event.class, PlayerProgress.class, Cooldown.class, PlayerGuard.class, KeyDefinition.class, KeyInstance.class, RewardGrant.class, Delivery.class, StaffOperation.class, Maintenance.class, Restriction.class, PlayerStats.class, Stats.class, MetricDefinition.class, ParticipationMetric.class, PlayerMetric.class, KeyReservation.class
+            StateDocumentRow.class, PlayerReference.class, Server.class, Definition.class, Deployment.class, Team.class, TeamMember.class, Admission.class, Run.class, Participation.class, Event.class, PlayerProgress.class, Cooldown.class, PlayerGuard.class, KeyDefinition.class, KeyInstance.class, StaffOperation.class, Maintenance.class, Restriction.class, PlayerStats.class, Stats.class, MetricDefinition.class, ParticipationMetric.class, PlayerMetric.class, KeyReservation.class
         };
     }
 
@@ -508,80 +508,6 @@ public final class DungeonEntities {
         @ManyToOne(fetch = FetchType.LAZY)
         @JoinColumns(value = {@JoinColumn(name = "dungeon_id", referencedColumnName = "dungeon_id", insertable = false, updatable = false), @JoinColumn(name = "key_id", referencedColumnName = "key_id", insertable = false, updatable = false)}, foreignKey = @ForeignKey(name = "fk_dungeon_key_instance_0"))
         protected KeyDefinition reference0;
-    }
-
-    @Entity(name = "DungeonRewardGrant")
-    @Table(name = "dungeon_reward_grant", indexes = {@Index(name = "ix_grant_claim", columnList = "player_id,server_id,status,created_at,grant_id"), @Index(name = "ix_grant_operation", columnList = "operation_id")})
-    public static class RewardGrant {
-        public RewardGrant() {}
-        @Id
-        @Column(name = "grant_id", nullable = false, columnDefinition = "CHAR(36)")
-        protected String grant_id;
-        @Column(name = "player_id", nullable = false, columnDefinition = "BIGINT")
-        protected Long player_id;
-        @Column(name = "server_id", nullable = false, columnDefinition = "VARCHAR(96)")
-        protected String server_id;
-        @Column(name = "dungeon_id", nullable = true, columnDefinition = "CHAR(36)")
-        protected String dungeon_id;
-        @Column(name = "participation_id", nullable = true, columnDefinition = "CHAR(36)")
-        protected String participation_id;
-        @Column(name = "operation_id", nullable = false, columnDefinition = "CHAR(36)")
-        protected String operation_id;
-        @Column(name = "grant_type", nullable = false, columnDefinition = "VARCHAR(24)")
-        protected String grant_type;
-        @Column(name = "payload", nullable = false, columnDefinition = "MEDIUMBLOB")
-        protected byte[] payload;
-        @Column(name = "payload_version", nullable = false, columnDefinition = "INT")
-        protected Integer payload_version;
-        @Column(name = "payload_checksum", nullable = false, columnDefinition = "CHAR(64)")
-        protected String payload_checksum;
-        @Column(name = "status", nullable = false, columnDefinition = "VARCHAR(24)")
-        protected String status;
-        @Column(name = "created_at", nullable = false, columnDefinition = "DATETIME(3)")
-        protected LocalDateTime created_at;
-        @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumns(value = {@JoinColumn(name = "player_id", referencedColumnName = "id", insertable = false, updatable = false)}, foreignKey = @ForeignKey(name = "fk_dungeon_reward_grant_0"))
-        @OnDelete(action = OnDeleteAction.CASCADE)
-        protected PlayerReference reference0;
-        @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumns(value = {@JoinColumn(name = "server_id", referencedColumnName = "server_id", insertable = false, updatable = false)}, foreignKey = @ForeignKey(name = "fk_dungeon_reward_grant_1"))
-        protected Server reference1;
-        @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumns(value = {@JoinColumn(name = "dungeon_id", referencedColumnName = "dungeon_id", insertable = false, updatable = false)}, foreignKey = @ForeignKey(name = "fk_dungeon_reward_grant_2"))
-        protected Definition reference2;
-    }
-
-    @Entity(name = "DungeonDelivery")
-    @Table(name = "dungeon_delivery", indexes = {@Index(name = "ix_delivery_pending", columnList = "player_id,server_id,status")})
-    public static class Delivery {
-        public Delivery() {}
-        @Id
-        @Column(name = "delivery_id", nullable = false, columnDefinition = "CHAR(36)")
-        protected String delivery_id;
-        @Column(name = "grant_id", nullable = false, columnDefinition = "CHAR(36)")
-        protected String grant_id;
-        @Column(name = "player_id", nullable = false, columnDefinition = "BIGINT")
-        protected Long player_id;
-        @Column(name = "server_id", nullable = false, columnDefinition = "VARCHAR(96)")
-        protected String server_id;
-        @Column(name = "status", nullable = false, columnDefinition = "VARCHAR(24)")
-        protected String status;
-        @Column(name = "payload", nullable = false, columnDefinition = "MEDIUMBLOB")
-        protected byte[] payload;
-        @Column(name = "payload_checksum", nullable = false, columnDefinition = "CHAR(64)")
-        protected String payload_checksum;
-        @Column(name = "created_at", nullable = false, columnDefinition = "DATETIME(3)")
-        protected LocalDateTime created_at;
-        @Column(name = "acknowledged_at", nullable = true, columnDefinition = "DATETIME(3)")
-        protected LocalDateTime acknowledged_at;
-        @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumns(value = {@JoinColumn(name = "grant_id", referencedColumnName = "grant_id", insertable = false, updatable = false)}, foreignKey = @ForeignKey(name = "fk_dungeon_delivery_0"))
-        @OnDelete(action = OnDeleteAction.CASCADE)
-        protected RewardGrant reference0;
-        @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumns(value = {@JoinColumn(name = "player_id", referencedColumnName = "id", insertable = false, updatable = false)}, foreignKey = @ForeignKey(name = "fk_dungeon_delivery_1"))
-        @OnDelete(action = OnDeleteAction.CASCADE)
-        protected PlayerReference reference1;
     }
 
     @Entity(name = "DungeonStaffOperation")

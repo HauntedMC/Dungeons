@@ -113,11 +113,9 @@ public final class AcceptancePlugin extends JavaPlugin {
                                 new Scenario(
                                         "native-item-and-graph-persistence",
                                         () -> NativePersistence.run(this)),
+
                                 new Scenario(
-                                        "native-loot-reload-and-item-persistence",
-                                        () -> NativeLoot.run(this)),
-                                new Scenario(
-                                        "native-player-recovery-and-rewards",
+                                        "native-player-recovery",
                                         () -> NativePlayerRecovery.run(this)),
                                 new Scenario(
                                         "copied-world-lifecycle", () -> WorldLifecycle.run(this)),
@@ -165,7 +163,7 @@ public final class AcceptancePlugin extends JavaPlugin {
                 runtime().dungeonCatalog().get("current-config") != null,
                 "Fresh dungeon is absent from the actual catalog");
         require(
-                runtime().functionRegistry().getRegisteredFunctions().size() == 33,
+                runtime().functionRegistry().getRegisteredFunctions().size() == 30,
                 "Unexpected function registry contents");
         require(
                 runtime().triggerRegistry().getRegisteredTriggers().size() == 14,

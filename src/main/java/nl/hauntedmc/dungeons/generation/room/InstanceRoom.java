@@ -3,7 +3,6 @@ package nl.hauntedmc.dungeons.generation.room;
 import nl.hauntedmc.dungeons.content.function.CheckpointFunction;
 import nl.hauntedmc.dungeons.content.function.SpawnMobFunction;
 import nl.hauntedmc.dungeons.content.function.TeleportFunction;
-import nl.hauntedmc.dungeons.content.function.reward.RewardFunction;
 import nl.hauntedmc.dungeons.content.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.generation.structure.StructurePieceBlock;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
@@ -234,10 +233,6 @@ public class InstanceRoom {
                     loc.add(this.offset);
                     newFunction.enable(instance, loc);
                     instance.getFunctions().put(loc, newFunction);
-                    if (newFunction instanceof RewardFunction) {
-                        instance.getRewardFunctions()
-                                .put(newFunction.getLocation(), (RewardFunction) newFunction);
-                    }
 
                     if (newFunction instanceof SpawnMobFunction spawner) {
                         double newYaw = spawner.getYaw() - this.source.getRotation();

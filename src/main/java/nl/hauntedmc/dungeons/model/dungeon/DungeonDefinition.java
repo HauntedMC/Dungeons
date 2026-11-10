@@ -5,11 +5,8 @@ import net.kyori.adventure.text.Component;
 import nl.hauntedmc.dungeons.config.ConfigurationFile;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
 import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
-import nl.hauntedmc.dungeons.content.function.reward.RewardFunction;
-import nl.hauntedmc.dungeons.content.reward.CooldownPeriod;
-import nl.hauntedmc.dungeons.content.reward.CooldownSchedule;
-import nl.hauntedmc.dungeons.content.reward.LootCooldown;
-import nl.hauntedmc.dungeons.content.reward.PlayerLootData;
+import nl.hauntedmc.dungeons.model.cooldown.CooldownPeriod;
+import nl.hauntedmc.dungeons.model.cooldown.CooldownSchedule;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
 import nl.hauntedmc.dungeons.model.instance.EditableInstance;
@@ -109,7 +106,7 @@ public abstract class DungeonDefinition {
     protected boolean cooldownOnLeave;
     protected boolean cooldownOnLoseLives;
     protected boolean cooldownOnStart;
-    protected boolean cooldownsPerReward;
+
     private final DungeonPlayerDataStore playerDataStore;
     private final DungeonAccessKeyService accessKeyService;
     protected List<DungeonInstance> instances;
@@ -320,8 +317,7 @@ public abstract class DungeonDefinition {
         this.cooldownOnLoseLives =
                 this.config.getBoolean("access.cooldown.on_lives_depleted", false);
         this.cooldownOnStart = this.config.getBoolean("access.cooldown.on_start", false);
-        this.cooldownsPerReward =
-                this.config.getBoolean("rewards.loot_cooldown.track_per_reward", true);
+
     }
 
     protected List<Material> loadMaterialList(String path) {
@@ -662,28 +658,6 @@ public abstract class DungeonDefinition {
         return this.playerDataStore.getAccessCooldown(player.getUniqueId());
     }
 
-    public void addLootCooldown(Player player, RewardFunction reward) {
-        this.addLootCooldown(player, reward, this.getNextLootTime());
-    }
-
-    public void addLootCooldown(Player player, RewardFunction reward, Date resetTime) {
-        this.playerDataStore.addLootCooldown(player, reward, resetTime);
-    }
-
-    public boolean hasLootCooldown(Player player, RewardFunction reward) {
-        return this.playerDataStore.hasLootCooldown(player, reward);
-    }
-
-    public Date getLootUnlockTime(Player player, RewardFunction function) {
-        PlayerLootData lootData = this.getPlayerLootData(player);
-        LootCooldown cd = lootData == null ? null : lootData.getLootCooldown(function);
-        return cd == null ? null : cd.getResetTime();
-    }
-
-    public PlayerLootData getPlayerLootData(Player player) {
-        return this.playerDataStore.getRewards(player.getUniqueId());
-    }
-
     public DungeonPlayerDataStore playerDataStore() {
         return this.playerDataStore;
     }
@@ -975,19 +949,6 @@ public abstract class DungeonDefinition {
                 period, cooldownTime, DungeonConfigView.getAccessCooldownResetDay(this.config));
     }
 
-    public Date getNextLootTime() {
-        if (!this.config.getBoolean("rewards.loot_cooldown.enabled", false)) {
-            return new Date();
-        }
-        CooldownPeriod period =
-                CooldownPeriod.valueOf(
-                        this.config.getString("rewards.loot_cooldown.period", "DAILY"));
-        return CooldownSchedule.nextReset(
-                period,
-                this.config.getInt("rewards.loot_cooldown.value", 1),
-                this.config.getInt("rewards.loot_cooldown.reset_day", 1));
-    }
-
     public void setSaveConfig(String path, Object value) {
         this.config.set(path, value);
         this.saveConfig();
@@ -1178,14 +1139,6 @@ public abstract class DungeonDefinition {
 
     public boolean isCooldownOnStart() {
         return this.cooldownOnStart;
-    }
-
-    public boolean isCooldownsPerReward() {
-        return this.cooldownsPerReward;
-    }
-
-    public List<PlayerLootData> getLootCooldowns() {
-        return this.playerDataStore.getLootCooldowns();
     }
 
     public List<DungeonInstance> getInstances() {

@@ -85,22 +85,6 @@ open:
   # bool. Keep one world preloaded for faster joins.
   preload_world: false
 
-rewards:
-  # bool. True = queue rewards and hand them out on completion.
-  deliver_on_finish: false
-  loot_cooldown:
-    # bool. Enable reward loot cooldown tracking.
-    enabled: false
-    # bool. True = track cooldown per reward function. False = share one cooldown for the dungeon.
-    track_per_reward: true
-    # string: TIMER | HOURLY | DAILY | WEEKLY | MONTHLY
-    period: DAILY
-    # int. TIMER = minutes. DAILY/WEEKLY/MONTHLY = reset hour from 0 to 23.
-    # HOURLY resets at the next full hour and ignores this value.
-    value: 0
-    # int. WEEKLY = 1-7. MONTHLY = 1-31.
-    reset_day: 1
-
 access:
   cooldown:
     # bool. Prevent players from starting again until the cooldown expires.
@@ -154,8 +138,6 @@ difficulty:
         mob_count: 1.5
         # decimal. 1.0 = unchanged, 1.25 = +25%.
         mob_damage: 1.25
-        # ranged number string. Example: 1-3, 0, 2+.
-        bonus_loot: "1-3"
 
 generator:
   # Settings for branching dungeon maps; ignored by static and open maps.

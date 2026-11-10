@@ -43,7 +43,6 @@ class PlayerRecoveryLifecycleTest {
             assertEquals(4, state.contents[0].getAmount());
             assertTrue(restarted.recoverPendingState());
             assertEquals(4, state.contents[0].getAmount());
-            assertTrue(restarted.getRewardItems().isEmpty());
         }
     }
 
@@ -126,7 +125,7 @@ class PlayerRecoveryLifecycleTest {
     }
 
     @Test
-    void newRegistryOnJoinRestoresFullPreDungeonSnapshotAndDurableRewards() throws Exception {
+    void newRegistryOnJoinRestoresFullPreDungeonSnapshot() throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
             var player = new PlayerState();
             var session = f.session(player);
@@ -137,7 +136,6 @@ class PlayerRecoveryLifecycleTest {
             f.paper.entities.when(() -> EntityUtils.getMaxHealth(player.player)).thenReturn(20.0);
             player.contents[0] = PlayerState.stack(12);
             f.run.addPlayer(session);
-            session.addReward(PlayerState.stack(4));
             player.inventory.clear();
             player.gameMode = GameMode.ADVENTURE;
             player.exp = 0;
@@ -151,7 +149,6 @@ class PlayerRecoveryLifecycleTest {
             assertEquals(12, player.contents[0].getAmount());
             assertEquals(GameMode.SURVIVAL, player.gameMode);
             assertEquals(.4f, player.exp);
-            assertEquals(4, registry.get(player.player).getRewardItems().getFirst().getAmount());
             player.contents[0].setAmount(3);
             listener.onPlayerJoin(event);
             assertEquals(3, player.contents[0].getAmount());

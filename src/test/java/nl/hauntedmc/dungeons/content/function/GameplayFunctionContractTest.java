@@ -69,28 +69,6 @@ class GameplayFunctionContractTest {
     }
 
     @Test
-    void finishingRecordsCompletionAndTransfersQueuedRewardsOnceWithoutForcingDeparture()
-            throws Exception {
-        try (var f = new RunFixture(directory, new YamlConfiguration())) {
-            var state = new PlayerState();
-            var session = f.session(state);
-            f.run.addPlayer(session);
-            var outsider = new PlayerState();
-            f.session(outsider);
-            var reward = PlayerState.stack(2);
-            f.run.addPlayerReward(state.player, reward);
-            var finish = bind(new FinishDungeonFunction(Map.of("leave", false)), f);
-            finish.runFunction(null, List.of(session));
-            finish.runFunction(null, List.of(session));
-            assertTrue(f.dungeon.hasPlayerCompletedDungeon(state.player));
-            assertFalse(f.dungeon.hasPlayerCompletedDungeon(outsider.player));
-            assertEquals(1, session.getRewardItems().size());
-            assertEquals(reward.getAmount(), session.getRewardItems().getFirst().getAmount());
-            assertSame(f.run, session.getInstance());
-        }
-    }
-
-    @Test
     void teleportResolvesTheRuntimeWorldWithoutMutatingItsTemplateAndIgnoresOtherRunTargets()
             throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
@@ -260,6 +238,23 @@ class GameplayFunctionContractTest {
             assertTrue(second.getFunctionListeners(SetStatusFunction.class).contains(copy));
             copy.disable();
             assertTrue(second.getFunctionListeners(SetStatusFunction.class).isEmpty());
+        }
+    }
+    @Test
+    void finishingRecordsCompletionWithoutForcingDeparture()
+            throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var state = new PlayerState();
+            var session = f.session(state);
+            f.run.addPlayer(session);
+            var outsider = new PlayerState();
+            f.session(outsider);
+            var finish = bind(new FinishDungeonFunction(Map.of("leave", false)), f);
+            finish.runFunction(null, List.of(session));
+            finish.runFunction(null, List.of(session));
+            assertTrue(f.dungeon.hasPlayerCompletedDungeon(state.player));
+            assertFalse(f.dungeon.hasPlayerCompletedDungeon(outsider.player));
+            assertSame(f.run, session.getInstance());
         }
     }
 }

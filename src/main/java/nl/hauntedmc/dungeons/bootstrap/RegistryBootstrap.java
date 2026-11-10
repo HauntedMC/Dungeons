@@ -4,10 +4,6 @@ import nl.hauntedmc.dungeons.config.ConfigSerializableModel;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
 import nl.hauntedmc.dungeons.content.dungeon.OpenDungeon;
 import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
-import nl.hauntedmc.dungeons.content.reward.LootCooldown;
-import nl.hauntedmc.dungeons.content.reward.LootTable;
-import nl.hauntedmc.dungeons.content.reward.LootTableItem;
-import nl.hauntedmc.dungeons.content.reward.PlayerLootData;
 import nl.hauntedmc.dungeons.content.variable.VariableEditMode;
 import nl.hauntedmc.dungeons.generation.layout.BranchingLayout;
 import nl.hauntedmc.dungeons.generation.layout.ConnectorExpansionLayout;
@@ -52,11 +48,7 @@ final class RegistryBootstrap {
      */
     void registerConfigurationSerializers() {
         TypeMetadataSupport.registerConfigurationSerializable(AccessKeyDefinition.class);
-        TypeMetadataSupport.registerConfigurationSerializable(PlayerLootData.class);
-        TypeMetadataSupport.registerConfigurationSerializable(LootCooldown.class);
         TypeMetadataSupport.registerConfigurationSerializable(FunctionTargetType.class);
-        TypeMetadataSupport.registerConfigurationSerializable(LootTable.class);
-        TypeMetadataSupport.registerConfigurationSerializable(LootTableItem.class);
         TypeMetadataSupport.registerConfigurationSerializable(VariableEditMode.class);
     }
 

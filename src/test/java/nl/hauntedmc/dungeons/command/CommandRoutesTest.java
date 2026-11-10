@@ -34,12 +34,4 @@ class CommandRoutesTest {
         }
     }
 
-    @Test
-    void reasonsAndConfirmationTokensRetainTheirExactArguments() {
-        var route = CommandRoutes.ALL.stream().filter(value -> value.syntax().startsWith("player <player> compensate")).findFirst().orElseThrow();
-        var arguments = "player Steve compensate DIAMOND 3 Lost items --confirm receipt".split(" ");
-        assertArrayEquals("compensate Steve DIAMOND 3 Lost items --confirm receipt".split(" "),
-                route.arguments(route.match(arguments)));
-        assertNull(route.match("player Steve compensate DIAMOND 3".split(" ")));
-    }
 }

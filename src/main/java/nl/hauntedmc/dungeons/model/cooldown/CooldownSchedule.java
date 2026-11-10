@@ -1,4 +1,4 @@
-package nl.hauntedmc.dungeons.content.reward;
+package nl.hauntedmc.dungeons.model.cooldown;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -8,7 +8,7 @@ import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Date;
 
-/** Shared next-reset calculation for access and reward cooldowns in the server time zone. */
+/** Shared next-reset calculation for access cooldowns in the server time zone. */
 public final class CooldownSchedule {
     private CooldownSchedule() {}
 

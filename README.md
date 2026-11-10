@@ -5,7 +5,7 @@
 [![Java 25](https://img.shields.io/badge/Java-25-007396?logo=openjdk&logoColor=white)](https://adoptium.net/)
 [![License](https://img.shields.io/github/license/HauntedMC/Dungeons)](LICENSE)
 
-Dungeons is a Paper plugin for creating, editing, and running configurable dungeon content with queueing, teams, triggers, functions, difficulty scaling, and loot table rewards.
+Dungeons is a Paper plugin for creating, editing, and running configurable dungeon content with queueing, teams, triggers, functions, difficulty scaling.
 
 ## Quick Start
 
@@ -57,7 +57,7 @@ Dungeons never invents canonical player rows. Player writes also verify the nume
 on the selected database connection before changing state. First-time backend joins remain allowed so
 DataRegistry can complete its join initialization; commands that require a player session wait for the active identity.
 
-Progression, completion, cooldowns, save points, rewards, recovery journals, unique-key ledgers,
+Progression, completion, cooldowns, save points, recovery journals, unique-key ledgers,
 staff state and audit events use the database. Legacy local gameplay files are ignored; there is
 no import, migration or file fallback. Content definitions, world templates and content backups
 remain files. Back up the database as well as content. Vanilla player saves remain necessary to
@@ -148,7 +148,6 @@ There is no admin dashboard inventory.
 - `/dungeon edit save` saves changes, and `/dungeon edit close` leaves the editor.
 - `/dungeon help map` covers creation, imports, validation, settings, keys, backups and archives.
 - `/dungeon help instance`, `/dungeon help player`, `/dungeon help queue` and `/dungeon help server` cover runtime administration.
-- `/dungeon help loot` covers loot tables, including their content editor.
 
 Legacy world templates containing `level.dat` and `DIM1`/`DIM-1` terrain are copied intact
 for Paper conversion. Current dimension templates keep their flat terrain layout.

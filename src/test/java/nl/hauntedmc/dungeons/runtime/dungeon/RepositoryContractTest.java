@@ -133,59 +133,6 @@ class RepositoryContractTest {
         }
     }
 
-    @Test
-    void unrelatedOrMalformedPlayerFilesCannotPreventLoadingValidDungeonAndPlayerData()
-            throws Exception {
-        try (var fixture = new Fixture(directory)) {
-            Path folder = Files.createDirectory(directory.resolve("healthy"));
-            Files.writeString(folder.resolve("config.yml"), "dungeon:\n  type: static\n");
-            Path players = Files.createDirectory(folder.resolve("players"));
-            var validId = UUID.fromString("00000000-0000-0000-0000-000000000001");
-            var brokenId = UUID.fromString("00000000-0000-0000-0000-000000000002");
-            Files.writeString(players.resolve(validId + ".yml"), "AccessCooldown: 4102444800000\n");
-            Files.writeString(players.resolve("notes.yml"), "operator: notes\n");
-            Files.writeString(players.resolve(brokenId + ".yml"), "RewardsInfo: [unfinished");
-            fixture.scheduler.jobs.getFirst().run();
-            var dungeon = fixture.repository.get("healthy");
-            assertNotNull(dungeon);
-            assertNull(dungeon.playerDataStore().getAccessCooldown(validId));
-            assertNull(dungeon.playerDataStore().getAccessCooldown(brokenId));
-            assertEquals("operator: notes\n", Files.readString(players.resolve("notes.yml")));
-            assertEquals(
-                    "RewardsInfo: [unfinished",
-                    Files.readString(players.resolve(brokenId + ".yml")));
-        }
-    }
-
-    @Test
-    void wrongRewardRecordTypeCannotDiscardOtherPlayerStateOrPreventDungeonLoading()
-            throws Exception {
-        try (var fixture = new Fixture(directory)) {
-            Path folder = Files.createDirectory(directory.resolve("healthy"));
-            Files.writeString(folder.resolve("config.yml"), "dungeon:\n  type: static\n");
-            Path players = Files.createDirectory(folder.resolve("players"));
-            var playerId = UUID.randomUUID();
-            String saved =
-                    "RewardsInfo: invalid-record\nFinished: true\nAccessCooldown: 4102444800000\n";
-            Path data = players.resolve(playerId + ".yml");
-            Files.writeString(data, saved);
-            var mapId = UUID.randomUUID();
-            Files.writeString(folder.resolve("config.yml"), "dungeon:\n  type: static\n  id: " + mapId + "\n");
-            fixture.paper.state.seed("dungeon-progress/" + mapId, playerId.toString(), playerId, saved);
-            fixture.scheduler.jobs.getFirst().run();
-            var dungeon = fixture.repository.get("healthy");
-            assertNotNull(dungeon);
-            var player = mock(Player.class);
-            when(player.getUniqueId()).thenReturn(playerId);
-            assertTrue(dungeon.hasPlayerCompletedDungeon(player));
-            assertEquals(
-                    4102444800000L,
-                    dungeon.playerDataStore().getAccessCooldown(playerId).getTime());
-            assertNull(dungeon.getPlayerLootData(player));
-            assertEquals(saved, Files.readString(data));
-        }
-    }
-
     static final class Fixture implements AutoCloseable {
         final PaperBoundary paper = new PaperBoundary();
         final CapturedScheduler scheduler = new CapturedScheduler(paper);
@@ -214,6 +161,29 @@ class RepositoryContractTest {
             DungeonTypeRegistry.clear();
             originalTypes.forEach((name, type) -> DungeonTypeRegistry.register(type, name));
             paper.close();
+        }
+    }
+    @Test
+    void unrelatedOrMalformedPlayerFilesCannotPreventLoadingValidDungeonAndPlayerData()
+            throws Exception {
+        try (var fixture = new Fixture(directory)) {
+            Path folder = Files.createDirectory(directory.resolve("healthy"));
+            Files.writeString(folder.resolve("config.yml"), "dungeon:\n  type: static\n");
+            Path players = Files.createDirectory(folder.resolve("players"));
+            var validId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+            var brokenId = UUID.fromString("00000000-0000-0000-0000-000000000002");
+            Files.writeString(players.resolve(validId + ".yml"), "AccessCooldown: 4102444800000\n");
+            Files.writeString(players.resolve("notes.yml"), "operator: notes\n");
+            Files.writeString(players.resolve(brokenId + ".yml"), "AccessCooldown: [unfinished");
+            fixture.scheduler.jobs.getFirst().run();
+            var dungeon = fixture.repository.get("healthy");
+            assertNotNull(dungeon);
+            assertNull(dungeon.playerDataStore().getAccessCooldown(validId));
+            assertNull(dungeon.playerDataStore().getAccessCooldown(brokenId));
+            assertEquals("operator: notes\n", Files.readString(players.resolve("notes.yml")));
+            assertEquals(
+                    "AccessCooldown: [unfinished",
+                    Files.readString(players.resolve(brokenId + ".yml")));
         }
     }
 }

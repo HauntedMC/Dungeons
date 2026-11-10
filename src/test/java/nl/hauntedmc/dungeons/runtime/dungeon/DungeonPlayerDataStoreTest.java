@@ -3,30 +3,16 @@ package nl.hauntedmc.dungeons.runtime.dungeon;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import nl.hauntedmc.dungeons.content.reward.PlayerLootData;
 import nl.hauntedmc.dungeons.support.*;
 
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.junit.jupiter.api.Test;
 
 import java.util.*;
 
 class DungeonPlayerDataStoreTest {
-    @Test void malformedDatabaseRecordsCannotBeReplacedByEmptySaves() {
-        for (String payload : List.of("Finished: broken\n", "AccessCooldown: broken\n", "RewardsInfo: broken\n")) {
-            try (var paper = new PaperBoundary()) {
-                var player = new PlayerState().player;
-                UUID dungeon = UUID.randomUUID();
-                String scope = "dungeon-progress/" + dungeon;
-                paper.state.seed(scope, player.getUniqueId().toString(), player.getUniqueId(), payload);
-                var store = new DungeonPlayerDataStore(paper.plugin, dungeon);
-                assertThrows(IllegalStateException.class, () -> store.save(player));
-                assertEquals(payload, paper.state.payload(scope, player.getUniqueId().toString()));
-            }
-        }
-    }
+
     @Test void databaseFailurePreservesDurableDocumentAndRetryRetainsUnknownFields() throws Exception {
         try (var paper = new PaperBoundary()) {
             var player = new PlayerState().player;
@@ -46,26 +32,7 @@ class DungeonPlayerDataStoreTest {
             assertEquals("retained", saved.getString("ExtensionField"));
         }
     }
-    @Test void cooldownIndexesAreIdempotentAndMismatchedOwnersAreProtected() throws Exception {
-        try (var aliases = new StaticMapSnapshot(ConfigurationSerialization.class, "aliases");
-                var paper = new PaperBoundary()) {
-            ConfigurationSerialization.registerClass(PlayerLootData.class);
-            var player = new PlayerState().player;
-            var data = new YamlConfiguration();
-            data.set("RewardsInfo", new PlayerLootData(player));
-            UUID dungeon = UUID.randomUUID();
-            String scope = "dungeon-progress/" + dungeon;
-            paper.state.seed(scope, player.getUniqueId().toString(), player.getUniqueId(), data.saveToString());
-            var store = new DungeonPlayerDataStore(paper.plugin, dungeon);
-            store.loadCooldowns(player.getUniqueId()); store.loadCooldowns(player.getUniqueId());
-            assertEquals(1, store.getLootCooldowns().size());
-            var other = new PlayerState().player;
-            paper.state.seed(scope, other.getUniqueId().toString(), other.getUniqueId(), data.saveToString());
-            var reload = new DungeonPlayerDataStore(paper.plugin, dungeon);
-            assertNull(reload.getRewards(other.getUniqueId()));
-            assertThrows(IllegalStateException.class, () -> reload.save(other));
-        }
-    }
+
     @Test void accessDatesAreDetachedAndWorkerMutationsAreRejected() throws Exception {
         try (var paper = new PaperBoundary()) {
             var id = UUID.randomUUID();
@@ -76,6 +43,19 @@ class DungeonPlayerDataStoreTest {
             assertEquals(expected, store.getAccessCooldown(id).getTime());
             paper.bukkit.when(Bukkit::isPrimaryThread).thenReturn(false);
             assertThrows(IllegalStateException.class, () -> store.setCompleted(id, true));
+        }
+    }
+    @Test void malformedDatabaseRecordsCannotBeReplacedByEmptySaves() {
+        for (String payload : List.of("Finished: broken\n", "AccessCooldown: broken\n")) {
+            try (var paper = new PaperBoundary()) {
+                var player = new PlayerState().player;
+                UUID dungeon = UUID.randomUUID();
+                String scope = "dungeon-progress/" + dungeon;
+                paper.state.seed(scope, player.getUniqueId().toString(), player.getUniqueId(), payload);
+                var store = new DungeonPlayerDataStore(paper.plugin, dungeon);
+                assertThrows(IllegalStateException.class, () -> store.save(player));
+                assertEquals(payload, paper.state.payload(scope, player.getUniqueId().toString()));
+            }
         }
     }
 }

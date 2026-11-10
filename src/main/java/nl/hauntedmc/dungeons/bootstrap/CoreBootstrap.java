@@ -1,7 +1,6 @@
 package nl.hauntedmc.dungeons.bootstrap;
 
 import nl.hauntedmc.dungeons.gui.framework.GuiService;
-import nl.hauntedmc.dungeons.gui.loot.LootTableEditor;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.registry.ConditionRegistry;
 import nl.hauntedmc.dungeons.registry.FunctionRegistry;
@@ -14,7 +13,6 @@ import nl.hauntedmc.dungeons.runtime.player.PlayerDataCheckpoint;
 import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueCoordinator;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry;
-import nl.hauntedmc.dungeons.runtime.rewards.LootTableRepository;
 import nl.hauntedmc.dungeons.runtime.staff.StaffOperations;
 import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
 import nl.hauntedmc.dungeons.util.config.ConfigSyncUtils;
@@ -97,9 +95,6 @@ final class CoreBootstrap {
                 new TriggerRegistry(
                         plugin, activeInstanceManager, this.runtime.elementEventHandler()));
         this.runtime.setConditionRegistry(new ConditionRegistry(plugin));
-        this.runtime.setLootTableRepository(new LootTableRepository(plugin));
-        this.runtime.setLootTableEditor(
-                new LootTableEditor(this.runtime.lootTableRepository(), this.runtime.guiService()));
     }
 
     /**

@@ -85,7 +85,7 @@ class LocalizedDeliveryTest {
     }
 
     @Test
-    void componentNoticesPreserveLiteralPrefixTextAndInteractiveRewardsUseTheRootCommand()
+    void componentNoticesPreserveLiteralPrefixTextAndInteractiveMessagesUseTheRootCommand()
             throws Exception {
         try (var fixture = new RunFixture(directory, new YamlConfiguration())) {
             LangUtils.initialize();
@@ -99,12 +99,12 @@ class LocalizedDeliveryTest {
             MessageUtils.sendClickableCommand(
                     state.player,
                     LangUtils.component(
-                            "instance.play.rewards.unclaimed-rewards", state.player, true),
-                    "dungeon rewards");
+                            "commands.join.usage", state.player, true),
+                    "dungeon join");
             var capture = ArgumentCaptor.forClass(Component.class);
             verify(state.player).sendMessage(capture.capture());
             assertEquals(
-                    ClickEvent.runCommand("/dungeon rewards"), capture.getValue().clickEvent());
+                    ClickEvent.runCommand("/dungeon join"), capture.getValue().clickEvent());
         } finally {
             LangUtils.clear();
         }

@@ -19,9 +19,6 @@ permissions:
   dungeons.staff.backup:
     description: Dungeon staff capability - backup
     default: false
-  dungeons.staff.compensate:
-    description: Dungeon staff capability - compensate
-    default: false
   dungeons.staff.cooldown:
     description: Dungeon staff capability - cooldown
     default: false
@@ -42,9 +39,6 @@ permissions:
     default: false
   dungeons.staff.lives:
     description: Dungeon staff capability - lives
-    default: false
-  dungeons.staff.loot:
-    description: Dungeon staff capability - loot
     default: false
   dungeons.staff.maintenance:
     description: Dungeon staff capability - maintenance
@@ -112,7 +106,6 @@ permissions:
       dungeons.staff.restrict: true
       dungeons.staff.cooldown: true
       dungeons.staff.progression: true
-      dungeons.staff.compensate: true
       dungeons.staff.lives: true
       dungeons.staff.timer: true
       dungeons.staff.edit: true
@@ -122,14 +115,12 @@ permissions:
       dungeons.staff.maintenance: true
       dungeons.staff.backup: true
       dungeons.staff.restore: true
-      dungeons.staff.loot: true
       dungeons.staff.diagnostics: true
   dungeons.role.operator:
     default: op
     children:
       dungeons.core: true
       dungeons.staff.backup: true
-      dungeons.staff.compensate: true
       dungeons.staff.cooldown: true
       dungeons.staff.delete: true
       dungeons.staff.diagnostics: true
@@ -137,7 +128,6 @@ permissions:
       dungeons.staff.inspect: true
       dungeons.staff.keys: true
       dungeons.staff.lives: true
-      dungeons.staff.loot: true
       dungeons.staff.maintenance: true
       dungeons.staff.observe: true
       dungeons.staff.progression: true

@@ -210,21 +210,21 @@ class StaffPolicyContractTest {
                     () ->
                             SettingValidation.validate(
                                     f.run.dungeon, "access.cooldown.period", "DAILY"));
-            config.set("rewards.loot_cooldown.reset_day", 31);
+            config.set("access.cooldown.reset_day", 31);
             assertThrows(
                     IllegalArgumentException.class,
                     () ->
                             SettingValidation.validate(
-                                    f.run.dungeon, "rewards.loot_cooldown.period", "WEEKLY"));
+                                    f.run.dungeon, "access.cooldown.period", "WEEKLY"));
             assertDoesNotThrow(
                     () ->
                             SettingValidation.validate(
-                                    f.run.dungeon, "rewards.loot_cooldown.period", "MONTHLY"));
-            config.set("rewards.loot_cooldown.reset_day", 7);
+                                    f.run.dungeon, "access.cooldown.period", "MONTHLY"));
+            config.set("access.cooldown.reset_day", 7);
             assertDoesNotThrow(
                     () ->
                             SettingValidation.validate(
-                                    f.run.dungeon, "rewards.loot_cooldown.period", "WEEKLY"));
+                                    f.run.dungeon, "access.cooldown.period", "WEEKLY"));
         }
     }
 

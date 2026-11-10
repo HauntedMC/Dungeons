@@ -32,7 +32,6 @@ final class MenuBootstrap {
         EditorMenus.initializeGateTriggerMenus();
         EditorMenus.initializeItemSelectTriggerMenu();
         EditorMenus.initializeItemSelectFunctionMenu();
-        PlayMenus.initializeRewardMenu();
         PlayMenus.initializeRevivalMenu();
         EditorMenus.initializeCompositeFunctionMenus();
         RoomMenus.initializeConnectorWhitelistMenu();

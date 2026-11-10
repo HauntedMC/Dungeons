@@ -144,13 +144,13 @@ public final class DungeonPlayerSession {
         }
     }
 
-    public boolean addStaffRewards(UUID operation, ItemStack... items) {
-        this.requireActiveSession();
-        return this.recoveryJournal.addStaffRewards(operation, items);
-    }
-
     public boolean hasUnresolvedRecovery() {
         return this.recoveryJournal.hasPendingTransaction();
+    }
+
+    public boolean addStaffRefunds(UUID operation, ItemStack... items) {
+        this.requireActiveSession();
+        return this.recoveryJournal.addStaffRefunds(operation, items);
     }
 
     public String recoveryStatus() {
@@ -159,9 +159,7 @@ public final class DungeonPlayerSession {
                 + ", pending transaction="
                 + this.recoveryJournal.hasPendingTransaction()
                 + ", key escrow="
-                + this.recoveryJournal.hasKeyReservation()
-                + ", claimable stacks="
-                + this.recoveryJournal.rewards().size();
+                + this.recoveryJournal.hasKeyReservation();
     }
 
     public boolean isExpired() {
@@ -185,7 +183,7 @@ public final class DungeonPlayerSession {
         this.recoveryJournal.checkpoint();
         this.playerData.set("CompletedDungeons", new ArrayList<>(this.completedDungeons));
         this.playerDocument.save(this.playerData.saveToString());
-        // Recovery and rewards remain in the journal; none are acknowledged or delivered here.
+        // Recovery remains in the journal; none are acknowledged or delivered here.
         this.expired = true;
         this.clearRecoveredState();
         this.reloadQueued = false;
@@ -378,27 +376,6 @@ public final class DungeonPlayerSession {
         this.ensureEditModeTools();
         this.player.updateInventory();
         this.sendEditorStatusActionBar();
-    }
-
-    public List<ItemStack> getRewardItems() {
-        return this.expired ? List.of() : this.recoveryJournal.rewards();
-    }
-
-    public void addReward(ItemStack... items) {
-        this.requireActiveSession();
-        this.recoveryJournal.addRewards(items);
-    }
-
-    /** Claims into available inventory space; overflow remains durable and claimable. */
-    public boolean claimReward(ItemStack item) {
-        if (this.expired) return false;
-        if (this.instance != null) return false;
-        try {
-            return this.recoveryJournal.claim(this.player, item);
-        } catch (RuntimeException failure) {
-            this.blockUnsafePlayerState(failure);
-            return false;
-        }
     }
 
     /** Persists the complete pre-entry state before membership or entry commands can change it. */

@@ -49,23 +49,13 @@ public final class StaffCommandHandler implements CommandHandler {
                             "cooldown",
                             "cooldown <name|uuid> <dungeon> <clear|duration> <reason>"),
                     new Syntax(
-                            "loot-cooldown",
-                            "cooldown",
-                            "loot-cooldown <name|uuid> <dungeon> clear <reason>"),
-                    new Syntax(
                             "completion",
                             "progression",
                             "completion <name|uuid> <dungeon> <true|false> <reason>"),
                     new Syntax(
-                            "compensate",
-                            "compensate",
-                            "compensate <name|uuid> <material> <amount> <reason>"),
-                    new Syntax(
                             "restrict",
                             "restrict",
                             "restrict <name|uuid> <dungeon|all> <duration|forever|clear> <reason>"),
-                    new Syntax("loot", "loot", "loot [table]"),
-                    new Syntax("loot-remove", "loot", "loot-remove <table> <reason>"),
                     new Syntax("keys", "keys", "keys <dungeon> [give <player> <key-id> <reason>]"),
                     new Syntax("queues", "inspect", "queues"),
                     new Syntax(
@@ -222,8 +212,8 @@ public final class StaffCommandHandler implements CommandHandler {
             }
             case "instance" -> instance(actor, a, input, token);
             case "player" -> player(actor, a, input, token);
-            case "cooldown", "loot-cooldown", "completion" -> correct(actor, a, input, token);
-            case "compensate" -> compensate(actor, a, input, token);
+            case "cooldown", "completion" -> correct(actor, a, input, token);
+
             case "restrict" -> {
                 need(a, 5, "restrict <player> <dungeon|all> <duration|forever|clear> <reason>");
                 UUID id = playerId(a[1]);
@@ -237,49 +227,7 @@ public final class StaffCommandHandler implements CommandHandler {
                 ops.restrict(actor, id, a[2], until, reason(a, 4));
                 tell(actor, "Entry restriction updated for " + id);
             }
-            case "loot" -> {
-                StaffPermissions.require(actor, "loot", null);
-                if (a.length == 1) {
-                    runtime.lootTableRepository()
-                            .getTables()
-                            .forEach(table -> tell(actor, table.getNamespace()));
-                } else if (actor instanceof Player p) {
-                    var table = runtime.lootTableRepository().get(a[1]);
-                    if (table == null || !runtime.lootTableEditor().open(table, p))
-                        throw new IllegalArgumentException(
-                                "Table unavailable or already being edited");
-                } else throw new IllegalArgumentException("Item editing requires a player");
-            }
-            case "loot-remove" -> {
-                need(a, 3, "loot-remove <table> <reason>");
-                StaffPermissions.require(actor, "loot", null);
-                var table = runtime.lootTableRepository().get(a[1]);
-                if (table == null) throw new IllegalArgumentException("Table not found");
-                var references = new ArrayList<String>();
-                for (var dungeon : sortedDungeons())
-                    ContentReferences.dungeon(
-                            dungeon,
-                            value -> {
-                                if (value
-                                                instanceof
-                                                nl.hauntedmc.dungeons.content.function.reward
-                                                                .LootTableRewardsFunction
-                                                        reward
-                                        && reward.getLootTableName().equals(a[1]))
-                                    references.add(dungeon.getWorldName());
-                            });
-                if (!references.isEmpty())
-                    throw new IllegalArgumentException(
-                            "Referenced by dungeons: " + new LinkedHashSet<>(references));
-                String removalReason = reason(a, 2);
-                if (!confirmed(
-                        actor, input, token, "loot-remove", a[1], table.serialize().toString()))
-                    return;
-                if (!runtime.lootTableRepository().remove(a[1]))
-                    throw new IllegalStateException("Loot save failed; table retained");
-                ops.audit(actor, "loot-remove", a[1], removalReason, "removed");
-                tell(actor, "Loot table removed");
-            }
+
             case "keys" -> {
                 need(a, 2, "keys <dungeon> [give <player> <key-id> <reason>]");
                 var dungeon = dungeon(a[1]);
@@ -310,14 +258,14 @@ public final class StaffCommandHandler implements CommandHandler {
                     ItemStack issued = dungeon.issueAccessKey(key);
                     if (issued == null)
                         throw new IllegalStateException("Key ledger could not be saved");
-                    StaffPlayerRecords.compensate(runtime, player, UUID.fromString(token), issued);
+                    StaffPlayerRecords.deliverKey(runtime, player, UUID.fromString(token), issued);
                     ops.audit(
                             actor,
                             "key-give",
                             player.toString(),
                             issuanceReason,
                             "issued for " + a[1]);
-                    tell(actor, "Key queued for durable delivery through /dungeon rewards");
+                    tell(actor, "Key queued for automatic delivery");
                 }
             }
             case "queues" -> {
@@ -427,10 +375,6 @@ public final class StaffCommandHandler implements CommandHandler {
             case "problems" -> {
                 StaffPermissions.require(actor, "diagnostics", null);
                 var problems = new ArrayList<>(ops.problems());
-                if (!runtime.lootTableRepository().isWritable())
-                    problems.add(
-                            "Loot editing is blocked after a failed load; repair loottables.yml and"
-                                    + " reload configuration");
                 runtime.dungeonCatalog()
                         .loadFailures()
                         .forEach((name, problem) -> problems.add(name + ": " + problem));
@@ -628,7 +572,7 @@ public final class StaffCommandHandler implements CommandHandler {
                 tell(
                         actor,
                         outcome
-                                + "; earned rewards retained. Inspect pending recovery before"
+                                + "; Inspect pending recovery before"
                                 + " retrying.");
             }
             case "extend" -> {
@@ -777,8 +721,7 @@ public final class StaffCommandHandler implements CommandHandler {
         var before = dungeon.playerDataStore().inspect(id);
         if (a[0].equals("completion") && !List.of("true", "false").contains(a[3]))
             throw new IllegalArgumentException("Use true or false");
-        if (a[0].equals("loot-cooldown") && !a[3].equals("clear"))
-            throw new IllegalArgumentException("Use clear for reward cooldowns");
+
         Long until =
                 a[0].equals("cooldown") && !a[3].equals("clear")
                         ? Math.addExact(System.currentTimeMillis(), duration(a[3]))
@@ -792,7 +735,7 @@ public final class StaffCommandHandler implements CommandHandler {
                             switch (a[0]) {
                                 case "completion" ->
                                         record.set("Finished", Boolean.parseBoolean(a[3]));
-                                case "loot-cooldown" -> record.set("RewardsInfo", null);
+
                                 case "cooldown" -> record.set("AccessCooldown", until);
                                 default -> throw new IllegalArgumentException("Unknown correction");
                             }
@@ -807,35 +750,6 @@ public final class StaffCommandHandler implements CommandHandler {
         if (online != null && !actor.equals(online))
             tell(online, "Staff corrected " + a[0] + " for " + a[2] + ": " + reason);
         tell(actor, "Correction persisted");
-    }
-
-    private void compensate(CommandSender actor, String[] a, List<String> input, String token) {
-        need(a, 5, "compensate <player> <material> <amount> <reason>");
-        StaffPermissions.require(actor, "compensate", null);
-        UUID id = playerId(a[1]);
-        Material material = Material.matchMaterial(a[2]);
-        int amount = Integer.parseInt(a[3]);
-        if (material == null
-                || !material.isItem()
-                || material.isAir()
-                || amount < 1
-                || amount > material.getMaxStackSize())
-            throw new IllegalArgumentException(
-                    "Choose an item material and one valid stack amount");
-        String reason = reason(a, 4);
-        if (!confirmed(actor, input, token, "compensate", id.toString(), a[2] + "/" + amount))
-            return;
-        UUID receipt = UUID.fromString(token);
-        boolean added =
-                StaffPlayerRecords.compensate(
-                        runtime, id, receipt, new ItemStack(material, amount));
-        ops.audit(
-                actor,
-                "compensate",
-                id.toString(),
-                reason,
-                receipt + " " + (added ? "queued " + amount + " " + material : "already applied"));
-        tell(actor, "Compensation is durably claimable through /dungeon rewards");
     }
 
     private boolean confirmed(
@@ -897,13 +811,7 @@ public final class StaffCommandHandler implements CommandHandler {
                             && function.getTrigger() == null
                             && function.getParentFunction() == null)
                         result.add("WARNING: Function has no trigger: " + function.getNamespace());
-                    if (value
-                                    instanceof
-                                    nl.hauntedmc.dungeons.content.function.reward
-                                                    .LootTableRewardsFunction
-                                            reward
-                            && runtime.lootTableRepository().get(reward.getLootTableName()) == null)
-                        result.add("ERROR: Missing loot table: " + reward.getLootTableName());
+
                 });
         for (String command : d.getJoinCommands()) {
             String label = command.strip().replaceFirst("^/+", "").split("\\s+", 2)[0];
@@ -1110,9 +1018,9 @@ public final class StaffCommandHandler implements CommandHandler {
                                         .toList();
                         case "player",
                                 "cooldown",
-                                "loot-cooldown",
+
                                 "completion",
-                                "compensate",
+
                                 "restrict" ->
                                 Bukkit.getOnlinePlayers().stream().map(Player::getName).toList();
                         case "operation", "cancel" ->

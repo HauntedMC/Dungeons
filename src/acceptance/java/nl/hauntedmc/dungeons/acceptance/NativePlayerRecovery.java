@@ -119,7 +119,6 @@ final class NativePlayerRecovery {
                 first.reserveAccessKey("native-refund", new ItemStack(Material.TRIPWIRE_HOOK, 2)),
                 "Could not reserve native refund fixture");
         require(first.prepareRecovery(), "Native recovery record could not be prepared");
-        first.addReward(new ItemStack(Material.EMERALD, 5));
         inventory.clear();
         values.put("GameMode", GameMode.CREATIVE);
         values.put("Exp", 0f);
@@ -183,30 +182,11 @@ final class NativePlayerRecovery {
                                         player.getGameMode() == GameMode.SURVIVAL
                                                 && player.getExp() == .6f,
                                         "Native recovery lost game mode or XP");
-                                require(
-                                        restarted.getRewardItems().size() == 1,
-                                        "Native reward did not survive session recreation");
-                                require(
-                                        restarted.claimReward(
-                                                restarted.getRewardItems().getFirst()),
-                                        "Native reward delivery failed");
-                                require(
-                                        Arrays.stream(inventory.getContents())
-                                                        .filter(Objects::nonNull)
-                                                        .filter(
-                                                                stack ->
-                                                                        stack.getType()
-                                                                                == Material.EMERALD)
-                                                        .mapToInt(ItemStack::getAmount)
-                                                        .sum()
-                                                == 5,
-                                        "Native reward delivery lost items");
                                 var again =
                                         new DungeonPlayerSession(
                                                 test.runtime().environment().plugin(), player);
                                 require(
-                                        again.recoverPendingState()
-                                                && again.getRewardItems().isEmpty(),
+                                        again.recoverPendingState(),
                                         "Native delivery was not acknowledged");
                                 require(
                                         Arrays.stream(inventory.getContents())
@@ -231,7 +211,6 @@ final class NativePlayerRecovery {
                                     again = new DungeonPlayerSession(test.runtime().environment().plugin(), player);
                                     require(again.recoverPendingState(), "Reconnect failed after a completed departure");
                                 }
-                                again.addReward(new ItemStack(Material.AMETHYST_SHARD, 7));
                                 try {
                                     Files.writeString(test.getDataFolder().toPath().resolve("database-player.txt"), id.toString());
                                 } catch (IOException failure) { throw new CompletionException(failure); }

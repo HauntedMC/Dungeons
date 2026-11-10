@@ -5,8 +5,6 @@ import io.papermc.paper.event.player.AsyncChatEvent;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
 import nl.hauntedmc.dungeons.content.function.HologramFunction;
 import nl.hauntedmc.dungeons.content.instance.edit.BranchingEditableInstance;
-import nl.hauntedmc.dungeons.event.PlayerFinishDungeonEvent;
-import nl.hauntedmc.dungeons.event.PlayerLeaveDungeonEvent;
 import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
 import nl.hauntedmc.dungeons.generation.room.Connector;
 import nl.hauntedmc.dungeons.generation.room.WhitelistEntry;
@@ -28,7 +26,6 @@ import nl.hauntedmc.dungeons.util.entity.ParticleUtils;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.text.ComponentUtils;
-import nl.hauntedmc.dungeons.util.text.MessageUtils;
 import nl.hauntedmc.dungeons.util.world.LocationUtils;
 import nl.hauntedmc.dungeons.util.world.WorldUtils;
 
@@ -426,32 +423,6 @@ public class DungeonListener implements Listener {
                 if (event.getBlock().getType() != Material.AIR) {
                     event.setCancelled(true);
                 }
-            }
-        }
-    }
-
-    /** Reminds players to claim pending rewards after a successful run. */
-    @EventHandler
-    public void onFinishDungeon(PlayerFinishDungeonEvent event) {
-        DungeonPlayerSession playerSession = event.getPlayerSession();
-        if (!playerSession.getRewardItems().isEmpty()) {
-            MessageUtils.sendClickableCommand(
-                    playerSession.getPlayer(),
-                    LangUtils.component("instance.play.rewards.unclaimed-rewards", playerSession.getPlayer(), true),
-                    "dungeon rewards");
-        }
-    }
-
-    /** Reminds players to claim pending rewards when they leave a run early. */
-    @EventHandler
-    public void onLeaveDungeon(PlayerLeaveDungeonEvent event) {
-        if (!event.isCancelled()) {
-            DungeonPlayerSession playerSession = event.getPlayerSession();
-            if (!playerSession.getRewardItems().isEmpty()) {
-                MessageUtils.sendClickableCommand(
-                        playerSession.getPlayer(),
-                        LangUtils.component("instance.play.rewards.unclaimed-rewards", playerSession.getPlayer(), true),
-                        "dungeon rewards");
             }
         }
     }

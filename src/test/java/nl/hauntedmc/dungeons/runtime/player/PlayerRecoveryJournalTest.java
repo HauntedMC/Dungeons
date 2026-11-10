@@ -37,7 +37,7 @@ class PlayerRecoveryJournalTest {
             restarted.deliverRefunds(reconnected.player);
             assertEquals(1, reconnected.contents[0].getAmount());
             assertFalse(restarted.hasKeyReservation());
-            assertTrue(restarted.rewards().isEmpty());
+            assertTrue(restarted.refunds().isEmpty());
             new PlayerRecoveryJournal(TestStateStore.player(path)).recover(reconnected.player);
             assertEquals(1, reconnected.contents[0].getAmount());
         }
@@ -62,7 +62,7 @@ class PlayerRecoveryJournalTest {
             consumed.recover(player.player);
             consumed.deliverRefunds(player.player);
             assertNull(player.contents[0]);
-            assertTrue(consumed.rewards().isEmpty());
+            assertTrue(consumed.refunds().isEmpty());
         }
     }
 
@@ -102,7 +102,7 @@ class PlayerRecoveryJournalTest {
     }
 
     @Test
-    void modernPlayerInventoryCanEnterRecoverAndDeliverRewardsWithoutLosingExtraEquipment() {
+    void modernPlayerInventoryCanEnterRecoverAndDeliverRefundsWithoutLosingExtraEquipment() {
         try (var paper = new PaperBoundary()) {
             var player = new PlayerState();
             player.contents = Arrays.copyOf(player.contents, 43);
@@ -120,34 +120,34 @@ class PlayerRecoveryJournalTest {
             assertTrue(restarted.recover(player.player));
             assertEquals(2, player.contents[41].getAmount());
             assertEquals(3, player.contents[42].getAmount());
-            var reward = PlayerState.stack(7);
-            restarted.addRewards(reward);
-            assertTrue(restarted.claim(player.player, reward));
+            var refund = PlayerState.stack(7);
+            restarted.addRefunds(refund);
+            assertTrue(restarted.deliverRefund(player.player, refund));
             assertEquals(7, player.contents[0].getAmount());
             assertEquals(3, player.contents[42].getAmount());
-            assertTrue(new PlayerRecoveryJournal(TestStateStore.player(path)).rewards().isEmpty());
+            assertTrue(new PlayerRecoveryJournal(TestStateStore.player(path)).refunds().isEmpty());
         }
     }
 
     @Test
-    void deadOrOfflineClaimsLeaveRewardsDurableUntilThePlayerCanReceiveThem() {
+    void deadOrOfflineClaimsLeaveRefundsDurableUntilThePlayerCanReceiveThem() {
         try (var paper = new PaperBoundary()) {
             var player = new PlayerState();
             var path = directory.resolve("recovery.yml");
             var journal = new PlayerRecoveryJournal(TestStateStore.player(path));
-            var reward = PlayerState.stack(7);
-            journal.addRewards(reward);
+            var refund = PlayerState.stack(7);
+            journal.addRefunds(refund);
             when(player.player.isOnline()).thenReturn(false);
-            assertFalse(journal.claim(player.player, reward));
+            assertFalse(journal.deliverRefund(player.player, refund));
             when(player.player.isOnline()).thenReturn(true);
             when(player.player.isDead()).thenReturn(true);
-            assertFalse(journal.claim(player.player, reward));
+            assertFalse(journal.deliverRefund(player.player, refund));
             verify(player.player, never()).saveData();
             assertNull(player.contents[0]);
-            assertEquals(7, new PlayerRecoveryJournal(TestStateStore.player(path)).rewards().getFirst().getAmount());
+            assertEquals(7, new PlayerRecoveryJournal(TestStateStore.player(path)).refunds().getFirst().getAmount());
             when(player.player.isDead()).thenReturn(false);
-            assertTrue(journal.claim(player.player, reward));
-            assertTrue(new PlayerRecoveryJournal(TestStateStore.player(path)).rewards().isEmpty());
+            assertTrue(journal.deliverRefund(player.player, refund));
+            assertTrue(new PlayerRecoveryJournal(TestStateStore.player(path)).refunds().isEmpty());
             assertEquals(7, player.contents[0].getAmount());
         }
     }
@@ -246,42 +246,42 @@ class PlayerRecoveryJournalTest {
     }
 
     @Test
-    void unclaimedRewardsAndPartialDeliverySurviveRestartAndStaleClicks() {
+    void unclaimedRefundsAndPartialDeliverySurviveRestartAndStaleClicks() {
         try (var paper = new PaperBoundary()) {
             var player = new PlayerState();
             var path = directory.resolve("recovery.yml");
             var journal = new PlayerRecoveryJournal(TestStateStore.player(path));
-            journal.addRewards(PlayerState.stack(20));
+            journal.addRefunds(PlayerState.stack(20));
             for (int slot = 0; slot < 36; slot++) player.contents[slot] = PlayerState.stack(64);
             player.contents[0].setAmount(60);
             var restarted = new PlayerRecoveryJournal(TestStateStore.player(path));
-            assertTrue(restarted.claim(player.player, restarted.rewards().getFirst()));
+            assertTrue(restarted.deliverRefund(player.player, restarted.refunds().getFirst()));
             assertEquals(64, player.contents[0].getAmount());
-            assertEquals(16, new PlayerRecoveryJournal(TestStateStore.player(path)).rewards().getFirst().getAmount());
-            assertFalse(restarted.claim(player.player, PlayerState.stack(20)));
-            assertFalse(restarted.claim(player.player, restarted.rewards().getFirst()));
+            assertEquals(16, new PlayerRecoveryJournal(TestStateStore.player(path)).refunds().getFirst().getAmount());
+            assertFalse(restarted.deliverRefund(player.player, PlayerState.stack(20)));
+            assertFalse(restarted.deliverRefund(player.player, restarted.refunds().getFirst()));
             player.contents[1] = null;
-            assertTrue(restarted.claim(player.player, restarted.rewards().getFirst()));
-            assertTrue(new PlayerRecoveryJournal(TestStateStore.player(path)).rewards().isEmpty());
+            assertTrue(restarted.deliverRefund(player.player, restarted.refunds().getFirst()));
+            assertTrue(new PlayerRecoveryJournal(TestStateStore.player(path)).refunds().isEmpty());
             assertEquals(16, player.contents[1].getAmount());
         }
     }
 
     @Test
-    void crashBeforePlayerSaveReplaysDeliveryInsteadOfLosingReward() {
+    void crashBeforePlayerSaveReplaysDeliveryInsteadOfLosingRefund() {
         try (var paper = new PaperBoundary()) {
             var path = directory.resolve("recovery.yml");
             var player = new PlayerState();
             var journal = new PlayerRecoveryJournal(TestStateStore.player(path));
-            journal.addRewards(PlayerState.stack(5));
+            journal.addRefunds(PlayerState.stack(5));
             doThrow(new IllegalStateException("save failed")).when(player.player).saveData();
             assertThrows(
                     IllegalStateException.class,
-                    () -> journal.claim(player.player, journal.rewards().getFirst()));
+                    () -> journal.deliverRefund(player.player, journal.refunds().getFirst()));
             var reconnect = new PlayerState();
             new PlayerRecoveryJournal(TestStateStore.player(path)).recover(reconnect.player);
             assertEquals(5, reconnect.contents[0].getAmount());
-            assertTrue(new PlayerRecoveryJournal(TestStateStore.player(path)).rewards().isEmpty());
+            assertTrue(new PlayerRecoveryJournal(TestStateStore.player(path)).refunds().isEmpty());
             new PlayerRecoveryJournal(TestStateStore.player(path)).recover(reconnect.player);
             assertEquals(5, reconnect.contents[0].getAmount());
         }
@@ -294,7 +294,7 @@ class PlayerRecoveryJournalTest {
             var path = directory.resolve("recovery.yml");
             var player = new PlayerState();
             var journal = new PlayerRecoveryJournal(TestStateStore.player(path));
-            journal.addRewards(PlayerState.stack(5));
+            journal.addRefunds(PlayerState.stack(5));
             byte[][] durableJournal = {null};
             doAnswer(
                             call -> {
@@ -305,14 +305,14 @@ class PlayerRecoveryJournalTest {
                     .saveData();
             assertThrows(
                     RuntimeException.class,
-                    () -> journal.claim(player.player, journal.rewards().getFirst()));
+                    () -> journal.deliverRefund(player.player, journal.refunds().getFirst()));
             paper.state.failWrites = false;
             // Simulate saved marker loaded on reconnect. Subsequent gameplay must not be
             // overwritten.
             player.contents[0].setAmount(2);
             new PlayerRecoveryJournal(TestStateStore.player(path)).recover(player.player);
             assertEquals(2, player.contents[0].getAmount());
-            assertTrue(new PlayerRecoveryJournal(TestStateStore.player(path)).rewards().isEmpty());
+            assertTrue(new PlayerRecoveryJournal(TestStateStore.player(path)).refunds().isEmpty());
             verify(player.player, times(1)).saveData();
         }
     }

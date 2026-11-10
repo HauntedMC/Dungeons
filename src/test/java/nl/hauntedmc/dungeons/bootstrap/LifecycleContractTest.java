@@ -106,46 +106,6 @@ class LifecycleContractTest {
     }
 
     @Test
-    void shutdownSettlesOfflineRunMembersBeforeDisposalAndReleasesDurableSessions()
-            throws Exception {
-        try (var f = new RunFixture(directory, new YamlConfiguration())) {
-            var catalog = mock(DungeonRepository.class);
-            f.paper.runtime.setDungeonCatalog(catalog);
-            f.paper.runtime.setQueueRegistry(mock(DungeonQueueRegistry.class));
-            f.paper.runtime.setTeamService(mock(DungeonTeamService.class));
-            when(catalog.getLoadedDungeons()).thenReturn(List.of(f.dungeon));
-            var online = new PlayerState();
-            var offline = new PlayerState();
-            offline.contents[0] = PlayerState.stack(12);
-            var present = f.session(online);
-            var absent = f.session(offline);
-            f.run.addPlayer(present);
-            f.run.addPlayer(absent);
-            absent.addReward(PlayerState.stack(3));
-            offline.online = false;
-            f.dungeon.getInstances().add(f.run);
-            f.paper.runtime.activeInstances().registerActiveInstance(f.run);
-            f.paper.bukkit.when(Bukkit::getOnlinePlayers).thenReturn(List.of(online.player));
-            f.paper.bukkit.when(() -> Bukkit.unloadWorld(f.world, false)).thenReturn(true);
-            new LifecycleCoordinator(f.paper.runtime, mock(CoreBootstrap.class)).shutdown();
-            assertTrue(present.isExpired());
-            assertTrue(absent.isExpired());
-            assertEquals(0, f.paper.runtime.playerSessions().size());
-            assertNull(f.run.getInstanceWorld());
-            f.paper
-                    .bukkit
-                    .when(() -> Bukkit.getWorld(offline.originWorld.getUID()))
-                    .thenReturn(offline.originWorld);
-            f.paper.bukkit.when(() -> Bukkit.getWorld("overworld")).thenReturn(offline.originWorld);
-            offline.online = true;
-            var recreated = new PlayerSessionRegistry(f.paper.plugin).put(offline.player);
-            assertTrue(recreated.recoverPendingState());
-            assertEquals(12, offline.contents[0].getAmount());
-            assertEquals(3, recreated.getRewardItems().getFirst().getAmount());
-        }
-    }
-
-    @Test
     void shutdownFailureStillFlushesAlreadyCapturedConfigurationSnapshots() throws Exception {
         try (var paper = new PaperBoundary()) {
             var scheduler = new CapturedScheduler(paper);
@@ -319,6 +279,43 @@ class LifecycleContractTest {
             verify(teams).clearQueuedStarts("crypt");
             verify(catalog, never()).remove(f.dungeon);
             verify(catalog).loadDungeon(f.dungeon.getFolder());
+        }
+    }
+    @Test
+    void shutdownSettlesOfflineRunMembersBeforeDisposalAndReleasesDurableSessions()
+            throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var catalog = mock(DungeonRepository.class);
+            f.paper.runtime.setDungeonCatalog(catalog);
+            f.paper.runtime.setQueueRegistry(mock(DungeonQueueRegistry.class));
+            f.paper.runtime.setTeamService(mock(DungeonTeamService.class));
+            when(catalog.getLoadedDungeons()).thenReturn(List.of(f.dungeon));
+            var online = new PlayerState();
+            var offline = new PlayerState();
+            offline.contents[0] = PlayerState.stack(12);
+            var present = f.session(online);
+            var absent = f.session(offline);
+            f.run.addPlayer(present);
+            f.run.addPlayer(absent);
+            offline.online = false;
+            f.dungeon.getInstances().add(f.run);
+            f.paper.runtime.activeInstances().registerActiveInstance(f.run);
+            f.paper.bukkit.when(Bukkit::getOnlinePlayers).thenReturn(List.of(online.player));
+            f.paper.bukkit.when(() -> Bukkit.unloadWorld(f.world, false)).thenReturn(true);
+            new LifecycleCoordinator(f.paper.runtime, mock(CoreBootstrap.class)).shutdown();
+            assertTrue(present.isExpired());
+            assertTrue(absent.isExpired());
+            assertEquals(0, f.paper.runtime.playerSessions().size());
+            assertNull(f.run.getInstanceWorld());
+            f.paper
+                    .bukkit
+                    .when(() -> Bukkit.getWorld(offline.originWorld.getUID()))
+                    .thenReturn(offline.originWorld);
+            f.paper.bukkit.when(() -> Bukkit.getWorld("overworld")).thenReturn(offline.originWorld);
+            offline.online = true;
+            var recreated = new PlayerSessionRegistry(f.paper.plugin).put(offline.player);
+            assertTrue(recreated.recoverPendingState());
+            assertEquals(12, offline.contents[0].getAmount());
         }
     }
 }

@@ -42,9 +42,6 @@ commands:
     not-in-dungeon: '<HauntedMC:Error>You are not in a dungeon.'
     infinite-lives: '<HauntedMC:Success>You have unlimited lives in this dungeon.'
     lives-remaining: '<HauntedMC:Success>You have <HauntedMC:Warning>{lives}<HauntedMC:Success> lives remaining.'
-  rewards:
-    usage: '<HauntedMC:Success>/dungeon rewards <HauntedMC:Text>| <HauntedMC:Warning>Claim your pending dungeon rewards.'
-    empty: '<HauntedMC:Muted>You have no pending dungeon rewards.'
   team:
     help:
       # Lists replace the entire default list, so keep all supported team commands.

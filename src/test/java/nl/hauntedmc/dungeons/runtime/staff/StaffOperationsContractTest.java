@@ -7,7 +7,6 @@ import nl.hauntedmc.dungeons.config.ConfigurationFile;
 import nl.hauntedmc.dungeons.model.instance.*;
 import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.runtime.player.StaffPlayerRecords;
 import nl.hauntedmc.dungeons.runtime.queue.*;
 import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
 import nl.hauntedmc.dungeons.support.*;
@@ -196,20 +195,6 @@ class StaffOperationsContractTest {
             assertFalse(session.isObserving());
             assertEquals(GameMode.SURVIVAL, player.player.getGameMode());
             assertSame(player.originWorld, player.location.getWorld());
-        }
-    }
-
-    @Test
-    void compensationReceiptIsDurableAndOfflineRetryCannotDuplicateRewards() throws Exception {
-        try (var f = new Fixture(directory)) {
-            UUID player = UUID.randomUUID();
-            UUID receipt = UUID.randomUUID();
-            var item = PlayerState.stack(3);
-            assertTrue(StaffPlayerRecords.compensate(f.run.paper.runtime, player, receipt, item));
-            assertFalse(StaffPlayerRecords.compensate(f.run.paper.runtime, player, receipt, item));
-            assertTrue(
-                    StaffPlayerRecords.inspect(f.run.paper.runtime, player)
-                            .contains("claimable stacks=1"));
         }
     }
 

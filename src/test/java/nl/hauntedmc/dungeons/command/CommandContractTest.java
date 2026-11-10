@@ -19,16 +19,13 @@ import nl.hauntedmc.dungeons.bootstrap.LifecycleCoordinator;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
 import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
 import nl.hauntedmc.dungeons.content.instance.play.BranchingInstance;
-import nl.hauntedmc.dungeons.content.reward.LootTable;
 import nl.hauntedmc.dungeons.generation.room.InstanceRoom;
 import nl.hauntedmc.dungeons.gui.framework.GuiService;
-import nl.hauntedmc.dungeons.gui.loot.LootTableEditor;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.registry.FunctionRegistry;
 import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
 import nl.hauntedmc.dungeons.runtime.queue.*;
-import nl.hauntedmc.dungeons.runtime.rewards.LootTableRepository;
 import nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard;
 import nl.hauntedmc.dungeons.runtime.staff.StaffOperations;
 import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
@@ -131,28 +128,6 @@ class CommandContractTest {
             command.permissions.clear();
             assertEquals(List.of(), command.root.onTabComplete(command.caller.player,
                     mock(Command.class), "dungeon", new String[] {""}));
-        }
-    }
-
-    @Test
-    void failedLootWritesAndReadOnlyEditorsReportFailureWithoutOpeningAMenu() throws Exception {
-        try (var f = new RunFixture(directory, new YamlConfiguration());
-                var lang =
-                        Mockito.mockStatic(
-                                LangUtils.class)) {
-            var command = new CommandFixture(f);
-            command.permissions.add("dungeons.staff.loot");
-            when(command.loot.get("keep"))
-                    .thenReturn(new LootTable("keep"));
-            command.execute("loot", "create", "new");
-            command.execute("loot", "remove", "keep");
-            command.execute("loot", "edit", "keep");
-            lang.verify(
-                    () ->
-                            LangUtils.sendMessage(
-                                    command.caller.player, "commands.loot.save-failed"),
-                    Mockito.times(2));
-            verifyNoInteractions(command.gui);
         }
     }
 
@@ -427,7 +402,7 @@ class CommandContractTest {
         final LifecycleCoordinator lifecycle = mock(LifecycleCoordinator.class);
         final DungeonQueueRegistry queues;
         final DungeonCommand root;
-        final LootTableRepository loot = mock(LootTableRepository.class);
+
         final GuiService gui = mock(GuiService.class);
 
         CommandFixture(RunFixture f) {
@@ -453,8 +428,7 @@ class CommandContractTest {
                             coordinator,
                             queues,
                             teams,
-                            loot,
-                            new LootTableEditor(loot, gui),
+
                             mock(FunctionRegistry.class),
                             lifecycle,
                             gui,

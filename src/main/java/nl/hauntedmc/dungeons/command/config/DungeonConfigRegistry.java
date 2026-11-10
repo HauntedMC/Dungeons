@@ -2,7 +2,7 @@ package nl.hauntedmc.dungeons.command.config;
 
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
 import nl.hauntedmc.dungeons.content.dungeon.OpenDungeon;
-import nl.hauntedmc.dungeons.content.reward.CooldownPeriod;
+import nl.hauntedmc.dungeons.model.cooldown.CooldownPeriod;
 import nl.hauntedmc.dungeons.generation.layout.BranchingLayout;
 import nl.hauntedmc.dungeons.generation.layout.ConnectorExpansionLayout;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
@@ -255,13 +255,6 @@ public final class DungeonConfigRegistry {
                         DungeonConfigValueType.INTEGER));
         register(
                 main(
-                        "give-loot-after-completion",
-                        "Queues loot to be claimed after completion instead of giving it directly.",
-                        "rewards.deliver_on_finish",
-                        DungeonConfigValueType.BOOLEAN,
-                        suggestions(BOOLEAN_VALUES)));
-        register(
-                main(
                         "difficulty-enabled",
                         "Enables configured difficulty levels.",
                         "difficulty.enabled",
@@ -373,39 +366,6 @@ public final class DungeonConfigRegistry {
                         "access-cooldown-reset-day",
                         "Reset day for weekly and monthly cooldowns.",
                         "access.cooldown.reset_day",
-                        DungeonConfigValueType.INTEGER));
-        register(
-                main(
-                        "loot-cooldown-enabled",
-                        "Enables reward cooldowns.",
-                        "rewards.loot_cooldown.enabled",
-                        DungeonConfigValueType.BOOLEAN,
-                        suggestions(BOOLEAN_VALUES)));
-        register(
-                main(
-                        "loot-cooldown-per-reward",
-                        "Tracks loot cooldowns per reward function.",
-                        "rewards.loot_cooldown.track_per_reward",
-                        DungeonConfigValueType.BOOLEAN,
-                        suggestions(BOOLEAN_VALUES)));
-        register(
-                main(
-                        "loot-cooldown-type",
-                        "Reward cooldown cadence.",
-                        "rewards.loot_cooldown.period",
-                        DungeonConfigValueType.COOLDOWN_PERIOD,
-                        suggestions(COOLDOWN_VALUES)));
-        register(
-                main(
-                        "loot-cooldown-time",
-                        "Cooldown amount, or reset hour for non timer periods.",
-                        "rewards.loot_cooldown.value",
-                        DungeonConfigValueType.INTEGER));
-        register(
-                main(
-                        "loot-cooldown-reset-day",
-                        "Reset day for weekly and monthly loot cooldowns.",
-                        "rewards.loot_cooldown.reset_day",
                         DungeonConfigValueType.INTEGER));
         register(
                 main(
@@ -805,13 +765,7 @@ public final class DungeonConfigRegistry {
                                 "Mob damage multiplier for " + readableName + ".",
                                 pathPrefix + "scaling.mob_damage",
                                 DungeonConfigValueType.DECIMAL));
-                entries.add(
-                        main(
-                                keyPrefix + "bonus-loot",
-                                "Bonus loot rule for " + readableName + ".",
-                                pathPrefix + "scaling.bonus_loot",
-                                DungeonConfigValueType.STRING,
-                                suggestions(RANGED_NUMBER_VALUES)));
+
             }
         }
 

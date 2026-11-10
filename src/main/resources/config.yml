@@ -20,7 +20,7 @@ runtime:
 
 sessions:
   # int. Reconnect grace in seconds for inactive, disconnected player sessions. Use a positive integer.
-  # Active runs and reservations remain retained; recovery and rewards are checkpointed before expiry.
+  # Active runs and reservations remain retained; recovery is checkpointed before expiry.
   offline_retention_seconds: 300
 
 instances:

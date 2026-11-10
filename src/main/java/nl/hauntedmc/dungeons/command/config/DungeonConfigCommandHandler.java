@@ -1,7 +1,7 @@
 package nl.hauntedmc.dungeons.command.config;
 
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
-import nl.hauntedmc.dungeons.content.reward.CooldownPeriod;
+import nl.hauntedmc.dungeons.model.cooldown.CooldownPeriod;
 import nl.hauntedmc.dungeons.gui.menu.PlayMenus;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;

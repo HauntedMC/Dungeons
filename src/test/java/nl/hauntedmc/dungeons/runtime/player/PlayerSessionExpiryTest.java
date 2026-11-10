@@ -43,7 +43,7 @@ class PlayerSessionExpiryTest {
     }
 
     @Test
-    void refundedKeysWithNoInventorySpaceRemainClaimableAfterEviction() throws Exception {
+    void refundedKeysWithNoInventorySpaceRetryAutomaticallyAfterEviction() throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
             var clock = new AtomicLong();
             var registry = registry(f, clock);
@@ -60,11 +60,9 @@ class PlayerSessionExpiryTest {
             state.online = true;
             var recreated = registry.put(state.player);
             assertTrue(recreated.recoverPendingState());
-            assertEquals(1, recreated.getRewardItems().getFirst().getAmount());
             state.contents[0] = null;
-            assertTrue(recreated.claimReward(recreated.getRewardItems().getFirst()));
+            recreated.flushPendingAccessKeyRefund();
             assertEquals(1, state.contents[0].getAmount());
-            assertTrue(recreated.getRewardItems().isEmpty());
         }
     }
 
@@ -91,8 +89,9 @@ class PlayerSessionExpiryTest {
             assertNull(session.getCopiedFunction());
             assertNull(session.getTargetLocation());
             assertThrows(IllegalStateException.class, session::getPlayer);
-            assertThrows(
-                    IllegalStateException.class, () -> session.addReward(PlayerState.stack(1)));
+            assertThrows(IllegalStateException.class,
+                    () -> session.addStaffRefunds(java.util.UUID.randomUUID(), PlayerState.stack(1)));
+
             assertThrows(IllegalStateException.class, () -> session.setDungeonFinished(f.dungeon));
             state.online = true;
             assertNotSame(session, registry.put(state.player));
@@ -165,7 +164,7 @@ class PlayerSessionExpiryTest {
     }
 
     @Test
-    void deferredRecoveryAndRewardsSurviveActualEvictionAndAreRestoredOnlyOnce() throws Exception {
+    void deferredRecoverySurvivesActualEvictionAndIsRestoredOnlyOnce() throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
             var clock = new AtomicLong();
             var registry = registry(f, clock);
@@ -179,7 +178,6 @@ class PlayerSessionExpiryTest {
             var session = registry.put(state.player);
             session.setDungeonFinished(f.dungeon);
             f.run.addPlayer(session);
-            session.addReward(PlayerState.stack(4));
             state.inventory.clear();
             state.online = false;
             f.run.removePlayer(session);
@@ -191,12 +189,8 @@ class PlayerSessionExpiryTest {
             assertNotSame(session, recreated);
             assertTrue(recreated.recoverPendingState());
             assertEquals(12, amount(state));
-            assertEquals(4, recreated.getRewardItems().getFirst().getAmount());
-            assertTrue(recreated.claimReward(recreated.getRewardItems().getFirst()));
-            assertEquals(16, amount(state));
             assertTrue(recreated.recoverPendingState());
-            assertEquals(16, amount(state));
-            assertTrue(recreated.getRewardItems().isEmpty());
+            assertEquals(12, amount(state));
             assertTrue(
                     f.paper.state.payload("player-profile", state.player.getUniqueId().toString()).contains("crypt"));
         }
@@ -224,7 +218,6 @@ class PlayerSessionExpiryTest {
             assertTrue(recreated.recoverPendingState());
             recreated.flushPendingAccessKeyRefund();
             assertEquals(3, amount(state));
-            assertTrue(recreated.getRewardItems().isEmpty());
             assertTrue(recreated.recoverPendingState());
             assertEquals(3, amount(state));
         }
@@ -237,9 +230,9 @@ class PlayerSessionExpiryTest {
             var registry = registry(f, clock);
             var state = new PlayerState();
             var session = registry.put(state.player);
-            session.addReward(PlayerState.stack(4));
+            session.addStaffRefunds(java.util.UUID.randomUUID(), PlayerState.stack(4));
             doThrow(new IllegalStateException("player save failed")).when(state.player).saveData();
-            assertFalse(session.claimReward(session.getRewardItems().getFirst()));
+            session.flushPendingAccessKeyRefund();
             state.online = false;
             registry.disconnected(state.player);
             clock.set(TimeUnit.SECONDS.toNanos(2));

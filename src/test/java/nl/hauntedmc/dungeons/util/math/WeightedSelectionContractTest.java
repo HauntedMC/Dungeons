@@ -36,7 +36,7 @@ class WeightedSelectionContractTest {
     }
 
     @Test
-    void invalidOrUnrepresentableWeightsCannotPoisonValidRoomAndLootCandidates() {
+    void invalidOrUnrepresentableWeightsCannotPoisonValidRoomCandidates() {
         var pool = new RandomCollection<String>(new Random(1));
         pool.add(1, "safe")
                 .add(Double.NaN, "nan")
