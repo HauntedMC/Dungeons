@@ -4,11 +4,14 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
+import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueEntry;
 import nl.hauntedmc.dungeons.support.*;
 
+import org.bukkit.Bukkit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.File;
 import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -131,7 +134,7 @@ class StaffFailureContractTest {
             f.flush();
             String id = copied.join();
             Files.writeString(source.resolve("content.txt"), "current");
-            when(f.repository.loadDungeon(any(java.io.File.class)))
+            when(f.repository.loadDungeon(any(File.class)))
                     .thenThrow(new IllegalStateException("bad candidate"))
                     .thenReturn(f.run.dungeon);
             var restored = storage.restore(f.run.dungeon, id);
@@ -142,7 +145,7 @@ class StaffFailureContractTest {
             Path archived = directory.resolve("archives/" + archive);
             Files.createDirectories(archived);
             Files.writeString(archived.resolve("config.yml"), "dungeon: {}\n");
-            when(f.repository.loadDungeon(any(java.io.File.class))).thenReturn(null);
+            when(f.repository.loadDungeon(any(File.class))).thenReturn(null);
             var unarchived = storage.archiveAction(archive, false);
             f.flush();
             assertThrows(CompletionException.class, unarchived::join);
@@ -190,12 +193,12 @@ class StaffFailureContractTest {
             throws Exception {
         try (var f = new StaffFixture(directory)) {
             f.ops.maintenance(f.actor, "crypt", true, "Retirement");
-            f.run.paper.bukkit.when(org.bukkit.Bukkit::isPrimaryThread).thenReturn(false);
+            f.run.paper.bukkit.when(Bukkit::isPrimaryThread).thenReturn(false);
             when(f.run.scheduler.scheduler.runTask(eq(f.run.paper.plugin), any(Runnable.class)))
                     .thenThrow(new IllegalStateException("scheduler stopped"));
             var archived = f.ops.archive(f.run.dungeon);
             // The file move finishes, but its catalog callback cannot reach the owner thread.
-            f.run.paper.bukkit.when(org.bukkit.Bukkit::isPrimaryThread).thenReturn(true);
+            f.run.paper.bukkit.when(Bukkit::isPrimaryThread).thenReturn(true);
             f.flush();
             assertTrue(archived.isDone());
             assertThrows(CompletionException.class, archived::join);
@@ -209,7 +212,7 @@ class StaffFailureContractTest {
             var player = f.player("Player");
             var session = f.runtime.playerSessions().get(player.player);
             var queue =
-                    new nl.hauntedmc.dungeons.runtime.queue.DungeonQueueEntry(session, other, "");
+                    new DungeonQueueEntry(session, other, "");
             f.runtime.queueRegistry().enqueue(queue);
             f.ops.restrict(f.actor, player.player.getUniqueId(), "crypt", 0, "Review");
             assertSame(queue, f.runtime.queueRegistry().getQueue(session));
@@ -236,7 +239,7 @@ class StaffFailureContractTest {
             String id = storage.archives().getFirst();
             assertEquals("crypt", storage.archivedDungeonName(id));
             assertNotNull(storage.archiveRevision(id));
-            when(f.repository.loadDungeon(any(java.io.File.class))).thenReturn(f.run.dungeon);
+            when(f.repository.loadDungeon(any(File.class))).thenReturn(f.run.dungeon);
             var restored = storage.archiveAction(id, false);
             f.flush();
             restored.join();

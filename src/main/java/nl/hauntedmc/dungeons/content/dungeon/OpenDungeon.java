@@ -1,6 +1,7 @@
 package nl.hauntedmc.dungeons.content.dungeon;
 
 import nl.hauntedmc.dungeons.content.instance.play.OpenInstance;
+import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDifficulty;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonLoadException;
 import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
@@ -225,7 +226,7 @@ public class OpenDungeon extends StaticDungeon {
         LangUtils.sendMessage(
                 player,
                 "instance.lifecycle.loading",
-                LangUtils.placeholder("dungeon", this.getDisplayName()));
+                LangUtils.placeholder("dungeon", this.getDisplayNameComponent()));
         DungeonDifficulty difficulty = this.difficultyLevels.get(difficultyName);
         UUID reservationId = player.getUniqueId();
 
@@ -259,7 +260,7 @@ public class OpenDungeon extends StaticDungeon {
             LangUtils.sendMessage(
                     player,
                     "instance.lifecycle.load-failed",
-                    LangUtils.placeholder("dungeon", this.getDisplayName()));
+                    LangUtils.placeholder("dungeon", this.getDisplayNameComponent()));
             return false;
         }
 
@@ -380,7 +381,7 @@ public class OpenDungeon extends StaticDungeon {
                     LangUtils.sendMessage(
                             player,
                             "instance.lifecycle.entered",
-                            LangUtils.placeholder("dungeon", getDisplayName()));
+                            LangUtils.placeholder("dungeon", getDisplayNameComponent()));
                 } else cancel();
             } catch (RuntimeException failure) {
                 logger().error("Failed to finish open dungeon admission.", failure);
@@ -389,7 +390,7 @@ public class OpenDungeon extends StaticDungeon {
         }
 
         @Override
-        public nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition dungeon() {
+        public DungeonDefinition dungeon() {
             return OpenDungeon.this;
         }
 

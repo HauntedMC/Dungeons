@@ -1,8 +1,11 @@
 package nl.hauntedmc.dungeons.persistence;
 
-import java.util.UUID;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
+
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.UUID;
 
 /** Owner-thread codec with a durable compare-and-set barrier before publishing changed state. */
 public final class StateDocument {
@@ -24,7 +27,7 @@ public final class StateDocument {
         return new Prepared(this, new StateStore.Write(key, snapshot.revision(), payload, UUID.randomUUID()));
     }
     public static void commitTogether(Prepared... changes) {
-        var active = java.util.Arrays.stream(changes).filter(java.util.Objects::nonNull).toList();
+        var active = Arrays.stream(changes).filter(Objects::nonNull).toList();
         if (active.isEmpty()) return;
         var store = active.getFirst().document.store;
         if (active.stream().anyMatch(change -> change.document.store != store))

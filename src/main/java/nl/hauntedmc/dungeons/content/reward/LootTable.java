@@ -8,11 +8,14 @@ import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /** Validated, serializable weighted loot data. Editor ownership and rendering live in gui.loot. */
 @TypeKey(id = "dungeons.reward.loot_table")
@@ -80,7 +83,7 @@ public class LootTable implements ConfigurationSerializable {
         }
 
         if (randomizer.isEmpty()) {
-            org.slf4j.LoggerFactory.getLogger(LootTable.class)
+            LoggerFactory.getLogger(LootTable.class)
                     .warn(
                             "Loot table '{}' has no valid weighted items to randomize.",
                             this.namespace);
@@ -157,12 +160,12 @@ public class LootTable implements ConfigurationSerializable {
     }
 
     public Map<Integer, LootTableItem> getItems() {
-        return java.util.Collections.unmodifiableMap(this.lootItems);
+        return Collections.unmodifiableMap(this.lootItems);
     }
 
     public void putItem(int slot, LootTableItem item) {
         if (slot < 9 || slot >= 54) throw new IllegalArgumentException("Invalid loot slot");
-        java.util.Objects.requireNonNull(item).validate();
+        Objects.requireNonNull(item).validate();
         this.lootItems.put(slot, item);
     }
 

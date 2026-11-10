@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
+import java.util.Map;
 
 class GateGraphCloneContractTest {
     @TempDir Path directory;
@@ -25,7 +26,7 @@ class GateGraphCloneContractTest {
             var gate = new GateAndTrigger();
             gate.addTrigger(new RemoteTrigger());
             gate.addTrigger(new RemoteTrigger());
-            var effect = new SetStatusFunction(java.util.Map.of("status", "gate-open"));
+            var effect = new SetStatusFunction(Map.of("status", "gate-open"));
             effect.initializeFields();
             effect.setTrigger(gate);
             effect.enable(f.run, new Location(f.world, 0, 70, 0));

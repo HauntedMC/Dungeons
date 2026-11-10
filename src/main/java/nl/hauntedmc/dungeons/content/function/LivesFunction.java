@@ -1,9 +1,5 @@
 package nl.hauntedmc.dungeons.content.function;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
@@ -18,10 +14,16 @@ import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.text.ColorUtils;
+
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerEvent;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Function that mutates the remaining-life counter for a run.

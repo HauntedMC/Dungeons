@@ -3,6 +3,7 @@ package nl.hauntedmc.dungeons.runtime.player;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import nl.hauntedmc.dungeons.util.config.PluginConfigView;
+import nl.hauntedmc.dungeons.util.lang.LangUtils;
 
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -18,6 +19,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Predicate;
 
@@ -29,7 +31,7 @@ public final class PlayerSessionRegistry implements Listener {
     private final HashMap<UUID, Long> disconnected = new HashMap<>();
     private final LongSupplier clock;
     private Predicate<DungeonPlayerSession> retained = session -> false;
-    private java.util.function.Consumer<UUID> releaseCachedState = ignored -> {};
+    private Consumer<UUID> releaseCachedState = ignored -> {};
     private BukkitTask sweepTask;
     private boolean closed;
 
@@ -82,7 +84,7 @@ public final class PlayerSessionRegistry implements Listener {
                             player.getUniqueId(),
                             failure);
             player.kick(
-                    net.kyori.adventure.text.Component.text(
+                    LangUtils.notice(
                             "Your player data could not be loaded safely. Please contact an"
                                 + " administrator."));
             throw failure;
@@ -175,8 +177,8 @@ public final class PlayerSessionRegistry implements Listener {
         }
     }
 
-    public java.util.List<DungeonPlayerSession> snapshot() {
-        return java.util.List.copyOf(players.values());
+    public List<DungeonPlayerSession> snapshot() {
+        return List.copyOf(players.values());
     }
 
     public int size() {

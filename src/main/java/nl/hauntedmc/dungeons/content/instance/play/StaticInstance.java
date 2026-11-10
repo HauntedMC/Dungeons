@@ -1,14 +1,16 @@
 package nl.hauntedmc.dungeons.content.instance.play;
 
-import java.util.concurrent.CountDownLatch;
 import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
 import nl.hauntedmc.dungeons.content.function.LeaveDungeonFunction;
 import nl.hauntedmc.dungeons.content.function.StartDungeonFunction;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+
+import java.util.concurrent.CountDownLatch;
 
 /**
  * Playable instance for static dungeons.

@@ -3,6 +3,7 @@ import nl.hauntedmc.dungeons.gui.framework.buttons.Button;
 import nl.hauntedmc.dungeons.gui.framework.window.GuiWindow;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
+import nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard;
 import nl.hauntedmc.dungeons.util.metadata.PersistedFieldSupport;
 import nl.hauntedmc.dungeons.util.text.ColorUtils;
 
@@ -16,7 +17,7 @@ final class EditorMenuSupport {
         var window = new GuiWindow(namespace, size, title);
         window.setAccessCheck(
                 player ->
-                        nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard.editor(
+                        StaffEditGuard.editor(
                                 player, RuntimeContext.playerSessions().get(player)));
         return window;
     }

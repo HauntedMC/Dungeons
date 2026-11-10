@@ -9,6 +9,7 @@ import nl.hauntedmc.dungeons.content.function.SetStatusFunction;
 import nl.hauntedmc.dungeons.content.function.meta.CompositeFunction;
 import nl.hauntedmc.dungeons.content.function.meta.DelayedFunction;
 import nl.hauntedmc.dungeons.model.dungeon.AccessKeyDefinition;
+import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
 
 import org.bukkit.Location;
@@ -22,6 +23,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
 final class NativePersistence {
@@ -83,7 +85,7 @@ final class NativePersistence {
                     try {
                         verify(test);
                     } catch (Exception failure) {
-                        throw new java.util.concurrent.CompletionException(failure);
+                        throw new CompletionException(failure);
                     } finally {
                         release(graph);
                     }
@@ -151,12 +153,12 @@ final class NativePersistence {
         }
     }
 
-    private static void release(nl.hauntedmc.dungeons.model.element.DungeonFunction function) {
+    private static void release(DungeonFunction function) {
         function.releaseEditorListener();
         if (function instanceof CompositeFunction composite) {
             composite.getFunctions().forEach(NativePersistence::release);
         } else if (function.serialize().get("function")
-                instanceof nl.hauntedmc.dungeons.model.element.DungeonFunction child) {
+                instanceof DungeonFunction child) {
             release(child);
         }
     }

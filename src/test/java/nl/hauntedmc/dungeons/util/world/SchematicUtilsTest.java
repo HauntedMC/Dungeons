@@ -10,11 +10,13 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.List;
 import java.util.zip.DeflaterOutputStream;
 
 class SchematicUtilsTest {
@@ -30,7 +32,7 @@ class SchematicUtilsTest {
         assertEquals(
                 "DUNGEONS-STRUCTURE-2\n\n", SchematicUtils.decompress(Files.readAllBytes(target)));
         try (var files = Files.list(target.getParent())) {
-            assertEquals(java.util.List.of(target), files.toList());
+            assertEquals(List.of(target), files.toList());
         }
     }
 
@@ -54,7 +56,7 @@ class SchematicUtilsTest {
                 () -> SchematicUtils.saveStructurePiece(target.toFile(), new StructurePiece()));
         assertEquals("previous content", Files.readString(target.resolve("keep")));
         try (var files = Files.list(directory)) {
-            assertEquals(java.util.List.of(target), files.toList());
+            assertEquals(List.of(target), files.toList());
         }
     }
 
@@ -62,10 +64,10 @@ class SchematicUtilsTest {
     void flushFailurePreservesOldBytesAndCleansTemporaryFile() throws Exception {
         Path target = Files.writeString(directory.resolve("room.struct"), "previous content");
         FileChannel channel = mock(FileChannel.class);
-        when(channel.write(any(java.nio.ByteBuffer.class)))
+        when(channel.write(any(ByteBuffer.class)))
                 .thenAnswer(
                         call -> {
-                            java.nio.ByteBuffer buffer = call.getArgument(0);
+                            ByteBuffer buffer = call.getArgument(0);
                             int size = buffer.remaining();
                             buffer.position(buffer.limit());
                             return size;
@@ -81,7 +83,7 @@ class SchematicUtilsTest {
         assertEquals("previous content", Files.readString(target));
         verify(channel).close();
         try (var files = Files.list(directory)) {
-            assertEquals(java.util.List.of(target), files.toList());
+            assertEquals(List.of(target), files.toList());
         }
     }
 

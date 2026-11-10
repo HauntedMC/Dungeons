@@ -10,6 +10,7 @@ import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.util.BoundingBox;
 
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -35,7 +36,7 @@ public final class LocationUtils {
         String id = config.getString("world_uuid");
         if (id != null) {
             try {
-                world = Bukkit.getWorld(java.util.UUID.fromString(id));
+                world = Bukkit.getWorld(UUID.fromString(id));
             } catch (IllegalArgumentException ignored) {
                 return null;
             }

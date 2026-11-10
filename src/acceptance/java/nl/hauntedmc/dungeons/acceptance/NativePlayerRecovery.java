@@ -13,9 +13,13 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.persistence.PersistentDataType;
 
+import java.io.IOException;
 import java.lang.reflect.Proxy;
+import java.nio.file.Files;
 import java.util.*;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Exercises native Paper player saves, loads, inventory codecs and the journal; network actions use a controlled boundary.
@@ -30,9 +34,9 @@ final class NativePlayerRecovery {
         UUID id = UUID.randomUUID();
         // A standalone Paper backend creates canonical identities after join, not pre-login.
         // Prefetch must probe the database without rejecting or inventing a first-time identity.
-        test.runtime().stateStore().prefetch(id).get(5, java.util.concurrent.TimeUnit.SECONDS);
+        test.runtime().stateStore().prefetch(id).get(5, TimeUnit.SECONDS);
         require(test.runtime().database().database().players().findIdentity(id).toCompletableFuture()
-                .get(5, java.util.concurrent.TimeUnit.SECONDS).isEmpty(), "Dungeons invented a canonical identity");
+                .get(5, TimeUnit.SECONDS).isEmpty(), "Dungeons invented a canonical identity");
         boolean waiting = false;
         try { test.runtime().stateStore().requirePlayerReady(id); }
         catch (IllegalArgumentException expected) { waiting = true; }
@@ -133,7 +137,7 @@ final class NativePlayerRecovery {
                                 test.getLogger()
                                         .info(
                                                 "Session expiry pending after 25 ticks; elapsed="
-                                                        + java.util.concurrent.TimeUnit.NANOSECONDS
+                                                        + TimeUnit.NANOSECONDS
                                                                 .toMillis(
                                                                         System.nanoTime()
                                                                                 - disconnectedAt)
@@ -229,8 +233,8 @@ final class NativePlayerRecovery {
                                 }
                                 again.addReward(new ItemStack(Material.AMETHYST_SHARD, 7));
                                 try {
-                                    java.nio.file.Files.writeString(test.getDataFolder().toPath().resolve("database-player.txt"), id.toString());
-                                } catch (java.io.IOException failure) { throw new java.util.concurrent.CompletionException(failure); }
+                                    Files.writeString(test.getDataFolder().toPath().resolve("database-player.txt"), id.toString());
+                                } catch (IOException failure) { throw new CompletionException(failure); }
                                 test.getLogger().info("Native save/load and three entry/departure/reconnect cycles passed");
                             } finally {
                                 test.runtime()

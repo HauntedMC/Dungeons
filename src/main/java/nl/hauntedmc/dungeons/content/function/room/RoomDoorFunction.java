@@ -1,16 +1,14 @@
 package nl.hauntedmc.dungeons.content.function.room;
 
-import java.util.List;
-import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.content.instance.edit.BranchingEditableInstance;
 import nl.hauntedmc.dungeons.content.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
+import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
 import nl.hauntedmc.dungeons.generation.room.Connector;
 import nl.hauntedmc.dungeons.generation.room.DoorAction;
 import nl.hauntedmc.dungeons.generation.room.InstanceRoom;
-import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ChatMenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuItem;
@@ -20,10 +18,14 @@ import nl.hauntedmc.dungeons.model.element.FunctionCategory;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerEvent;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * Branching-room function that opens, closes, or toggles named room doors.

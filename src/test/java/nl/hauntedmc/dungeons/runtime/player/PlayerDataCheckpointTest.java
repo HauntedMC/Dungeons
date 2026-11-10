@@ -5,10 +5,14 @@ import static org.mockito.Mockito.*;
 
 import nl.hauntedmc.dungeons.support.PaperBoundary;
 import nl.hauntedmc.dungeons.support.PlayerState;
+import nl.hauntedmc.dungeons.support.TestStateStore;
 
+import org.bukkit.NamespacedKey;
+import org.bukkit.persistence.PersistentDataType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.*;
 
@@ -21,9 +25,9 @@ class PlayerDataCheckpointTest {
             var player = new PlayerState();
             player.contents[0] = PlayerState.stack(4);
             var file = directory.resolve("recovery.yml");
-            var journal = new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(file));
+            var journal = new PlayerRecoveryJournal(TestStateStore.player(file));
             paper.checkpoints.when(PlayerDataCheckpoint::requireStorage)
-                    .thenThrow(new UncheckedIOException(new java.io.IOException("unsupported storage adapter")));
+                    .thenThrow(new UncheckedIOException(new IOException("unsupported storage adapter")));
             assertThrows(UncheckedIOException.class, () -> journal.begin(player.player));
             assertFalse(Files.exists(file));
             assertFalse(journal.hasRecovery());
@@ -69,25 +73,25 @@ class PlayerDataCheckpointTest {
         try (var paper = new PaperBoundary()) {
             var path = directory.resolve("recovery.yml");
             var player = new PlayerState();
-            var journal = new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path));
+            var journal = new PlayerRecoveryJournal(TestStateStore.player(path));
             journal.addRewards(PlayerState.stack(5));
             paper.checkpoints
                     .when(() -> PlayerDataCheckpoint.verify(eq(player.player), anyString()))
                     .thenThrow(
                             new UncheckedIOException(
-                                    new java.io.IOException("native save missing")));
+                                    new IOException("native save missing")));
             assertThrows(
                     UncheckedIOException.class,
                     () -> journal.claim(player.player, journal.rewards().getFirst()));
-            assertTrue(new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path)).hasPendingTransaction());
+            assertTrue(new PlayerRecoveryJournal(TestStateStore.player(path)).hasPendingTransaction());
             assertNull(
                     player.player
                             .getPersistentDataContainer()
                             .get(
-                                    new org.bukkit.NamespacedKey("dungeons", "player_transaction"),
-                                    org.bukkit.persistence.PersistentDataType.STRING));
+                                    new NamespacedKey("dungeons", "player_transaction"),
+                                    PersistentDataType.STRING));
             var reconnected = new PlayerState();
-            new PlayerRecoveryJournal(nl.hauntedmc.dungeons.support.TestStateStore.player(path)).recover(reconnected.player);
+            new PlayerRecoveryJournal(TestStateStore.player(path)).recover(reconnected.player);
             assertEquals(5, reconnected.contents[0].getAmount());
         }
     }

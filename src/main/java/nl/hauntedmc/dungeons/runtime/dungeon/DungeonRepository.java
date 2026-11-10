@@ -6,6 +6,7 @@ import nl.hauntedmc.dungeons.model.dungeon.DungeonLoadException;
 import nl.hauntedmc.dungeons.registry.DungeonTypeRegistry;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
+import nl.hauntedmc.dungeons.util.config.ConfigSyncUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 
 import org.bukkit.Bukkit;
@@ -22,7 +23,11 @@ import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Runtime catalogue of loaded dungeon definitions.
@@ -32,14 +37,14 @@ import java.util.UUID;
  */
 public final class DungeonRepository {
     private final DungeonsRuntime runtime;
-    private final java.util.Map<String, String> loadFailures = new java.util.LinkedHashMap<>();
+    private final Map<String, String> loadFailures = new LinkedHashMap<>();
 
-    public java.util.Map<String, String> loadFailures() {
-        return java.util.Map.copyOf(loadFailures);
+    public Map<String, String> loadFailures() {
+        return Map.copyOf(loadFailures);
     }
 
-    public java.util.concurrent.CompletableFuture<java.util.Map<String, String>> reloadAllAsync() {
-        var result = new java.util.concurrent.CompletableFuture<java.util.Map<String, String>>();
+    public CompletableFuture<Map<String, String>> reloadAllAsync() {
+        var result = new CompletableFuture<Map<String, String>>();
         this.loadDefaultDungeonConfig();
         Bukkit.getScheduler()
                 .runTask(
@@ -50,7 +55,7 @@ public final class DungeonRepository {
                                 if (files == null)
                                     throw new IllegalStateException(
                                             "Cannot list dungeon directory");
-                                var present = new java.util.HashSet<String>();
+                                var present = new HashSet<String>();
                                 for (File file : files)
                                     if (file.isDirectory()) {
                                         present.add(file.getName());
@@ -94,7 +99,7 @@ public final class DungeonRepository {
             }
             YamlConfiguration template = new YamlConfiguration();
             if (defaultConfig.exists()) template.load(defaultConfig);
-            nl.hauntedmc.dungeons.util.config.ConfigSyncUtils.syncMissingAndObsolete(
+            ConfigSyncUtils.syncMissingAndObsolete(
                     bundledDefaults, template);
             template.save(defaultConfig);
 
@@ -141,7 +146,7 @@ public final class DungeonRepository {
                         () -> {
                             File[] files = this.runtime.dungeonFiles().listFiles();
                             if (files != null) {
-                                var present = new java.util.HashSet<String>();
+                                var present = new HashSet<String>();
                                 for (File file : files) {
                                     if (file.isDirectory()) {
                                         present.add(file.getName());
@@ -266,7 +271,7 @@ public final class DungeonRepository {
         var named = this.dungeons.get(dungeonName);
         if (named != null || dungeonName == null) return named;
         try {
-            var id = java.util.UUID.fromString(dungeonName);
+            var id = UUID.fromString(dungeonName);
             if (!id.toString().equalsIgnoreCase(dungeonName)) return null;
             return this.dungeons.values().stream()
                     .filter(dungeon -> id.equals(dungeon.getDungeonId())).findFirst().orElse(null);

@@ -3,9 +3,12 @@ package nl.hauntedmc.dungeons.bootstrap;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import nl.hauntedmc.dungeons.config.ConfigurationFile;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
 import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
+import nl.hauntedmc.dungeons.runtime.instance.ActiveInstanceRegistry;
+import nl.hauntedmc.dungeons.runtime.instance.PreparationRegistry;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueCoordinator;
@@ -23,8 +26,11 @@ import org.bukkit.entity.Player;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 class LifecycleContractTest {
     @TempDir Path directory;
@@ -42,8 +48,8 @@ class LifecycleContractTest {
             when(dungeon.getInstances()).thenReturn(List.of(editor));
             when(catalog.getLoadedDungeons()).thenReturn(List.of(dungeon));
             when(editor.isEditInstance()).thenReturn(true);
-            var failedSave = new java.util.concurrent.CompletableFuture<Boolean>();
-            var retrySave = new java.util.concurrent.CompletableFuture<Boolean>();
+            var failedSave = new CompletableFuture<Boolean>();
+            var retrySave = new CompletableFuture<Boolean>();
             when(editor.disposeAsync()).thenReturn(failedSave, retrySave);
             var lifecycle = new LifecycleCoordinator(paper.runtime, mock(CoreBootstrap.class));
             var first = lifecycle.reloadAllDungeons();
@@ -84,8 +90,8 @@ class LifecycleContractTest {
     void oneFailedPreparationCancellationCannotAbandonTheOthers() throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
             var registry = f.paper.runtime.preparations();
-            var broken = mock(nl.hauntedmc.dungeons.runtime.instance.PreparationRegistry.Pending.class);
-            var healthy = mock(nl.hauntedmc.dungeons.runtime.instance.PreparationRegistry.Pending.class);
+            var broken = mock(PreparationRegistry.Pending.class);
+            var healthy = mock(PreparationRegistry.Pending.class);
             when(broken.dungeon()).thenReturn(f.dungeon);
             when(healthy.dungeon()).thenReturn(f.dungeon);
             doThrow(new IllegalStateException("refund storage unavailable")).when(broken).cancel();
@@ -144,7 +150,7 @@ class LifecycleContractTest {
         try (var paper = new PaperBoundary()) {
             var scheduler = new CapturedScheduler(paper);
             when(paper.plugin.isEnabled()).thenReturn(true);
-            var config = new nl.hauntedmc.dungeons.config.ConfigurationFile(paper.plugin);
+            var config = new ConfigurationFile(paper.plugin);
             config.set("value", "durable");
             var file = directory.resolve("shutdown.yml");
             var saved = config.saveAsync(file.toFile());
@@ -159,8 +165,8 @@ class LifecycleContractTest {
                     () ->
                             new LifecycleCoordinator(paper.runtime, mock(CoreBootstrap.class))
                                     .shutdown());
-            assertTrue(saved.get(1, java.util.concurrent.TimeUnit.SECONDS));
-            assertEquals("value: durable\n", java.nio.file.Files.readString(file));
+            assertTrue(saved.get(1, TimeUnit.SECONDS));
+            assertEquals("value: durable\n", Files.readString(file));
             scheduler.asynchronous.getFirst().run();
         }
     }
@@ -184,7 +190,7 @@ class LifecycleContractTest {
             var broken = mock(DungeonInstance.class);
             var healthy = mock(DungeonInstance.class);
             var retainedFromPreviousCatalog = mock(DungeonInstance.class);
-            var active = mock(nl.hauntedmc.dungeons.runtime.instance.ActiveInstanceRegistry.class);
+            var active = mock(ActiveInstanceRegistry.class);
             paper.runtime.setActiveInstances(active);
             when(active.getActiveInstances())
                     .thenReturn(List.of(healthy, retainedFromPreviousCatalog));

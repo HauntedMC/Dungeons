@@ -1,14 +1,16 @@
 package nl.hauntedmc.dungeons.gui.hotbar.menuitems;
 
-import java.util.ArrayList;
-import java.util.List;
 import nl.hauntedmc.dungeons.gui.hotbar.PlayerHotbarMenu;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
+
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Base model for one hotbar editor action slot.

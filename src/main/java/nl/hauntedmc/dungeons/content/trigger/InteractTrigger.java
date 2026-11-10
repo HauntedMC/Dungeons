@@ -1,6 +1,5 @@
 package nl.hauntedmc.dungeons.content.trigger;
 
-import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
@@ -10,6 +9,7 @@ import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.event.InteractionUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -20,6 +20,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
+
+import java.util.Map;
 
 /**
  * Trigger that fires when a player right-clicks the configured block location.

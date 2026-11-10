@@ -11,6 +11,7 @@ import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueCoordinator;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueEntry;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry;
+import nl.hauntedmc.dungeons.runtime.staff.StaffOperations;
 import nl.hauntedmc.dungeons.runtime.team.DungeonTeam;
 import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
 import nl.hauntedmc.dungeons.util.command.CommandUtils;
@@ -22,6 +23,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
@@ -99,7 +101,7 @@ final class GameplayCommandHandler implements CommandHandler {
         DungeonPlayerSession playerSession = this.playerManager.get(player);
         if (playerSession != null && playerSession.isObserving()) {
             playerSession.stopObservation();
-            player.sendMessage("[Dungeons] Observation ended");
+            LangUtils.sendRaw(player, "Observation ended");
             return true;
         }
         if (playerSession.getInstance() == null) {
@@ -141,7 +143,7 @@ final class GameplayCommandHandler implements CommandHandler {
             return true;
         }
 
-        String dungeonName = playerSession.getInstance().getDungeon().getDisplayName();
+        var dungeonName = playerSession.getInstance().getDungeon().getDisplayNameComponent();
         playerSession.getInstance().removePlayer(playerSession);
         LangUtils.sendMessage(
                 player,
@@ -296,8 +298,8 @@ final class GameplayCommandHandler implements CommandHandler {
             if (!dungeon.isUseDifficultyLevels() || !dungeon.getDifficultyLevels().containsKey(difficulty))
                 throw new IllegalArgumentException("Unknown difficulty");
         }
-        String reason = String.join(" ", java.util.Arrays.copyOfRange(args, reasonStart, args.length));
-        nl.hauntedmc.dungeons.runtime.staff.StaffOperations.requireReason(reason);
+        String reason = String.join(" ", Arrays.copyOfRange(args, reasonStart, args.length));
+        StaffOperations.requireReason(reason);
         var session = this.playerManager.get(target);
         if (session == null || session.isAwaitingDungeon() || session.getInstance() != null
                 || session.isObserving() || this.queueManager.getQueue(session) != null)

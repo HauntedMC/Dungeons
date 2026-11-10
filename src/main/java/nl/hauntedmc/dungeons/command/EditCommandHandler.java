@@ -8,6 +8,7 @@ import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
+import nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard;
 import nl.hauntedmc.dungeons.util.command.CommandUtils;
 import nl.hauntedmc.dungeons.util.config.PluginConfigView;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
@@ -57,7 +58,7 @@ final class EditCommandHandler implements CommandHandler {
             case "exit" -> {
                 if (!(sender instanceof Player player)) throw new IllegalArgumentException("Players only");
                 var session = this.playerManager.get(player);
-                if (!nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard.editor(player, session))
+                if (!StaffEditGuard.editor(player, session))
                     throw new IllegalArgumentException("Open an authorized editor first");
                 session.getInstance().getDungeon().setExit(player.getLocation());
                 yield true;
@@ -543,7 +544,7 @@ final class EditCommandHandler implements CommandHandler {
             return false;
         }
 
-        String dungeonName = instance.getDungeon().getDisplayName();
+        var dungeonName = instance.getDungeon().getDisplayNameComponent();
         instance.removePlayer(playerSession);
         LangUtils.sendMessage(
                 player,
@@ -555,7 +556,7 @@ final class EditCommandHandler implements CommandHandler {
     /** Runs require dungeon edit access. */
     private boolean requireDungeonEditAccess(Player player, DungeonDefinition dungeon) {
         if (dungeon != null && CommandUtils.hasDungeonEditAccess(player, dungeon.getWorldName())) {
-            nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard.configuration(
+            StaffEditGuard.configuration(
                     player, dungeon, "editor");
             return true;
         }

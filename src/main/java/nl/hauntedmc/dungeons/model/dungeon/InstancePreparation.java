@@ -311,6 +311,6 @@ final class InstancePreparation implements PreparationRegistry.Pending {
 
     private void message(String key) {
         LangUtils.sendMessage(
-                player, key, LangUtils.placeholder("dungeon", dungeon.getDisplayName()));
+                player, key, LangUtils.placeholder("dungeon", dungeon.getDisplayNameComponent()));
     }
 }

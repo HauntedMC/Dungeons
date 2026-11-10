@@ -5,10 +5,14 @@ import static org.mockito.Mockito.*;
 
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
 import nl.hauntedmc.dungeons.content.function.CommandFunction;
+import nl.hauntedmc.dungeons.content.function.MessageFunction;
 import nl.hauntedmc.dungeons.content.function.meta.DelayedFunction;
+import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
 import nl.hauntedmc.dungeons.model.instance.EditableInstance;
+import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.support.*;
 
+import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
@@ -48,7 +52,7 @@ class StaffPolicyContractTest {
             throws Exception {
         try (var f = new StaffFixture(directory)) {
             var state = f.player("Builder");
-            var session = mock(nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession.class);
+            var session = mock(DungeonPlayerSession.class);
             assertFalse(StaffEditGuard.editor(state.player, session));
             assertThrows(
                     IllegalArgumentException.class,
@@ -229,11 +233,11 @@ class StaffPolicyContractTest {
         try (var f = new StaffFixture(directory)) {
             var branching = mock(BranchingDungeon.class);
             when(branching.asBranching()).thenReturn(branching);
-            var first = mock(nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition.class);
-            var second = mock(nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition.class);
+            var first = mock(BranchingRoomDefinition.class);
+            var second = mock(BranchingRoomDefinition.class);
             var script = new CommandFunction();
-            var ordinary = new nl.hauntedmc.dungeons.content.function.MessageFunction();
-            var location = new org.bukkit.Location(null, 0, 0, 0);
+            var ordinary = new MessageFunction();
+            var location = new Location(null, 0, 0, 0);
             when(first.getFunctionsMapRelative()).thenReturn(Map.of(location, script));
             when(second.getFunctionsMapRelative()).thenReturn(Map.of(location, ordinary));
             when(branching.getUniqueRooms()).thenReturn(Map.of("first", first, "second", second));

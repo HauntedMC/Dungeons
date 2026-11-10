@@ -4,18 +4,27 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
+import nl.hauntedmc.dungeons.config.ConfigurationFile;
 import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
+import nl.hauntedmc.dungeons.persistence.DatabaseLifecycle;
+import nl.hauntedmc.dungeons.persistence.DungeonDatabase;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
+import nl.hauntedmc.dungeons.runtime.instance.ActiveInstanceRegistry;
+import nl.hauntedmc.dungeons.runtime.player.PlayerDataCheckpoint;
+import nl.hauntedmc.dungeons.util.entity.EntityUtils;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Server;
 import org.bukkit.UnsafeValues;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Damageable;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Files;
@@ -29,25 +38,25 @@ public final class PaperBoundary implements AutoCloseable {
     public final TestStateStore state = new TestStateStore();
     public final DungeonsRuntime runtime = new DungeonsRuntime(plugin);
     public final MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class);
-    public final MockedStatic<nl.hauntedmc.dungeons.util.entity.EntityUtils> entities =
+    public final MockedStatic<EntityUtils> entities =
             mockStatic(
-                    nl.hauntedmc.dungeons.util.entity.EntityUtils.class,
-                    org.mockito.Mockito.CALLS_REAL_METHODS);
-    public final MockedStatic<nl.hauntedmc.dungeons.runtime.player.PlayerDataCheckpoint>
+                    EntityUtils.class,
+                    Mockito.CALLS_REAL_METHODS);
+    public final MockedStatic<PlayerDataCheckpoint>
             checkpoints =
-                    mockStatic(nl.hauntedmc.dungeons.runtime.player.PlayerDataCheckpoint.class);
-    private final MockedStatic<org.bukkit.inventory.ItemStack> items =
+                    mockStatic(PlayerDataCheckpoint.class);
+    private final MockedStatic<ItemStack> items =
             mockStatic(
-                    org.bukkit.inventory.ItemStack.class, org.mockito.Mockito.CALLS_REAL_METHODS);
+                    ItemStack.class, Mockito.CALLS_REAL_METHODS);
     private final MockedStatic<JavaPlugin> javaPlugin = mockStatic(JavaPlugin.class);
 
     public PaperBoundary() {
         NativeItemBytes.decode(items);
         entities.when(
                         () ->
-                                nl.hauntedmc.dungeons.util.entity.EntityUtils.getMaxHealth(
-                                        org.mockito.Mockito.any(
-                                                org.bukkit.entity.Damageable.class)))
+                                EntityUtils.getMaxHealth(
+                                        Mockito.any(
+                                                Damageable.class)))
                 .thenReturn(20.0);
         bukkit.when(Bukkit::isPrimaryThread).thenReturn(true);
         when(plugin.getName()).thenReturn("Dungeons");
@@ -55,13 +64,13 @@ public final class PaperBoundary implements AutoCloseable {
         when(plugin.getSLF4JLogger()).thenReturn(LoggerFactory.getLogger("CoreContractTests"));
         runtime.setConfig(config);
         runtime.setStateStore(state);
-        var database = mock(nl.hauntedmc.dungeons.persistence.DatabaseLifecycle.class);
+        var database = mock(DatabaseLifecycle.class);
         when(database.ready()).thenReturn(true);
-        when(database.state()).thenReturn(nl.hauntedmc.dungeons.persistence.DungeonDatabase.State.READY);
+        when(database.state()).thenReturn(DungeonDatabase.State.READY);
         when(database.problem()).thenReturn("");
         runtime.setDatabase(database);
         runtime.setActiveInstances(
-                new nl.hauntedmc.dungeons.runtime.instance.ActiveInstanceRegistry(plugin));
+                new ActiveInstanceRegistry(plugin));
         RuntimeContext.initialize(runtime);
         bukkit.when(Bukkit::getPluginManager).thenReturn(mock(PluginManager.class));
         bukkit.when(Bukkit::getOnlinePlayers).thenReturn(List.of());
@@ -86,7 +95,7 @@ public final class PaperBoundary implements AutoCloseable {
     @Override
     public void close() {
         bukkit.when(Bukkit::isPrimaryThread).thenReturn(true);
-        nl.hauntedmc.dungeons.config.ConfigurationFile.flushPendingSaves();
+        ConfigurationFile.flushPendingSaves();
         RuntimeContext.clear();
         entities.close();
         checkpoints.close();

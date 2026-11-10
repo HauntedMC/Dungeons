@@ -19,9 +19,11 @@ import org.bukkit.Material;
 import org.bukkit.util.BoundingBox;
 import org.joml.Vector3i;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 final class NativeBranching {
@@ -91,7 +93,7 @@ final class NativeBranching {
                                                 }
                                                 require(
                                                         floorTypes.equals(
-                                                                java.util.Set.of(
+                                                                Set.of(
                                                                         Material.GOLD_BLOCK,
                                                                         Material.DIAMOND_BLOCK)),
                                                         "Native chunk generation did not place both"
@@ -122,7 +124,7 @@ final class NativeBranching {
     }
 
     private static BranchingRoomDefinition room(
-            BranchingDungeon dungeon, String name, Material floor) throws java.io.IOException {
+            BranchingDungeon dungeon, String name, Material floor) throws IOException {
         var room = new BranchingRoomDefinition(dungeon, name, new BoundingBox(0, 0, 0, 2, 2, 2));
         room.setOccurrencesString("1");
         room.setDepthString("0+");

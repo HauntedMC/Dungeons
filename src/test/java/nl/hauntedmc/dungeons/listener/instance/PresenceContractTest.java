@@ -13,6 +13,7 @@ import nl.hauntedmc.dungeons.support.*;
 import org.bukkit.Location;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.player.*;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -54,7 +55,7 @@ class PresenceContractTest {
             f.run.removePlayer(session);
             f.paper.runtime.playerSessions().shutdown();
             assertTrue(session.isExpired());
-            org.junit.jupiter.api.Assertions.assertDoesNotThrow(oldTracker::run);
+            Assertions.assertDoesNotThrow(oldTracker::run);
 
         }
     }

@@ -1,23 +1,25 @@
 package nl.hauntedmc.dungeons.generation.layout;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
+import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
 import nl.hauntedmc.dungeons.generation.room.Connector;
 import nl.hauntedmc.dungeons.generation.room.InstanceRoom;
-import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
 import nl.hauntedmc.dungeons.generation.room.WhitelistEntry;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.util.math.MathUtils;
 import nl.hauntedmc.dungeons.util.math.RandomCollection;
 import nl.hauntedmc.dungeons.util.math.RangedNumber;
 import nl.hauntedmc.dungeons.util.world.SimpleLocation;
+
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.util.BoundingBox;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Layout algorithm that builds a trunk path and optional side branches.

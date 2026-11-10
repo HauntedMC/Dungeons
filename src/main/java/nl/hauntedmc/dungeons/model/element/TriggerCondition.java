@@ -1,6 +1,5 @@
 package nl.hauntedmc.dungeons.model.element;
 
-import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.gui.hotbar.PlayerHotbarMenu;
@@ -9,10 +8,13 @@ import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerEvent;
+
+import java.util.Map;
 
 /**
  * Base contract for conditional checks attached to a {@link DungeonTrigger}.

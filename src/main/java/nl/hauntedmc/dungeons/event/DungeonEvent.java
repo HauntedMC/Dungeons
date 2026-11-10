@@ -2,6 +2,7 @@ package nl.hauntedmc.dungeons.event;
 
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
+
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;

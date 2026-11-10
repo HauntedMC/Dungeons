@@ -3,9 +3,11 @@ package nl.hauntedmc.dungeons.acceptance;
 import static nl.hauntedmc.dungeons.acceptance.AcceptancePlugin.require;
 
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
+import nl.hauntedmc.dungeons.runtime.player.StaffPlayerRecords;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
@@ -36,8 +38,8 @@ final class NativeRestart {
 
     static CompletionStage<Void> verify(AcceptancePlugin test) throws Exception {
         NativePersistence.verify(test);
-        var playerId = java.util.UUID.fromString(Files.readString(test.getDataFolder().toPath().resolve("database-player.txt")));
-        String recovery = nl.hauntedmc.dungeons.runtime.player.StaffPlayerRecords.inspect(test.runtime(), playerId);
+        var playerId = UUID.fromString(Files.readString(test.getDataFolder().toPath().resolve("database-player.txt")));
+        String recovery = StaffPlayerRecords.inspect(test.runtime(), playerId);
         require(recovery.contains("claimable stacks=1"), "Database rewards did not survive cold process restart: " + recovery);
         var branch = test.runtime().dungeonCatalog().get("acceptance_branching");
         require(

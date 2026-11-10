@@ -3,15 +3,17 @@ package nl.hauntedmc.dungeons.runtime.dungeon;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Set;
-import java.util.UUID;
 import nl.hauntedmc.dungeons.util.config.ConfigSyncUtils;
+
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.Plugin;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Set;
+import java.util.UUID;
 
 class DungeonIdentityTest {
     @TempDir Path directory;

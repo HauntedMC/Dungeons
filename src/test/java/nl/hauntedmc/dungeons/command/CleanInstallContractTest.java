@@ -8,6 +8,7 @@ import nl.hauntedmc.dungeons.support.*;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
 
 import org.bukkit.*;
+import org.bukkit.command.Command;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -39,7 +40,7 @@ class CleanInstallContractTest {
                 assertFalse(
                         c.root.onTabComplete(
                                         c.caller.player,
-                                        mock(org.bukkit.command.Command.class),
+                                        mock(Command.class),
                                         "dungeon",
                                         new String[] {root})
                                 .contains(root));

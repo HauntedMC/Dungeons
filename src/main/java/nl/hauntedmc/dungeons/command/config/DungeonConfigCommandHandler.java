@@ -8,6 +8,8 @@ import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
 import nl.hauntedmc.dungeons.runtime.instance.ActiveInstanceRegistry;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
+import nl.hauntedmc.dungeons.runtime.staff.SettingValidation;
+import nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard;
 import nl.hauntedmc.dungeons.util.command.CommandUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 
@@ -172,7 +174,7 @@ public final class DungeonConfigCommandHandler {
             DungeonDefinition dungeon,
             DungeonConfigEntry entry,
             String rawValue) {
-        nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard.configuration(
+        StaffEditGuard.configuration(
                 sender, dungeon, entry.getPath());
         rawValue = rawValue == null ? "" : rawValue.trim();
 
@@ -191,7 +193,7 @@ public final class DungeonConfigCommandHandler {
             };
             if (changes == null || changes.isEmpty())
                 return this.sendInvalidValue(sender, entry, "add/remove requires a list setting and valid values");
-            var candidate = new java.util.ArrayList<>(dungeon.getConfig().getStringList(entry.getPath()));
+            var candidate = new ArrayList<>(dungeon.getConfig().getStringList(entry.getPath()));
             if (add) {
                 for (String change : changes) if (!candidate.contains(change)) candidate.add(change);
             } else candidate.removeAll(changes);
@@ -460,7 +462,7 @@ public final class DungeonConfigCommandHandler {
             DungeonDefinition dungeon,
             DungeonConfigEntry entry,
             Object value) {
-        nl.hauntedmc.dungeons.runtime.staff.SettingValidation.validate(
+        SettingValidation.validate(
                 dungeon, entry.getPath(), value);
         dungeon.getConfig().set(entry.getPath(), value);
         dungeon.saveConfig();
@@ -475,7 +477,7 @@ public final class DungeonConfigCommandHandler {
                 PlayMenus.initializeDifficultySelector(dungeon);
             }
         }
-        this.sendUpdated(sender, dungeon, entry, this.getCurrentValue(dungeon, entry), false);
+        this.sendUpdated(sender, dungeon, entry, this.getCurrentValue(sender, dungeon, entry), false);
         return true;
     }
 
@@ -484,7 +486,7 @@ public final class DungeonConfigCommandHandler {
             CommandSender sender,
             DungeonDefinition dungeon,
             DungeonConfigEntry entry,
-            String value,
+            Object value,
             boolean immediate) {
         LangUtils.sendMessage(
                 sender,
@@ -506,18 +508,16 @@ public final class DungeonConfigCommandHandler {
                 sender,
                 "commands.config.setting-value",
                 LangUtils.placeholder("setting", entry.getKey()),
-                LangUtils.placeholder("value", this.getCurrentValue(dungeon, entry)),
+                LangUtils.placeholder("value", this.getCurrentValue(sender, dungeon, entry)),
                 LangUtils.placeholder("description", entry.getDescription()));
     }
 
     /** Runs list settings. */
     private void listSettings(CommandSender sender, DungeonDefinition dungeon, String filter) {
         String loweredFilter = filter == null ? "" : filter.toLowerCase(Locale.ROOT);
-        sender.sendMessage(
-                LangUtils.getMessage(
+        LangUtils.sendMessage(sender,
                         "commands.config.list-header",
-                        false,
-                        LangUtils.placeholder("dungeon", dungeon.getWorldName())));
+                        LangUtils.placeholder("dungeon", dungeon.getWorldName()));
         LangUtils.sendMessage(
                 sender,
                 "commands.config.list-usage",
@@ -537,13 +537,11 @@ public final class DungeonConfigCommandHandler {
                 }
             }
 
-            sender.sendMessage(
-                    LangUtils.getMessage(
+            LangUtils.sendMessage(sender,
                             "commands.config.setting-line",
-                            false,
                             LangUtils.placeholder("setting", entry.getKey()),
-                            LangUtils.placeholder("value", this.getCurrentValue(dungeon, entry)),
-                            LangUtils.placeholder("description", entry.getDescription())));
+                            LangUtils.placeholder("value", this.getCurrentValue(sender, dungeon, entry)),
+                            LangUtils.placeholder("description", entry.getDescription()));
             found = true;
         }
 
@@ -554,7 +552,7 @@ public final class DungeonConfigCommandHandler {
 
     /** Runs send usage. */
     private void sendUsage(CommandSender sender) {
-        sender.sendMessage(LangUtils.getMessage("commands.config.help.header", false));
+        LangUtils.sendMessage(sender,"commands.config.help.header");
         LangUtils.sendMessageList(sender, "commands.config.help.lines");
     }
 
@@ -570,7 +568,7 @@ public final class DungeonConfigCommandHandler {
     }
 
     /** Returns the current value. */
-    private String getCurrentValue(DungeonDefinition dungeon, DungeonConfigEntry entry) {
+    private Object getCurrentValue(CommandSender audience, DungeonDefinition dungeon, DungeonConfigEntry entry) {
         if (entry.getValueType() == DungeonConfigValueType.LOCATION) {
             return switch (entry.getKey()) {
                 case "lobby-location" -> this.formatLocation(dungeon.getLobbySpawn());
@@ -604,9 +602,8 @@ public final class DungeonConfigCommandHandler {
         FileConfiguration config = dungeon.getConfig();
         String value = this.stringifyValue(config.get(entry.getPath()));
         if (this.isRuleSetting(entry) && !config.getKeys(true).contains(entry.getPath())) {
-            return LangUtils.getMessage(
-                    "commands.config.inherited-value",
-                    false,
+            return LangUtils.component(
+                    "commands.config.inherited-value", audience, false,
                     LangUtils.placeholder("value", value));
         }
         return value;

@@ -24,6 +24,7 @@ import org.mockito.MockedStatic;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 class RoomSchematicPersistenceTest {
     @TempDir Path directory;
@@ -50,7 +51,7 @@ class RoomSchematicPersistenceTest {
             var metadata = f.room.saveRoomAsync();
             f.room.delete();
             // Drive pending saves after deletion, just as a delayed autosave worker would run.
-            for (var task : java.util.List.copyOf(f.scheduler.asynchronous)) task.run();
+            for (var task : List.copyOf(f.scheduler.asynchronous)) task.run();
             assertTrue(schematic.join());
             assertTrue(metadata.join());
             assertFalse(Files.exists(f.target));

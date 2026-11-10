@@ -21,6 +21,7 @@ import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueEntry;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry;
+import nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard;
 import nl.hauntedmc.dungeons.util.command.CommandUtils;
 import nl.hauntedmc.dungeons.util.config.PluginConfigView;
 import nl.hauntedmc.dungeons.util.entity.ParticleUtils;
@@ -235,7 +236,7 @@ public class DungeonListener implements Listener {
             return;
         }
 
-        if (!nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard.editor(player, playerSession))
+        if (!StaffEditGuard.editor(player, playerSession))
             return;
 
         if (!ItemUtils.isRoomTool(item)) {
@@ -323,7 +324,7 @@ public class DungeonListener implements Listener {
             return;
         }
 
-        if (!nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard.editor(player, playerSession))
+        if (!StaffEditGuard.editor(player, playerSession))
             return;
 
         if (!(playerSession.getInstance() instanceof BranchingEditableInstance)) {
@@ -399,7 +400,7 @@ public class DungeonListener implements Listener {
         Player player = event.getPlayer();
         DungeonPlayerSession playerSession = this.playerManager.get(player);
         if (playerSession != null && playerSession.isEditMode()) {
-            if (!nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard.editor(player, playerSession)) {
+            if (!StaffEditGuard.editor(player, playerSession)) {
                 event.setCancelled(true);
                 return;
             }
@@ -416,7 +417,7 @@ public class DungeonListener implements Listener {
         Player player = event.getPlayer();
         DungeonPlayerSession playerSession = this.playerManager.get(player);
         if (playerSession != null && playerSession.isEditMode()) {
-            if (!nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard.editor(player, playerSession)) {
+            if (!StaffEditGuard.editor(player, playerSession)) {
                 event.setCancelled(true);
                 return;
             }
@@ -436,8 +437,8 @@ public class DungeonListener implements Listener {
         if (!playerSession.getRewardItems().isEmpty()) {
             MessageUtils.sendClickableCommand(
                     playerSession.getPlayer(),
-                    LangUtils.getMessage("instance.play.rewards.unclaimed-rewards"),
-                    "rewards");
+                    LangUtils.component("instance.play.rewards.unclaimed-rewards", playerSession.getPlayer(), true),
+                    "dungeon rewards");
         }
     }
 
@@ -449,8 +450,8 @@ public class DungeonListener implements Listener {
             if (!playerSession.getRewardItems().isEmpty()) {
                 MessageUtils.sendClickableCommand(
                         playerSession.getPlayer(),
-                        LangUtils.getMessage("instance.play.rewards.unclaimed-rewards"),
-                        "rewards");
+                        LangUtils.component("instance.play.rewards.unclaimed-rewards", playerSession.getPlayer(), true),
+                        "dungeon rewards");
             }
         }
     }
@@ -479,7 +480,7 @@ public class DungeonListener implements Listener {
         Location blockLoc = clickedLocation.clone();
         blockLoc.setWorld(null);
 
-        if (!nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard.editor(player, playerSession))
+        if (!StaffEditGuard.editor(player, playerSession))
             return;
 
         DungeonFunction function = this.findFunctionAt(instance.getDungeon(), blockLoc);
@@ -526,7 +527,7 @@ public class DungeonListener implements Listener {
             return;
         }
 
-        if (!nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard.editor(player, playerSession))
+        if (!StaffEditGuard.editor(player, playerSession))
             return;
         DungeonFunction function = this.findFunctionByDisplay(instance, display);
         if (function == null) {
@@ -706,7 +707,7 @@ public class DungeonListener implements Listener {
             return false;
         }
 
-        if (!nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard.editor(player, playerSession))
+        if (!StaffEditGuard.editor(player, playerSession))
             return true;
         if (!this.pendingRoomNameInputs.add(playerId)) {
             return true;

@@ -1,15 +1,11 @@
 package nl.hauntedmc.dungeons.content.function;
 
-import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuItem;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ChatMenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
+import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.FunctionCategory;
@@ -17,12 +13,18 @@ import nl.hauntedmc.dungeons.model.element.FunctionTargetType;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 /**
  * Function that dispatches a configured command from dungeon content.
@@ -407,7 +409,7 @@ public class CommandFunction extends DungeonFunction {
      */
     private String formatCoordinate(double value) {
         if (Math.rint(value) == value) {
-            return String.format(java.util.Locale.ROOT, "%.1f", value);
+            return String.format(Locale.ROOT, "%.1f", value);
         }
 
         return Double.toString(value);
@@ -470,14 +472,13 @@ public class CommandFunction extends DungeonFunction {
                         CommandFunction.this.commandType == CONSOLE_COMMAND_TYPE
                                 ? PLAYER_COMMAND_TYPE
                                 : CONSOLE_COMMAND_TYPE;
-                player.sendMessage(
-                        LangUtils.getMessage(
+                LangUtils.sendMessage(player,
                                 "editor.function.command.command-set",
                                 LangUtils.placeholder(
                                         "command",
                                         "Execution set to "
                                                 + CommandFunction.this
-                                                        .getCommandTypeDisplay())));
+                                                        .getCommandTypeDisplay()));
             }
         };
     }

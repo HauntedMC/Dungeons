@@ -4,12 +4,14 @@ import nl.hauntedmc.dungeons.model.instance.DungeonInstance.DisposalState;
 import nl.hauntedmc.dungeons.model.instance.EditableInstance;
 import nl.hauntedmc.dungeons.runtime.instance.PreparationRegistry;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
+import nl.hauntedmc.dungeons.runtime.staff.StaffPermissions;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -25,10 +27,10 @@ final class EditorPreparation implements PreparationRegistry.Pending {
     private EditableInstance editor;
     private boolean created;
     private boolean admitted;
-    private final java.util.concurrent.CompletableFuture<Boolean> result =
-            new java.util.concurrent.CompletableFuture<>();
+    private final CompletableFuture<Boolean> result =
+            new CompletableFuture<>();
 
-    java.util.concurrent.CompletableFuture<Boolean> result() {
+    CompletableFuture<Boolean> result() {
         return result.copy();
     }
 
@@ -131,7 +133,7 @@ final class EditorPreparation implements PreparationRegistry.Pending {
             return;
         }
         if (dungeon.getRuntime().staffOperations() != null
-                && !nl.hauntedmc.dungeons.runtime.staff.StaffPermissions.allows(player, "edit", dungeon.getWorldName())) {
+                && !StaffPermissions.allows(player, "edit", dungeon.getWorldName())) {
             fail("instance.editor.open-failed");
             return;
         }
@@ -153,7 +155,7 @@ final class EditorPreparation implements PreparationRegistry.Pending {
         cleanup();
         if (owned && player != null && player.isOnline() && session.getPlayer() == player)
             LangUtils.sendMessage(player, key,
-                    LangUtils.placeholder("dungeon", dungeon.getDisplayName()));
+                    LangUtils.placeholder("dungeon", dungeon.getDisplayNameComponent()));
     }
 
     @Override

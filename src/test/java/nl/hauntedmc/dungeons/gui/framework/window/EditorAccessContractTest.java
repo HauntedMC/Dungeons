@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 class EditorAccessContractTest {
@@ -97,7 +98,7 @@ class EditorAccessContractTest {
                 when(dungeon.getRuntime()).thenReturn(f.runtime);
                 var room = mock(BranchingRoomDefinition.class);
                 when(room.getNamespace()).thenReturn("hall");
-                when(room.getRoomWhitelist()).thenReturn(new java.util.ArrayList<>());
+                when(room.getRoomWhitelist()).thenReturn(new ArrayList<>());
                 var session = mock(DungeonPlayerSession.class);
                 var sessions = mock(PlayerSessionRegistry.class);
                 when(sessions.get(player.player)).thenReturn(session);

@@ -1,11 +1,7 @@
 package nl.hauntedmc.dungeons.gui.menu;
 
 import com.google.common.collect.Lists;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+
 import nl.hauntedmc.dungeons.content.function.RevivePlayerFunction;
 import nl.hauntedmc.dungeons.gui.framework.buttons.Button;
 import nl.hauntedmc.dungeons.gui.framework.window.GuiInventory;
@@ -17,10 +13,17 @@ import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * Inventory menu builders used during live dungeon play.

@@ -5,12 +5,17 @@ import static org.mockito.Mockito.*;
 
 import nl.hauntedmc.dungeons.content.reward.LootTable;
 import nl.hauntedmc.dungeons.content.reward.LootTableItem;
+import nl.hauntedmc.dungeons.gui.framework.GuiService;
+import nl.hauntedmc.dungeons.gui.loot.LootTableEditor;
 import nl.hauntedmc.dungeons.support.*;
 
 import org.bukkit.Bukkit;
+import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
+import org.bukkit.configuration.serialization.SerializableAs;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.Mockito;
 
 import java.io.IOException;
 import java.nio.file.*;
@@ -206,7 +211,7 @@ class LootRepositoryContractTest {
     void replacementNotificationsFollowCommitAndObserverFailureCannotFalsifySuccess()
             throws Exception {
         try (var f = new Fixture(directory, null)) {
-            var accepted = new java.util.concurrent.atomic.AtomicInteger();
+            var accepted = new AtomicInteger();
             Runnable unsubscribe =
                     f.repository.onTableReplacement(
                             () -> {
@@ -233,7 +238,7 @@ class LootRepositoryContractTest {
         }
     }
 
-    @org.bukkit.configuration.serialization.SerializableAs("dungeons.reward.loot_table")
+    @SerializableAs("dungeons.reward.loot_table")
     static final class CountingTable extends LootTable {
         final AtomicInteger count = new AtomicInteger();
         final boolean fail;
@@ -259,10 +264,10 @@ class LootRepositoryContractTest {
             assertTrue(f.repository.put(old));
             assertEquals(0, f.menus.windows().size());
             var editor =
-                    new nl.hauntedmc.dungeons.gui.loot.LootTableEditor(
+                    new LootTableEditor(
                             f.repository,
-                            org.mockito.Mockito.mock(
-                                    nl.hauntedmc.dungeons.gui.framework.GuiService.class));
+                            Mockito.mock(
+                                    GuiService.class));
             editor.initialize(old);
             assertEquals(1, f.menus.windows().size());
             assertTrue(f.repository.reload());
@@ -271,7 +276,7 @@ class LootRepositoryContractTest {
             assertNotSame(old, current);
             assertEquals(
                     1, f.menus.windows().size(), "Reloading must not construct new GUI windows");
-            org.mockito.Mockito.verify(f.menus.windows().getFirst()).unregister();
+            Mockito.verify(f.menus.windows().getFirst()).unregister();
             String good = Files.readString(f.file);
             assertFalse(f.repository.saveTablesConfig(old));
             assertEquals(good, Files.readString(f.file));
@@ -322,13 +327,13 @@ class LootRepositoryContractTest {
             if (previousTable != null)
                 ConfigurationSerialization.registerClass(
                         previousTable.asSubclass(
-                                org.bukkit.configuration.serialization.ConfigurationSerializable
+                                ConfigurationSerializable
                                         .class),
                         "dungeons.reward.loot_table");
             if (previousItem != null)
                 ConfigurationSerialization.registerClass(
                         previousItem.asSubclass(
-                                org.bukkit.configuration.serialization.ConfigurationSerializable
+                                ConfigurationSerializable
                                         .class),
                         "dungeons.reward.loot_table_item");
             menus.close();

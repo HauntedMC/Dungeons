@@ -2,15 +2,17 @@ package nl.hauntedmc.dungeons.persistence;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.sql.DriverManager;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.mysql.MySQLContainer;
+
+import java.sql.DriverManager;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 class DungeonConcurrencyIT {
     private static final MySQLContainer MYSQL = new MySQLContainer("mysql:8.4");
@@ -114,7 +116,7 @@ class DungeonConcurrencyIT {
                 DungeonSql.update(connection, "UPDATE dungeon_server SET lease_until=TIMESTAMPADD(SECOND,-1,UTC_TIMESTAMP(3)) WHERE server_id=?", host.database.serverId());
             }
             var ran = new AtomicInteger();
-            assertThrows(java.util.concurrent.ExecutionException.class, () -> host.database.transaction(connection -> ran.incrementAndGet()).get(5, TimeUnit.SECONDS));
+            assertThrows(ExecutionException.class, () -> host.database.transaction(connection -> ran.incrementAndGet()).get(5, TimeUnit.SECONDS));
             assertEquals(0, ran.get());
             assertEquals(DungeonDatabase.State.UNAVAILABLE, host.database.state());
             assertEquals(1, failures.get());

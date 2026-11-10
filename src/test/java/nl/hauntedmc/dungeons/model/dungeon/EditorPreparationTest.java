@@ -3,7 +3,9 @@ package nl.hauntedmc.dungeons.model.dungeon;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
 import nl.hauntedmc.dungeons.model.instance.EditableInstance;
+import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
 import nl.hauntedmc.dungeons.runtime.instance.PreparationRegistry;
 import nl.hauntedmc.dungeons.support.*;
 
@@ -23,7 +25,7 @@ class EditorPreparationTest {
             var session = f.session(state);
             session.setAwaitingDungeon(true);
             var dungeon = spy(f.dungeon);
-            var catalog = mock(nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository.class);
+            var catalog = mock(DungeonRepository.class);
             when(catalog.get(dungeon.getWorldName())).thenReturn(dungeon);
             f.paper.runtime.setDungeonCatalog(catalog);
             new EditorPreparation(dungeon, state.player.getUniqueId(), 30).start();
@@ -41,12 +43,12 @@ class EditorPreparationTest {
             f.paper.runtime.setPreparations(registry);
             var state = new PlayerState();
             var session = f.session(state);
-            var catalog = mock(nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository.class);
+            var catalog = mock(DungeonRepository.class);
             when(catalog.get(f.dungeon.getWorldName())).thenReturn(f.dungeon);
             f.paper.runtime.setDungeonCatalog(catalog);
             var editor = mock(EditableInstance.class);
             when(editor.getDisposalState()).thenReturn(
-                    nl.hauntedmc.dungeons.model.instance.DungeonInstance.DisposalState.ACTIVE);
+                    DungeonInstance.DisposalState.ACTIVE);
             when(editor.awaitInitialization(anyLong(), any())).thenReturn(true);
             doAnswer(call -> {
                 session.setInstance(editor);
@@ -72,7 +74,7 @@ class EditorPreparationTest {
             var state = new PlayerState();
             var session = f.session(state);
             var dungeon = spy(f.dungeon);
-            var catalog = mock(nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository.class);
+            var catalog = mock(DungeonRepository.class);
             when(catalog.get(dungeon.getWorldName())).thenReturn(dungeon);
             f.paper.runtime.setDungeonCatalog(catalog);
             new EditorPreparation(dungeon, state.player.getUniqueId(), 0).start();
@@ -90,7 +92,7 @@ class EditorPreparationTest {
             var state = new PlayerState();
             var session = f.session(state);
             var dungeon = spy(f.dungeon);
-            var catalog = mock(nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository.class);
+            var catalog = mock(DungeonRepository.class);
             when(catalog.get(dungeon.getWorldName())).thenReturn(dungeon);
             f.paper.runtime.setDungeonCatalog(catalog);
             var late = mock(EditableInstance.class);
@@ -115,12 +117,12 @@ class EditorPreparationTest {
             var state = new PlayerState();
             var session = f.session(state);
             var dungeon = spy(f.dungeon);
-            var catalog = mock(nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository.class);
+            var catalog = mock(DungeonRepository.class);
             when(catalog.get(dungeon.getWorldName())).thenReturn(dungeon);
             f.paper.runtime.setDungeonCatalog(catalog);
             var original = mock(EditableInstance.class);
             when(original.getDisposalState()).thenReturn(
-                    nl.hauntedmc.dungeons.model.instance.DungeonInstance.DisposalState.ACTIVE);
+                    DungeonInstance.DisposalState.ACTIVE);
             when(original.awaitInitialization(anyLong(), any())).thenReturn(true);
             dungeon.setEditSession(original);
             new EditorPreparation(dungeon, state.player.getUniqueId(), 30).start();

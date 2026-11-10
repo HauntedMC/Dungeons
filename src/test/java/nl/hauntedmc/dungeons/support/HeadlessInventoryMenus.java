@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 import nl.hauntedmc.dungeons.gui.framework.buttons.Button;
 import nl.hauntedmc.dungeons.gui.framework.window.GuiWindow;
 
+import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
@@ -22,7 +23,7 @@ public final class HeadlessInventoryMenus implements AutoCloseable {
                     (item, context) -> {
                         if (!context.arguments().isEmpty()
                                 && context.arguments().getFirst()
-                                        instanceof org.bukkit.Material material) {
+                                        instanceof Material material) {
                             when(item.getType()).thenReturn(material);
                         }
                         NativeItemBytes.support(item);

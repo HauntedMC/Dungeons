@@ -5,6 +5,7 @@ main: nl.hauntedmc.dungeons.plugin.DungeonsPlugin
 api-version: '26.3'
 author: HauntedMC
 depend: [DataProvider, DataRegistry]
+softdepend: [ServerFeatures]
 commands:
   dungeon:
     description: Main dungeon command

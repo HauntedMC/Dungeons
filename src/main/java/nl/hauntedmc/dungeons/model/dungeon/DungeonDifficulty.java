@@ -1,15 +1,17 @@
 package nl.hauntedmc.dungeons.model.dungeon;
 
-import java.util.ArrayList;
-import java.util.List;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.util.math.RangedNumber;
 import nl.hauntedmc.dungeons.util.text.ComponentUtils;
+
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.components.CustomModelDataComponent;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Immutable difficulty preset loaded from a dungeon configuration section.

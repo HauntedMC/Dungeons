@@ -1,22 +1,30 @@
 package nl.hauntedmc.dungeons.command;
 
+import net.kyori.adventure.text.Component;
+
 import nl.hauntedmc.dungeons.bootstrap.LifecycleCoordinator;
 import nl.hauntedmc.dungeons.command.CommandOutput.FilterPageQuery;
 import nl.hauntedmc.dungeons.command.config.DungeonConfigCommandHandler;
+import nl.hauntedmc.dungeons.command.config.DungeonConfigRegistry;
 import nl.hauntedmc.dungeons.gui.framework.GuiService;
 import nl.hauntedmc.dungeons.gui.loot.LootTableEditor;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.registry.FunctionRegistry;
+import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
 import nl.hauntedmc.dungeons.runtime.instance.ActiveInstanceRegistry;
 import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueCoordinator;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry;
 import nl.hauntedmc.dungeons.runtime.rewards.LootTableRepository;
+import nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard;
+import nl.hauntedmc.dungeons.runtime.staff.StaffPermissions;
 import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 
+import org.bukkit.Bukkit;
+import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.command.TabExecutor;
@@ -24,8 +32,13 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.TreeSet;
 
 /**
  * Central Bukkit command executor for the plugin's root command.
@@ -94,7 +107,7 @@ public final class DungeonCommand implements TabExecutor {
     @Override
     public boolean onCommand(
             @NotNull CommandSender sender,
-            @NotNull org.bukkit.command.Command cmd,
+            @NotNull Command cmd,
             @NotNull String label,
             @NotNull String @NotNull [] args) {
         if (!sender.hasPermission(this.getPermissionNode())) {
@@ -108,18 +121,17 @@ public final class DungeonCommand implements TabExecutor {
         }
 
         try {
-            if (!nl.hauntedmc.dungeons.runtime.RuntimeContext.runtime().database().ready())
+            if (!RuntimeContext.runtime().database().ready())
                 throw new IllegalArgumentException("Dungeons database is unavailable");
             return this.handleCommand(sender, args);
         } catch (IllegalArgumentException rejected) {
-            sender.sendMessage(
-                    net.kyori.adventure.text.Component.text("[Dungeons] " + rejected.getMessage()));
+            LangUtils.sendRaw(sender, rejected.getMessage());
             return true;
         } catch (RuntimeException failure) {
             this.plugin
                     .getSLF4JLogger()
                     .error("Dungeon command failed for {}", sender.getName(), failure);
-            sender.sendMessage("[Dungeons] Change failed; check the server log before retrying.");
+            LangUtils.sendRaw(sender, "Change failed; check the server log before retrying.");
             return true;
         }
     }
@@ -128,7 +140,7 @@ public final class DungeonCommand implements TabExecutor {
     @Override
     public List<String> onTabComplete(
             @NotNull CommandSender sender,
-            @NotNull org.bukkit.command.Command cmd,
+            @NotNull Command cmd,
             @NotNull String label,
             @NotNull String @NotNull [] args) {
         if (!sender.hasPermission(this.getPermissionNode())) {
@@ -144,7 +156,7 @@ public final class DungeonCommand implements TabExecutor {
             return true;
         }
         if (args[0].equalsIgnoreCase("help")) {
-            this.canonicalHelp(sender, java.util.Arrays.copyOfRange(args, 1, args.length));
+            this.canonicalHelp(sender, Arrays.copyOfRange(args, 1, args.length));
             return true;
         }
         for (var route : CommandRoutes.ALL) {
@@ -160,7 +172,7 @@ public final class DungeonCommand implements TabExecutor {
                 return true;
             }
             if (route.playerOnly() && sender instanceof Player player)
-                nl.hauntedmc.dungeons.runtime.RuntimeContext.runtime().stateStore().requirePlayerReady(player.getUniqueId());
+                RuntimeContext.runtime().stateStore().requirePlayerReady(player.getUniqueId());
             String[] operation = route.arguments(values);
             return switch (route.handler()) {
                 case GAMEPLAY -> this.gameplayCommands.handleCommand(sender, operation);
@@ -170,7 +182,7 @@ public final class DungeonCommand implements TabExecutor {
                 case EDIT -> this.editCommandGroup.handleCommand(sender, operation);
                 case DEBUG -> {
                     if (!(sender instanceof Player player)
-                            || !nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard.editor(
+                            || !StaffEditGuard.editor(
                                     player, this.playerManager.get(player)))
                         throw new IllegalArgumentException("Open an authorized editor first");
                     yield this.debugCommandGroup.handleCommand(sender, operation);
@@ -189,13 +201,13 @@ public final class DungeonCommand implements TabExecutor {
         if (CommandRoutes.ALL.stream().anyMatch(route -> route.syntax().startsWith(args[0].toLowerCase(Locale.ROOT) + " "))) {
             this.canonicalHelp(sender, args);
         } else {
-            sender.sendMessage("[Dungeons] Unknown command. Use /dungeon help.");
+            LangUtils.sendRaw(sender, "Unknown command. Use /dungeon help.");
         }
         return true;
     }
 
     private boolean allowed(CommandSender sender, CommandRoutes.Route route,
-            java.util.Map<String, List<String>> values) {
+            Map<String, List<String>> values) {
         if (route.playerOnly() && !(sender instanceof Player)) return false;
         if (!route.permission().startsWith("staff.")) {
             return sender.hasPermission("dungeons." + route.permission());
@@ -206,25 +218,25 @@ public final class DungeonCommand implements TabExecutor {
             var dungeon = this.dungeonManager.get(map.getFirst());
             String scope = dungeon == null ? map.getFirst() : dungeon.getWorldName();
             if (!scope.equals("all") && !scope.equals("current")) {
-                return nl.hauntedmc.dungeons.runtime.staff.StaffPermissions.allows(sender, capability, scope);
+                return StaffPermissions.allows(sender, capability, scope);
             }
         }
-        if (nl.hauntedmc.dungeons.runtime.staff.StaffPermissions.allows(sender, capability, null)) return true;
+        if (StaffPermissions.allows(sender, capability, null)) return true;
         if (route.syntax().startsWith("server") || route.syntax().startsWith("loot ")
                 || route.syntax().startsWith("map archive ") || route.syntax().equals("instance list")
                 || route.syntax().equals("queue list") || capability.equals("compensate")) return false;
         return this.dungeonManager.getLoadedDungeons().stream().anyMatch(dungeon ->
-                nl.hauntedmc.dungeons.runtime.staff.StaffPermissions.allows(sender, capability, dungeon.getWorldName()));
+                StaffPermissions.allows(sender, capability, dungeon.getWorldName()));
     }
 
     private void canonicalHelp(CommandSender sender, String[] path) {
         String prefix = String.join(" ", path).toLowerCase(Locale.ROOT);
-        sender.sendMessage("[Dungeons] " + (prefix.isBlank() ? "Commands" : prefix));
-        var lines = new java.util.LinkedHashSet<String>();
+        LangUtils.sendRaw(sender, prefix.isBlank() ? "Commands" : prefix);
+        var lines = new LinkedHashSet<String>();
         for (var route : CommandRoutes.ALL) {
             String[] pattern = route.syntax().split(" ");
             if (path.length > pattern.length) continue;
-            var values = new java.util.LinkedHashMap<String, List<String>>();
+            var values = new LinkedHashMap<String, List<String>>();
             boolean matches = true;
             for (int index = 0; index < path.length; index++) {
                 String part = pattern[index];
@@ -245,20 +257,20 @@ public final class DungeonCommand implements TabExecutor {
             }
             lines.add("/dungeon " + usage);
         }
-        if (lines.isEmpty()) sender.sendMessage("No accessible commands match this path.");
-        else lines.forEach(sender::sendMessage);
+        if (lines.isEmpty()) LangUtils.sendRaw(sender, "No accessible commands match this path.");
+        else lines.forEach(line -> LangUtils.sendRaw(sender, line));
     }
 
     private List<String> completeCanonical(CommandSender sender, String[] args) {
         if (args.length > 1 && args[0].equalsIgnoreCase("help"))
-            return this.completeCanonical(sender, java.util.Arrays.copyOfRange(args, 1, args.length));
-        var suggestions = new java.util.TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
+            return this.completeCanonical(sender, Arrays.copyOfRange(args, 1, args.length));
+        var suggestions = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
         if (args.length == 0) return List.of();
         if (args.length == 1) suggestions.add("help");
         for (var route : CommandRoutes.ALL) {
             String[] pattern = route.syntax().split(" ");
             if (args.length > pattern.length) continue;
-            var values = new java.util.LinkedHashMap<String, List<String>>();
+            var values = new LinkedHashMap<String, List<String>>();
             boolean matches = true;
             for (int index = 0; index < args.length - 1; index++) {
                 String part = pattern[index];
@@ -270,18 +282,18 @@ public final class DungeonCommand implements TabExecutor {
             if (!next.startsWith("<") && !next.startsWith("*")) suggestions.add(next);
             else if (next.equals("<map>")) {
                 for (var dungeon : this.dungeonManager.getLoadedDungeons()) {
-                    var candidate = new java.util.LinkedHashMap<>(values);
+                    var candidate = new LinkedHashMap<>(values);
                     candidate.put("map", List.of(dungeon.getWorldName()));
                     if (this.allowed(sender, route, candidate)) suggestions.add(dungeon.getWorldName());
                 }
             } else if (next.equals("<player>")) {
-                org.bukkit.Bukkit.getOnlinePlayers().forEach(player -> suggestions.add(player.getName()));
+                Bukkit.getOnlinePlayers().forEach(player -> suggestions.add(player.getName()));
             } else if (next.equals("<difficulty>") && values.containsKey("map")) {
                 var dungeon = this.dungeonManager.get(values.get("map").getFirst());
                 if (dungeon != null) suggestions.addAll(dungeon.getDifficultyLevels().keySet());
             } else if (next.equals("<setting>") && values.containsKey("map")) {
                 var dungeon = this.dungeonManager.get(values.get("map").getFirst());
-                if (dungeon != null) suggestions.addAll(nl.hauntedmc.dungeons.command.config.DungeonConfigRegistry.getKeys(dungeon, ""));
+                if (dungeon != null) suggestions.addAll(DungeonConfigRegistry.getKeys(dungeon, ""));
             } else if (next.equals("<table>")) {
                 suggestions.addAll(this.lootCommandGroup.handleTabComplete(sender, new String[] {"loot", "edit", ""}));
             } else if (next.equals("<environment>")) suggestions.addAll(List.of("normal", "nether", "the_end"));
@@ -296,11 +308,11 @@ public final class DungeonCommand implements TabExecutor {
     private boolean publicInfo(CommandSender sender, String name) {
         var dungeon = this.dungeonManager.get(name);
         if (dungeon == null) throw new IllegalArgumentException("Unknown dungeon: " + name);
-        sender.sendMessage("[Dungeons] " + dungeon.getDisplayName() + " (" + dungeon.getWorldName() + ")");
-        sender.sendMessage("Type: " + this.output.getDungeonTypeName(dungeon)
+        LangUtils.sendRaw(sender, dungeon.getDisplayNameComponent().append(Component.text(" (" + dungeon.getWorldName() + ")")));
+        LangUtils.sendRaw(sender, Component.text("Type: " + this.output.getDungeonTypeName(dungeon)
                 + "; team limit: " + dungeon.getMaxTeamSize()
-                + "; difficulties: " + this.output.formatDungeonDifficulties(dungeon));
-        sender.sendMessage("Available: " + dungeon.isEnabled() + "; keys required: " + !dungeon.getAccessKeys().isEmpty());
+                + "; difficulties: ").append(this.output.formatDungeonDifficulties(sender, dungeon)));
+        LangUtils.sendRaw(sender, "Available: " + dungeon.isEnabled() + "; keys required: " + !dungeon.getAccessKeys().isEmpty());
         return true;
     }
 
@@ -324,24 +336,23 @@ public final class DungeonCommand implements TabExecutor {
         }
 
         List<DungeonDefinition> dungeons = this.output.getFilteredDungeons(query.filter(), false);
-        List<String> lines = new ArrayList<>();
+        List<Component> lines = new ArrayList<>();
         for (DungeonDefinition dungeon : dungeons) {
             lines.add(
-                    LangUtils.getMessage(
-                            "commands.list.line",
-                            false,
+                    LangUtils.component(
+                            "commands.list.line", sender, false,
                             LangUtils.placeholder("dungeon", dungeon.getWorldName()),
-                            LangUtils.placeholder("display", dungeon.getDisplayName()),
+                            LangUtils.placeholder("display", dungeon.getDisplayNameComponent()),
                             LangUtils.placeholder(
                                     "team_size", String.valueOf(dungeon.getMaxTeamSize())),
                             LangUtils.placeholder(
                                     "difficulties",
-                                    this.output.formatDungeonDifficulties(dungeon))));
+                                    this.output.formatDungeonDifficulties(sender, dungeon))));
         }
 
         this.output.sendPaginatedLines(
                 sender,
-                LangUtils.getMessage("commands.list.header", false),
+                LangUtils.component("commands.list.header", sender, false),
                 lines,
                 "commands.list.no-match",
                 "commands.list.footer",

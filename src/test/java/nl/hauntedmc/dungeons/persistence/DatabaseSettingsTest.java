@@ -2,10 +2,14 @@ package nl.hauntedmc.dungeons.persistence;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.InputStreamReader;
 import nl.hauntedmc.dungeons.util.config.ConfigSyncUtils;
+import nl.hauntedmc.dungeons.util.config.PluginConfigView;
+
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
+
+import java.io.InputStreamReader;
+import java.util.List;
 
 class DatabaseSettingsTest {
     @Test void defaultsAreAddedToExistingConfigsWithoutReplacingTheConnection() throws Exception {
@@ -31,7 +35,7 @@ class DatabaseSettingsTest {
             existing.loadFromString("database:\n  connection-id: custom_rw\nruntime:\n  server-id: survival\n");
             existing.setDefaults(defaults);
             ConfigSyncUtils.syncMissingAndObsolete(defaults, existing);
-            boolean metadataEnabled = nl.hauntedmc.dungeons.util.config.PluginConfigView.isAccessKeyMetadataValidationEnabled(existing);
+            boolean metadataEnabled = PluginConfigView.isAccessKeyMetadataValidationEnabled(existing);
             assertTrue(metadataEnabled);
             var restarted = new YamlConfiguration();
             restarted.loadFromString(existing.saveToString());
@@ -49,19 +53,19 @@ class DatabaseSettingsTest {
         assertTrue(assertThrows(IllegalArgumentException.class, () -> DatabaseSettings.read(config))
                 .getMessage().contains("DataProvider"));
         config.set("database.orm.schema-mode", null);
-        for (Object value : java.util.List.of(0, 61, "10")) {
+        for (Object value : List.of(0, 61, "10")) {
             config.set("database.shutdown-timeout-seconds", value);
             assertThrows(IllegalArgumentException.class, () -> DatabaseSettings.read(config));
         }
         config.set("database.shutdown-timeout-seconds", 10);
-        for (String key : java.util.List.of("database.startup-timeout-seconds", "database.operation-timeout-ms")) {
-            for (Object value : java.util.List.of(0, 100000, "10")) {
+        for (String key : List.of("database.startup-timeout-seconds", "database.operation-timeout-ms")) {
+            for (Object value : List.of(0, 100000, "10")) {
                 config.set(key, value);
                 assertThrows(IllegalArgumentException.class, () -> DatabaseSettings.read(config));
             }
             config.set(key, null);
         }
-        for (Object value : java.util.List.of(" ", 42)) {
+        for (Object value : List.of(" ", 42)) {
             config.set("database.connection-id", value);
             assertThrows(IllegalArgumentException.class, () -> DatabaseSettings.read(config));
         }

@@ -29,6 +29,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -52,7 +53,7 @@ class RepositoryContractTest {
     void duplicateDungeonIdentitiesAreIsolatedAndIdsResolveWithoutRenamingMaps() throws Exception {
         try (var fixture = new Fixture(directory)) {
             var shared = UUID.randomUUID();
-            for (String name : java.util.List.of("first", "duplicate", "healthy")) {
+            for (String name : List.of("first", "duplicate", "healthy")) {
                 Path folder = Files.createDirectory(directory.resolve(name));
                 Files.writeString(folder.resolve("config.yml"), "dungeon:\n  type: static\n  id: '"
                         + (name.equals("healthy") ? UUID.randomUUID() : shared) + "'\n");

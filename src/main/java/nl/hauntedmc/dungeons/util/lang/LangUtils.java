@@ -1,359 +1,164 @@
 package nl.hauntedmc.dungeons.util.lang;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
+import net.kyori.adventure.audience.Audience;
+import net.kyori.adventure.text.Component;
+
+import nl.hauntedmc.dungeons.integration.DungeonMessages;
+import nl.hauntedmc.dungeons.runtime.RuntimeContext;
+import nl.hauntedmc.dungeons.util.text.ComponentUtils;
+import nl.hauntedmc.featureframework.toolkit.io.localization.Language;
+import nl.hauntedmc.featureframework.toolkit.log.FrameworkLogger;
+import nl.hauntedmc.featureframework.toolkit.text.format.ComponentFormatter;
+import nl.hauntedmc.theme.HauntedMcColor;
+
+import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
+
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import net.kyori.adventure.text.Component;
-import nl.hauntedmc.dungeons.runtime.RuntimeContext;
-import nl.hauntedmc.dungeons.util.text.ColorUtils;
-import org.bukkit.command.CommandSender;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.InvalidConfigurationException;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.Player;
 
-/**
- * Localization utility for loading and formatting messages from {@code messages.yml}.
- */
+/** HauntedMC localization boundary; legacy string accessors remain for Bukkit model/UI codecs. */
 public final class LangUtils {
-    private static final String MESSAGES_FILE_NAME = "messages.yml";
-    private static final Pattern NAMED_PLACEHOLDER_PATTERN =
-            Pattern.compile("\\{([a-zA-Z0-9_.-]+)}");
-    private static FileConfiguration messagesYaml;
-    private static FileConfiguration jarMessages;
+    private static final Component DEFAULT_PREFIX =
+            Component.text("[Dungeons] ", HauntedMcColor.BRAND.textColor());
+    private static volatile DungeonMessages messages;
 
-    /** Utility class. */
     private LangUtils() {}
 
-    /** Loads bundled and disk language files into memory. */
     public static void initialize() {
-        messagesYaml = new YamlConfiguration();
-        File messagesFile = new File(RuntimeContext.plugin().getDataFolder(), MESSAGES_FILE_NAME);
-        jarMessages = new YamlConfiguration();
-
-        try (InputStream jarMessagesStream =
-                RuntimeContext.plugin().getResource(MESSAGES_FILE_NAME)) {
-            if (jarMessagesStream != null) {
-                try (InputStreamReader reader = new InputStreamReader(jarMessagesStream)) {
-                    jarMessages = YamlConfiguration.loadConfiguration(reader);
-                }
-            } else {
-                RuntimeContext.logger()
-                        .warn(
-                                "Bundled {} resource was not found in the plugin jar.",
-                                MESSAGES_FILE_NAME);
-            }
-        } catch (IOException exception) {
-            RuntimeContext.logger()
-                    .error("Failed to read bundled {} resource.", MESSAGES_FILE_NAME, exception);
-        }
-
-        try {
-            if (!messagesFile.exists()) {
-                RuntimeContext.plugin().saveResource(MESSAGES_FILE_NAME, false);
-            }
-
-            messagesYaml.load(messagesFile);
-        } catch (InvalidConfigurationException | IOException exception) {
-            RuntimeContext.logger()
-                    .error(
-                            "Failed to load messages file '{}'.",
-                            messagesFile.getAbsolutePath(),
-                            exception);
-        }
+        var plugin = RuntimeContext.plugin();
+        messages =
+                new DungeonMessages(
+                        plugin.getDataFolder().toPath(),
+                        LangUtils.class.getClassLoader(),
+                        FrameworkLogger.from(plugin.getSLF4JLogger()),
+                        LangUtils::language);
     }
 
-    /** Returns whether a language namespace exists in loaded messages. */
-    public static boolean contains(String langNamespace) {
-        return messagesYaml != null && messagesYaml.contains(langNamespace);
+    private static Language language(Audience audience) {
+        if (audience instanceof Player player) {
+            var profiles = RuntimeContext.runtime().profiles();
+            if (profiles != null) return profiles.language(player);
+            var locale = player.locale();
+            if (locale != null)
+                return Language.fromCode(locale.getLanguage())
+                        .filter(Language::isLocalizable)
+                        .orElse(Language.EN);
+        }
+        return Language.EN;
     }
 
-    /** Creates a named placeholder helper value. */
+    public static Locale getLocale() {
+        var current = messages;
+        return current == null
+                ? Locale.ENGLISH
+                : Locale.forLanguageTag(current.template("general.java-locale", null));
+    }
+
+    public static void clear() {
+        messages = null;
+    }
+
     public static LangPlaceholder placeholder(String name, Object value) {
         return new LangPlaceholder(name, value);
     }
 
-    /** Sends one localized message to a command sender with default prefix behavior. */
-    public static void sendMessage(CommandSender target, String langNamespace) {
-        String message = formatMessage(resolveString(langNamespace), true);
-        if (!message.isEmpty()) {
-            target.sendMessage(message);
-        }
+    private static Map<String, Object> values(LangPlaceholder... placeholders) {
+        var result = new LinkedHashMap<String, Object>();
+        if (placeholders == null) return result;
+        for (var value : placeholders) if (value != null) result.put(value.name(), value.value());
+        return result;
     }
 
-    /** Sends one localized message with named placeholders. */
-    public static void sendMessage(
-            CommandSender target, String langNamespace, LangPlaceholder... placeholders) {
-        String message = getMessage(langNamespace, true, placeholders);
-        if (!message.isEmpty()) {
-            target.sendMessage(message);
-        }
+    public static Component component(
+            String key, Audience audience, boolean prefix, Map<String, ?> values) {
+        var current = messages;
+        return current == null
+                ? Component.empty()
+                : current.message(key, audience, prefix, values == null ? Map.of() : values);
     }
 
-    /** Returns one localized message with default prefix behavior. */
-    public static String getMessage(String langNamespace) {
-        return getMessage(langNamespace, true);
+    public static Component component(
+            String key, Audience audience, boolean prefix, LangPlaceholder... values) {
+        return component(key, audience, prefix, values(values));
     }
 
-    /** Returns one localized message with configurable prefix behavior. */
-    public static String getMessage(String langNamespace, boolean prefixed) {
-        return formatMessage(resolveString(langNamespace), prefixed);
+    /**
+     * Parse administrator-authored text; substitutions must go through the component message API.
+     */
+    public static Component trusted(String template) {
+        var current = messages;
+        if (current != null) return current.render(template, Map.of());
+        return ComponentFormatter.deserialize(template == null ? "" : template)
+                .features(ComponentFormatter.ALL_DEFAULTS())
+                .toComponent();
     }
 
-    /** Returns one localized message with placeholder substitution. */
-    public static String getMessage(String langNamespace, LangPlaceholder... placeholders) {
-        return getMessage(langNamespace, true, placeholders);
+    public static Component notice(String text) {
+        return notice(Component.text(text == null ? "" : text));
     }
 
-    /** Returns one localized message with placeholders and optional prefix. */
-    public static String getMessage(
-            String langNamespace, boolean prefixed, LangPlaceholder... placeholders) {
-        return getMessage(langNamespace, prefixed, toPlaceholderMap(placeholders));
+    public static Component notice(Component text) {
+        return notice(text, null);
     }
 
-    /** Returns one localized message with placeholder map substitution. */
-    public static String getMessage(String langNamespace, Map<String, ?> placeholders) {
-        return getMessage(langNamespace, true, placeholders);
+    private static Component notice(Component text, Audience audience) {
+        Component body =
+                (text == null ? Component.empty() : text)
+                        .colorIfAbsent(HauntedMcColor.TEXT.textColor());
+        var current = messages;
+        return (current == null ? DEFAULT_PREFIX : current.prefix(audience)).append(body);
     }
 
-    /** Returns one localized message with placeholder map and prefix control. */
-    public static String getMessage(
-            String langNamespace, boolean prefixed, Map<String, ?> placeholders) {
-        String message = resolveString(langNamespace);
-        if (message == null) {
-            return "";
-        }
-
-        message = applyNamedPlaceholders(message, placeholders);
-
-        if (prefixed) {
-            message = applyPrefix(message);
-        }
-
-        return ColorUtils.fullColor(message);
+    public static void sendRaw(CommandSender target, Component text) {
+        target.sendMessage(notice(text, target));
     }
 
-    /** Sends an action-bar localized message to a player. */
-    public static void sendActionBar(Player target, String langNamespace) {
-        String message = formatMessage(resolveString(langNamespace), false);
-        if (!message.isEmpty()) {
-            target.sendActionBar(Component.text(message));
-        }
+    public static void sendRaw(CommandSender target, String text) {
+        target.sendMessage(notice(Component.text(text == null ? "" : text), target));
     }
 
-    /** Sends an action-bar localized message with placeholders. */
-    public static void sendActionBar(
-            Player target, String langNamespace, LangPlaceholder... placeholders) {
-        String message = getMessage(langNamespace, false, placeholders);
-        if (!message.isEmpty()) {
-            target.sendActionBar(Component.text(message));
-        }
+    public static void sendMessage(CommandSender target, String key) {
+        sendMessage(target, key, new LangPlaceholder[0]);
     }
 
-    /** Sends every localized line in a list namespace to a command sender. */
-    public static void sendMessageList(CommandSender target, String langNamespace) {
-        for (String line : getMessageList(langNamespace)) {
-            target.sendMessage(line);
-        }
+    public static void sendMessage(CommandSender target, String key, LangPlaceholder... values) {
+        Component message = component(key, target, true, values(values));
+        if (!message.equals(Component.empty())) target.sendMessage(message);
     }
 
-    /** Sends every localized list line with placeholder substitution. */
+    /** Legacy string boundary for inventory title APIs; delivery uses components directly. */
+    public static String getMessage(String key, boolean prefix) {
+        return ComponentUtils.serialize(component(key, null, prefix));
+    }
+
+    public static void sendActionBar(Player target, String key) {
+        sendActionBar(target, key, new LangPlaceholder[0]);
+    }
+
+    public static void sendActionBar(Player target, String key, LangPlaceholder... values) {
+        target.sendActionBar(component(key, target, false, values(values)));
+    }
+
+    public static void sendMessageList(CommandSender target, String key) {
+        sendMessageList(target, key, new LangPlaceholder[0]);
+    }
+
     public static void sendMessageList(
-            CommandSender target, String langNamespace, LangPlaceholder... placeholders) {
-        for (String line : getMessageList(langNamespace, placeholders)) {
-            target.sendMessage(line);
-        }
+            CommandSender target, String key, LangPlaceholder... values) {
+        for (Component line : components(key, target, values)) target.sendMessage(line);
     }
 
-    /** Returns a localized message list with no placeholder substitution. */
-    public static List<String> getMessageList(String langNamespace) {
-        return getMessageList(langNamespace, Map.of());
-    }
-
-    /** Returns a localized message list with placeholder substitution. */
-    public static List<String> getMessageList(
-            String langNamespace, LangPlaceholder... placeholders) {
-        return getMessageList(langNamespace, toPlaceholderMap(placeholders));
-    }
-
-    /** Returns a localized message list with placeholder-map substitution. */
-    public static List<String> getMessageList(String langNamespace, Map<String, ?> placeholders) {
-        List<String> messages = new ArrayList<>();
-        List<String> source =
-                messagesYaml == null ? List.of() : messagesYaml.getStringList(langNamespace);
-
-        for (String message : source) {
-            messages.add(ColorUtils.fullColor(applyNamedPlaceholders(message, placeholders)));
-        }
-
-        return messages;
-    }
-
-    /** Returns configured Java locale for date/time rendering. */
-    public static Locale getLocale() {
-        Locale locale = Locale.forLanguageTag(resolveString("general.java-locale", "nl-NL"));
-        if (locale.getLanguage().isBlank()) {
-            locale = Locale.of("nl", "NL");
-        }
-
-        return locale;
-    }
-
-    /** Synchronizes missing message keys from bundled resources into disk messages file. */
-    public static void saveMissingValues() {
-        if (messagesYaml == null || jarMessages == null) {
-            RuntimeContext.logger()
-                    .warn(
-                            "Message resources were not initialized before saveMissingValues() was called.");
-            return;
-        }
-
-        syncSection(jarMessages, messagesYaml);
-
-        File langFile = new File(RuntimeContext.plugin().getDataFolder(), MESSAGES_FILE_NAME);
-        try {
-            messagesYaml.save(langFile);
-        } catch (IOException exception) {
-            RuntimeContext.logger()
-                    .error(
-                            "Failed to save messages file '{}'.",
-                            langFile.getAbsolutePath(),
-                            exception);
-        }
-    }
-
-    /** Resolves one string value from loaded messages with optional fallback. */
-    private static String resolveString(String langNamespace) {
-        return resolveString(langNamespace, null);
-    }
-
-    /** Resolves one string value from disk messages, then bundled messages, then fallback. */
-    private static String resolveString(String langNamespace, String fallback) {
-        if (messagesYaml == null) {
-            return fallback;
-        }
-
-        String message = messagesYaml.getString(langNamespace);
-        if (message != null) {
-            return message;
-        }
-
-        if (jarMessages != null) {
-            return jarMessages.getString(langNamespace, fallback);
-        }
-
-        return fallback;
-    }
-
-    /** Converts placeholder records into a string substitution map. */
-    private static Map<String, String> toPlaceholderMap(LangPlaceholder... placeholders) {
-        Map<String, String> values = new LinkedHashMap<>();
-        for (LangPlaceholder placeholder : placeholders) {
-            if (placeholder == null) {
-                continue;
-            }
-
-            values.put(placeholder.name(), String.valueOf(placeholder.value()));
-        }
-        return values;
-    }
-
-    /** Replaces `{name}` tokens in a message with provided placeholder values. */
-    private static String applyNamedPlaceholders(String message, Map<String, ?> placeholders) {
-        if (message == null
-                || message.isEmpty()
-                || placeholders == null
-                || placeholders.isEmpty()) {
-            return message == null ? "" : message;
-        }
-
-        Matcher matcher = NAMED_PLACEHOLDER_PATTERN.matcher(message);
-        StringBuilder formatted = new StringBuilder();
-        while (matcher.find()) {
-            String placeholderName = matcher.group(1);
-            Object value = placeholders.get(placeholderName);
-            String replacement = value == null ? matcher.group(0) : String.valueOf(value);
-            matcher.appendReplacement(formatted, Matcher.quoteReplacement(replacement));
-        }
-
-        matcher.appendTail(formatted);
-        return formatted.toString();
-    }
-
-    /** Prefixes a message with configured `general.prefix` when available. */
-    private static String applyPrefix(String message) {
-        String prefix = resolveString("general.prefix", "[Dungeons]");
-        if (prefix == null || prefix.isEmpty()) {
-            return message;
-        }
-
-        return prefix + " " + message;
-    }
-
-    /** Applies optional prefix and color formatting to one message string. */
-    private static String formatMessage(String message, boolean prefixed) {
-        if (message == null || message.isEmpty()) {
-            return "";
-        }
-
-        if (prefixed) {
-            message = applyPrefix(message);
-        }
-
-        return ColorUtils.fullColor(message);
-    }
-
-    /** Synchronizes one configuration section recursively from source into target. */
-    private static void syncSection(ConfigurationSection source, ConfigurationSection target) {
-        if (source == null || target == null) {
-            return;
-        }
-
-        for (String key : new ArrayList<>(target.getKeys(false))) {
-            if (!source.contains(key)) {
-                target.set(key, null);
-            }
-        }
-
-        for (String key : source.getKeys(false)) {
-            Object sourceValue = source.get(key);
-            if (sourceValue instanceof ConfigurationSection sourceSection) {
-                ConfigurationSection targetSection = target.getConfigurationSection(key);
-                if (targetSection == null) {
-                    if (target.contains(key)) {
-                        target.set(key, null);
-                    }
-                    targetSection = target.createSection(key);
-                }
-
-                syncSection(sourceSection, targetSection);
-            } else {
-                if (!target.contains(key) || target.isConfigurationSection(key)) {
-                    target.set(key, copyValue(sourceValue));
-                }
-            }
-        }
-    }
-
-    /** Creates shallow copies for mutable list/map config values. */
-    private static Object copyValue(Object value) {
-        if (value instanceof List<?> list) {
-            return new ArrayList<>(list);
-        }
-
-        if (value instanceof Map<?, ?> map) {
-            return new LinkedHashMap<>(map);
-        }
-
-        return value;
+    public static List<Component> components(
+            String key, Audience audience, LangPlaceholder... values) {
+        var current = messages;
+        var replacements = values(values);
+        return current == null
+                ? List.of()
+                : current.lines(key, audience).stream()
+                        .map(line -> current.render(line, replacements))
+                        .toList();
     }
 }

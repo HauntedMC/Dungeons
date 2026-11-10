@@ -1,10 +1,9 @@
 package nl.hauntedmc.dungeons.generation.layout;
 
-import java.util.Optional;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
+import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
 import nl.hauntedmc.dungeons.generation.room.Connector;
 import nl.hauntedmc.dungeons.generation.room.InstanceRoom;
-import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
 import nl.hauntedmc.dungeons.generation.room.WhitelistEntry;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ChatMenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
@@ -14,9 +13,12 @@ import nl.hauntedmc.dungeons.util.command.InputUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.math.MathUtils;
 import nl.hauntedmc.dungeons.util.math.RandomCollection;
+
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
+
+import java.util.Optional;
 
 /**
  * Layout algorithm that expands outward connector by connector until room targets are met.

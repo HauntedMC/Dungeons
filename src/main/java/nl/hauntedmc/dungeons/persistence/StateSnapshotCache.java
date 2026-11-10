@@ -1,6 +1,7 @@
 package nl.hauntedmc.dungeons.persistence;
 
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.UUID;
 
@@ -25,7 +26,7 @@ final class StateSnapshotCache {
         return new Read(key, cell, cell.snapshot);
     }
     synchronized PlayerRead beginPlayer(UUID player) {
-        var keys = new java.util.LinkedHashSet<StateStore.Key>();
+        var keys = new LinkedHashSet<StateStore.Key>();
         for (var key : entries.keySet()) if (player.equals(key.player())) keys.add(key);
         keys.add(new StateStore.Key("player-profile", player.toString(), player));
         keys.add(new StateStore.Key("player-recovery", player.toString(), player));

@@ -6,6 +6,7 @@ import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
 import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
+import nl.hauntedmc.dungeons.runtime.staff.StaffPermissions;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 
 import org.bukkit.command.CommandSender;
@@ -64,7 +65,7 @@ final class DebugCommandHandler implements CommandHandler {
         if (!(sender instanceof Player player)) return false;
         var session = this.playerManager.get(player);
         var dungeon = session == null || session.getInstance() == null ? null : session.getInstance().getDungeon();
-        return dungeon != null && nl.hauntedmc.dungeons.runtime.staff.StaffPermissions.allows(sender, "diagnostics", dungeon.getWorldName());
+        return dungeon != null && StaffPermissions.allows(sender, "diagnostics", dungeon.getWorldName());
     }
 
     /** Runs handle test door command. */

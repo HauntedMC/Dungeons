@@ -1,5 +1,8 @@
 package nl.hauntedmc.dungeons.model.dungeon;
 
+import net.kyori.adventure.text.Component;
+
+import nl.hauntedmc.dungeons.config.ConfigurationFile;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
 import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
 import nl.hauntedmc.dungeons.content.function.reward.RewardFunction;
@@ -14,9 +17,10 @@ import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import nl.hauntedmc.dungeons.runtime.PluginEnvironment;
+import nl.hauntedmc.dungeons.runtime.dungeon.DungeonAccessKeyService;
+import nl.hauntedmc.dungeons.runtime.dungeon.DungeonIdentity;
 import nl.hauntedmc.dungeons.runtime.dungeon.DungeonPlayerDataStore;
 import nl.hauntedmc.dungeons.runtime.dungeon.InstanceWorldCleanup;
-import nl.hauntedmc.dungeons.runtime.dungeon.DungeonAccessKeyService;
 import nl.hauntedmc.dungeons.runtime.instance.ActiveInstanceRegistry;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
@@ -43,6 +47,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
 import org.yaml.snakeyaml.error.YAMLException;
 
 import java.io.File;
@@ -50,12 +55,14 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
 
@@ -133,7 +140,7 @@ public abstract class DungeonDefinition {
                     this.config.load(configFile);
                 }
             }
-            nl.hauntedmc.dungeons.runtime.dungeon.DungeonIdentity.existing(this.config);
+            DungeonIdentity.existing(this.config);
             File configFile = new File(folder, "config.yml");
             if (!configFile.exists()) {
                 this.config.save(configFile);
@@ -151,7 +158,7 @@ public abstract class DungeonDefinition {
             throw failure;
         }
 
-        this.dungeonId = nl.hauntedmc.dungeons.runtime.dungeon.DungeonIdentity.initialize(
+        this.dungeonId = DungeonIdentity.initialize(
                 this.plugin(), this.config, new File(folder, "config.yml"));
         this.syncConfigWithDefaults();
         this.loadRuntimeSettingsFromConfig();
@@ -215,7 +222,7 @@ public abstract class DungeonDefinition {
         return this.runtime.environment().plugin();
     }
 
-    protected final org.slf4j.Logger logger() {
+    protected final Logger logger() {
         return this.runtime.environment().logger();
     }
 
@@ -423,7 +430,7 @@ public abstract class DungeonDefinition {
 
     protected int getTrackedInstanceCount() {
         // Reloading a definition must not hide retained worlds owned by its previous object.
-        var tracked = new java.util.HashSet<>(this.instances);
+        var tracked = new HashSet<>(this.instances);
         if (this.activeInstances() != null) {
             for (DungeonInstance instance : this.activeInstances().getActiveInstances()) {
                 if (instance.getDungeon() != null
@@ -552,17 +559,17 @@ public abstract class DungeonDefinition {
         this.editAsync(playerId);
     }
 
-    public java.util.concurrent.CompletableFuture<Boolean> editAsync(UUID playerId) {
-        if (!this.runtime.database().ready()) return java.util.concurrent.CompletableFuture.completedFuture(false);
+    public CompletableFuture<Boolean> editAsync(UUID playerId) {
+        if (!this.runtime.database().ready()) return CompletableFuture.completedFuture(false);
         if (this.runtime.staffOperations() != null) {
             if (!this.runtime.staffOperations().maintenance(this.worldName)
                     || this.instances.stream().anyMatch(i -> !i.isEditInstance())) {
                 Player player = Bukkit.getPlayer(playerId);
                 if (player != null)
-                    player.sendMessage(
-                            "[Dungeons] Enable maintenance and let play worlds drain before"
+                    LangUtils.sendRaw(player,
+                            "Enable maintenance and let play worlds drain before"
                                     + " editing.");
-                return java.util.concurrent.CompletableFuture.completedFuture(false);
+                return CompletableFuture.completedFuture(false);
             }
         }
         var preparation =
@@ -600,10 +607,10 @@ public abstract class DungeonDefinition {
     public void timeout(DungeonInstance instance, DungeonPlayerSession playerSession) {
         Player player = playerSession.getPlayer();
         this.cancelInstance(instance, playerSession);
-        nl.hauntedmc.dungeons.util.lang.LangUtils.sendMessage(
+        LangUtils.sendMessage(
                 player,
                 "instance.lifecycle.load-timeout",
-                LangUtils.placeholder("dungeon", this.getDisplayName()));
+                LangUtils.placeholder("dungeon", this.getDisplayNameComponent()));
     }
 
     public void cancelInstance(DungeonInstance instance, DungeonPlayerSession playerSession) {
@@ -990,7 +997,7 @@ public abstract class DungeonDefinition {
     public void saveConfig() {
         try {
             String snapshot = this.config.saveToString();
-            nl.hauntedmc.dungeons.config.ConfigurationFile.saveSnapshot(
+            ConfigurationFile.saveSnapshot(
                     this.plugin(), new File(this.folder, "config.yml"), snapshot);
             this.durableConfiguration = snapshot;
         } catch (RuntimeException failure) {
@@ -1035,6 +1042,11 @@ public abstract class DungeonDefinition {
 
     public String getDisplayName() {
         return this.displayName;
+    }
+
+    /** Administrator-authored formatting is explicit; ordinary placeholder strings stay literal. */
+    public Component getDisplayNameComponent() {
+        return LangUtils.trusted(this.displayName);
     }
 
     public boolean isEnabled() {

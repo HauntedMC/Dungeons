@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
 import nl.hauntedmc.dungeons.content.instance.play.StaticInstance;
 import nl.hauntedmc.dungeons.runtime.instance.ActiveInstanceRegistry;
+import nl.hauntedmc.dungeons.runtime.instance.PreparationRegistry;
 import nl.hauntedmc.dungeons.runtime.player.*;
 
 import org.bukkit.*;
@@ -30,7 +31,7 @@ public final class RunFixture implements AutoCloseable {
         when(paper.plugin.namespace()).thenReturn("dungeons");
         paper.bukkit.when(Bukkit::isPrimaryThread).thenReturn(true);
         paper.bukkit.when(Bukkit::getDefaultGameMode).thenReturn(GameMode.SURVIVAL);
-        paper.runtime.setPreparations(new nl.hauntedmc.dungeons.runtime.instance.PreparationRegistry());
+        paper.runtime.setPreparations(new PreparationRegistry());
         paper.runtime.setPlayerSessions(new PlayerSessionRegistry(paper.plugin));
         paper.runtime.setActiveInstances(new ActiveInstanceRegistry(paper.plugin));
         when(world.getName()).thenReturn("crypt_0");

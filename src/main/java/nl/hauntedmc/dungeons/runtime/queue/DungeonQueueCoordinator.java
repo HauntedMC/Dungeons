@@ -12,12 +12,14 @@ import nl.hauntedmc.dungeons.util.command.CommandUtils;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import nl.hauntedmc.dungeons.util.lang.LangPlaceholder;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -73,7 +75,7 @@ public final class DungeonQueueCoordinator {
                             .staffOperations()
                             .entryBlock(player.getUniqueId(), dungeonName);
             if (blocked != null) {
-                player.sendMessage("[Dungeons] " + blocked);
+                LangUtils.sendRaw(player, blocked);
                 return;
             }
         }
@@ -110,7 +112,7 @@ public final class DungeonQueueCoordinator {
                                 .staffOperations()
                                 .entryBlock(playerId, queue.getDungeon().getWorldName());
                 if (blocked != null) {
-                    player.sendMessage("[Dungeons] " + blocked);
+                    LangUtils.sendRaw(player, blocked);
                     return false;
                 }
             }
@@ -340,7 +342,7 @@ public final class DungeonQueueCoordinator {
                 return false;
             }
 
-            ItemStack[] beforeReservation = java.util.Arrays.stream(player.getInventory().getContents())
+            ItemStack[] beforeReservation = Arrays.stream(player.getInventory().getContents())
                     .map(item -> item == null ? null : item.clone()).toArray(ItemStack[]::new);
             ItemStack reservedKey = this.reserveAccessKey(dungeon, player);
             boolean reserved;

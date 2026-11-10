@@ -9,6 +9,8 @@ import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.text.ColorUtils;
+import nl.hauntedmc.dungeons.util.text.ComponentUtils;
+
 import org.bukkit.entity.Player;
 
 /** Builds the composites editor workflow. */
@@ -114,7 +116,7 @@ final class CompositeFunctionEditorMenus {
                                 LangUtils.sendMessage(
                                         clickPlayer,
                                         "menus.remove.function",
-                                        LangUtils.placeholder("name", menuButton.getDisplayName()));
+                                        LangUtils.placeholder("name", ComponentUtils.component(menuButton.getDisplayName())));
                                 reloadCompositeFunctionRemovalGui(gui, clickPlayer);
                             });
                     guiInv.setButton(slot, button);

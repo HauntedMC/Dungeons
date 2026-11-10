@@ -1,10 +1,15 @@
 package nl.hauntedmc.dungeons.runtime.dungeon;
 
-import java.io.File;
-import java.util.UUID;
 import nl.hauntedmc.dungeons.config.ConfigurationFile;
+
+import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.Plugin;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.UUID;
 
 /** Assigns a map identity once, before publishing any database or runtime references. */
 public final class DungeonIdentity {
@@ -33,9 +38,9 @@ public final class DungeonIdentity {
         Object stored = config.get("dungeon.id");
         UUID id = null;
         if (destination.isFile()) {
-            var persisted = new org.bukkit.configuration.file.YamlConfiguration();
+            var persisted = new YamlConfiguration();
             try { ConfigurationFile.loadSnapshot(persisted, destination); }
-            catch (java.io.IOException | org.bukkit.configuration.InvalidConfigurationException failure) {
+            catch (IOException | InvalidConfigurationException failure) {
                 throw new IllegalStateException("Cannot recover existing dungeon identity", failure);
             }
             id = existing(persisted);

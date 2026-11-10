@@ -1,7 +1,5 @@
 package nl.hauntedmc.dungeons.content.function;
 
-import java.util.List;
-import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
@@ -9,8 +7,12 @@ import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.FunctionCategory;
 import nl.hauntedmc.dungeons.model.element.FunctionTargetType;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
+
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * Function that removes targeted players from the current dungeon instance.

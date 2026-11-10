@@ -25,8 +25,8 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 
-import java.util.function.Supplier;
 import java.util.function.IntSupplier;
+import java.util.function.Supplier;
 
 /** Builds connector and door editor hotbars independently of layout generation. */
 public final class ConnectorEditorMenus {

@@ -1,10 +1,5 @@
 package nl.hauntedmc.dungeons.content.function;
 
-import java.util.Locale;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
@@ -17,11 +12,18 @@ import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.SoundCategory;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * Function that plays a configured sound cue for the selected targets.

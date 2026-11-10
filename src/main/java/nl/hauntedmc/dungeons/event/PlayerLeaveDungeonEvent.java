@@ -3,6 +3,7 @@ package nl.hauntedmc.dungeons.event;
 import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
 import nl.hauntedmc.dungeons.model.instance.EditableInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
+
 import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
 

@@ -1,5 +1,6 @@
 package nl.hauntedmc.dungeons.runtime.team;
 
+import nl.hauntedmc.dungeons.content.instance.play.OpenInstance;
 import nl.hauntedmc.dungeons.event.DungeonDisposeEvent;
 import nl.hauntedmc.dungeons.event.PlayerLeaveDungeonEvent;
 import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
@@ -404,20 +405,20 @@ public final class DungeonTeamService implements Listener {
             memberNames.add(member == null ? memberId.toString() : member.getName());
         }
 
-        String state =
+        var state =
                 team.isStarted()
-                        ? LangUtils.getMessage("commands.team.info.states.running", false)
+                        ? LangUtils.component("commands.team.info.states.running", requester, false)
                         : team.isQueued()
-                                ? LangUtils.getMessage("commands.team.info.states.queued", false)
-                                : LangUtils.getMessage("commands.team.info.states.idle", false);
+                                ? LangUtils.component("commands.team.info.states.queued", requester, false)
+                                : LangUtils.component("commands.team.info.states.idle", requester, false);
         this.send(requester, "commands.team.info.leader", this.getLeaderName(team));
         this.send(requester, "commands.team.info.members", String.join(", ", memberNames));
         this.send(requester, "commands.team.info.state", state);
         if (team.getQueuedDungeonName() != null) {
-            String difficulty =
+            Object difficulty =
                     team.getQueuedDifficulty() == null || team.getQueuedDifficulty().isEmpty()
-                            ? LangUtils.getMessage(
-                                    "commands.team.info.labels.default-difficulty", false)
+                            ? LangUtils.component(
+                                    "commands.team.info.labels.default-difficulty", requester, false)
                             : team.getQueuedDifficulty();
             this.send(
                     requester,
@@ -567,7 +568,7 @@ public final class DungeonTeamService implements Listener {
         }
 
         team.setStarted(true);
-        if (!(instance instanceof nl.hauntedmc.dungeons.content.instance.play.OpenInstance))
+        if (!(instance instanceof OpenInstance))
             instance.setStartedTeamLeaderId(team.getLeaderId());
         team.setInstanceWorldName(instance.getInstanceWorld().getName());
         team.cancelExpiryTask();
@@ -653,7 +654,7 @@ public final class DungeonTeamService implements Listener {
     /** Schedules delayed shutdown of an instance whose backing team disbanded. */
     private void scheduleDisbandShutdown(DungeonInstance instance) {
         // A team owns its membership, never the lifetime of a shared public world.
-        if (instance instanceof nl.hauntedmc.dungeons.content.instance.play.OpenInstance) return;
+        if (instance instanceof OpenInstance) return;
         if (instance.getInstanceWorld() == null) {
             return;
         }
@@ -749,8 +750,7 @@ public final class DungeonTeamService implements Listener {
             return;
         }
 
-        instance.messagePlayers(
-                LangUtils.getMessage("instance.play.events.team-disbanded-timeout"));
+        instance.messagePlayers("instance.play.events.team-disbanded-timeout");
         for (DungeonPlayerSession playerSession : new ArrayList<>(instance.getPlayers())) {
             instance.removePlayer(playerSession);
         }
@@ -773,7 +773,7 @@ public final class DungeonTeamService implements Listener {
             this.send(target, memberKey);
         }
 
-        this.notifyTeam(team, othersKey, othersArgs);
+        this.notifyTeam(team, othersKey, (Object[]) othersArgs);
     }
 
     private void dissolveTeam(DungeonTeam team, String messageKey, boolean notifyMembers) {
@@ -815,7 +815,7 @@ public final class DungeonTeamService implements Listener {
         }
     }
 
-    private void notifyTeam(DungeonTeam team, String messageKey, String... args) {
+    private void notifyTeam(DungeonTeam team, String messageKey, Object... args) {
         for (UUID memberId : team.getMemberIds()) {
             Player member = Bukkit.getPlayer(memberId);
             if (member != null && member.isOnline()) {
@@ -824,7 +824,7 @@ public final class DungeonTeamService implements Listener {
         }
     }
 
-    private void send(Player player, String messageKey, String... args) {
+    private void send(Player player, String messageKey, Object... args) {
         // Team messages use named placeholders and this central switch keeps the placeholder
         // mapping explicit so mismatches fail fast during development.
         switch (messageKey) {

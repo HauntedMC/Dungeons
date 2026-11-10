@@ -10,10 +10,12 @@ import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
 import nl.hauntedmc.dungeons.runtime.instance.ActiveInstanceRegistry;
 import nl.hauntedmc.dungeons.runtime.instance.PreparationRegistry;
+import nl.hauntedmc.dungeons.runtime.player.PlayerDataCheckpoint;
 import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueCoordinator;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry;
 import nl.hauntedmc.dungeons.runtime.rewards.LootTableRepository;
+import nl.hauntedmc.dungeons.runtime.staff.StaffOperations;
 import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
 import nl.hauntedmc.dungeons.util.config.ConfigSyncUtils;
 import nl.hauntedmc.dungeons.util.config.PluginConfigView;
@@ -48,10 +50,9 @@ final class CoreBootstrap {
      * Loads config-backed state and ensures the plugin data layout exists on disk.
      */
     void initializeCoreState() {
-        nl.hauntedmc.dungeons.runtime.player.PlayerDataCheckpoint.requireStorage();
+        PlayerDataCheckpoint.requireStorage();
         this.initializePluginState();
         this.ensureDataDirectories();
-        this.initializeLanguageResources();
         this.reloadRuntimeConfiguration();
     }
 
@@ -61,7 +62,7 @@ final class CoreBootstrap {
     void initializeManagers() {
         DungeonsPlugin plugin = this.runtime.environment().plugin();
         this.runtime.setStaffOperations(
-                new nl.hauntedmc.dungeons.runtime.staff.StaffOperations(this.runtime));
+                new StaffOperations(this.runtime));
         this.runtime.setPreparations(new PreparationRegistry());
         this.runtime.setGuiService(new GuiService(plugin));
         this.runtime.setPlayerSessions(new PlayerSessionRegistry(plugin));
@@ -162,6 +163,7 @@ final class CoreBootstrap {
         this.syncPluginConfigWithDefaults(plugin);
         this.runtime.setConfig(plugin.getConfig());
         this.loadConfiguredMaterials();
+        LangUtils.initialize();
     }
 
     /**
@@ -170,8 +172,6 @@ final class CoreBootstrap {
     private void initializePluginState() {
         DungeonsPlugin plugin = this.runtime.environment().plugin();
         plugin.saveDefaultConfig();
-        this.syncPluginConfigWithDefaults(plugin);
-        this.runtime.setConfig(plugin.getConfig());
         this.runtime.setDefaultDungeonConfig(new YamlConfiguration());
         this.runtime.setLogPrefix("[Dungeons] ");
     }
@@ -202,14 +202,6 @@ final class CoreBootstrap {
                             "Failed to create plugin data directory '{}'.",
                             directory.getAbsolutePath());
         }
-    }
-
-    /**
-     * Initializes the language subsystem and writes missing bundled keys.
-     */
-    private void initializeLanguageResources() {
-        LangUtils.initialize();
-        LangUtils.saveMissingValues();
     }
 
     /**

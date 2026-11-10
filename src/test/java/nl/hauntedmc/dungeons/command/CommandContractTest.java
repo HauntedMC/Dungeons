@@ -13,23 +13,41 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import net.kyori.adventure.text.Component;
+
 import nl.hauntedmc.dungeons.bootstrap.LifecycleCoordinator;
+import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
 import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
+import nl.hauntedmc.dungeons.content.instance.play.BranchingInstance;
+import nl.hauntedmc.dungeons.content.reward.LootTable;
+import nl.hauntedmc.dungeons.generation.room.InstanceRoom;
 import nl.hauntedmc.dungeons.gui.framework.GuiService;
+import nl.hauntedmc.dungeons.gui.loot.LootTableEditor;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
+import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.registry.FunctionRegistry;
 import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
 import nl.hauntedmc.dungeons.runtime.queue.*;
 import nl.hauntedmc.dungeons.runtime.rewards.LootTableRepository;
+import nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard;
+import nl.hauntedmc.dungeons.runtime.staff.StaffOperations;
 import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
 import nl.hauntedmc.dungeons.support.*;
+import nl.hauntedmc.dungeons.util.lang.LangUtils;
+import nl.hauntedmc.dungeons.util.text.ComponentUtils;
 
+import org.apache.commons.io.FileUtils;
 import org.bukkit.*;
 import org.bukkit.command.Command;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.AdditionalMatchers;
+import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Mockito;
 
 import java.io.File;
 import java.nio.file.*;
@@ -40,6 +58,25 @@ class CommandContractTest {
     @TempDir Path directory;
 
     @Test
+    void listLabelsKeepTheirComponentsAndCommandOutputHasNoEscapedFormattingCodes() throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var command = new CommandFixture(f);
+            command.permissions.add("dungeons.play");
+            LangUtils.initialize();
+            command.execute("list");
+            var messages = ArgumentCaptor.forClass(Component.class);
+            verify(command.caller.player, Mockito.atLeastOnce()).sendMessage(messages.capture());
+            assertTrue(messages.getAllValues().size() >= 3);
+            for (var message : messages.getAllValues()) {
+                String plain = ComponentUtils.plainText(message);
+                assertFalse(plain.contains("§"), plain);
+                assertFalse(plain.contains("\\u00a7"), plain);
+                assertFalse(plain.contains("<HauntedMC:"), plain);
+            }
+        } finally { LangUtils.clear(); }
+    }
+
+    @Test
     void editorOpenWithoutReasonDispatchesAndCompletesScopedDungeonNames() throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
             var command = new CommandFixture(f);
@@ -48,7 +85,7 @@ class CommandContractTest {
             command.root.setStaffCommandHandler(staff);
             command.execute("edit", "open", "crypt");
             verify(staff).handleCommand(eq(command.caller.player),
-                    org.mockito.AdditionalMatchers.aryEq(new String[] {"edit", "crypt", "editor-command"}));
+                    AdditionalMatchers.aryEq(new String[] {"edit", "crypt", "editor-command"}));
             assertEquals(List.of("crypt"), command.root.onTabComplete(command.caller.player,
                     mock(Command.class), "dungeon", new String[] {"edit", "open", ""}));
         }
@@ -58,11 +95,11 @@ class CommandContractTest {
     void keyDefinitionChangesUseTheirOwnCapabilityAndConfirmTheExactMapIdentity() throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
             var command = new CommandFixture(f);
-            var dungeon = org.mockito.Mockito.spy(f.dungeon);
+            var dungeon = Mockito.spy(f.dungeon);
             when(command.catalog.get("crypt")).thenReturn(dungeon);
-            var operations = mock(nl.hauntedmc.dungeons.runtime.staff.StaffOperations.class);
+            var operations = mock(StaffOperations.class);
             f.paper.runtime.setStaffOperations(operations);
-            org.mockito.Mockito.doReturn(0).when(dungeon).removeAllAccessKeys();
+            Mockito.doReturn(0).when(dungeon).removeAllAccessKeys();
             command.permissions.add("dungeons.staff.keys.crypt");
             command.execute("map", "keys", "clear", "crypt", "Retire unused keys");
             verify(dungeon).removeAllAccessKeys();
@@ -70,13 +107,13 @@ class CommandContractTest {
             var second = UUID.randomUUID();
             when(dungeon.getDungeonId()).thenReturn(second);
             command.execute("map", "keys", "clear", "crypt", "Retire unused keys");
-            var revisions = org.mockito.ArgumentCaptor.forClass(String.class);
-            verify(operations, org.mockito.Mockito.times(2)).confirm(eq(command.caller.player), eq("key-clear"), eq("crypt"),
-                    revisions.capture(), anyString(), org.mockito.ArgumentMatchers.isNull());
+            var revisions = ArgumentCaptor.forClass(String.class);
+            verify(operations, Mockito.times(2)).confirm(eq(command.caller.player), eq("key-clear"), eq("crypt"),
+                    revisions.capture(), anyString(), ArgumentMatchers.isNull());
             assertTrue(revisions.getAllValues().getFirst().contains(first.toString()));
             assertTrue(revisions.getAllValues().getLast().contains(second.toString()));
-            org.junit.jupiter.api.Assertions.assertNotEquals(revisions.getAllValues().getFirst(), revisions.getAllValues().getLast());
-            verify(operations, org.mockito.Mockito.times(2)).requireContentWritable("crypt");
+            Assertions.assertNotEquals(revisions.getAllValues().getFirst(), revisions.getAllValues().getLast());
+            verify(operations, Mockito.times(2)).requireContentWritable("crypt");
         }
     }
 
@@ -90,7 +127,7 @@ class CommandContractTest {
             command.execute("map", "disable", id, "Scoped maintenance");
             assertFalse(f.dungeon.isEnabled());
             command.execute("help", "map", "settings", "crypt");
-            verify(command.caller.player, org.mockito.Mockito.atLeastOnce()).sendMessage(org.mockito.ArgumentMatchers.contains("/dungeon map settings crypt"));
+            verify(command.caller.player, Mockito.atLeastOnce()).sendMessage(ArgumentMatchers.argThat((Component message) -> ComponentUtils.plainText(message).contains("/dungeon map settings crypt")));
             command.permissions.clear();
             assertEquals(List.of(), command.root.onTabComplete(command.caller.player,
                     mock(Command.class), "dungeon", new String[] {""}));
@@ -101,20 +138,20 @@ class CommandContractTest {
     void failedLootWritesAndReadOnlyEditorsReportFailureWithoutOpeningAMenu() throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration());
                 var lang =
-                        org.mockito.Mockito.mockStatic(
-                                nl.hauntedmc.dungeons.util.lang.LangUtils.class)) {
+                        Mockito.mockStatic(
+                                LangUtils.class)) {
             var command = new CommandFixture(f);
             command.permissions.add("dungeons.staff.loot");
             when(command.loot.get("keep"))
-                    .thenReturn(new nl.hauntedmc.dungeons.content.reward.LootTable("keep"));
+                    .thenReturn(new LootTable("keep"));
             command.execute("loot", "create", "new");
             command.execute("loot", "remove", "keep");
             command.execute("loot", "edit", "keep");
             lang.verify(
                     () ->
-                            nl.hauntedmc.dungeons.util.lang.LangUtils.sendMessage(
+                            LangUtils.sendMessage(
                                     command.caller.player, "commands.loot.save-failed"),
-                    org.mockito.Mockito.times(2));
+                    Mockito.times(2));
             verifyNoInteractions(command.gui);
         }
     }
@@ -245,7 +282,7 @@ class CommandContractTest {
                 f.paper.bukkit.when(Bukkit::getUnsafe).thenReturn(unsafe);
                 var source = Files.createDirectories(directory.resolve("imported"));
                 Files.writeString(source.resolve("level.dat"), "world contents");
-                if (modernOnly) org.apache.commons.io.FileUtils.deleteDirectory(source.toFile());
+                if (modernOnly) FileUtils.deleteDirectory(source.toFile());
                 var world = mock(World.class);
                 when(world.getName()).thenReturn("imported");
                 var migrated =
@@ -290,7 +327,7 @@ class CommandContractTest {
                 if (!modernOnly)
                     assertEquals("world contents", Files.readString(source.resolve("level.dat")));
                 assertTrue(Files.isRegularFile(target.resolve("config.yml")));
-                org.apache.commons.io.FileUtils.deleteDirectory(target.toFile());
+                FileUtils.deleteDirectory(target.toFile());
             }
         }
     }
@@ -350,31 +387,31 @@ class CommandContractTest {
     @Test
     void canonicalDebugCommandsReachTheInstanceActions() throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration());
-                var guard = org.mockito.Mockito.mockStatic(nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard.class)) {
+                var guard = Mockito.mockStatic(StaffEditGuard.class)) {
             var command = new CommandFixture(f);
             command.permissions.add("dungeons.staff.edit");
             var instance =
-                    mock(nl.hauntedmc.dungeons.content.instance.play.BranchingInstance.class);
-            var room = mock(nl.hauntedmc.dungeons.generation.room.InstanceRoom.class);
-            when(instance.as(nl.hauntedmc.dungeons.content.instance.play.BranchingInstance.class))
+                    mock(BranchingInstance.class);
+            var room = mock(InstanceRoom.class);
+            when(instance.as(BranchingInstance.class))
                     .thenReturn(instance);
-            when(instance.as(nl.hauntedmc.dungeons.model.instance.PlayableInstance.class))
+            when(instance.as(PlayableInstance.class))
                     .thenReturn(instance);
             when(instance.getRoom(any(Location.class))).thenReturn(room);
             var session = f.paper.runtime.playerSessions().get(command.caller.player);
             when(instance.getRuntime()).thenReturn(f.paper.runtime);
-            var inspected = mock(nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon.class);
+            var inspected = mock(BranchingDungeon.class);
             when(inspected.getWorldName()).thenReturn("crypt");
             when(instance.getDungeon()).thenReturn(inspected);
-            guard.when(() -> nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard.editor(command.caller.player, session)).thenReturn(true);
+            guard.when(() -> StaffEditGuard.editor(command.caller.player, session)).thenReturn(true);
             session.setInstance(instance);
             command.permissions.add("dungeons.staff.diagnostics");
             command.execute("edit", "test", "doors", "north");
             command.execute("edit", "test", "doors", "all");
             command.execute("edit", "test", "map");
-            verify(room, org.mockito.Mockito.times(1)).toggleDoor("north");
-            verify(room, org.mockito.Mockito.times(1)).toggleValidDoors(true);
-            verify(instance, org.mockito.Mockito.times(1)).giveDungeonMap(command.caller.player);
+            verify(room, Mockito.times(1)).toggleDoor("north");
+            verify(room, Mockito.times(1)).toggleValidDoors(true);
+            verify(instance, Mockito.times(1)).giveDungeonMap(command.caller.player);
             command.permissions.remove("dungeons.staff.diagnostics");
             clearInvocations(room, instance);
             command.execute("edit", "test", "doors", "all");
@@ -417,7 +454,7 @@ class CommandContractTest {
                             queues,
                             teams,
                             loot,
-                            new nl.hauntedmc.dungeons.gui.loot.LootTableEditor(loot, gui),
+                            new LootTableEditor(loot, gui),
                             mock(FunctionRegistry.class),
                             lifecycle,
                             gui,

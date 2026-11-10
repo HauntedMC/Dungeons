@@ -1,7 +1,5 @@
 package nl.hauntedmc.dungeons.content.function;
 
-import java.util.List;
-import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
@@ -13,9 +11,13 @@ import nl.hauntedmc.dungeons.model.element.FunctionTargetType;
 import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * Function that updates the current status string of a playable instance.

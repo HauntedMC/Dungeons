@@ -2,6 +2,8 @@ package nl.hauntedmc.dungeons.runtime.staff;
 
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 
+import java.util.List;
+
 /** Domain validation supplements parsing; rejected values never reach persistence. */
 public final class SettingValidation {
     private SettingValidation() {}
@@ -14,7 +16,7 @@ public final class SettingValidation {
             validateResetDay(period, dungeon.getConfig().getInt(prefix + "reset_day", 1));
         }
         if (path.endsWith("room_pool")
-                && value instanceof java.util.List<?> rooms
+                && value instanceof List<?> rooms
                 && dungeon.asBranching() != null) {
             for (Object room : rooms)
                 if (dungeon.asBranching().getRoom(String.valueOf(room)) == null)

@@ -2,11 +2,13 @@ package nl.hauntedmc.dungeons.persistence;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import nl.hauntedmc.dungeons.persistence.DungeonProgressRepository.*;
+
+import org.junit.jupiter.api.Test;
+
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import nl.hauntedmc.dungeons.persistence.DungeonProgressRepository.*;
-import org.junit.jupiter.api.Test;
 
 class DungeonProgressRepositoryTest {
     @Test void changesRejectAmbiguousOperationsAndHaveDeterministicCooldownOrdering() {

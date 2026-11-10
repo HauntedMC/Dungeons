@@ -7,6 +7,7 @@ import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuItem;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
+import nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard;
 import nl.hauntedmc.dungeons.util.config.PluginConfigView;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
@@ -82,7 +83,7 @@ public final class HotbarMenuListener implements Listener {
         this.playMenuSound(player);
         playerSession.setChatListening(false);
         if (!playerSession.isEditMode()
-                || nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard.editor(player, playerSession))
+                || StaffEditGuard.editor(player, playerSession))
             menuItem.runSelectActions(event);
         menu.renderMenu();
     }
@@ -111,7 +112,7 @@ public final class HotbarMenuListener implements Listener {
         this.playMenuSound(player);
         playerSession.setChatListening(false);
         if (!playerSession.isEditMode()
-                || nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard.editor(player, playerSession))
+                || StaffEditGuard.editor(player, playerSession))
             menuItem.runSelectActions(event);
         menu.renderMenu();
     }
@@ -145,7 +146,7 @@ public final class HotbarMenuListener implements Listener {
         this.playMenuSound(player);
         playerSession.setChatListening(false);
         if (!playerSession.isEditMode()
-                || nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard.editor(player, playerSession))
+                || StaffEditGuard.editor(player, playerSession))
             menuItem.runClickActions(event);
         menu.renderMenu();
     }
@@ -486,7 +487,7 @@ public final class HotbarMenuListener implements Listener {
             if (playerSession.isChatListening()) {
                 if (!message.equalsIgnoreCase("cancel")
                         && (!playerSession.isEditMode()
-                                || nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard.editor(
+                                || StaffEditGuard.editor(
                                         player, playerSession)))
                     menuItem.runChatActions(player, message);
                 player.playSound(

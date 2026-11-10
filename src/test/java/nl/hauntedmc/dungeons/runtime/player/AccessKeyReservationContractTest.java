@@ -7,7 +7,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import nl.hauntedmc.dungeons.support.PaperBoundary;
+import nl.hauntedmc.dungeons.support.PlayerState;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -20,8 +22,8 @@ class AccessKeyReservationContractTest {
     void aReservationHasOneOwnerAndOfflineRefundIsDeliveredExactlyOnceOnReconnect() {
         try (var paper = new PaperBoundary()) {
             when(paper.plugin.getDataFolder()).thenReturn(directory.toFile());
-            var state = new nl.hauntedmc.dungeons.support.PlayerState();
-            var key = nl.hauntedmc.dungeons.support.PlayerState.stack(1);
+            var state = new PlayerState();
+            var key = PlayerState.stack(1);
             var session = new DungeonPlayerSession(paper.plugin, state.player);
             assertTrue(session.reserveAccessKey("crypt", key));
             state.online = false;
@@ -31,13 +33,13 @@ class AccessKeyReservationContractTest {
             assertTrue(session.refundReservedAccessKey("crypt"));
             assertFalse(session.refundReservedAccessKey("crypt"));
             session.flushPendingAccessKeyRefund();
-            org.junit.jupiter.api.Assertions.assertNull(state.contents[0]);
+            Assertions.assertNull(state.contents[0]);
             // The old session is deliberately abandoned: offline refunds must survive recreation.
             var reloaded = new DungeonPlayerSession(paper.plugin, state.player);
             state.online = true;
             reloaded.flushPendingAccessKeyRefund();
             reloaded.flushPendingAccessKeyRefund();
-            org.junit.jupiter.api.Assertions.assertEquals(1, state.contents[0].getAmount());
+            Assertions.assertEquals(1, state.contents[0].getAmount());
             assertTrue(reloaded.getRewardItems().isEmpty());
             assertFalse(reloaded.hasReservedAccessKey());
             verify(state.player, times(2)).saveData();
@@ -48,10 +50,10 @@ class AccessKeyReservationContractTest {
     void successfulConsumptionCannotLaterRefundTheKeyAndWrongDungeonCannotConsumeIt() {
         try (var paper = new PaperBoundary()) {
             when(paper.plugin.getDataFolder()).thenReturn(directory.toFile());
-            var state = new nl.hauntedmc.dungeons.support.PlayerState();
+            var state = new PlayerState();
             var player = state.player;
             var inventory = state.inventory;
-            var key = nl.hauntedmc.dungeons.support.PlayerState.stack(1);
+            var key = PlayerState.stack(1);
             var session = new DungeonPlayerSession(paper.plugin, player);
             assertTrue(session.reserveAccessKey("crypt", key));
             assertFalse(session.completeReservedAccessKey("other", null));
@@ -61,7 +63,7 @@ class AccessKeyReservationContractTest {
             assertFalse(session.refundReservedAccessKey());
             when(player.isOnline()).thenReturn(true);
             session.flushPendingAccessKeyRefund();
-            org.junit.jupiter.api.Assertions.assertNull(inventory.getContents()[0]);
+            Assertions.assertNull(inventory.getContents()[0]);
         }
     }
 

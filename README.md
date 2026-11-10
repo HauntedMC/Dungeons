@@ -76,6 +76,69 @@ without issuing SQL. One-connection pools are supported. Native Paper acceptance
 DataProvider/DataRegistry stack, rejects invalid connection/schema boots, and verifies healthy boot
 and cold-restart recovery; MySQL integration tests cover schema ownership and transactional failures.
 
+## HauntedMC integration
+
+Dungeons bundles FeatureFramework 2.2.4 and the HauntedMC Theme adapter 1.2.5 (palette 1.2.3),
+matching ServerFeatures and ProxyFeatures. These are libraries, so no additional server plugin is
+needed. The shared classes retain their public package identities; DataProvider/DataRegistry APIs
+and Adventure stay provided by the server.
+
+`lang/messages.yml` is the single default message resource. Existing installations move the old
+root `messages.yml` there once, preserving their text and formatting. If both files already exist,
+the canonical `lang/messages.yml` stays authoritative and the old file moves to
+`backups/messages-legacy-<id>.yml`. Fresh installs never create a root message file. Missing bundled
+keys are merged; custom keys and translations are retained. Restart or use
+`/dungeon server reload config <reason>` to reload messages.
+
+Templates accept legacy formatting, MiniMessage and `<HauntedMC:Brand>`, `<HauntedMC:Success>`,
+`<HauntedMC:Warning>`, `<HauntedMC:Error>` and the other shared theme items. Placeholder strings are
+literal components, so a player name or staff reason cannot inject colors or click actions. Explicit
+component placeholders preserve intentionally supplied interactive actions. Legacy UI conversion
+does not parse the resulting text a second time. Chat, action bars, kick notices and command output
+share the theme; authored dungeon narrative retains its configured formatting.
+
+Language preferences are read asynchronously through DataRegistry's identity-bound API, cached
+per connected player and refreshed after 30 seconds. Reconnect and shutdown discard pending
+results. Overrides in `lang/messages_EN.yml` and `lang/messages_NL.yml` use the player's resolved
+network preference, falling back to client locale and then the bundled Dutch defaults when a key
+has no translation. Message delivery never waits for a language query or performs SQL.
+
+The bundled [`lang/messages_EN.yml`](src/main/resources/lang/messages_EN.yml) is an active example:
+it is copied to `plugins/Dungeons/lang/messages_EN.yml` automatically. It contains English scalar
+messages, placeholders, theme tags and a complete translated team-help list. It deliberately
+overrides only some keys; the remaining messages fall back to `lang/messages.yml`. Edit that file
+for EN players, or `lang/messages_NL.yml` for NL-specific overrides. Supported language codes are
+EN and NL; DataRegistry owns the player's effective language choice. The default file is also
+used for console output and shared inventory templates without a player language context.
+
+DataProvider connections belong to the `dungeons.gameplay` scope, which closes only Dungeons'
+resources after admitted writes drain and ORM closes. Online identity lookups use DataRegistry's
+explicit active cache, with persisted asynchronous lookup for offline identities. Canonical UUIDs
+are still checked in the write transaction. FeatureFramework owns ingress listener/service cleanup,
+so stale callbacks and public services cannot survive shutdown.
+
+Peer Paper plugins can obtain `nl.hauntedmc.dungeons.api.DungeonsApi` from Bukkit's services manager.
+Its server identity, readiness and immutable catalog snapshots are safe to read from any thread and
+perform no I/O. Catalog snapshots refresh once per second; unavailable persistence yields an empty
+catalog. Mutable dungeon models, worlds and player records are never exposed through this service.
+
+The service also provides asynchronous `canViewPlayerData(viewer, target)` disclosure decisions
+and `publicPlayerIds(candidates)` batches (at most 512 canonical IDs). These query DataRegistry's
+current privacy settings without caching grants. Only `PUBLIC` entries belong in public rankings;
+both `FRIENDS` and `PRIVATE` entries are excluded before consumers assign ranks or paginate. A
+player may view their own historical data. `FRIENDS` access resolves the live ServerFeatures
+`PlayerPrivacyApi` capability, which delegates friendship decisions to ProxyFeatures. ServerFeatures
+5.2.6 is an optional provided API; it is not bundled or required for ordinary dungeon gameplay.
+Missing/disabled privacy support, absent friendship authority, failed/incomplete replies, timeouts,
+overload and shutdown never grant disclosure. At most 128 disclosure operations are admitted, each
+with a five-second deadline; shutdown terminates outstanding results.
+
+There are currently no active public dungeon statistics or ranking commands, and the reserved
+statistics tables are not populated by gameplay. The API exposes the policy boundary for consumers;
+it does not claim to supply a working leaderboard. Existing self/gameplay state and capability-checked
+staff inspection/recovery retain their separate authorization rules. Privacy controls disclosure,
+not durability of progression or recovery state.
+
 ## Administration
 
 Use `/dungeon help` to discover commands; staff inspection and confirmations appear in chat.

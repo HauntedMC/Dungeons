@@ -1,8 +1,15 @@
 package nl.hauntedmc.dungeons.bootstrap;
 
+import nl.hauntedmc.dungeons.integration.DungeonService;
+import nl.hauntedmc.dungeons.integration.RegistryProfiles;
+import nl.hauntedmc.dungeons.persistence.DatabaseLifecycle;
+import nl.hauntedmc.dungeons.persistence.DatabaseSettings;
+import nl.hauntedmc.dungeons.persistence.DatabaseStateStore;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
+import nl.hauntedmc.dungeons.util.lang.LangUtils;
+import nl.hauntedmc.featureframework.lifecycle.CleanupSequence;
 
 import org.bukkit.generator.ChunkGenerator;
 import org.jetbrains.annotations.NotNull;
@@ -13,7 +20,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * <p>This class owns the startup and shutdown sequence and keeps the ordering explicit in one
  * place. The individual bootstrap collaborators remain concrete classes because the codebase has a
- * single startup path and does not benefit from an extra bootstrap framework.
+ * single startup path; shared FeatureFramework resources own ingress cleanup.
  */
 public final class DungeonsApplication {
     private final DungeonsRuntime runtime;
@@ -25,7 +32,7 @@ public final class DungeonsApplication {
     private final LifecycleCoordinator lifecycleCoordinator;
     private final CommandBootstrap commandBootstrap;
     private boolean started;
-    private nl.hauntedmc.dungeons.persistence.DatabaseLifecycle database;
+    private DatabaseLifecycle database;
 
     /** Creates the application composition root around the Bukkit plugin entrypoint. */
     public DungeonsApplication(DungeonsPlugin plugin) {
@@ -48,16 +55,19 @@ public final class DungeonsApplication {
 
         try {
             this.initializeCoreState();
-            var databaseSettings = nl.hauntedmc.dungeons.persistence.DatabaseSettings.read(
+            var databaseSettings = DatabaseSettings.read(
                     this.runtime.environment().plugin().getConfig());
-            nl.hauntedmc.dungeons.persistence.DatabaseLifecycle.requireDependencies(
+            DatabaseLifecycle.requireDependencies(
                     this.runtime.environment().plugin());
-            this.database = new nl.hauntedmc.dungeons.persistence.DatabaseLifecycle(
+            this.database = new DatabaseLifecycle(
                     this.runtime.environment().plugin());
             this.runtime.setDatabase(this.database);
             this.database.awaitReady(databaseSettings.startupTimeoutSeconds());
-            this.runtime.setStateStore(new nl.hauntedmc.dungeons.persistence.DatabaseStateStore(
+            this.runtime.setStateStore(new DatabaseStateStore(
                     this.database.database(), databaseSettings.operationTimeoutMillis()));
+            var profiles = new RegistryProfiles(this.database.database().players());
+            this.runtime.setProfiles(profiles);
+            this.runtime.resources().own(profiles);
             this.started = true;
             this.initializeRuntimeServices();
             this.registerRuntimeTypes();
@@ -66,6 +76,7 @@ public final class DungeonsApplication {
             this.bindBukkitIntegrations();
             this.initializeUserInterfaces();
             this.restoreRuntimeState();
+            new DungeonService(this.runtime).start();
             this.logStartupSummary();
         } catch (RuntimeException | Error exception) {
             try { this.stop(); }
@@ -79,19 +90,19 @@ public final class DungeonsApplication {
     /** Stops the application and always clears the static runtime bridge afterwards. */
     public void stop() {
         try {
-            if (this.started) {
-                this.lifecycleCoordinator.shutdown();
-            }
+            CleanupSequence.run(
+                    this.runtime.resources()::quiesce,
+                    () -> { if (this.started) this.lifecycleCoordinator.shutdown(); },
+                    this.runtime.resources()::cleanup,
+                    () -> { if (this.database != null) this.database.close(); });
         } finally {
-            try {
-                if (this.database != null) this.database.close();
-            } finally {
-                this.database = null;
-                this.runtime.setDatabase(null);
-                this.runtime.setStateStore(null);
-                this.started = false;
-                RuntimeContext.clear();
-            }
+            this.database = null;
+            this.runtime.setDatabase(null);
+            this.runtime.setStateStore(null);
+            this.runtime.setProfiles(null);
+            this.started = false;
+            LangUtils.clear();
+            RuntimeContext.clear();
         }
     }
 
@@ -103,6 +114,7 @@ public final class DungeonsApplication {
 
     /** Publishes the freshly created runtime graph through the shared runtime context. */
     private void initializeRuntimeAccess() {
+        this.runtime.resetResources();
         RuntimeContext.initialize(this.runtime);
     }
 

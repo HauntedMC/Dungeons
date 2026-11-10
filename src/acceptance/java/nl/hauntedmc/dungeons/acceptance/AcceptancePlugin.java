@@ -1,11 +1,17 @@
 package nl.hauntedmc.dungeons.acceptance;
 
+import nl.hauntedmc.dungeons.api.DungeonsApi;
+import nl.hauntedmc.dungeons.persistence.DungeonSql;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
+import nl.hauntedmc.dungeons.util.lang.LangUtils;
+import nl.hauntedmc.dungeons.util.text.ComponentUtils;
+import nl.hauntedmc.theme.HauntedMcColor;
 
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -13,9 +19,12 @@ import java.nio.file.Files;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import java.util.logging.Level;
 
@@ -33,10 +42,11 @@ public final class AcceptancePlugin extends JavaPlugin {
     record Result(String name, double seconds, Throwable failure) {}
 
     private boolean running;
+    private Class<?> publicApiType;
 
     @Override
     public void onEnable() {
-        if (java.nio.file.Files.exists(getDataFolder().toPath().resolve("expect-database-failure"))) {
+        if (Files.exists(getDataFolder().toPath().resolve("expect-database-failure"))) {
             var dungeon = Bukkit.getPluginManager().getPlugin("Dungeons");
             if (dungeon != null && dungeon.isEnabled()) {
                 getLogger().severe("DUNGEONS_ACCEPTANCE_FAIL database failure still enabled Dungeons");
@@ -56,6 +66,7 @@ public final class AcceptancePlugin extends JavaPlugin {
             getLogger().info("DUNGEONS_DATABASE_REJECTED");
             return;
         }
+        publicApiType = DungeonsApi.class;
         Objects.requireNonNull(getCommand("dungeonsacceptance")).setExecutor(this::runCommand);
     }
 
@@ -63,17 +74,17 @@ public final class AcceptancePlugin extends JavaPlugin {
         return RuntimeContext.runtime();
     }
 
-    void seedPlayer(java.util.UUID id) throws Exception {
+    void seedPlayer(UUID id) throws Exception {
         runtime().database().database().transaction(connection -> {
-            nl.hauntedmc.dungeons.persistence.DungeonSql.update(connection,
+            DungeonSql.update(connection,
                     "INSERT INTO player_entity(uuid,username) VALUES(?,?) ON DUPLICATE KEY UPDATE uuid=uuid",
                     id, "Fixture" + id.toString().substring(0, 8));
             return null;
-        }).get(5, java.util.concurrent.TimeUnit.SECONDS);
+        }).get(5, TimeUnit.SECONDS);
     }
 
     private boolean runCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!(sender instanceof org.bukkit.command.ConsoleCommandSender) || running) return false;
+        if (!(sender instanceof ConsoleCommandSender) || running) return false;
         if (args.length == 1 && args[0].equals("database-down")) {
             var dungeon = Bukkit.getPluginManager().getPlugin("Dungeons");
             require(dungeon != null && !dungeon.isEnabled(), "Database outage left Dungeons enabled");
@@ -81,6 +92,7 @@ public final class AcceptancePlugin extends JavaPlugin {
             try { RuntimeContext.runtime(); }
             catch (IllegalStateException expected) { cleared = true; }
             require(cleared, "Database outage retained the runtime bridge");
+            require(Bukkit.getServicesManager().getRegistration(publicApiType) == null, "Database outage retained the public service");
             getLogger().info("DUNGEONS_DATABASE_OUTAGE_CLOSED");
             return true;
         }
@@ -94,6 +106,8 @@ public final class AcceptancePlugin extends JavaPlugin {
                                         () -> NativeRestart.verify(this)))
                         : List.of(
                                 new Scenario("packaged-bootstrap", this::bootstrap),
+                                new Scenario("native-localization-resources", () -> NativeLocalization.run(this)),
+                                new Scenario("native-privacy-disclosure", () -> NativePrivacy.run(this)),
                                 new Scenario(
                                         "native-staff-operations", () -> NativeStaff.run(this)),
                                 new Scenario(
@@ -136,6 +150,16 @@ public final class AcceptancePlugin extends JavaPlugin {
         var plugin = Bukkit.getPluginManager().getPlugin("Dungeons");
         require(plugin != null && plugin.isEnabled(), "Packaged Dungeons is not enabled");
         require(Bukkit.getPluginCommand("dungeon") != null, "Dungeon command is missing");
+        var api = Bukkit.getServicesManager().load(DungeonsApi.class);
+        require(api != null && api.ready() && !api.catalog().isEmpty(), "Dungeons public service is unavailable");
+        require(api.serverId().equals(runtime().database().database().serverId()), "Public backend identity differs from DataRegistry identity");
+        var themed = ComponentUtils.component("<HauntedMC:Success>Ready");
+        require(ComponentUtils.plainText(themed).equals("Ready"), "Theme tags leaked to native Paper");
+        require(themed.toString().contains(HauntedMcColor.SUCCESS.textColor().asHexString()), "Packaged HauntedMC palette did not render");
+        var literal = LangUtils.component("commands.play.usage", null, false,
+                Map.of("dungeon", "<click:run_command:/op bad>&cBad</click>"));
+        require(literal != null, "Packaged localization failed");
+
         require(runtime().environment().plugin() == plugin, "Runtime refers to another plugin");
         require(
                 runtime().dungeonCatalog().get("current-config") != null,

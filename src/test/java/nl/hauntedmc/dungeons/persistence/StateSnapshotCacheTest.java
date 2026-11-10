@@ -1,9 +1,11 @@
 package nl.hauntedmc.dungeons.persistence;
 
 import static org.junit.jupiter.api.Assertions.*;
+
+import org.junit.jupiter.api.Test;
+
 import java.util.Map;
 import java.util.UUID;
-import org.junit.jupiter.api.Test;
 
 class StateSnapshotCacheTest {
     private static final StateStore.Key KEY = new StateStore.Key("staff-state", "server", null);

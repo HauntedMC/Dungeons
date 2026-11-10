@@ -6,22 +6,24 @@ import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.mockStatic;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.concurrent.*;
 
 class WorldTemplateTest {
     @TempDir Path directory;
 
     @Test
-    @org.junit.jupiter.api.Timeout(10)
+    @Timeout(10)
     void publicationFailureRestoresAllWorldPathsBeforeReleasingTemplateReaders() throws Exception {
         Path template = Files.createDirectory(directory.resolve("template"));
         Path source = Files.createDirectory(directory.resolve("live"));
-        for (String entry : java.util.List.of("region", "entities")) {
+        for (String entry : List.of("region", "entities")) {
             Files.createDirectory(template.resolve(entry));
             Files.writeString(template.resolve(entry + "/chunk.mca"), "old " + entry);
             Files.createDirectory(source.resolve(entry));

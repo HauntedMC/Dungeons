@@ -275,7 +275,7 @@ public class LootTableRewardsFunction extends RewardFunction {
                             player, "editor.function.loot-table-rewards.warning-not-found");
                     MessageUtils.sendClickableCommand(
                             player,
-                            RuntimeContext.logPrefix() + "&b&lClick here &bto create it!",
+                            LangUtils.component("editor.function.loot-table-rewards.create-link", player, true),
                             "dungeon loot create " + message);
                 }
 

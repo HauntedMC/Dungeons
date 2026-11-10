@@ -1,7 +1,5 @@
 package nl.hauntedmc.dungeons.content.function;
 
-import java.util.List;
-import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
@@ -14,6 +12,7 @@ import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.entity.EntityUtils;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.math.MathUtils;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -22,6 +21,9 @@ import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerEvent;
 import org.bukkit.scheduler.BukkitRunnable;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * Function that teleports its targets to the configured destination.

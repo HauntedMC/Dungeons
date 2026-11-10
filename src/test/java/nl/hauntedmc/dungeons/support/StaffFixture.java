@@ -19,9 +19,11 @@ import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
 import org.bukkit.*;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
 
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Real staff/runtime services; Paper storage, schedulers and command output are controlled
@@ -63,7 +65,7 @@ public final class StaffFixture implements AutoCloseable {
         when(repository.getLoadedDungeons()).thenAnswer(c -> List.copyOf(catalog.values()));
         when(repository.loadFailures()).thenReturn(Map.of());
         when(repository.reloadAllAsync())
-                .thenReturn(java.util.concurrent.CompletableFuture.completedFuture(Map.of()));
+                .thenReturn(CompletableFuture.completedFuture(Map.of()));
         doAnswer(
                         c -> {
                             catalog.remove(((StaticDungeon) c.getArgument(0)).getWorldName());
@@ -113,7 +115,7 @@ public final class StaffFixture implements AutoCloseable {
                         c ->
                                 players.values().stream()
                                         .map(p -> p.player)
-                                        .filter(org.bukkit.entity.Player::isOnline)
+                                        .filter(Player::isOnline)
                                         .toList());
         run.paper
                 .bukkit

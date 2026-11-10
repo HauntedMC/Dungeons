@@ -1,5 +1,6 @@
 package nl.hauntedmc.dungeons.content.dungeon;
 
+import nl.hauntedmc.dungeons.config.ConfigurationFile;
 import nl.hauntedmc.dungeons.content.instance.edit.BranchingEditableInstance;
 import nl.hauntedmc.dungeons.content.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.generation.layout.Layout;
@@ -27,6 +28,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.file.NoSuchFileException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -77,9 +79,9 @@ public class BranchingDungeon extends DungeonDefinition {
 
         try {
             File configFile = new File(folder, "gamerules.yml");
-            nl.hauntedmc.dungeons.config.ConfigurationFile.loadSnapshot(
+            ConfigurationFile.loadSnapshot(
                     this.ruleConfig, configFile);
-        } catch (java.nio.file.NoSuchFileException absent) {
+        } catch (NoSuchFileException absent) {
             // New dungeons have no persisted rule overrides yet.
         } catch (IOException exception) {
             throw new DungeonLoadException(
@@ -229,12 +231,12 @@ public class BranchingDungeon extends DungeonDefinition {
      * Saves gamerules from.
      */
     public void saveGamerulesFrom(World world) {
-        nl.hauntedmc.dungeons.config.ConfigurationFile.onOwnerThread(
+        ConfigurationFile.onOwnerThread(
                 this.plugin(),
                 () -> {
                     GameRuleUtils.capture(world, this.ruleConfig);
                     this.ruleConfig.set("Difficulty", world.getDifficulty().name());
-                    return nl.hauntedmc.dungeons.config.ConfigurationFile.saveAsync(
+                    return ConfigurationFile.saveAsync(
                             this.plugin(), this.ruleConfig, new File(this.folder, "gamerules.yml"));
                 });
     }

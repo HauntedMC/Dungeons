@@ -1,5 +1,9 @@
 package nl.hauntedmc.dungeons.runtime.dungeon;
 
+import nl.hauntedmc.dungeons.model.dungeon.AccessKeyDefinition;
+import nl.hauntedmc.dungeons.model.dungeon.DungeonLoadException;
+import nl.hauntedmc.dungeons.persistence.StateDocument;
+import nl.hauntedmc.dungeons.persistence.StateStore;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import nl.hauntedmc.dungeons.util.config.PluginConfigView;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
@@ -20,10 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-
-import nl.hauntedmc.dungeons.model.dungeon.AccessKeyDefinition;
-import nl.hauntedmc.dungeons.model.dungeon.DungeonLoadException;
 import java.util.function.Supplier;
+
 /** Owns issued access-key validation, reservations, revocation and durable ledger rollback.
  * Configuration definitions are supplied by the dungeon and remain owned by its server thread.
  */
@@ -31,7 +33,7 @@ public final class DungeonAccessKeyService {
     private final DungeonsRuntime runtime;
     private final String worldName;
     private final Supplier<List<AccessKeyDefinition>> definitions;
-    private final nl.hauntedmc.dungeons.persistence.StateDocument document;
+    private final StateDocument document;
     private final YamlConfiguration accessKeyStateConfig;
     private Map<String, String> issuedAccessKeyInstances;
     private Map<String, String> durableIssuedKeys = Map.of();
@@ -48,7 +50,7 @@ public final class DungeonAccessKeyService {
         this.runtime = runtime;
         this.worldName = folder.getName();
         this.definitions = definitions;
-        this.document = runtime.stateStore().document(new nl.hauntedmc.dungeons.persistence.StateStore.Key(
+        this.document = runtime.stateStore().document(new StateStore.Key(
                 "key-ledger", dungeonId.toString(), null));
         this.accessKeyStateConfig = new YamlConfiguration();
         this.issuedAccessKeyInstances = new LinkedHashMap<>();
@@ -442,7 +444,7 @@ public final class DungeonAccessKeyService {
 
     /** A candidate ledger change; publication is allowed only after the joint journal commit. */
     public record Settlement(boolean valid, @Nullable ItemStack replacement,
-            nl.hauntedmc.dungeons.persistence.StateDocument.Prepared write, Runnable publish) {}
+            StateDocument.Prepared write, Runnable publish) {}
 
     public synchronized Settlement prepareSettlement(ItemStack item, boolean refund, boolean consume) {
         if (this.usesUniqueAccessKeyValidation()) this.ensureUniqueAccessKeyStateLoaded();
@@ -463,7 +465,7 @@ public final class DungeonAccessKeyService {
             var nextIssued = new LinkedHashMap<>(this.issuedAccessKeyInstances);
             var nextReserved = new LinkedHashSet<>(this.reservedAccessKeyInstances);
             var nextInvalidated = new LinkedHashSet<>(this.invalidatedAccessKeyInstances);
-            nl.hauntedmc.dungeons.persistence.StateDocument.Prepared write = null;
+            StateDocument.Prepared write = null;
             if (this.usesUniqueAccessKeyValidation()) {
                 var candidate = new YamlConfiguration();
                 candidate.loadFromString(this.accessKeyStateConfig.saveToString());

@@ -3,16 +3,21 @@ package nl.hauntedmc.dungeons.persistence;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import java.sql.DriverManager;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import nl.hauntedmc.dataregistry.api.player.PlayerIdentity;
+
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.mysql.MySQLContainer;
+
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 class DatabaseStateStoreIT {
     static final MySQLContainer MYSQL = new MySQLContainer("mysql:8.4");
@@ -39,7 +44,7 @@ class DatabaseStateStoreIT {
             var saved = store.save(key, 0, "Completed: true\n", operation).get(5, TimeUnit.SECONDS);
             assertEquals(1, saved.revision());
             assertEquals(saved, store.save(key, 0, "Completed: true\n", operation).get(5, TimeUnit.SECONDS));
-            assertThrows(java.util.concurrent.ExecutionException.class,
+            assertThrows(ExecutionException.class,
                     () -> store.save(key, 1, "changed", operation).get(5, TimeUnit.SECONDS));
             var fresh = new DatabaseStateStore(host.database, 3000);
             assertEquals(saved, fresh.load(key).get(5, TimeUnit.SECONDS));
@@ -64,7 +69,7 @@ class DatabaseStateStoreIT {
             }).get(5, TimeUnit.SECONDS);
             assertThrows(RuntimeException.class, () -> store.await(store.refresh(key)));
             assertFalse(host.database.ready());
-            assertThrows(java.util.concurrent.ExecutionException.class,
+            assertThrows(ExecutionException.class,
                     () -> store.save(key, 1, "overwrite", UUID.randomUUID()).get(5, TimeUnit.SECONDS));
         }
     }
@@ -84,12 +89,12 @@ class DatabaseStateStoreIT {
             var store = new DatabaseStateStore(host.database, 3000);
             var ledger = new StateStore.Key("key-ledger", "atomic", null);
             var journal = new StateStore.Key("player-recovery-test", "atomic", null);
-            var initial = store.saveAll(java.util.List.of(
+            var initial = store.saveAll(List.of(
                     new StateStore.Write(ledger, 0, "original", UUID.randomUUID()),
                     new StateStore.Write(journal, 0, "reserved", UUID.randomUUID()))).get(5, TimeUnit.SECONDS);
             assertEquals(2, initial.size());
             host.failBeforeCommit.set(true);
-            assertThrows(java.util.concurrent.ExecutionException.class, () -> store.saveAll(java.util.List.of(
+            assertThrows(ExecutionException.class, () -> store.saveAll(List.of(
                     new StateStore.Write(ledger, 1, "rotated", UUID.randomUUID()),
                     new StateStore.Write(journal, 1, "replacement", UUID.randomUUID()))).get(5, TimeUnit.SECONDS));
             assertEquals("original", store.load(ledger).get(5, TimeUnit.SECONDS).payload());
@@ -97,7 +102,7 @@ class DatabaseStateStoreIT {
             assertEquals("original", fresh.load(ledger).get(5, TimeUnit.SECONDS).payload());
             assertEquals("reserved", fresh.load(journal).get(5, TimeUnit.SECONDS).payload());
             // A stale second document also rolls back a preceding valid write.
-            assertThrows(java.util.concurrent.ExecutionException.class, () -> store.saveAll(java.util.List.of(
+            assertThrows(ExecutionException.class, () -> store.saveAll(List.of(
                     new StateStore.Write(ledger, 1, "rotated", UUID.randomUUID()),
                     new StateStore.Write(journal, 0, "stale", UUID.randomUUID()))).get(5, TimeUnit.SECONDS));
             assertEquals("original", fresh.refresh(ledger).get(5, TimeUnit.SECONDS).payload());
@@ -108,12 +113,12 @@ class DatabaseStateStoreIT {
             var store = new DatabaseStateStore(host.database, 3000);
             var ledger = new StateStore.Key("key-ledger", "ambiguous", null);
             var journal = new StateStore.Key("player-recovery-test", "ambiguous", null);
-            var writes = java.util.List.of(new StateStore.Write(ledger, 0, "rotated", UUID.randomUUID()),
+            var writes = List.of(new StateStore.Write(ledger, 0, "rotated", UUID.randomUUID()),
                     new StateStore.Write(journal, 0, "replacement", UUID.randomUUID()));
             host.failAfterCommit.set(true);
-            assertThrows(java.util.concurrent.ExecutionException.class, () -> store.saveAll(writes).get(5, TimeUnit.SECONDS));
+            assertThrows(ExecutionException.class, () -> store.saveAll(writes).get(5, TimeUnit.SECONDS));
             var retried = store.saveAll(writes).get(5, TimeUnit.SECONDS);
-            assertEquals(java.util.List.of(new StateStore.Snapshot(1, "rotated"), new StateStore.Snapshot(1, "replacement")), retried);
+            assertEquals(List.of(new StateStore.Snapshot(1, "rotated"), new StateStore.Snapshot(1, "replacement")), retried);
             var fresh = new DatabaseStateStore(host.database, 3000);
             assertEquals(1, fresh.load(ledger).get(5, TimeUnit.SECONDS).revision());
             assertEquals("replacement", fresh.load(journal).get(5, TimeUnit.SECONDS).payload());
@@ -132,7 +137,7 @@ class DatabaseStateStoreIT {
             assertDoesNotThrow(() -> store.requirePlayerReady(player));
             assertThrows(IllegalArgumentException.class, () -> store.await(store.save(key, 0, "invalid", UUID.randomUUID())));
             var write = new StateStore.Write(new StateStore.Key("staff-state", "server", null), 0, "value", UUID.randomUUID());
-            assertThrows(IllegalArgumentException.class, () -> store.await(store.saveAll(java.util.List.of(write, write))));
+            assertThrows(IllegalArgumentException.class, () -> store.await(store.saveAll(List.of(write, write))));
             assertTrue(host.database.ready());
             assertThrows(IllegalArgumentException.class, () -> new StateStore.Key("player-profile", UUID.randomUUID().toString(), player));
         }
@@ -176,9 +181,9 @@ class DatabaseStateStoreIT {
             try (var host = new DatabaseTestHost(MYSQL, "state-wrong-owner-" + prefetch)) {
                 when(host.players.findIdentity(claimed)).thenReturn(CompletableFuture.completedFuture(Optional.of(new PlayerIdentity(301L, claimed, "WrongDatabase"))));
                 var store = new DatabaseStateStore(host.database, 3000);
-                if (prefetch) assertThrows(java.util.concurrent.ExecutionException.class,
+                if (prefetch) assertThrows(ExecutionException.class,
                         () -> store.prefetch(claimed).get(5, TimeUnit.SECONDS));
-                else assertThrows(java.util.concurrent.ExecutionException.class, () -> store.saveAll(java.util.List.of(
+                else assertThrows(ExecutionException.class, () -> store.saveAll(List.of(
                         new StateStore.Write(new StateStore.Key("key-ledger", "wrong-owner", null), 0, "rotated", UUID.randomUUID()),
                         new StateStore.Write(new StateStore.Key("player-profile", claimed.toString(), claimed), 0, "wrong owner", UUID.randomUUID())))
                         .get(5, TimeUnit.SECONDS));
@@ -220,11 +225,29 @@ class DatabaseStateStoreIT {
             DungeonSql.update(connection, "ALTER TABLE player_entity MODIFY uuid VARCHAR(36) NULL");
             try {
                 var before = DungeonSql.rows(connection, "SHOW CREATE TABLE player_entity");
-                assertThrows(java.sql.SQLException.class, () -> OrmTestSupport.initialize(MYSQL, "update"));
+                assertThrows(SQLException.class, () -> OrmTestSupport.initialize(MYSQL, "update"));
                 assertEquals(before, DungeonSql.rows(connection, "SHOW CREATE TABLE player_entity"));
             } finally {
                 DungeonSql.update(connection, "ALTER TABLE player_entity MODIFY uuid VARCHAR(36) NOT NULL");
             }
+        }
+    }
+
+    @Test void activeIdentityCacheAvoidsRepeatedRegistryQueriesForAtomicPlayerWrites() throws Exception {
+        try (var host = new DatabaseTestHost(MYSQL, "state-active-cache")) {
+            UUID player = UUID.randomUUID();
+            host.database.transaction(connection -> {
+                DungeonSql.update(connection, "INSERT INTO player_entity(id,uuid) VALUES(400,?)", player);
+                return null;
+            }).get(5, TimeUnit.SECONDS);
+            when(host.players.findActiveIdentityCached(player)).thenReturn(Optional.of(new PlayerIdentity(400L, player, "Active")));
+            var store = new DatabaseStateStore(host.database, 3000);
+            store.saveAll(List.of(
+                    new StateStore.Write(new StateStore.Key("player-profile", player.toString(), player), 0, "profile", UUID.randomUUID()),
+                    new StateStore.Write(new StateStore.Key("player-recovery", player.toString(), player), 0, "recovery", UUID.randomUUID())))
+                    .get(5, TimeUnit.SECONDS);
+            verify(host.players, never()).findIdentity(player);
+            assertTrue(host.database.ready());
         }
     }
 

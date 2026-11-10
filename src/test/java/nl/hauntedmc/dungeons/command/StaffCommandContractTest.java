@@ -3,11 +3,16 @@ package nl.hauntedmc.dungeons.command;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import net.kyori.adventure.text.Component;
+
 import nl.hauntedmc.dungeons.content.function.reward.LootTableRewardsFunction;
 import nl.hauntedmc.dungeons.content.reward.LootTable;
+import nl.hauntedmc.dungeons.model.dungeon.AccessKeyDefinition;
 import nl.hauntedmc.dungeons.model.instance.*;
 import nl.hauntedmc.dungeons.runtime.player.StaffPlayerRecords;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueEntry;
+import nl.hauntedmc.dungeons.runtime.staff.StaffContentStorage;
+import nl.hauntedmc.dungeons.runtime.staff.StaffOperations;
 import nl.hauntedmc.dungeons.support.*;
 
 import org.bukkit.*;
@@ -89,7 +94,7 @@ class StaffCommandContractTest {
             h.executeChecked(p.player, new String[] {"queues"});
             h.executeChecked(p.player, new String[] {"operations"});
             h.executeChecked(p.player, new String[] {"loot"});
-            verify(p.player, atLeastOnce()).sendMessage(any(net.kyori.adventure.text.Component.class));
+            verify(p.player, atLeastOnce()).sendMessage(any(Component.class));
             assertTrue(h.handleCommand(f.actor, new String[] {"no-such-command"}));
             assertThrows(
                     IllegalArgumentException.class, () -> execute(h, f, "overview", "--confirm"));
@@ -162,7 +167,7 @@ class StaffCommandContractTest {
             execute(h, f, "backup", "crypt", "Safety copy");
             f.flush();
             assertFalse(
-                    new nl.hauntedmc.dungeons.runtime.staff.StaffContentStorage(f.runtime)
+                    new StaffContentStorage(f.runtime)
                             .backups("crypt")
                             .isEmpty());
             var completion = new CompletableFuture<String>();
@@ -184,7 +189,7 @@ class StaffCommandContractTest {
             completion.complete("done");
             f.flush();
             assertEquals(
-                    nl.hauntedmc.dungeons.runtime.staff.StaffOperations.State.SUCCEEDED, op.state);
+                    StaffOperations.State.SUCCEEDED, op.state);
         }
     }
 
@@ -285,7 +290,7 @@ class StaffCommandContractTest {
             doAnswer(
                             call -> {
                                 assertFalse(
-                                        new nl.hauntedmc.dungeons.runtime.staff.StaffContentStorage(
+                                        new StaffContentStorage(
                                                         f.runtime)
                                                 .backups("crypt")
                                                 .isEmpty());
@@ -297,7 +302,7 @@ class StaffCommandContractTest {
             f.flush();
             verify(dungeon).editAsync(playerId);
             assertEquals(
-                    nl.hauntedmc.dungeons.runtime.staff.StaffOperations.State.SUCCEEDED,
+                    StaffOperations.State.SUCCEEDED,
                     f.ops.operations().getLast().state);
             assertTrue(f.ops.maintenance("crypt"));
         }
@@ -486,7 +491,7 @@ class StaffCommandContractTest {
                         StaffPlayerRecords.inspect(f.runtime, online.player.getUniqueId())
                                 .contains("claimable stacks=1"));
                 var definition = spy(f.run.dungeon);
-                var key = mock(nl.hauntedmc.dungeons.model.dungeon.AccessKeyDefinition.class);
+                var key = mock(AccessKeyDefinition.class);
                 var issued = PlayerState.stack(1);
                 when(key.getItem()).thenReturn(issued);
                 doReturn(key).when(definition).getAccessKey(1);
@@ -540,7 +545,7 @@ class StaffCommandContractTest {
             f.denials.clear();
             execute(h, f, "archive", "crypt", "Retired", "--confirm", token);
             f.flush();
-            var storage = new nl.hauntedmc.dungeons.runtime.staff.StaffContentStorage(f.runtime);
+            var storage = new StaffContentStorage(f.runtime);
             String archive = storage.archives().getFirst();
             assertFalse(f.run.dungeon.getFolder().exists());
             when(f.repository.loadDungeon(f.run.dungeon.getFolder()))

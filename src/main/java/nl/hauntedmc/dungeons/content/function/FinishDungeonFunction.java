@@ -1,7 +1,5 @@
 package nl.hauntedmc.dungeons.content.function;
 
-import java.util.List;
-import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.event.PlayerFinishDungeonEvent;
@@ -16,11 +14,15 @@ import nl.hauntedmc.dungeons.model.instance.EditableInstance;
 import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * Function that marks a run as finished for the targeted players.
@@ -82,7 +84,7 @@ public class FinishDungeonFunction extends DungeonFunction {
                 LangUtils.sendMessage(
                         player,
                         "instance.play.functions.finish-dungeon",
-                        LangUtils.placeholder("dungeon", instance.getDungeon().getDisplayName()));
+                        LangUtils.placeholder("dungeon", instance.getDungeon().getDisplayNameComponent()));
                 instance.applyLootCooldowns(player);
                 instance.pushPlayerRewards(player);
                 DungeonDefinition dungeon = instance.getDungeon();

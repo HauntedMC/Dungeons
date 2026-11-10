@@ -1,10 +1,8 @@
 package nl.hauntedmc.dungeons.util.entity;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.util.text.ComponentUtils;
+
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Display.Billboard;
@@ -12,6 +10,10 @@ import org.bukkit.entity.TextDisplay;
 import org.bukkit.entity.TextDisplay.TextAlignment;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * In-world text-display hologram manager keyed by normalized location.

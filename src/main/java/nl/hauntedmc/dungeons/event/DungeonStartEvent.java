@@ -1,11 +1,13 @@
 package nl.hauntedmc.dungeons.event;
 
+import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
+import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
+
+import org.bukkit.entity.Player;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
-import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import org.bukkit.entity.Player;
 
 /**
  * Event fired when a dungeon instance begins running for a set of players.

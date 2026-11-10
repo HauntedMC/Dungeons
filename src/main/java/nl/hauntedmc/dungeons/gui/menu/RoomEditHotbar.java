@@ -1,10 +1,9 @@
 package nl.hauntedmc.dungeons.gui.menu;
 
-import java.util.Optional;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
 import nl.hauntedmc.dungeons.content.instance.edit.BranchingEditableInstance;
-import nl.hauntedmc.dungeons.generation.room.Connector;
 import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
+import nl.hauntedmc.dungeons.generation.room.Connector;
 import nl.hauntedmc.dungeons.gui.hotbar.PlayerHotbarMenu;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ChatMenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
@@ -20,6 +19,7 @@ import nl.hauntedmc.dungeons.util.math.RangedNumber;
 import nl.hauntedmc.dungeons.util.world.DirectionUtils;
 import nl.hauntedmc.dungeons.util.world.LocationUtils;
 import nl.hauntedmc.dungeons.util.world.SimpleLocation;
+
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -28,6 +28,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.util.BoundingBox;
+
+import java.util.Optional;
 
 /** Builds the room editor hotbar workflow. */
 final class RoomEditHotbar {

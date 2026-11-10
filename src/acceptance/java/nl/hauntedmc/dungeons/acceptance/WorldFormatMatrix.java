@@ -3,8 +3,13 @@ package nl.hauntedmc.dungeons.acceptance;
 import static nl.hauntedmc.dungeons.acceptance.AcceptancePlugin.require;
 
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
+
+import org.apache.commons.io.FileUtils;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.entity.Endermite;
+import org.bukkit.entity.Minecart;
 
 import java.io.DataOutputStream;
 import java.nio.file.Files;
@@ -90,14 +95,14 @@ final class WorldFormatMatrix {
                                                 world.setChunkForceLoaded(0, 0, true);
                                                 var cart =
                                                         world.spawn(
-                                                                new org.bukkit.Location(
+                                                                new Location(
                                                                         world, 5.5, 70, 5.5),
-                                                                org.bukkit.entity.Minecart.class);
+                                                                Minecart.class);
                                                 var mite =
                                                         world.spawn(
-                                                                new org.bukkit.Location(
+                                                                new Location(
                                                                         world, 5.5, 70, 5.5),
-                                                                org.bukkit.entity.Endermite.class);
+                                                                Endermite.class);
                                                 mite.setPersistent(true);
                                                 mite.setRemoveWhenFarAway(false);
                                                 require(
@@ -135,7 +140,7 @@ final class WorldFormatMatrix {
                                                     reopened
                                                             .getInstanceWorld()
                                                             .getEntitiesByClass(
-                                                                    org.bukkit.entity.Minecart
+                                                                    Minecart
                                                                             .class)
                                                             .stream()
                                                             .anyMatch(
@@ -169,7 +174,7 @@ final class WorldFormatMatrix {
                             template.resolve(folder), template.resolve(dimension).resolve(folder));
             }
         }
-        org.apache.commons.io.FileUtils.deleteDirectory(template.resolve("data").toFile());
+        FileUtils.deleteDirectory(template.resolve("data").toFile());
         // Minimal pre-26.1 level data. Region files retain their native version and contents.
         try (var output =
                 new DataOutputStream(

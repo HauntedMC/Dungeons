@@ -6,15 +6,20 @@ import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.InvalidConfigurationException;
+import org.yaml.snakeyaml.LoaderOptions;
+import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /** Transactional loot-table storage. Mutable table models are owned by the server thread. */
 public final class LootTableRepository {
@@ -22,7 +27,7 @@ public final class LootTableRepository {
     private final File file;
     private volatile State state;
     private volatile boolean writable;
-    private final java.util.List<Runnable> replacementListeners = new java.util.ArrayList<>();
+    private final List<Runnable> replacementListeners = new ArrayList<>();
 
     private record State(Map<String, LootTable> tables, String document) {}
 
@@ -136,7 +141,7 @@ public final class LootTableRepository {
     /** Subscribes to successful membership/model replacements; returns an unsubscribe action. */
     public Runnable onTableReplacement(Runnable listener) {
         requireOwnerThread();
-        java.util.Objects.requireNonNull(listener);
+        Objects.requireNonNull(listener);
         this.replacementListeners.add(listener);
         return () -> {
             requireOwnerThread();
@@ -194,12 +199,12 @@ public final class LootTableRepository {
     }
 
     private List<String> expectedTables(String document) {
-        var options = new org.yaml.snakeyaml.LoaderOptions();
+        var options = new LoaderOptions();
         options.setAllowDuplicateKeys(false);
         options.setMaxAliasesForCollections(Integer.MAX_VALUE);
         Object raw =
-                new org.yaml.snakeyaml.Yaml(
-                                new org.yaml.snakeyaml.constructor.SafeConstructor(options))
+                new Yaml(
+                                new SafeConstructor(options))
                         .load(document);
         if (raw == null && this.state == null) return List.of();
         if (!(raw instanceof Map<?, ?> root)) {
@@ -210,7 +215,7 @@ public final class LootTableRepository {
             throw new IllegalArgumentException(
                     "Tables must be a YAML mapping; use Tables: {} for an empty repository");
         }
-        var names = new java.util.ArrayList<String>();
+        var names = new ArrayList<String>();
         for (Object key : tables.keySet()) {
             if (!(key instanceof String name) || name.isBlank()) {
                 throw new IllegalArgumentException("Loot table keys must be nonblank names");

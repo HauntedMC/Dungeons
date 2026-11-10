@@ -3,6 +3,7 @@ package nl.hauntedmc.dungeons.runtime.staff;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
+import nl.hauntedmc.dungeons.util.lang.LangUtils;
 
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -40,7 +41,7 @@ public final class StaffEditGuard {
                 StaffPermissions.require(player, "scripts", instance.getDungeon().getWorldName());
             return true;
         } catch (IllegalArgumentException | IllegalStateException failure) {
-            player.sendMessage("[Dungeons] " + failure.getMessage());
+            LangUtils.sendRaw(player, failure.getMessage());
             return false;
         }
     }

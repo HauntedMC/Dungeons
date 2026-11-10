@@ -2,12 +2,45 @@ package nl.hauntedmc.dungeons.persistence;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+
+import nl.hauntedmc.dataprovider.api.DataProviderAPI;
+import nl.hauntedmc.dataprovider.api.DataProviderScope;
+import nl.hauntedmc.dataprovider.core.DataProviderHandler;
+import nl.hauntedmc.dataprovider.core.api.DefaultDataProviderApi;
+import nl.hauntedmc.dataprovider.core.identity.PluginIdentityRegistry;
+import nl.hauntedmc.dataprovider.database.DatabaseType;
+import nl.hauntedmc.dataprovider.database.relational.RelationalDataAccess;
+import nl.hauntedmc.dataprovider.database.relational.RelationalDatabaseProvider;
+import nl.hauntedmc.dataprovider.database.relational.TransactionCallback;
+import nl.hauntedmc.dataregistry.api.DataRegistryApi;
+import nl.hauntedmc.dataregistry.api.DataRegistryApiProvider;
+import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
+
+import org.bukkit.Server;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.PluginManager;
+import org.bukkit.plugin.RegisteredServiceProvider;
+import org.bukkit.plugin.ServicesManager;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Mockito;
+import org.testcontainers.mysql.MySQLContainer;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
-import org.junit.jupiter.api.Test;
-import org.testcontainers.mysql.MySQLContainer;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+
+import javax.sql.DataSource;
 
 class DungeonSchemaIT {
     @Test
@@ -51,28 +84,28 @@ class DungeonSchemaIT {
                 second.release(connection);
                 verifyProviderLifecycle(mysql);
                 // A bounded one-connection pool must not deadlock ORM initialization.
-                var poolConfig = new com.zaxxer.hikari.HikariConfig();
+                var poolConfig = new HikariConfig();
                 poolConfig.setJdbcUrl(mysql.getJdbcUrl());
                 poolConfig.setUsername(mysql.getUsername());
                 poolConfig.setPassword(mysql.getPassword());
                 poolConfig.setMaximumPoolSize(1);
                 poolConfig.setConnectionTimeout(2000);
-                try (var pool = new com.zaxxer.hikari.HikariDataSource(poolConfig)) {
+                try (var pool = new HikariDataSource(poolConfig)) {
                     // Exercise the real public facade, plugin binding and guarded DataSource,
                     // rather than an adapter which might accidentally honor a consumer mode.
-                    var handler = org.mockito.Mockito.mock(nl.hauntedmc.dataprovider.core.DataProviderHandler.class);
-                    var identity = new nl.hauntedmc.dataprovider.core.identity.PluginIdentityRegistry()
+                    var handler = Mockito.mock(DataProviderHandler.class);
+                    var identity = new PluginIdentityRegistry()
                             .register("dungeons", DungeonEntities.class.getClassLoader());
-                    org.mockito.Mockito.when(handler.issuePluginIdentity(org.mockito.ArgumentMatchers.any())).thenReturn(identity);
-                    org.mockito.Mockito.when(handler.getPluginId(identity)).thenReturn("dungeons");
-                    org.mockito.Mockito.when(handler.getConfiguredOrmSchemaMode(identity)).thenReturn("validate");
-                    var backend = org.mockito.Mockito.mock(nl.hauntedmc.dataprovider.database.relational.RelationalDatabaseProvider.class);
-                    org.mockito.Mockito.when(backend.getDataSource()).thenReturn(pool);
-                    org.mockito.Mockito.when(handler.registerDatabaseOrThrow(identity,
-                            nl.hauntedmc.dataprovider.database.DatabaseType.MYSQL, "canonical_rw")).thenReturn(backend);
-                    var api = new nl.hauntedmc.dataprovider.core.api.DefaultDataProviderApi(handler).forPlugin(new Object());
-                    var registered = api.registerDatabaseOrThrow(nl.hauntedmc.dataprovider.database.DatabaseType.MYSQL,
-                            "canonical_rw", nl.hauntedmc.dataprovider.database.relational.RelationalDatabaseProvider.class);
+                    Mockito.when(handler.issuePluginIdentity(ArgumentMatchers.any())).thenReturn(identity);
+                    Mockito.when(handler.getPluginId(identity)).thenReturn("dungeons");
+                    Mockito.when(handler.getConfiguredOrmSchemaMode(identity)).thenReturn("validate");
+                    var backend = Mockito.mock(RelationalDatabaseProvider.class);
+                    Mockito.when(backend.getDataSource()).thenReturn(pool);
+                    Mockito.when(handler.registerDatabaseOrThrow(identity,
+                            DatabaseType.MYSQL, "canonical_rw")).thenReturn(backend);
+                    var api = new DefaultDataProviderApi(handler).forPlugin(new Object());
+                    var registered = api.registerDatabaseOrThrow(DatabaseType.MYSQL,
+                            "canonical_rw", RelationalDatabaseProvider.class);
                     try {
                         try (var context = DungeonSchema.open(api, registered.getDataSource(), (level, message, error) -> {})) { }
                         var beforeLegacyCall = DungeonSql.rows(connection, "SHOW CREATE TABLE player_entity");
@@ -82,10 +115,10 @@ class DungeonSchemaIT {
                         assertThrows(IllegalArgumentException.class,
                                 () -> DungeonSchema.open(api, pool, (level, message, error) -> {}));
                     } finally {
-                        api.unregisterDatabase(nl.hauntedmc.dataprovider.database.DatabaseType.MYSQL, "canonical_rw");
+                        api.unregisterDatabase(DatabaseType.MYSQL, "canonical_rw");
                     }
-                    org.mockito.Mockito.verify(handler).unregisterDatabase(identity,
-                            nl.hauntedmc.dataprovider.database.DatabaseType.MYSQL, "canonical_rw");
+                    Mockito.verify(handler).unregisterDatabase(identity,
+                            DatabaseType.MYSQL, "canonical_rw");
                 }
                 DungeonSql.update(connection, "ALTER TABLE dungeon_run DROP COLUMN exclusion_reason");
                 assertThrows(RuntimeException.class, () -> OrmTestSupport.initialize(mysql, "validate"));
@@ -96,13 +129,13 @@ class DungeonSchemaIT {
         }
     }
     private void verifyProviderLifecycle(MySQLContainer mysql) throws Exception {
-        var source = org.mockito.Mockito.mock(javax.sql.DataSource.class);
-        org.mockito.Mockito.when(source.getConnection()).thenAnswer(ignored ->
+        var source = Mockito.mock(DataSource.class);
+        Mockito.when(source.getConnection()).thenAnswer(ignored ->
                 DriverManager.getConnection(mysql.getJdbcUrl(), mysql.getUsername(), mysql.getPassword()));
-        var access = org.mockito.Mockito.mock(nl.hauntedmc.dataprovider.database.relational.RelationalDataAccess.class);
-        org.mockito.Mockito.when(access.executeTransactionally(org.mockito.Mockito.any())).thenAnswer(invocation -> {
-            nl.hauntedmc.dataprovider.database.relational.TransactionCallback<?> callback = invocation.getArgument(0);
-            return java.util.concurrent.CompletableFuture.supplyAsync(() -> {
+        var access = Mockito.mock(RelationalDataAccess.class);
+        Mockito.when(access.executeTransactionally(Mockito.any())).thenAnswer(invocation -> {
+            TransactionCallback<?> callback = invocation.getArgument(0);
+            return CompletableFuture.supplyAsync(() -> {
                 try (var connection = source.getConnection()) {
                     connection.setAutoCommit(false);
                     try {
@@ -114,54 +147,56 @@ class DungeonSchemaIT {
                         throw failure;
                     }
                 } catch (Exception failure) {
-                    throw new java.util.concurrent.CompletionException(failure);
+                    throw new CompletionException(failure);
                 }
             });
         });
-        var relational = org.mockito.Mockito.mock(nl.hauntedmc.dataprovider.database.relational.RelationalDatabaseProvider.class);
-        org.mockito.Mockito.when(relational.getDataSource()).thenReturn(source);
-        org.mockito.Mockito.when(relational.getDataAccess()).thenReturn(access);
-        var api = org.mockito.Mockito.mock(nl.hauntedmc.dataprovider.api.DataProviderAPI.class);
+        var relational = Mockito.mock(RelationalDatabaseProvider.class);
+        Mockito.when(relational.getDataSource()).thenReturn(source);
+        Mockito.when(relational.getDataAccess()).thenReturn(access);
+        var api = Mockito.mock(DataProviderAPI.class);
         OrmTestSupport.configure(api);
-        var plugin = org.mockito.Mockito.mock(nl.hauntedmc.dungeons.plugin.DungeonsPlugin.class);
-        org.mockito.Mockito.when(api.forPlugin(plugin)).thenReturn(api);
-        org.mockito.Mockito.when(api.registerDatabaseOrThrow(nl.hauntedmc.dataprovider.database.DatabaseType.MYSQL,
-                "player_data_rw", nl.hauntedmc.dataprovider.database.relational.RelationalDatabaseProvider.class)).thenReturn(relational);
-        var server = org.mockito.Mockito.mock(org.bukkit.Server.class);
-        var services = org.mockito.Mockito.mock(org.bukkit.plugin.ServicesManager.class);
-        var registration = org.mockito.Mockito.mock(org.bukkit.plugin.RegisteredServiceProvider.class);
-        org.mockito.Mockito.when(registration.getProvider()).thenReturn(api);
-        org.mockito.Mockito.when(services.getRegistration(nl.hauntedmc.dataprovider.api.DataProviderAPI.class)).thenReturn(registration);
-        var manager = org.mockito.Mockito.mock(org.bukkit.plugin.PluginManager.class);
-        var registry = org.mockito.Mockito.mock(org.bukkit.plugin.Plugin.class,
-                org.mockito.Mockito.withSettings().extraInterfaces(nl.hauntedmc.dataregistry.api.DataRegistryApiProvider.class));
-        var registryApi = org.mockito.Mockito.mock(nl.hauntedmc.dataregistry.api.DataRegistryApi.class);
-        org.mockito.Mockito.when(((nl.hauntedmc.dataregistry.api.DataRegistryApiProvider) registry).getDataRegistry()).thenReturn(registryApi);
-        org.mockito.Mockito.when(manager.getPlugin("DataRegistry")).thenReturn(registry);
-        org.mockito.Mockito.when(server.getPluginManager()).thenReturn(manager);
-        org.mockito.Mockito.when(server.getServicesManager()).thenReturn(services);
-        org.mockito.Mockito.when(plugin.getServer()).thenReturn(server);
-        var config = new org.bukkit.configuration.file.YamlConfiguration();
+        var plugin = Mockito.mock(DungeonsPlugin.class);
+        Mockito.when(api.forPlugin(plugin)).thenReturn(api);
+        var scope = Mockito.mock(DataProviderScope.class);
+        Mockito.when(api.scope("dungeons.gameplay")).thenReturn(scope);
+        Mockito.when(scope.registerDatabaseOrThrow(DatabaseType.MYSQL,
+                "player_data_rw", RelationalDatabaseProvider.class)).thenReturn(relational);
+        var server = Mockito.mock(Server.class);
+        var services = Mockito.mock(ServicesManager.class);
+        var registration = Mockito.mock(RegisteredServiceProvider.class);
+        Mockito.when(registration.getProvider()).thenReturn(api);
+        Mockito.when(services.getRegistration(DataProviderAPI.class)).thenReturn(registration);
+        var manager = Mockito.mock(PluginManager.class);
+        var registry = Mockito.mock(Plugin.class,
+                Mockito.withSettings().extraInterfaces(DataRegistryApiProvider.class));
+        var registryApi = Mockito.mock(DataRegistryApi.class);
+        Mockito.when(((DataRegistryApiProvider) registry).getDataRegistry()).thenReturn(registryApi);
+        Mockito.when(manager.getPlugin("DataRegistry")).thenReturn(registry);
+        Mockito.when(server.getPluginManager()).thenReturn(manager);
+        Mockito.when(server.getServicesManager()).thenReturn(services);
+        Mockito.when(plugin.getServer()).thenReturn(server);
+        var config = new YamlConfiguration();
         config.set("runtime.server-id", "lifecycle");
-        org.mockito.Mockito.when(plugin.getConfig()).thenReturn(config);
+        Mockito.when(plugin.getConfig()).thenReturn(config);
         var database = new DungeonDatabase(plugin);
-        database.start().get(15, java.util.concurrent.TimeUnit.SECONDS);
-        database.start().get(15, java.util.concurrent.TimeUnit.SECONDS);
+        database.start().get(15, TimeUnit.SECONDS);
+        database.start().get(15, TimeUnit.SECONDS);
         assertTrue(database.ready());
-        database.heartbeat().get(10, java.util.concurrent.TimeUnit.SECONDS);
+        database.heartbeat().get(10, TimeUnit.SECONDS);
         verifyKeyTransactions(database);
-        var pending = new java.util.concurrent.CompletableFuture<java.util.List<java.util.Map<String, Object>>>();
-        org.mockito.Mockito.when(access.queryForList("pending")).thenReturn(pending);
+        var pending = new CompletableFuture<List<Map<String, Object>>>();
+        Mockito.when(access.queryForList("pending")).thenReturn(pending);
         database.read("pending").cancel(true);
         var closing = database.closeAsync();
         assertFalse(closing.isDone());
-        pending.complete(java.util.List.of());
-        closing.get(10, java.util.concurrent.TimeUnit.SECONDS);
+        pending.complete(List.of());
+        closing.get(10, TimeUnit.SECONDS);
         assertEquals(DungeonDatabase.State.CLOSED, database.state());
         assertFalse(database.ready());
-        org.mockito.Mockito.verify(api).unregisterDatabase(nl.hauntedmc.dataprovider.database.DatabaseType.MYSQL, "player_data_rw");
-        org.mockito.Mockito.verify(api).registerDatabaseOrThrow(nl.hauntedmc.dataprovider.database.DatabaseType.MYSQL,
-                "player_data_rw", nl.hauntedmc.dataprovider.database.relational.RelationalDatabaseProvider.class);
+        Mockito.verify(scope).close();
+        Mockito.verify(scope).registerDatabaseOrThrow(DatabaseType.MYSQL,
+                "player_data_rw", RelationalDatabaseProvider.class);
     }
 
     private void verifyKeyTransactions(DungeonDatabase database) throws Exception {
@@ -170,7 +205,7 @@ class DungeonSchemaIT {
             DungeonSql.update(connection, "INSERT INTO dungeon_definition(dungeon_id) VALUES(?)", dungeon);
             DungeonSql.update(connection, "INSERT INTO dungeon_key_definition(dungeon_id,key_id) VALUES(?,'key')", dungeon);
             return null;
-        }).get(10, java.util.concurrent.TimeUnit.SECONDS);
+        }).get(10, TimeUnit.SECONDS);
         var ledger = new DungeonKeyLedger(database, dungeon);
         UUID token = UUID.randomUUID();
         UUID issue = UUID.randomUUID();
@@ -200,7 +235,7 @@ class DungeonSchemaIT {
         assertTrue(ledger.settle(replacement, use, null).get());
         ledger.revoke("key", UUID.randomUUID()).get();
         assertEquals(token, ledger.issue("key", token, issue).get());
-        assertThrows(java.util.concurrent.ExecutionException.class,
+        assertThrows(ExecutionException.class,
                 () -> ledger.issue("key", UUID.randomUUID(), UUID.randomUUID()).get());
     }
 

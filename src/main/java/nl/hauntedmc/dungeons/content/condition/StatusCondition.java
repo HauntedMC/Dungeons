@@ -1,6 +1,5 @@
 package nl.hauntedmc.dungeons.content.condition;
 
-import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
@@ -9,9 +8,12 @@ import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.model.element.TriggerCondition;
 import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
+
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
+
+import java.util.Map;
 
 /**
  * Condition that checks the current runtime status string of a playable instance.

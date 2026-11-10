@@ -3,6 +3,7 @@ package nl.hauntedmc.dungeons.gui.hotbar.menuitems;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.text.ColorUtils;
+
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerEvent;
 

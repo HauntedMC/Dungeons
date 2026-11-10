@@ -1,11 +1,15 @@
 package nl.hauntedmc.dungeons.bootstrap;
 
+import nl.hauntedmc.dungeons.integration.ProfileListener;
+import nl.hauntedmc.dungeons.listener.DatabaseLoginListener;
 import nl.hauntedmc.dungeons.listener.DungeonListener;
 import nl.hauntedmc.dungeons.listener.HotbarMenuListener;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 
 import org.bukkit.Bukkit;
+import org.bukkit.event.HandlerList;
+import org.bukkit.event.Listener;
 
 /**
  * Registers Bukkit event listeners that are part of the plugin's core runtime.
@@ -25,23 +29,25 @@ final class ListenerBootstrap {
      */
     void registerCoreListeners() {
         DungeonsPlugin plugin = this.runtime.environment().plugin();
-        Bukkit.getPluginManager().registerEvents(new nl.hauntedmc.dungeons.listener.DatabaseLoginListener(this.runtime), plugin);
-        Bukkit.getPluginManager().registerEvents(this.runtime.playerSessions(), plugin);
+        register(new DatabaseLoginListener(this.runtime));
+        register(new ProfileListener(this.runtime));
+        register(this.runtime.playerSessions());
         this.runtime.playerSessions().start(this.runtime);
-        Bukkit.getPluginManager()
-                .registerEvents(
-                        new DungeonListener(
-                                plugin,
-                                this.runtime.playerSessions(),
-                                this.runtime.queueRegistry(),
-                                this.runtime.dungeonCatalog(),
-                                this.runtime.guiService()),
-                        plugin);
-        Bukkit.getPluginManager()
-                .registerEvents(
-                        new HotbarMenuListener(plugin, this.runtime.playerSessions()), plugin);
-        Bukkit.getPluginManager().registerEvents(this.runtime.queueRegistry(), plugin);
-        Bukkit.getPluginManager().registerEvents(this.runtime.teamService(), plugin);
-        Bukkit.getPluginManager().registerEvents(this.runtime.lootTableEditor(), plugin);
+        register(
+                new DungeonListener(
+                        plugin,
+                        this.runtime.playerSessions(),
+                        this.runtime.queueRegistry(),
+                        this.runtime.dungeonCatalog(),
+                        this.runtime.guiService()));
+        register(new HotbarMenuListener(plugin, this.runtime.playerSessions()));
+        register(this.runtime.queueRegistry());
+        register(this.runtime.teamService());
+        register(this.runtime.lootTableEditor());
     }
+    private void register(Listener listener) {
+        this.runtime.resources().ownIngress(listener, HandlerList::unregisterAll);
+        Bukkit.getPluginManager().registerEvents(listener, this.runtime.environment().plugin());
+    }
+
 }

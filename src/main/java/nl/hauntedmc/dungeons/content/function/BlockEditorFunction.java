@@ -1,16 +1,11 @@
 package nl.hauntedmc.dungeons.content.function;
 
-import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuItem;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ChatMenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
+import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.FunctionCategory;
@@ -18,6 +13,7 @@ import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.text.MessageUtils;
+
 import org.bukkit.Axis;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -29,6 +25,11 @@ import org.bukkit.block.data.Orientable;
 import org.bukkit.block.data.Rotatable;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 /**
  * Function that places or removes a configured block at its location.
@@ -295,8 +296,8 @@ public class BlockEditorFunction extends DungeonFunction {
                             player, "editor.function.block-editor.invalid-material");
                     MessageUtils.sendClickableLink(
                             player,
-                            LangUtils.getMessage(
-                                    "editor.function.block-editor.valid-materials-link"),
+                            LangUtils.component(
+                                    "editor.function.block-editor.valid-materials-link", player, true),
                             "https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Material.html");
                 }
             }
@@ -392,8 +393,8 @@ public class BlockEditorFunction extends DungeonFunction {
                                 player, "editor.function.block-editor.invalid-direction");
                         MessageUtils.sendClickableLink(
                                 player,
-                                LangUtils.getMessage(
-                                        "editor.function.block-editor.valid-directions-link"),
+                                LangUtils.component(
+                                        "editor.function.block-editor.valid-directions-link", player, true),
                                 "https://hub.spigotmc.org/javadocs/spigot/org/bukkit/block/BlockFace.html");
                     }
                 } else if (data instanceof Rotatable) {
@@ -409,8 +410,8 @@ public class BlockEditorFunction extends DungeonFunction {
                                 player, "editor.function.block-editor.invalid-direction");
                         MessageUtils.sendClickableLink(
                                 player,
-                                LangUtils.getMessage(
-                                        "editor.function.block-editor.valid-directions-link"),
+                                LangUtils.component(
+                                        "editor.function.block-editor.valid-directions-link", player, true),
                                 "https://hub.spigotmc.org/javadocs/spigot/org/bukkit/block/BlockFace.html");
                     }
                 } else {

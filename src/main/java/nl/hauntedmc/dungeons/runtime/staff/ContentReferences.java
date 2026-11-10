@@ -1,9 +1,13 @@
 package nl.hauntedmc.dungeons.runtime.staff;
 
+import nl.hauntedmc.dungeons.content.function.CommandFunction;
+import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
+import nl.hauntedmc.dungeons.model.element.DungeonElement;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.util.metadata.PersistedFieldSupport;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 /** Traverses persisted mechanics, including private wrapper children, with cycle protection. */
@@ -11,7 +15,7 @@ public final class ContentReferences {
     private ContentReferences() {}
 
     public static void dungeon(
-            nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition dungeon,
+            DungeonDefinition dungeon,
             Consumer<Object> visitor) {
         if (dungeon.asBranching() != null) {
             for (var room : dungeon.asBranching().getUniqueRooms().values())
@@ -33,7 +37,7 @@ public final class ContentReferences {
             for (Object child : map.values()) walk(child, visitor, seen);
             return;
         }
-        if (!(value instanceof nl.hauntedmc.dungeons.model.element.DungeonElement)) return;
+        if (!(value instanceof DungeonElement)) return;
         visitor.accept(value);
         for (var field : PersistedFieldSupport.persistedFields(value.getClass())) {
             try {
@@ -45,11 +49,11 @@ public final class ContentReferences {
     }
 
     public static boolean containsScript(DungeonFunction root) {
-        var found = new java.util.concurrent.atomic.AtomicBoolean();
+        var found = new AtomicBoolean();
         visit(
                 root,
                 value -> {
-                    if (value instanceof nl.hauntedmc.dungeons.content.function.CommandFunction)
+                    if (value instanceof CommandFunction)
                         found.set(true);
                 });
         return found.get();

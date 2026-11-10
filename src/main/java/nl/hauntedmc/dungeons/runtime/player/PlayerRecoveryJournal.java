@@ -1,13 +1,19 @@
 package nl.hauntedmc.dungeons.runtime.player;
 
+import nl.hauntedmc.dungeons.persistence.StateDocument;
+import nl.hauntedmc.dungeons.persistence.StateStore;
+import nl.hauntedmc.dungeons.runtime.RuntimeContext;
+
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
+import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.*;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 /**
@@ -17,12 +23,12 @@ import java.util.function.Consumer;
 final class PlayerRecoveryJournal {
     private static final NamespacedKey APPLIED =
             new NamespacedKey("dungeons", "player_transaction");
-    private final nl.hauntedmc.dungeons.persistence.StateDocument document;
+    private final StateDocument document;
     private YamlConfiguration state;
 
-    PlayerRecoveryJournal(java.util.UUID playerId) {
-        this.document = nl.hauntedmc.dungeons.runtime.RuntimeContext.runtime().stateStore().document(
-                new nl.hauntedmc.dungeons.persistence.StateStore.Key("player-recovery", playerId.toString(), playerId));
+    PlayerRecoveryJournal(UUID playerId) {
+        this.document = RuntimeContext.runtime().stateStore().document(
+                new StateStore.Key("player-recovery", playerId.toString(), playerId));
         state = new YamlConfiguration();
         try {
             document.loadInto(state);
@@ -75,12 +81,12 @@ final class PlayerRecoveryJournal {
         requireServerThread();
         if (!state.contains("key-reservation")) return false;
         var prepared = prepareKeySettlement(refundOriginal, replacement);
-        nl.hauntedmc.dungeons.persistence.StateDocument.commitTogether(prepared.write());
+        StateDocument.commitTogether(prepared.write());
         prepared.publish().run();
         return true;
     }
 
-    record Settlement(nl.hauntedmc.dungeons.persistence.StateDocument.Prepared write, Runnable publish) {}
+    record Settlement(StateDocument.Prepared write, Runnable publish) {}
 
     Settlement prepareKeySettlement(boolean refundOriginal, ItemStack replacement) {
         requireServerThread();
@@ -96,7 +102,7 @@ final class PlayerRecoveryJournal {
             next.set("key-reservation", null);
             next.set("refunds", PlayerRecoverySnapshot.encode(refunds.toArray(ItemStack[]::new)));
             return new Settlement(document.prepare(next.saveToString()), () -> state = next);
-        } catch (org.bukkit.configuration.InvalidConfigurationException failure) {
+        } catch (InvalidConfigurationException failure) {
             throw new IllegalStateException("Cannot stage key recovery", failure);
         }
     }
@@ -363,7 +369,7 @@ final class PlayerRecoveryJournal {
             mutation.accept(next);
             document.save(next.saveToString());
             state = next;
-        } catch (org.bukkit.configuration.InvalidConfigurationException failure) {
+        } catch (InvalidConfigurationException failure) {
             throw new IllegalStateException(failure);
         }
     }

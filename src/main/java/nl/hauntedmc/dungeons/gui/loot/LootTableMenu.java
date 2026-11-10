@@ -41,7 +41,7 @@ final class LootTableMenu {
         assert meta != null;
 
         meta.displayName(
-                ComponentUtils.component(LangUtils.getMessage("menus.common.empty-slot", false)));
+                LangUtils.component("menus.common.empty-slot", null, false));
         this.openSlotItem.setItemMeta(meta);
     }
 

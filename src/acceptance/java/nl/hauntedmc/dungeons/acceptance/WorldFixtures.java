@@ -5,6 +5,7 @@ import static nl.hauntedmc.dungeons.acceptance.AcceptancePlugin.require;
 import net.kyori.adventure.text.Component;
 
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
+import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
 import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
 
 import org.bukkit.Bukkit;
@@ -16,8 +17,10 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.inventory.ItemStack;
 
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -39,7 +42,7 @@ final class WorldFixtures {
                 test.getDataFolder()
                         .toPath()
                         .resolve("template-path-" + environment.name() + ".txt");
-        java.nio.file.Path template;
+        Path template;
         if (!Files.exists(templateRecord)) {
             var generator =
                     test.runtime()
@@ -53,7 +56,7 @@ final class WorldFixtures {
                                             "acceptance_template_"
                                                     + environment
                                                             .name()
-                                                            .toLowerCase(java.util.Locale.ROOT))
+                                                            .toLowerCase(Locale.ROOT))
                                     .environment(environment)
                                     .generator(generator)
                                     .generateStructures(false)
@@ -77,7 +80,7 @@ final class WorldFixtures {
             world.save(true);
             require(Bukkit.unloadWorld(world, true), "Cannot unload the template before copying");
         } else {
-            template = java.nio.file.Path.of(Files.readString(templateRecord));
+            template = Path.of(Files.readString(templateRecord));
         }
         var folder = test.runtime().dungeonFiles().toPath().resolve(name);
         Files.createDirectories(folder);
@@ -134,7 +137,7 @@ final class WorldFixtures {
     }
 
     static CompletableFuture<Void> dispose(
-            AcceptancePlugin test, nl.hauntedmc.dungeons.model.instance.DungeonInstance... runs) {
+            AcceptancePlugin test, DungeonInstance... runs) {
         var names = Arrays.stream(runs).map(run -> run.getInstanceWorld().getName()).toList();
         var folders =
                 Arrays.stream(runs)
