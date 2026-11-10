@@ -1,3 +1,21 @@
+# Database foundation settings. Gameplay persistence currently remains file-based.
+# Restart the server after changing these settings; /dungeon server reload does not reconnect.
+database:
+  # Enable schema initialization and the server lease. Requires DataProvider and DataRegistry.
+  enabled: false
+  # Named MySQL connection in DataProvider, using the same database as DataRegistry player_entity.
+  # Credentials and pool settings stay in DataProvider's configuration.
+  connection-id: player_data_rw
+  # ORM policy is authoritative in DataProvider/config.yml: orm.schema_mode: update
+  # Use update, validate or none for this shared database; do not use destructive create mode.
+  # Maximum time shutdown waits on the server thread; remaining cleanup continues asynchronously.
+  shutdown-timeout-seconds: 10
+
+runtime:
+  # Stable unique backend identity. Empty uses the service-name published by DataRegistry.
+  # If both are configured they must match. Do not share one identity between running servers.
+  server-id: ''
+
 sessions:
   # int. Reconnect grace in seconds for inactive, disconnected player sessions. Use a positive integer.
   # Active runs and reservations remain retained; recovery and rewards are checkpointed before expiry.

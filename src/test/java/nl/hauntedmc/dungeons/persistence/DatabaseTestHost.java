@@ -82,6 +82,7 @@ final class DatabaseTestHost implements AutoCloseable {
         when(relational.getDataSource()).thenReturn(source);
         when(relational.getDataAccess()).thenReturn(access);
         var api = mock(DataProviderAPI.class);
+        OrmTestSupport.configure(api);
         var plugin = mock(DungeonsPlugin.class);
         when(api.forPlugin(plugin)).thenReturn(api);
         when(api.registerDatabaseOrThrow(DatabaseType.MYSQL, "player_data_rw", RelationalDatabaseProvider.class)).thenReturn(relational);

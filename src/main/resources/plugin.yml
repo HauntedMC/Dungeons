@@ -4,6 +4,7 @@ version: ${project.version}
 main: nl.hauntedmc.dungeons.plugin.DungeonsPlugin
 api-version: '26.3'
 author: HauntedMC
+softdepend: [DataProvider, DataRegistry]
 commands:
   dungeon:
     description: Main dungeon command

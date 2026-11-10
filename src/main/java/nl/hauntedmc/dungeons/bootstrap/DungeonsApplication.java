@@ -25,6 +25,7 @@ public final class DungeonsApplication {
     private final LifecycleCoordinator lifecycleCoordinator;
     private final CommandBootstrap commandBootstrap;
     private boolean started;
+    private nl.hauntedmc.dungeons.persistence.DatabaseLifecycle database;
 
     /** Creates the application composition root around the Bukkit plugin entrypoint. */
     public DungeonsApplication(DungeonsPlugin plugin) {
@@ -47,16 +48,30 @@ public final class DungeonsApplication {
 
         try {
             this.initializeCoreState();
+            var databaseSettings = nl.hauntedmc.dungeons.persistence.DatabaseSettings.read(
+                    this.runtime.environment().plugin().getConfig());
+            if (databaseSettings.enabled())
+                nl.hauntedmc.dungeons.persistence.DatabaseLifecycle.requireDependencies(
+                        this.runtime.environment().plugin());
             this.initializeRuntimeServices();
             this.registerRuntimeTypes();
             this.initializeContentManagers();
             this.bindBukkitIntegrations();
             this.initializeUserInterfaces();
             this.restoreRuntimeState();
-            this.logStartupSummary();
+            // The runtime graph is now complete and must be cleaned even if database startup fails.
             this.started = true;
+            if (databaseSettings.enabled()) {
+                this.database = new nl.hauntedmc.dungeons.persistence.DatabaseLifecycle(
+                        this.runtime.environment().plugin());
+                this.runtime.setDatabase(this.database);
+            }
+            this.logStartupSummary();
         } catch (RuntimeException | Error exception) {
-            RuntimeContext.clear();
+            try { this.stop(); }
+            catch (RuntimeException | Error cleanup) {
+                if (cleanup != exception) exception.addSuppressed(cleanup);
+            }
             throw exception;
         }
     }
@@ -68,8 +83,14 @@ public final class DungeonsApplication {
                 this.lifecycleCoordinator.shutdown();
             }
         } finally {
-            this.started = false;
-            RuntimeContext.clear();
+            try {
+                if (this.database != null) this.database.close();
+            } finally {
+                this.database = null;
+                this.runtime.setDatabase(null);
+                this.started = false;
+                RuntimeContext.clear();
+            }
         }
     }
 

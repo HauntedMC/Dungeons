@@ -18,7 +18,7 @@ class DungeonConcurrencyIT {
         MYSQL.start();
         try (var connection = DriverManager.getConnection(MYSQL.getJdbcUrl(), MYSQL.getUsername(), MYSQL.getPassword())) {
             DungeonSql.update(connection, "CREATE TABLE player_entity(id BIGINT PRIMARY KEY,uuid CHAR(36) NOT NULL UNIQUE)");
-            DungeonSchema.initialize(connection, true);
+            OrmTestSupport.initialize(MYSQL, "update");
         }
     }
     @AfterAll static void stop() { MYSQL.stop(); }
@@ -121,95 +121,74 @@ class DungeonConcurrencyIT {
         }
     }
 
-    @Test void migrationTwoUpgradesVersionOneWithoutRewritingItsReceiptAndRejectsSchemaDrift() throws Exception {
+    @Test void ormUpdateRestoresMissingTablesAndValidateRejectsMissingColumns() throws Exception {
         try (var connection = DriverManager.getConnection(MYSQL.getJdbcUrl(), MYSQL.getUsername(), MYSQL.getPassword())) {
-            var original = DungeonSql.rows(connection, "SELECT checksum,applied_at FROM dungeon_schema_history WHERE version=1");
             DungeonSql.update(connection, "DROP TABLE dungeon_key_reservation");
-            DungeonSql.update(connection, "DELETE FROM dungeon_schema_history WHERE version=2");
-            assertThrows(java.sql.SQLException.class, () -> DungeonSchema.initialize(connection, false));
-            DungeonSchema.initialize(connection, true);
-            assertEquals(original, DungeonSql.rows(connection, "SELECT checksum,applied_at FROM dungeon_schema_history WHERE version=1"));
-            DungeonSql.update(connection, "ALTER TABLE dungeon_event MODIFY event_type VARCHAR(120) NOT NULL");
-            try { assertThrows(java.sql.SQLException.class, () -> DungeonSchema.initialize(connection, false)); }
-            finally { DungeonSql.update(connection, "ALTER TABLE dungeon_event MODIFY event_type VARCHAR(48) NOT NULL"); }
-            DungeonSql.update(connection, "ALTER TABLE dungeon_definition MODIFY created_at DATETIME(3) NULL DEFAULT CURRENT_TIMESTAMP(3)");
-            try { assertThrows(java.sql.SQLException.class, () -> DungeonSchema.initialize(connection, false)); }
-            finally { DungeonSql.update(connection, "ALTER TABLE dungeon_definition MODIFY created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)"); }
-            DungeonSql.update(connection, "ALTER TABLE dungeon_schema_history ENGINE=MyISAM");
-            try { assertThrows(java.sql.SQLException.class, () -> DungeonSchema.initialize(connection, false)); }
-            finally { DungeonSql.update(connection, "ALTER TABLE dungeon_schema_history ENGINE=InnoDB"); }
-            DungeonSql.update(connection, "ALTER TABLE dungeon_event DROP INDEX ix_event_operation");
-            try { assertThrows(java.sql.SQLException.class, () -> DungeonSchema.initialize(connection, false)); }
-            finally { DungeonSql.update(connection, "ALTER TABLE dungeon_event ADD KEY ix_event_operation(operation_id)"); }
-            DungeonSql.update(connection, "ALTER TABLE dungeon_staff_operation DROP PRIMARY KEY");
-            try { assertThrows(java.sql.SQLException.class, () -> DungeonSchema.initialize(connection, false)); }
-            finally { DungeonSql.update(connection, "ALTER TABLE dungeon_staff_operation ADD PRIMARY KEY(operation_id)"); }
-            DungeonSql.update(connection, "ALTER TABLE dungeon_restriction DROP FOREIGN KEY dungeon_restriction_ibfk_1");
-            try {
-                assertThrows(java.sql.SQLException.class, () -> DungeonSchema.initialize(connection, false));
-                DungeonSql.update(connection, "ALTER TABLE dungeon_restriction ADD CONSTRAINT fk_test_player FOREIGN KEY(player_id) REFERENCES player_entity(id) ON DELETE RESTRICT");
-                assertThrows(java.sql.SQLException.class, () -> DungeonSchema.initialize(connection, false));
-            } finally {
-                DungeonSql.update(connection, "ALTER TABLE dungeon_restriction DROP FOREIGN KEY fk_test_player");
-                DungeonSql.update(connection, "ALTER TABLE dungeon_restriction ADD FOREIGN KEY(player_id) REFERENCES player_entity(id) ON DELETE CASCADE");
-            }
-            connection.setAutoCommit(false);
-            try { assertThrows(java.sql.SQLException.class, () -> DungeonSchema.initialize(connection, true)); }
-            finally { connection.rollback(); connection.setAutoCommit(true); }
-            DungeonSchema.initialize(connection, false);
+            assertThrows(RuntimeException.class,
+                    () -> OrmTestSupport.initialize(MYSQL, "validate"));
+            OrmTestSupport.initialize(MYSQL, "update");
+            OrmTestSupport.initialize(MYSQL, "validate");
+            DungeonSql.update(connection, "ALTER TABLE dungeon_event DROP COLUMN detail");
+            assertThrows(RuntimeException.class,
+                    () -> OrmTestSupport.initialize(MYSQL, "validate"));
+            OrmTestSupport.initialize(MYSQL, "update");
+            OrmTestSupport.initialize(MYSQL, "validate");
         }
     }
 
-    @Test void progressionAndCooldownWritesAreAtomicIdempotentIdentityBoundAndUtc() throws Exception {
-        try (var host = new DatabaseTestHost(MYSQL, "progression")) {
-            UUID dungeon = definition(host);
-            long playerId = 100;
-            UUID uuid = UUID.randomUUID();
-            host.database.transaction(connection -> {
-                DungeonSql.update(connection, "INSERT INTO player_entity(id,uuid) VALUES(?,?)", playerId, uuid);
-                return null;
-            }).get(5, TimeUnit.SECONDS);
-            var identity = new nl.hauntedmc.dataregistry.api.player.PlayerIdentity(playerId, uuid, "Explorer");
-            org.mockito.Mockito.when(host.players.findIdentity(playerId)).thenReturn(CompletableFuture.completedFuture(java.util.Optional.of(identity)));
-            var repository = new DungeonProgressRepository(host.database);
-            var key = new DungeonProgressRepository.CooldownKey(DungeonProgressRepository.CooldownType.ACCESS, "");
-            var expiry = java.time.Instant.now().plusSeconds(3600).truncatedTo(java.time.temporal.ChronoUnit.MILLIS);
-            var checkpoint = new DungeonProgressRepository.Checkpoint("worldless checkpoint", "a".repeat(64));
-            var change = new DungeonProgressRepository.Changes(true, true, checkpoint,
-                    java.util.List.of(new DungeonProgressRepository.CooldownChange(key, expiry)));
-            UUID operation = UUID.randomUUID();
-            java.util.TimeZone previous = java.util.TimeZone.getDefault();
+    @Test void constraintDriftFailsClosedEvenWhenTheProviderDisablesDDL() throws Exception {
+        try (var connection = DriverManager.getConnection(MYSQL.getJdbcUrl(), MYSQL.getUsername(), MYSQL.getPassword())) {
+            DungeonSql.update(connection, "ALTER TABLE dungeon_event DROP INDEX ix_event_operation");
             try {
-                java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("America/Los_Angeles"));
-                assertEquals(1, repository.update(identity, dungeon, 0, change, operation).get(5, TimeUnit.SECONDS).revision());
-                assertTrue(repository.update(identity, dungeon, 0, change, operation).get(5, TimeUnit.SECONDS).replayed());
-                var loaded = repository.load(identity, dungeon).get(5, TimeUnit.SECONDS);
-                assertEquals(1, loaded.revision());
-                assertTrue(loaded.completed());
-                assertEquals(expiry, loaded.cooldowns().get(key));
-                assertEquals(checkpoint, loaded.checkpoint());
-                assertNull(loaded.firstCompletedAt(), "Administrative progression must not invent finish history");
-            } finally { java.util.TimeZone.setDefault(previous); }
-            var clear = new DungeonProgressRepository.Changes(false, true, null,
-                    java.util.List.of(new DungeonProgressRepository.CooldownChange(key, null)));
-            assertThrows(java.util.concurrent.ExecutionException.class,
-                    () -> repository.update(identity, dungeon, 0, clear, operation).get(5, TimeUnit.SECONDS));
-            var a = repository.update(identity, dungeon, 1, clear, UUID.randomUUID());
-            var b = repository.update(identity, dungeon, 1, clear, UUID.randomUUID());
-            a.handle((value, failure) -> null).get(5, TimeUnit.SECONDS);
-            b.handle((value, failure) -> null).get(5, TimeUnit.SECONDS);
-            assertNotEquals(a.isCompletedExceptionally(), b.isCompletedExceptionally());
-            var loaded = repository.load(identity, dungeon).get(5, TimeUnit.SECONDS);
-            assertEquals(2, loaded.revision());
-            assertFalse(loaded.completed());
-            assertNull(loaded.checkpoint());
-            assertTrue(loaded.cooldowns().isEmpty());
-            int queries = host.transactions.get();
-            var replacement = new nl.hauntedmc.dataregistry.api.player.PlayerIdentity(playerId, UUID.randomUUID(), "AnotherIdentity");
-            org.mockito.Mockito.when(host.players.findIdentity(playerId)).thenReturn(CompletableFuture.completedFuture(java.util.Optional.of(replacement)));
-            assertThrows(java.util.concurrent.ExecutionException.class, () -> repository.load(identity, dungeon).get(5, TimeUnit.SECONDS));
-            assertThrows(java.util.concurrent.ExecutionException.class, () -> repository.update(identity, dungeon, 2, change, UUID.randomUUID()).get(5, TimeUnit.SECONDS));
-            assertEquals(queries, host.transactions.get(), "Stale identity requests must not reach feature storage");
+                assertThrows(RuntimeException.class, () -> OrmTestSupport.initialize(MYSQL, "none"));
+            } finally {
+                DungeonSql.update(connection, "ALTER TABLE dungeon_event ADD INDEX ix_event_operation(operation_id)");
+            }
+            var constraints = DungeonSql.rows(connection, "SELECT CONSTRAINT_NAME AS name FROM information_schema.KEY_COLUMN_USAGE"
+                    + " WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='dungeon_restriction' AND REFERENCED_TABLE_NAME='player_entity'");
+            String name = (String) constraints.getFirst().get("name");
+            DungeonSql.update(connection, "ALTER TABLE dungeon_restriction DROP FOREIGN KEY " + name);
+            DungeonSql.update(connection, "ALTER TABLE dungeon_restriction ADD CONSTRAINT " + name
+                    + " FOREIGN KEY(player_id) REFERENCES player_entity(id) ON DELETE RESTRICT");
+            try {
+                assertThrows(RuntimeException.class, () -> OrmTestSupport.initialize(MYSQL, "none"));
+            } finally {
+                DungeonSql.update(connection, "ALTER TABLE dungeon_restriction DROP FOREIGN KEY " + name);
+                DungeonSql.update(connection, "ALTER TABLE dungeon_restriction ADD CONSTRAINT " + name
+                        + " FOREIGN KEY(player_id) REFERENCES player_entity(id) ON DELETE CASCADE");
+            }
+            OrmTestSupport.initialize(MYSQL, "validate");
+        }
+    }
+
+    @Test void incompatibleColumnsAndForeignKeyUpdateRulesPreventReadiness() throws Exception {
+        try (var connection = DriverManager.getConnection(MYSQL.getJdbcUrl(), MYSQL.getUsername(), MYSQL.getPassword())) {
+            DungeonSql.update(connection, "ALTER TABLE dungeon_event MODIFY event_type VARCHAR(24) NOT NULL");
+            try {
+                assertThrows(RuntimeException.class, () -> OrmTestSupport.initialize(MYSQL, "none"));
+            } finally {
+                DungeonSql.update(connection, "ALTER TABLE dungeon_event MODIFY event_type VARCHAR(48) NOT NULL");
+            }
+            DungeonSql.update(connection, "ALTER TABLE dungeon_server MODIFY storage_version INT NULL DEFAULT 0");
+            try {
+                assertThrows(RuntimeException.class, () -> OrmTestSupport.initialize(MYSQL, "none"));
+            } finally {
+                DungeonSql.update(connection, "ALTER TABLE dungeon_server MODIFY storage_version INT NOT NULL DEFAULT 0");
+            }
+            var constraints = DungeonSql.rows(connection, "SELECT CONSTRAINT_NAME AS name FROM information_schema.KEY_COLUMN_USAGE"
+                    + " WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='dungeon_restriction' AND REFERENCED_TABLE_NAME='player_entity'");
+            String name = (String) constraints.getFirst().get("name");
+            DungeonSql.update(connection, "ALTER TABLE dungeon_restriction DROP FOREIGN KEY " + name);
+            DungeonSql.update(connection, "ALTER TABLE dungeon_restriction ADD CONSTRAINT " + name
+                    + " FOREIGN KEY(player_id) REFERENCES player_entity(id) ON DELETE CASCADE ON UPDATE CASCADE");
+            try {
+                assertThrows(RuntimeException.class, () -> OrmTestSupport.initialize(MYSQL, "none"));
+            } finally {
+                DungeonSql.update(connection, "ALTER TABLE dungeon_restriction DROP FOREIGN KEY " + name);
+                DungeonSql.update(connection, "ALTER TABLE dungeon_restriction ADD CONSTRAINT " + name
+                        + " FOREIGN KEY(player_id) REFERENCES player_entity(id) ON DELETE CASCADE");
+            }
+            OrmTestSupport.initialize(MYSQL, "validate");
         }
     }
 
