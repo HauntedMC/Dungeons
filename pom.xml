@@ -82,7 +82,7 @@
         <dependency>
             <groupId>nl.hauntedmc.serverfeatures</groupId>
             <artifactId>serverfeatures-api</artifactId>
-            <version>5.4.6</version>
+            <version>5.2.6</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

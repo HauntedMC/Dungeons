@@ -128,7 +128,7 @@ current privacy settings without caching grants. Only `PUBLIC` entries belong in
 both `FRIENDS` and `PRIVATE` entries are excluded before consumers assign ranks or paginate. A
 player may view their own historical data. `FRIENDS` access resolves the live ServerFeatures
 `PlayerPrivacyApi` capability, which delegates friendship decisions to ProxyFeatures. ServerFeatures
-5.4.6 is an optional provided API; it is not bundled or required for ordinary dungeon gameplay.
+5.2.6 is an optional provided API; it is not bundled or required for ordinary dungeon gameplay.
 Missing/disabled privacy support, absent friendship authority, failed/incomplete replies, timeouts,
 overload and shutdown never grant disclosure. At most 128 disclosure operations are admitted, each
 with a five-second deadline; shutdown terminates outstanding results.
