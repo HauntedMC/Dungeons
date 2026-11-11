@@ -1,13 +1,5 @@
 package nl.hauntedmc.dungeons.runtime.staff;
 
-import nl.hauntedmc.dungeons.config.ConfigurationFile;
-import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
-import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
-
-import org.apache.commons.io.FileUtils;
-import org.bukkit.Bukkit;
-import org.bukkit.configuration.file.YamlConfiguration;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
@@ -15,6 +7,12 @@ import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
+import nl.hauntedmc.dungeons.config.ConfigurationFile;
+import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
+import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
+import org.apache.commons.io.FileUtils;
+import org.bukkit.Bukkit;
+import org.bukkit.configuration.file.YamlConfiguration;
 
 /** Filesystem work runs after drain. Backups never contain progression or key ledgers. */
 public final class StaffContentStorage {
@@ -299,8 +297,7 @@ public final class StaffContentStorage {
         }
     }
 
-    private <T> CompletableFuture<T> filesystem(
-            File file, Callable<T> action) {
+    private <T> CompletableFuture<T> filesystem(File file, Callable<T> action) {
         return ConfigurationFile.filesystemAsync(runtime.environment().plugin(), file, action);
     }
 

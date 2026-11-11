@@ -3,20 +3,18 @@ package nl.hauntedmc.dungeons.support;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
-import nl.hauntedmc.dungeons.content.instance.play.StaticInstance;
-import nl.hauntedmc.dungeons.runtime.instance.ActiveInstanceRegistry;
-import nl.hauntedmc.dungeons.runtime.instance.PreparationRegistry;
-import nl.hauntedmc.dungeons.runtime.player.*;
-
-import org.bukkit.*;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.EnderDragon;
-
 import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
+import nl.hauntedmc.dungeons.runtime.instance.ActiveInstanceRegistry;
+import nl.hauntedmc.dungeons.runtime.instance.PreparationRegistry;
+import nl.hauntedmc.dungeons.runtime.instance.play.StaticInstance;
+import nl.hauntedmc.dungeons.runtime.player.*;
+import org.bukkit.*;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.EnderDragon;
 
 /** Real run/session graph with server state at the Paper boundary. Does not bypass run hooks. */
 public final class RunFixture implements AutoCloseable {

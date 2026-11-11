@@ -4,6 +4,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
 import nl.hauntedmc.dungeons.config.ConfigurationFile;
 import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
 import nl.hauntedmc.dungeons.persistence.DatabaseLifecycle;
@@ -14,7 +17,6 @@ import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.instance.ActiveInstanceRegistry;
 import nl.hauntedmc.dungeons.runtime.player.PlayerDataCheckpoint;
 import nl.hauntedmc.dungeons.util.entity.EntityUtils;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Server;
 import org.bukkit.UnsafeValues;
@@ -27,10 +29,6 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.slf4j.LoggerFactory;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
-
 /** Only the server/plugin boundary is mocked; tests construct the real system under test. */
 public final class PaperBoundary implements AutoCloseable {
     public final DungeonsPlugin plugin = mock(DungeonsPlugin.class);
@@ -39,27 +37,23 @@ public final class PaperBoundary implements AutoCloseable {
     public final DungeonsRuntime runtime = new DungeonsRuntime(plugin);
     public final MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class);
     public final MockedStatic<EntityUtils> entities =
-            mockStatic(
-                    EntityUtils.class,
-                    Mockito.CALLS_REAL_METHODS);
-    public final MockedStatic<PlayerDataCheckpoint>
-            checkpoints =
-                    mockStatic(PlayerDataCheckpoint.class);
+            mockStatic(EntityUtils.class, Mockito.CALLS_REAL_METHODS);
+    public final MockedStatic<PlayerDataCheckpoint> checkpoints =
+            mockStatic(PlayerDataCheckpoint.class);
     private final MockedStatic<ItemStack> items =
-            mockStatic(
-                    ItemStack.class, Mockito.CALLS_REAL_METHODS);
+            mockStatic(ItemStack.class, Mockito.CALLS_REAL_METHODS);
     private final MockedStatic<JavaPlugin> javaPlugin = mockStatic(JavaPlugin.class);
 
+    // Paper's WorldCreator still calls the deprecated implementation boundary internally.
+    @SuppressWarnings("deprecation")
     public PaperBoundary() {
+        runtime.setGuiService(new nl.hauntedmc.dungeons.gui.framework.GuiService(plugin));
         NativeItemBytes.decode(items);
-        entities.when(
-                        () ->
-                                EntityUtils.getMaxHealth(
-                                        Mockito.any(
-                                                Damageable.class)))
+        entities.when(() -> EntityUtils.getMaxHealth(Mockito.any(Damageable.class)))
                 .thenReturn(20.0);
         bukkit.when(Bukkit::isPrimaryThread).thenReturn(true);
         when(plugin.getName()).thenReturn("Dungeons");
+        when(plugin.namespace()).thenReturn("dungeons");
         when(plugin.getConfig()).thenReturn(config);
         when(plugin.getSLF4JLogger()).thenReturn(LoggerFactory.getLogger("CoreContractTests"));
         runtime.setConfig(config);
@@ -69,8 +63,7 @@ public final class PaperBoundary implements AutoCloseable {
         when(database.state()).thenReturn(DungeonDatabase.State.READY);
         when(database.problem()).thenReturn("");
         runtime.setDatabase(database);
-        runtime.setActiveInstances(
-                new ActiveInstanceRegistry(plugin));
+        runtime.setActiveInstances(new ActiveInstanceRegistry(plugin));
         RuntimeContext.initialize(runtime);
         bukkit.when(Bukkit::getPluginManager).thenReturn(mock(PluginManager.class));
         bukkit.when(Bukkit::getOnlinePlayers).thenReturn(List.of());

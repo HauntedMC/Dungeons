@@ -1,11 +1,9 @@
 package nl.hauntedmc.dungeons.runtime.instance;
 
+import java.util.concurrent.ConcurrentHashMap;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-
 import org.jetbrains.annotations.Nullable;
-
-import java.util.concurrent.ConcurrentHashMap;
 
 /** Owns pending isolated-instance admissions for one runtime lifecycle. */
 public final class PreparationRegistry {
@@ -63,10 +61,13 @@ public final class PreparationRegistry {
                     attempt.cancel();
                 } catch (RuntimeException failure) {
                     // Keep failed ownership for retry while allowing unrelated players to settle.
-                    attempt.dungeon().getEnvironment().logger()
+                    attempt.dungeon()
+                            .getEnvironment()
+                            .logger()
                             .error(
                                     "Failed to cancel a dungeon preparation; retaining it for"
-                                        + " retry.", failure);
+                                            + " retry.",
+                                    failure);
                 }
             }
         }

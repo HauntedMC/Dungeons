@@ -3,26 +3,24 @@ package nl.hauntedmc.dungeons.runtime.staff;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import nl.hauntedmc.dungeons.config.ConfigurationFile;
-import nl.hauntedmc.dungeons.model.instance.*;
-import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
-import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.runtime.queue.*;
-import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
-import nl.hauntedmc.dungeons.support.*;
-
-import org.bukkit.*;
-import org.bukkit.command.CommandSender;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-
 import java.io.File;
 import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.*;
+import nl.hauntedmc.dungeons.config.ConfigurationFile;
+import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
+import nl.hauntedmc.dungeons.runtime.instance.*;
+import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
+import nl.hauntedmc.dungeons.runtime.queue.*;
+import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
+import nl.hauntedmc.dungeons.support.*;
+import org.bukkit.*;
+import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class StaffOperationsContractTest {
     @TempDir Path directory;
@@ -79,8 +77,7 @@ class StaffOperationsContractTest {
         try (var f = new Fixture(directory)) {
             var instance = mock(DungeonInstance.class);
             when(instance.getDungeon()).thenReturn(f.run.dungeon);
-            var participants =
-                    new ArrayList<DungeonPlayerSession>();
+            var participants = new ArrayList<DungeonPlayerSession>();
             participants.add(f.run.session(new PlayerState()));
             when(instance.getPlayers()).thenReturn(participants);
             var disposal = new CompletableFuture<Boolean>();

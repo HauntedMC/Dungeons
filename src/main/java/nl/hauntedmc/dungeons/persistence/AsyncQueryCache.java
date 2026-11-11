@@ -46,8 +46,9 @@ public final class AsyncQueryCache<K, V> {
                 return observe(current.result);
             }
             if (current != null) entries.remove(key);
-            if (pendingLoads >= maximumSize) return CompletableFuture.failedFuture(
-                    new RejectedExecutionException("Presentation cache load limit reached"));
+            if (pendingLoads >= maximumSize)
+                return CompletableFuture.failedFuture(
+                        new RejectedExecutionException("Presentation cache load limit reached"));
             if (entries.size() >= maximumSize) {
                 Iterator<Map.Entry<K, Entry<V>>> iterator = entries.entrySet().iterator();
                 boolean evicted = false;
@@ -58,8 +59,10 @@ public final class AsyncQueryCache<K, V> {
                         break;
                     }
                 }
-                if (!evicted) return CompletableFuture.failedFuture(
-                        new RejectedExecutionException("Presentation cache load limit reached"));
+                if (!evicted)
+                    return CompletableFuture.failedFuture(
+                            new RejectedExecutionException(
+                                    "Presentation cache load limit reached"));
             }
             entry = new Entry<>();
             entries.put(key, entry);
@@ -67,32 +70,43 @@ public final class AsyncQueryCache<K, V> {
         }
         // Loading and arbitrary dependent callbacks must never run while holding the cache lock.
         try {
-            loader.get().whenComplete((value, failure) -> {
-                synchronized (entries) {
-                    pendingLoads--;
-                    if (failure != null) entries.remove(key, entry);
-                    else entry.expiresAt = clock.getAsLong() + ttlNanos;
-                }
-                if (failure != null) entry.result.completeExceptionally(failure);
-                else entry.result.complete(value);
-            });
+            loader.get()
+                    .whenComplete(
+                            (value, failure) -> {
+                                synchronized (entries) {
+                                    pendingLoads--;
+                                    if (failure != null) entries.remove(key, entry);
+                                    else entry.expiresAt = clock.getAsLong() + ttlNanos;
+                                }
+                                if (failure != null) entry.result.completeExceptionally(failure);
+                                else entry.result.complete(value);
+                            });
         } catch (RuntimeException failure) {
-            synchronized (entries) { pendingLoads--; entries.remove(key, entry); }
+            synchronized (entries) {
+                pendingLoads--;
+                entries.remove(key, entry);
+            }
             entry.result.completeExceptionally(failure);
         }
         return observe(entry.result);
     }
 
     public void invalidate(K key) {
-        synchronized (entries) { entries.remove(key); }
+        synchronized (entries) {
+            entries.remove(key);
+        }
     }
 
     public void clear() {
-        synchronized (entries) { entries.clear(); }
+        synchronized (entries) {
+            entries.clear();
+        }
     }
 
     public int size() {
-        synchronized (entries) { return entries.size(); }
+        synchronized (entries) {
+            return entries.size();
+        }
     }
 
     private CompletableFuture<V> observe(CompletableFuture<V> result) {

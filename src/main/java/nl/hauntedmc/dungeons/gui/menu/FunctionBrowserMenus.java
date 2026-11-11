@@ -1,33 +1,32 @@
 package nl.hauntedmc.dungeons.gui.menu;
-import nl.hauntedmc.dungeons.content.function.CommandFunction;
-import nl.hauntedmc.dungeons.content.function.GiveItemFunction;
-import nl.hauntedmc.dungeons.content.function.meta.CompositeFunction;
-import nl.hauntedmc.dungeons.content.instance.edit.BranchingEditableInstance;
-import nl.hauntedmc.dungeons.gui.framework.buttons.Button;
-import nl.hauntedmc.dungeons.gui.framework.window.GuiWindow;
-import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
-import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
-import nl.hauntedmc.dungeons.model.element.DungeonFunction;
-import nl.hauntedmc.dungeons.model.element.FunctionCategory;
-import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
-import nl.hauntedmc.dungeons.model.instance.EditableInstance;
-import nl.hauntedmc.dungeons.runtime.RuntimeContext;
-import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.runtime.staff.StaffPermissions;
-import nl.hauntedmc.dungeons.util.item.ItemUtils;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-import nl.hauntedmc.dungeons.util.text.ColorUtils;
-import nl.hauntedmc.dungeons.util.text.TextUtils;
-
-import org.bukkit.Material;
-import org.bukkit.entity.Player;
-import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.ItemStack;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import nl.hauntedmc.dungeons.content.function.CommandFunction;
+import nl.hauntedmc.dungeons.content.function.GiveItemFunction;
+import nl.hauntedmc.dungeons.content.function.meta.CompositeFunction;
+import nl.hauntedmc.dungeons.gui.framework.buttons.Button;
+import nl.hauntedmc.dungeons.gui.framework.window.GuiWindow;
+import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
+import nl.hauntedmc.dungeons.localization.LangUtils;
+import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
+import nl.hauntedmc.dungeons.model.element.DungeonFunction;
+import nl.hauntedmc.dungeons.model.element.FunctionCategory;
+import nl.hauntedmc.dungeons.runtime.RuntimeContext;
+import nl.hauntedmc.dungeons.runtime.instance.DungeonInstance;
+import nl.hauntedmc.dungeons.runtime.instance.EditableInstance;
+import nl.hauntedmc.dungeons.runtime.instance.edit.BranchingEditableInstance;
+import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
+import nl.hauntedmc.dungeons.runtime.staff.StaffPermissions;
+import nl.hauntedmc.dungeons.util.item.ItemUtils;
+import nl.hauntedmc.dungeons.util.text.ColorUtils;
+import nl.hauntedmc.dungeons.util.text.TextUtils;
+import org.bukkit.Material;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
 
 /** Builds the functions editor workflow. */
 final class FunctionBrowserMenus {
@@ -147,16 +146,14 @@ final class FunctionBrowserMenus {
                             EditableInstance instance =
                                     playerSession.getInstance().asEditInstance();
                             if (instance != null) {
-                                if (CommandFunction.class
-                                        .isAssignableFrom(
-                                                RuntimeContext.functionRegistry()
-                                                        .getFunctionClass(functionName))) {
+                                if (CommandFunction.class.isAssignableFrom(
+                                        RuntimeContext.functionRegistry()
+                                                .getFunctionClass(functionName))) {
                                     try {
-                                        StaffPermissions
-                                                .require(
-                                                        player,
-                                                        "scripts",
-                                                        instance.getDungeon().getWorldName());
+                                        StaffPermissions.require(
+                                                player,
+                                                "scripts",
+                                                instance.getDungeon().getWorldName());
                                     } catch (IllegalArgumentException denied) {
                                         LangUtils.sendRaw(player, denied.getMessage());
                                         return;
@@ -209,7 +206,7 @@ final class FunctionBrowserMenus {
                                             .getSLF4JLogger()
                                             .error(
                                                     "Failed to create function '{}' from the"
-                                                        + " function browser for player '{}'.",
+                                                            + " function browser for player '{}'.",
                                                     functionName,
                                                     player.getName(),
                                                     exception);
@@ -224,7 +221,8 @@ final class FunctionBrowserMenus {
 
     /** Builds and registers the function item-selection GUI. */
     static void initializeItemSelectFunctionMenu() {
-        GuiWindow gui = EditorMenuSupport.editorWindow("selectitem_function", 9, "&8Put your item here");
+        GuiWindow gui =
+                EditorMenuSupport.editorWindow("selectitem_function", 9, "&8Put your item here");
         gui.setCancelClick(false);
 
         for (int i = 0; i < 9; i++) {

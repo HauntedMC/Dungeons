@@ -9,22 +9,26 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
+import java.nio.file.*;
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
 import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
-import nl.hauntedmc.dungeons.content.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.event.PlayerLeaveDungeonEvent;
 import nl.hauntedmc.dungeons.generation.layout.BranchingLayout;
 import nl.hauntedmc.dungeons.generation.layout.Layout;
 import nl.hauntedmc.dungeons.generation.room.InstanceRoom;
 import nl.hauntedmc.dungeons.gui.menu.RoomMenus;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
-import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
-import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.registry.LayoutRegistry;
+import nl.hauntedmc.dungeons.runtime.instance.DungeonInstance;
+import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
+import nl.hauntedmc.dungeons.runtime.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.support.*;
 import nl.hauntedmc.dungeons.util.world.WorldUtils;
-
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -34,12 +38,6 @@ import org.bukkit.plugin.Plugin;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
-
-import java.nio.file.*;
-import java.time.Duration;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicReference;
 
 class PreparationContractTest {
     @TempDir Path directory;
@@ -68,14 +66,11 @@ class PreparationContractTest {
             finishPreparation(f);
             doThrow(new IllegalStateException("entry task rejected"))
                     .when(f.scheduler.scheduler)
-                    .runTaskLater(
-                            any(Plugin.class), any(Runnable.class), anyLong());
+                    .runTaskLater(any(Plugin.class), any(Runnable.class), anyLong());
             var manager = Bukkit.getPluginManager();
             doAnswer(
                             call -> {
-                                if (call.getArgument(0)
-                                        instanceof
-                                        PlayerLeaveDungeonEvent) {
+                                if (call.getArgument(0) instanceof PlayerLeaveDungeonEvent) {
                                     // Player restoration invokes plugin events; cancellation may be
                                     // reentrant.
                                     f.paper.runtime.preparations().cancel(session);
@@ -99,10 +94,10 @@ class PreparationContractTest {
     @Test
     @Timeout(10)
     void aBranchingCreatorThatReturnsAfterCancellationDisposesItsGeneratedRun() throws Exception {
-        try (var layouts = new StaticMapSnapshot(LayoutRegistry.class, "layouts");
+        try (var _ = new StaticMapSnapshot(LayoutRegistry.class, "layouts");
                 var f = new RunFixture(directory, new YamlConfiguration());
-                var menus = new HeadlessMenus();
-                var rooms = mockStatic(RoomMenus.class);
+                var _ = new HeadlessMenus();
+                var _ = mockStatic(RoomMenus.class);
                 var executor = Executors.newSingleThreadExecutor()) {
             LayoutRegistry.register(BranchingLayout.class, "branching");
             var settings = new YamlConfiguration();
@@ -294,8 +289,7 @@ class PreparationContractTest {
                 if (rejected)
                     doThrow(new IllegalStateException("scheduler stopped"))
                             .when(f.scheduler.scheduler)
-                            .runTaskAsynchronously(
-                                    any(Plugin.class), any(Runnable.class));
+                            .runTaskAsynchronously(any(Plugin.class), any(Runnable.class));
                 assertEquals(
                         !rejected,
                         dungeon.prepareInstance(session.getPlayer(), "DEFAULT", 1, null));
@@ -330,17 +324,22 @@ class PreparationContractTest {
             var creationReturned = new CountDownLatch(1);
             dungeon.beforeReturn =
                     () ->
-                            doAnswer(call -> {
-                                        // Reject on the worker only after owner-thread publication
-                                        // returns. Otherwise create() may legitimately drain the
-                                        // cancellation in its finally block before this assertion.
-                                        assertTrue(creationReturned.await(2, TimeUnit.SECONDS));
-                                        throw new IllegalStateException("scheduler stopped");
-                                    })
+                            doAnswer(
+                                            call -> {
+                                                // Reject on the worker only after owner-thread
+                                                // publication
+                                                // returns. Otherwise create() may legitimately
+                                                // drain the
+                                                // cancellation in its finally block before this
+                                                // assertion.
+                                                assertTrue(
+                                                        creationReturned.await(
+                                                                2, TimeUnit.SECONDS));
+                                                throw new IllegalStateException(
+                                                        "scheduler stopped");
+                                            })
                                     .when(f.scheduler.scheduler)
-                                    .runTask(
-                                            any(Plugin.class),
-                                            any(Runnable.class));
+                                    .runTask(any(Plugin.class), any(Runnable.class));
             creation.run();
             creationReturned.countDown();
             waiting.get(2, TimeUnit.SECONDS);
@@ -453,10 +452,10 @@ class PreparationContractTest {
     void branchingPreparationRevalidatesMembershipAndConnectivityAtTheFinalAdmissionTick()
             throws Exception {
         for (String outcome : List.of("ready", "disconnect", "moved")) {
-            try (var layouts = new StaticMapSnapshot(LayoutRegistry.class, "layouts");
+            try (var _ = new StaticMapSnapshot(LayoutRegistry.class, "layouts");
                     var f = new RunFixture(directory.resolve(outcome), new YamlConfiguration());
-                    var menus = new HeadlessMenus();
-                    var rooms = mockStatic(RoomMenus.class)) {
+                    var _ = new HeadlessMenus();
+                    var _ = mockStatic(RoomMenus.class)) {
                 LayoutRegistry.register(BranchingLayout.class, "branching");
                 var settings = new YamlConfiguration();
                 settings.set("generator.seal_open_connectors_with", "AIR");
@@ -603,13 +602,13 @@ class PreparationContractTest {
     void initializedInstancesCannotBeAdmittedOrRejectedUntilTheirCreationHasPublished()
             throws Exception {
         for (boolean branching : List.of(false, true)) {
-            try (var layouts = new StaticMapSnapshot(LayoutRegistry.class, "layouts");
+            try (var _ = new StaticMapSnapshot(LayoutRegistry.class, "layouts");
                     var f =
                             new RunFixture(
                                     directory.resolve(Boolean.toString(branching)),
                                     new YamlConfiguration());
-                    var menus = new HeadlessMenus();
-                    var rooms = mockStatic(RoomMenus.class);
+                    var _ = new HeadlessMenus();
+                    var _ = mockStatic(RoomMenus.class);
                     var executor = Executors.newFixedThreadPool(2)) {
                 var initialized = new CountDownLatch(1);
                 var allowPublication = new CountDownLatch(1);

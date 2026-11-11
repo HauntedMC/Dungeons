@@ -1,4 +1,6 @@
 package nl.hauntedmc.dungeons.gui.menu;
+
+import java.util.Collection;
 import nl.hauntedmc.dungeons.gui.framework.buttons.Button;
 import nl.hauntedmc.dungeons.gui.framework.window.GuiWindow;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
@@ -7,18 +9,15 @@ import nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard;
 import nl.hauntedmc.dungeons.util.metadata.PersistedFieldSupport;
 import nl.hauntedmc.dungeons.util.text.ColorUtils;
 
-import java.util.Collection;
-
 /** Shared access-controlled windows and persisted-field descriptions for editor workflows. */
 final class EditorMenuSupport {
     private EditorMenuSupport() {}
 
     static GuiWindow editorWindow(String namespace, int size, String title) {
-        var window = new GuiWindow(namespace, size, title);
+        var window = RuntimeContext.guiService().createWindow(namespace, size, title);
         window.setAccessCheck(
                 player ->
-                        StaffEditGuard.editor(
-                                player, RuntimeContext.playerSessions().get(player)));
+                        StaffEditGuard.editor(player, RuntimeContext.playerSessions().get(player)));
         return window;
     }
 

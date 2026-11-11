@@ -1,9 +1,8 @@
 package nl.hauntedmc.dungeons.gui.menu;
+
 import nl.hauntedmc.dungeons.gui.framework.window.GuiWindow;
 
-/**
- * Inventory menu builders used by the dungeon editor.
- */
+/** Inventory menu builders used by the dungeon editor. */
 public class EditorMenus {
     public static GuiWindow editorWindow(String namespace, int size, String title) {
         return EditorMenuSupport.editorWindow(namespace, size, title);
@@ -36,5 +35,4 @@ public class EditorMenus {
     public static void initializeItemSelectTriggerMenu() {
         TriggerBrowserMenus.initializeItemSelectTriggerMenu();
     }
-
 }

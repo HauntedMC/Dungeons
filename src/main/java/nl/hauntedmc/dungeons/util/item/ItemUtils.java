@@ -1,11 +1,11 @@
 package nl.hauntedmc.dungeons.util.item;
 
+import java.util.List;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.text.ComponentUtils;
 import nl.hauntedmc.dungeons.util.text.TextUtils;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -18,8 +18,6 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
-
-import java.util.List;
 
 /** Item utility helpers for editor tools, key items and inventory transfers. */
 public final class ItemUtils {

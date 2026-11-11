@@ -6,17 +6,15 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.nio.file.Path;
+import java.util.UUID;
 import nl.hauntedmc.dungeons.support.PaperBoundary;
 import nl.hauntedmc.dungeons.support.PlayerState;
 import nl.hauntedmc.dungeons.support.RunFixture;
 import org.bukkit.configuration.file.YamlConfiguration;
-import java.util.UUID;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-
-import java.nio.file.Path;
 
 class AccessKeyReservationContractTest {
     @TempDir Path directory;
@@ -70,16 +68,25 @@ class AccessKeyReservationContractTest {
     }
 
     @Test
-    void staffIssuedKeysDeliverImmediatelyAndReplayedOperationsDoNotDuplicateThem() throws Exception {
+    void staffIssuedKeysDeliverImmediatelyAndReplayedOperationsDoNotDuplicateThem()
+            throws Exception {
         try (var fixture = new RunFixture(directory, new YamlConfiguration())) {
             var state = new PlayerState();
             fixture.session(state);
             UUID operation = UUID.randomUUID();
-            assertTrue(StaffPlayerRecords.deliverKey(fixture.paper.runtime,
-                    state.player.getUniqueId(), operation, PlayerState.stack(2)));
+            assertTrue(
+                    StaffPlayerRecords.deliverKey(
+                            fixture.paper.runtime,
+                            state.player.getUniqueId(),
+                            operation,
+                            PlayerState.stack(2)));
             Assertions.assertEquals(2, state.contents[0].getAmount());
-            assertFalse(StaffPlayerRecords.deliverKey(fixture.paper.runtime,
-                    state.player.getUniqueId(), operation, PlayerState.stack(2)));
+            assertFalse(
+                    StaffPlayerRecords.deliverKey(
+                            fixture.paper.runtime,
+                            state.player.getUniqueId(),
+                            operation,
+                            PlayerState.stack(2)));
             Assertions.assertEquals(2, state.contents[0].getAmount());
         }
     }

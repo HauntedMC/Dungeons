@@ -1,12 +1,15 @@
 package nl.hauntedmc.dungeons.command;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.Locale;
+import java.util.UUID;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
 import nl.hauntedmc.dungeons.runtime.staff.StaffPermissions;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.world.WorldUtils;
-
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -16,11 +19,6 @@ import org.bukkit.WorldCreator;
 import org.bukkit.WorldType;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.Locale;
-import java.util.UUID;
 
 /** Creates dungeon templates from imported or temporary Paper worlds. */
 final class DungeonWorldCommandHandler {
@@ -42,7 +40,8 @@ final class DungeonWorldCommandHandler {
         String worldName = args[1].trim();
         String mapName = args[2].trim();
         StaffPermissions.require(sender, "edit", mapName);
-        if (!this.isSafeImportWorldName(mapName)) throw new IllegalArgumentException("Invalid dungeon name");
+        if (!this.isSafeImportWorldName(mapName))
+            throw new IllegalArgumentException("Invalid dungeon name");
         if (!this.isSafeImportWorldName(worldName)) {
             LangUtils.sendMessage(
                     sender,
@@ -146,8 +145,15 @@ final class DungeonWorldCommandHandler {
         Bukkit.getScheduler()
                 .runTaskAsynchronously(
                         this.plugin,
-                        () -> this.copyImport(sender,
-                                new ImportedWorld(worldName, importedWorldFolder, saveFolder, importSpawn, dimension)));
+                        () ->
+                                this.copyImport(
+                                        sender,
+                                        new ImportedWorld(
+                                                worldName,
+                                                importedWorldFolder,
+                                                saveFolder,
+                                                importSpawn,
+                                                dimension)));
 
         return true;
     }
@@ -158,8 +164,7 @@ final class DungeonWorldCommandHandler {
             return false;
         }
 
-        if (args.length > 1)
-            StaffPermissions.require(sender, "edit", args[1]);
+        if (args.length > 1) StaffPermissions.require(sender, "edit", args[1]);
 
         if (args.length < 2 || args.length > 4) {
             LangUtils.sendMessage(player, "commands.dungeon.create.usage");
@@ -224,8 +229,7 @@ final class DungeonWorldCommandHandler {
                             exception);
             if (Bukkit.getWorld(tempWorldName) == null) {
                 this.cleanupDirectoryAsync(
-                        WorldUtils.dimensionFolder(tempWorldName),
-                        "failed temporary dimension");
+                        WorldUtils.dimensionFolder(tempWorldName), "failed temporary dimension");
                 this.cleanupDirectoryAsync(
                         new File(Bukkit.getWorldContainer(), tempWorldName),
                         "failed temporary world");
@@ -254,8 +258,17 @@ final class DungeonWorldCommandHandler {
         Bukkit.getScheduler()
                 .runTaskAsynchronously(
                         this.plugin,
-                        () -> this.copyCreation(player,
-                                new CreatedWorld(worldName, tempWorldName, worldFolder, saveFolder, spawnpoint, dungeonType, generatorType)));
+                        () ->
+                                this.copyCreation(
+                                        player,
+                                        new CreatedWorld(
+                                                worldName,
+                                                tempWorldName,
+                                                worldFolder,
+                                                saveFolder,
+                                                spawnpoint,
+                                                dungeonType,
+                                                generatorType)));
 
         return true;
     }
@@ -279,8 +292,7 @@ final class DungeonWorldCommandHandler {
 
         try {
             return this.resolveSafeChildDirectory(Bukkit.getWorldContainer(), worldName).exists()
-                    || WorldUtils.dimensionFolder(worldName)
-                            .exists();
+                    || WorldUtils.dimensionFolder(worldName).exists();
         } catch (IOException exception) {
             this.plugin
                     .getSLF4JLogger()
@@ -305,8 +317,7 @@ final class DungeonWorldCommandHandler {
             File worldFolder = new File(Bukkit.getWorldContainer(), candidate);
             if (Bukkit.getWorld(candidate) == null
                     && !worldFolder.exists()
-                    && !WorldUtils.dimensionFolder(candidate)
-                            .exists()) {
+                    && !WorldUtils.dimensionFolder(candidate).exists()) {
                 return candidate;
             }
         }
@@ -369,6 +380,7 @@ final class DungeonWorldCommandHandler {
                         this.plugin,
                         () -> LangUtils.sendMessage(sender, "commands.dungeon.import.failed"));
     }
+
     private void copyImport(CommandSender sender, ImportedWorld captured) {
         if (captured.destination().exists()) {
             this.plugin
@@ -399,8 +411,7 @@ final class DungeonWorldCommandHandler {
             this.plugin
                     .getSLF4JLogger()
                     .error(
-                            "Failed to import world '{}' into dungeon folder"
-                                    + " '{}'.",
+                            "Failed to import world '{}' into dungeon folder" + " '{}'.",
                             captured.name(),
                             captured.destination().getAbsolutePath(),
                             exception);
@@ -408,26 +419,18 @@ final class DungeonWorldCommandHandler {
             return;
         }
 
-        Bukkit.getScheduler()
-                .runTask(
-                        this.plugin,
-                        () -> this.finishImport(sender, captured));
+        Bukkit.getScheduler().runTask(this.plugin, () -> this.finishImport(sender, captured));
     }
 
     private void finishImport(CommandSender sender, ImportedWorld captured) {
-        DungeonDefinition importDungeon =
-                this.dungeonManager.loadDungeon(captured.destination());
+        DungeonDefinition importDungeon = this.dungeonManager.loadDungeon(captured.destination());
         if (importDungeon == null) {
-            this.cleanupDirectoryAsync(
-                    captured.destination(), "failed imported dungeon");
-            LangUtils.sendMessage(
-                    sender,
-                    "commands.dungeon.import.failed");
+            this.cleanupDirectoryAsync(captured.destination(), "failed imported dungeon");
+            LangUtils.sendMessage(sender, "commands.dungeon.import.failed");
             return;
         }
 
-        importDungeon.setSaveConfig(
-                "dungeon.environment", captured.environment());
+        importDungeon.setSaveConfig("dungeon.environment", captured.environment());
         importDungeon.setLobbySpawn(captured.spawn());
         LangUtils.sendMessage(
                 sender,
@@ -435,7 +438,8 @@ final class DungeonWorldCommandHandler {
                 LangUtils.placeholder("world", captured.name()));
     }
 
-    private record ImportedWorld(String name, File sourceFolder, File destination, Location spawn, String environment) {}
+    private record ImportedWorld(
+            String name, File sourceFolder, File destination, Location spawn, String environment) {}
 
     private void copyCreation(Player player, CreatedWorld captured) {
         if (captured.destination().exists()) {
@@ -455,8 +459,7 @@ final class DungeonWorldCommandHandler {
                             this.plugin,
                             () ->
                                     LangUtils.sendMessage(
-                                            player,
-                                            "commands.dungeon.create.already-exists"));
+                                            player, "commands.dungeon.create.already-exists"));
             return;
         }
 
@@ -475,8 +478,7 @@ final class DungeonWorldCommandHandler {
                             this.plugin,
                             () ->
                                     LangUtils.sendMessage(
-                                            player,
-                                            "commands.dungeon.create.failed-to-create"));
+                                            player, "commands.dungeon.create.failed-to-create"));
             return;
         }
 
@@ -491,8 +493,7 @@ final class DungeonWorldCommandHandler {
             this.plugin
                     .getSLF4JLogger()
                     .error(
-                            "Failed to create dungeon '{}' from world folder"
-                                    + " '{}'.",
+                            "Failed to create dungeon '{}' from world folder" + " '{}'.",
                             captured.name(),
                             captured.sourceFolder().getAbsolutePath(),
                             exception);
@@ -501,8 +502,7 @@ final class DungeonWorldCommandHandler {
                             this.plugin,
                             () ->
                                     LangUtils.sendMessage(
-                                            player,
-                                            "commands.dungeon.create.failed-to-create"));
+                                            player, "commands.dungeon.create.failed-to-create"));
             return;
         }
 
@@ -511,30 +511,22 @@ final class DungeonWorldCommandHandler {
                 new File(Bukkit.getWorldContainer(), captured.temporaryName()),
                 "temporary world folder");
 
-        Bukkit.getScheduler()
-                .runTask(
-                        this.plugin,
-                        () -> this.finishCreation(player, captured));
+        Bukkit.getScheduler().runTask(this.plugin, () -> this.finishCreation(player, captured));
     }
 
     private void finishCreation(Player player, CreatedWorld captured) {
         DungeonDefinition newDungeon =
                 this.dungeonManager.loadDungeon(
-                        captured.destination(),
-                        captured.dungeonType(),
-                        captured.generatorType());
+                        captured.destination(), captured.dungeonType(), captured.generatorType());
         if (newDungeon == null) {
-            this.cleanupDirectoryAsync(
-                    captured.destination(), "failed created dungeon");
-            LangUtils.sendMessage(
-                    player,
-                    "commands.dungeon.create.failed-to-create");
+            this.cleanupDirectoryAsync(captured.destination(), "failed created dungeon");
+            LangUtils.sendMessage(player, "commands.dungeon.create.failed-to-create");
             this.plugin
                     .getSLF4JLogger()
                     .warn(
                             "Dungeon creation failed for"
-                                + " '{}': unknown dungeon"
-                                + " type '{}'.",
+                                    + " '{}': unknown dungeon"
+                                    + " type '{}'.",
                             captured.name(),
                             captured.dungeonType());
             return;
@@ -542,18 +534,22 @@ final class DungeonWorldCommandHandler {
 
         newDungeon.setLobbySpawn(captured.spawn());
         if (!captured.dungeonType().isEmpty()) {
-            newDungeon
-                    .getConfig()
-                    .set("dungeon.type", captured.dungeonType());
+            newDungeon.getConfig().set("dungeon.type", captured.dungeonType());
         }
 
         newDungeon.saveConfig();
         LangUtils.sendMessage(
                 player,
                 "commands.dungeon.create.success",
-                LangUtils.placeholder(
-                        "dungeon", captured.name()));
+                LangUtils.placeholder("dungeon", captured.name()));
     }
 
-    private record CreatedWorld(String name, String temporaryName, File sourceFolder, File destination, Location spawn, String dungeonType, String generatorType) {}
+    private record CreatedWorld(
+            String name,
+            String temporaryName,
+            File sourceFolder,
+            File destination,
+            Location spawn,
+            String dungeonType,
+            String generatorType) {}
 }

@@ -1,14 +1,11 @@
 package nl.hauntedmc.dungeons.util.instance;
 
-import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
-
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
 
-/**
- * Helpers for parsing and evaluating instance variable placeholders.
- */
+/** Helpers for parsing and evaluating instance variable placeholders. */
 public final class InstanceUtils {
     private InstanceUtils() {}
 
@@ -16,9 +13,7 @@ public final class InstanceUtils {
             Pattern.compile("([^<=>]*)(>=|<=|=+|>|<)([^<=>]*)");
     private static final Pattern VARIABLE_PATTERN = Pattern.compile("<[^<>]*>");
 
-    /**
-     * Resolves placeholders and evaluates one simple comparison expression.
-     */
+    /** Resolves placeholders and evaluates one simple comparison expression. */
     public static boolean compareVars(PlayableInstance instance, String comparison) {
         String parsed = parseVars(instance, comparison);
         if (parsed == null) {

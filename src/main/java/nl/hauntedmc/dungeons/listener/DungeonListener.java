@@ -1,34 +1,38 @@
 package nl.hauntedmc.dungeons.listener;
 
 import io.papermc.paper.event.player.AsyncChatEvent;
-
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.regex.Pattern;
+import nl.hauntedmc.dungeons.config.PluginConfigView;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
 import nl.hauntedmc.dungeons.content.function.HologramFunction;
-import nl.hauntedmc.dungeons.content.instance.edit.BranchingEditableInstance;
 import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
 import nl.hauntedmc.dungeons.generation.room.Connector;
 import nl.hauntedmc.dungeons.generation.room.WhitelistEntry;
 import nl.hauntedmc.dungeons.gui.framework.GuiService;
 import nl.hauntedmc.dungeons.gui.menu.HotbarMenus;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
-import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
+import nl.hauntedmc.dungeons.runtime.instance.DungeonInstance;
+import nl.hauntedmc.dungeons.runtime.instance.edit.BranchingEditableInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueEntry;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry;
 import nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard;
 import nl.hauntedmc.dungeons.util.command.CommandUtils;
-import nl.hauntedmc.dungeons.util.config.PluginConfigView;
 import nl.hauntedmc.dungeons.util.entity.ParticleUtils;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.text.ComponentUtils;
 import nl.hauntedmc.dungeons.util.world.LocationUtils;
 import nl.hauntedmc.dungeons.util.world.WorldUtils;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -54,13 +58,6 @@ import org.bukkit.event.world.WorldInitEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.BoundingBox;
-
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.regex.Pattern;
 
 /**
  * Global listener coordinating player session recovery and editor tool interactions.
@@ -233,8 +230,7 @@ public class DungeonListener implements Listener {
             return;
         }
 
-        if (!StaffEditGuard.editor(player, playerSession))
-            return;
+        if (!StaffEditGuard.editor(player, playerSession)) return;
 
         if (!ItemUtils.isRoomTool(item)) {
             return;
@@ -321,8 +317,7 @@ public class DungeonListener implements Listener {
             return;
         }
 
-        if (!StaffEditGuard.editor(player, playerSession))
-            return;
+        if (!StaffEditGuard.editor(player, playerSession)) return;
 
         if (!(playerSession.getInstance() instanceof BranchingEditableInstance)) {
             return;
@@ -451,8 +446,7 @@ public class DungeonListener implements Listener {
         Location blockLoc = clickedLocation.clone();
         blockLoc.setWorld(null);
 
-        if (!StaffEditGuard.editor(player, playerSession))
-            return;
+        if (!StaffEditGuard.editor(player, playerSession)) return;
 
         DungeonFunction function = this.findFunctionAt(instance.getDungeon(), blockLoc);
         if (function != null) {
@@ -498,8 +492,7 @@ public class DungeonListener implements Listener {
             return;
         }
 
-        if (!StaffEditGuard.editor(player, playerSession))
-            return;
+        if (!StaffEditGuard.editor(player, playerSession)) return;
         DungeonFunction function = this.findFunctionByDisplay(instance, display);
         if (function == null) {
             return;
@@ -678,8 +671,7 @@ public class DungeonListener implements Listener {
             return false;
         }
 
-        if (!StaffEditGuard.editor(player, playerSession))
-            return true;
+        if (!StaffEditGuard.editor(player, playerSession)) return true;
         if (!this.pendingRoomNameInputs.add(playerId)) {
             return true;
         }

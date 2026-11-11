@@ -1,20 +1,5 @@
 package nl.hauntedmc.dungeons.world.generator;
 
-import nl.hauntedmc.dungeons.generation.room.InstanceRoom;
-import nl.hauntedmc.dungeons.generation.structure.StructurePieceBlock;
-import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
-import nl.hauntedmc.dungeons.util.world.BlockNbtUtils;
-
-import org.bukkit.Bukkit;
-import org.bukkit.Material;
-import org.bukkit.World;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.generator.WorldInfo;
-import org.bukkit.util.BoundingBox;
-import org.jetbrains.annotations.NotNull;
-import org.joml.Vector2i;
-import org.joml.Vector3i;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -25,10 +10,21 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
+import nl.hauntedmc.dungeons.generation.room.InstanceRoom;
+import nl.hauntedmc.dungeons.generation.structure.StructurePieceBlock;
+import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
+import nl.hauntedmc.dungeons.util.world.BlockNbtUtils;
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.World;
+import org.bukkit.block.data.BlockData;
+import org.bukkit.generator.WorldInfo;
+import org.bukkit.util.BoundingBox;
+import org.jetbrains.annotations.NotNull;
+import org.joml.Vector2i;
+import org.joml.Vector3i;
 
-/**
- * Chunk generator that emits precomputed branching room blocks and borders.
- */
+/** Chunk generator that emits precomputed branching room blocks and borders. */
 public class DungeonChunkGenerator extends SolidBlockChunkGenerator {
     private final DungeonsPlugin plugin;
     private final ConcurrentMap<Vector3i, StructurePieceBlock> blocks;
@@ -36,9 +32,7 @@ public class DungeonChunkGenerator extends SolidBlockChunkGenerator {
     private final ConcurrentMap<Vector2i, List<Vector3i>> chunkBlocks;
     private final AtomicLong nextNbtDelay = new AtomicLong(1L);
 
-    /**
-     * Creates a generator with pre-baked room block placements and room-outline coordinates.
-     */
+    /** Creates a generator with pre-baked room block placements and room-outline coordinates. */
     public DungeonChunkGenerator(
             DungeonsPlugin plugin,
             Material blockType,
@@ -88,9 +82,7 @@ public class DungeonChunkGenerator extends SolidBlockChunkGenerator {
         this.chunkBlocks = freezeChunkMap(roomBlocksByChunk);
     }
 
-    /**
-     * Places precomputed outline and room blocks for the requested chunk.
-     */
+    /** Places precomputed outline and room blocks for the requested chunk. */
     @Override
     public void generateNoise(
             @NotNull WorldInfo worldInfo,

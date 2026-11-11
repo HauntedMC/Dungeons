@@ -171,6 +171,33 @@
         </resources>
         <plugins>
             <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+                <version>2.43.0</version>
+                <configuration>
+                    <java>
+                        <includes>
+                            <include>src/main/java/**/*.java</include>
+                            <include>src/test/java/**/*.java</include>
+                            <include>src/acceptance/java/**/*.java</include>
+                            <include>tools/architecture/*.java</include>
+                        </includes>
+                        <googleJavaFormat>
+                            <version>1.33.0</version>
+                            <style>AOSP</style>
+                        </googleJavaFormat>
+                        <removeUnusedImports/>
+                    </java>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>java-format</id>
+                        <phase>verify</phase>
+                        <goals><goal>check</goal></goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <argLine>@{argLine} -javaagent:${settings.localRepository}/org/mockito/mockito-core/${haunted.mockito.version}/mockito-core-${haunted.mockito.version}.jar</argLine>
@@ -192,6 +219,9 @@
                                     <exclude>META-INF/*.SF</exclude>
                                     <exclude>META-INF/*.RSA</exclude>
                                     <exclude>META-INF/*.DSA</exclude>
+                                    <!-- The shaded plugin is one classpath jar, not the dependency modules. -->
+                                    <exclude>module-info.class</exclude>
+                                    <exclude>META-INF/versions/**/module-info.class</exclude>
                                 </excludes></filter>
                             </filters>
                             <transformers>

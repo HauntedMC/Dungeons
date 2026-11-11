@@ -2,22 +2,6 @@ package nl.hauntedmc.dungeons.acceptance;
 
 import static nl.hauntedmc.dungeons.acceptance.AcceptancePlugin.require;
 
-import net.kyori.adventure.text.Component;
-
-import nl.hauntedmc.dungeons.config.ConfigurationFile;
-import nl.hauntedmc.dungeons.content.function.SetStatusFunction;
-import nl.hauntedmc.dungeons.content.function.meta.CompositeFunction;
-import nl.hauntedmc.dungeons.content.function.meta.DelayedFunction;
-import nl.hauntedmc.dungeons.model.dungeon.AccessKeyDefinition;
-import nl.hauntedmc.dungeons.model.element.DungeonFunction;
-import nl.hauntedmc.dungeons.util.item.ItemUtils;
-
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.persistence.PersistentDataType;
-
 import java.nio.file.Files;
 import java.util.Date;
 import java.util.List;
@@ -25,6 +9,19 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import net.kyori.adventure.text.Component;
+import nl.hauntedmc.dungeons.config.ConfigurationFile;
+import nl.hauntedmc.dungeons.content.function.SetStatusFunction;
+import nl.hauntedmc.dungeons.content.function.meta.CompositeFunction;
+import nl.hauntedmc.dungeons.content.function.meta.DelayedFunction;
+import nl.hauntedmc.dungeons.model.dungeon.AccessKeyDefinition;
+import nl.hauntedmc.dungeons.model.element.DungeonFunction;
+import nl.hauntedmc.dungeons.util.item.ItemUtils;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataType;
 
 final class NativePersistence {
     private NativePersistence() {}
@@ -157,8 +154,7 @@ final class NativePersistence {
         function.releaseEditorListener();
         if (function instanceof CompositeFunction composite) {
             composite.getFunctions().forEach(NativePersistence::release);
-        } else if (function.serialize().get("function")
-                instanceof DungeonFunction child) {
+        } else if (function.serialize().get("function") instanceof DungeonFunction child) {
             release(child);
         }
     }

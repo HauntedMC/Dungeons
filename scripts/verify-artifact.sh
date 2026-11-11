@@ -31,4 +31,12 @@ if grep -Eq '^nl/hauntedmc/dungeons/acceptance/|^org/junit/|^org/mockito/' <<<"$
   echo 'Plugin jar contains acceptance or unit-test classes' >&2
   exit 1
 fi
+if grep -Eq '(^|/)module-info\.class$' <<<"$entries"; then
+  echo 'Plugin jar contains dependency module descriptors that do not describe the shaded jar' >&2
+  exit 1
+fi
+if grep -Eq '^nl/hauntedmc/dungeons/(model/instance|content/instance|listener/instance|util/config|util/lang)/' <<<"$entries"; then
+  echo 'Plugin jar contains retired internal packages; rebuild from a clean target directory' >&2
+  exit 1
+fi
 echo "Artifact audit passed: $artifact"

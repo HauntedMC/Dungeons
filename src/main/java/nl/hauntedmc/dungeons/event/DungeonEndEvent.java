@@ -1,16 +1,12 @@
 package nl.hauntedmc.dungeons.event;
 
-import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
-import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-
-import org.bukkit.entity.Player;
-
 import java.util.ArrayList;
 import java.util.List;
+import nl.hauntedmc.dungeons.runtime.instance.DungeonInstance;
+import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
+import org.bukkit.entity.Player;
 
-/**
- * Event fired when an instance has ended and its player list is finalized.
- */
+/** Event fired when an instance has ended and its player list is finalized. */
 public class DungeonEndEvent extends DungeonEvent {
     private final List<DungeonPlayerSession> gamePlayers;
     private final List<Player> players;

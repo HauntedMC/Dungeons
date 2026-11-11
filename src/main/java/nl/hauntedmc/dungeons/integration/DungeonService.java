@@ -1,13 +1,5 @@
 package nl.hauntedmc.dungeons.integration;
 
-import nl.hauntedmc.dungeons.api.DungeonsApi;
-import nl.hauntedmc.dungeons.persistence.DatabaseLifecycle;
-import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
-
-import org.bukkit.Bukkit;
-import org.bukkit.plugin.ServicePriority;
-import org.bukkit.scheduler.BukkitTask;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
@@ -15,6 +7,12 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import nl.hauntedmc.dungeons.api.DungeonsApi;
+import nl.hauntedmc.dungeons.persistence.DatabaseLifecycle;
+import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
+import org.bukkit.Bukkit;
+import org.bukkit.plugin.ServicePriority;
+import org.bukkit.scheduler.BukkitTask;
 
 /** Publishes snapshots for peer plugins without sharing mutable dungeon or database objects. */
 public final class DungeonService implements DungeonsApi, AutoCloseable {

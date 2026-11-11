@@ -1,24 +1,28 @@
 package nl.hauntedmc.dungeons.runtime.player;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
+import java.util.function.Consumer;
 import nl.hauntedmc.dungeons.config.ConfigurationFile;
+import nl.hauntedmc.dungeons.config.PluginConfigView;
 import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
 import nl.hauntedmc.dungeons.event.HotbarSetEvent;
 import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
 import nl.hauntedmc.dungeons.generation.room.Connector;
 import nl.hauntedmc.dungeons.generation.room.ConnectorDoor;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
-import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
 import nl.hauntedmc.dungeons.persistence.StateDocument;
 import nl.hauntedmc.dungeons.persistence.StateStore;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.dungeon.DungeonAccessKeyService;
-import nl.hauntedmc.dungeons.util.config.PluginConfigView;
+import nl.hauntedmc.dungeons.runtime.instance.DungeonInstance;
 import nl.hauntedmc.dungeons.util.entity.EntityUtils;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -29,12 +33,6 @@ import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
-import java.util.function.Consumer;
 
 /**
  * Mutable runtime state attached to a single player.
@@ -132,8 +130,14 @@ public final class DungeonPlayerSession {
         this.hotbarHistory = new ArrayList<>();
         this.savedGameMode = Bukkit.getDefaultGameMode();
         this.playerData = new ConfigurationFile(plugin);
-        this.playerDocument = RuntimeContext.runtime().stateStore().document(
-                new StateStore.Key("player-profile", player.getUniqueId().toString(), player.getUniqueId()));
+        this.playerDocument =
+                RuntimeContext.runtime()
+                        .stateStore()
+                        .document(
+                                new StateStore.Key(
+                                        "player-profile",
+                                        player.getUniqueId().toString(),
+                                        player.getUniqueId()));
         this.recoveryJournal = new PlayerRecoveryJournal(player.getUniqueId());
         try {
             this.playerDocument.loadInto(this.playerData);
@@ -426,8 +430,7 @@ public final class DungeonPlayerSession {
         try {
             if (this.savedPosition != null
                     && !this.player.teleport(
-                            this.savedPosition,
-                            PlayerTeleportEvent.TeleportCause.PLUGIN)) {
+                            this.savedPosition, PlayerTeleportEvent.TeleportCause.PLUGIN)) {
                 throw new IllegalStateException("Return teleport rejected");
             }
             if (restoreItems) this.restoreInventory();
@@ -647,26 +650,30 @@ public final class DungeonPlayerSession {
             change.accept(candidate);
             this.playerDocument.save(candidate.saveToString());
             this.playerData.loadFromString(candidate.saveToString());
-            this.completedDungeons = new ArrayList<>(this.playerData.getStringList("CompletedDungeons"));
+            this.completedDungeons =
+                    new ArrayList<>(this.playerData.getStringList("CompletedDungeons"));
         } catch (InvalidConfigurationException failure) {
             throw new IllegalStateException("Cannot stage player profile", failure);
         }
     }
 
     public void setDungeonFinished(StaticDungeon dungeon) {
-        this.updateProfile(candidate -> {
-            var completed = new ArrayList<>(candidate.getStringList("CompletedDungeons"));
-            if (!completed.contains(dungeon.getWorldName())) completed.add(dungeon.getWorldName());
-            candidate.set("CompletedDungeons", completed);
-        });
+        this.updateProfile(
+                candidate -> {
+                    var completed = new ArrayList<>(candidate.getStringList("CompletedDungeons"));
+                    if (!completed.contains(dungeon.getWorldName()))
+                        completed.add(dungeon.getWorldName());
+                    candidate.set("CompletedDungeons", completed);
+                });
     }
 
     public void setDungeonUnfinished(StaticDungeon dungeon) {
-        this.updateProfile(candidate -> {
-            var completed = new ArrayList<>(candidate.getStringList("CompletedDungeons"));
-            completed.remove(dungeon.getWorldName());
-            candidate.set("CompletedDungeons", completed);
-        });
+        this.updateProfile(
+                candidate -> {
+                    var completed = new ArrayList<>(candidate.getStringList("CompletedDungeons"));
+                    completed.remove(dungeon.getWorldName());
+                    candidate.set("CompletedDungeons", completed);
+                });
     }
 
     public void setDungeonSavePoint(Location loc, String dungeon) {
@@ -814,8 +821,8 @@ public final class DungeonPlayerSession {
         return this.reservedAccessKey == null ? null : this.reservedAccessKey.clone();
     }
 
-    public boolean settleReservedAccessKey(String dungeonName,
-            DungeonAccessKeyService.Settlement ledger, boolean refund) {
+    public boolean settleReservedAccessKey(
+            String dungeonName, DungeonAccessKeyService.Settlement ledger, boolean refund) {
         this.requireActiveSession();
         if (!this.hasReservedAccessKey(dungeonName) || !ledger.valid()) return false;
         var journal = this.recoveryJournal.prepareKeySettlement(refund, ledger.replacement());

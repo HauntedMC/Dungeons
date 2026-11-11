@@ -1,8 +1,6 @@
 package nl.hauntedmc.dungeons.command.config;
 
-/**
- * Parsing categories supported by the dungeon config command layer.
- */
+/** Parsing categories supported by the dungeon config command layer. */
 public enum DungeonConfigValueType {
     BOOLEAN,
     INTEGER,

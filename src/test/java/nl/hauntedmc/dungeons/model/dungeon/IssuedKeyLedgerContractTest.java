@@ -13,6 +13,14 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
 import nl.hauntedmc.dungeons.persistence.StateDocument;
 import nl.hauntedmc.dungeons.persistence.StateStore;
@@ -20,7 +28,6 @@ import nl.hauntedmc.dungeons.runtime.dungeon.DungeonAccessKeyService;
 import nl.hauntedmc.dungeons.runtime.dungeon.DungeonIdentity;
 import nl.hauntedmc.dungeons.support.PaperBoundary;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -33,20 +40,12 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
 class IssuedKeyLedgerContractTest {
     @TempDir Path directory;
 
     @Test
-    void failedKeyDefinitionSaveReportsFailureAndRestoresThePreviousConfiguration() throws Exception {
+    void failedKeyDefinitionSaveReportsFailureAndRestoresThePreviousConfiguration()
+            throws Exception {
         try (var paper = new PaperBoundary()) {
             when(paper.plugin.namespace()).thenReturn("dungeons");
             paper.config.set("access.keys.unique_validation_enabled", false);
@@ -58,7 +57,8 @@ class IssuedKeyLedgerContractTest {
             Files.createDirectory(configFile);
             Files.writeString(configFile.resolve("obstacle"), "keep");
             try {
-                Assertions.assertThrows(UncheckedIOException.class,
+                Assertions.assertThrows(
+                        UncheckedIOException.class,
                         () -> dungeon.addAccessKey(item(new HashMap<>()), null));
                 assertTrue(dungeon.getAccessKeys().isEmpty());
                 assertTrue(dungeon.getValidKeys().isEmpty());
@@ -76,27 +76,39 @@ class IssuedKeyLedgerContractTest {
     }
 
     @Test
-    void metadataOnlyKeysSurviveIdAssignmentWithoutNewTagsOrAReadableUniqueLedger() throws Exception {
+    void metadataOnlyKeysSurviveIdAssignmentWithoutNewTagsOrAReadableUniqueLedger()
+            throws Exception {
         try (var paper = new PaperBoundary()) {
             when(paper.plugin.namespace()).thenReturn("dungeons");
             paper.config.set("access.keys.unique_validation_enabled", false);
             paper.config.set("access.keys.metadata_validation_enabled", true);
-            var definition = new AccessKeyDefinition(Map.of("KeyId", "existing-definition", "Item", item(new HashMap<>())));
-            var original = item(new HashMap<>(Map.of(new NamespacedKey("dungeons", "dungeon_access_key_id"), "existing-definition")));
+            var definition =
+                    new AccessKeyDefinition(
+                            Map.of("KeyId", "existing-definition", "Item", item(new HashMap<>())));
+            var original =
+                    item(
+                            new HashMap<>(
+                                    Map.of(
+                                            new NamespacedKey("dungeons", "dungeon_access_key_id"),
+                                            "existing-definition")));
             Files.writeString(directory.resolve("access_keys.yml"), "broken: [unused");
             var config = new YamlConfiguration();
-            var id = DungeonIdentity.initialize(
-                    paper.plugin, config, directory.resolve("config.yml").toFile());
-            var service = new DungeonAccessKeyService(
-                    paper.runtime, directory.toFile(), id, () -> List.of(definition));
+            var id =
+                    DungeonIdentity.initialize(
+                            paper.plugin, config, directory.resolve("config.yml").toFile());
+            var service =
+                    new DungeonAccessKeyService(
+                            paper.runtime, directory.toFile(), id, () -> List.of(definition));
             assertNotNull(service.isValidKey(original));
             ItemUtils.tagDungeonAccessKeyInstance(original, UUID.randomUUID().toString());
             assertNotNull(service.isValidKey(original));
             assertEquals("existing-definition", definition.getKeyId());
             var restored = new YamlConfiguration();
             restored.load(directory.resolve("config.yml").toFile());
-            assertEquals(id, DungeonIdentity.initialize(
-                    paper.plugin, restored, directory.resolve("config.yml").toFile()));
+            assertEquals(
+                    id,
+                    DungeonIdentity.initialize(
+                            paper.plugin, restored, directory.resolve("config.yml").toFile()));
             assertEquals("broken: [unused", Files.readString(directory.resolve("access_keys.yml")));
         }
     }
@@ -105,10 +117,12 @@ class IssuedKeyLedgerContractTest {
     void failedLedgerReplacementCannotReportConsumptionOrChangeTheWorkingLedger() throws Exception {
         try (var fixture = new Fixture(directory)) {
             var key = fixture.dungeon.issueAccessKey(1);
-            String document = fixture.paper.state.payload("key-ledger", fixture.dungeon.getDungeonId().toString());
+            String document =
+                    fixture.paper.state.payload(
+                            "key-ledger", fixture.dungeon.getDungeonId().toString());
             fixture.paper.state.failWrites = true;
-            Assertions.assertThrows(IllegalStateException.class,
-                    () -> fixture.dungeon.consumeAccessKey(key));
+            Assertions.assertThrows(
+                    IllegalStateException.class, () -> fixture.dungeon.consumeAccessKey(key));
             assertNotNull(fixture.dungeon.isValidKey(key));
             fixture.paper.state.failWrites = false;
             assertNotNull(fixture.reload().isValidKey(key));
@@ -164,17 +178,12 @@ class IssuedKeyLedgerContractTest {
             assertTrue(fixture.dungeon.consumeAccessKey(consumed));
             String interruptedId = ItemUtils.getDungeonAccessKeyInstanceId(interrupted);
             assertEquals(
-                    List.of(interruptedId),
-                    fixture.saved()
-                            .getStringList("reserved_instance_ids"));
+                    List.of(interruptedId), fixture.saved().getStringList("reserved_instance_ids"));
             var restored = fixture.reload();
             assertNotNull(restored.isValidKey(interrupted));
             assertFalse(restored.isReservedAccessKey(interrupted));
             assertNull(restored.isValidKey(consumed));
-            assertTrue(
-                    fixture.saved()
-                            .getStringList("reserved_instance_ids")
-                            .isEmpty());
+            assertTrue(fixture.saved().getStringList("reserved_instance_ids").isEmpty());
             assertTrue(restored.reserveIssuedAccessKey(interrupted));
             assertFalse(restored.reserveIssuedAccessKey(interrupted.clone()));
         }
@@ -219,10 +228,17 @@ class IssuedKeyLedgerContractTest {
             throws Exception {
         try (var fixture = new Fixture(directory)) {
             String broken = "issued_instances: [unfinished";
-            fixture.paper.state.seed("key-ledger", fixture.dungeon.getDungeonId().toString(), null, broken);
+            fixture.paper.state.seed(
+                    "key-ledger", fixture.dungeon.getDungeonId().toString(), null, broken);
             assertNull(fixture.dungeon.issueAccessKey(1));
-            assertEquals(broken, fixture.paper.state.payload("key-ledger", fixture.dungeon.getDungeonId().toString()));
-            fixture.paper.state.seed("key-ledger", fixture.dungeon.getDungeonId().toString(), null,
+            assertEquals(
+                    broken,
+                    fixture.paper.state.payload(
+                            "key-ledger", fixture.dungeon.getDungeonId().toString()));
+            fixture.paper.state.seed(
+                    "key-ledger",
+                    fixture.dungeon.getDungeonId().toString(),
+                    null,
                     "issued_instances: {}\nreserved_instance_ids: []\ninvalidated_instance_ids: []\n");
             var issued = fixture.dungeon.issueAccessKey(1);
             assertNotNull(issued);
@@ -257,8 +273,12 @@ class IssuedKeyLedgerContractTest {
     @Test
     void jointSettlementDoesNotRotateTheWorkingLedgerWhenTheRecoveryWriteFails() throws Exception {
         try (var fixture = new Fixture(directory)) {
-            var service = new DungeonAccessKeyService(
-                    fixture.paper.runtime, fixture.folder.toFile(), fixture.dungeon.getDungeonId(), () -> List.of(fixture.definition));
+            var service =
+                    new DungeonAccessKeyService(
+                            fixture.paper.runtime,
+                            fixture.folder.toFile(),
+                            fixture.dungeon.getDungeonId(),
+                            () -> List.of(fixture.definition));
             var key = service.issueAccessKey(fixture.definition);
             assertTrue(service.reserveIssuedAccessKey(key));
             var journalKey = new StateStore.Key("player-recovery-test", "atomic", null);
@@ -267,11 +287,19 @@ class IssuedKeyLedgerContractTest {
             assertTrue(settlement.valid());
             assertTrue(service.isReservedAccessKey(key));
             fixture.paper.state.failedWrites.add(journalKey);
-            Assertions.assertThrows(RuntimeException.class, () ->
-                    StateDocument.commitTogether(settlement.write(), journal.prepare("replacement")));
+            Assertions.assertThrows(
+                    RuntimeException.class,
+                    () ->
+                            StateDocument.commitTogether(
+                                    settlement.write(), journal.prepare("replacement")));
             assertTrue(service.isReservedAccessKey(key));
-            assertFalse(fixture.paper.state.payload("key-ledger", fixture.dungeon.getDungeonId().toString())
-                    .contains(ItemUtils.getDungeonAccessKeyInstanceId(settlement.replacement())));
+            assertFalse(
+                    fixture.paper
+                            .state
+                            .payload("key-ledger", fixture.dungeon.getDungeonId().toString())
+                            .contains(
+                                    ItemUtils.getDungeonAccessKeyInstanceId(
+                                            settlement.replacement())));
             assertEquals(0, journal.revision());
             fixture.paper.state.failedWrites.clear();
             StateDocument.commitTogether(settlement.write(), journal.prepare("replacement"));
@@ -300,7 +328,10 @@ class IssuedKeyLedgerContractTest {
             dungeon = reload();
         }
 
-        YamlConfiguration saved() { return paper.state.yaml("key-ledger", dungeon.getDungeonId().toString()); }
+        YamlConfiguration saved() {
+            return paper.state.yaml("key-ledger", dungeon.getDungeonId().toString());
+        }
+
         LedgerDungeon reload() throws Exception {
             paper.config.set("access.keys.unique_validation_enabled", false);
             paper.runtime.setDefaultDungeonConfig(new YamlConfiguration());

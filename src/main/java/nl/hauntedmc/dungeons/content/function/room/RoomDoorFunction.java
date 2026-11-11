@@ -1,9 +1,9 @@
 package nl.hauntedmc.dungeons.content.function.room;
 
+import java.util.List;
+import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
-import nl.hauntedmc.dungeons.content.instance.edit.BranchingEditableInstance;
-import nl.hauntedmc.dungeons.content.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
 import nl.hauntedmc.dungeons.generation.room.Connector;
@@ -13,23 +13,19 @@ import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ChatMenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.FunctionCategory;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
+import nl.hauntedmc.dungeons.runtime.instance.edit.BranchingEditableInstance;
+import nl.hauntedmc.dungeons.runtime.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerEvent;
 
-import java.util.List;
-import java.util.Map;
-
-/**
- * Branching-room function that opens, closes, or toggles named room doors.
- */
+/** Branching-room function that opens, closes, or toggles named room doors. */
 @AutoRegister(id = "dungeons.function.room_door")
 @SerializableAs("dungeons.function.room_door")
 public class RoomDoorFunction extends DungeonFunction {
@@ -37,27 +33,21 @@ public class RoomDoorFunction extends DungeonFunction {
     @PersistedField private int action = 0;
     @PersistedField private boolean keepEntranceOpen = true;
 
-    /**
-     * Creates a new RoomDoorFunction instance.
-     */
+    /** Creates a new RoomDoorFunction instance. */
     public RoomDoorFunction(Map<String, Object> config) {
         super("Room Door Controller", config);
         this.setCategory(FunctionCategory.ROOM);
         this.setAllowChangingTargetType(false);
     }
 
-    /**
-     * Creates a new RoomDoorFunction instance.
-     */
+    /** Creates a new RoomDoorFunction instance. */
     public RoomDoorFunction() {
         super("Room Door Controller");
         this.setCategory(FunctionCategory.ROOM);
         this.setAllowChangingTargetType(false);
     }
 
-    /**
-     * Performs run function.
-     */
+    /** Performs run function. */
     @Override
     public void runFunction(TriggerFireEvent triggerEvent, List<DungeonPlayerSession> targets) {
         BranchingInstance branchingInstance = this.instance.as(BranchingInstance.class);
@@ -92,9 +82,7 @@ public class RoomDoorFunction extends DungeonFunction {
         }
     }
 
-    /**
-     * Builds menu button.
-     */
+    /** Builds menu button. */
     @Override
     public MenuButton buildMenuButton() {
         MenuButton functionButton = new MenuButton(Material.OAK_DOOR);
@@ -105,25 +93,19 @@ public class RoomDoorFunction extends DungeonFunction {
         return functionButton;
     }
 
-    /**
-     * Builds hotbar menu.
-     */
+    /** Builds hotbar menu. */
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
                 new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.NAME_TAG);
                         this.button.setDisplayName("&d&lDoor Name");
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         LangUtils.sendMessage(player, "editor.function.room-door.ask-door-name");
@@ -134,9 +116,7 @@ public class RoomDoorFunction extends DungeonFunction {
                                 LangUtils.placeholder("door", RoomDoorFunction.this.doorName));
                     }
 
-                    /**
-                     * Performs on input.
-                     */
+                    /** Performs on input. */
                     @Override
                     public void onInput(Player player, String message) {
                         DungeonPlayerSession playerSession =
@@ -170,9 +150,7 @@ public class RoomDoorFunction extends DungeonFunction {
                 });
         this.menu.addMenuItem(
                 new MenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         DoorAction[] actions = DoorAction.values();
@@ -183,9 +161,7 @@ public class RoomDoorFunction extends DungeonFunction {
                                 "&d&lAction: " + actions[RoomDoorFunction.this.action]);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
@@ -210,9 +186,7 @@ public class RoomDoorFunction extends DungeonFunction {
                 });
         this.menu.addMenuItem(
                 new ToggleMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         if (!RoomDoorFunction.this.controlsAllDoors()) {
@@ -226,9 +200,7 @@ public class RoomDoorFunction extends DungeonFunction {
                         }
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         if (!RoomDoorFunction.this.keepEntranceOpen) {
@@ -245,23 +217,17 @@ public class RoomDoorFunction extends DungeonFunction {
                 });
     }
 
-    /**
-     * Returns the door name.
-     */
+    /** Returns the door name. */
     public String getDoorName() {
         return this.doorName;
     }
 
-    /**
-     * Returns whether keep entrance open.
-     */
+    /** Returns whether keep entrance open. */
     public boolean isKeepEntranceOpen() {
         return this.keepEntranceOpen;
     }
 
-    /**
-     * Performs controls all doors.
-     */
+    /** Performs controls all doors. */
     private boolean controlsAllDoors() {
         return "all".equalsIgnoreCase(this.doorName) || "any".equalsIgnoreCase(this.doorName);
     }

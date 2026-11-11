@@ -34,7 +34,8 @@ final class NativePlayerStorage {
                 throw new IOException("Native player storage returned an unsupported directory");
             return folder.toPath().toAbsolutePath().normalize();
         } catch (ReflectiveOperationException | RuntimeException failure) {
-            throw new IOException("Cannot resolve the server's active native player storage", failure);
+            throw new IOException(
+                    "Cannot resolve the server's active native player storage", failure);
         }
     }
 }

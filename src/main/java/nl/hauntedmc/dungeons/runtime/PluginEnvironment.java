@@ -1,7 +1,6 @@
 package nl.hauntedmc.dungeons.runtime;
 
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
-
 import org.bukkit.NamespacedKey;
 import org.slf4j.Logger;
 
@@ -14,9 +13,7 @@ import org.slf4j.Logger;
 public final class PluginEnvironment {
     private final DungeonsPlugin plugin;
 
-    /**
-     * Creates a new plugin environment instance.
-     */
+    /** Creates a new plugin environment instance. */
     PluginEnvironment(DungeonsPlugin plugin) {
         this.plugin = plugin;
     }

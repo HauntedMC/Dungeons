@@ -1,5 +1,10 @@
 package nl.hauntedmc.dungeons.generation.layout;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
 import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
 import nl.hauntedmc.dungeons.generation.room.Connector;
@@ -10,16 +15,9 @@ import nl.hauntedmc.dungeons.util.math.MathUtils;
 import nl.hauntedmc.dungeons.util.math.RandomCollection;
 import nl.hauntedmc.dungeons.util.math.RangedNumber;
 import nl.hauntedmc.dungeons.util.world.SimpleLocation;
-
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.util.BoundingBox;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Layout algorithm that builds a trunk path and optional side branches.
@@ -37,9 +35,7 @@ public class BranchingLayout extends Layout {
     private int targetSize;
     private int branchCount;
 
-    /**
-     * Creates a branching layout with trunk and branch settings loaded from configuration.
-     */
+    /** Creates a branching layout with trunk and branch settings loaded from configuration. */
     public BranchingLayout(BranchingDungeon dungeon, FileConfiguration config) {
         super(dungeon, config);
     }
@@ -628,44 +624,32 @@ public class BranchingLayout extends Layout {
         return weightedRooms;
     }
 
-    /**
-     * Returns the configured trunk straightness bias in the range {@code [0,1]}.
-     */
+    /** Returns the configured trunk straightness bias in the range {@code [0,1]}. */
     public double getStraightness() {
         return this.straightness;
     }
 
-    /**
-     * Returns the eligible depth range where side branches may start.
-     */
+    /** Returns the eligible depth range where side branches may start. */
     public RangedNumber getBranchDepth() {
         return this.branchDepth;
     }
 
-    /**
-     * Returns how many branches may be created for the current generation run.
-     */
+    /** Returns how many branches may be created for the current generation run. */
     public RangedNumber getBranchOccurrences() {
         return this.branchOccurrences;
     }
 
-    /**
-     * Returns the minimum branch room target for the active branch profile.
-     */
+    /** Returns the minimum branch room target for the active branch profile. */
     public int getMinBranchRooms() {
         return this.minBranchRooms;
     }
 
-    /**
-     * Returns the maximum branch room target for the active branch profile.
-     */
+    /** Returns the maximum branch room target for the active branch profile. */
     public int getMaxBranchRooms() {
         return this.maxBranchRooms;
     }
 
-    /**
-     * Returns whether branch generation enforces the minimum target strictly.
-     */
+    /** Returns whether branch generation enforces the minimum target strictly. */
     public boolean isStrictBranches() {
         return this.strictBranches;
     }

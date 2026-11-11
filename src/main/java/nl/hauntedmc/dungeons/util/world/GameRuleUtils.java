@@ -2,7 +2,6 @@ package nl.hauntedmc.dungeons.util.world;
 
 import io.papermc.paper.registry.RegistryAccess;
 import io.papermc.paper.registry.RegistryKey;
-
 import org.bukkit.GameRule;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;

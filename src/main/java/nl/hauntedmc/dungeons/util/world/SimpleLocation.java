@@ -1,17 +1,15 @@
 package nl.hauntedmc.dungeons.util.world;
 
+import java.util.Objects;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.annotation.TypeKey;
 import nl.hauntedmc.dungeons.config.ConfigSerializableModel;
-
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.util.Vector;
-
-import java.util.Objects;
 
 /** Lightweight serializable location value with plugin-defined cardinal direction. */
 @TypeKey(id = "dungeons.serializable.simple_location")

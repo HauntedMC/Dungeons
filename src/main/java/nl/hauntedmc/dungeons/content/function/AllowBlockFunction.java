@@ -1,22 +1,20 @@
 package nl.hauntedmc.dungeons.content.function;
 
+import java.util.List;
+import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.content.trigger.DungeonStartTrigger;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.FunctionCategory;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * Function that toggles location-specific block interaction permissions.
@@ -32,9 +30,7 @@ public class AllowBlockFunction extends DungeonFunction {
     @PersistedField private boolean allowBucket = false;
     private boolean active = false;
 
-    /**
-     * Creates a new AllowBlockFunction instance.
-     */
+    /** Creates a new AllowBlockFunction instance. */
     public AllowBlockFunction(Map<String, Object> config) {
         super("Block Control", config);
         this.setRequiresTrigger(false);
@@ -42,9 +38,7 @@ public class AllowBlockFunction extends DungeonFunction {
         this.setCategory(FunctionCategory.LOCATION);
     }
 
-    /**
-     * Creates a new AllowBlockFunction instance.
-     */
+    /** Creates a new AllowBlockFunction instance. */
     public AllowBlockFunction() {
         super("Block Control");
         this.setRequiresTrigger(false);
@@ -52,9 +46,7 @@ public class AllowBlockFunction extends DungeonFunction {
         this.setCategory(FunctionCategory.LOCATION);
     }
 
-    /**
-     * Performs on enable.
-     */
+    /** Performs on enable. */
     @Override
     public void onEnable() {
         this.active = false;
@@ -66,25 +58,19 @@ public class AllowBlockFunction extends DungeonFunction {
         }
     }
 
-    /**
-     * Performs on disable.
-     */
+    /** Performs on disable. */
     @Override
     public void onDisable() {
         this.active = false;
     }
 
-    /**
-     * Performs run function.
-     */
+    /** Performs run function. */
     @Override
     public void runFunction(TriggerFireEvent triggerEvent, List<DungeonPlayerSession> targets) {
         this.active = true;
     }
 
-    /**
-     * Builds menu button.
-     */
+    /** Builds menu button. */
     @Override
     public MenuButton buildMenuButton() {
         MenuButton functionButton = new MenuButton(Material.GRASS_BLOCK);
@@ -96,16 +82,12 @@ public class AllowBlockFunction extends DungeonFunction {
         return functionButton;
     }
 
-    /**
-     * Builds hotbar menu.
-     */
+    /** Builds hotbar menu. */
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
                 new ToggleMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.GRASS_BLOCK);
@@ -113,9 +95,7 @@ public class AllowBlockFunction extends DungeonFunction {
                         this.button.setEnchanted(AllowBlockFunction.this.allowPlace);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         if (!AllowBlockFunction.this.allowPlace) {
@@ -131,9 +111,7 @@ public class AllowBlockFunction extends DungeonFunction {
                 });
         this.menu.addMenuItem(
                 new ToggleMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.BARRIER);
@@ -141,9 +119,7 @@ public class AllowBlockFunction extends DungeonFunction {
                         this.button.setEnchanted(AllowBlockFunction.this.allowBreak);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         if (!AllowBlockFunction.this.allowBreak) {
@@ -159,9 +135,7 @@ public class AllowBlockFunction extends DungeonFunction {
                 });
         this.menu.addMenuItem(
                 new ToggleMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.BUCKET);
@@ -169,9 +143,7 @@ public class AllowBlockFunction extends DungeonFunction {
                         this.button.setEnchanted(AllowBlockFunction.this.allowBucket);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         if (!AllowBlockFunction.this.allowBucket) {
@@ -187,30 +159,22 @@ public class AllowBlockFunction extends DungeonFunction {
                 });
     }
 
-    /**
-     * Returns whether allow place.
-     */
+    /** Returns whether allow place. */
     public boolean isAllowPlace() {
         return this.allowPlace;
     }
 
-    /**
-     * Returns whether allow break.
-     */
+    /** Returns whether allow break. */
     public boolean isAllowBreak() {
         return this.allowBreak;
     }
 
-    /**
-     * Returns whether allow bucket.
-     */
+    /** Returns whether allow bucket. */
     public boolean isAllowBucket() {
         return this.allowBucket;
     }
 
-    /**
-     * Returns whether active.
-     */
+    /** Returns whether active. */
     public boolean isActive() {
         return this.active;
     }

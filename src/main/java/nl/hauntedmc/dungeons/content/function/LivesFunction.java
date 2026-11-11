@@ -1,58 +1,48 @@
 package nl.hauntedmc.dungeons.content.function;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ChatMenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuItem;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.FunctionCategory;
-import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
+import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.text.ColorUtils;
-
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerEvent;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-
-/**
- * Function that mutates the remaining-life counter for a run.
- */
+/** Function that mutates the remaining-life counter for a run. */
 @AutoRegister(id = "dungeons.function.lives")
 @SerializableAs("dungeons.function.lives")
 public class LivesFunction extends DungeonFunction {
     @PersistedField private int amount = 1;
     @PersistedField private int mode = 0;
 
-    /**
-     * Creates a new LivesFunction instance.
-     */
+    /** Creates a new LivesFunction instance. */
     public LivesFunction(Map<String, Object> config) {
         super("Lives", config);
         this.setCategory(FunctionCategory.DUNGEON);
     }
 
-    /**
-     * Creates a new LivesFunction instance.
-     */
+    /** Creates a new LivesFunction instance. */
     public LivesFunction() {
         super("Lives");
         this.setCategory(FunctionCategory.DUNGEON);
     }
 
-    /**
-     * Performs run function.
-     */
+    /** Performs run function. */
     @Override
     public void runFunction(TriggerFireEvent triggerEvent, List<DungeonPlayerSession> targets) {
         PlayableInstance instance = this.instance.asPlayInstance();
@@ -104,9 +94,7 @@ public class LivesFunction extends DungeonFunction {
         }
     }
 
-    /**
-     * Builds menu button.
-     */
+    /** Builds menu button. */
     @Override
     public MenuButton buildMenuButton() {
         MenuButton button = new MenuButton(Material.PLAYER_HEAD);
@@ -116,16 +104,12 @@ public class LivesFunction extends DungeonFunction {
         return button;
     }
 
-    /**
-     * Builds hotbar menu.
-     */
+    /** Builds hotbar menu. */
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
                 new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.REPEATER);
@@ -133,9 +117,7 @@ public class LivesFunction extends DungeonFunction {
                         this.button.setAmount(LivesFunction.this.amount);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         String prompt =
@@ -147,9 +129,7 @@ public class LivesFunction extends DungeonFunction {
                         LangUtils.sendMessage(player, prompt);
                     }
 
-                    /**
-                     * Performs on input.
-                     */
+                    /** Performs on input. */
                     @Override
                     public void onInput(Player player, String message) {
                         Optional<Integer> value = InputUtils.readIntegerInput(player, message);
@@ -163,18 +143,14 @@ public class LivesFunction extends DungeonFunction {
                 });
         this.menu.addMenuItem(
                 new MenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.COMPARATOR);
                         this.button.setDisplayName("&d&lSet Lives Change Mode");
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
@@ -192,16 +168,12 @@ public class LivesFunction extends DungeonFunction {
                 });
     }
 
-    /**
-     * Sets the amount.
-     */
+    /** Sets the amount. */
     public void setAmount(int amount) {
         this.amount = amount;
     }
 
-    /**
-     * Sets the mode.
-     */
+    /** Sets the mode. */
     public void setMode(int mode) {
         this.mode = mode;
     }
@@ -211,9 +183,7 @@ public class LivesFunction extends DungeonFunction {
         SET,
         MULTIPLY;
 
-        /**
-         * Performs int to mode.
-         */
+        /** Performs int to mode. */
         public static MathType intToMode(int index) {
             return switch (index) {
                 case 1 -> SET;

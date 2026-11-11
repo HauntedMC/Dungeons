@@ -12,20 +12,18 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import nl.hauntedmc.dungeons.event.TriggerFireEvent;
-import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
-import nl.hauntedmc.dungeons.model.element.DungeonFunction;
-import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
-import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.support.CapturedScheduler;
-import nl.hauntedmc.dungeons.support.PaperBoundary;
-
-import org.bukkit.Location;
-import org.junit.jupiter.api.Test;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import nl.hauntedmc.dungeons.event.TriggerFireEvent;
+import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
+import nl.hauntedmc.dungeons.model.element.DungeonFunction;
+import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
+import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
+import nl.hauntedmc.dungeons.support.CapturedScheduler;
+import nl.hauntedmc.dungeons.support.PaperBoundary;
+import org.bukkit.Location;
+import org.junit.jupiter.api.Test;
 
 class ScheduledFunctionContractTest {
     @Test

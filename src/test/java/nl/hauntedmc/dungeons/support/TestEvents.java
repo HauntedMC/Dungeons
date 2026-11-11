@@ -7,7 +7,9 @@ import static org.mockito.Mockito.when;
 
 import org.bukkit.event.Cancellable;
 
-/** Stateful cancellation at the event boundary, avoiding assertions against stubbed return values. */
+/**
+ * Stateful cancellation at the event boundary, avoiding assertions against stubbed return values.
+ */
 public final class TestEvents {
     private TestEvents() {}
 

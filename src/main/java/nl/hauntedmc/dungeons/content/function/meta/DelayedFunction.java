@@ -1,32 +1,28 @@
 package nl.hauntedmc.dungeons.content.function.meta;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ChatMenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuItem;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-
-/**
- * Composite function that runs its child functions after a configured delay.
- */
+/** Composite function that runs its child functions after a configured delay. */
 @AutoRegister(id = "dungeons.function.delayed")
 @SerializableAs("dungeons.function.delayed")
 public class DelayedFunction extends CompositeFunction {
@@ -34,23 +30,17 @@ public class DelayedFunction extends CompositeFunction {
     @PersistedField private int delay = 0;
     private Set<BukkitRunnable> tasks = new HashSet<>();
 
-    /**
-     * Creates a new DelayedFunction instance.
-     */
+    /** Creates a new DelayedFunction instance. */
     public DelayedFunction(Map<String, Object> config) {
         super("Delayed Function", config);
     }
 
-    /**
-     * Creates a new DelayedFunction instance.
-     */
+    /** Creates a new DelayedFunction instance. */
     public DelayedFunction() {
         super("Delayed Function");
     }
 
-    /**
-     * Performs initialize.
-     */
+    /** Performs initialize. */
     @Override
     public void initialize() {
         super.initialize();
@@ -61,9 +51,7 @@ public class DelayedFunction extends CompositeFunction {
         }
     }
 
-    /**
-     * Performs on enable.
-     */
+    /** Performs on enable. */
     @Override
     public void onEnable() {
         if (this.function == null) {
@@ -82,9 +70,7 @@ public class DelayedFunction extends CompositeFunction {
         }
     }
 
-    /**
-     * Performs on disable.
-     */
+    /** Performs on disable. */
     @Override
     public void onDisable() {
         for (BukkitRunnable task : this.tasks) {
@@ -99,18 +85,14 @@ public class DelayedFunction extends CompositeFunction {
         }
     }
 
-    /**
-     * Adds function.
-     */
+    /** Adds function. */
     @Override
     public void addFunction(DungeonFunction function) {
         this.function = function;
         if (function != null) function.setParentFunction(this);
     }
 
-    /**
-     * Performs run function.
-     */
+    /** Performs run function. */
     @Override
     public void runFunction(
             final TriggerFireEvent triggerEvent, List<DungeonPlayerSession> targets) {
@@ -120,9 +102,7 @@ public class DelayedFunction extends CompositeFunction {
 
             BukkitRunnable task =
                     new BukkitRunnable() {
-                        /**
-                         * Performs run.
-                         */
+                        /** Performs run. */
                         public void run() {
                             try {
                                 DelayedFunction.this.executeNestedFunction(
@@ -153,9 +133,7 @@ public class DelayedFunction extends CompositeFunction {
         }
     }
 
-    /**
-     * Builds menu button.
-     */
+    /** Builds menu button. */
     @Override
     public MenuButton buildMenuButton() {
         MenuButton button = new MenuButton(Material.REPEATER);
@@ -165,25 +143,19 @@ public class DelayedFunction extends CompositeFunction {
         return button;
     }
 
-    /**
-     * Builds hotbar menu.
-     */
+    /** Builds hotbar menu. */
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
                 new MenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.COMMAND_BLOCK);
                         this.button.setDisplayName("&a&lSet Function");
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
@@ -192,18 +164,14 @@ public class DelayedFunction extends CompositeFunction {
                 });
         this.menu.addMenuItem(
                 new MenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.CHAIN_COMMAND_BLOCK);
                         this.button.setDisplayName("&e&lEdit Function");
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
@@ -218,9 +186,7 @@ public class DelayedFunction extends CompositeFunction {
                 });
         this.menu.addMenuItem(
                 new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.REPEATER);
@@ -228,17 +194,13 @@ public class DelayedFunction extends CompositeFunction {
                         this.button.setAmount(DelayedFunction.this.delay);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         LangUtils.sendMessage(player, "editor.function.delayed.ask-delay");
                     }
 
-                    /**
-                     * Performs on input.
-                     */
+                    /** Performs on input. */
                     @Override
                     public void onInput(Player player, String message) {
                         Optional<Integer> value = InputUtils.readIntegerInput(player, message);
@@ -254,9 +216,7 @@ public class DelayedFunction extends CompositeFunction {
                 });
     }
 
-    /**
-     * Performs clone.
-     */
+    /** Performs clone. */
     public DelayedFunction clone() {
         DelayedFunction clone = (DelayedFunction) super.clone();
         clone.tasks = new HashSet<>();

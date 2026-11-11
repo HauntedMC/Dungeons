@@ -1,5 +1,8 @@
 package nl.hauntedmc.dungeons.bootstrap;
 
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 import nl.hauntedmc.dungeons.config.ConfigSerializableModel;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
 import nl.hauntedmc.dungeons.content.dungeon.OpenDungeon;
@@ -8,9 +11,6 @@ import nl.hauntedmc.dungeons.content.variable.VariableEditMode;
 import nl.hauntedmc.dungeons.generation.layout.BranchingLayout;
 import nl.hauntedmc.dungeons.generation.layout.ConnectorExpansionLayout;
 import nl.hauntedmc.dungeons.generation.layout.Layout;
-import nl.hauntedmc.dungeons.listener.instance.EditListener;
-import nl.hauntedmc.dungeons.listener.instance.InstanceListener;
-import nl.hauntedmc.dungeons.listener.instance.PlayListener;
 import nl.hauntedmc.dungeons.model.dungeon.AccessKeyDefinition;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
@@ -20,16 +20,14 @@ import nl.hauntedmc.dungeons.model.element.TriggerCondition;
 import nl.hauntedmc.dungeons.registry.DungeonTypeRegistry;
 import nl.hauntedmc.dungeons.registry.LayoutRegistry;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
+import nl.hauntedmc.dungeons.runtime.instance.listener.EditListener;
+import nl.hauntedmc.dungeons.runtime.instance.listener.InstanceListener;
+import nl.hauntedmc.dungeons.runtime.instance.listener.PlayListener;
 import nl.hauntedmc.dungeons.util.metadata.TypeMetadataSupport;
-
 import org.apache.commons.lang3.reflect.MethodUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
-
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Registers runtime types and serialization metadata that must exist before dungeon content is
@@ -128,9 +126,9 @@ final class RegistryBootstrap {
                                                             .logger()
                                                             .error(
                                                                     "Failed to invoke instance"
-                                                                        + " listener method '{}#{}'"
-                                                                        + " for event '{}' in"
-                                                                        + " instance '{}'.",
+                                                                            + " listener method '{}#{}'"
+                                                                            + " for event '{}' in"
+                                                                            + " instance '{}'.",
                                                                     type.getSimpleName(),
                                                                     method.getName(),
                                                                     eventClass.getSimpleName(),

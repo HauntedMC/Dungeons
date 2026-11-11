@@ -1,13 +1,11 @@
 package nl.hauntedmc.dungeons.command;
 
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
+import java.util.List;
+import java.util.Locale;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-
-import java.util.List;
-import java.util.Locale;
 
 /** Argument slicing and discovery helpers shared by command branches. */
 final class CommandArguments {

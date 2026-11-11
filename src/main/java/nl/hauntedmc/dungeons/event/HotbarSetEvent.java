@@ -2,16 +2,13 @@ package nl.hauntedmc.dungeons.event;
 
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.runtime.player.PlayerHotbarSnapshot;
-
 import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
-/**
- * Event fired before a player's hotbar snapshot is swapped to a new hotbar state.
- */
+/** Event fired before a player's hotbar snapshot is swapped to a new hotbar state. */
 public class HotbarSetEvent extends Event implements Cancellable {
     private final PlayerHotbarSnapshot newHotbar;
     private final DungeonPlayerSession playerSession;
@@ -38,17 +35,13 @@ public class HotbarSetEvent extends Event implements Cancellable {
         return this.playerSession.getPlayer();
     }
 
-    /**
-     * Returns whether this hotbar change has been cancelled.
-     */
+    /** Returns whether this hotbar change has been cancelled. */
     @Override
     public boolean isCancelled() {
         return this.cancelled;
     }
 
-    /**
-     * Sets whether this hotbar change should be cancelled.
-     */
+    /** Sets whether this hotbar change should be cancelled. */
     @Override
     public void setCancelled(boolean cancel) {
         this.cancelled = cancel;

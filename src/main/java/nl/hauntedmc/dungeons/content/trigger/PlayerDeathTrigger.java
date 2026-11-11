@@ -1,18 +1,22 @@
 package nl.hauntedmc.dungeons.content.trigger;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
-import nl.hauntedmc.dungeons.content.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.generation.room.InstanceRoom;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ChatMenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
 import nl.hauntedmc.dungeons.model.element.TriggerCategory;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
+import nl.hauntedmc.dungeons.runtime.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -21,15 +25,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.PlayerDeathEvent;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-
-/**
- * Trigger that fires after a configured number of player deaths.
- */
+/** Trigger that fires after a configured number of player deaths. */
 @AutoRegister(id = "dungeons.trigger.player_death")
 @SerializableAs("dungeons.trigger.player_death")
 public class PlayerDeathTrigger extends DungeonTrigger {
@@ -38,9 +34,7 @@ public class PlayerDeathTrigger extends DungeonTrigger {
     private List<UUID> playerDeaths;
     private transient boolean invalidDeathRequirementLogged;
 
-    /**
-     * Creates a new PlayerDeathTrigger instance.
-     */
+    /** Creates a new PlayerDeathTrigger instance. */
     public PlayerDeathTrigger(Map<String, Object> config) {
         super("Player Death", config);
         this.waitForConditions = true;
@@ -49,9 +43,7 @@ public class PlayerDeathTrigger extends DungeonTrigger {
         this.setHasTarget(true);
     }
 
-    /**
-     * Creates a new PlayerDeathTrigger instance.
-     */
+    /** Creates a new PlayerDeathTrigger instance. */
     public PlayerDeathTrigger() {
         super("Player Death");
         this.waitForConditions = true;
@@ -60,9 +52,7 @@ public class PlayerDeathTrigger extends DungeonTrigger {
         this.setHasTarget(true);
     }
 
-    /**
-     * Performs on player death.
-     */
+    /** Performs on player death. */
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
         if (event.isCancelled()) {
@@ -98,9 +88,7 @@ public class PlayerDeathTrigger extends DungeonTrigger {
         }
     }
 
-    /**
-     * Performs matches room.
-     */
+    /** Performs matches room. */
     private boolean matchesRoom(Location origin) {
         BranchingInstance instance = this.instance.as(BranchingInstance.class);
         if (instance == null) {
@@ -114,9 +102,7 @@ public class PlayerDeathTrigger extends DungeonTrigger {
         }
     }
 
-    /**
-     * Builds menu button.
-     */
+    /** Builds menu button. */
     @Override
     public MenuButton buildMenuButton() {
         MenuButton functionButton = new MenuButton(Material.PLAYER_HEAD);
@@ -126,16 +112,12 @@ public class PlayerDeathTrigger extends DungeonTrigger {
         return functionButton;
     }
 
-    /**
-     * Builds hotbar menu.
-     */
+    /** Builds hotbar menu. */
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
                 new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.BONE);
@@ -143,17 +125,13 @@ public class PlayerDeathTrigger extends DungeonTrigger {
                         this.button.setAmount(PlayerDeathTrigger.this.deathsRequired);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         LangUtils.sendMessage(player, "editor.trigger.player-death.ask-count");
                     }
 
-                    /**
-                     * Performs on input.
-                     */
+                    /** Performs on input. */
                     @Override
                     public void onInput(Player player, String message) {
                         Optional<Integer> value = InputUtils.readIntegerInput(player, message);
@@ -172,9 +150,7 @@ public class PlayerDeathTrigger extends DungeonTrigger {
                 });
         this.menu.addMenuItem(
                 new ToggleMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.REDSTONE);
@@ -182,9 +158,7 @@ public class PlayerDeathTrigger extends DungeonTrigger {
                         this.button.setEnchanted(PlayerDeathTrigger.this.oneDeathPerPlayer);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         if (!PlayerDeathTrigger.this.oneDeathPerPlayer) {
@@ -200,9 +174,7 @@ public class PlayerDeathTrigger extends DungeonTrigger {
                 });
         this.menu.addMenuItem(
                 new ToggleMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.REDSTONE_TORCH);
@@ -210,9 +182,7 @@ public class PlayerDeathTrigger extends DungeonTrigger {
                         this.button.setEnchanted(PlayerDeathTrigger.this.allowRetrigger);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         if (!PlayerDeathTrigger.this.allowRetrigger) {

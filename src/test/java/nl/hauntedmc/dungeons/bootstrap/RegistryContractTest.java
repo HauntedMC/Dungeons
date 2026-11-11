@@ -3,26 +3,32 @@ package nl.hauntedmc.dungeons.bootstrap;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import nl.hauntedmc.dungeons.config.ConfigSerializableModel;
 import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
 import nl.hauntedmc.dungeons.event.DungeonStartEvent;
 import nl.hauntedmc.dungeons.generation.room.Connector;
 import nl.hauntedmc.dungeons.generation.room.ConnectorDoor;
 import nl.hauntedmc.dungeons.generation.room.WhitelistEntry;
-import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
-import nl.hauntedmc.dungeons.model.instance.EditableInstance;
 import nl.hauntedmc.dungeons.registry.ConditionRegistry;
 import nl.hauntedmc.dungeons.registry.DungeonTypeRegistry;
 import nl.hauntedmc.dungeons.registry.FunctionRegistry;
 import nl.hauntedmc.dungeons.registry.LayoutRegistry;
 import nl.hauntedmc.dungeons.registry.TriggerRegistry;
+import nl.hauntedmc.dungeons.runtime.instance.DungeonInstance;
+import nl.hauntedmc.dungeons.runtime.instance.EditableInstance;
 import nl.hauntedmc.dungeons.support.HeadlessInventoryMenus;
 import nl.hauntedmc.dungeons.support.HeadlessMenus;
 import nl.hauntedmc.dungeons.support.PaperBoundary;
 import nl.hauntedmc.dungeons.support.RunFixture;
 import nl.hauntedmc.dungeons.support.StaticMapSnapshot;
 import nl.hauntedmc.dungeons.util.world.SimpleLocation;
-
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -36,24 +42,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
-
 class RegistryContractTest {
     @TempDir Path directory;
 
     @Test
     void dungeonNamesAreIndependentOfTheServerLocale() throws Exception {
         var previousLocale = Locale.getDefault();
-        try (var registry = new StaticMapSnapshot(DungeonTypeRegistry.class, "types")) {
+        try (var _ = new StaticMapSnapshot(DungeonTypeRegistry.class, "types")) {
             Locale.setDefault(Locale.forLanguageTag("tr-TR"));
-            DungeonTypeRegistry.register(
-                    StaticDungeon.class, "STATIC");
+            DungeonTypeRegistry.register(StaticDungeon.class, "STATIC");
             assertTrue(DungeonTypeRegistry.getDungeonTypes().containsKey("static"));
             assertFalse(DungeonTypeRegistry.getDungeonTypes().containsKey("instance"));
         } finally {
@@ -91,12 +88,12 @@ class RegistryContractTest {
             throws Exception {
         var rules = new YamlConfiguration();
         rules.set("rules.building.break_blocks", false);
-        try (var aliases = new StaticMapSnapshot(ConfigurationSerialization.class, "aliases");
-                var layouts = new StaticMapSnapshot(LayoutRegistry.class, "layouts");
-                var dungeons = new StaticMapSnapshot(DungeonTypeRegistry.class, "types");
+        try (var _ = new StaticMapSnapshot(ConfigurationSerialization.class, "aliases");
+                var _ = new StaticMapSnapshot(LayoutRegistry.class, "layouts");
+                var _ = new StaticMapSnapshot(DungeonTypeRegistry.class, "types");
                 var f = new RunFixture(directory, rules);
-                var menus = new HeadlessMenus();
-                var gui = new HeadlessInventoryMenus()) {
+                var _ = new HeadlessMenus();
+                var _ = new HeadlessInventoryMenus()) {
             var runtime = f.paper.runtime;
             runtime.setFunctionRegistry(
                     new FunctionRegistry(
@@ -158,12 +155,12 @@ class RegistryContractTest {
     @Test
     void bootstrapRegistersEveryManifestTypeWithItsSerializerEditorMetadataAndRuntimeRegistry()
             throws Exception {
-        try (var aliases = new StaticMapSnapshot(ConfigurationSerialization.class, "aliases");
-                var layouts = new StaticMapSnapshot(LayoutRegistry.class, "layouts");
-                var dungeons = new StaticMapSnapshot(DungeonTypeRegistry.class, "types");
+        try (var _ = new StaticMapSnapshot(ConfigurationSerialization.class, "aliases");
+                var _ = new StaticMapSnapshot(LayoutRegistry.class, "layouts");
+                var _ = new StaticMapSnapshot(DungeonTypeRegistry.class, "types");
                 var f = new RunFixture(directory, new YamlConfiguration());
-                var menus = new HeadlessMenus();
-                var gui = new HeadlessInventoryMenus()) {
+                var _ = new HeadlessMenus();
+                var _ = new HeadlessInventoryMenus()) {
             LayoutRegistry.clear();
             DungeonTypeRegistry.clear();
             var runtime = f.paper.runtime;

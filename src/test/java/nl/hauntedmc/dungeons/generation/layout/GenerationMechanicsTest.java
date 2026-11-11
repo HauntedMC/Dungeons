@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
 import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
 import nl.hauntedmc.dungeons.generation.room.Connector;
@@ -14,12 +15,9 @@ import nl.hauntedmc.dungeons.generation.room.RotatedRoom;
 import nl.hauntedmc.dungeons.generation.room.WhitelistEntry;
 import nl.hauntedmc.dungeons.util.math.RangedNumber;
 import nl.hauntedmc.dungeons.util.world.SimpleLocation;
-
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.util.BoundingBox;
 import org.junit.jupiter.api.Test;
-
-import java.util.List;
 
 class GenerationMechanicsTest {
     @Test

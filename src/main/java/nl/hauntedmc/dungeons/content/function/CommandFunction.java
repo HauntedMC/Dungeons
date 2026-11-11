@@ -1,5 +1,9 @@
 package nl.hauntedmc.dungeons.content.function;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
@@ -7,24 +11,18 @@ import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ChatMenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.FunctionCategory;
 import nl.hauntedmc.dungeons.model.element.FunctionTargetType;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 
 /**
  * Function that dispatches a configured command from dungeon content.
@@ -42,25 +40,19 @@ public class CommandFunction extends DungeonFunction {
     @PersistedField private int commandType = PLAYER_COMMAND_TYPE;
     @PersistedField private boolean forEachPlayer = false;
 
-    /**
-     * Creates a new CommandFunction instance.
-     */
+    /** Creates a new CommandFunction instance. */
     public CommandFunction(Map<String, Object> config) {
         super("Command", config);
         this.setCategory(FunctionCategory.META);
     }
 
-    /**
-     * Creates a new CommandFunction instance.
-     */
+    /** Creates a new CommandFunction instance. */
     public CommandFunction() {
         super("Command");
         this.setCategory(FunctionCategory.META);
     }
 
-    /**
-     * Performs run function.
-     */
+    /** Performs run function. */
     @Override
     public void runFunction(TriggerFireEvent triggerEvent, List<DungeonPlayerSession> targets) {
         this.normalizeCommandType();
@@ -132,9 +124,7 @@ public class CommandFunction extends DungeonFunction {
         }
     }
 
-    /**
-     * Builds menu button.
-     */
+    /** Builds menu button. */
     @Override
     public MenuButton buildMenuButton() {
         MenuButton button = new MenuButton(Material.COMMAND_BLOCK);
@@ -144,9 +134,7 @@ public class CommandFunction extends DungeonFunction {
         return button;
     }
 
-    /**
-     * Builds hotbar menu.
-     */
+    /** Builds hotbar menu. */
     @Override
     public void buildHotbarMenu() {
         this.normalizeCommandType();
@@ -158,40 +146,30 @@ public class CommandFunction extends DungeonFunction {
         this.menu.addMenuItem(createToggleForEachPlayerItem());
     }
 
-    /**
-     * Sets the command.
-     */
+    /** Sets the command. */
     public void setCommand(String command) {
         this.command = command;
     }
 
-    /**
-     * Sets the command type.
-     */
+    /** Sets the command type. */
     public void setCommandType(int commandType) {
         this.commandType = commandType;
         this.normalizeCommandType();
     }
 
-    /**
-     * Sets the for each player.
-     */
+    /** Sets the for each player. */
     public void setForEachPlayer(boolean forEachPlayer) {
         this.forEachPlayer = forEachPlayer;
     }
 
-    /**
-     * Performs normalize command type.
-     */
+    /** Performs normalize command type. */
     private void normalizeCommandType() {
         if (this.commandType != PLAYER_COMMAND_TYPE && this.commandType != CONSOLE_COMMAND_TYPE) {
             this.commandType = PLAYER_COMMAND_TYPE;
         }
     }
 
-    /**
-     * Runs the command as console.
-     */
+    /** Runs the command as console. */
     private void runConsoleCommand(String commandToRunTemplate, List<Player> players) {
         if (players.isEmpty()) {
             this.dispatchConsoleCommand(
@@ -205,9 +183,7 @@ public class CommandFunction extends DungeonFunction {
         }
     }
 
-    /**
-     * Dispatches one console command and logs failures.
-     */
+    /** Dispatches one console command and logs failures. */
     private void dispatchConsoleCommand(String commandToRun, Player player) {
         if (commandToRun.isEmpty()) {
             RuntimeContext.plugin()
@@ -241,9 +217,7 @@ public class CommandFunction extends DungeonFunction {
         }
     }
 
-    /**
-     * Resolves players.
-     */
+    /** Resolves players. */
     private List<Player> resolvePlayers(
             TriggerFireEvent triggerEvent, List<DungeonPlayerSession> targets) {
         List<Player> players = new ArrayList<>();
@@ -269,9 +243,7 @@ public class CommandFunction extends DungeonFunction {
         return players;
     }
 
-    /**
-     * Resolves primary target.
-     */
+    /** Resolves primary target. */
     private DungeonPlayerSession resolvePrimaryTarget(
             TriggerFireEvent triggerEvent, List<DungeonPlayerSession> targets) {
         DungeonPlayerSession source = triggerEvent.getPlayerSession();
@@ -289,18 +261,14 @@ public class CommandFunction extends DungeonFunction {
         return targets.getFirst();
     }
 
-    /**
-     * Adds player if valid.
-     */
+    /** Adds player if valid. */
     private void addPlayerIfValid(List<Player> players, Player player) {
         if (player != null && player.isOnline() && !players.contains(player)) {
             players.add(player);
         }
     }
 
-    /**
-     * Performs sanitize command.
-     */
+    /** Performs sanitize command. */
     private String sanitizeCommand(String command) {
         if (command == null) {
             return "";
@@ -314,9 +282,7 @@ public class CommandFunction extends DungeonFunction {
         return sanitized;
     }
 
-    /**
-     * Resolves supported player placeholders for the command context.
-     */
+    /** Resolves supported player placeholders for the command context. */
     private String resolveCommand(String commandTemplate, Player player) {
         String commandToRun = this.sanitizeCommand(commandTemplate);
         if (player == null) {
@@ -335,9 +301,7 @@ public class CommandFunction extends DungeonFunction {
                 .replace("%uuid%", playerId);
     }
 
-    /**
-     * Resolves one console command anchored to the dungeon function location when possible.
-     */
+    /** Resolves one console command anchored to the dungeon function location when possible. */
     private String resolveConsoleCommand(String commandTemplate, Player player) {
         String commandToRun = this.resolveCommand(commandTemplate, player);
         if (commandToRun.isEmpty()) {
@@ -366,7 +330,10 @@ public class CommandFunction extends DungeonFunction {
                 + commandToRun;
     }
 
-    /** Loads the destination of a direct summon, including absolute coordinates in a different chunk. */
+    /**
+     * Loads the destination of a direct summon, including absolute coordinates in a different
+     * chunk.
+     */
     private void loadSummonChunk(String command, Location anchor) {
         String[] parts = command.split("\\s+", 6);
         if (parts.length < 5 || !(parts[0].equals("summon") || parts[0].equals("minecraft:summon")))
@@ -389,9 +356,7 @@ public class CommandFunction extends DungeonFunction {
                 : Double.parseDouble(value);
     }
 
-    /**
-     * Resolves the location that console commands should run from.
-     */
+    /** Resolves the location that console commands should run from. */
     private Location resolveConsoleAnchor() {
         if (this.location != null && this.location.getWorld() != null) {
             return this.location;
@@ -404,9 +369,7 @@ public class CommandFunction extends DungeonFunction {
         return null;
     }
 
-    /**
-     * Formats one command coordinate with stable decimal output.
-     */
+    /** Formats one command coordinate with stable decimal output. */
     private String formatCoordinate(double value) {
         if (Math.rint(value) == value) {
             return String.format(Locale.ROOT, "%.1f", value);
@@ -415,9 +378,7 @@ public class CommandFunction extends DungeonFunction {
         return Double.toString(value);
     }
 
-    /**
-     * Returns the display name of the configured command sender.
-     */
+    /** Returns the display name of the configured command sender. */
     private String getCommandTypeDisplay() {
         return this.commandType == CONSOLE_COMMAND_TYPE ? "Console" : "Player";
     }
@@ -429,6 +390,7 @@ public class CommandFunction extends DungeonFunction {
                 this.button = new MenuButton(Material.COMMAND_BLOCK);
                 this.button.setDisplayName("&d&lSet Command");
             }
+
             @Override
             public void onSelect(Player player) {
                 LangUtils.sendMessage(player, "editor.function.command.ask-command");
@@ -437,6 +399,7 @@ public class CommandFunction extends DungeonFunction {
                         "editor.function.command.current-command",
                         LangUtils.placeholder("command", CommandFunction.this.command));
             }
+
             @Override
             public void onInput(Player player, String message) {
                 CommandFunction.this.command = message;
@@ -462,8 +425,7 @@ public class CommandFunction extends DungeonFunction {
                 this.button.addLore("&ePlayer: runs as resolved target.");
                 this.button.addLore("&eConsole: runs in the dungeon world");
                 this.button.addLore("&eat this function's location.");
-                this.button.setEnchanted(
-                        CommandFunction.this.commandType == CONSOLE_COMMAND_TYPE);
+                this.button.setEnchanted(CommandFunction.this.commandType == CONSOLE_COMMAND_TYPE);
             }
 
             @Override
@@ -472,13 +434,13 @@ public class CommandFunction extends DungeonFunction {
                         CommandFunction.this.commandType == CONSOLE_COMMAND_TYPE
                                 ? PLAYER_COMMAND_TYPE
                                 : CONSOLE_COMMAND_TYPE;
-                LangUtils.sendMessage(player,
-                                "editor.function.command.command-set",
-                                LangUtils.placeholder(
-                                        "command",
-                                        "Execution set to "
-                                                + CommandFunction.this
-                                                        .getCommandTypeDisplay()));
+                LangUtils.sendMessage(
+                        player,
+                        "editor.function.command.command-set",
+                        LangUtils.placeholder(
+                                "command",
+                                "Execution set to "
+                                        + CommandFunction.this.getCommandTypeDisplay()));
             }
         };
     }
@@ -491,11 +453,11 @@ public class CommandFunction extends DungeonFunction {
                 this.button.setDisplayName("&d&lToggle 'For Each Player'");
                 this.button.setEnchanted(CommandFunction.this.forEachPlayer);
             }
+
             @Override
             public void onSelect(Player player) {
                 if (!CommandFunction.this.forEachPlayer) {
-                    LangUtils.sendMessage(
-                            player, "editor.function.command.for-each-player");
+                    LangUtils.sendMessage(player, "editor.function.command.for-each-player");
                 } else {
                     LangUtils.sendMessage(player, "editor.function.command.run-once");
                 }

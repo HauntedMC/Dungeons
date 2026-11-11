@@ -3,6 +3,9 @@ package nl.hauntedmc.dungeons.generation.room;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
 import nl.hauntedmc.dungeons.generation.layout.BranchingLayout;
 import nl.hauntedmc.dungeons.gui.menu.RoomMenus;
@@ -11,7 +14,6 @@ import nl.hauntedmc.dungeons.support.CapturedScheduler;
 import nl.hauntedmc.dungeons.support.HeadlessMenus;
 import nl.hauntedmc.dungeons.support.PaperBoundary;
 import nl.hauntedmc.dungeons.support.StaticMapSnapshot;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -21,10 +23,6 @@ import org.bukkit.util.BoundingBox;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.MockedStatic;
-
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
 
 class RoomSchematicPersistenceTest {
     @TempDir Path directory;

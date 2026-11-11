@@ -3,36 +3,50 @@ package nl.hauntedmc.dungeons.gui.framework.window;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import net.kyori.adventure.text.Component;
-
+import nl.hauntedmc.dungeons.gui.framework.GuiService;
 import nl.hauntedmc.dungeons.gui.framework.buttons.Button;
 import nl.hauntedmc.dungeons.support.PaperBoundary;
 import nl.hauntedmc.dungeons.support.PlayerState;
-import nl.hauntedmc.dungeons.support.StaticMapSnapshot;
 import nl.hauntedmc.dungeons.support.TestEvents;
-
 import org.bukkit.Bukkit;
 import org.bukkit.event.inventory.*;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 import org.junit.jupiter.api.Test;
 
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
 class GuiWindowLifetimeTest {
+    @Test
+    void servicesOwnIndependentNamespacesAndCloseOnlyTheirOwnWindows() {
+        try (var paper = new PaperBoundary();
+                var other = new GuiService(paper.plugin)) {
+            var service = paper.runtime.guiService();
+            var first = service.createWindow("same", 9, "First lifecycle");
+            var second = other.createWindow("same", 9, "Second lifecycle");
+            assertSame(first, service.getWindow("same"));
+            assertSame(second, other.getWindow("same"));
+            service.close();
+            service.close();
+            assertNull(service.getWindow("same"));
+            assertSame(second, other.getWindow("same"));
+            assertThrows(
+                    IllegalStateException.class, () -> service.createWindow("late", 9, "Closed"));
+        }
+    }
+
     @Test
     void revokedAccessBlocksOpenButtonsEditableSlotsShiftTransfersDragsAndCloseMutations()
             throws Exception {
-        try (var windows = new StaticMapSnapshot(GuiWindowRegistry.class, "windows");
-                var paper = new PaperBoundary()) {
+        try (var paper = new PaperBoundary()) {
             var player = new PlayerState().player;
             var inventory = mock(Inventory.class);
             paper.bukkit
                     .when(() -> Bukkit.createInventory(eq(player), eq(9), any(Component.class)))
                     .thenReturn(inventory);
-            var window = new GuiWindow("guarded", 9, "Guarded");
+            var window = paper.runtime.guiService().createWindow("guarded", 9, "Guarded");
             window.setCancelClick(false);
             var allowed = new AtomicBoolean(false);
             window.setAccessCheck(p -> allowed.get());
@@ -99,14 +113,13 @@ class GuiWindowLifetimeTest {
 
     @Test
     void closeCallbacksCanInspectTheViewButFailureStillReleasesThePlayer() throws Exception {
-        try (var windows = new StaticMapSnapshot(GuiWindowRegistry.class, "windows");
-                var paper = new PaperBoundary()) {
+        try (var paper = new PaperBoundary()) {
             var player = new PlayerState().player;
             var inventory = mock(Inventory.class);
             paper.bukkit
                     .when(() -> Bukkit.createInventory(eq(player), eq(9), any(Component.class)))
                     .thenReturn(inventory);
-            var window = new GuiWindow("expiry", 9, "Expiry");
+            var window = paper.runtime.guiService().createWindow("expiry", 9, "Expiry");
             window.open(player);
             var close = mock(InventoryCloseEvent.class);
             when(close.getPlayer()).thenReturn(player);
@@ -124,15 +137,14 @@ class GuiWindowLifetimeTest {
 
     @Test
     void staleCloseCannotRemoveAReentrantlyReopenedWindowAndQuitReleasesItsView() throws Exception {
-        try (var windows = new StaticMapSnapshot(GuiWindowRegistry.class, "windows");
-                var paper = new PaperBoundary()) {
+        try (var paper = new PaperBoundary()) {
             var player = new PlayerState().player;
             var first = mock(Inventory.class);
             var second = mock(Inventory.class);
             paper.bukkit
                     .when(() -> Bukkit.createInventory(eq(player), eq(9), any(Component.class)))
                     .thenReturn(first, second);
-            var window = new GuiWindow("reentrant", 9, "Reentrant");
+            var window = paper.runtime.guiService().createWindow("reentrant", 9, "Reentrant");
             window.open(player);
             var calls = new AtomicInteger();
             window.addCloseAction(
@@ -155,20 +167,19 @@ class GuiWindowLifetimeTest {
             window.open(player);
             window.unregister();
             assertNull(window.getInventoryFor(player));
-            assertNull(GuiWindowRegistry.getWindow("reentrant"));
+            assertNull(paper.runtime.guiService().getWindow("reentrant"));
         }
     }
 
     @Test
     void unregisteringAnOldWindowCannotRemoveItsReplacement() throws Exception {
-        try (var windows = new StaticMapSnapshot(GuiWindowRegistry.class, "windows");
-                var paper = new PaperBoundary()) {
-            var old = new GuiWindow("same", 9, "Old");
-            var replacement = new GuiWindow("same", 9, "Replacement");
+        try (var paper = new PaperBoundary()) {
+            var old = paper.runtime.guiService().createWindow("same", 9, "Old");
+            var replacement = paper.runtime.guiService().createWindow("same", 9, "Replacement");
             old.unregister();
-            assertSame(replacement, GuiWindowRegistry.getWindow("same"));
+            assertSame(replacement, paper.runtime.guiService().getWindow("same"));
             replacement.unregister();
-            assertNull(GuiWindowRegistry.getWindow("same"));
+            assertNull(paper.runtime.guiService().getWindow("same"));
         }
     }
 }

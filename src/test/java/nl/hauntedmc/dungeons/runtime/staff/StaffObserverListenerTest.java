@@ -3,16 +3,14 @@ package nl.hauntedmc.dungeons.runtime.staff;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.nio.file.Path;
 import nl.hauntedmc.dungeons.support.*;
-
 import org.bukkit.GameMode;
 import org.bukkit.event.Event;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.player.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-
-import java.nio.file.Path;
 
 class StaffObserverListenerTest {
     @TempDir Path directory;

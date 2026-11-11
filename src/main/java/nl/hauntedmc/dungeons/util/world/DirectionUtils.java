@@ -3,9 +3,7 @@ package nl.hauntedmc.dungeons.util.world;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
 
-/**
- * Direction conversion helpers between yaw, faces, and plugin direction models.
- */
+/** Direction conversion helpers between yaw, faces, and plugin direction models. */
 public final class DirectionUtils {
     private DirectionUtils() {}
 

@@ -1,27 +1,5 @@
 package nl.hauntedmc.dungeons.runtime.team;
 
-import nl.hauntedmc.dungeons.content.instance.play.OpenInstance;
-import nl.hauntedmc.dungeons.event.DungeonDisposeEvent;
-import nl.hauntedmc.dungeons.event.PlayerLeaveDungeonEvent;
-import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
-import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
-import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
-import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueEntry;
-import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry;
-import nl.hauntedmc.dungeons.util.config.DungeonConfigView;
-import nl.hauntedmc.dungeons.util.config.PluginConfigView;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
-import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scheduler.BukkitTask;
-import org.jetbrains.annotations.Nullable;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -31,10 +9,28 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import nl.hauntedmc.dungeons.config.DungeonConfigView;
+import nl.hauntedmc.dungeons.config.PluginConfigView;
+import nl.hauntedmc.dungeons.event.DungeonDisposeEvent;
+import nl.hauntedmc.dungeons.event.PlayerLeaveDungeonEvent;
+import nl.hauntedmc.dungeons.localization.LangUtils;
+import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
+import nl.hauntedmc.dungeons.runtime.instance.DungeonInstance;
+import nl.hauntedmc.dungeons.runtime.instance.play.OpenInstance;
+import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
+import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
+import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueEntry;
+import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
+import org.jetbrains.annotations.Nullable;
 
-/**
- * Runtime service for team membership, invitations, queued-start state, and lifecycle cleanup.
- */
+/** Runtime service for team membership, invitations, queued-start state, and lifecycle cleanup. */
 public final class DungeonTeamService implements Listener {
     private final DungeonsPlugin plugin;
     private final PlayerSessionRegistry playerManager;
@@ -85,8 +81,8 @@ public final class DungeonTeamService implements Listener {
     }
 
     /**
-     * Resolves the active team members that should be targeted alongside the given player inside the
-     * current instance. Solo players are treated as a one-player team.
+     * Resolves the active team members that should be targeted alongside the given player inside
+     * the current instance. Solo players are treated as a one-player team.
      */
     public List<DungeonPlayerSession> getActiveMembers(
             DungeonPlayerSession source, DungeonInstance instance) {
@@ -409,8 +405,10 @@ public final class DungeonTeamService implements Listener {
                 team.isStarted()
                         ? LangUtils.component("commands.team.info.states.running", requester, false)
                         : team.isQueued()
-                                ? LangUtils.component("commands.team.info.states.queued", requester, false)
-                                : LangUtils.component("commands.team.info.states.idle", requester, false);
+                                ? LangUtils.component(
+                                        "commands.team.info.states.queued", requester, false)
+                                : LangUtils.component(
+                                        "commands.team.info.states.idle", requester, false);
         this.send(requester, "commands.team.info.leader", this.getLeaderName(team));
         this.send(requester, "commands.team.info.members", String.join(", ", memberNames));
         this.send(requester, "commands.team.info.state", state);
@@ -418,7 +416,9 @@ public final class DungeonTeamService implements Listener {
             Object difficulty =
                     team.getQueuedDifficulty() == null || team.getQueuedDifficulty().isEmpty()
                             ? LangUtils.component(
-                                    "commands.team.info.labels.default-difficulty", requester, false)
+                                    "commands.team.info.labels.default-difficulty",
+                                    requester,
+                                    false)
                             : team.getQueuedDifficulty();
             this.send(
                     requester,
@@ -721,7 +721,7 @@ public final class DungeonTeamService implements Listener {
                 .getSLF4JLogger()
                 .info(
                         "Scheduled shutdown of instance '{}' in {} seconds because its team was"
-                            + " disbanded.",
+                                + " disbanded.",
                         instanceWorldName,
                         delaySeconds);
     }

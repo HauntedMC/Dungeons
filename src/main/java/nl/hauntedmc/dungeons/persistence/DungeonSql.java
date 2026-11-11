@@ -19,14 +19,16 @@ import java.util.UUID;
 public final class DungeonSql {
     private DungeonSql() {}
 
-    public static int update(Connection connection, String sql, Object... values) throws SQLException {
+    public static int update(Connection connection, String sql, Object... values)
+            throws SQLException {
         try (var statement = connection.prepareStatement(sql)) {
             bind(statement, values);
             return statement.executeUpdate();
         }
     }
 
-    public static List<Map<String, Object>> rows(Connection connection, String sql, Object... values) throws SQLException {
+    public static List<Map<String, Object>> rows(
+            Connection connection, String sql, Object... values) throws SQLException {
         try (var statement = connection.prepareStatement(sql)) {
             bind(statement, values);
             try (var result = statement.executeQuery()) {
@@ -53,12 +55,13 @@ public final class DungeonSql {
         for (int index = 0; index < values.length; index++) {
             Object value = values[index];
             if (value instanceof UUID id) value = id.toString();
-            if (value instanceof Instant instant) statement.setTimestamp(index + 1, Timestamp.from(instant), utcCalendar());
+            if (value instanceof Instant instant)
+                statement.setTimestamp(index + 1, Timestamp.from(instant), utcCalendar());
             else statement.setObject(index + 1, value);
         }
     }
+
     private static Calendar utcCalendar() {
         return Calendar.getInstance(TimeZone.getTimeZone("UTC"));
     }
-
 }

@@ -2,9 +2,7 @@ package nl.hauntedmc.dungeons.util.math;
 
 import java.util.concurrent.ThreadLocalRandom;
 
-/**
- * Numeric utility helpers for randomization and sign-aware arithmetic.
- */
+/** Numeric utility helpers for randomization and sign-aware arithmetic. */
 public final class MathUtils {
     private MathUtils() {}
 

@@ -9,6 +9,7 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.*;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerTeleportEvent;
@@ -16,9 +17,9 @@ import org.bukkit.inventory.*;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
-import java.util.*;
-
-/** Stateful Paper boundary: inventory reads copy arrays as Bukkit does, without hiding alias bugs. */
+/**
+ * Stateful Paper boundary: inventory reads copy arrays as Bukkit does, without hiding alias bugs.
+ */
 public final class PlayerState {
     public final Player player = mock(Player.class);
     public final PlayerInventory inventory = mock(PlayerInventory.class);
@@ -41,9 +42,7 @@ public final class PlayerState {
         var persistent = mock(PersistentDataContainer.class);
         var data = new HashMap<NamespacedKey, String>();
         when(player.getPersistentDataContainer()).thenReturn(persistent);
-        when(persistent.get(
-                        any(NamespacedKey.class),
-                        eq(PersistentDataType.STRING)))
+        when(persistent.get(any(NamespacedKey.class), eq(PersistentDataType.STRING)))
                 .thenAnswer(c -> data.get(c.getArgument(0)));
         doAnswer(
                         c -> {
@@ -51,10 +50,7 @@ public final class PlayerState {
                             return null;
                         })
                 .when(persistent)
-                .set(
-                        any(NamespacedKey.class),
-                        eq(PersistentDataType.STRING),
-                        any(String.class));
+                .set(any(NamespacedKey.class), eq(PersistentDataType.STRING), any(String.class));
         doAnswer(
                         c -> {
                             data.remove(c.getArgument(0));

@@ -6,12 +6,13 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
-import nl.hauntedmc.dungeons.content.instance.play.OpenInstance;
+import java.nio.file.Path;
+import java.util.*;
 import nl.hauntedmc.dungeons.event.DungeonDisposeEvent;
 import nl.hauntedmc.dungeons.event.PlayerLeaveDungeonEvent;
+import nl.hauntedmc.dungeons.runtime.instance.play.OpenInstance;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry;
 import nl.hauntedmc.dungeons.support.*;
-
 import org.bukkit.*;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.Event;
@@ -19,9 +20,6 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mockito;
-
-import java.nio.file.Path;
-import java.util.*;
 
 class TeamTransitionsContractTest {
     @TempDir Path directory;
@@ -63,8 +61,9 @@ class TeamTransitionsContractTest {
             var secondTeam = service.getTeam(second.player.getUniqueId());
             service.markStarted(firstTeam.getTeamId(), open);
             service.markStarted(secondTeam.getTeamId(), open);
-            service.onPlayerLeaveDungeon(new PlayerLeaveDungeonEvent(open,
-                    f.paper.runtime.playerSessions().get(first.player)));
+            service.onPlayerLeaveDungeon(
+                    new PlayerLeaveDungeonEvent(
+                            open, f.paper.runtime.playerSessions().get(first.player)));
             f.scheduler.immediate.getLast().run();
             assertNull(service.getTeam(first.player.getUniqueId()));
             assertSame(secondTeam, service.getTeam(second.player.getUniqueId()));
@@ -273,9 +272,8 @@ class TeamTransitionsContractTest {
                     Mockito.doAnswer(
                                     c -> {
                                         if (c.getArgument(0)
-                                                instanceof
-                                                PlayerLeaveDungeonEvent
-                                                        event) service.onPlayerLeaveDungeon(event);
+                                                instanceof PlayerLeaveDungeonEvent event)
+                                            service.onPlayerLeaveDungeon(event);
                                         return null;
                                     })
                             .when(manager)

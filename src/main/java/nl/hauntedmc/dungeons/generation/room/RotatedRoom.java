@@ -1,12 +1,17 @@
 package nl.hauntedmc.dungeons.generation.room;
 
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import nl.hauntedmc.dungeons.content.function.TeleportFunction;
 import nl.hauntedmc.dungeons.generation.structure.StructurePiece;
 import nl.hauntedmc.dungeons.generation.structure.StructurePieceBlock;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.util.world.DirectionUtils;
 import nl.hauntedmc.dungeons.util.world.SimpleLocation;
-
 import org.bukkit.Axis;
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
@@ -22,13 +27,6 @@ import org.bukkit.block.data.type.Wall.Height;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 import org.slf4j.Logger;
-
-import java.lang.ref.WeakReference;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 
 /**
  * Cached rotated view of a branching room definition.
@@ -51,9 +49,7 @@ public class RotatedRoom {
         this.schematic = null;
     }
 
-    /**
-     * Returns the rotated schematic snapshot for this orientation.
-     */
+    /** Returns the rotated schematic snapshot for this orientation. */
     public StructurePiece getSchematic() {
         synchronized (this.origin) {
             StructurePiece cached = this.schematic == null ? null : this.schematic.get();
@@ -177,9 +173,7 @@ public class RotatedRoom {
         return this.origin.getDungeon().getEnvironment().logger();
     }
 
-    /**
-     * Creates a cached rotated view of the provided room definition.
-     */
+    /** Creates a cached rotated view of the provided room definition. */
     public RotatedRoom(BranchingRoomDefinition origin, int rotation) {
         this.origin = origin;
         this.rotation = rotation;
@@ -217,7 +211,7 @@ public class RotatedRoom {
                 this.logger()
                         .warn(
                                 "Skipping broken connector while rotating room '{}' in dungeon"
-                                    + " '{}'. Rotation={}, reason={}",
+                                        + " '{}'. Rotation={}, reason={}",
                                 this.origin.getNamespace(),
                                 this.origin.getDungeon().getWorldName(),
                                 this.rotation,
@@ -265,7 +259,7 @@ public class RotatedRoom {
                 this.logger()
                         .warn(
                                 "Skipping function '{}' in room '{}' of dungeon '{}' because"
-                                    + " clone() returned null.",
+                                        + " clone() returned null.",
                                 originalFunction.getClass().getSimpleName(),
                                 this.origin.getNamespace(),
                                 this.origin.getDungeon().getWorldName());
@@ -283,8 +277,8 @@ public class RotatedRoom {
                         this.logger()
                                 .warn(
                                         "Skipping teleport function in room '{}' of dungeon '{}' at"
-                                            + " {},{},{} because no teleport target was"
-                                            + " configured.",
+                                                + " {},{},{} because no teleport target was"
+                                                + " configured.",
                                         this.origin.getNamespace(),
                                         this.origin.getDungeon().getWorldName(),
                                         originalLocation.getBlockX(),
@@ -306,7 +300,7 @@ public class RotatedRoom {
             this.logger()
                     .warn(
                             "Skipping broken function '{}' while rotating room '{}' in dungeon '{}'"
-                                + " at {},{},{}. Reason: {}",
+                                    + " at {},{},{}. Reason: {}",
                             originalFunction.getClass().getSimpleName(),
                             this.origin.getNamespace(),
                             this.origin.getDungeon().getWorldName(),
@@ -320,16 +314,12 @@ public class RotatedRoom {
         }
     }
 
-    /**
-     * Returns valid destination rooms for this orientation.
-     */
+    /** Returns valid destination rooms for this orientation. */
     public List<WhitelistEntry> getValidRooms() {
         return this.origin.getValidRooms();
     }
 
-    /**
-     * Rotates a local location around room origin for one of the 4 cardinal rotations.
-     */
+    /** Rotates a local location around room origin for one of the 4 cardinal rotations. */
     public static SimpleLocation rotateLocation(
             SimpleLocation originalLocus, int rotationDegrees, SimpleLocation size) {
         int x = originalLocus.asVector().getBlockX();
@@ -356,9 +346,7 @@ public class RotatedRoom {
         };
     }
 
-    /**
-     * Rotates a local location around a custom minimum corner.
-     */
+    /** Rotates a local location around a custom minimum corner. */
     public static SimpleLocation rotateLocation(
             Vector min, SimpleLocation originalLocus, int rotationDegrees, SimpleLocation size) {
         int x = originalLocus.asVector().getBlockX() - min.getBlockX();
@@ -385,9 +373,7 @@ public class RotatedRoom {
         };
     }
 
-    /**
-     * Computes translation offset needed after rotating the room bounds.
-     */
+    /** Computes translation offset needed after rotating the room bounds. */
     public void setRotationOffset(int rotationDegrees, SimpleLocation size) {
         switch (rotationDegrees) {
             case -90:
@@ -405,9 +391,7 @@ public class RotatedRoom {
         }
     }
 
-    /**
-     * Creates a rotated copy of a connector door.
-     */
+    /** Creates a rotated copy of a connector door. */
     public static ConnectorDoor rotateDoor(ConnectorDoor door, int rotation, SimpleLocation size) {
         ConnectorDoor newDoor = door.clone();
         newDoor.getLocations().clear();
@@ -419,51 +403,37 @@ public class RotatedRoom {
         return newDoor;
     }
 
-    /**
-     * Returns the source room definition.
-     */
+    /** Returns the source room definition. */
     public BranchingRoomDefinition getOrigin() {
         return this.origin;
     }
 
-    /**
-     * Returns applied yaw rotation in degrees.
-     */
+    /** Returns applied yaw rotation in degrees. */
     public int getRotation() {
         return this.rotation;
     }
 
-    /**
-     * Returns translation offset produced by the current rotation.
-     */
+    /** Returns translation offset produced by the current rotation. */
     public Vector getRotationOffset() {
         return this.rotationOffset;
     }
 
-    /**
-     * Returns rotated bounds relative to room-local origin.
-     */
+    /** Returns rotated bounds relative to room-local origin. */
     public BoundingBox getBounds() {
         return this.bounds;
     }
 
-    /**
-     * Returns rotated spawn location, if configured.
-     */
+    /** Returns rotated spawn location, if configured. */
     public Location getSpawn() {
         return this.spawn;
     }
 
-    /**
-     * Returns rotated connectors.
-     */
+    /** Returns rotated connectors. */
     public List<Connector> getConnectors() {
         return this.connectors;
     }
 
-    /**
-     * Returns rotated function map keyed by room-local location.
-     */
+    /** Returns rotated function map keyed by room-local location. */
     public Map<Location, DungeonFunction> getFunctions() {
         return this.functions;
     }

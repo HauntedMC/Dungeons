@@ -1,19 +1,17 @@
 package nl.hauntedmc.dungeons.content.condition;
 
+import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ChatMenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.TriggerCondition;
-import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
+import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
-
-import java.util.Map;
 
 /**
  * Condition that checks the current playable instance difficulty namespace.
@@ -27,23 +25,17 @@ public class DifficultyCondition extends TriggerCondition {
     @PersistedField private String difficulty;
     private transient boolean missingDifficultyLogged;
 
-    /**
-     * Creates a new DifficultyCondition instance.
-     */
+    /** Creates a new DifficultyCondition instance. */
     public DifficultyCondition(Map<String, Object> config) {
         super("Difficulty", config);
     }
 
-    /**
-     * Creates a new DifficultyCondition instance.
-     */
+    /** Creates a new DifficultyCondition instance. */
     public DifficultyCondition() {
         super("Difficulty");
     }
 
-    /**
-     * Performs check.
-     */
+    /** Performs check. */
     @Override
     public boolean check(TriggerFireEvent event) {
         if (this.difficulty == null || this.difficulty.isBlank()) {
@@ -72,9 +64,7 @@ public class DifficultyCondition extends TriggerCondition {
         return this.difficulty.equals(instanceDif);
     }
 
-    /**
-     * Builds menu button.
-     */
+    /** Builds menu button. */
     @Override
     public MenuButton buildMenuButton() {
         MenuButton functionButton = new MenuButton(Material.BLAZE_POWDER);
@@ -87,16 +77,12 @@ public class DifficultyCondition extends TriggerCondition {
         return functionButton;
     }
 
-    /**
-     * Builds hotbar menu.
-     */
+    /** Builds hotbar menu. */
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
                 new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.BLAZE_POWDER);
@@ -105,9 +91,7 @@ public class DifficultyCondition extends TriggerCondition {
                                 "&7Current difficulty: &6" + DifficultyCondition.this.difficulty);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         LangUtils.sendMessage(player, "editor.condition.difficulty.ask-difficulty");
@@ -118,9 +102,7 @@ public class DifficultyCondition extends TriggerCondition {
                                         "difficulty", DifficultyCondition.this.difficulty));
                     }
 
-                    /**
-                     * Performs on input.
-                     */
+                    /** Performs on input. */
                     @Override
                     public void onInput(Player player, String message) {
                         DifficultyCondition.this.difficulty = message;

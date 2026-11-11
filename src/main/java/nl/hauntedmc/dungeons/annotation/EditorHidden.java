@@ -11,7 +11,7 @@ import java.lang.annotation.Target;
  *
  * <p>{@link nl.hauntedmc.dungeons.util.metadata.PersistedFieldSupport} still includes the field in
  * reflective persistence, but editor metadata queries omit it so the field does not appear in
- * generic editor menus.</p>
+ * generic editor menus.
  */
 @Documented
 @Target(ElementType.FIELD)

@@ -1,21 +1,5 @@
 package nl.hauntedmc.dungeons.runtime.dungeon;
 
-import nl.hauntedmc.dungeons.model.dungeon.AccessKeyDefinition;
-import nl.hauntedmc.dungeons.model.dungeon.DungeonLoadException;
-import nl.hauntedmc.dungeons.persistence.StateDocument;
-import nl.hauntedmc.dungeons.persistence.StateStore;
-import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
-import nl.hauntedmc.dungeons.util.config.PluginConfigView;
-import nl.hauntedmc.dungeons.util.item.ItemUtils;
-
-import org.bukkit.Material;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.InvalidConfigurationException;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.inventory.ItemStack;
-import org.jetbrains.annotations.Nullable;
-import org.yaml.snakeyaml.error.YAMLException;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -25,8 +9,23 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
+import nl.hauntedmc.dungeons.config.PluginConfigView;
+import nl.hauntedmc.dungeons.model.dungeon.AccessKeyDefinition;
+import nl.hauntedmc.dungeons.model.dungeon.DungeonLoadException;
+import nl.hauntedmc.dungeons.persistence.StateDocument;
+import nl.hauntedmc.dungeons.persistence.StateStore;
+import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
+import nl.hauntedmc.dungeons.util.item.ItemUtils;
+import org.bukkit.Material;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.InvalidConfigurationException;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.Nullable;
+import org.yaml.snakeyaml.error.YAMLException;
 
-/** Owns issued access-key validation, reservations, revocation and durable ledger rollback.
+/**
+ * Owns issued access-key validation, reservations, revocation and durable ledger rollback.
  * Configuration definitions are supplied by the dungeon and remain owned by its server thread.
  */
 public final class DungeonAccessKeyService {
@@ -45,13 +44,18 @@ public final class DungeonAccessKeyService {
     private boolean planningSettlement;
     private @Nullable Boolean uniqueAccessKeyValidationEnabled;
 
-    public DungeonAccessKeyService(DungeonsRuntime runtime, File folder, UUID dungeonId,
-            Supplier<List<AccessKeyDefinition>> definitions) throws DungeonLoadException {
+    public DungeonAccessKeyService(
+            DungeonsRuntime runtime,
+            File folder,
+            UUID dungeonId,
+            Supplier<List<AccessKeyDefinition>> definitions)
+            throws DungeonLoadException {
         this.runtime = runtime;
         this.worldName = folder.getName();
         this.definitions = definitions;
-        this.document = runtime.stateStore().document(new StateStore.Key(
-                "key-ledger", dungeonId.toString(), null));
+        this.document =
+                runtime.stateStore()
+                        .document(new StateStore.Key("key-ledger", dungeonId.toString(), null));
         this.accessKeyStateConfig = new YamlConfiguration();
         this.issuedAccessKeyInstances = new LinkedHashMap<>();
         this.reservedAccessKeyInstances = new LinkedHashSet<>();
@@ -267,7 +271,9 @@ public final class DungeonAccessKeyService {
             this.loadAccessKeyState();
             this.pruneAccessKeyState();
         } catch (DungeonLoadException exception) {
-            this.runtime.environment().logger()
+            this.runtime
+                    .environment()
+                    .logger()
                     .error(
                             "Failed to load access key state for dungeon '{}' while unique"
                                     + " validation was enabled.",
@@ -443,10 +449,14 @@ public final class DungeonAccessKeyService {
     }
 
     /** A candidate ledger change; publication is allowed only after the joint journal commit. */
-    public record Settlement(boolean valid, @Nullable ItemStack replacement,
-            StateDocument.Prepared write, Runnable publish) {}
+    public record Settlement(
+            boolean valid,
+            @Nullable ItemStack replacement,
+            StateDocument.Prepared write,
+            Runnable publish) {}
 
-    public synchronized Settlement prepareSettlement(ItemStack item, boolean refund, boolean consume) {
+    public synchronized Settlement prepareSettlement(
+            ItemStack item, boolean refund, boolean consume) {
         if (this.usesUniqueAccessKeyValidation()) this.ensureUniqueAccessKeyStateLoaded();
         var issued = new LinkedHashMap<>(this.issuedAccessKeyInstances);
         var reserved = new LinkedHashSet<>(this.reservedAccessKeyInstances);
@@ -460,7 +470,11 @@ public final class DungeonAccessKeyService {
                 // The journal still owns the escrowed item and must be able to return it.
                 this.releaseReservedAccessKey(item);
                 valid = true;
-            } else valid = consume ? this.consumeAccessKey(item) : (replacement = this.rotateAccessKey(item)) != null;
+            } else
+                valid =
+                        consume
+                                ? this.consumeAccessKey(item)
+                                : (replacement = this.rotateAccessKey(item)) != null;
             if (!valid) return new Settlement(false, null, null, () -> {});
             var nextIssued = new LinkedHashMap<>(this.issuedAccessKeyInstances);
             var nextReserved = new LinkedHashSet<>(this.reservedAccessKeyInstances);
@@ -474,14 +488,18 @@ public final class DungeonAccessKeyService {
                 candidate.set("invalidated_instance_ids", new ArrayList<>(nextInvalidated));
                 write = this.document.prepare(candidate.saveToString());
             }
-            return new Settlement(true, replacement, write, () -> {
-                synchronized (this) {
-                    this.issuedAccessKeyInstances = nextIssued;
-                    this.reservedAccessKeyInstances = nextReserved;
-                    this.invalidatedAccessKeyInstances = nextInvalidated;
-                    this.rememberKeyLedger();
-                }
-            });
+            return new Settlement(
+                    true,
+                    replacement,
+                    write,
+                    () -> {
+                        synchronized (this) {
+                            this.issuedAccessKeyInstances = nextIssued;
+                            this.reservedAccessKeyInstances = nextReserved;
+                            this.invalidatedAccessKeyInstances = nextInvalidated;
+                            this.rememberKeyLedger();
+                        }
+                    });
         } catch (InvalidConfigurationException failure) {
             throw new IllegalStateException("Cannot stage access key settlement", failure);
         } finally {
@@ -548,5 +566,4 @@ public final class DungeonAccessKeyService {
         this.saveAccessKeyState();
         return replacementItem;
     }
-
 }

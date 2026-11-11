@@ -3,11 +3,11 @@ package nl.hauntedmc.dungeons.world.generator;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.util.*;
 import nl.hauntedmc.dungeons.generation.room.InstanceRoom;
 import nl.hauntedmc.dungeons.generation.structure.StructurePieceBlock;
 import nl.hauntedmc.dungeons.support.*;
 import nl.hauntedmc.dungeons.util.world.BlockNbtUtils;
-
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
@@ -16,8 +16,6 @@ import org.bukkit.generator.WorldInfo;
 import org.bukkit.util.BoundingBox;
 import org.joml.Vector3i;
 import org.junit.jupiter.api.Test;
-
-import java.util.*;
 
 class ChunkAssemblyContractTest {
     @Test

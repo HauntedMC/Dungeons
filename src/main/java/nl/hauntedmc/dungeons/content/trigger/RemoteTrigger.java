@@ -1,37 +1,31 @@
 package nl.hauntedmc.dungeons.content.trigger;
 
+import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
-import nl.hauntedmc.dungeons.content.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.event.RemoteTriggerEvent;
 import nl.hauntedmc.dungeons.generation.room.InstanceRoom;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ChatMenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
 import nl.hauntedmc.dungeons.model.element.TriggerCategory;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
+import nl.hauntedmc.dungeons.runtime.instance.play.BranchingInstance;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 
-import java.util.Map;
-
-/**
- * Trigger that listens for named remote signals emitted by other dungeon content.
- */
+/** Trigger that listens for named remote signals emitted by other dungeon content. */
 @AutoRegister(id = "dungeons.trigger.remote")
 @SerializableAs("dungeons.trigger.remote")
 public class RemoteTrigger extends DungeonTrigger {
     @PersistedField private String triggerName = "trigger";
     @PersistedField private boolean awaitConditions = true;
 
-    /**
-     * Creates a new RemoteTrigger instance.
-     */
+    /** Creates a new RemoteTrigger instance. */
     public RemoteTrigger(Map<String, Object> config) {
         super("Signal Receiver", config);
         this.waitForConditions = true;
@@ -39,9 +33,7 @@ public class RemoteTrigger extends DungeonTrigger {
         this.setHasTarget(true);
     }
 
-    /**
-     * Creates a new RemoteTrigger instance.
-     */
+    /** Creates a new RemoteTrigger instance. */
     public RemoteTrigger() {
         super("Signal Receiver");
         this.waitForConditions = true;
@@ -49,9 +41,7 @@ public class RemoteTrigger extends DungeonTrigger {
         this.setHasTarget(true);
     }
 
-    /**
-     * Performs initialize.
-     */
+    /** Performs initialize. */
     @Override
     public void initialize() {
         super.initialize();
@@ -59,9 +49,7 @@ public class RemoteTrigger extends DungeonTrigger {
         this.waitForConditions = this.awaitConditions;
     }
 
-    /**
-     * Builds menu button.
-     */
+    /** Builds menu button. */
     @Override
     public MenuButton buildMenuButton() {
         MenuButton functionButton = new MenuButton(Material.REDSTONE_TORCH);
@@ -72,9 +60,7 @@ public class RemoteTrigger extends DungeonTrigger {
         return functionButton;
     }
 
-    /**
-     * Performs on trigger receive.
-     */
+    /** Performs on trigger receive. */
     @EventHandler
     public void onTriggerReceive(RemoteTriggerEvent event) {
         if (event.isCancelled()) {
@@ -99,9 +85,7 @@ public class RemoteTrigger extends DungeonTrigger {
         }
     }
 
-    /**
-     * Performs matches room.
-     */
+    /** Performs matches room. */
     private boolean matchesRoom(Location origin) {
         BranchingInstance instance = this.instance.as(BranchingInstance.class);
         if (instance == null) {
@@ -117,25 +101,19 @@ public class RemoteTrigger extends DungeonTrigger {
         }
     }
 
-    /**
-     * Builds hotbar menu.
-     */
+    /** Builds hotbar menu. */
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
                 new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.PAPER);
                         this.button.setDisplayName("&d&lSignal Name");
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         LangUtils.sendMessage(player, "editor.trigger.remote.ask-signal");
@@ -145,9 +123,7 @@ public class RemoteTrigger extends DungeonTrigger {
                                 LangUtils.placeholder("signal", RemoteTrigger.this.triggerName));
                     }
 
-                    /**
-                     * Performs on input.
-                     */
+                    /** Performs on input. */
                     @Override
                     public void onInput(Player player, String message) {
                         RemoteTrigger.this.triggerName = message;
@@ -161,9 +137,7 @@ public class RemoteTrigger extends DungeonTrigger {
                 });
         this.menu.addMenuItem(
                 new ToggleMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.REDSTONE_TORCH);
@@ -171,9 +145,7 @@ public class RemoteTrigger extends DungeonTrigger {
                         this.button.setEnchanted(RemoteTrigger.this.allowRetrigger);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         if (!RemoteTrigger.this.allowRetrigger) {
@@ -187,9 +159,7 @@ public class RemoteTrigger extends DungeonTrigger {
                 });
         this.menu.addMenuItem(
                 new ToggleMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.REPEATER);
@@ -197,9 +167,7 @@ public class RemoteTrigger extends DungeonTrigger {
                         this.button.setEnchanted(RemoteTrigger.this.awaitConditions);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         if (!RemoteTrigger.this.awaitConditions) {
@@ -218,30 +186,22 @@ public class RemoteTrigger extends DungeonTrigger {
         this.addRoomLimitToggleButton();
     }
 
-    /**
-     * Returns the trigger name.
-     */
+    /** Returns the trigger name. */
     public String getTriggerName() {
         return this.triggerName;
     }
 
-    /**
-     * Sets the trigger name.
-     */
+    /** Sets the trigger name. */
     public void setTriggerName(String triggerName) {
         this.triggerName = triggerName;
     }
 
-    /**
-     * Returns whether await conditions.
-     */
+    /** Returns whether await conditions. */
     public boolean isAwaitConditions() {
         return this.awaitConditions;
     }
 
-    /**
-     * Sets the await conditions.
-     */
+    /** Sets the await conditions. */
     public void setAwaitConditions(boolean awaitConditions) {
         this.awaitConditions = awaitConditions;
     }

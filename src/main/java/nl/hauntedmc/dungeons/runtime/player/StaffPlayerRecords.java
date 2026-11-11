@@ -1,10 +1,8 @@
 package nl.hauntedmc.dungeons.runtime.player;
 
-import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
-
-import org.bukkit.inventory.ItemStack;
-
 import java.util.UUID;
+import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
+import org.bukkit.inventory.ItemStack;
 
 /** Offline support uses the same validated journal and never rewrites native player files. */
 public final class StaffPlayerRecords {

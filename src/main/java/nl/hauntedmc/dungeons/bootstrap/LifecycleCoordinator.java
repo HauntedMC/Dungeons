@@ -1,23 +1,21 @@
 package nl.hauntedmc.dungeons.bootstrap;
 
-import nl.hauntedmc.dungeons.config.ConfigurationFile;
-import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
-import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
-import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
-import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueEntry;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-import nl.hauntedmc.dungeons.util.text.TextUtils;
-
-import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
-import org.jetbrains.annotations.Nullable;
-
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import nl.hauntedmc.dungeons.config.ConfigurationFile;
+import nl.hauntedmc.dungeons.localization.LangUtils;
+import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
+import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
+import nl.hauntedmc.dungeons.runtime.instance.DungeonInstance;
+import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
+import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueEntry;
+import nl.hauntedmc.dungeons.util.text.TextUtils;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Coordinates runtime lifecycle operations that happen after initial bootstrap, such as shutdown
@@ -33,17 +31,13 @@ public final class LifecycleCoordinator {
     private volatile boolean shuttingDown;
     private CompletableFuture<Boolean> reloadAttempt;
 
-    /**
-     * Creates the lifecycle coordinator for an already-bootstrapped runtime graph.
-     */
+    /** Creates the lifecycle coordinator for an already-bootstrapped runtime graph. */
     LifecycleCoordinator(DungeonsRuntime runtime, CoreBootstrap coreBootstrap) {
         this.runtime = runtime;
         this.coreBootstrap = coreBootstrap;
     }
 
-    /**
-     * Releases player and instance state during plugin shutdown.
-     */
+    /** Releases player and instance state during plugin shutdown. */
     void shutdown() {
         this.shuttingDown = true;
         if (this.reloadAttempt != null) this.reloadAttempt.complete(false);
@@ -60,9 +54,13 @@ public final class LifecycleCoordinator {
             if (this.runtime.hasQueueRegistry())
                 this.runCleanup("queued starts", () -> this.discardQueuedStarts(null));
             if (this.runtime.hasPlayerSessions())
-                this.runCleanup("reserved access keys", () -> this.refundOutstandingReservedKeys(null));
+                this.runCleanup(
+                        "reserved access keys", () -> this.refundOutstandingReservedKeys(null));
 
-            for (Player player : this.runtime.hasPlayerSessions() ? Bukkit.getOnlinePlayers() : List.<Player>of()) {
+            for (Player player :
+                    this.runtime.hasPlayerSessions()
+                            ? Bukkit.getOnlinePlayers()
+                            : List.<Player>of()) {
                 try {
                     DungeonPlayerSession playerSession = this.runtime.playerSessions().get(player);
                     if (playerSession == null) {
@@ -100,7 +98,9 @@ public final class LifecycleCoordinator {
                 try {
                     for (DungeonPlayerSession participant :
                             new ArrayList<>(instance.getPlayers())) {
-                        this.runCleanup("instance participant", () -> instance.removePlayer(participant, true));
+                        this.runCleanup(
+                                "instance participant",
+                                () -> instance.removePlayer(participant, true));
                     }
                     instance.dispose();
                 } catch (Exception exception) {
@@ -134,8 +134,13 @@ public final class LifecycleCoordinator {
         try {
             action.run();
         } catch (RuntimeException failure) {
-            this.runtime.environment().logger()
-                    .error("Failed to clean up {}; continuing other cleanup stages.", stage, failure);
+            this.runtime
+                    .environment()
+                    .logger()
+                    .error(
+                            "Failed to clean up {}; continuing other cleanup stages.",
+                            stage,
+                            failure);
         }
     }
 
@@ -159,14 +164,16 @@ public final class LifecycleCoordinator {
                     && (instance.getDungeon() == null
                             || !dungeonName.equals(instance.getDungeon().getWorldName()))) continue;
             if (!instance.getPlayers().isEmpty()) {
-                if (instance.isEditInstance()) editors.add(CompletableFuture.completedFuture(false));
+                if (instance.isEditInstance())
+                    editors.add(CompletableFuture.completedFuture(false));
                 continue;
             }
             try {
                 if (instance.isEditInstance()) editors.add(instance.disposeAsync());
                 else instance.dispose();
             } catch (Exception failure) {
-                if (instance.isEditInstance()) editors.add(CompletableFuture.completedFuture(false));
+                if (instance.isEditInstance())
+                    editors.add(CompletableFuture.completedFuture(false));
                 this.runtime
                         .environment()
                         .logger()
@@ -177,39 +184,57 @@ public final class LifecycleCoordinator {
             }
         }
         return CompletableFuture.allOf(editors.toArray(CompletableFuture[]::new))
-                .handle((ignored, failure) -> failure == null
-                        && editors.stream().allMatch(future -> Boolean.TRUE.equals(future.join())));
+                .handle(
+                        (ignored, failure) ->
+                                failure == null
+                                        && editors.stream()
+                                                .allMatch(
+                                                        future ->
+                                                                Boolean.TRUE.equals(
+                                                                        future.join())));
     }
 
-    private CompletableFuture<Boolean> finishReload(CompletableFuture<Boolean> editors, Runnable replacement) {
+    private CompletableFuture<Boolean> finishReload(
+            CompletableFuture<Boolean> editors, Runnable replacement) {
         var result = this.reloadAttempt;
-        editors.whenComplete((success, failure) -> {
-            Runnable finish = () -> {
-                if (this.shuttingDown || failure != null || !Boolean.TRUE.equals(success)) {
-                    this.runtime.environment().logger().error(
+        editors.whenComplete(
+                (success, failure) -> {
+                    Runnable finish =
+                            () -> {
+                                if (this.shuttingDown
+                                        || failure != null
+                                        || !Boolean.TRUE.equals(success)) {
+                                    this.runtime
+                                            .environment()
+                                            .logger()
+                                            .error(
                                                     "Dungeon reload aborted: editor persistence or"
-                                                        + " unload did not succeed.");
-                    result.complete(false);
-                    return;
-                }
-                try {
-                    replacement.run();
-                    result.complete(true);
-                } catch (RuntimeException reloadFailure) {
-                    this.runtime.environment().logger().error("Dungeon reload failed.", reloadFailure);
-                    result.complete(false);
-                }
-            };
-            if (this.shuttingDown) result.complete(false);
-            else if (Bukkit.isPrimaryThread()) finish.run();
-            else {
-                try {
-                    Bukkit.getScheduler().runTask(this.runtime.environment().plugin(), finish);
-                } catch (RuntimeException rejected) {
-                    result.complete(false);
-                }
-            }
-        });
+                                                            + " unload did not succeed.");
+                                    result.complete(false);
+                                    return;
+                                }
+                                try {
+                                    replacement.run();
+                                    result.complete(true);
+                                } catch (RuntimeException reloadFailure) {
+                                    this.runtime
+                                            .environment()
+                                            .logger()
+                                            .error("Dungeon reload failed.", reloadFailure);
+                                    result.complete(false);
+                                }
+                            };
+                    if (this.shuttingDown) result.complete(false);
+                    else if (Bukkit.isPrimaryThread()) finish.run();
+                    else {
+                        try {
+                            Bukkit.getScheduler()
+                                    .runTask(this.runtime.environment().plugin(), finish);
+                        } catch (RuntimeException rejected) {
+                            result.complete(false);
+                        }
+                    }
+                });
         return result.copy();
     }
 
@@ -217,9 +242,7 @@ public final class LifecycleCoordinator {
         return this.shuttingDown || this.reloadAttempt != null && !this.reloadAttempt.isDone();
     }
 
-    /**
-     * Reloads the dungeon catalogue while preserving the same injected manager objects.
-     */
+    /** Reloads the dungeon catalogue while preserving the same injected manager objects. */
     public CompletableFuture<Boolean> reloadAllDungeons() {
         if (!Bukkit.isPrimaryThread())
             return ConfigurationFile.onOwnerThread(
@@ -246,8 +269,12 @@ public final class LifecycleCoordinator {
                 }
             }
 
-            return this.finishReload(this.disposeEmptyManagedInstances(null),
-                    () -> TextUtils.runTimed("Reloading Dungeons", () -> this.runtime.dungeonCatalog().reloadAll()));
+            return this.finishReload(
+                    this.disposeEmptyManagedInstances(null),
+                    () ->
+                            TextUtils.runTimed(
+                                    "Reloading Dungeons",
+                                    () -> this.runtime.dungeonCatalog().reloadAll()));
         } catch (RuntimeException failure) {
             this.runtime.environment().logger().error("Cannot prepare dungeon reload.", failure);
             this.reloadAttempt.complete(false);
@@ -255,9 +282,7 @@ public final class LifecycleCoordinator {
         }
     }
 
-    /**
-     * Reloads a single dungeon definition and its in-memory instances.
-     */
+    /** Reloads a single dungeon definition and its in-memory instances. */
     public CompletableFuture<Boolean> reloadDungeon(DungeonDefinition dungeon) {
         if (!Bukkit.isPrimaryThread())
             return ConfigurationFile.onOwnerThread(
@@ -278,10 +303,13 @@ public final class LifecycleCoordinator {
                 }
             }
 
-            return this.finishReload(this.disposeEmptyManagedInstances(dungeon.getWorldName()), () -> {
-                if (this.runtime.dungeonCatalog().loadDungeon(dungeon.getFolder()) == null)
-                    throw new IllegalStateException("Replacement dungeon could not be loaded");
-            });
+            return this.finishReload(
+                    this.disposeEmptyManagedInstances(dungeon.getWorldName()),
+                    () -> {
+                        if (this.runtime.dungeonCatalog().loadDungeon(dungeon.getFolder()) == null)
+                            throw new IllegalStateException(
+                                    "Replacement dungeon could not be loaded");
+                    });
         } catch (RuntimeException failure) {
             this.runtime.environment().logger().error("Cannot prepare dungeon reload.", failure);
             this.reloadAttempt.complete(false);
@@ -289,9 +317,7 @@ public final class LifecycleCoordinator {
         }
     }
 
-    /**
-     * Reloads config-backed runtime values without rebuilding the runtime graph.
-     */
+    /** Reloads config-backed runtime values without rebuilding the runtime graph. */
     public void reloadConfigs() {
         this.runtime.environment().plugin().reloadConfig();
         this.coreBootstrap.reloadRuntimeConfiguration();
@@ -300,9 +326,7 @@ public final class LifecycleCoordinator {
         }
     }
 
-    /**
-     * Discards queued dungeon starts, optionally limiting the cleanup to a single dungeon.
-     */
+    /** Discards queued dungeon starts, optionally limiting the cleanup to a single dungeon. */
     private void discardQueuedStarts(@Nullable String dungeonName) {
         for (DungeonQueueEntry queue : this.runtime.queueRegistry().snapshotQueues()) {
             if (queue == null) {
@@ -313,15 +337,16 @@ public final class LifecycleCoordinator {
                 continue;
             }
 
-            this.runCleanup("queue", () -> this.runtime.dungeonQueueCoordinator().discardQueue(queue));
+            this.runCleanup(
+                    "queue", () -> this.runtime.dungeonQueueCoordinator().discardQueue(queue));
         }
     }
 
-    /**
-     * Refunds any reserved access keys for players who are waiting to start a dungeon.
-     */
+    /** Refunds any reserved access keys for players who are waiting to start a dungeon. */
     private void refundOutstandingReservedKeys(@Nullable String dungeonName) {
-        this.runCleanup("team queued starts", () -> this.runtime.teamService().clearQueuedStarts(dungeonName));
+        this.runCleanup(
+                "team queued starts",
+                () -> this.runtime.teamService().clearQueuedStarts(dungeonName));
 
         for (Player player : Bukkit.getOnlinePlayers()) {
             DungeonPlayerSession playerSession = this.runtime.playerSessions().get(player);

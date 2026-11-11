@@ -1,16 +1,14 @@
 package nl.hauntedmc.dungeons.command;
 
-import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
-import nl.hauntedmc.dungeons.util.command.CommandUtils;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
-import org.bukkit.Bukkit;
-import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Player;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import nl.hauntedmc.dungeons.localization.LangUtils;
+import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
+import nl.hauntedmc.dungeons.util.command.CommandUtils;
+import org.bukkit.Bukkit;
+import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 
 /** Owns the team command branch and its completions. */
 final class TeamCommandHandler implements CommandHandler {

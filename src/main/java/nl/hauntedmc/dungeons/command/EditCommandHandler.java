@@ -1,19 +1,21 @@
 package nl.hauntedmc.dungeons.command;
 
-import nl.hauntedmc.dungeons.content.instance.edit.BranchingEditableInstance;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import nl.hauntedmc.dungeons.config.PluginConfigView;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
-import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
-import nl.hauntedmc.dungeons.model.instance.EditableInstance;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
+import nl.hauntedmc.dungeons.runtime.instance.DungeonInstance;
+import nl.hauntedmc.dungeons.runtime.instance.EditableInstance;
+import nl.hauntedmc.dungeons.runtime.instance.edit.BranchingEditableInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
 import nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard;
 import nl.hauntedmc.dungeons.util.command.CommandUtils;
-import nl.hauntedmc.dungeons.util.config.PluginConfigView;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.math.MathUtils;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -25,17 +27,15 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-
 /** Owns editor commands, scoped authorization and editor completions. */
 final class EditCommandHandler implements CommandHandler {
     private final DungeonsPlugin plugin;
     private final PlayerSessionRegistry playerManager;
     private final DungeonRepository dungeonManager;
 
-    EditCommandHandler(DungeonsPlugin plugin, PlayerSessionRegistry playerManager,
+    EditCommandHandler(
+            DungeonsPlugin plugin,
+            PlayerSessionRegistry playerManager,
             DungeonRepository dungeonManager) {
         this.plugin = plugin;
         this.playerManager = playerManager;
@@ -56,7 +56,8 @@ final class EditCommandHandler implements CommandHandler {
             case "lobby" -> this.handleLobbyCommand(sender, args);
             case "start" -> this.handleStartCommand(sender, args);
             case "exit" -> {
-                if (!(sender instanceof Player player)) throw new IllegalArgumentException("Players only");
+                if (!(sender instanceof Player player))
+                    throw new IllegalArgumentException("Players only");
                 var session = this.playerManager.get(player);
                 if (!StaffEditGuard.editor(player, session))
                     throw new IllegalArgumentException("Open an authorized editor first");
@@ -79,9 +80,9 @@ final class EditCommandHandler implements CommandHandler {
         List<String> options = new ArrayList<>();
         if (args.length == 2) {
             CommandArguments.addMatchingLiteralOptions(
-                    options, args[1], "close", "save", "lobby", "start", "items", "tools",
-                    "signs");
-            DungeonCompletions.addMatchingEditableDungeonNames(this.dungeonManager, sender, options, args[1]);
+                    options, args[1], "close", "save", "lobby", "start", "items", "tools", "signs");
+            DungeonCompletions.addMatchingEditableDungeonNames(
+                    this.dungeonManager, sender, options, args[1]);
             return options;
         }
 
@@ -154,14 +155,10 @@ final class EditCommandHandler implements CommandHandler {
         }
 
         return switch (args[2].toLowerCase(Locale.ROOT)) {
-            case "ban" ->
-                    this.handleBanItemCommand(sender, new String[] {"banitem"});
-            case "unban" ->
-                    this.handleUnbanItemCommand(
-                            sender, new String[] {"unbanitem"});
+            case "ban" -> this.handleBanItemCommand(sender, new String[] {"banitem"});
+            case "unban" -> this.handleUnbanItemCommand(sender, new String[] {"unbanitem"});
             case "mark-dungeon" ->
-                    this.handleDungeonItemCommand(
-                            sender, new String[] {"dungeonitem"});
+                    this.handleDungeonItemCommand(sender, new String[] {"dungeonitem"});
             default -> {
                 CommandArguments.sendUsageList(sender, "commands.edit.help.lines");
                 yield true;
@@ -189,8 +186,7 @@ final class EditCommandHandler implements CommandHandler {
     /** Runs handle signs command. */
     private boolean handleSignsCommand(CommandSender sender, String[] args) {
         if (args.length == 3 && args[2].equalsIgnoreCase("clean")) {
-            return this.handleCleanSignsCommand(
-                    sender, new String[] {"cleansigns"});
+            return this.handleCleanSignsCommand(sender, new String[] {"cleansigns"});
         }
 
         CommandArguments.sendUsageList(sender, "commands.edit.help.lines");
@@ -556,13 +552,11 @@ final class EditCommandHandler implements CommandHandler {
     /** Runs require dungeon edit access. */
     private boolean requireDungeonEditAccess(Player player, DungeonDefinition dungeon) {
         if (dungeon != null && CommandUtils.hasDungeonEditAccess(player, dungeon.getWorldName())) {
-            StaffEditGuard.configuration(
-                    player, dungeon, "editor");
+            StaffEditGuard.configuration(player, dungeon, "editor");
             return true;
         }
 
         LangUtils.sendMessage(player, "general.errors.no-permission");
         return false;
     }
-
 }

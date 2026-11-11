@@ -1,29 +1,27 @@
 package nl.hauntedmc.dungeons.content.condition;
 
-import nl.hauntedmc.dungeons.annotation.AutoRegister;
-import nl.hauntedmc.dungeons.annotation.PersistedField;
-import nl.hauntedmc.dungeons.event.TriggerFireEvent;
-import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ChatMenuItem;
-import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
-import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
-import nl.hauntedmc.dungeons.model.element.TriggerCondition;
-import nl.hauntedmc.dungeons.util.command.InputUtils;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-import nl.hauntedmc.dungeons.util.math.MathUtils;
-
-import org.bukkit.Material;
-import org.bukkit.configuration.serialization.SerializableAs;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Player;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import nl.hauntedmc.dungeons.annotation.AutoRegister;
+import nl.hauntedmc.dungeons.annotation.PersistedField;
+import nl.hauntedmc.dungeons.event.TriggerFireEvent;
+import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ChatMenuItem;
+import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
+import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
+import nl.hauntedmc.dungeons.localization.LangUtils;
+import nl.hauntedmc.dungeons.model.element.TriggerCondition;
+import nl.hauntedmc.dungeons.util.command.InputUtils;
+import nl.hauntedmc.dungeons.util.math.MathUtils;
+import org.bukkit.Material;
+import org.bukkit.configuration.serialization.SerializableAs;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
 
 /**
  * Condition that counts nearby living entities of a configured type.
@@ -39,23 +37,17 @@ public class MobWithinCondition extends TriggerCondition {
     @PersistedField private boolean mobsExact = false;
     private transient boolean invalidConfigurationLogged;
 
-    /**
-     * Creates a new MobWithinCondition instance.
-     */
+    /** Creates a new MobWithinCondition instance. */
     public MobWithinCondition(Map<String, Object> config) {
         super("mobswithin", config);
     }
 
-    /**
-     * Creates a new MobWithinCondition instance.
-     */
+    /** Creates a new MobWithinCondition instance. */
     public MobWithinCondition() {
         super("mobswithin");
     }
 
-    /**
-     * Performs check.
-     */
+    /** Performs check. */
     @Override
     public boolean check(TriggerFireEvent event) {
         if (this.location == null || this.location.getWorld() == null) {
@@ -111,9 +103,7 @@ public class MobWithinCondition extends TriggerCondition {
         return this.mobsExact ? mobs.size() == requiredMobs : mobs.size() >= requiredMobs;
     }
 
-    /**
-     * Builds menu button.
-     */
+    /** Builds menu button. */
     @Override
     public MenuButton buildMenuButton() {
         MenuButton functionButton = new MenuButton(Material.CREEPER_HEAD);
@@ -125,33 +115,25 @@ public class MobWithinCondition extends TriggerCondition {
         return functionButton;
     }
 
-    /**
-     * Builds hotbar menu.
-     */
+    /** Builds hotbar menu. */
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
                 new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.ZOMBIE_HEAD);
                         this.button.setDisplayName("&d&lSet Mob Type");
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         LangUtils.sendMessage(player, "editor.condition.mob-within.ask-mob");
                     }
 
-                    /**
-                     * Performs on input.
-                     */
+                    /** Performs on input. */
                     @Override
                     public void onInput(Player player, String message) {
                         EntityType type = EntityType.fromName(message);
@@ -174,9 +156,7 @@ public class MobWithinCondition extends TriggerCondition {
                 });
         this.menu.addMenuItem(
                 new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.DETECTOR_RAIL);
@@ -185,17 +165,13 @@ public class MobWithinCondition extends TriggerCondition {
                                 (int) MathUtils.round(MobWithinCondition.this.radius, 0));
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         LangUtils.sendMessage(player, "editor.condition.mob-within.ask-radius");
                     }
 
-                    /**
-                     * Performs on input.
-                     */
+                    /** Performs on input. */
                     @Override
                     public void onInput(Player player, String message) {
                         Optional<Double> value = InputUtils.readDoubleInput(player, message);
@@ -213,9 +189,7 @@ public class MobWithinCondition extends TriggerCondition {
                 });
         this.menu.addMenuItem(
                 new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.REPEATER);
@@ -226,17 +200,13 @@ public class MobWithinCondition extends TriggerCondition {
                         this.button.setAmount(MobWithinCondition.this.count);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         LangUtils.sendMessage(player, "editor.condition.mob-within.ask-count");
                     }
 
-                    /**
-                     * Performs on input.
-                     */
+                    /** Performs on input. */
                     @Override
                     public void onInput(Player player, String message) {
                         Optional<Integer> value = InputUtils.readIntegerInput(player, message);
@@ -253,9 +223,7 @@ public class MobWithinCondition extends TriggerCondition {
                 });
         this.menu.addMenuItem(
                 new ToggleMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.REDSTONE_TORCH);
@@ -263,9 +231,7 @@ public class MobWithinCondition extends TriggerCondition {
                         this.button.setEnchanted(MobWithinCondition.this.mobsExact);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         if (!MobWithinCondition.this.mobsExact) {
@@ -279,44 +245,32 @@ public class MobWithinCondition extends TriggerCondition {
                 });
     }
 
-    /**
-     * Returns the entity name.
-     */
+    /** Returns the entity name. */
     public String getEntityName() {
         return this.entityName;
     }
 
-    /**
-     * Sets the entity name.
-     */
+    /** Sets the entity name. */
     public void setEntityName(String entityName) {
         this.entityName = entityName;
     }
 
-    /**
-     * Returns the radius.
-     */
+    /** Returns the radius. */
     public double getRadius() {
         return this.radius;
     }
 
-    /**
-     * Sets the radius.
-     */
+    /** Sets the radius. */
     public void setRadius(double radius) {
         this.radius = radius;
     }
 
-    /**
-     * Returns the count.
-     */
+    /** Returns the count. */
     public int getCount() {
         return this.count;
     }
 
-    /**
-     * Sets the count.
-     */
+    /** Sets the count. */
     public void setCount(int count) {
         this.count = count;
     }

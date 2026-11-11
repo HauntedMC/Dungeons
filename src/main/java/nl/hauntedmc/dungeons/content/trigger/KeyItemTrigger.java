@@ -1,17 +1,20 @@
 package nl.hauntedmc.dungeons.content.trigger;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
 import nl.hauntedmc.dungeons.model.element.TriggerCategory;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
@@ -23,14 +26,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-
-/**
- * Trigger that reacts to players using a matching key item.
- */
+/** Trigger that reacts to players using a matching key item. */
 @AutoRegister(id = "dungeons.trigger.key_item")
 @SerializableAs("dungeons.trigger.key_item")
 public class KeyItemTrigger extends DungeonTrigger {
@@ -40,9 +36,7 @@ public class KeyItemTrigger extends DungeonTrigger {
     @PersistedField private String clickType = "RIGHT";
     private ClickType click;
 
-    /**
-     * Creates a new KeyItemTrigger instance.
-     */
+    /** Creates a new KeyItemTrigger instance. */
     public KeyItemTrigger(Map<String, Object> config) {
         super("Key Item", config);
         this.setCategory(TriggerCategory.PLAYER);
@@ -50,9 +44,7 @@ public class KeyItemTrigger extends DungeonTrigger {
         this.item = ItemUtils.getDefaultKeyItem();
     }
 
-    /**
-     * Creates a new KeyItemTrigger instance.
-     */
+    /** Creates a new KeyItemTrigger instance. */
     public KeyItemTrigger() {
         super("Key Item");
         this.setCategory(TriggerCategory.PLAYER);
@@ -60,9 +52,7 @@ public class KeyItemTrigger extends DungeonTrigger {
         this.item = ItemUtils.getDefaultKeyItem();
     }
 
-    /**
-     * Performs initialize.
-     */
+    /** Performs initialize. */
     @Override
     public void initialize() {
         super.initialize();
@@ -80,9 +70,7 @@ public class KeyItemTrigger extends DungeonTrigger {
         }
     }
 
-    /**
-     * Performs on use item.
-     */
+    /** Performs on use item. */
     @EventHandler
     public void onUseItem(PlayerInteractEvent event) {
         Player player = event.getPlayer();
@@ -131,9 +119,7 @@ public class KeyItemTrigger extends DungeonTrigger {
         }
     }
 
-    /**
-     * Builds menu button.
-     */
+    /** Builds menu button. */
     @Override
     public MenuButton buildMenuButton() {
         MenuButton button = new MenuButton(Material.ITEM_FRAME);
@@ -143,16 +129,12 @@ public class KeyItemTrigger extends DungeonTrigger {
         return button;
     }
 
-    /**
-     * Builds hotbar menu.
-     */
+    /** Builds hotbar menu. */
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
                 new ToggleMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.REDSTONE_TORCH);
@@ -160,9 +142,7 @@ public class KeyItemTrigger extends DungeonTrigger {
                         this.button.setEnchanted(KeyItemTrigger.this.allowRetrigger);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         if (!KeyItemTrigger.this.allowRetrigger) {
@@ -176,18 +156,14 @@ public class KeyItemTrigger extends DungeonTrigger {
                 });
         this.menu.addMenuItem(
                 new MenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.ITEM_FRAME);
                         this.button.setDisplayName("&d&lChoose Item");
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
@@ -196,9 +172,7 @@ public class KeyItemTrigger extends DungeonTrigger {
                 });
         this.menu.addMenuItem(
                 new ToggleMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.FURNACE);
@@ -206,9 +180,7 @@ public class KeyItemTrigger extends DungeonTrigger {
                         this.button.setEnchanted(KeyItemTrigger.this.consumeItem);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         if (!KeyItemTrigger.this.consumeItem) {
@@ -222,9 +194,7 @@ public class KeyItemTrigger extends DungeonTrigger {
                 });
         this.menu.addMenuItem(
                 new ToggleMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.TARGET);
@@ -232,9 +202,7 @@ public class KeyItemTrigger extends DungeonTrigger {
                         this.button.setEnchanted(KeyItemTrigger.this.useAnywhere);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         if (!KeyItemTrigger.this.useAnywhere) {
@@ -248,9 +216,7 @@ public class KeyItemTrigger extends DungeonTrigger {
                 });
         this.menu.addMenuItem(
                 new MenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.PLAYER_HEAD);
@@ -258,9 +224,7 @@ public class KeyItemTrigger extends DungeonTrigger {
                                 "&d&lClick Type: " + KeyItemTrigger.this.clickType);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
@@ -290,30 +254,22 @@ public class KeyItemTrigger extends DungeonTrigger {
                 });
     }
 
-    /**
-     * Returns the item.
-     */
+    /** Returns the item. */
     public ItemStack getItem() {
         return this.item;
     }
 
-    /**
-     * Sets the item.
-     */
+    /** Sets the item. */
     public void setItem(ItemStack item) {
         this.item = item;
     }
 
-    /**
-     * Sets the consume item.
-     */
+    /** Sets the consume item. */
     public void setConsumeItem(boolean consumeItem) {
         this.consumeItem = consumeItem;
     }
 
-    /**
-     * Sets the use anywhere.
-     */
+    /** Sets the use anywhere. */
     public void setUseAnywhere(boolean useAnywhere) {
         this.useAnywhere = useAnywhere;
     }
@@ -333,9 +289,7 @@ public class KeyItemTrigger extends DungeonTrigger {
             Collections.addAll(this.actions, actions);
         }
 
-        /**
-         * Returns whether it has action.
-         */
+        /** Returns whether it has action. */
         public boolean hasAction(Action action) {
             return this.actions.contains(action);
         }

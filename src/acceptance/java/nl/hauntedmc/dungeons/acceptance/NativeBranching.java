@@ -2,29 +2,27 @@ package nl.hauntedmc.dungeons.acceptance;
 
 import static nl.hauntedmc.dungeons.acceptance.AcceptancePlugin.require;
 
-import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
-import nl.hauntedmc.dungeons.content.function.SetStatusFunction;
-import nl.hauntedmc.dungeons.content.instance.play.BranchingInstance;
-import nl.hauntedmc.dungeons.content.trigger.RemoteTrigger;
-import nl.hauntedmc.dungeons.event.RemoteTriggerEvent;
-import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
-import nl.hauntedmc.dungeons.generation.structure.StructurePiece;
-import nl.hauntedmc.dungeons.generation.structure.StructurePieceBlock;
-import nl.hauntedmc.dungeons.util.world.SchematicUtils;
-import nl.hauntedmc.dungeons.util.world.SimpleLocation;
-
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.util.BoundingBox;
-import org.joml.Vector3i;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
+import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
+import nl.hauntedmc.dungeons.content.function.SetStatusFunction;
+import nl.hauntedmc.dungeons.content.trigger.RemoteTrigger;
+import nl.hauntedmc.dungeons.event.RemoteTriggerEvent;
+import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
+import nl.hauntedmc.dungeons.generation.structure.StructurePiece;
+import nl.hauntedmc.dungeons.generation.structure.StructurePieceBlock;
+import nl.hauntedmc.dungeons.runtime.instance.play.BranchingInstance;
+import nl.hauntedmc.dungeons.util.world.SchematicUtils;
+import nl.hauntedmc.dungeons.util.world.SimpleLocation;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.util.BoundingBox;
+import org.joml.Vector3i;
 
 final class NativeBranching {
     private NativeBranching() {}
@@ -97,7 +95,7 @@ final class NativeBranching {
                                                                         Material.GOLD_BLOCK,
                                                                         Material.DIAMOND_BLOCK)),
                                                         "Native chunk generation did not place both"
-                                                            + " schematic floors: "
+                                                                + " schematic floors: "
                                                                 + floorTypes);
                                                 Bukkit.getPluginManager()
                                                         .callEvent(

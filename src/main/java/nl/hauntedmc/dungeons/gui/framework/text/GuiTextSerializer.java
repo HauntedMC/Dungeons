@@ -1,13 +1,10 @@
 package nl.hauntedmc.dungeons.gui.framework.text;
 
 import net.kyori.adventure.text.Component;
-
 import nl.hauntedmc.dungeons.util.text.ColorUtils;
 import nl.hauntedmc.dungeons.util.text.ComponentUtils;
 
-/**
- * Internal serializer for converting menu strings into Adventure components.
- */
+/** Internal serializer for converting menu strings into Adventure components. */
 final class GuiTextSerializer {
     /** Utility class. */
     private GuiTextSerializer() {}

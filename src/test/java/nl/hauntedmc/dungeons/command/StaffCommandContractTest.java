@@ -3,21 +3,18 @@ package nl.hauntedmc.dungeons.command;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.nio.file.Path;
+import java.util.*;
+import java.util.concurrent.*;
 import net.kyori.adventure.text.Component;
-
-import nl.hauntedmc.dungeons.model.instance.*;
+import nl.hauntedmc.dungeons.runtime.instance.*;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueEntry;
 import nl.hauntedmc.dungeons.runtime.staff.StaffContentStorage;
 import nl.hauntedmc.dungeons.runtime.staff.StaffOperations;
 import nl.hauntedmc.dungeons.support.*;
-
 import org.bukkit.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-
-import java.nio.file.Path;
-import java.util.*;
-import java.util.concurrent.*;
 
 class StaffCommandContractTest {
     @TempDir Path directory;
@@ -159,10 +156,7 @@ class StaffCommandContractTest {
             execute(h, f, "reload", "crypt", "Refresh");
             execute(h, f, "backup", "crypt", "Safety copy");
             f.flush();
-            assertFalse(
-                    new StaffContentStorage(f.runtime)
-                            .backups("crypt")
-                            .isEmpty());
+            assertFalse(new StaffContentStorage(f.runtime).backups("crypt").isEmpty());
             var completion = new CompletableFuture<String>();
             var op =
                     f.ops.drain(
@@ -181,8 +175,7 @@ class StaffCommandContractTest {
             assertDoesNotThrow(() -> execute(h, f, "operation", op.shortId()));
             completion.complete("done");
             f.flush();
-            assertEquals(
-                    StaffOperations.State.SUCCEEDED, op.state);
+            assertEquals(StaffOperations.State.SUCCEEDED, op.state);
         }
     }
 
@@ -283,8 +276,7 @@ class StaffCommandContractTest {
             doAnswer(
                             call -> {
                                 assertFalse(
-                                        new StaffContentStorage(
-                                                        f.runtime)
+                                        new StaffContentStorage(f.runtime)
                                                 .backups("crypt")
                                                 .isEmpty());
                                 return CompletableFuture.completedFuture(true);
@@ -294,9 +286,7 @@ class StaffCommandContractTest {
             h.executeChecked(player.player, new String[] {"edit", "crypt", "Open editor"});
             f.flush();
             verify(dungeon).editAsync(playerId);
-            assertEquals(
-                    StaffOperations.State.SUCCEEDED,
-                    f.ops.operations().getLast().state);
+            assertEquals(StaffOperations.State.SUCCEEDED, f.ops.operations().getLast().state);
             assertTrue(f.ops.maintenance("crypt"));
         }
     }

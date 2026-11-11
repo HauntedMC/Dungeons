@@ -1,32 +1,31 @@
 package nl.hauntedmc.dungeons.gui.menu;
-import nl.hauntedmc.dungeons.content.instance.edit.BranchingEditableInstance;
+
+import java.lang.reflect.InvocationTargetException;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Map.Entry;
 import nl.hauntedmc.dungeons.content.trigger.DungeonStartTrigger;
 import nl.hauntedmc.dungeons.content.trigger.KeyItemTrigger;
 import nl.hauntedmc.dungeons.content.trigger.gate.GateTrigger;
 import nl.hauntedmc.dungeons.gui.framework.buttons.Button;
 import nl.hauntedmc.dungeons.gui.framework.window.GuiWindow;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
 import nl.hauntedmc.dungeons.model.element.TriggerCategory;
-import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
-import nl.hauntedmc.dungeons.model.instance.EditableInstance;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
+import nl.hauntedmc.dungeons.runtime.instance.DungeonInstance;
+import nl.hauntedmc.dungeons.runtime.instance.EditableInstance;
+import nl.hauntedmc.dungeons.runtime.instance.edit.BranchingEditableInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.text.ColorUtils;
 import nl.hauntedmc.dungeons.util.text.TextUtils;
-
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-
-import java.lang.reflect.InvocationTargetException;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Map.Entry;
 
 /** Builds the triggers editor workflow. */
 final class TriggerBrowserMenus {
@@ -268,7 +267,7 @@ final class TriggerBrowserMenus {
                                             .getSLF4JLogger()
                                             .error(
                                                     "Failed to create trigger '{}' from the trigger"
-                                                        + " browser for player '{}'.",
+                                                            + " browser for player '{}'.",
                                                     triggerName,
                                                     player.getName(),
                                                     exception);
@@ -283,7 +282,8 @@ final class TriggerBrowserMenus {
 
     /** Builds and registers the trigger item-selection GUI. */
     static void initializeItemSelectTriggerMenu() {
-        GuiWindow gui = EditorMenuSupport.editorWindow("selectitem_trigger", 9, "&8Put your item here");
+        GuiWindow gui =
+                EditorMenuSupport.editorWindow("selectitem_trigger", 9, "&8Put your item here");
         gui.setCancelClick(false);
 
         for (int i = 0; i < 9; i++) {

@@ -5,10 +5,9 @@ import static org.mockito.Mockito.*;
 
 import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
 import nl.hauntedmc.dungeons.generation.room.Connector;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.world.SimpleLocation;
-
 import org.bukkit.entity.Player;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -28,7 +27,7 @@ class ConnectorClipboardActionsTest {
             when(session.isConnectorCutting()).thenReturn(!copying);
             when(session.getCopiedConnector()).thenReturn(source);
             when(room.applyDirectionAtEdge(target)).thenReturn(true);
-            try (var messages = mockStatic(LangUtils.class)) {
+            try (var _ = mockStatic(LangUtils.class)) {
                 ConnectorClipboardActions.paste(player, session, room, target);
             }
             var selected = ArgumentCaptor.forClass(Connector.class);
@@ -60,7 +59,7 @@ class ConnectorClipboardActionsTest {
         var target = new SimpleLocation(8, 1, 8);
         when(session.isConnectorCutting()).thenReturn(true);
         when(session.getCopiedConnector()).thenReturn(source);
-        try (var messages = mockStatic(LangUtils.class)) {
+        try (var _ = mockStatic(LangUtils.class)) {
             ConnectorClipboardActions.paste(mock(Player.class), session, room, target);
         }
         assertEquals(2, source.getLocation().getX());

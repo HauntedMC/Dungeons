@@ -3,24 +3,21 @@ package nl.hauntedmc.dungeons.content.function;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.nio.file.Path;
+import java.util.*;
 import nl.hauntedmc.dungeons.event.RemoteTriggerEvent;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.model.element.FunctionTargetType;
 import nl.hauntedmc.dungeons.support.*;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
-
 import org.bukkit.*;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.HandlerList;
-import org.bukkit.event.Listener;
 import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
-
-import java.nio.file.Path;
-import java.util.*;
 
 class PlayerEffectContractTest {
     @TempDir Path directory;
@@ -116,7 +113,7 @@ class PlayerEffectContractTest {
     void itemAndKeyDispensersGiveIndependentTaggedStacksToEveryTargetAndCanDropAtTheirLocation()
             throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration());
-                var gui = new HeadlessInventoryMenus()) {
+                var _ = new HeadlessInventoryMenus()) {
             var first = new PlayerState();
             var second = new PlayerState();
             var left = f.session(first);
@@ -176,8 +173,7 @@ class PlayerEffectContractTest {
     }
 
     @Test
-    void remoteSignalsPreserveTheirSourceAndReleaseTemporaryListenersEvenWhenDispatchFails()
-            throws Exception {
+    void remoteSignalsPreserveTheirSourceWithoutAcquiringEditorListeners() throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration());
                 var handlers = mockStatic(HandlerList.class)) {
             var session = f.session(new PlayerState());
@@ -205,11 +201,8 @@ class PlayerEffectContractTest {
                     .when(manager)
                     .callEvent(any(RemoteTriggerEvent.class));
             assertThrows(IllegalStateException.class, () -> signal.runFunction(source, List.of()));
-            ArgumentCaptor<Listener> listeners = ArgumentCaptor.captor();
-            verify(manager, times(3)).registerEvents(listeners.capture(), eq(f.paper.plugin));
-            for (var listener : listeners.getAllValues()) {
-                handlers.verify(() -> HandlerList.unregisterAll(listener));
-            }
+            verify(manager, never()).registerEvents(any(), any());
+            handlers.verifyNoInteractions();
         }
     }
 }

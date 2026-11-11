@@ -3,6 +3,12 @@ package nl.hauntedmc.dungeons.runtime.player;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.nio.file.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.persistence.StateStore;
 import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
@@ -10,20 +16,12 @@ import nl.hauntedmc.dungeons.runtime.instance.PreparationRegistry;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueEntry;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry;
 import nl.hauntedmc.dungeons.support.*;
-
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-
-import java.nio.file.*;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 class PlayerSessionExpiryTest {
     @TempDir Path directory;
@@ -89,8 +87,11 @@ class PlayerSessionExpiryTest {
             assertNull(session.getCopiedFunction());
             assertNull(session.getTargetLocation());
             assertThrows(IllegalStateException.class, session::getPlayer);
-            assertThrows(IllegalStateException.class,
-                    () -> session.addStaffRefunds(java.util.UUID.randomUUID(), PlayerState.stack(1)));
+            assertThrows(
+                    IllegalStateException.class,
+                    () ->
+                            session.addStaffRefunds(
+                                    java.util.UUID.randomUUID(), PlayerState.stack(1)));
 
             assertThrows(IllegalStateException.class, () -> session.setDungeonFinished(f.dungeon));
             state.online = true;
@@ -99,11 +100,13 @@ class PlayerSessionExpiryTest {
     }
 
     @Test
-    void sessionExpiryReleasesDecodedDungeonRecordsAndReconnectReadsDurableState() throws Exception {
+    void sessionExpiryReleasesDecodedDungeonRecordsAndReconnectReadsDurableState()
+            throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
             var clock = new AtomicLong();
             var registry = registry(f, clock);
-            f.paper.runtime.setQueueRegistry(new DungeonQueueRegistry(registry, f.paper.runtime.activeInstances()));
+            f.paper.runtime.setQueueRegistry(
+                    new DungeonQueueRegistry(registry, f.paper.runtime.activeInstances()));
             var catalog = mock(DungeonRepository.class);
             when(catalog.getLoadedDungeons()).thenReturn(List.of(f.dungeon));
             f.paper.runtime.setDungeonCatalog(catalog);
@@ -118,7 +121,11 @@ class PlayerSessionExpiryTest {
             clock.set(TimeUnit.SECONDS.toNanos(2));
             assertEquals(1, registry.expireOfflineSessions());
             // Simulate a durable correction after eviction, before the next connection.
-            f.paper.state.seed("dungeon-progress/" + f.dungeon.getDungeonId(), id.toString(), id, "Finished: false\n");
+            f.paper.state.seed(
+                    "dungeon-progress/" + f.dungeon.getDungeonId(),
+                    id.toString(),
+                    id,
+                    "Finished: false\n");
             assertFalse(progress.isCompleted(id));
         }
     }
@@ -192,7 +199,10 @@ class PlayerSessionExpiryTest {
             assertTrue(recreated.recoverPendingState());
             assertEquals(12, amount(state));
             assertTrue(
-                    f.paper.state.payload("player-profile", state.player.getUniqueId().toString()).contains("crypt"));
+                    f.paper
+                            .state
+                            .payload("player-profile", state.player.getUniqueId().toString())
+                            .contains("crypt"));
         }
     }
 
@@ -266,7 +276,11 @@ class PlayerSessionExpiryTest {
             session.setActiveFunction(mock(DungeonFunction.class));
             var target = directory.resolve("players/" + failedPlayer.getUniqueId() + ".yml");
             clock.set(TimeUnit.SECONDS.toNanos(2));
-            var failedKey = new StateStore.Key("player-profile", failedPlayer.getUniqueId().toString(), failedPlayer.getUniqueId());
+            var failedKey =
+                    new StateStore.Key(
+                            "player-profile",
+                            failedPlayer.getUniqueId().toString(),
+                            failedPlayer.getUniqueId());
             f.paper.state.failedWrites.add(failedKey);
             try {
                 assertEquals(7, registry.expireOfflineSessions());
@@ -276,7 +290,9 @@ class PlayerSessionExpiryTest {
                 assertSame(session, registry.get(failedPlayer));
                 assertFalse(session.isExpired());
                 assertNotNull(session.getActiveFunction());
-            } finally { f.paper.state.failedWrites.remove(failedKey); }
+            } finally {
+                f.paper.state.failedWrites.remove(failedKey);
+            }
             assertEquals(1, registry.expireOfflineSessions());
             assertTrue(session.isExpired());
             assertNull(session.getActiveFunction());
@@ -328,10 +344,16 @@ class PlayerSessionExpiryTest {
             var state = new PlayerState();
             var file = directory.resolve("players/" + state.player.getUniqueId() + ".yml");
             Files.createDirectories(file.getParent());
-            f.paper.state.seed("player-profile", state.player.getUniqueId().toString(), state.player.getUniqueId(), "CompletedDungeons: [broken\n");
+            f.paper.state.seed(
+                    "player-profile",
+                    state.player.getUniqueId().toString(),
+                    state.player.getUniqueId(),
+                    "CompletedDungeons: [broken\n");
             assertThrows(IllegalStateException.class, () -> registry.put(state.player));
             assertEquals(0, registry.size());
-            assertEquals("CompletedDungeons: [broken\n", f.paper.state.payload("player-profile", state.player.getUniqueId().toString()));
+            assertEquals(
+                    "CompletedDungeons: [broken\n",
+                    f.paper.state.payload("player-profile", state.player.getUniqueId().toString()));
         }
     }
 }

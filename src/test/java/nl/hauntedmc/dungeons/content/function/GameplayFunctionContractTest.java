@@ -16,15 +16,16 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.*;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.kyori.adventure.title.Title;
-
 import nl.hauntedmc.dungeons.event.DungeonStartEvent;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDifficulty;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.support.*;
-
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -32,10 +33,6 @@ import org.bukkit.entity.Entity;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
-
-import java.nio.file.Path;
-import java.time.Duration;
-import java.util.*;
 
 class GameplayFunctionContractTest {
     @TempDir Path directory;
@@ -221,7 +218,7 @@ class GameplayFunctionContractTest {
     void cloningAnEnabledMechanicAllowsIndependentRegistrationAndExecutionInAnotherRun()
             throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration());
-                var menus = new HeadlessMenus()) {
+                var _ = new HeadlessMenus()) {
             var original = bind(new SetStatusFunction(Map.of("status", "activated")), f);
             original.enable(f.run, original.getLocation());
             var copy = original.clone();
@@ -240,9 +237,9 @@ class GameplayFunctionContractTest {
             assertTrue(second.getFunctionListeners(SetStatusFunction.class).isEmpty());
         }
     }
+
     @Test
-    void finishingRecordsCompletionWithoutForcingDeparture()
-            throws Exception {
+    void finishingRecordsCompletionWithoutForcingDeparture() throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
             var state = new PlayerState();
             var session = f.session(state);

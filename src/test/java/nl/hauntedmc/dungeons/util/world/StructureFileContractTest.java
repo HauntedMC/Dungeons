@@ -6,21 +6,19 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import nl.hauntedmc.dungeons.generation.structure.StructurePiece;
 import nl.hauntedmc.dungeons.generation.structure.StructurePieceBlock;
 import nl.hauntedmc.dungeons.support.PaperBoundary;
-
 import org.bukkit.Bukkit;
 import org.bukkit.block.data.BlockData;
 import org.joml.Vector3i;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 
 class StructureFileContractTest {
     @TempDir Path directory;
@@ -42,7 +40,7 @@ class StructureFileContractTest {
 
     @Test
     void anEmptyCapturedStructureRemainsAValidEmptyStructureAfterReload() throws Exception {
-        try (var paper = new PaperBoundary()) {
+        try (var _ = new PaperBoundary()) {
             var file = directory.resolve("empty.schem").toFile();
             SchematicUtils.saveStructurePiece(file, new StructurePiece());
             assertEquals(0, SchematicUtils.loadStructurePiece(file).size());

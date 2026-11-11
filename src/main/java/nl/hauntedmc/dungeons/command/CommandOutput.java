@@ -1,21 +1,18 @@
 package nl.hauntedmc.dungeons.command;
 
-import net.kyori.adventure.text.Component;
-
-import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
-import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
-import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
-import nl.hauntedmc.dungeons.util.command.InputUtils;
-import nl.hauntedmc.dungeons.util.config.PluginConfigView;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
-import org.bukkit.Location;
-import org.bukkit.command.CommandSender;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import net.kyori.adventure.text.Component;
+import nl.hauntedmc.dungeons.config.PluginConfigView;
+import nl.hauntedmc.dungeons.localization.LangUtils;
+import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
+import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
+import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
+import nl.hauntedmc.dungeons.util.command.InputUtils;
+import org.bukkit.Location;
+import org.bukkit.command.CommandSender;
 
 /** Presentation and pagination shared by command handlers; no lifecycle or file mutations. */
 final class CommandOutput {

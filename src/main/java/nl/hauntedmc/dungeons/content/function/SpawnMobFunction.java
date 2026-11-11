@@ -1,24 +1,28 @@
 package nl.hauntedmc.dungeons.content.function;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
-import nl.hauntedmc.dungeons.content.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.generation.room.InstanceRoom;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ChatMenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuItem;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDifficulty;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.FunctionCategory;
-import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
+import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
+import nl.hauntedmc.dungeons.runtime.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
 import nl.hauntedmc.dungeons.util.entity.EntityUtils;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.math.MathUtils;
-
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -35,18 +39,11 @@ import org.bukkit.event.player.PlayerEvent;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-
 /**
  * Function that spawns one or more mobs at the configured location.
  *
  * <p>The spawned mob type and effective count can be scaled by dungeon difficulty, and branching
- * instances receive an origin-room tag so later systems can reason about where the mob came
- * from.</p>
+ * instances receive an origin-room tag so later systems can reason about where the mob came from.
  */
 @AutoRegister(id = "dungeons.function.spawn_mob")
 @SerializableAs("dungeons.function.spawn_mob")
@@ -60,9 +57,7 @@ public class SpawnMobFunction extends DungeonFunction {
     private int count;
     private List<BukkitRunnable> spawners;
 
-    /**
-     * Creates the function from persisted configuration.
-     */
+    /** Creates the function from persisted configuration. */
     public SpawnMobFunction(Map<String, Object> config) {
         super("Mob Spawner", config);
         this.setAllowChangingTargetType(false);
@@ -70,9 +65,7 @@ public class SpawnMobFunction extends DungeonFunction {
         this.spawners = new ArrayList<>();
     }
 
-    /**
-     * Creates a new function with default spawn settings.
-     */
+    /** Creates a new function with default spawn settings. */
     public SpawnMobFunction() {
         super("Mob Spawner");
         this.setAllowChangingTargetType(false);
@@ -91,18 +84,14 @@ public class SpawnMobFunction extends DungeonFunction {
         return clone;
     }
 
-    /**
-     * Refreshes the display name so the editor reflects the configured mob type.
-     */
+    /** Refreshes the display name so the editor reflects the configured mob type. */
     @Override
     public void initialize() {
         super.initialize();
         this.setDisplayName(this.mob + " Spawner");
     }
 
-    /**
-     * Cancels any delayed or repeating spawn tasks that are still pending.
-     */
+    /** Cancels any delayed or repeating spawn tasks that are still pending. */
     @Override
     public void onDisable() {
         for (BukkitRunnable spawner : this.spawners) {
@@ -114,9 +103,7 @@ public class SpawnMobFunction extends DungeonFunction {
         this.spawners.clear();
     }
 
-    /**
-     * Resolves the effective spawn configuration and schedules the actual mob spawns.
-     */
+    /** Resolves the effective spawn configuration and schedules the actual mob spawns. */
     @Override
     public void runFunction(TriggerFireEvent triggerEvent, List<DungeonPlayerSession> targets) {
         final PlayableInstance instance = this.instance.asPlayInstance();
@@ -178,9 +165,7 @@ public class SpawnMobFunction extends DungeonFunction {
                     new BukkitRunnable() {
                         private int spawned;
 
-                        /**
-                         * Performs run.
-                         */
+                        /** Performs run. */
                         public void run() {
                             if (this.spawned >= finalMaxCountMod) {
                                 this.cancel();
@@ -244,9 +229,7 @@ public class SpawnMobFunction extends DungeonFunction {
         }
     }
 
-    /**
-     * Builds menu button.
-     */
+    /** Builds menu button. */
     @Override
     public MenuButton buildMenuButton() {
         MenuButton functionButton = new MenuButton(Material.CREEPER_HEAD);
@@ -255,9 +238,7 @@ public class SpawnMobFunction extends DungeonFunction {
         return functionButton;
     }
 
-    /**
-     * Builds hotbar menu.
-     */
+    /** Builds hotbar menu. */
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(createMobNameItem());
@@ -268,86 +249,62 @@ public class SpawnMobFunction extends DungeonFunction {
         this.menu.addMenuItem(createMobDirectionItem());
     }
 
-    /**
-     * Returns the mob.
-     */
+    /** Returns the mob. */
     public String getMob() {
         return this.mob;
     }
 
-    /**
-     * Sets the mob.
-     */
+    /** Sets the mob. */
     public void setMob(String mob) {
         this.mob = mob;
     }
 
-    /**
-     * Returns the level string.
-     */
+    /** Returns the level string. */
     public String getLevelString() {
         return this.levelString;
     }
 
-    /**
-     * Sets the level string.
-     */
+    /** Sets the level string. */
     public void setLevelString(String levelString) {
         this.levelString = levelString;
     }
 
-    /**
-     * Returns the max count.
-     */
+    /** Returns the max count. */
     public int getMaxCount() {
         return this.maxCount;
     }
 
-    /**
-     * Sets the max count.
-     */
+    /** Sets the max count. */
     public void setMaxCount(int maxCount) {
         this.maxCount = maxCount;
     }
 
-    /**
-     * Returns the delay.
-     */
+    /** Returns the delay. */
     public int getDelay() {
         return this.delay;
     }
 
-    /**
-     * Sets the delay.
-     */
+    /** Sets the delay. */
     public void setDelay(int delay) {
         this.delay = delay;
     }
 
-    /**
-     * Returns the interval.
-     */
+    /** Returns the interval. */
     public int getInterval() {
         return this.interval;
     }
 
-    /**
-     * Sets the interval.
-     */
+    /** Sets the interval. */
     public void setInterval(int interval) {
         this.interval = interval;
     }
 
-    /**
-     * Returns the yaw.
-     */
+    /** Returns the yaw. */
     public double getYaw() {
         return this.yaw;
     }
 
-    /**
-     * Sets the yaw.
-     */
+    /** Sets the yaw. */
     public void setYaw(double yaw) {
         this.yaw = yaw;
     }
@@ -359,6 +316,7 @@ public class SpawnMobFunction extends DungeonFunction {
                 this.button = new MenuButton(Material.ZOMBIE_HEAD);
                 this.button.setDisplayName("&d&lMob Name");
             }
+
             @Override
             public void onSelect(Player player) {
                 LangUtils.sendMessage(player, "editor.function.spawn-mob.ask-mob");
@@ -367,6 +325,7 @@ public class SpawnMobFunction extends DungeonFunction {
                         "editor.function.spawn-mob.current-mob",
                         LangUtils.placeholder("mob", SpawnMobFunction.this.mob));
             }
+
             @Override
             public void onInput(Player player, String message) {
                 EntityType type = EntityType.fromName(message);
@@ -374,8 +333,7 @@ public class SpawnMobFunction extends DungeonFunction {
                     try {
                         type = EntityType.valueOf(message.toUpperCase(Locale.ROOT));
                     } catch (IllegalArgumentException exception) {
-                        LangUtils.sendMessage(
-                                player, "editor.function.spawn-mob.invalid-mob");
+                        LangUtils.sendMessage(player, "editor.function.spawn-mob.invalid-mob");
                         return;
                     }
                 }
@@ -385,8 +343,7 @@ public class SpawnMobFunction extends DungeonFunction {
                         player,
                         "editor.function.spawn-mob.mob-set",
                         LangUtils.placeholder("mob", SpawnMobFunction.this.mob));
-                SpawnMobFunction.this.setDisplayName(
-                        SpawnMobFunction.this.mob + " Spawner");
+                SpawnMobFunction.this.setDisplayName(SpawnMobFunction.this.mob + " Spawner");
             }
         };
     }
@@ -399,22 +356,22 @@ public class SpawnMobFunction extends DungeonFunction {
                 this.button.setDisplayName("&d&lAmount");
                 this.button.setAmount(SpawnMobFunction.this.maxCount);
             }
+
             @Override
             public void onSelect(Player player) {
                 LangUtils.sendMessage(player, "editor.function.spawn-mob.ask-count");
             }
+
             @Override
             public void onInput(Player player, String message) {
                 Optional<Integer> value = InputUtils.readIntegerInput(player, message);
-                SpawnMobFunction.this.maxCount =
-                        value.orElse(SpawnMobFunction.this.maxCount);
+                SpawnMobFunction.this.maxCount = value.orElse(SpawnMobFunction.this.maxCount);
                 if (value.isPresent()) {
                     LangUtils.sendMessage(
                             player,
                             "editor.function.spawn-mob.count-set",
                             LangUtils.placeholder(
-                                    "count",
-                                    String.valueOf(SpawnMobFunction.this.maxCount)));
+                                    "count", String.valueOf(SpawnMobFunction.this.maxCount)));
                 }
             }
         };
@@ -428,10 +385,12 @@ public class SpawnMobFunction extends DungeonFunction {
                 this.button.setDisplayName("&d&lSpawn Delay");
                 this.button.setAmount(SpawnMobFunction.this.delay);
             }
+
             @Override
             public void onSelect(Player player) {
                 LangUtils.sendMessage(player, "editor.function.spawn-mob.ask-delay");
             }
+
             @Override
             public void onInput(Player player, String message) {
                 Optional<Integer> value = InputUtils.readIntegerInput(player, message);
@@ -455,22 +414,22 @@ public class SpawnMobFunction extends DungeonFunction {
                 this.button.setDisplayName("&d&lSpawn Interval");
                 this.button.setAmount(SpawnMobFunction.this.interval);
             }
+
             @Override
             public void onSelect(Player player) {
                 LangUtils.sendMessage(player, "editor.function.spawn-mob.ask-interval");
             }
+
             @Override
             public void onInput(Player player, String message) {
                 Optional<Integer> value = InputUtils.readIntegerInput(player, message);
-                SpawnMobFunction.this.interval =
-                        value.orElse(SpawnMobFunction.this.interval);
+                SpawnMobFunction.this.interval = value.orElse(SpawnMobFunction.this.interval);
                 if (value.isPresent()) {
                     LangUtils.sendMessage(
                             player,
                             "editor.function.spawn-mob.interval-set",
                             LangUtils.placeholder(
-                                    "interval",
-                                    String.valueOf(SpawnMobFunction.this.interval)));
+                                    "interval", String.valueOf(SpawnMobFunction.this.interval)));
                 }
             }
         };
@@ -483,16 +442,15 @@ public class SpawnMobFunction extends DungeonFunction {
                 this.button = new MenuButton(Material.COMPASS);
                 this.button.setDisplayName("&d&lMob Direction");
             }
+
             @Override
             public void onSelect(PlayerEvent event) {
                 Player player = event.getPlayer();
-                SpawnMobFunction.this.yaw =
-                        MathUtils.round(player.getLocation().getYaw(), 0);
+                SpawnMobFunction.this.yaw = MathUtils.round(player.getLocation().getYaw(), 0);
                 LangUtils.sendMessage(
                         player,
                         "editor.function.spawn-mob.direction-set",
-                        LangUtils.placeholder(
-                                "yaw", String.valueOf(SpawnMobFunction.this.yaw)));
+                        LangUtils.placeholder("yaw", String.valueOf(SpawnMobFunction.this.yaw)));
             }
         };
     }

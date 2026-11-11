@@ -2,19 +2,16 @@ package nl.hauntedmc.dungeons.support;
 
 import static org.mockito.Mockito.*;
 
+import java.util.*;
+import java.util.concurrent.atomic.*;
+import java.util.function.Consumer;
 import net.kyori.adventure.text.Component;
-
 import nl.hauntedmc.dungeons.util.text.ComponentUtils;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.inventory.*;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.mockito.MockedConstruction;
-
-import java.util.*;
-import java.util.concurrent.atomic.*;
-import java.util.function.Consumer;
 
 /**
  * Inventory/network rendering boundary; real staff menu navigation and event handlers run
@@ -113,10 +110,7 @@ public final class StaffGuiBoundary implements AutoCloseable {
 
     public String label(int slot) {
         ItemStack item = contents.getOrDefault(top, Map.of()).get(slot);
-        return item == null
-                ? ""
-                : ComponentUtils.plainText(
-                        item.getItemMeta().displayName());
+        return item == null ? "" : ComponentUtils.plainText(item.getItemMeta().displayName());
     }
 
     @Override

@@ -1,15 +1,13 @@
 package nl.hauntedmc.dungeons.generation.room;
 
+import java.util.Objects;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.annotation.TypeKey;
 import nl.hauntedmc.dungeons.config.ConfigSerializableModel;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
-
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Objects;
 
 /**
  * Weighted whitelist/blacklist entry that references a branching room.
@@ -27,18 +25,14 @@ public class WhitelistEntry implements ConfigSerializableModel {
 
     private WhitelistEntry() {}
 
-    /**
-     * Creates an entry that points to the given room and inherits its current weight.
-     */
+    /** Creates an entry that points to the given room and inherits its current weight. */
     public WhitelistEntry(BranchingRoomDefinition room) {
         this.dungeon = room.getDungeon();
         this.roomName = room.getNamespace();
         this.weight = room.getWeight();
     }
 
-    /**
-     * Creates a detached copy of another whitelist entry.
-     */
+    /** Creates a detached copy of another whitelist entry. */
     public WhitelistEntry(WhitelistEntry entry) {
         this.dungeon = entry == null ? null : entry.dungeon;
         this.roomName = entry == null ? null : entry.roomName;
@@ -70,30 +64,22 @@ public class WhitelistEntry implements ConfigSerializableModel {
         return this.roomName != null;
     }
 
-    /**
-     * Updates the referenced room namespace.
-     */
+    /** Updates the referenced room namespace. */
     public void setRoom(BranchingRoomDefinition room) {
         this.roomName = room.getNamespace();
     }
 
-    /**
-     * Sets the icon material used to represent this entry in editors.
-     */
+    /** Sets the icon material used to represent this entry in editors. */
     public void setMaterial(Material mat) {
         this.materialName = mat.name();
     }
 
-    /**
-     * Sets selection weight for random room picks, clamped to non-negative values.
-     */
+    /** Sets selection weight for random room picks, clamped to non-negative values. */
     public void setWeight(double weight) {
         this.weight = Math.max(0.0, weight);
     }
 
-    /**
-     * Returns the configured icon material, if valid.
-     */
+    /** Returns the configured icon material, if valid. */
     @Nullable
     public Material getMaterial() {
         try {
@@ -104,45 +90,33 @@ public class WhitelistEntry implements ConfigSerializableModel {
         }
     }
 
-    /**
-     * Resolves the referenced room from the stored dungeon context.
-     */
+    /** Resolves the referenced room from the stored dungeon context. */
     @Nullable
     public BranchingRoomDefinition getRoom() {
         return this.dungeon == null ? null : this.dungeon.getRoom(this.roomName);
     }
 
-    /**
-     * Resolves the referenced room using an explicit dungeon context.
-     */
+    /** Resolves the referenced room using an explicit dungeon context. */
     public BranchingRoomDefinition getRoom(BranchingDungeon dungeon) {
         return dungeon.getRoom(this.roomName);
     }
 
-    /**
-     * Returns the dungeon used to resolve this entry.
-     */
+    /** Returns the dungeon used to resolve this entry. */
     public BranchingDungeon getDungeon() {
         return this.dungeon;
     }
 
-    /**
-     * Sets the dungeon used to resolve this entry.
-     */
+    /** Sets the dungeon used to resolve this entry. */
     public void setDungeon(BranchingDungeon dungeon) {
         this.dungeon = dungeon;
     }
 
-    /**
-     * Returns the referenced room namespace.
-     */
+    /** Returns the referenced room namespace. */
     public String getRoomName() {
         return this.roomName;
     }
 
-    /**
-     * Returns the random-selection weight.
-     */
+    /** Returns the random-selection weight. */
     public double getWeight() {
         return this.weight;
     }

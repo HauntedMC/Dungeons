@@ -1,52 +1,5 @@
 package nl.hauntedmc.dungeons.model.dungeon;
 
-import net.kyori.adventure.text.Component;
-
-import nl.hauntedmc.dungeons.config.ConfigurationFile;
-import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
-import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
-import nl.hauntedmc.dungeons.model.cooldown.CooldownPeriod;
-import nl.hauntedmc.dungeons.model.cooldown.CooldownSchedule;
-import nl.hauntedmc.dungeons.model.element.DungeonFunction;
-import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
-import nl.hauntedmc.dungeons.model.instance.EditableInstance;
-import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
-import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
-import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
-import nl.hauntedmc.dungeons.runtime.PluginEnvironment;
-import nl.hauntedmc.dungeons.runtime.dungeon.DungeonAccessKeyService;
-import nl.hauntedmc.dungeons.runtime.dungeon.DungeonIdentity;
-import nl.hauntedmc.dungeons.runtime.dungeon.DungeonPlayerDataStore;
-import nl.hauntedmc.dungeons.runtime.dungeon.InstanceWorldCleanup;
-import nl.hauntedmc.dungeons.runtime.instance.ActiveInstanceRegistry;
-import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
-import nl.hauntedmc.dungeons.runtime.team.TeamRequirementPolicy;
-import nl.hauntedmc.dungeons.util.command.CommandUtils;
-import nl.hauntedmc.dungeons.util.config.ConfigSyncUtils;
-import nl.hauntedmc.dungeons.util.config.DungeonConfigView;
-import nl.hauntedmc.dungeons.util.config.DungeonRuleConfiguration;
-import nl.hauntedmc.dungeons.util.config.PluginConfigView;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-import nl.hauntedmc.dungeons.util.text.ColorUtils;
-import nl.hauntedmc.dungeons.util.world.LocationUtils;
-
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.InvalidConfigurationException;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.PlayerInventory;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-import org.yaml.snakeyaml.error.YAMLException;
-
 import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
@@ -62,6 +15,50 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
+import net.kyori.adventure.text.Component;
+import nl.hauntedmc.dungeons.config.ConfigSyncUtils;
+import nl.hauntedmc.dungeons.config.ConfigurationFile;
+import nl.hauntedmc.dungeons.config.DungeonConfigView;
+import nl.hauntedmc.dungeons.config.DungeonRuleConfiguration;
+import nl.hauntedmc.dungeons.config.PluginConfigView;
+import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
+import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
+import nl.hauntedmc.dungeons.localization.LangUtils;
+import nl.hauntedmc.dungeons.model.cooldown.CooldownPeriod;
+import nl.hauntedmc.dungeons.model.cooldown.CooldownSchedule;
+import nl.hauntedmc.dungeons.model.element.DungeonFunction;
+import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
+import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
+import nl.hauntedmc.dungeons.runtime.PluginEnvironment;
+import nl.hauntedmc.dungeons.runtime.dungeon.DungeonAccessKeyService;
+import nl.hauntedmc.dungeons.runtime.dungeon.DungeonIdentity;
+import nl.hauntedmc.dungeons.runtime.dungeon.DungeonPlayerDataStore;
+import nl.hauntedmc.dungeons.runtime.dungeon.InstanceWorldCleanup;
+import nl.hauntedmc.dungeons.runtime.instance.ActiveInstanceRegistry;
+import nl.hauntedmc.dungeons.runtime.instance.DungeonInstance;
+import nl.hauntedmc.dungeons.runtime.instance.EditableInstance;
+import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
+import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
+import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
+import nl.hauntedmc.dungeons.runtime.team.TeamRequirementPolicy;
+import nl.hauntedmc.dungeons.util.command.CommandUtils;
+import nl.hauntedmc.dungeons.util.text.ColorUtils;
+import nl.hauntedmc.dungeons.util.world.LocationUtils;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.InvalidConfigurationException;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.yaml.snakeyaml.error.YAMLException;
 
 /**
  * Base model for a dungeon definition loaded from disk.
@@ -143,8 +140,11 @@ public abstract class DungeonDefinition {
                 this.config.save(configFile);
             }
         } catch (IOException exception) {
-            throw new DungeonLoadException(
-                    "Access of config.yml failed!", false, exception.getMessage());
+            DungeonLoadException failure =
+                    new DungeonLoadException(
+                            "Access of config.yml failed!", false, exception.getMessage());
+            failure.initCause(exception);
+            throw failure;
         } catch (InvalidConfigurationException
                 | IllegalArgumentException
                 | YAMLException exception) {
@@ -155,11 +155,13 @@ public abstract class DungeonDefinition {
             throw failure;
         }
 
-        this.dungeonId = DungeonIdentity.initialize(
-                this.plugin(), this.config, new File(folder, "config.yml"));
+        this.dungeonId =
+                DungeonIdentity.initialize(
+                        this.plugin(), this.config, new File(folder, "config.yml"));
         this.syncConfigWithDefaults();
         this.loadRuntimeSettingsFromConfig();
-        this.accessKeyService = new DungeonAccessKeyService(runtime, folder, this.dungeonId, () -> this.accessKeys);
+        this.accessKeyService =
+                new DungeonAccessKeyService(runtime, folder, this.dungeonId, () -> this.accessKeys);
         this.playerDataStore = new DungeonPlayerDataStore(this.plugin(), this.dungeonId);
 
         this.instances = new ArrayList<>();
@@ -182,8 +184,14 @@ public abstract class DungeonDefinition {
             return;
         }
 
-        if (!ConfigSyncUtils.syncMissingAndObsolete(defaultConfig, this.config,
-                Set.of("rules", "dungeon.id", "statistics.custom_metrics", "statistics.rankings"))) {
+        if (!ConfigSyncUtils.syncMissingAndObsolete(
+                defaultConfig,
+                this.config,
+                Set.of(
+                        "rules",
+                        "dungeon.id",
+                        "statistics.custom_metrics",
+                        "statistics.rankings"))) {
             return;
         }
 
@@ -317,7 +325,6 @@ public abstract class DungeonDefinition {
         this.cooldownOnLoseLives =
                 this.config.getBoolean("access.cooldown.on_lives_depleted", false);
         this.cooldownOnStart = this.config.getBoolean("access.cooldown.on_start", false);
-
     }
 
     protected List<Material> loadMaterialList(String path) {
@@ -562,9 +569,9 @@ public abstract class DungeonDefinition {
                     || this.instances.stream().anyMatch(i -> !i.isEditInstance())) {
                 Player player = Bukkit.getPlayer(playerId);
                 if (player != null)
-                    LangUtils.sendRaw(player,
-                            "Enable maintenance and let play worlds drain before"
-                                    + " editing.");
+                    LangUtils.sendRaw(
+                            player,
+                            "Enable maintenance and let play worlds drain before" + " editing.");
                 return CompletableFuture.completedFuture(false);
             }
         }
@@ -856,8 +863,11 @@ public abstract class DungeonDefinition {
             return false;
         }
 
-        var settlement = this.accessKeyService.prepareSettlement(reservedKey, false,
-                this.config.getBoolean("access.keys.consume_on_entry", true));
+        var settlement =
+                this.accessKeyService.prepareSettlement(
+                        reservedKey,
+                        false,
+                        this.config.getBoolean("access.keys.consume_on_entry", true));
         return playerSession.settleReservedAccessKey(this.worldName, settlement, false);
     }
 
@@ -1011,7 +1021,8 @@ public abstract class DungeonDefinition {
     }
 
     public boolean isEnabled() {
-        return this.enabled && this.runtime.database().ready()
+        return this.enabled
+                && this.runtime.database().ready()
                 && (this.runtime.staffOperations() == null
                         || !this.runtime.staffOperations().maintenance(this.worldName));
     }

@@ -1,11 +1,16 @@
 package nl.hauntedmc.dungeons.gui.framework.window;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 import nl.hauntedmc.dungeons.gui.framework.GuiService;
-import nl.hauntedmc.dungeons.gui.framework.actions.Action;
 import nl.hauntedmc.dungeons.gui.framework.buttons.Button;
 import nl.hauntedmc.dungeons.gui.framework.text.GuiTextUtils;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -20,17 +25,9 @@ import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map.Entry;
-import java.util.Objects;
-import java.util.Set;
-import java.util.function.Predicate;
-
-/**
- * Registered inventory window with per-player state and click/open/close callbacks.
- */
+/** Registered inventory window with per-player state and click/open/close callbacks. */
 public class GuiWindow implements Listener {
+    private final GuiService service;
     private final String namespace;
     private final int size;
     private final String display;
@@ -44,11 +41,12 @@ public class GuiWindow implements Listener {
     private final HashMap<Player, GuiInventory> inventories;
     private final Set<Player> closing = new HashSet<>();
     private final HashMap<Integer, Button> buttons;
-    private final HashMap<String, Action<InventoryOpenEvent>> openActions;
-    private final HashMap<String, Action<InventoryCloseEvent>> closeActions;
+    private final HashMap<String, Consumer<InventoryOpenEvent>> openActions;
+    private final HashMap<String, Consumer<InventoryCloseEvent>> closeActions;
 
     /** Creates and registers a new GUI window definition. */
-    public GuiWindow(String namespace, int size, String displayName) {
+    public GuiWindow(GuiService service, String namespace, int size, String displayName) {
+        this.service = Objects.requireNonNull(service);
         this.namespace = namespace;
         this.size = size;
         this.display = GuiTextUtils.fullColor(displayName);
@@ -56,15 +54,7 @@ public class GuiWindow implements Listener {
         this.buttons = new HashMap<>();
         this.openActions = new HashMap<>();
         this.closeActions = new HashMap<>();
-        Bukkit.getPluginManager().registerEvents(this, GuiService.plugin());
-        GuiWindow previousWindow = GuiWindowRegistry.getWindow(namespace);
-        if (previousWindow != null) {
-            previousWindow.unregister();
-        }
-
-        // Window namespaces are unique; replacing the old registration avoids duplicate listeners
-        // when menus are rebuilt at runtime.
-        GuiWindowRegistry.register(this);
+        Bukkit.getPluginManager().registerEvents(this, service.plugin());
     }
 
     /** Sets whether clicks inside this GUI should be cancelled by default. */
@@ -100,12 +90,12 @@ public class GuiWindow implements Listener {
     }
 
     /** Registers an inventory-open callback keyed by id. */
-    public final void addOpenAction(String id, Action<InventoryOpenEvent> action) {
+    public final void addOpenAction(String id, Consumer<InventoryOpenEvent> action) {
         this.openActions.put(id, action);
     }
 
     /** Registers an inventory-close callback keyed by id. */
-    public final void addCloseAction(String id, Action<InventoryCloseEvent> action) {
+    public final void addCloseAction(String id, Consumer<InventoryCloseEvent> action) {
         this.closeActions.put(id, action);
     }
 
@@ -151,7 +141,7 @@ public class GuiWindow implements Listener {
 
     /** Unregisters this window listener from Bukkit. */
     public final void unregister() {
-        GuiWindowRegistry.unregister(this);
+        this.service.unregister(this);
         HandlerList.unregisterAll(this);
         this.inventories.clear();
         this.closing.clear();
@@ -214,8 +204,7 @@ public class GuiWindow implements Listener {
         if (gui == null || event.getInventory() != gui.inventory()) return;
         if (!this.accessCheck.test(player)
                 || this.cancelClick
-                || gui.buttons().containsKey(event.getRawSlot()))
-            event.setCancelled(true);
+                || gui.buttons().containsKey(event.getRawSlot())) event.setCancelled(true);
     }
 
     /** Prevents drag operations that modify this window inventory. */
@@ -245,8 +234,8 @@ public class GuiWindow implements Listener {
                     event.setCancelled(true);
                     return;
                 }
-                for (Action<InventoryOpenEvent> action : this.openActions.values()) {
-                    action.run(event);
+                for (Consumer<InventoryOpenEvent> action : this.openActions.values()) {
+                    action.accept(event);
                 }
             }
         }
@@ -263,7 +252,8 @@ public class GuiWindow implements Listener {
             // Save callbacks may inspect the view until they finish. Reentrant opens receive a
             // fresh view so the old close cannot remove a newly opened inventory.
             if (this.accessCheck.test(player))
-                for (Action<InventoryCloseEvent> action : this.closeActions.values()) action.run(event);
+                for (Consumer<InventoryCloseEvent> action : this.closeActions.values())
+                    action.accept(event);
         } finally {
             this.inventories.remove(player, gui);
             this.closing.remove(player);

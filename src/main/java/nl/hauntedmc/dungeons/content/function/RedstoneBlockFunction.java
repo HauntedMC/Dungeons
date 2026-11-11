@@ -1,17 +1,19 @@
 package nl.hauntedmc.dungeons.content.function;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ChatMenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.FunctionCategory;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -20,13 +22,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
-/**
- * Function that toggles a redstone block state at its location.
- */
+/** Function that toggles a redstone block state at its location. */
 @AutoRegister(id = "dungeons.function.redstone_block")
 @SerializableAs("dungeons.function.redstone_block")
 public class RedstoneBlockFunction extends DungeonFunction {
@@ -37,27 +33,21 @@ public class RedstoneBlockFunction extends DungeonFunction {
     private BukkitTask pendingReset;
     private int status = 0;
 
-    /**
-     * Creates a new RedstoneBlockFunction instance.
-     */
+    /** Creates a new RedstoneBlockFunction instance. */
     public RedstoneBlockFunction(Map<String, Object> config) {
         super("Redstone Block", config);
         this.setAllowChangingTargetType(false);
         this.setCategory(FunctionCategory.LOCATION);
     }
 
-    /**
-     * Creates a new RedstoneBlockFunction instance.
-     */
+    /** Creates a new RedstoneBlockFunction instance. */
     public RedstoneBlockFunction() {
         super("Redstone Block");
         this.setAllowChangingTargetType(false);
         this.setCategory(FunctionCategory.LOCATION);
     }
 
-    /**
-     * Performs on disable.
-     */
+    /** Performs on disable. */
     @Override
     public void onDisable() {
         if (this.repeater != null && !this.repeater.isCancelled()) {
@@ -72,9 +62,7 @@ public class RedstoneBlockFunction extends DungeonFunction {
         this.status = 0;
     }
 
-    /**
-     * Performs run function.
-     */
+    /** Performs run function. */
     @Override
     public void runFunction(TriggerFireEvent triggerEvent, List<DungeonPlayerSession> targets) {
         final World world = this.instance.getInstanceWorld();
@@ -84,9 +72,7 @@ public class RedstoneBlockFunction extends DungeonFunction {
         final int effectiveRate = Math.max(1, this.rate);
         this.repeater =
                 new BukkitRunnable() {
-                    /**
-                     * Performs run.
-                     */
+                    /** Performs run. */
                     public void run() {
                         world.getBlockAt(RedstoneBlockFunction.this.location)
                                 .setType(Material.REDSTONE_BLOCK);
@@ -113,9 +99,7 @@ public class RedstoneBlockFunction extends DungeonFunction {
         this.repeater.runTaskTimer(RuntimeContext.plugin(), effectiveDelay, effectiveRate);
     }
 
-    /**
-     * Builds menu button.
-     */
+    /** Builds menu button. */
     @Override
     public MenuButton buildMenuButton() {
         MenuButton functionButton = new MenuButton(Material.REDSTONE_BLOCK);
@@ -125,16 +109,12 @@ public class RedstoneBlockFunction extends DungeonFunction {
         return functionButton;
     }
 
-    /**
-     * Builds hotbar menu.
-     */
+    /** Builds hotbar menu. */
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
                 new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.REPEATER);
@@ -142,17 +122,13 @@ public class RedstoneBlockFunction extends DungeonFunction {
                         this.button.setAmount(RedstoneBlockFunction.this.delay);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         LangUtils.sendMessage(player, "editor.function.redstone-block.ask-delay");
                     }
 
-                    /**
-                     * Performs on input.
-                     */
+                    /** Performs on input. */
                     @Override
                     public void onInput(Player player, String message) {
                         Optional<Integer> value = InputUtils.readIntegerInput(player, message);
@@ -170,9 +146,7 @@ public class RedstoneBlockFunction extends DungeonFunction {
                 });
         this.menu.addMenuItem(
                 new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.COMPARATOR);
@@ -180,17 +154,13 @@ public class RedstoneBlockFunction extends DungeonFunction {
                         this.button.setAmount(RedstoneBlockFunction.this.count);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         LangUtils.sendMessage(player, "editor.function.redstone-block.ask-count");
                     }
 
-                    /**
-                     * Performs on input.
-                     */
+                    /** Performs on input. */
                     @Override
                     public void onInput(Player player, String message) {
                         Optional<Integer> value = InputUtils.readIntegerInput(player, message);
@@ -208,9 +178,7 @@ public class RedstoneBlockFunction extends DungeonFunction {
                 });
         this.menu.addMenuItem(
                 new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.REDSTONE_TORCH);
@@ -218,17 +186,13 @@ public class RedstoneBlockFunction extends DungeonFunction {
                         this.button.setAmount(RedstoneBlockFunction.this.rate);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         LangUtils.sendMessage(player, "editor.function.redstone-block.ask-rate");
                     }
 
-                    /**
-                     * Performs on input.
-                     */
+                    /** Performs on input. */
                     @Override
                     public void onInput(Player player, String message) {
                         Optional<Integer> value = InputUtils.readIntegerInput(player, message);

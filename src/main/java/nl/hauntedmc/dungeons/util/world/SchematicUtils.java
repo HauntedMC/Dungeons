@@ -1,14 +1,5 @@
 package nl.hauntedmc.dungeons.util.world;
 
-import nl.hauntedmc.dungeons.generation.structure.StructurePiece;
-import nl.hauntedmc.dungeons.generation.structure.StructurePieceBlock;
-import nl.hauntedmc.dungeons.runtime.RuntimeContext;
-
-import org.apache.commons.io.FileUtils;
-import org.bukkit.Bukkit;
-import org.bukkit.block.data.BlockData;
-import org.joml.Vector3i;
-
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -27,6 +18,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterOutputStream;
+import nl.hauntedmc.dungeons.generation.structure.StructurePiece;
+import nl.hauntedmc.dungeons.generation.structure.StructurePieceBlock;
+import nl.hauntedmc.dungeons.runtime.RuntimeContext;
+import org.apache.commons.io.FileUtils;
+import org.bukkit.Bukkit;
+import org.bukkit.block.data.BlockData;
+import org.joml.Vector3i;
 
 /** Serialization helpers for compact structure-piece storage. */
 public final class SchematicUtils {

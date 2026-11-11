@@ -1,6 +1,13 @@
 package nl.hauntedmc.dungeons.bootstrap;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import nl.hauntedmc.dungeons.config.ConfigSyncUtils;
+import nl.hauntedmc.dungeons.config.PluginConfigView;
 import nl.hauntedmc.dungeons.gui.framework.GuiService;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.registry.ConditionRegistry;
 import nl.hauntedmc.dungeons.registry.FunctionRegistry;
@@ -15,20 +22,11 @@ import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueCoordinator;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry;
 import nl.hauntedmc.dungeons.runtime.staff.StaffOperations;
 import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
-import nl.hauntedmc.dungeons.util.config.ConfigSyncUtils;
-import nl.hauntedmc.dungeons.util.config.PluginConfigView;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 
 /**
  * Initializes the concrete runtime state that is required before the plugin can register Bukkit
@@ -37,16 +35,12 @@ import java.io.InputStreamReader;
 final class CoreBootstrap {
     private final DungeonsRuntime runtime;
 
-    /**
-     * Creates the bootstrap stage that owns core runtime initialization.
-     */
+    /** Creates the bootstrap stage that owns core runtime initialization. */
     CoreBootstrap(DungeonsRuntime runtime) {
         this.runtime = runtime;
     }
 
-    /**
-     * Loads config-backed state and ensures the plugin data layout exists on disk.
-     */
+    /** Loads config-backed state and ensures the plugin data layout exists on disk. */
     void initializeCoreState() {
         PlayerDataCheckpoint.requireStorage();
         this.initializePluginState();
@@ -54,15 +48,14 @@ final class CoreBootstrap {
         this.reloadRuntimeConfiguration();
     }
 
-    /**
-     * Creates the long-lived runtime services that other bootstrap stages depend on.
-     */
+    /** Creates the long-lived runtime services that other bootstrap stages depend on. */
     void initializeManagers() {
         DungeonsPlugin plugin = this.runtime.environment().plugin();
-        this.runtime.setStaffOperations(
-                new StaffOperations(this.runtime));
+        this.runtime.setStaffOperations(new StaffOperations(this.runtime));
         this.runtime.setPreparations(new PreparationRegistry());
-        this.runtime.setGuiService(new GuiService(plugin));
+        var guiService = new GuiService(plugin);
+        this.runtime.setGuiService(guiService);
+        this.runtime.resources().own(guiService);
         this.runtime.setPlayerSessions(new PlayerSessionRegistry(plugin));
 
         ActiveInstanceRegistry activeInstanceManager = new ActiveInstanceRegistry(plugin);
@@ -97,9 +90,7 @@ final class CoreBootstrap {
         this.runtime.setConditionRegistry(new ConditionRegistry(plugin));
     }
 
-    /**
-     * Creates the dungeon repository after all registry-backed types have been registered.
-     */
+    /** Creates the dungeon repository after all registry-backed types have been registered. */
     void initializeDungeonCatalog() {
         DungeonRepository dungeonRepository = new DungeonRepository(this.runtime);
         this.runtime.setDungeonCatalog(dungeonRepository);
@@ -120,9 +111,7 @@ final class CoreBootstrap {
         }
     }
 
-    /**
-     * Emits a concise startup summary once all bootstrap stages have completed.
-     */
+    /** Emits a concise startup summary once all bootstrap stages have completed. */
     void logStartupSummary() {
         this.runtime
                 .environment()
@@ -150,9 +139,7 @@ final class CoreBootstrap {
                         this.runtime.environment().version());
     }
 
-    /**
-     * Reloads config-backed runtime values without rebuilding the whole runtime graph.
-     */
+    /** Reloads config-backed runtime values without rebuilding the whole runtime graph. */
     void reloadRuntimeConfiguration() {
         DungeonsPlugin plugin = this.runtime.environment().plugin();
         this.syncPluginConfigWithDefaults(plugin);
@@ -161,9 +148,7 @@ final class CoreBootstrap {
         LangUtils.initialize();
     }
 
-    /**
-     * Initializes the initial plugin configuration state before any managers are created.
-     */
+    /** Initializes the initial plugin configuration state before any managers are created. */
     private void initializePluginState() {
         DungeonsPlugin plugin = this.runtime.environment().plugin();
         plugin.saveDefaultConfig();
@@ -171,9 +156,7 @@ final class CoreBootstrap {
         this.runtime.setLogPrefix("[Dungeons] ");
     }
 
-    /**
-     * Ensures the dungeon content folder exists; gameplay state belongs to the database.
-     */
+    /** Ensures the dungeon content folder exists; gameplay state belongs to the database. */
     private void ensureDataDirectories() {
         File dungeonFiles =
                 new File(this.runtime.environment().plugin().getDataFolder(), "dungeons");
@@ -181,9 +164,7 @@ final class CoreBootstrap {
         this.createDirectory(dungeonFiles);
     }
 
-    /**
-     * Creates a directory when it does not already exist and logs failures.
-     */
+    /** Creates a directory when it does not already exist and logs failures. */
     private void createDirectory(File directory) {
         if (directory.exists()) {
             return;
@@ -199,9 +180,7 @@ final class CoreBootstrap {
         }
     }
 
-    /**
-     * Synchronizes the live plugin config with the bundled default template.
-     */
+    /** Synchronizes the live plugin config with the bundled default template. */
     private void syncPluginConfigWithDefaults(DungeonsPlugin plugin) {
         YamlConfiguration template;
         try (InputStream resource = plugin.getResource("config.yml")) {
@@ -230,7 +209,7 @@ final class CoreBootstrap {
                     .logger()
                     .warn(
                             "Skipping plugin config sync because the bundled config template is"
-                                + " empty.");
+                                    + " empty.");
             return;
         }
 
@@ -242,9 +221,7 @@ final class CoreBootstrap {
         plugin.saveConfig();
     }
 
-    /**
-     * Loads config-backed tool materials into the runtime cache.
-     */
+    /** Loads config-backed tool materials into the runtime cache. */
     private void loadConfiguredMaterials() {
         FileConfiguration config = this.runtime.config();
         this.runtime.setFunctionBuilderMaterial(
@@ -259,9 +236,7 @@ final class CoreBootstrap {
                         Material.GOLDEN_AXE));
     }
 
-    /**
-     * Resolves a configured material name and falls back to the supplied default when invalid.
-     */
+    /** Resolves a configured material name and falls back to the supplied default when invalid. */
     private Material readConfiguredMaterial(String configured, String path, Material fallback) {
         String normalized = configured == null ? "" : configured.trim();
         Material material = Material.matchMaterial(normalized);

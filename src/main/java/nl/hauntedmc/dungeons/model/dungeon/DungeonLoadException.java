@@ -1,11 +1,10 @@
 package nl.hauntedmc.dungeons.model.dungeon;
 
-import nl.hauntedmc.dungeons.runtime.RuntimeContext;
-
 import java.io.File;
 import java.io.Serial;
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
 
 /** Signals that a dungeon could not be loaded from disk into the runtime catalogue. */
 public class DungeonLoadException extends Exception {
@@ -14,9 +13,7 @@ public class DungeonLoadException extends Exception {
     private final ArrayList<String> info;
     private final boolean trace;
 
-    /**
-     * Creates a load exception with optional detail lines and stack-trace preference.
-     */
+    /** Creates a load exception with optional detail lines and stack-trace preference. */
     public DungeonLoadException(String message, boolean printStackTrace, String... info) {
         super(message);
         this.trace = printStackTrace;
@@ -27,34 +24,26 @@ public class DungeonLoadException extends Exception {
         }
     }
 
-    /**
-     * Adds an extra human-readable detail line to this exception.
-     */
+    /** Adds an extra human-readable detail line to this exception. */
     public void addMessage(String message) {
         this.info.add(message);
     }
 
-    /**
-     * Logs this load failure against one dungeon folder.
-     */
-    public void printError(File folder) {
-        RuntimeContext.logger()
-                .error("The dungeon '{}' was not loaded: {}", folder.getName(), this.getMessage());
+    /** Logs this load failure against one dungeon folder. */
+    public void printError(Logger logger, File folder) {
+        logger.error("The dungeon '{}' was not loaded: {}", folder.getName(), this.getMessage());
 
         for (String line : this.info) {
-            RuntimeContext.logger().error("  - {}", line);
+            logger.error("  - {}", line);
         }
 
         if (this.trace) {
-            RuntimeContext.logger()
-                    .error("Dungeon initialization failed for '{}'.", folder.getName(), this);
+            logger.error("Dungeon initialization failed for '{}'.", folder.getName(), this);
         }
     }
 
-    /**
-     * Returns additional detail lines attached to this failure.
-     */
+    /** Returns additional detail lines attached to this failure. */
     public List<String> getInfo() {
-        return this.info;
+        return List.copyOf(this.info);
     }
 }

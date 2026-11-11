@@ -1,20 +1,19 @@
 package nl.hauntedmc.dungeons.gui.menu;
+
+import java.lang.reflect.InvocationTargetException;
+import java.util.Map.Entry;
 import nl.hauntedmc.dungeons.gui.framework.buttons.Button;
 import nl.hauntedmc.dungeons.gui.framework.window.GuiInventory;
 import nl.hauntedmc.dungeons.gui.framework.window.GuiWindow;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
 import nl.hauntedmc.dungeons.model.element.TriggerCondition;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.text.ColorUtils;
 import nl.hauntedmc.dungeons.util.text.ComponentUtils;
-
 import org.bukkit.entity.Player;
-
-import java.lang.reflect.InvocationTargetException;
-import java.util.Map.Entry;
 
 /** Builds the conditions editor workflow. */
 final class ConditionEditorMenus {
@@ -29,7 +28,8 @@ final class ConditionEditorMenus {
 
     /** Builds and registers the trigger-condition browser GUI. */
     private static void initializeConditionsBrowser() {
-        GuiWindow gui = EditorMenuSupport.editorWindow("conditionsmenu", 54, "&8Select a Condition");
+        GuiWindow gui =
+                EditorMenuSupport.editorWindow("conditionsmenu", 54, "&8Select a Condition");
         int i = 0;
 
         for (Entry<String, MenuButton> pair :
@@ -69,7 +69,7 @@ final class ConditionEditorMenus {
                                     .getSLF4JLogger()
                                     .error(
                                             "Failed to create condition '{}' from the condition"
-                                                + " browser for player '{}'.",
+                                                    + " browser for player '{}'.",
                                             conditionName,
                                             player.getName(),
                                             exception);
@@ -106,7 +106,8 @@ final class ConditionEditorMenus {
                             Button button = new Button("condition_" + slot, menuButton.getItem());
                             button.addLore("");
                             button.addLore(ColorUtils.colorize("&6Options:"));
-                            EditorMenuSupport.addPersistedFieldLore(button, condition, false, "condition");
+                            EditorMenuSupport.addPersistedFieldLore(
+                                    button, condition, false, "condition");
 
                             button.addAction(
                                     "click",
@@ -126,7 +127,8 @@ final class ConditionEditorMenus {
 
     /** Builds and registers the trigger-condition removal GUI. */
     private static void initializeConditionsRemover() {
-        GuiWindow gui = EditorMenuSupport.editorWindow("removecondition", 54, "&8Remove a Condition");
+        GuiWindow gui =
+                EditorMenuSupport.editorWindow("removecondition", 54, "&8Remove a Condition");
         gui.addOpenAction(
                 "populate", event -> reloadConditionsRemovalGui(gui, (Player) event.getPlayer()));
     }
@@ -156,7 +158,9 @@ final class ConditionEditorMenus {
                             LangUtils.sendMessage(
                                     clickPlayer,
                                     "menus.remove.condition-from-trigger",
-                                    LangUtils.placeholder("name", ComponentUtils.component(menuButton.getDisplayName())));
+                                    LangUtils.placeholder(
+                                            "name",
+                                            ComponentUtils.component(menuButton.getDisplayName())));
                             reloadConditionsRemovalGui(gui, clickPlayer);
                         });
                 guiInv.setButton(slot, button);

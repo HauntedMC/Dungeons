@@ -2,7 +2,6 @@ package nl.hauntedmc.dungeons.runtime.staff;
 
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
-
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
@@ -60,8 +59,7 @@ public final class StaffObserverListener implements Listener {
         var session = runtime.playerSessions().get(event.getPlayer());
         if (session != null
                 && session.isObserving()
-                && event.getNewGameMode() != GameMode.SPECTATOR)
-            event.setCancelled(true);
+                && event.getNewGameMode() != GameMode.SPECTATOR) event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

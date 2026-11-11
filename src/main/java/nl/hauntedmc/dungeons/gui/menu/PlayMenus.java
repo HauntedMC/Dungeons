@@ -1,27 +1,23 @@
 package nl.hauntedmc.dungeons.gui.menu;
 
+import java.util.ArrayList;
+import java.util.List;
 import nl.hauntedmc.dungeons.content.function.RevivePlayerFunction;
 import nl.hauntedmc.dungeons.gui.framework.buttons.Button;
 import nl.hauntedmc.dungeons.gui.framework.window.GuiInventory;
 import nl.hauntedmc.dungeons.gui.framework.window.GuiWindow;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDifficulty;
-import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
+import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
 
-import java.util.ArrayList;
-import java.util.List;
-
-/**
- * Inventory menu builders used during live dungeon play.
- */
+/** Inventory menu builders used during live dungeon play. */
 public class PlayMenus {
 
     /** Builds and registers the dungeon difficulty selector GUI. */
@@ -35,10 +31,11 @@ public class PlayMenus {
             }
 
             GuiWindow gui =
-                    new GuiWindow(
-                            "difficulty_" + dungeon.getWorldName(),
-                            guiSize,
-                            LangUtils.getMessage("menus.difficulty-select.title", false));
+                    RuntimeContext.guiService()
+                            .createWindow(
+                                    "difficulty_" + dungeon.getWorldName(),
+                                    guiSize,
+                                    LangUtils.getMessage("menus.difficulty-select.title", false));
             if (!difficulties.isEmpty()) {
                 for (int i = 0; i < difficulties.size(); i++) {
                     DungeonDifficulty difficulty = difficulties.get(i);
@@ -65,7 +62,9 @@ public class PlayMenus {
 
     /** Builds and registers the player revival confirmation GUI. */
     public static void initializeRevivalMenu() {
-        GuiWindow gui = new GuiWindow("revivalmenu", 27, "&8Choose who to revive");
+        GuiWindow gui =
+                RuntimeContext.guiService()
+                        .createWindow("revivalmenu", 27, "&8Choose who to revive");
         gui.addOpenAction(
                 "populate",
                 event -> {

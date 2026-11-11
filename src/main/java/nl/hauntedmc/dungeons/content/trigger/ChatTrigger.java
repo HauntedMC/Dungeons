@@ -1,21 +1,23 @@
 package nl.hauntedmc.dungeons.content.trigger;
 
 import io.papermc.paper.event.player.AsyncChatEvent;
-
+import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
-import nl.hauntedmc.dungeons.content.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.generation.room.InstanceRoom;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ChatMenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
 import nl.hauntedmc.dungeons.model.element.TriggerCategory;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
+import nl.hauntedmc.dungeons.runtime.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.text.ComponentUtils;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -23,11 +25,6 @@ import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-
-import java.util.Locale;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Trigger that reacts to matching chat messages from players in the instance.
@@ -42,27 +39,21 @@ public class ChatTrigger extends DungeonTrigger {
     @PersistedField private boolean caseSensitive = false;
     @PersistedField private boolean exact = true;
 
-    /**
-     * Creates a new ChatTrigger instance.
-     */
+    /** Creates a new ChatTrigger instance. */
     public ChatTrigger(Map<String, Object> config) {
         super("Chat Message", config);
         this.setCategory(TriggerCategory.PLAYER);
         this.setHasTarget(true);
     }
 
-    /**
-     * Creates a new ChatTrigger instance.
-     */
+    /** Creates a new ChatTrigger instance. */
     public ChatTrigger() {
         super("Chat Message");
         this.setCategory(TriggerCategory.PLAYER);
         this.setHasTarget(true);
     }
 
-    /**
-     * Builds menu button.
-     */
+    /** Builds menu button. */
     @Override
     public MenuButton buildMenuButton() {
         MenuButton functionButton = new MenuButton(Material.NAME_TAG);
@@ -73,9 +64,7 @@ public class ChatTrigger extends DungeonTrigger {
         return functionButton;
     }
 
-    /**
-     * Performs on chat.
-     */
+    /** Performs on chat. */
     @EventHandler(priority = EventPriority.LOW)
     public void onChat(AsyncChatEvent event) {
         String message = ComponentUtils.plainText(event.originalMessage());
@@ -88,9 +77,7 @@ public class ChatTrigger extends DungeonTrigger {
         }
     }
 
-    /**
-     * Performs matches room.
-     */
+    /** Performs matches room. */
     private boolean matchesRoom(Location origin) {
         BranchingInstance instance = this.instance.as(BranchingInstance.class);
         if (instance == null) {
@@ -104,9 +91,7 @@ public class ChatTrigger extends DungeonTrigger {
         }
     }
 
-    /**
-     * Performs matches message.
-     */
+    /** Performs matches message. */
     private boolean matchesMessage(String message) {
         if (this.exact) {
             if (this.caseSensitive) {
@@ -120,13 +105,10 @@ public class ChatTrigger extends DungeonTrigger {
             return message.contains(this.text);
         }
 
-        return message.toLowerCase(Locale.ROOT)
-                .contains(this.text.toLowerCase(Locale.ROOT));
+        return message.toLowerCase(Locale.ROOT).contains(this.text.toLowerCase(Locale.ROOT));
     }
 
-    /**
-     * Performs handle trigger chat.
-     */
+    /** Performs handle trigger chat. */
     private boolean handleTriggerChat(UUID playerId, boolean asynchronous) {
         if (!asynchronous) {
             return this.handleTriggerChatSync(playerId);
@@ -154,9 +136,7 @@ public class ChatTrigger extends DungeonTrigger {
         }
     }
 
-    /**
-     * Performs handle trigger chat sync.
-     */
+    /** Performs handle trigger chat sync. */
     private boolean handleTriggerChatSync(UUID playerId) {
         DungeonPlayerSession session = RuntimeContext.playerSessions().get(playerId);
         if (session == null || session.getInstance() != this.instance) {
@@ -174,16 +154,12 @@ public class ChatTrigger extends DungeonTrigger {
         return true;
     }
 
-    /**
-     * Builds hotbar menu.
-     */
+    /** Builds hotbar menu. */
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
                 new ToggleMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.REDSTONE_TORCH);
@@ -191,9 +167,7 @@ public class ChatTrigger extends DungeonTrigger {
                         this.button.setEnchanted(ChatTrigger.this.allowRetrigger);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         if (!ChatTrigger.this.allowRetrigger) {
@@ -207,18 +181,14 @@ public class ChatTrigger extends DungeonTrigger {
                 });
         this.menu.addMenuItem(
                 new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.PAPER);
                         this.button.setDisplayName("&d&lEdit Required Text");
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         LangUtils.sendMessage(player, "editor.trigger.chat.ask-text");
@@ -228,9 +198,7 @@ public class ChatTrigger extends DungeonTrigger {
                                 LangUtils.placeholder("text", ChatTrigger.this.text));
                     }
 
-                    /**
-                     * Performs on input.
-                     */
+                    /** Performs on input. */
                     @Override
                     public void onInput(Player player, String message) {
                         ChatTrigger.this.text = message;
@@ -242,9 +210,7 @@ public class ChatTrigger extends DungeonTrigger {
                 });
         this.menu.addMenuItem(
                 new ToggleMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.NAME_TAG);
@@ -252,9 +218,7 @@ public class ChatTrigger extends DungeonTrigger {
                         this.button.setEnchanted(ChatTrigger.this.exact);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         if (!ChatTrigger.this.exact) {
@@ -268,9 +232,7 @@ public class ChatTrigger extends DungeonTrigger {
                 });
         this.menu.addMenuItem(
                 new ToggleMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.KNOWLEDGE_BOOK);
@@ -278,9 +240,7 @@ public class ChatTrigger extends DungeonTrigger {
                         this.button.setEnchanted(ChatTrigger.this.caseSensitive);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         if (!ChatTrigger.this.caseSensitive) {

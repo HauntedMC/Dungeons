@@ -1,8 +1,5 @@
 package nl.hauntedmc.dungeons.config;
 
-import org.bukkit.Bukkit;
-import org.bukkit.plugin.Plugin;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -16,6 +13,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.ReentrantLock;
+import org.bukkit.Bukkit;
+import org.bukkit.plugin.Plugin;
 
 /** Shared FIFO disk lanes. No Bukkit configuration or mutable model is accessed by a worker. */
 final class ConfigurationIoQueue {

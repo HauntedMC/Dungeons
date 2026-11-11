@@ -13,26 +13,28 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import java.io.File;
+import java.nio.file.*;
+import java.util.*;
+import java.util.ArrayList;
 import net.kyori.adventure.text.Component;
-
 import nl.hauntedmc.dungeons.bootstrap.LifecycleCoordinator;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
 import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
-import nl.hauntedmc.dungeons.content.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.generation.room.InstanceRoom;
 import nl.hauntedmc.dungeons.gui.framework.GuiService;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
-import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.registry.FunctionRegistry;
 import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
+import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
+import nl.hauntedmc.dungeons.runtime.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.runtime.queue.*;
 import nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard;
 import nl.hauntedmc.dungeons.runtime.staff.StaffOperations;
 import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
 import nl.hauntedmc.dungeons.support.*;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.text.ComponentUtils;
-
 import org.apache.commons.io.FileUtils;
 import org.bukkit.*;
 import org.bukkit.command.Command;
@@ -41,21 +43,19 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.AdditionalMatchers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 
-import java.io.File;
-import java.nio.file.*;
-import java.util.*;
-import java.util.ArrayList;
-
 class CommandContractTest {
     @TempDir Path directory;
 
     @Test
-    void listLabelsKeepTheirComponentsAndCommandOutputHasNoEscapedFormattingCodes() throws Exception {
+    void listLabelsKeepTheirComponentsAndCommandOutputHasNoEscapedFormattingCodes()
+            throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
             var command = new CommandFixture(f);
             command.permissions.add("dungeons.play");
@@ -70,7 +70,9 @@ class CommandContractTest {
                 assertFalse(plain.contains("\\u00a7"), plain);
                 assertFalse(plain.contains("<HauntedMC:"), plain);
             }
-        } finally { LangUtils.clear(); }
+        } finally {
+            LangUtils.clear();
+        }
     }
 
     @Test
@@ -81,10 +83,18 @@ class CommandContractTest {
             var staff = mock(StaffCommandHandler.class);
             command.root.setStaffCommandHandler(staff);
             command.execute("edit", "open", "crypt");
-            verify(staff).handleCommand(eq(command.caller.player),
-                    AdditionalMatchers.aryEq(new String[] {"edit", "crypt", "editor-command"}));
-            assertEquals(List.of("crypt"), command.root.onTabComplete(command.caller.player,
-                    mock(Command.class), "dungeon", new String[] {"edit", "open", ""}));
+            verify(staff)
+                    .handleCommand(
+                            eq(command.caller.player),
+                            AdditionalMatchers.aryEq(
+                                    new String[] {"edit", "crypt", "editor-command"}));
+            assertEquals(
+                    List.of("crypt"),
+                    command.root.onTabComplete(
+                            command.caller.player,
+                            mock(Command.class),
+                            "dungeon",
+                            new String[] {"edit", "open", ""}));
         }
     }
 
@@ -105,17 +115,25 @@ class CommandContractTest {
             when(dungeon.getDungeonId()).thenReturn(second);
             command.execute("map", "keys", "clear", "crypt", "Retire unused keys");
             var revisions = ArgumentCaptor.forClass(String.class);
-            verify(operations, Mockito.times(2)).confirm(eq(command.caller.player), eq("key-clear"), eq("crypt"),
-                    revisions.capture(), anyString(), ArgumentMatchers.isNull());
+            verify(operations, Mockito.times(2))
+                    .confirm(
+                            eq(command.caller.player),
+                            eq("key-clear"),
+                            eq("crypt"),
+                            revisions.capture(),
+                            anyString(),
+                            ArgumentMatchers.isNull());
             assertTrue(revisions.getAllValues().getFirst().contains(first.toString()));
             assertTrue(revisions.getAllValues().getLast().contains(second.toString()));
-            Assertions.assertNotEquals(revisions.getAllValues().getFirst(), revisions.getAllValues().getLast());
+            Assertions.assertNotEquals(
+                    revisions.getAllValues().getFirst(), revisions.getAllValues().getLast());
             verify(operations, Mockito.times(2)).requireContentWritable("crypt");
         }
     }
 
     @Test
-    void canonicalUuidTargetsRetainScopedAuthorizationAndDeniedCompletionDoesNotFallBack() throws Exception {
+    void canonicalUuidTargetsRetainScopedAuthorizationAndDeniedCompletionDoesNotFallBack()
+            throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
             var command = new CommandFixture(f);
             String id = f.dungeon.getDungeonId().toString();
@@ -124,10 +142,20 @@ class CommandContractTest {
             command.execute("map", "disable", id, "Scoped maintenance");
             assertFalse(f.dungeon.isEnabled());
             command.execute("help", "map", "settings", "crypt");
-            verify(command.caller.player, Mockito.atLeastOnce()).sendMessage(ArgumentMatchers.argThat((Component message) -> ComponentUtils.plainText(message).contains("/dungeon map settings crypt")));
+            verify(command.caller.player, Mockito.atLeastOnce())
+                    .sendMessage(
+                            ArgumentMatchers.argThat(
+                                    (Component message) ->
+                                            ComponentUtils.plainText(message)
+                                                    .contains("/dungeon map settings crypt")));
             command.permissions.clear();
-            assertEquals(List.of(), command.root.onTabComplete(command.caller.player,
-                    mock(Command.class), "dungeon", new String[] {""}));
+            assertEquals(
+                    List.of(),
+                    command.root.onTabComplete(
+                            command.caller.player,
+                            mock(Command.class),
+                            "dungeon",
+                            new String[] {""}));
         }
     }
 
@@ -245,65 +273,61 @@ class CommandContractTest {
         }
     }
 
-    @Test
-    void successfulImportCopiesAnUnloadedWorldBeforeLoadingAndPersistsItsDimensionAndSpawn()
-            throws Exception {
-        for (boolean modernOnly : new boolean[] {true}) {
-            try (var f = new RunFixture(directory, new YamlConfiguration())) {
-                var command = new CommandFixture(f);
-                command.permissions.add("dungeons.staff.edit");
-                var unsafe = mock(UnsafeValues.class);
-                when(unsafe.getMainLevelName()).thenReturn("world");
-                f.paper.bukkit.when(Bukkit::getUnsafe).thenReturn(unsafe);
-                var source = Files.createDirectories(directory.resolve("imported"));
-                Files.writeString(source.resolve("level.dat"), "world contents");
-                if (modernOnly) FileUtils.deleteDirectory(source.toFile());
-                var world = mock(World.class);
-                when(world.getName()).thenReturn("imported");
-                var migrated =
-                        Files.createDirectories(
-                                directory.resolve("world/dimensions/minecraft/imported"));
-                Files.writeString(migrated.resolve("level.dat"), "world contents");
-                when(world.getWorldFolder()).thenReturn(migrated.toFile());
-                when(world.getEnvironment()).thenReturn(World.Environment.NETHER);
-                var spawn = new Location(world, 4, 70, 6, 30, 10);
-                when(world.getSpawnLocation()).thenReturn(spawn);
-                f.paper
-                        .bukkit
-                        .when(() -> Bukkit.createWorld(any(WorldCreator.class)))
-                        .thenReturn(world);
-                f.paper.bukkit.when(() -> Bukkit.unloadWorld(world, false)).thenReturn(true);
-                var imported = new ArrayList<DungeonDefinition>();
-                when(command.catalog.loadDungeon(any(File.class)))
-                        .thenAnswer(
-                                c -> {
-                                    var dungeon =
-                                            new StaticDungeon(
-                                                    f.paper.runtime,
-                                                    c.getArgument(0),
-                                                    new YamlConfiguration());
-                                    imported.add(dungeon);
-                                    return dungeon;
-                                });
-                command.execute("map", "import", "imported", "imported", "--environment", "nether");
-                assertEquals(1, f.scheduler.asynchronous.size());
-                assertTrue(imported.isEmpty());
-                f.scheduler.asynchronous.getFirst().run();
-                var target = directory.resolve("dungeons/imported");
-                assertEquals("world contents", Files.readString(target.resolve("level.dat")));
-                assertTrue(imported.isEmpty());
-                f.scheduler.readyImmediate.remove().run();
-                assertEquals(1, imported.size());
-                var loaded = imported.getFirst();
-                assertEquals("NETHER", loaded.getConfig().getString("dungeon.environment"));
-                assertEquals(4, loaded.getLobbySpawn().getX());
-                assertEquals(70, loaded.getLobbySpawn().getY());
-                assertEquals(30, loaded.getLobbySpawn().getYaw());
-                if (!modernOnly)
-                    assertEquals("world contents", Files.readString(source.resolve("level.dat")));
-                assertTrue(Files.isRegularFile(target.resolve("config.yml")));
-                FileUtils.deleteDirectory(target.toFile());
-            }
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void successfulImportCopiesAnUnloadedWorldBeforeLoadingAndPersistsItsDimensionAndSpawn(
+            boolean modernOnly) throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var command = new CommandFixture(f);
+            command.permissions.add("dungeons.staff.edit");
+            var source = Files.createDirectories(directory.resolve("imported"));
+            Files.writeString(source.resolve("level.dat"), "world contents");
+            if (modernOnly) FileUtils.deleteDirectory(source.toFile());
+            var world = mock(World.class);
+            when(world.getName()).thenReturn("imported");
+            var migrated =
+                    Files.createDirectories(
+                            directory.resolve("world/dimensions/minecraft/imported"));
+            Files.writeString(migrated.resolve("level.dat"), "world contents");
+            when(world.getWorldFolder()).thenReturn(migrated.toFile());
+            when(world.getEnvironment()).thenReturn(World.Environment.NETHER);
+            var spawn = new Location(world, 4, 70, 6, 30, 10);
+            when(world.getSpawnLocation()).thenReturn(spawn);
+            f.paper
+                    .bukkit
+                    .when(() -> Bukkit.createWorld(any(WorldCreator.class)))
+                    .thenReturn(world);
+            f.paper.bukkit.when(() -> Bukkit.unloadWorld(world, false)).thenReturn(true);
+            var imported = new ArrayList<DungeonDefinition>();
+            when(command.catalog.loadDungeon(any(File.class)))
+                    .thenAnswer(
+                            c -> {
+                                var dungeon =
+                                        new StaticDungeon(
+                                                f.paper.runtime,
+                                                c.getArgument(0),
+                                                new YamlConfiguration());
+                                imported.add(dungeon);
+                                return dungeon;
+                            });
+            command.execute("map", "import", "imported", "imported", "--environment", "nether");
+            assertEquals(1, f.scheduler.asynchronous.size());
+            assertTrue(imported.isEmpty());
+            f.scheduler.asynchronous.getFirst().run();
+            var target = directory.resolve("dungeons/imported");
+            assertEquals("world contents", Files.readString(target.resolve("level.dat")));
+            assertTrue(imported.isEmpty());
+            f.scheduler.readyImmediate.remove().run();
+            assertEquals(1, imported.size());
+            var loaded = imported.getFirst();
+            assertEquals("NETHER", loaded.getConfig().getString("dungeon.environment"));
+            assertEquals(4, loaded.getLobbySpawn().getX());
+            assertEquals(70, loaded.getLobbySpawn().getY());
+            assertEquals(30, loaded.getLobbySpawn().getYaw());
+            if (!modernOnly)
+                assertEquals("world contents", Files.readString(source.resolve("level.dat")));
+            assertTrue(Files.isRegularFile(target.resolve("config.yml")));
+            FileUtils.deleteDirectory(target.toFile());
         }
     }
 
@@ -317,23 +341,31 @@ class CommandContractTest {
             var world = mock(World.class);
             when(world.getWorldFolder()).thenReturn(source.toFile());
             when(world.getSpawnLocation()).thenReturn(new Location(world, 2, 72, 9));
-            f.paper.bukkit.when(() -> Bukkit.createWorld(any(WorldCreator.class))).thenReturn(world);
+            f.paper
+                    .bukkit
+                    .when(() -> Bukkit.createWorld(any(WorldCreator.class)))
+                    .thenReturn(world);
             f.paper.bukkit.when(() -> Bukkit.unloadWorld(world, true)).thenReturn(true);
             var created = new ArrayList<DungeonDefinition>();
             when(command.catalog.loadDungeon(any(File.class), eq("static"), eq("")))
-                    .thenAnswer(call -> {
-                        var dungeon = new StaticDungeon(f.paper.runtime, call.getArgument(0),
-                                new YamlConfiguration());
-                        created.add(dungeon);
-                        return dungeon;
-                    });
+                    .thenAnswer(
+                            call -> {
+                                var dungeon =
+                                        new StaticDungeon(
+                                                f.paper.runtime,
+                                                call.getArgument(0),
+                                                new YamlConfiguration());
+                                created.add(dungeon);
+                                return dungeon;
+                            });
 
             command.execute("map", "create", "created", "static");
             assertTrue(created.isEmpty());
             assertTrue(Files.exists(source));
             assertEquals(1, f.scheduler.asynchronous.size());
             f.scheduler.asynchronous.getFirst().run();
-            assertEquals("generated world",
+            assertEquals(
+                    "generated world",
                     Files.readString(directory.resolve("dungeons/created/level.dat")));
             assertFalse(Files.exists(source));
             assertTrue(created.isEmpty());
@@ -349,9 +381,6 @@ class CommandContractTest {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
             var command = new CommandFixture(f);
             command.permissions.add("dungeons.staff.edit");
-            var unsafe = mock(UnsafeValues.class);
-            when(unsafe.getMainLevelName()).thenReturn("world");
-            f.paper.bukkit.when(Bukkit::getUnsafe).thenReturn(unsafe);
             Files.createDirectories(directory.resolve("world/dimensions/minecraft/existing"));
             command.execute("map", "create", "existing", "static");
             f.paper.bukkit.verify(() -> Bukkit.createWorld(any(WorldCreator.class)), never());
@@ -365,20 +394,18 @@ class CommandContractTest {
                 var guard = Mockito.mockStatic(StaffEditGuard.class)) {
             var command = new CommandFixture(f);
             command.permissions.add("dungeons.staff.edit");
-            var instance =
-                    mock(BranchingInstance.class);
+            var instance = mock(BranchingInstance.class);
             var room = mock(InstanceRoom.class);
-            when(instance.as(BranchingInstance.class))
-                    .thenReturn(instance);
-            when(instance.as(PlayableInstance.class))
-                    .thenReturn(instance);
+            when(instance.as(BranchingInstance.class)).thenReturn(instance);
+            when(instance.as(PlayableInstance.class)).thenReturn(instance);
             when(instance.getRoom(any(Location.class))).thenReturn(room);
             var session = f.paper.runtime.playerSessions().get(command.caller.player);
             when(instance.getRuntime()).thenReturn(f.paper.runtime);
             var inspected = mock(BranchingDungeon.class);
             when(inspected.getWorldName()).thenReturn("crypt");
             when(instance.getDungeon()).thenReturn(inspected);
-            guard.when(() -> StaffEditGuard.editor(command.caller.player, session)).thenReturn(true);
+            guard.when(() -> StaffEditGuard.editor(command.caller.player, session))
+                    .thenReturn(true);
             session.setInstance(instance);
             command.permissions.add("dungeons.staff.diagnostics");
             command.execute("edit", "test", "doors", "north");
@@ -428,7 +455,6 @@ class CommandContractTest {
                             coordinator,
                             queues,
                             teams,
-
                             mock(FunctionRegistry.class),
                             lifecycle,
                             gui,

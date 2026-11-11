@@ -2,6 +2,8 @@ package nl.hauntedmc.dungeons.config;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.nio.file.Path;
+import java.util.*;
 import nl.hauntedmc.dungeons.content.condition.*;
 import nl.hauntedmc.dungeons.content.function.SetStatusFunction;
 import nl.hauntedmc.dungeons.content.function.meta.*;
@@ -9,15 +11,11 @@ import nl.hauntedmc.dungeons.content.trigger.RemoteTrigger;
 import nl.hauntedmc.dungeons.model.element.*;
 import nl.hauntedmc.dungeons.support.*;
 import nl.hauntedmc.dungeons.util.metadata.TypeMetadataSupport;
-
 import org.bukkit.Location;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-
-import java.nio.file.Path;
-import java.util.*;
 
 class MechanicGraphPersistenceContractTest {
     @TempDir Path directory;
@@ -26,9 +24,9 @@ class MechanicGraphPersistenceContractTest {
     void
             yamlGraphsRestoreNestedMechanicsAndTheirClonesExecuteWithIndependentParentsConditionsAndTimers()
                     throws Exception {
-        try (var aliases = new StaticMapSnapshot(ConfigurationSerialization.class, "aliases");
+        try (var _ = new StaticMapSnapshot(ConfigurationSerialization.class, "aliases");
                 var f = new RunFixture(directory, new YamlConfiguration());
-                var menus = new HeadlessMenus()) {
+                var _ = new HeadlessMenus()) {
             for (var type :
                     List.of(
                             CompositeFunction.class,

@@ -4,6 +4,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import java.sql.*;
+import java.util.concurrent.*;
+import javax.sql.DataSource;
 import nl.hauntedmc.dataprovider.api.DataProviderAPI;
 import nl.hauntedmc.dataprovider.api.DataProviderScope;
 import nl.hauntedmc.dataprovider.api.orm.ORMContext;
@@ -13,17 +16,11 @@ import nl.hauntedmc.dataprovider.database.relational.RelationalDatabaseProvider;
 import nl.hauntedmc.dataregistry.api.DataRegistryApi;
 import nl.hauntedmc.dataregistry.api.DataRegistryApiProvider;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
-
 import org.bukkit.Server;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-
-import java.sql.*;
-import java.util.concurrent.*;
-
-import javax.sql.DataSource;
 
 @Timeout(10)
 class DungeonDatabaseOwnershipTest {
@@ -37,14 +34,19 @@ class DungeonDatabaseOwnershipTest {
         final ORMContext orm = mock(ORMContext.class);
         final YamlConfiguration config = new YamlConfiguration();
 
-        @SuppressWarnings("unchecked") Fixture() throws Exception {
+        @SuppressWarnings("unchecked")
+        Fixture() throws Exception {
             var server = mock(Server.class);
             var services = mock(ServicesManager.class);
-            RegisteredServiceProvider<DataProviderAPI> registration = mock(RegisteredServiceProvider.class);
+            RegisteredServiceProvider<DataProviderAPI> registration =
+                    mock(RegisteredServiceProvider.class);
             when(registration.getProvider()).thenReturn(api);
             when(services.getRegistration(DataProviderAPI.class)).thenReturn(registration);
             var plugins = mock(PluginManager.class);
-            var registry = mock(Plugin.class, withSettings().extraInterfaces(DataRegistryApiProvider.class));
+            var registry =
+                    mock(
+                            Plugin.class,
+                            withSettings().extraInterfaces(DataRegistryApiProvider.class));
             var registryApi = mock(DataRegistryApi.class);
             when(((DataRegistryApiProvider) registry).getDataRegistry()).thenReturn(registryApi);
             when(plugins.getPlugin("DataRegistry")).thenReturn(registry);
@@ -56,10 +58,13 @@ class DungeonDatabaseOwnershipTest {
             config.set("database.connection-id", "custom_rw");
             when(api.forPlugin(plugin)).thenReturn(api);
             when(api.scope("dungeons.gameplay")).thenReturn(scope);
-            when(scope.registerDatabaseOrThrow(DatabaseType.MYSQL, "custom_rw", RelationalDatabaseProvider.class)).thenReturn(provider);
+            when(scope.registerDatabaseOrThrow(
+                            DatabaseType.MYSQL, "custom_rw", RelationalDatabaseProvider.class))
+                    .thenReturn(provider);
             when(provider.getDataSource()).thenReturn(source);
             when(provider.getDataAccess()).thenReturn(access);
-            when(access.executeTransactionally(any())).thenReturn(CompletableFuture.completedFuture(null));
+            when(access.executeTransactionally(any()))
+                    .thenReturn(CompletableFuture.completedFuture(null));
             var connection = mock(Connection.class);
             var statement = mock(Statement.class);
             var result = mock(ResultSet.class);
@@ -74,11 +79,13 @@ class DungeonDatabaseOwnershipTest {
             when(metadata.isNullable(2)).thenReturn(ResultSetMetaData.columnNoNulls);
             when(metadata.isSigned(1)).thenReturn(true);
             when(metadata.isNullable(1)).thenReturn(ResultSetMetaData.columnNoNulls);
-            when(api.createConfiguredOrmContext(eq(source), any(), any(Class[].class))).thenReturn(orm);
+            when(api.createConfiguredOrmContext(eq(source), any(), any(Class[].class)))
+                    .thenReturn(orm);
         }
     }
 
-    @Test void failedStartupReleasesRegistrationWithoutWaitingForPluginDisable() throws Exception {
+    @Test
+    void failedStartupReleasesRegistrationWithoutWaitingForPluginDisable() throws Exception {
         var f = new Fixture();
         when(f.source.getConnection()).thenThrow(new SQLException("database offline"));
         var database = new DungeonDatabase(f.plugin);
@@ -90,7 +97,9 @@ class DungeonDatabaseOwnershipTest {
         verify(f.api, never()).createConfiguredOrmContext(any(), any(), any(Class[].class));
     }
 
-    @Test void configuredFactoryAndOrmBeforeProviderReleaseMatchThePublicOwnershipContract() throws Exception {
+    @Test
+    void configuredFactoryAndOrmBeforeProviderReleaseMatchThePublicOwnershipContract()
+            throws Exception {
         var f = new Fixture();
         var database = new DungeonDatabase(f.plugin);
         database.start().get(2, TimeUnit.SECONDS);
@@ -102,12 +111,20 @@ class DungeonDatabaseOwnershipTest {
         verify(f.api, never()).createOrmContext(any(), any(), anyString(), any(Class[].class));
     }
 
-    @Test void closeDuringRegistrationPreventsLateSchemaInitializationAndStillReleasesTheHandle() throws Exception {
+    @Test
+    void closeDuringRegistrationPreventsLateSchemaInitializationAndStillReleasesTheHandle()
+            throws Exception {
         var f = new Fixture();
         var registered = new CountDownLatch(1);
         var proceed = new CountDownLatch(1);
-        when(f.scope.registerDatabaseOrThrow(DatabaseType.MYSQL, "custom_rw", RelationalDatabaseProvider.class))
-                .thenAnswer(call -> { registered.countDown(); assertTrue(proceed.await(2, TimeUnit.SECONDS)); return f.provider; });
+        when(f.scope.registerDatabaseOrThrow(
+                        DatabaseType.MYSQL, "custom_rw", RelationalDatabaseProvider.class))
+                .thenAnswer(
+                        call -> {
+                            registered.countDown();
+                            assertTrue(proceed.await(2, TimeUnit.SECONDS));
+                            return f.provider;
+                        });
         var database = new DungeonDatabase(f.plugin);
         database.start();
         assertTrue(registered.await(2, TimeUnit.SECONDS));
@@ -120,21 +137,27 @@ class DungeonDatabaseOwnershipTest {
         assertFalse(database.ready());
     }
 
-    @Test void everyCleanupStageRunsAndRetainsFailuresEvenWhenLeaseAndOrmReleaseFail() throws Exception {
+    @Test
+    void everyCleanupStageRunsAndRetainsFailuresEvenWhenLeaseAndOrmReleaseFail() throws Exception {
         var f = new Fixture();
         var database = new DungeonDatabase(f.plugin);
         database.start().get(2, TimeUnit.SECONDS);
-        when(f.access.executeTransactionally(any())).thenReturn(CompletableFuture.failedFuture(new SQLException("lease release")));
+        when(f.access.executeTransactionally(any()))
+                .thenReturn(CompletableFuture.failedFuture(new SQLException("lease release")));
         doThrow(new IllegalStateException("orm close")).when(f.orm).close();
         doThrow(new IllegalStateException("provider close")).when(f.scope).close();
-        var failure = assertThrows(ExecutionException.class, () -> database.closeAsync().get(2, TimeUnit.SECONDS));
+        var failure =
+                assertThrows(
+                        ExecutionException.class,
+                        () -> database.closeAsync().get(2, TimeUnit.SECONDS));
         assertEquals(2, failure.getCause().getSuppressed().length);
         verify(f.orm).close();
         verify(f.scope).close();
         assertEquals(DungeonDatabase.State.CLOSED, database.state());
     }
 
-    @Test void incompatibleDependencyCannotLeaveStartupPermanentlyPending() throws Exception {
+    @Test
+    void incompatibleDependencyCannotLeaveStartupPermanentlyPending() throws Exception {
         var f = new Fixture();
         when(f.api.createConfiguredOrmContext(eq(f.source), any(), any(Class[].class)))
                 .thenThrow(new NoClassDefFoundError("incompatible ORM dependency"));

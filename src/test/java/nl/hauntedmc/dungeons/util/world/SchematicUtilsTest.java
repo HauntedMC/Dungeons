@@ -3,11 +3,6 @@ package nl.hauntedmc.dungeons.util.world;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import nl.hauntedmc.dungeons.generation.structure.StructurePiece;
-
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -18,6 +13,9 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.zip.DeflaterOutputStream;
+import nl.hauntedmc.dungeons.generation.structure.StructurePiece;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class SchematicUtilsTest {
     @TempDir Path directory;

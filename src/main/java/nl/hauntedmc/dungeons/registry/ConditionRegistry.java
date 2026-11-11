@@ -1,18 +1,15 @@
 package nl.hauntedmc.dungeons.registry;
 
+import java.lang.reflect.InvocationTargetException;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.model.element.TriggerCondition;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.util.metadata.TypeMetadataSupport;
 
-import java.lang.reflect.InvocationTargetException;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.Map;
-
-/**
- * Registry for discoverable {@link TriggerCondition} implementations.
- */
+/** Registry for discoverable {@link TriggerCondition} implementations. */
 public final class ConditionRegistry {
     private final DungeonsPlugin plugin;
     private final Map<String, Class<? extends TriggerCondition>> conditions = new LinkedHashMap<>();
@@ -25,9 +22,7 @@ public final class ConditionRegistry {
         this.plugin = plugin;
     }
 
-    /**
-     * Registers a condition class and its editor button metadata.
-     */
+    /** Registers a condition class and its editor button metadata. */
     public <T extends TriggerCondition> void register(Class<T> conditionClass) {
         String conditionId = TypeMetadataSupport.requiredId(conditionClass);
         TriggerCondition condition = null;

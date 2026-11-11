@@ -2,15 +2,13 @@ package nl.hauntedmc.dungeons.config;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import nl.hauntedmc.dungeons.annotation.PersistedField;
-import nl.hauntedmc.dungeons.annotation.TypeKey;
-
-import org.junit.jupiter.api.Test;
-
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import nl.hauntedmc.dungeons.annotation.PersistedField;
+import nl.hauntedmc.dungeons.annotation.TypeKey;
+import org.junit.jupiter.api.Test;
 
 class ConfigSerializableModelTest {
     @Test

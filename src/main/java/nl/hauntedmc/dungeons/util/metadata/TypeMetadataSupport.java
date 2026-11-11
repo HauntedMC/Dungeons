@@ -1,22 +1,18 @@
 package nl.hauntedmc.dungeons.util.metadata;
 
-import nl.hauntedmc.dungeons.annotation.AutoRegister;
-import nl.hauntedmc.dungeons.annotation.TypeKey;
-
-import org.bukkit.configuration.serialization.ConfigurationSerializable;
-import org.bukkit.configuration.serialization.ConfigurationSerialization;
-import org.reflections.Reflections;
-
 import java.lang.reflect.Modifier;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import nl.hauntedmc.dungeons.annotation.AutoRegister;
+import nl.hauntedmc.dungeons.annotation.TypeKey;
+import org.bukkit.configuration.serialization.ConfigurationSerializable;
+import org.bukkit.configuration.serialization.ConfigurationSerialization;
+import org.reflections.Reflections;
 
-/**
- * Type metadata and auto-discovery helpers for plugin model registration.
- */
+/** Type metadata and auto-discovery helpers for plugin model registration. */
 public final class TypeMetadataSupport {
     private static final ConcurrentMap<Class<?>, TypeMetadata> TYPE_CACHE =
             new ConcurrentHashMap<>();

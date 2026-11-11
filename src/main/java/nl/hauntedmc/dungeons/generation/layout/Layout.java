@@ -1,26 +1,5 @@
 package nl.hauntedmc.dungeons.generation.layout;
 
-import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
-import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
-import nl.hauntedmc.dungeons.generation.room.Connector;
-import nl.hauntedmc.dungeons.generation.room.InstanceRoom;
-import nl.hauntedmc.dungeons.generation.room.RotatedRoom;
-import nl.hauntedmc.dungeons.gui.hotbar.PlayerHotbarMenu;
-import nl.hauntedmc.dungeons.gui.menu.ConnectorEditorMenus;
-import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
-import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.util.config.PluginConfigView;
-import nl.hauntedmc.dungeons.util.math.MathUtils;
-import nl.hauntedmc.dungeons.util.math.RandomCollection;
-import nl.hauntedmc.dungeons.util.world.SimpleLocation;
-
-import org.bukkit.Material;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.entity.Player;
-import org.bukkit.util.BoundingBox;
-import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -38,6 +17,25 @@ import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import nl.hauntedmc.dungeons.config.PluginConfigView;
+import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
+import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
+import nl.hauntedmc.dungeons.generation.room.Connector;
+import nl.hauntedmc.dungeons.generation.room.InstanceRoom;
+import nl.hauntedmc.dungeons.generation.room.RotatedRoom;
+import nl.hauntedmc.dungeons.gui.hotbar.PlayerHotbarMenu;
+import nl.hauntedmc.dungeons.gui.menu.ConnectorEditorMenus;
+import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
+import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
+import nl.hauntedmc.dungeons.util.math.MathUtils;
+import nl.hauntedmc.dungeons.util.math.RandomCollection;
+import nl.hauntedmc.dungeons.util.world.SimpleLocation;
+import org.bukkit.Material;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.Player;
+import org.bukkit.util.BoundingBox;
+import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
 
 /**
  * Base class for branching layout algorithms.
@@ -78,14 +76,10 @@ public abstract class Layout implements Cloneable {
         return PluginConfigView.getEditorTargetBlockRangeBlocks(this.runtime().config());
     }
 
-    /**
-     * Creates a layout instance backed by one branching dungeon and generator configuration.
-     */
+    /** Creates a layout instance backed by one branching dungeon and generator configuration. */
     public Layout(BranchingDungeon dungeon, FileConfiguration config) {
         this.dungeon = dungeon;
         this.config = config;
-        this.initializeConnectorEditMenu();
-
         try {
             String configuredMaterial =
                     config.getString("generator.seal_open_connectors_with", "STONE");
@@ -166,9 +160,7 @@ public abstract class Layout implements Cloneable {
         return valid;
     }
 
-    /**
-     * Validates layout and room metadata before generation starts.
-     */
+    /** Validates layout and room metadata before generation starts. */
     public LayoutValidationReport validateConfiguration() {
         LayoutValidationReport report = new LayoutValidationReport();
         if (this.dungeon.getUniqueRooms().isEmpty()) {
@@ -225,9 +217,7 @@ public abstract class Layout implements Cloneable {
         return false;
     }
 
-    /**
-     * Runs layout generation with timeout/retry handling and returns the final outcome.
-     */
+    /** Runs layout generation with timeout/retry handling and returns the final outcome. */
     public GenerationResult generate() {
         this.cancelled = false;
         this.failureReasons.clear();
@@ -611,9 +601,7 @@ public abstract class Layout implements Cloneable {
         return this.queuedCountsByRoom.getOrDefault(room, 0);
     }
 
-    /**
-     * Returns whether the room has reached its configured maximum occurrence count.
-     */
+    /** Returns whether the room has reached its configured maximum occurrence count. */
     public boolean isRoomMaxedOut(BranchingRoomDefinition room) {
         if (room.getOccurrences().getMax() == 0.0) {
             return false;
@@ -624,7 +612,8 @@ public abstract class Layout implements Cloneable {
     }
 
     /**
-     * Returns whether the room can be placed without colliding with existing queued/generated rooms.
+     * Returns whether the room can be placed without colliding with existing queued/generated
+     * rooms.
      */
     public boolean canRoomGenerate(InstanceRoom room) {
         BoundingBox roomBox = room.getBounds().clone().expand(0.0, 0.0, 0.0, 1.0, 1.0, 1.0);
@@ -646,9 +635,7 @@ public abstract class Layout implements Cloneable {
         return true;
     }
 
-    /**
-     * Returns all rooms currently accepted into the layout.
-     */
+    /** Returns all rooms currently accepted into the layout. */
     public Collection<InstanceRoom> getAllRooms() {
         return this.roomAnchors.values();
     }
@@ -738,27 +725,25 @@ public abstract class Layout implements Cloneable {
         return null;
     }
 
-    /**
-     * Builds the connector editor hotbar menu used in room-edit sessions.
-     */
+    /** Builds the connector editor hotbar menu used in room-edit sessions. */
     public void initializeConnectorEditMenu() {
-        this.connectorEditMenu = ConnectorEditorMenus.connectorMenu(
-                this.runtime(), () -> this.connectorDoorMenu);
+        this.connectorEditMenu =
+                ConnectorEditorMenus.connectorMenu(this.runtime(), () -> this.connectorDoorMenu);
         this.initializeConnectorDoorMenu();
     }
 
-    /**
-     * Builds the connector-door editor hotbar menu.
-     */
+    /** Builds the connector-door editor hotbar menu. */
     public void initializeConnectorDoorMenu() {
-        this.connectorDoorMenu = ConnectorEditorMenus.doorMenu(
-                this.runtime(), this::getEditorTargetBlockRange);
+        this.connectorDoorMenu =
+                ConnectorEditorMenus.doorMenu(this.runtime(), this::getEditorTargetBlockRange);
     }
 
     @Override
     public Layout clone() {
         try {
             Layout clone = (Layout) super.clone();
+            clone.connectorEditMenu = null;
+            clone.connectorDoorMenu = null;
             clone.roomWhitelist = new ArrayList<>(this.roomWhitelist);
             clone.endRoomWhitelist = new ArrayList<>(this.endRoomWhitelist);
             clone.countsByRoom = new HashMap<>();
@@ -783,23 +768,18 @@ public abstract class Layout implements Cloneable {
         }
     }
 
-    /**
-     * Returns the connector editor hotbar menu.
-     */
+    /** Builds editor controls on first use, after the layout has been fully constructed. */
     public PlayerHotbarMenu getConnectorEditMenu() {
+        if (this.connectorEditMenu == null) this.initializeConnectorEditMenu();
         return this.connectorEditMenu;
     }
 
-    /**
-     * Returns the block type used to seal unconnected connector openings.
-     */
+    /** Returns the block type used to seal unconnected connector openings. */
     public Material getClosedConnectorBlock() {
         return this.closedConnectorBlock;
     }
 
-    /**
-     * Returns the first room in the generated layout, if generation has started.
-     */
+    /** Returns the first room in the generated layout, if generation has started. */
     public InstanceRoom getFirst() {
         return this.first;
     }
@@ -825,16 +805,12 @@ public abstract class Layout implements Cloneable {
             this.msg = msg;
         }
 
-        /**
-         * Returns whether this result represents a successful generation.
-         */
+        /** Returns whether this result represents a successful generation. */
         public boolean isPassed() {
             return this.passed;
         }
 
-        /**
-         * Returns a user-facing status message for this result.
-         */
+        /** Returns a user-facing status message for this result. */
         public String getMsg() {
             return this.msg;
         }

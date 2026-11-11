@@ -1,17 +1,13 @@
 package nl.hauntedmc.dungeons.content.variable;
 
+import java.util.Collections;
+import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.TypeKey;
-
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Collections;
-import java.util.Map;
-
-/**
- * Supported mutations for instance variables.
- */
+/** Supported mutations for instance variables. */
 @TypeKey(id = "dungeons.variable.edit_mode")
 @SerializableAs("dungeons.variable.edit_mode")
 public enum VariableEditMode implements ConfigurationSerializable {
@@ -19,9 +15,7 @@ public enum VariableEditMode implements ConfigurationSerializable {
     ADD,
     SUBTRACT;
 
-    /**
-     * Creates a value from index.
-     */
+    /** Creates a value from index. */
     public static VariableEditMode fromIndex(int index) {
         return switch (index) {
             case 1 -> ADD;
@@ -35,9 +29,7 @@ public enum VariableEditMode implements ConfigurationSerializable {
         return Collections.singletonMap("value", this.name());
     }
 
-    /**
-     * Performs deserialize.
-     */
+    /** Performs deserialize. */
     public static VariableEditMode deserialize(Map<String, Object> map) {
         return valueOf((String) map.get("value"));
     }

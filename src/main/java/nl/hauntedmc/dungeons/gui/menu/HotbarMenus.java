@@ -2,9 +2,7 @@ package nl.hauntedmc.dungeons.gui.menu;
 
 import nl.hauntedmc.dungeons.gui.hotbar.PlayerHotbarMenu;
 
-/**
- * Hotbar menu builders used by the dungeon editor.
- */
+/** Hotbar menu builders used by the dungeon editor. */
 public class HotbarMenus {
 
     public static void initializeRoomEditMenu() {
@@ -26,5 +24,4 @@ public class HotbarMenus {
     public static PlayerHotbarMenu getFunctionEditMenu() {
         return FunctionEditHotbar.getFunctionEditMenu();
     }
-
 }

@@ -2,12 +2,11 @@ package nl.hauntedmc.dungeons.support;
 
 import static org.mockito.Mockito.*;
 
+import java.util.*;
 import org.bukkit.*;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.*;
-
-import java.util.*;
 
 /** In-memory Paper item/PDC boundary with copied metadata, quantities, and independent clones. */
 public final class TaggedItems {

@@ -1,20 +1,18 @@
 package nl.hauntedmc.dungeons.model.dungeon;
 
-import nl.hauntedmc.dungeons.model.instance.DungeonInstance.DisposalState;
-import nl.hauntedmc.dungeons.model.instance.EditableInstance;
-import nl.hauntedmc.dungeons.runtime.instance.PreparationRegistry;
-import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.runtime.staff.StaffPermissions;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
-import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
-
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import nl.hauntedmc.dungeons.localization.LangUtils;
+import nl.hauntedmc.dungeons.runtime.instance.DungeonInstance.DisposalState;
+import nl.hauntedmc.dungeons.runtime.instance.EditableInstance;
+import nl.hauntedmc.dungeons.runtime.instance.PreparationRegistry;
+import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
+import nl.hauntedmc.dungeons.runtime.staff.StaffPermissions;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 
 /** Owns one editor admission, including delayed creation and cancellation during reload/quit. */
 final class EditorPreparation implements PreparationRegistry.Pending {
@@ -27,8 +25,7 @@ final class EditorPreparation implements PreparationRegistry.Pending {
     private EditableInstance editor;
     private boolean created;
     private boolean admitted;
-    private final CompletableFuture<Boolean> result =
-            new CompletableFuture<>();
+    private final CompletableFuture<Boolean> result = new CompletableFuture<>();
 
     CompletableFuture<Boolean> result() {
         return result.copy();
@@ -52,7 +49,9 @@ final class EditorPreparation implements PreparationRegistry.Pending {
             return;
         }
         player = session.getPlayer();
-        if (!player.isOnline() || session.getInstance() != null || session.isAwaitingDungeon()
+        if (!player.isOnline()
+                || session.getInstance() != null
+                || session.isAwaitingDungeon()
                 || session.isObserving()) {
             result.complete(false);
             return;
@@ -89,7 +88,8 @@ final class EditorPreparation implements PreparationRegistry.Pending {
                 Bukkit.getScheduler().runTaskAsynchronously(dungeon.plugin(), this::await);
             }
         } catch (RuntimeException | Error failure) {
-            dungeon.logger().error("Failed to open editor for '{}'.", dungeon.getWorldName(), failure);
+            dungeon.logger()
+                    .error("Failed to open editor for '{}'.", dungeon.getWorldName(), failure);
             fail("instance.editor.open-failed");
         }
     }
@@ -102,10 +102,13 @@ final class EditorPreparation implements PreparationRegistry.Pending {
         try {
             boolean loaded = editor.awaitInitialization(remaining(), TimeUnit.NANOSECONDS);
             if (!loaded) cancelled.set(true);
-            Bukkit.getScheduler().runTask(dungeon.plugin(), () -> {
-                if (!loaded) fail("instance.editor.open-timeout");
-                else finish();
-            });
+            Bukkit.getScheduler()
+                    .runTask(
+                            dungeon.plugin(),
+                            () -> {
+                                if (!loaded) fail("instance.editor.open-timeout");
+                                else finish();
+                            });
         } catch (InterruptedException failure) {
             Thread.currentThread().interrupt();
             cancel();
@@ -128,7 +131,9 @@ final class EditorPreparation implements PreparationRegistry.Pending {
             fail("instance.editor.open-timeout");
             return;
         }
-        if (editor.hasLoadFailed() || !editor.isReady() || editor.getDisposalState() != DisposalState.ACTIVE) {
+        if (editor.hasLoadFailed()
+                || !editor.isReady()
+                || editor.getDisposalState() != DisposalState.ACTIVE) {
             fail("instance.editor.open-failed");
             return;
         }
@@ -154,7 +159,9 @@ final class EditorPreparation implements PreparationRegistry.Pending {
         cancelled.set(true);
         cleanup();
         if (owned && player != null && player.isOnline() && session.getPlayer() == player)
-            LangUtils.sendMessage(player, key,
+            LangUtils.sendMessage(
+                    player,
+                    key,
                     LangUtils.placeholder("dungeon", dungeon.getDisplayNameComponent()));
     }
 
@@ -171,7 +178,8 @@ final class EditorPreparation implements PreparationRegistry.Pending {
             try {
                 Bukkit.getScheduler().runTask(dungeon.plugin(), this::cleanup);
             } catch (RuntimeException failure) {
-                dungeon.logger().error("Retaining editor preparation for shutdown cleanup.", failure);
+                dungeon.logger()
+                        .error("Retaining editor preparation for shutdown cleanup.", failure);
             }
         }
     }
@@ -182,7 +190,8 @@ final class EditorPreparation implements PreparationRegistry.Pending {
         if (editor != null && session != null && session.getInstance() == editor)
             editor.removePlayer(session, true);
         // Only this request's creation can be discarded; never target a replacement editor.
-        if (created && editor != null && editor.getPlayers().isEmpty()) dungeon.discardInstance(editor);
+        if (created && editor != null && editor.getPlayers().isEmpty())
+            dungeon.discardInstance(editor);
         if (session != null && dungeon.runtime().preparations().remove(session, this))
             session.setAwaitingDungeon(false);
     }

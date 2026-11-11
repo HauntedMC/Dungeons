@@ -2,6 +2,9 @@ package nl.hauntedmc.dungeons.acceptance;
 
 import static nl.hauntedmc.dungeons.acceptance.AcceptancePlugin.require;
 
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletionStage;
 import nl.hauntedmc.dungeons.content.function.ChunkLoadFunction;
 import nl.hauntedmc.dungeons.content.function.RedstoneBlockFunction;
 import nl.hauntedmc.dungeons.content.function.SetStatusFunction;
@@ -9,18 +12,13 @@ import nl.hauntedmc.dungeons.content.function.SpawnMobFunction;
 import nl.hauntedmc.dungeons.content.trigger.RemoteTrigger;
 import nl.hauntedmc.dungeons.event.RemoteTriggerEvent;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
-import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
-
+import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Zombie;
-
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletionStage;
 
 final class NativeMechanics {
     private NativeMechanics() {}

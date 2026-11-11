@@ -1,5 +1,6 @@
 package nl.hauntedmc.dungeons.generation.layout;
 
+import java.util.Optional;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
 import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
 import nl.hauntedmc.dungeons.generation.room.Connector;
@@ -7,26 +8,18 @@ import nl.hauntedmc.dungeons.generation.room.InstanceRoom;
 import nl.hauntedmc.dungeons.generation.room.WhitelistEntry;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ChatMenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
-import nl.hauntedmc.dungeons.runtime.RuntimeContext;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.math.MathUtils;
 import nl.hauntedmc.dungeons.util.math.RandomCollection;
-
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 
-import java.util.Optional;
-
-/**
- * Layout algorithm that expands outward connector by connector until room targets are met.
- */
+/** Layout algorithm that expands outward connector by connector until room targets are met. */
 public class ConnectorExpansionLayout extends Layout {
-    /**
-     * Creates a connector-expansion layout driven by generator configuration values.
-     */
+    /** Creates a connector-expansion layout driven by generator configuration values. */
     public ConnectorExpansionLayout(BranchingDungeon dungeon, FileConfiguration config) {
         super(dungeon, config);
     }
@@ -87,8 +80,7 @@ public class ConnectorExpansionLayout extends Layout {
     @Override
     protected boolean verifyLayout() {
         if (this.roomCount < this.minRooms) {
-            RuntimeContext.plugin()
-                    .getSLF4JLogger()
+            this.logger()
                     .warn(
                             "Generated layout for dungeon '{}' only has {} rooms; minimum required is {}.",
                             this.dungeon.getWorldName(),
@@ -123,7 +115,10 @@ public class ConnectorExpansionLayout extends Layout {
                         @Override
                         public void onSelect(Player player) {
                             DungeonPlayerSession playerSession =
-                                    RuntimeContext.playerSessions().get(player);
+                                    ConnectorExpansionLayout.this
+                                            .runtime()
+                                            .playerSessions()
+                                            .get(player);
                             Connector connector = playerSession.getActiveConnector();
                             if (connector != null) {
                                 double chance = connector.getSuccessChance();
@@ -141,7 +136,10 @@ public class ConnectorExpansionLayout extends Layout {
                         @Override
                         public void onInput(Player player, String message) {
                             DungeonPlayerSession playerSession =
-                                    RuntimeContext.playerSessions().get(player);
+                                    ConnectorExpansionLayout.this
+                                            .runtime()
+                                            .playerSessions()
+                                            .get(player);
                             Connector connector = playerSession.getActiveConnector();
                             if (connector != null) {
                                 Optional<Double> value =

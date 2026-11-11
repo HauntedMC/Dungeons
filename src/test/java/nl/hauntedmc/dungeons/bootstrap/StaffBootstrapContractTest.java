@@ -3,17 +3,15 @@ package nl.hauntedmc.dungeons.bootstrap;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.nio.file.Path;
 import nl.hauntedmc.dungeons.gui.framework.GuiService;
 import nl.hauntedmc.dungeons.registry.FunctionRegistry;
 import nl.hauntedmc.dungeons.support.StaffFixture;
-
 import org.bukkit.Server;
 import org.bukkit.command.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
-
-import java.nio.file.Path;
 
 class StaffBootstrapContractTest {
     @TempDir Path directory;
@@ -52,7 +50,9 @@ class StaffBootstrapContractTest {
                     f.actor,
                     command,
                     "dungeon",
-                    new String[] {"map", "archive", "create", "crypt", "Retire", "--confirm", token});
+                    new String[] {
+                        "map", "archive", "create", "crypt", "Retire", "--confirm", token
+                    });
             f.flush();
             assertFalse(f.run.dungeon.getFolder().exists());
         }

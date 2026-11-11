@@ -1,9 +1,8 @@
 package nl.hauntedmc.dungeons.event;
 
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
-import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
+import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
@@ -58,17 +57,13 @@ public class RemoteTriggerEvent extends DungeonEvent implements Cancellable {
         return this.playerSession == null ? null : this.playerSession.getPlayer();
     }
 
-    /**
-     * Returns whether this remote trigger propagation has been cancelled.
-     */
+    /** Returns whether this remote trigger propagation has been cancelled. */
     @Override
     public boolean isCancelled() {
         return this.cancelled;
     }
 
-    /**
-     * Sets whether this remote trigger propagation should be cancelled.
-     */
+    /** Sets whether this remote trigger propagation should be cancelled. */
     @Override
     public void setCancelled(boolean cancel) {
         this.cancelled = cancel;

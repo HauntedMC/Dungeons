@@ -3,23 +3,21 @@ package nl.hauntedmc.dungeons.runtime.staff;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.nio.file.*;
+import java.util.*;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
 import nl.hauntedmc.dungeons.content.function.CommandFunction;
 import nl.hauntedmc.dungeons.content.function.MessageFunction;
 import nl.hauntedmc.dungeons.content.function.meta.DelayedFunction;
 import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
-import nl.hauntedmc.dungeons.model.instance.EditableInstance;
+import nl.hauntedmc.dungeons.runtime.instance.EditableInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.support.*;
-
 import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-
-import java.nio.file.*;
-import java.util.*;
 
 class StaffPolicyContractTest {
     @TempDir Path directory;
@@ -100,7 +98,7 @@ class StaffPolicyContractTest {
     @Test
     void persistedGraphTraversalHandlesWrappersMapsAndCyclesWithoutMissingScripts()
             throws Exception {
-        try (var f = new StaffFixture(directory)) {
+        try (var _ = new StaffFixture(directory)) {
             var delayed = new DelayedFunction();
             var script = new CommandFunction();
             delayed.addFunction(script);
@@ -230,7 +228,7 @@ class StaffPolicyContractTest {
 
     @Test
     void roomGraphsAtIdenticalRelativeCoordinatesAreAllInspected() throws Exception {
-        try (var f = new StaffFixture(directory)) {
+        try (var _ = new StaffFixture(directory)) {
             var branching = mock(BranchingDungeon.class);
             when(branching.asBranching()).thenReturn(branching);
             var first = mock(BranchingRoomDefinition.class);

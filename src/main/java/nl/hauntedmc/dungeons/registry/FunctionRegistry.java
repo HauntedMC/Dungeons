@@ -1,19 +1,5 @@
 package nl.hauntedmc.dungeons.registry;
 
-import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
-import nl.hauntedmc.dungeons.listener.EventRelayListener;
-import nl.hauntedmc.dungeons.model.element.DungeonFunction;
-import nl.hauntedmc.dungeons.model.element.FunctionCategory;
-import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
-import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
-import nl.hauntedmc.dungeons.runtime.instance.ActiveInstanceRegistry;
-import nl.hauntedmc.dungeons.util.metadata.TypeMetadataSupport;
-
-import org.apache.commons.lang3.reflect.MethodUtils;
-import org.bukkit.Bukkit;
-import org.bukkit.event.Event;
-import org.bukkit.event.EventHandler;
-
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -21,6 +7,18 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
+import nl.hauntedmc.dungeons.listener.EventRelayListener;
+import nl.hauntedmc.dungeons.model.element.DungeonFunction;
+import nl.hauntedmc.dungeons.model.element.FunctionCategory;
+import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
+import nl.hauntedmc.dungeons.runtime.instance.ActiveInstanceRegistry;
+import nl.hauntedmc.dungeons.runtime.instance.DungeonInstance;
+import nl.hauntedmc.dungeons.util.metadata.TypeMetadataSupport;
+import org.apache.commons.lang3.reflect.MethodUtils;
+import org.bukkit.Bukkit;
+import org.bukkit.event.Event;
+import org.bukkit.event.EventHandler;
 
 /**
  * Registry for discoverable {@link DungeonFunction} implementations.
@@ -52,9 +50,7 @@ public final class FunctionRegistry {
         }
     }
 
-    /**
-     * Registers a function class, editor metadata, and reflective event handlers.
-     */
+    /** Registers a function class, editor metadata, and reflective event handlers. */
     public <T extends DungeonFunction> void register(Class<T> functionClass) {
         String functionId = TypeMetadataSupport.requiredId(functionClass);
         DungeonFunction function = null;
@@ -69,7 +65,7 @@ public final class FunctionRegistry {
                         .getSLF4JLogger()
                         .warn(
                                 "Function '{}' does not expose a menu button and will not appear in"
-                                    + " the editor.",
+                                        + " the editor.",
                                 functionClass.getSimpleName());
                 return;
             }
@@ -122,10 +118,10 @@ public final class FunctionRegistry {
                                                                     .getSLF4JLogger()
                                                                     .error(
                                                                             "Function listener"
-                                                                                + " '{}#{}' failed"
-                                                                                + " for event '{}'"
-                                                                                + " in instance"
-                                                                                + " '{}'.",
+                                                                                    + " '{}#{}' failed"
+                                                                                    + " for event '{}'"
+                                                                                    + " in instance"
+                                                                                    + " '{}'.",
                                                                             functionClass
                                                                                     .getSimpleName(),
                                                                             method.getName(),

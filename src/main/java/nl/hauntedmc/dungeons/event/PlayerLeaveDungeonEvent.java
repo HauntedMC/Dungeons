@@ -1,15 +1,12 @@
 package nl.hauntedmc.dungeons.event;
 
-import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
-import nl.hauntedmc.dungeons.model.instance.EditableInstance;
+import nl.hauntedmc.dungeons.runtime.instance.DungeonInstance;
+import nl.hauntedmc.dungeons.runtime.instance.EditableInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-
 import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
 
-/**
- * Event fired before a player leaves a dungeon instance.
- */
+/** Event fired before a player leaves a dungeon instance. */
 public class PlayerLeaveDungeonEvent extends DungeonEvent implements Cancellable {
     private final DungeonPlayerSession playerSession;
     private final Player player;
@@ -47,17 +44,13 @@ public class PlayerLeaveDungeonEvent extends DungeonEvent implements Cancellable
         return this.player;
     }
 
-    /**
-     * Returns whether leaving the dungeon should be cancelled.
-     */
+    /** Returns whether leaving the dungeon should be cancelled. */
     @Override
     public boolean isCancelled() {
         return this.cancelled;
     }
 
-    /**
-     * Sets whether leaving the dungeon should be cancelled.
-     */
+    /** Sets whether leaving the dungeon should be cancelled. */
     @Override
     public void setCancelled(boolean cancelled) {
         this.cancelled = cancelled;

@@ -1,20 +1,16 @@
 package nl.hauntedmc.dungeons.model.dungeon;
 
+import java.util.ArrayList;
+import java.util.List;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.util.text.ComponentUtils;
-
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.components.CustomModelDataComponent;
 
-import java.util.ArrayList;
-import java.util.List;
-
-/**
- * Immutable difficulty preset loaded from a dungeon configuration section.
- */
+/** Immutable difficulty preset loaded from a dungeon configuration section. */
 public class DungeonDifficulty {
     private final String namespace;
     private ItemStack icon;
@@ -22,9 +18,7 @@ public class DungeonDifficulty {
     private final double mobSpawnScale;
     private final double mobDamageScale;
 
-    /**
-     * Creates a difficulty definition from one named config section.
-     */
+    /** Creates a difficulty definition from one named config section. */
     public DungeonDifficulty(ConfigurationSection config) {
         this.namespace = config.getName();
         this.mobHealthScale = config.getDouble("scaling.mob_health", 0.0);
@@ -59,39 +53,28 @@ public class DungeonDifficulty {
         }
     }
 
-    /**
-     * Returns a cloned icon item for menu rendering.
-     */
+    /** Returns a cloned icon item for menu rendering. */
     public ItemStack getIcon() {
         return this.icon.clone();
     }
 
-    /**
-     * Returns the config namespace identifier of this difficulty.
-     */
+    /** Returns the config namespace identifier of this difficulty. */
     public String getNamespace() {
         return this.namespace;
     }
 
-    /**
-     * Returns the additive mob health scaling value.
-     */
+    /** Returns the additive mob health scaling value. */
     public double getMobHealthScale() {
         return this.mobHealthScale;
     }
 
-    /**
-     * Returns the additive mob spawn amount scaling value.
-     */
+    /** Returns the additive mob spawn amount scaling value. */
     public double getMobSpawnScale() {
         return this.mobSpawnScale;
     }
 
-    /**
-     * Returns the additive mob damage scaling value.
-     */
+    /** Returns the additive mob damage scaling value. */
     public double getMobDamageScale() {
         return this.mobDamageScale;
     }
-
 }

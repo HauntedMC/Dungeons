@@ -2,13 +2,11 @@ package nl.hauntedmc.dungeons.support;
 
 import static org.mockito.Mockito.*;
 
-import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
-import nl.hauntedmc.dungeons.content.instance.play.BranchingInstance;
-import nl.hauntedmc.dungeons.generation.room.InstanceRoom;
-
-import org.bukkit.*;
-
 import java.util.*;
+import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
+import nl.hauntedmc.dungeons.generation.room.InstanceRoom;
+import nl.hauntedmc.dungeons.runtime.instance.play.BranchingInstance;
+import org.bukkit.*;
 
 /** Seeds the output of the separately tested layout stage; run and room behavior stays real. */
 public final class BranchingRunFixture {

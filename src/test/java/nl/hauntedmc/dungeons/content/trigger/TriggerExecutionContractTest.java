@@ -17,17 +17,21 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.papermc.paper.event.player.AsyncChatEvent;
-
+import java.nio.file.Path;
+import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import net.kyori.adventure.text.Component;
-
 import nl.hauntedmc.dungeons.content.condition.ChanceCondition;
-import nl.hauntedmc.dungeons.content.instance.play.StaticInstance;
 import nl.hauntedmc.dungeons.event.*;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
+import nl.hauntedmc.dungeons.runtime.instance.play.StaticInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.support.*;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
-
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -43,14 +47,6 @@ import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
-
-import java.nio.file.Path;
-import java.util.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CompletableFuture;
 
 class TriggerExecutionContractTest {
     @TempDir Path directory;
@@ -298,7 +294,7 @@ class TriggerExecutionContractTest {
     @Test
     void keyItemTriggerConsumesOnlyMatchingMainHandItemsAtTheConfiguredBlock() throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration());
-                var menus = new HeadlessMenus();
+                var _ = new HeadlessMenus();
                 var items = mockStatic(ItemUtils.class)) {
             var state = new PlayerState();
             source(f, state);
@@ -336,7 +332,7 @@ class TriggerExecutionContractTest {
     @Test
     void clonedDeathCountersDoNotShareProgressWithEachOtherOrTheirTemplate() throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration());
-                var menus = new HeadlessMenus()) {
+                var _ = new HeadlessMenus()) {
             var first = new PlayerState();
             source(f, first);
             var second = new PlayerState();
@@ -369,7 +365,7 @@ class TriggerExecutionContractTest {
     @Test
     void disablingAClonedTriggerCannotCancelItsSourcesConditionWaitTask() throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration());
-                var menus = new HeadlessMenus()) {
+                var _ = new HeadlessMenus()) {
             var trigger = bind(new RemoteTrigger(Map.of("waitForConditions", true)), f);
             trigger.setAllowRetrigger(false);
             var condition = new ChanceCondition(Map.of("chance", 0.0));

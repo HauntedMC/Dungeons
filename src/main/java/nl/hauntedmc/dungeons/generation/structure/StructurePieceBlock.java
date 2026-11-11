@@ -1,7 +1,9 @@
 package nl.hauntedmc.dungeons.generation.structure;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 import nl.hauntedmc.dungeons.util.world.BlockNbtUtils;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -12,10 +14,6 @@ import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3i;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
 
 /**
  * Captured block state within a structure piece.
@@ -32,16 +30,12 @@ public class StructurePieceBlock implements Cloneable {
     @Nullable private String blockNbt;
     private static final Map<String, BlockData> dataCache = new HashMap<>();
 
-    /**
-     * Creates a captured block snapshot at the given absolute location.
-     */
+    /** Creates a captured block snapshot at the given absolute location. */
     public StructurePieceBlock(Location loc, BlockData data, String nbt) {
         this(new Vector3i(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()), data, nbt);
     }
 
-    /**
-     * Creates a captured block snapshot using relative coordinates.
-     */
+    /** Creates a captured block snapshot using relative coordinates. */
     public StructurePieceBlock(Vector3i pos, BlockData data, @Nullable String nbt) {
         this.x = pos.x;
         this.y = pos.y;
@@ -50,32 +44,24 @@ public class StructurePieceBlock implements Cloneable {
         this.blockNbt = nbt;
     }
 
-    /**
-     * Replaces the captured block state for this snapshot.
-     */
+    /** Replaces the captured block state for this snapshot. */
     public void setBlockData(BlockData data) {
         this.blockData = checkCache(data);
     }
 
-    /**
-     * Returns the relative position represented by this snapshot.
-     */
+    /** Returns the relative position represented by this snapshot. */
     public Vector3i getPos() {
         return new Vector3i(this.x, this.y, this.z);
     }
 
-    /**
-     * Places this block state and tile data at the target world location.
-     */
+    /** Places this block state and tile data at the target world location. */
     public void placeAt(Location loc) {
         World world = loc.getWorld();
         world.setBlockData(loc, this.blockData);
         BlockNbtUtils.applyTileSnbt(world.getBlockAt(loc), this.blockNbt);
     }
 
-    /**
-     * Captures a block in the world as a structure block snapshot.
-     */
+    /** Captures a block in the world as a structure block snapshot. */
     public static StructurePieceBlock from(Block block) {
         String compound = BlockNbtUtils.readTileSnbt(block);
         return new StructurePieceBlock(block.getLocation(), block.getBlockData().clone(), compound);
@@ -132,44 +118,32 @@ public class StructurePieceBlock implements Cloneable {
         return dataCache.computeIfAbsent(str, k -> data);
     }
 
-    /**
-     * Creates an explicit AIR snapshot for the given position.
-     */
+    /** Creates an explicit AIR snapshot for the given position. */
     public static StructurePieceBlock air(Vector3i pos) {
         return new StructurePieceBlock(pos, Bukkit.createBlockData(Material.AIR), null);
     }
 
-    /**
-     * Returns the relative X coordinate.
-     */
+    /** Returns the relative X coordinate. */
     public int getX() {
         return this.x;
     }
 
-    /**
-     * Returns the relative Y coordinate.
-     */
+    /** Returns the relative Y coordinate. */
     public int getY() {
         return this.y;
     }
 
-    /**
-     * Returns the relative Z coordinate.
-     */
+    /** Returns the relative Z coordinate. */
     public int getZ() {
         return this.z;
     }
 
-    /**
-     * Returns the captured block data.
-     */
+    /** Returns the captured block data. */
     public BlockData getBlockData() {
         return this.blockData;
     }
 
-    /**
-     * Returns captured SNBT payload for tile entities, if present.
-     */
+    /** Returns captured SNBT payload for tile entities, if present. */
     @Nullable
     public String getBlockNbt() {
         return this.blockNbt;

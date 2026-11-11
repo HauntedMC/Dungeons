@@ -3,29 +3,26 @@ package nl.hauntedmc.dungeons.integration;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.event.ClickEvent;
-
-import nl.hauntedmc.dataregistry.api.DataRegistryFeature;
-import nl.hauntedmc.dataregistry.api.player.PlayerData;
-import nl.hauntedmc.dataregistry.api.player.PlayerIdentity;
-import nl.hauntedmc.dataregistry.api.player.PlayerLanguageSettings;
-import nl.hauntedmc.dungeons.support.PlayerState;
-import nl.hauntedmc.dungeons.support.RunFixture;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-import nl.hauntedmc.dungeons.util.text.ComponentUtils;
-import nl.hauntedmc.dungeons.util.text.MessageUtils;
-
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import org.mockito.ArgumentCaptor;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import nl.hauntedmc.dataregistry.api.DataRegistryFeature;
+import nl.hauntedmc.dataregistry.api.player.PlayerData;
+import nl.hauntedmc.dataregistry.api.player.PlayerIdentity;
+import nl.hauntedmc.dataregistry.api.player.PlayerLanguageSettings;
+import nl.hauntedmc.dungeons.localization.LangUtils;
+import nl.hauntedmc.dungeons.support.PlayerState;
+import nl.hauntedmc.dungeons.support.RunFixture;
+import nl.hauntedmc.dungeons.util.text.ComponentUtils;
+import nl.hauntedmc.dungeons.util.text.MessageUtils;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.mockito.ArgumentCaptor;
 
 class LocalizedDeliveryTest {
     @TempDir Path directory;
@@ -66,7 +63,7 @@ class LocalizedDeliveryTest {
 
     @Test
     void rawNoticesUseTheRecipientsPrefixWithoutEditingTheirLiteralText() throws Exception {
-        try (var fixture = new RunFixture(directory, new YamlConfiguration())) {
+        try (var _ = new RunFixture(directory, new YamlConfiguration())) {
             Files.createDirectories(directory.resolve("lang"));
             Files.writeString(
                     directory.resolve("lang/messages_EN.yml"), "general:\n  prefix: '[English]'\n");
@@ -87,7 +84,7 @@ class LocalizedDeliveryTest {
     @Test
     void componentNoticesPreserveLiteralPrefixTextAndInteractiveMessagesUseTheRootCommand()
             throws Exception {
-        try (var fixture = new RunFixture(directory, new YamlConfiguration())) {
+        try (var _ = new RunFixture(directory, new YamlConfiguration())) {
             LangUtils.initialize();
             var text =
                     LangUtils.notice(
@@ -98,13 +95,11 @@ class LocalizedDeliveryTest {
             var state = new PlayerState();
             MessageUtils.sendClickableCommand(
                     state.player,
-                    LangUtils.component(
-                            "commands.join.usage", state.player, true),
+                    LangUtils.component("commands.join.usage", state.player, true),
                     "dungeon join");
             var capture = ArgumentCaptor.forClass(Component.class);
             verify(state.player).sendMessage(capture.capture());
-            assertEquals(
-                    ClickEvent.runCommand("/dungeon join"), capture.getValue().clickEvent());
+            assertEquals(ClickEvent.runCommand("/dungeon join"), capture.getValue().clickEvent());
         } finally {
             LangUtils.clear();
         }

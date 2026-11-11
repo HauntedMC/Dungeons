@@ -1,8 +1,7 @@
 package nl.hauntedmc.dungeons.command;
 
-import org.bukkit.command.CommandSender;
-
 import java.util.List;
+import org.bukkit.command.CommandSender;
 
 interface CommandHandler {
     /** Handles a branch-specific command invocation. */

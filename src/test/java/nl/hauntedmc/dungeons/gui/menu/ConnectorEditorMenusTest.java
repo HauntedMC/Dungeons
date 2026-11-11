@@ -2,24 +2,22 @@ package nl.hauntedmc.dungeons.gui.menu;
 
 import static org.mockito.Mockito.*;
 
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
 import nl.hauntedmc.dungeons.generation.room.Connector;
 import nl.hauntedmc.dungeons.generation.room.ConnectorDoor;
 import nl.hauntedmc.dungeons.gui.hotbar.PlayerHotbarMenu;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
 import nl.hauntedmc.dungeons.support.HeadlessInventoryMenus;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 class ConnectorEditorMenusTest {
     private HeadlessInventoryMenus menus;
@@ -54,7 +52,7 @@ class ConnectorEditorMenusTest {
         var replacement = mock(PlayerHotbarMenu.class);
         current.set(replacement);
 
-        try (var messages = mockStatic(LangUtils.class)) {
+        try (var _ = mockStatic(LangUtils.class)) {
             menu.getMenuItems().get(2).onSelect(event);
         }
 

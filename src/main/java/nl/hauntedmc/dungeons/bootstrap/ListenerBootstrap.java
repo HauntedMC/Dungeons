@@ -6,27 +6,20 @@ import nl.hauntedmc.dungeons.listener.DungeonListener;
 import nl.hauntedmc.dungeons.listener.HotbarMenuListener;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
-
 import org.bukkit.Bukkit;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 
-/**
- * Registers Bukkit event listeners that are part of the plugin's core runtime.
- */
+/** Registers Bukkit event listeners that are part of the plugin's core runtime. */
 final class ListenerBootstrap {
     private final DungeonsRuntime runtime;
 
-    /**
-     * Creates the listener bootstrap stage.
-     */
+    /** Creates the listener bootstrap stage. */
     ListenerBootstrap(DungeonsRuntime runtime) {
         this.runtime = runtime;
     }
 
-    /**
-     * Registers long-lived listeners once their required managers have been initialized.
-     */
+    /** Registers long-lived listeners once their required managers have been initialized. */
     void registerCoreListeners() {
         DungeonsPlugin plugin = this.runtime.environment().plugin();
         register(new DatabaseLoginListener(this.runtime));
@@ -44,9 +37,9 @@ final class ListenerBootstrap {
         register(this.runtime.queueRegistry());
         register(this.runtime.teamService());
     }
+
     private void register(Listener listener) {
         this.runtime.resources().ownIngress(listener, HandlerList::unregisterAll);
         Bukkit.getPluginManager().registerEvents(listener, this.runtime.environment().plugin());
     }
-
 }

@@ -4,13 +4,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.bukkit.block.data.BlockData;
-import org.joml.Vector3i;
-import org.junit.jupiter.api.Test;
-
 import java.lang.reflect.Proxy;
 import java.util.HashSet;
 import java.util.List;
+import org.bukkit.block.data.BlockData;
+import org.joml.Vector3i;
+import org.junit.jupiter.api.Test;
 
 class StructurePieceBlockTest {
     @Test

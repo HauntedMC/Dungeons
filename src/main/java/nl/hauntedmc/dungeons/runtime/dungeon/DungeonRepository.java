@@ -1,20 +1,5 @@
 package nl.hauntedmc.dungeons.runtime.dungeon;
 
-import nl.hauntedmc.dungeons.gui.menu.PlayMenus;
-import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
-import nl.hauntedmc.dungeons.model.dungeon.DungeonLoadException;
-import nl.hauntedmc.dungeons.registry.DungeonTypeRegistry;
-import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
-import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.util.config.ConfigSyncUtils;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
-import org.bukkit.Bukkit;
-import org.bukkit.configuration.InvalidConfigurationException;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.Player;
-import org.jetbrains.annotations.Nullable;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,6 +13,19 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import nl.hauntedmc.dungeons.config.ConfigSyncUtils;
+import nl.hauntedmc.dungeons.gui.menu.PlayMenus;
+import nl.hauntedmc.dungeons.localization.LangUtils;
+import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
+import nl.hauntedmc.dungeons.model.dungeon.DungeonLoadException;
+import nl.hauntedmc.dungeons.registry.DungeonTypeRegistry;
+import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
+import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
+import org.bukkit.Bukkit;
+import org.bukkit.configuration.InvalidConfigurationException;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Runtime catalogue of loaded dungeon definitions.
@@ -99,8 +97,7 @@ public final class DungeonRepository {
             }
             YamlConfiguration template = new YamlConfiguration();
             if (defaultConfig.exists()) template.load(defaultConfig);
-            ConfigSyncUtils.syncMissingAndObsolete(
-                    bundledDefaults, template);
+            ConfigSyncUtils.syncMissingAndObsolete(bundledDefaults, template);
             template.save(defaultConfig);
 
             this.runtime.defaultDungeonConfig().load(defaultConfig);
@@ -177,8 +174,13 @@ public final class DungeonRepository {
                 config = new YamlConfiguration();
                 config.load(configFile);
                 var candidateId = DungeonIdentity.existing(config);
-                if (candidateId != null && this.dungeons.values().stream().anyMatch(existing ->
-                        !existing.getWorldName().equals(folder.getName()) && candidateId.equals(existing.getDungeonId())))
+                if (candidateId != null
+                        && this.dungeons.values().stream()
+                                .anyMatch(
+                                        existing ->
+                                                !existing.getWorldName().equals(folder.getName())
+                                                        && candidateId.equals(
+                                                                existing.getDungeonId())))
                     throw new IllegalArgumentException("Duplicate dungeon UUID: " + candidateId);
                 dungeonType = config.getString("dungeon.type", "static");
             }
@@ -194,7 +196,8 @@ public final class DungeonRepository {
             } catch (InvocationTargetException exception) {
                 Throwable ex = exception.getTargetException();
                 if (ex instanceof DungeonLoadException) {
-                    ((DungeonLoadException) ex).printError(folder);
+                    ((DungeonLoadException) ex)
+                            .printError(this.runtime.environment().logger(), folder);
                 } else {
                     this.runtime
                             .environment()
@@ -253,9 +256,13 @@ public final class DungeonRepository {
 
     /** Inserts or replaces a loaded dungeon in this catalogue. */
     public void put(DungeonDefinition dungeon) {
-        if (dungeon.getDungeonId() != null && this.dungeons.values().stream().anyMatch(existing ->
-                !existing.getWorldName().equals(dungeon.getWorldName())
-                        && dungeon.getDungeonId().equals(existing.getDungeonId()))) {
+        if (dungeon.getDungeonId() != null
+                && this.dungeons.values().stream()
+                        .anyMatch(
+                                existing ->
+                                        !existing.getWorldName().equals(dungeon.getWorldName())
+                                                && dungeon.getDungeonId()
+                                                        .equals(existing.getDungeonId()))) {
             throw new IllegalArgumentException("Duplicate dungeon UUID: " + dungeon.getDungeonId());
         }
         this.dungeons.put(dungeon.getWorldName(), dungeon);
@@ -274,7 +281,9 @@ public final class DungeonRepository {
             var id = UUID.fromString(dungeonName);
             if (!id.toString().equalsIgnoreCase(dungeonName)) return null;
             return this.dungeons.values().stream()
-                    .filter(dungeon -> id.equals(dungeon.getDungeonId())).findFirst().orElse(null);
+                    .filter(dungeon -> id.equals(dungeon.getDungeonId()))
+                    .findFirst()
+                    .orElse(null);
         } catch (IllegalArgumentException invalidId) {
             return null;
         }

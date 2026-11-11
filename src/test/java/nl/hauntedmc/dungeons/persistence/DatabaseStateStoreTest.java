@@ -3,14 +3,14 @@ package nl.hauntedmc.dungeons.persistence;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import org.junit.jupiter.api.Test;
-
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
+import org.junit.jupiter.api.Test;
 
 class DatabaseStateStoreTest {
-    @Test void cancelledAndTimedOutDurabilityBarriersCloseAdmissionWithoutCancellingDatabaseWork() {
+    @Test
+    void cancelledAndTimedOutDurabilityBarriersCloseAdmissionWithoutCancellingDatabaseWork() {
         var database = mock(DungeonDatabase.class);
         var store = new DatabaseStateStore(database, 50);
         var cancelled = new CompletableFuture<Void>();

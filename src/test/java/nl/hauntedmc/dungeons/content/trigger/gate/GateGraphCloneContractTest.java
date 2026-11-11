@@ -2,18 +2,16 @@ package nl.hauntedmc.dungeons.content.trigger.gate;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.nio.file.Path;
+import java.util.Map;
 import nl.hauntedmc.dungeons.content.function.SetStatusFunction;
 import nl.hauntedmc.dungeons.content.trigger.RemoteTrigger;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.support.*;
-
 import org.bukkit.Location;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-
-import java.nio.file.Path;
-import java.util.Map;
 
 class GateGraphCloneContractTest {
     @TempDir Path directory;
@@ -22,7 +20,7 @@ class GateGraphCloneContractTest {
     void cloningPartiallySatisfiedGatesCreatesIndependentChildGraphsAndCleanupOwnership()
             throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration());
-                var menus = new HeadlessMenus()) {
+                var _ = new HeadlessMenus()) {
             var gate = new GateAndTrigger();
             gate.addTrigger(new RemoteTrigger());
             gate.addTrigger(new RemoteTrigger());

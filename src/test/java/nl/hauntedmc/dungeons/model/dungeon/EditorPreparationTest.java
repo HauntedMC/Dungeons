@@ -3,17 +3,15 @@ package nl.hauntedmc.dungeons.model.dungeon;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
-import nl.hauntedmc.dungeons.model.instance.EditableInstance;
+import java.nio.file.Path;
 import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
+import nl.hauntedmc.dungeons.runtime.instance.DungeonInstance;
+import nl.hauntedmc.dungeons.runtime.instance.EditableInstance;
 import nl.hauntedmc.dungeons.runtime.instance.PreparationRegistry;
 import nl.hauntedmc.dungeons.support.*;
-
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-
-import java.nio.file.Path;
 
 class EditorPreparationTest {
     @TempDir Path directory;
@@ -47,13 +45,15 @@ class EditorPreparationTest {
             when(catalog.get(f.dungeon.getWorldName())).thenReturn(f.dungeon);
             f.paper.runtime.setDungeonCatalog(catalog);
             var editor = mock(EditableInstance.class);
-            when(editor.getDisposalState()).thenReturn(
-                    DungeonInstance.DisposalState.ACTIVE);
+            when(editor.getDisposalState()).thenReturn(DungeonInstance.DisposalState.ACTIVE);
             when(editor.awaitInitialization(anyLong(), any())).thenReturn(true);
-            doAnswer(call -> {
-                session.setInstance(editor);
-                return null;
-            }).when(editor).addPlayer(session);
+            doAnswer(
+                            call -> {
+                                session.setInstance(editor);
+                                return null;
+                            })
+                    .when(editor)
+                    .addPlayer(session);
             f.dungeon.setEditSession(editor);
             new EditorPreparation(f.dungeon, state.player.getUniqueId(), 30).start();
             assertTrue(registry.contains(session));
@@ -96,10 +96,13 @@ class EditorPreparationTest {
             when(catalog.get(dungeon.getWorldName())).thenReturn(dungeon);
             f.paper.runtime.setDungeonCatalog(catalog);
             var late = mock(EditableInstance.class);
-            doAnswer(call -> {
-                registry.cancel(session);
-                return late;
-            }).when(dungeon).createEditSession(any());
+            doAnswer(
+                            call -> {
+                                registry.cancel(session);
+                                return late;
+                            })
+                    .when(dungeon)
+                    .createEditSession(any());
             doNothing().when(dungeon).discardInstance(late);
             new EditorPreparation(dungeon, state.player.getUniqueId(), 30).start();
             verify(dungeon).discardInstance(late);
@@ -121,8 +124,7 @@ class EditorPreparationTest {
             when(catalog.get(dungeon.getWorldName())).thenReturn(dungeon);
             f.paper.runtime.setDungeonCatalog(catalog);
             var original = mock(EditableInstance.class);
-            when(original.getDisposalState()).thenReturn(
-                    DungeonInstance.DisposalState.ACTIVE);
+            when(original.getDisposalState()).thenReturn(DungeonInstance.DisposalState.ACTIVE);
             when(original.awaitInitialization(anyLong(), any())).thenReturn(true);
             dungeon.setEditSession(original);
             new EditorPreparation(dungeon, state.player.getUniqueId(), 30).start();

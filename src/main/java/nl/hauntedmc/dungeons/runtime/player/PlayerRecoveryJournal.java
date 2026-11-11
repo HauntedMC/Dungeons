@@ -1,9 +1,11 @@
 package nl.hauntedmc.dungeons.runtime.player;
 
+import java.util.*;
+import java.util.UUID;
+import java.util.function.Consumer;
 import nl.hauntedmc.dungeons.persistence.StateDocument;
 import nl.hauntedmc.dungeons.persistence.StateStore;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
-
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.InvalidConfigurationException;
@@ -11,10 +13,6 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
-
-import java.util.*;
-import java.util.UUID;
-import java.util.function.Consumer;
 
 /**
  * Database write-ahead journal. All operations run on the server thread. A transaction is
@@ -27,8 +25,12 @@ final class PlayerRecoveryJournal {
     private YamlConfiguration state;
 
     PlayerRecoveryJournal(UUID playerId) {
-        this.document = RuntimeContext.runtime().stateStore().document(
-                new StateStore.Key("player-recovery", playerId.toString(), playerId));
+        this.document =
+                RuntimeContext.runtime()
+                        .stateStore()
+                        .document(
+                                new StateStore.Key(
+                                        "player-recovery", playerId.toString(), playerId));
         state = new YamlConfiguration();
         try {
             document.loadInto(state);
@@ -52,7 +54,8 @@ final class PlayerRecoveryJournal {
                 }
             }
         } catch (Exception failure) {
-            throw new IllegalStateException("Cannot load database player recovery journal " + playerId, failure);
+            throw new IllegalStateException(
+                    "Cannot load database player recovery journal " + playerId, failure);
         }
     }
 
@@ -90,10 +93,13 @@ final class PlayerRecoveryJournal {
 
     Settlement prepareKeySettlement(boolean refundOriginal, ItemStack replacement) {
         requireServerThread();
-        if (!hasKeyReservation()) throw new IllegalStateException("Missing durable key reservation");
+        if (!hasKeyReservation())
+            throw new IllegalStateException("Missing durable key reservation");
         var refunds = items("refunds");
-        if (refundOriginal) refunds.add(PlayerRecoverySnapshot.decode(
-                Objects.requireNonNull(state.getList("key-reservation.item")))[0]);
+        if (refundOriginal)
+            refunds.add(
+                    PlayerRecoverySnapshot.decode(
+                            Objects.requireNonNull(state.getList("key-reservation.item")))[0]);
         else if (replacement != null) refunds.add(replacement.clone());
         try {
             var next = new YamlConfiguration();
@@ -217,6 +223,7 @@ final class PlayerRecoveryJournal {
                 });
         return true;
     }
+
     boolean recover(Player player) {
         requireServerThread();
         // A crash during reservation can precede the native inventory removal checkpoint.
@@ -252,7 +259,8 @@ final class PlayerRecoveryJournal {
     boolean deliverRefund(Player player, ItemStack requested) {
         requireServerThread();
         // Offline saves may silently do nothing, and respawn can replace a dead player's inventory.
-        // Keep both the refund and any unfinished delivery journal untouched until the player is alive.
+        // Keep both the refund and any unfinished delivery journal untouched until the player is
+        // alive.
         if (!player.isOnline() || player.isDead() || player.getHealth() <= 0) return false;
         if (hasRecovery()) return false;
         finishDelivery(player);

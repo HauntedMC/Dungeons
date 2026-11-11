@@ -4,12 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import nl.hauntedmc.dungeons.util.world.SimpleLocation;
-
 import org.bukkit.util.BoundingBox;
 import org.junit.jupiter.api.Test;
-
-import java.util.List;
 
 class RoomTransformContractTest {
     @Test

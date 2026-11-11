@@ -1,5 +1,9 @@
 package nl.hauntedmc.dungeons.content.function;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
@@ -7,13 +11,12 @@ import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ChatMenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.FunctionCategory;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.text.MessageUtils;
-
 import org.bukkit.Axis;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -25,11 +28,6 @@ import org.bukkit.block.data.Orientable;
 import org.bukkit.block.data.Rotatable;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 
 /**
  * Function that places or removes a configured block at its location.
@@ -44,25 +42,19 @@ public class BlockEditorFunction extends DungeonFunction {
     @PersistedField private String direction = "NORTH";
     private transient boolean invalidBlockTypeLogged;
 
-    /**
-     * Creates a new BlockEditorFunction instance.
-     */
+    /** Creates a new BlockEditorFunction instance. */
     public BlockEditorFunction(Map<String, Object> config) {
         super("Block Editor", config);
         this.setCategory(FunctionCategory.LOCATION);
     }
 
-    /**
-     * Creates a new BlockEditorFunction instance.
-     */
+    /** Creates a new BlockEditorFunction instance. */
     public BlockEditorFunction() {
         super("Block Editor");
         this.setCategory(FunctionCategory.LOCATION);
     }
 
-    /**
-     * Performs initialize.
-     */
+    /** Performs initialize. */
     @Override
     public void initialize() {
         super.initialize();
@@ -73,9 +65,7 @@ public class BlockEditorFunction extends DungeonFunction {
         }
     }
 
-    /**
-     * Performs run function.
-     */
+    /** Performs run function. */
     @Override
     public void runFunction(TriggerFireEvent triggerEvent, List<DungeonPlayerSession> targets) {
         Block block = this.location.getBlock();
@@ -157,9 +147,7 @@ public class BlockEditorFunction extends DungeonFunction {
         }
     }
 
-    /**
-     * Builds menu button.
-     */
+    /** Builds menu button. */
     @Override
     public MenuButton buildMenuButton() {
         MenuButton functionButton = new MenuButton(Material.OBSERVER);
@@ -169,9 +157,7 @@ public class BlockEditorFunction extends DungeonFunction {
         return functionButton;
     }
 
-    /**
-     * Builds hotbar menu.
-     */
+    /** Builds hotbar menu. */
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(createBlockTypeItem());
@@ -179,37 +165,27 @@ public class BlockEditorFunction extends DungeonFunction {
         this.menu.addMenuItem(createBlockDirectionItem());
     }
 
-    /**
-     * Returns the block type.
-     */
+    /** Returns the block type. */
     public String getBlockType() {
         return this.blockType;
     }
 
-    /**
-     * Sets the block type.
-     */
+    /** Sets the block type. */
     public void setBlockType(String blockType) {
         this.blockType = blockType;
     }
 
-    /**
-     * Returns whether remove.
-     */
+    /** Returns whether remove. */
     public boolean isRemove() {
         return this.remove;
     }
 
-    /**
-     * Returns the direction.
-     */
+    /** Returns the direction. */
     public String getDirection() {
         return this.direction;
     }
 
-    /**
-     * Resolves configured material.
-     */
+    /** Resolves configured material. */
     private Material resolveConfiguredMaterial(boolean logInvalid) {
         try {
             Material material = Material.valueOf(this.blockType.toUpperCase(Locale.ROOT));
@@ -241,14 +217,13 @@ public class BlockEditorFunction extends DungeonFunction {
                 this.button = new MenuButton(Material.GRASS_BLOCK);
                 this.button.setDisplayName("&d&lBlock Type");
             }
+
             @Override
             public void onSelect(Player player) {
                 if (!BlockEditorFunction.this.remove) {
-                    LangUtils.sendMessage(
-                            player, "editor.function.block-editor.ask-place-block");
+                    LangUtils.sendMessage(player, "editor.function.block-editor.ask-place-block");
                 } else {
-                    LangUtils.sendMessage(
-                            player, "editor.function.block-editor.ask-remove-block");
+                    LangUtils.sendMessage(player, "editor.function.block-editor.ask-remove-block");
                 }
 
                 LangUtils.sendMessage(
@@ -256,6 +231,7 @@ public class BlockEditorFunction extends DungeonFunction {
                         "editor.function.block-editor.current-block",
                         LangUtils.placeholder("block", BlockEditorFunction.this.blockType));
             }
+
             @Override
             public void onInput(Player player, String message) {
                 String matString = message.toUpperCase(Locale.ROOT);
@@ -267,8 +243,7 @@ public class BlockEditorFunction extends DungeonFunction {
                         LangUtils.sendMessage(
                                 player,
                                 "editor.function.block-editor.block-set",
-                                LangUtils.placeholder(
-                                        "block", BlockEditorFunction.this.blockType));
+                                LangUtils.placeholder("block", BlockEditorFunction.this.blockType));
                         return;
                     }
 
@@ -289,15 +264,15 @@ public class BlockEditorFunction extends DungeonFunction {
                     LangUtils.sendMessage(
                             player,
                             "editor.function.block-editor.block-set",
-                            LangUtils.placeholder(
-                                    "block", BlockEditorFunction.this.blockType));
+                            LangUtils.placeholder("block", BlockEditorFunction.this.blockType));
                 } catch (IllegalArgumentException exception) {
-                    LangUtils.sendMessage(
-                            player, "editor.function.block-editor.invalid-material");
+                    LangUtils.sendMessage(player, "editor.function.block-editor.invalid-material");
                     MessageUtils.sendClickableLink(
                             player,
                             LangUtils.component(
-                                    "editor.function.block-editor.valid-materials-link", player, true),
+                                    "editor.function.block-editor.valid-materials-link",
+                                    player,
+                                    true),
                             "https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Material.html");
                 }
             }
@@ -311,16 +286,15 @@ public class BlockEditorFunction extends DungeonFunction {
                 this.button = new MenuButton(Material.BARRIER);
                 this.button.setDisplayName("&d&lToggle Remover");
             }
+
             @Override
             public void onSelect(Player player) {
                 if (!BlockEditorFunction.this.remove) {
-                    LangUtils.sendMessage(
-                            player, "editor.function.block-editor.mode-remove");
+                    LangUtils.sendMessage(player, "editor.function.block-editor.mode-remove");
                     BlockEditorFunction.this.setDisplayName(
                             BlockEditorFunction.this.blockType + " Remover");
                 } else {
-                    LangUtils.sendMessage(
-                            player, "editor.function.block-editor.mode-place");
+                    LangUtils.sendMessage(player, "editor.function.block-editor.mode-place");
                     BlockEditorFunction.this.setDisplayName(
                             BlockEditorFunction.this.blockType + " Placer");
                 }
@@ -337,12 +311,12 @@ public class BlockEditorFunction extends DungeonFunction {
                 this.button = new MenuButton(Material.MAGENTA_GLAZED_TERRACOTTA);
                 this.button.setDisplayName("&d&lBlock Direction");
             }
+
             @Override
             public void onSelect(Player player) {
                 Material mat = BlockEditorFunction.this.resolveConfiguredMaterial(true);
                 if (mat == null) {
-                    LangUtils.sendMessage(
-                            player, "editor.function.block-editor.invalid-material");
+                    LangUtils.sendMessage(player, "editor.function.block-editor.invalid-material");
                     this.setCancelled(true);
                     return;
                 }
@@ -350,8 +324,7 @@ public class BlockEditorFunction extends DungeonFunction {
                 BlockData data = mat.createBlockData();
                 if (BlockEditorFunction.this.remove) {
                     LangUtils.sendMessage(
-                            player,
-                            "editor.function.block-editor.no-direction-while-removing");
+                            player, "editor.function.block-editor.no-direction-while-removing");
                     this.setCancelled(true);
                 } else if (!(data instanceof Directional)
                         && !(data instanceof Rotatable)
@@ -360,22 +333,20 @@ public class BlockEditorFunction extends DungeonFunction {
                             player, "editor.function.block-editor.no-direction-for-block");
                     this.setCancelled(true);
                 } else {
-                    LangUtils.sendMessage(
-                            player, "editor.function.block-editor.ask-direction");
+                    LangUtils.sendMessage(player, "editor.function.block-editor.ask-direction");
                     LangUtils.sendMessage(
                             player,
                             "editor.function.block-editor.current-direction",
-                            LangUtils.placeholder(
-                                    "direction", BlockEditorFunction.this.direction));
+                            LangUtils.placeholder("direction", BlockEditorFunction.this.direction));
                 }
             }
+
             @Override
             public void onInput(Player player, String message) {
                 String directionString = message.toUpperCase(Locale.ROOT);
                 Material mat = BlockEditorFunction.this.resolveConfiguredMaterial(true);
                 if (mat == null) {
-                    LangUtils.sendMessage(
-                            player, "editor.function.block-editor.invalid-material");
+                    LangUtils.sendMessage(player, "editor.function.block-editor.invalid-material");
                     return;
                 }
 
@@ -394,7 +365,9 @@ public class BlockEditorFunction extends DungeonFunction {
                         MessageUtils.sendClickableLink(
                                 player,
                                 LangUtils.component(
-                                        "editor.function.block-editor.valid-directions-link", player, true),
+                                        "editor.function.block-editor.valid-directions-link",
+                                        player,
+                                        true),
                                 "https://hub.spigotmc.org/javadocs/spigot/org/bukkit/block/BlockFace.html");
                     }
                 } else if (data instanceof Rotatable) {
@@ -411,7 +384,9 @@ public class BlockEditorFunction extends DungeonFunction {
                         MessageUtils.sendClickableLink(
                                 player,
                                 LangUtils.component(
-                                        "editor.function.block-editor.valid-directions-link", player, true),
+                                        "editor.function.block-editor.valid-directions-link",
+                                        player,
+                                        true),
                                 "https://hub.spigotmc.org/javadocs/spigot/org/bukkit/block/BlockFace.html");
                     }
                 } else {
@@ -420,14 +395,12 @@ public class BlockEditorFunction extends DungeonFunction {
                         LangUtils.sendMessage(
                                 player,
                                 "editor.function.block-editor.axis-set",
-                                LangUtils.placeholder(
-                                        "axis", BlockEditorFunction.this.direction));
+                                LangUtils.placeholder("axis", BlockEditorFunction.this.direction));
                     } catch (IllegalArgumentException exception) {
                         LangUtils.sendMessage(
                                 player, "editor.function.block-editor.invalid-direction");
                         LangUtils.sendMessage(
-                                player,
-                                "editor.function.block-editor.valid-axis-directions");
+                                player, "editor.function.block-editor.valid-axis-directions");
                     }
                 }
             }

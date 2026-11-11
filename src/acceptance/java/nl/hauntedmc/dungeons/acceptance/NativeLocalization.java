@@ -1,11 +1,5 @@
 package nl.hauntedmc.dungeons.acceptance;
 
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-import nl.hauntedmc.dungeons.util.text.ComponentUtils;
-
-import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
-
 import java.lang.reflect.Proxy;
 import java.nio.file.Files;
 import java.util.Locale;
@@ -13,6 +7,10 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import nl.hauntedmc.dungeons.localization.LangUtils;
+import nl.hauntedmc.dungeons.util.text.ComponentUtils;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 
 /** Validate installed localization resources and language selection through the actual facade. */
 final class NativeLocalization {

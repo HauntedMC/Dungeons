@@ -1,22 +1,19 @@
 package nl.hauntedmc.dungeons.runtime.staff;
 
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import nl.hauntedmc.dungeons.content.function.CommandFunction;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.model.element.DungeonElement;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.util.metadata.PersistedFieldSupport;
 
-import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
-
 /** Traverses persisted mechanics, including private wrapper children, with cycle protection. */
 public final class ContentReferences {
     private ContentReferences() {}
 
-    public static void dungeon(
-            DungeonDefinition dungeon,
-            Consumer<Object> visitor) {
+    public static void dungeon(DungeonDefinition dungeon, Consumer<Object> visitor) {
         if (dungeon.asBranching() != null) {
             for (var room : dungeon.asBranching().getUniqueRooms().values())
                 visit(room.getFunctionsMapRelative(), visitor);
@@ -53,8 +50,7 @@ public final class ContentReferences {
         visit(
                 root,
                 value -> {
-                    if (value instanceof CommandFunction)
-                        found.set(true);
+                    if (value instanceof CommandFunction) found.set(true);
                 });
         return found.get();
     }

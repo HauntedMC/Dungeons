@@ -3,19 +3,17 @@ package nl.hauntedmc.dungeons.integration;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import nl.hauntedmc.dataregistry.api.DataRegistryFeature;
-import nl.hauntedmc.dataregistry.api.player.*;
-import nl.hauntedmc.featureframework.toolkit.io.localization.Language;
-
-import org.bukkit.entity.Player;
-import org.junit.jupiter.api.Test;
-
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import nl.hauntedmc.dataregistry.api.DataRegistryFeature;
+import nl.hauntedmc.dataregistry.api.player.*;
+import nl.hauntedmc.featureframework.toolkit.io.localization.Language;
+import org.bukkit.entity.Player;
+import org.junit.jupiter.api.Test;
 
 class RegistryProfilesTest {
     @Test

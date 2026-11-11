@@ -1,19 +1,20 @@
 package nl.hauntedmc.dungeons.content.function;
 
+import java.util.List;
+import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.FunctionCategory;
 import nl.hauntedmc.dungeons.model.element.FunctionTargetType;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.serialization.SerializableAs;
@@ -23,9 +24,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * Function that gives or drops a configured item stack.
@@ -40,45 +38,35 @@ public class GiveItemFunction extends DungeonFunction {
     @PersistedField protected boolean drop = false;
     @PersistedField protected boolean notify = true;
 
-    /**
-     * Creates a new GiveItemFunction instance.
-     */
+    /** Creates a new GiveItemFunction instance. */
     public GiveItemFunction(String namespace, Map<String, Object> config) {
         super(namespace, config);
         this.targetType = FunctionTargetType.PLAYER;
         this.setCategory(FunctionCategory.PLAYER);
     }
 
-    /**
-     * Creates a new GiveItemFunction instance.
-     */
+    /** Creates a new GiveItemFunction instance. */
     public GiveItemFunction(Map<String, Object> config) {
         super("Item Dispenser", config);
         this.targetType = FunctionTargetType.PLAYER;
         this.setCategory(FunctionCategory.PLAYER);
     }
 
-    /**
-     * Creates a new GiveItemFunction instance.
-     */
+    /** Creates a new GiveItemFunction instance. */
     public GiveItemFunction(String namespace) {
         super(namespace);
         this.targetType = FunctionTargetType.PLAYER;
         this.setCategory(FunctionCategory.PLAYER);
     }
 
-    /**
-     * Creates a new GiveItemFunction instance.
-     */
+    /** Creates a new GiveItemFunction instance. */
     public GiveItemFunction() {
         super("Item Dispenser");
         this.targetType = FunctionTargetType.PLAYER;
         this.setCategory(FunctionCategory.PLAYER);
     }
 
-    /**
-     * Performs run function.
-     */
+    /** Performs run function. */
     @Override
     public void runFunction(TriggerFireEvent triggerEvent, List<DungeonPlayerSession> targets) {
         if (this.item != null) {
@@ -125,9 +113,7 @@ public class GiveItemFunction extends DungeonFunction {
         }
     }
 
-    /**
-     * Builds menu button.
-     */
+    /** Builds menu button. */
     @Override
     public MenuButton buildMenuButton() {
         MenuButton functionButton = new MenuButton(Material.DROPPER);
@@ -137,25 +123,19 @@ public class GiveItemFunction extends DungeonFunction {
         return functionButton;
     }
 
-    /**
-     * Builds hotbar menu.
-     */
+    /** Builds hotbar menu. */
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
                 new MenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.ITEM_FRAME);
                         this.button.setDisplayName("&d&lChoose Item");
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
@@ -164,9 +144,7 @@ public class GiveItemFunction extends DungeonFunction {
                 });
         this.menu.addMenuItem(
                 new ToggleMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.DROPPER);
@@ -174,9 +152,7 @@ public class GiveItemFunction extends DungeonFunction {
                         this.button.setEnchanted(GiveItemFunction.this.drop);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         if (!GiveItemFunction.this.drop) {
@@ -192,9 +168,7 @@ public class GiveItemFunction extends DungeonFunction {
                 });
         this.menu.addMenuItem(
                 new ToggleMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.NAME_TAG);
@@ -202,9 +176,7 @@ public class GiveItemFunction extends DungeonFunction {
                         this.button.setEnchanted(GiveItemFunction.this.notify);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         if (!GiveItemFunction.this.notify) {
@@ -219,44 +191,32 @@ public class GiveItemFunction extends DungeonFunction {
                 });
     }
 
-    /**
-     * Returns the item.
-     */
+    /** Returns the item. */
     public ItemStack getItem() {
         return this.item;
     }
 
-    /**
-     * Sets the item.
-     */
+    /** Sets the item. */
     public void setItem(ItemStack item) {
         this.item = item;
     }
 
-    /**
-     * Returns whether drop.
-     */
+    /** Returns whether drop. */
     public boolean isDrop() {
         return this.drop;
     }
 
-    /**
-     * Sets the drop.
-     */
+    /** Sets the drop. */
     public void setDrop(boolean drop) {
         this.drop = drop;
     }
 
-    /**
-     * Returns whether notify.
-     */
+    /** Returns whether notify. */
     public boolean isNotify() {
         return this.notify;
     }
 
-    /**
-     * Sets the notify.
-     */
+    /** Sets the notify. */
     public void setNotify(boolean notify) {
         this.notify = notify;
     }

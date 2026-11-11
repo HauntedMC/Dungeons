@@ -1,25 +1,19 @@
 package nl.hauntedmc.dungeons.bootstrap;
 
+import java.util.Locale;
 import nl.hauntedmc.dungeons.runtime.PluginEnvironment;
 import nl.hauntedmc.dungeons.world.generator.SolidBlockChunkGenerator;
 import nl.hauntedmc.dungeons.world.generator.VoidGenerator;
-
 import org.bukkit.Material;
 import org.bukkit.generator.ChunkGenerator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Locale;
-
-/**
- * Resolves the plugin-specific string world generator identifiers used by Bukkit's plugin hook.
- */
+/** Resolves the plugin-specific string world generator identifiers used by Bukkit's plugin hook. */
 final class WorldGeneratorResolver {
     private final PluginEnvironment environment;
 
-    /**
-     * Creates the resolver used by the Bukkit world-generator callback.
-     */
+    /** Creates the resolver used by the Bukkit world-generator callback. */
     WorldGeneratorResolver(PluginEnvironment environment) {
         this.environment = environment;
     }

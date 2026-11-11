@@ -1,23 +1,5 @@
 package nl.hauntedmc.dungeons.runtime.staff;
 
-import nl.hauntedmc.dungeons.config.ConfigurationFile;
-import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
-import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
-import nl.hauntedmc.dungeons.persistence.StateDocument;
-import nl.hauntedmc.dungeons.persistence.StateStore;
-import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
-import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
-import org.bukkit.Bukkit;
-import org.bukkit.GameMode;
-import org.bukkit.Location;
-import org.bukkit.command.CommandSender;
-import org.bukkit.configuration.InvalidConfigurationException;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitTask;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -29,6 +11,22 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
+import nl.hauntedmc.dungeons.config.ConfigurationFile;
+import nl.hauntedmc.dungeons.localization.LangUtils;
+import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
+import nl.hauntedmc.dungeons.persistence.StateDocument;
+import nl.hauntedmc.dungeons.persistence.StateStore;
+import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
+import nl.hauntedmc.dungeons.runtime.instance.DungeonInstance;
+import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
+import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
+import org.bukkit.Location;
+import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.InvalidConfigurationException;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitTask;
 
 /** Server-thread operations shared by staff interfaces. Maintenance survives process restarts. */
 public final class StaffOperations implements AutoCloseable {
@@ -102,11 +100,13 @@ public final class StaffOperations implements AutoCloseable {
     StaffOperations(DungeonsRuntime runtime, LongSupplier clock) {
         this.clock = clock;
         this.runtime = runtime;
-        this.document = runtime.stateStore().document(new StateStore.Key("staff-state", "server", null));
+        this.document =
+                runtime.stateStore().document(new StateStore.Key("staff-state", "server", null));
         try {
             document.loadInto(state);
         } catch (InvalidConfigurationException failure) {
-            throw new IllegalStateException("Cannot load database staff state; admissions must remain stopped", failure);
+            throw new IllegalStateException(
+                    "Cannot load database staff state; admissions must remain stopped", failure);
         }
         for (String section : List.of("maintenance", "restrictions", "operations"))
             if (state.contains(section) && !state.isConfigurationSection(section))
@@ -555,7 +555,8 @@ public final class StaffOperations implements AutoCloseable {
                 op.target,
                 op.reason,
                 op.shortId() + " " + op.state + " " + op.detail);
-        LangUtils.sendRaw(pendingWork.actor,
+        LangUtils.sendRaw(
+                pendingWork.actor,
                 op.shortId()
                         + " "
                         + op.state

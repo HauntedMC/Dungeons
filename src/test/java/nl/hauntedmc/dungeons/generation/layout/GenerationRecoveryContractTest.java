@@ -13,17 +13,15 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.*;
+import java.util.concurrent.*;
 import nl.hauntedmc.dungeons.generation.room.RotatedRoom;
 import nl.hauntedmc.dungeons.support.PaperBoundary;
 import nl.hauntedmc.dungeons.util.world.SimpleLocation;
-
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.mockito.ArgumentMatchers;
-
-import java.util.*;
-import java.util.concurrent.*;
 
 class GenerationRecoveryContractTest {
     @Test

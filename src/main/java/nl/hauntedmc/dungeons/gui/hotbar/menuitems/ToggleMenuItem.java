@@ -2,13 +2,10 @@ package nl.hauntedmc.dungeons.gui.hotbar.menuitems;
 
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerEvent;
 
-/**
- * Hotbar menu item that immediately re-renders the current menu after selection.
- */
+/** Hotbar menu item that immediately re-renders the current menu after selection. */
 public abstract class ToggleMenuItem extends MenuItem {
     @Override
     public void onSelect(PlayerEvent event) {

@@ -3,9 +3,8 @@ package nl.hauntedmc.dungeons.util.time;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.jupiter.api.Test;
-
 import java.util.Date;
+import org.junit.jupiter.api.Test;
 
 class TimeUtilsTest {
     @Test

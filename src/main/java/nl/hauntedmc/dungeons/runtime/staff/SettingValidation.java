@@ -1,8 +1,7 @@
 package nl.hauntedmc.dungeons.runtime.staff;
 
-import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
-
 import java.util.List;
+import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 
 /** Domain validation supplements parsing; rejected values never reach persistence. */
 public final class SettingValidation {

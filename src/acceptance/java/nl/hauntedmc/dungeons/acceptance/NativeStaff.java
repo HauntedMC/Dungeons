@@ -2,23 +2,6 @@ package nl.hauntedmc.dungeons.acceptance;
 
 import static nl.hauntedmc.dungeons.acceptance.AcceptancePlugin.require;
 
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
-
-import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
-import nl.hauntedmc.dungeons.runtime.staff.StaffOperations;
-import nl.hauntedmc.dungeons.runtime.staff.StaffPermissions;
-import nl.hauntedmc.dungeons.util.item.ItemUtils;
-
-import org.bukkit.Bukkit;
-import org.bukkit.Material;
-import org.bukkit.command.CommandSender;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.permissions.PermissibleBase;
-import org.bukkit.permissions.ServerOperator;
-
 import java.io.File;
 import java.lang.reflect.Proxy;
 import java.nio.file.Files;
@@ -28,6 +11,20 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
+import nl.hauntedmc.dungeons.runtime.staff.StaffOperations;
+import nl.hauntedmc.dungeons.runtime.staff.StaffPermissions;
+import nl.hauntedmc.dungeons.util.item.ItemUtils;
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.permissions.PermissibleBase;
+import org.bukkit.permissions.ServerOperator;
 
 /**
  * Verifies packaged permissions, command binding and persisted admission policy on native Paper.
@@ -77,8 +74,7 @@ final class NativeStaff {
         try {
             attachment.setPermission("dungeons.staff.edit.crypt", true);
             require(
-                    StaffPermissions.allows(
-                            scoped, "edit", "crypt"),
+                    StaffPermissions.allows(scoped, "edit", "crypt"),
                     "Scoped grant is hidden by Bukkit defaults");
             attachment.setPermission("dungeons.role.builder", true);
             require(
@@ -92,8 +88,7 @@ final class NativeStaff {
                     "Builder preset bypassed gameplay commands");
             attachment.setPermission("dungeons.staff.edit.crypt", false);
             require(
-                    !StaffPermissions.allows(
-                            scoped, "edit", "crypt"),
+                    !StaffPermissions.allows(scoped, "edit", "crypt"),
                     "Scoped denial did not override preset");
         } finally {
             attachment.remove();
@@ -130,9 +125,13 @@ final class NativeStaff {
                                             }
                                             case "sendMessage" -> {
                                                 for (Object arg : args) {
-                                                    if (arg instanceof String text) playerOutput.add(text);
+                                                    if (arg instanceof String text)
+                                                        playerOutput.add(text);
                                                     if (arg instanceof Component component)
-                                                        playerOutput.add(PlainTextComponentSerializer.plainText().serialize(component));
+                                                        playerOutput.add(
+                                                                PlainTextComponentSerializer
+                                                                        .plainText()
+                                                                        .serialize(component));
                                                 }
                                                 yield null;
                                             }
@@ -141,12 +140,14 @@ final class NativeStaff {
         var command = Objects.requireNonNull(Bukkit.getPluginCommand("dungeon"));
         command.execute(player, "dungeon", new String[] {"server"});
         require(!opened.get(), "Staff status opened an inventory");
-        require(playerOutput.stream().anyMatch(line -> line.contains("Dungeons:")),
+        require(
+                playerOutput.stream().anyMatch(line -> line.contains("Dungeons:")),
                 "Staff status did not render chat output");
         playerOutput.clear();
         command.execute(player, "dungeon", new String[] {"map", "info", dungeon.getWorldName()});
         require(!opened.get(), "Map info opened an inventory");
-        require(playerOutput.stream().anyMatch(line -> line.contains(dungeon.getWorldName())),
+        require(
+                playerOutput.stream().anyMatch(line -> line.contains(dungeon.getWorldName())),
                 "Map detail did not render chat output");
 
         var output = new ArrayList<String>();
@@ -166,10 +167,7 @@ final class NativeStaff {
                                                 for (Object arg : args) {
                                                     if (arg instanceof String text)
                                                         output.add(text);
-                                                    else if (arg
-                                                            instanceof
-                                                            Component
-                                                                    component)
+                                                    else if (arg instanceof Component component)
                                                         output.add(
                                                                 net.kyori.adventure.text.serializer
                                                                         .plain
@@ -184,8 +182,9 @@ final class NativeStaff {
         verifyExistingMapIdentityAndMetadataKeys(test, dungeon);
         return CompletableFuture.completedFuture(null);
     }
-    private static void verifyExistingMapIdentityAndMetadataKeys(AcceptancePlugin test,
-            DungeonDefinition dungeon) throws Exception {
+
+    private static void verifyExistingMapIdentityAndMetadataKeys(
+            AcceptancePlugin test, DungeonDefinition dungeon) throws Exception {
         var settings = test.runtime().config();
         Object unique = settings.get("access.keys.unique_validation_enabled");
         Object metadata = settings.get("access.keys.metadata_validation_enabled");
@@ -193,27 +192,36 @@ final class NativeStaff {
             settings.set("access.keys.unique_validation_enabled", false);
             settings.set("access.keys.metadata_validation_enabled", true);
             var definition = dungeon.addAccessKey(new ItemStack(Material.PAPER), null);
-            var existing = ItemUtils.tagDungeonAccessKey(
-                    new ItemStack(Material.PAPER), definition.getKeyId());
+            var existing =
+                    ItemUtils.tagDungeonAccessKey(
+                            new ItemStack(Material.PAPER), definition.getKeyId());
             var file = new File(dungeon.getFolder(), "config.yml");
             var before = new YamlConfiguration();
             before.load(file);
             before.set("dungeon.id", null);
             before.save(file);
-            Files.writeString(dungeon.getFolder().toPath().resolve("access_keys.yml"), "unused: [broken");
+            Files.writeString(
+                    dungeon.getFolder().toPath().resolve("access_keys.yml"), "unused: [broken");
             var upgraded = test.runtime().dungeonCatalog().loadDungeon(dungeon.getFolder());
             require(upgraded != null, "Missing map ID or unused ledger broke upgrade");
             UUID assigned = upgraded.getDungeonId();
             require(assigned != null, "Map UUID was not assigned");
-            require(upgraded.isValidKey(existing) != null, "Existing metadata key rejected after ID assignment");
+            require(
+                    upgraded.isValidKey(existing) != null,
+                    "Existing metadata key rejected after ID assignment");
             var reloaded = test.runtime().dungeonCatalog().loadDungeon(upgraded.getFolder());
-            require(reloaded != null && assigned.equals(reloaded.getDungeonId()), "Reload changed the assigned UUID");
-            require(reloaded.getAccessKeys().getFirst().getKeyId().equals(definition.getKeyId()), "Upgrade changed key-definition identity");
-            require(reloaded.isValidKey(existing) != null, "Reload rejected an existing metadata-only key");
+            require(
+                    reloaded != null && assigned.equals(reloaded.getDungeonId()),
+                    "Reload changed the assigned UUID");
+            require(
+                    reloaded.getAccessKeys().getFirst().getKeyId().equals(definition.getKeyId()),
+                    "Upgrade changed key-definition identity");
+            require(
+                    reloaded.isValidKey(existing) != null,
+                    "Reload rejected an existing metadata-only key");
         } finally {
             settings.set("access.keys.unique_validation_enabled", unique);
             settings.set("access.keys.metadata_validation_enabled", metadata);
         }
     }
-
 }

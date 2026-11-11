@@ -1,11 +1,5 @@
 package nl.hauntedmc.dungeons.util.metadata;
 
-import nl.hauntedmc.dungeons.annotation.EditorHidden;
-import nl.hauntedmc.dungeons.annotation.PersistedField;
-
-import org.apache.commons.lang3.ClassUtils;
-import org.apache.commons.lang3.reflect.FieldUtils;
-
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -14,10 +8,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import nl.hauntedmc.dungeons.annotation.EditorHidden;
+import nl.hauntedmc.dungeons.annotation.PersistedField;
+import org.apache.commons.lang3.ClassUtils;
+import org.apache.commons.lang3.reflect.FieldUtils;
 
-/**
- * Reflection helper for persisted-field discovery, serialization, and hydration.
- */
+/** Reflection helper for persisted-field discovery, serialization, and hydration. */
 public final class PersistedFieldSupport {
     public static final Object SKIP = new Object();
 
