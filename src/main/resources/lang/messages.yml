@@ -903,3 +903,7 @@ input:
 
 internal:
   render: "{text}"
+
+repository:
+  started: '<HauntedMC:Info>Repository operation started.'
+  failed: '<HauntedMC:Error>Repository operation failed: {detail}'

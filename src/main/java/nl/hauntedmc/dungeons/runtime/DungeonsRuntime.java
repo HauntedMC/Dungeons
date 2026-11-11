@@ -71,6 +71,16 @@ public final class DungeonsRuntime {
         this.database = database;
     }
 
+    private nl.hauntedmc.dungeons.repository.RepoService contentRepository;
+
+    public nl.hauntedmc.dungeons.repository.RepoService contentRepository() {
+        return contentRepository;
+    }
+
+    public void setContentRepository(nl.hauntedmc.dungeons.repository.RepoService repository) {
+        contentRepository = repository;
+    }
+
     private StaffOperations staffOperations;
 
     public StaffOperations staffOperations() {

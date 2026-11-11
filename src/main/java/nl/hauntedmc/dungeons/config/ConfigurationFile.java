@@ -107,6 +107,17 @@ public class ConfigurationFile extends YamlConfiguration {
     }
 
     /** Captures pending owner-thread requests and drains disk queues before shutdown completes. */
+    public static CompletableFuture<Void> awaitPendingSaves(File directory) {
+        requireOwnerThread();
+        for (SnapshotRequest pending : PENDING_CAPTURES.toArray(SnapshotRequest[]::new))
+            pending.capture();
+        try {
+            return ConfigurationIoQueue.barrier(ConfigurationIoQueue.destination(directory));
+        } catch (IOException failure) {
+            return CompletableFuture.failedFuture(failure);
+        }
+    }
+
     public static void flushPendingSaves() {
         requireOwnerThread();
         for (SnapshotRequest pending : PENDING_CAPTURES.toArray(SnapshotRequest[]::new)) {

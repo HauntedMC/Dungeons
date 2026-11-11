@@ -59,8 +59,8 @@ DataRegistry can complete its join initialization; commands that require a playe
 
 Progression, completion, cooldowns, save points, recovery journals, unique-key ledgers,
 staff state and audit events use the database. Legacy local gameplay files are ignored; there is
-no import, migration or file fallback. Content definitions, world templates and content backups
-remain files. Back up the database as well as content. Vanilla player saves remain necessary to
+no import, migration or file fallback. Content definitions and world templates remain local working copies; published releases and all
+of their content are also stored in MySQL. Local safety backups remain files. Back up the database as well as content. Vanilla player saves remain necessary to
 checkpoint inventory transactions against their database recovery receipts.
 
 SQL executes on provider workers. Async login prefetch warms immutable player snapshots; dungeon
@@ -75,6 +75,93 @@ configured deadline; cleanup continues on its worker. `/dungeon server status` r
 without issuing SQL. One-connection pools are supported. Native Paper acceptance runs the real
 DataProvider/DataRegistry stack, rejects invalid connection/schema boots, and verifies healthy boot
 and cold-restart recovery; MySQL integration tests cover schema ownership and transactional failures.
+
+## Dungeon content repository
+
+Local map creation, imports, editors and saves keep their existing commands. New maps are
+initialized automatically as unpublished `0.0.0` drafts and can be played locally. **Existing maps
+without valid `.dungeon-repo.yml` metadata are disabled for gameplay and warm-world preloading.**
+They remain inspectable/editable. Run `/dungeon repo init <map>` on each legacy map to initialize
+it, preserving its UUID, enabled preference, progression and keys. Initialization does not publish
+or attach an older map to a release already in the repository.
+
+| Command | Purpose |
+| --- | --- |
+| `/dungeon repo init <map>` | Initialize an existing local draft. |
+| `/dungeon repo add <map> [message...]` | Publish its first release, `1.0.0`. |
+| `/dungeon repo push <map> <major\|minor\|patch> [message...]` | Publish changes, calculating the version automatically. |
+| `/dungeon repo fetch` | Check for new maps/releases without installing anything. |
+| `/dungeon repo pull <map-or-UUID> [--version <version>] [--force]` | Install a release or update a local working copy. |
+| `/dungeon repo rollback <map> <version> <major\|minor\|patch> [message...]` | Republish historical content as a new release. |
+| `/dungeon repo status [map]` | Show local version, changes and cached remote state. |
+| `/dungeon repo diff <map> [page]` | List added, changed and removed paths against the installed release. |
+| `/dungeon repo list [page]` | Browse published maps, including maps absent locally. |
+| `/dungeon repo history <map> [page]` | Browse permanent release history. |
+
+Any authorized server can publish. Releases are immutable and share one linear history per
+persistent dungeon UUID. Push requires the current published head as the local base; stale or
+competing pushes fail. Save and close the editor before publishing. An unchanged push creates no
+release. There is no merging or force push: preserve conflicting edits, pull the latest release,
+then reapply the edits. Historical pulls leave the working copy based on that historical release;
+use `repo rollback` to make historical content the newest release for all servers.
+
+Only `dungeon.enabled` and the external `locations.exit` destination are local to a server. Their
+comments identify them as **LOCAL — NOT SYNCED**. Publishing excludes them, local changes to them
+do not dirty a map, and update pulls preserve them. First-time pulls start disabled with no exit.
+Other map settings, including capacity, preload preferences, rules and commands, are published.
+Global plugin settings and external plugin/resource dependencies are not bundled with a map.
+
+Pull downloads and validates before closing admissions. Existing runs can finish; occupied editors
+must save/close. Editor changes are frozen during the drain, but save/close remain available. The
+final saved local content is checked again before installation. Modified or uninitialized copies
+require `--force`; the command returns a short-lived `--confirm <token>` command bound to the saved
+content and selected release. Confirmed requests reuse the verified download, and the token is
+accepted before potentially lengthy local revalidation. A forced pull still requires compatible, verified content and matching
+UUIDs. Different-UUID name collisions must be archived/resolved explicitly.
+
+Successful updates restore the prior admission state without clearing separately requested
+maintenance. Failures retain maintenance and restore prior files when possible. Every replacement
+retains a safety backup under `backups/<map>/`; the most recent ten backups are retained, with active
+recovery backups protected. Interrupted swaps are recovered before map discovery on the next boot.
+Do not remove `repository/journals` or edit `.dungeon-repo.yml` to fake a release. Backups/archives
+preserve the marker, so restoring old content also restores its accurate older base version.
+
+Fetch runs after startup and approximately every five minutes, with jitter/backoff; updates are
+never automatically installed. Discovery is cached under `repository/index.yml`, with freshness
+shown by status. Failed fetches retain stale discovery; they do not independently disable local
+maps. Existing mandatory database and server-lease health rules still apply.
+
+MySQL stores portable file manifests and SHA-256-addressed binary chunks, at most 1 MiB each,
+compressed when useful and reused across versions. The repository includes world terrain/entities/
+POI, room definitions/schematics, functions, datapacks and other authored files. Player saves,
+progression files, world locks/UUID files, temporary files and local repository metadata are not
+published. Published history is retained permanently; abandoned uploads expire after 24 hours.
+Transfers use bounded batches and support one-connection pools without holding the lease lock for
+an entire map. Publisher/rollback transfers and pull drains appear in `/dungeon server operations`;
+uncommitted publication transfers and waiting pulls can be cancelled through that interface.
+
+Repository limits in `config.yml`:
+
+```yaml
+repository:
+  max-snapshot-bytes: 17179869184 # 16 GiB uncompressed
+  max-files: 100000
+  queued-operations: 8
+  operation-timeout-seconds: 1800
+```
+
+One worker transfers content at a time per server. Prepare sufficient local disk space for staging
+and safety backups. Content format 1 requires the same Minecraft version at publication/installation;
+unknown serialization types and corrupt content are rejected. Custom `.struct` room schematics are
+validated with a 256 MiB decompression bound. Database/schema changes are additive and use the
+existing DataProvider ORM policy; no separate credentials, SQL installation or object store is needed.
+
+Permissions are `dungeons.staff.repo.inspect`, `.init`, `.publish`, `.pull` and `.force`, with optional
+`.<map>` scoping. Builder grants inspect/init; administrator and operator grant all five. Installing
+or publishing command-bearing content additionally requires `dungeons.staff.scripts`. Existing
+maintenance permissions control cancellation. Console is supported. Use `/dungeon help repo`.
+Before upgrading, back up content and MySQL, verify the update in staging, then initialize legacy
+maps deliberately. Repository rollback changes content only and never resets player progression.
 
 ## HauntedMC integration
 

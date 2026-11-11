@@ -3,7 +3,7 @@ dungeon:
   id: ''
   # string: STATIC | BRANCHING | OPEN
   type: STATIC
-  # bool. Enables this dungeon for playable runs.
+  # LOCAL — NOT SYNCED. Enables playable runs on this server.
   enabled: true
   # string. Name shown in menus, chat and titles.
   display_name: "&bNieuwe Dungeon"
@@ -29,7 +29,7 @@ locations:
     spawn: null
   # location or null. Player entry point for the dungeon.
   start: null
-  # location or null. Destination used when leaving the dungeon.
+  # LOCAL — NOT SYNCED. External destination on this server.
   exit: null
   # bool. True = always send leaving players to locations.exit.
   exit_on_leave: false

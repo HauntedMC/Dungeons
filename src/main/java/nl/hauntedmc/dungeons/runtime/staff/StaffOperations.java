@@ -47,6 +47,7 @@ public final class StaffOperations implements AutoCloseable {
         public final Instant created = Instant.now();
         public State state = State.WAITING;
         public String detail = "Waiting for active runs and worlds to drain";
+        private java.util.function.BooleanSupplier repositoryCancellation;
 
         private Operation(String actor, String action, String target, String reason) {
             this.actor = actor;
@@ -73,7 +74,9 @@ public final class StaffOperations implements AutoCloseable {
             Operation operation,
             String capability,
             CommandSender actor,
-            Supplier<CompletableFuture<String>> work) {}
+            Supplier<CompletableFuture<String>> work,
+            boolean resume,
+            Object previousMaintenance) {}
 
     private final LongSupplier clock;
     private final DungeonsRuntime runtime;
@@ -398,6 +401,27 @@ public final class StaffOperations implements AutoCloseable {
             String target,
             String reason,
             Supplier<CompletableFuture<String>> work) {
+        return drainInternal(actor, capability, action, target, reason, work, false);
+    }
+
+    public Operation repositoryDrain(
+            CommandSender actor,
+            String capability,
+            String action,
+            String target,
+            String reason,
+            Supplier<CompletableFuture<String>> work) {
+        return drainInternal(actor, capability, action, target, reason, work, true);
+    }
+
+    private Operation drainInternal(
+            CommandSender actor,
+            String capability,
+            String action,
+            String target,
+            String reason,
+            Supplier<CompletableFuture<String>> work,
+            boolean resume) {
         requireOpen();
         StaffPermissions.require(actor, capability, target.equals("all") ? null : target);
         requireReason(reason);
@@ -405,6 +429,7 @@ public final class StaffOperations implements AutoCloseable {
                 || pending.containsKey("all")
                 || target.equals("all") && !pending.isEmpty())
             throw new IllegalArgumentException("A conflicting operation is already pending");
+        requireContentWritable(target);
         Object before = state.get("maintenance." + target);
         persist(next -> next.set("maintenance." + target, reason));
         audit(actor, "maintenance", target, reason, before + " -> " + reason);
@@ -412,11 +437,59 @@ public final class StaffOperations implements AutoCloseable {
         Operation op = new Operation(actor.getName(), action, target, reason);
         operations.put(op.id, op);
         remember(op);
-        pending.put(target, new Pending(op, capability, actor, work));
+        pending.put(target, new Pending(op, capability, actor, work, resume, before));
         trim();
         audit(actor, action, target, reason, op.shortId() + " WAITING");
         tick();
         return op;
+    }
+
+    public void repositoryCancellation(
+            Operation operation, java.util.function.BooleanSupplier cancellation) {
+        requireOpen();
+        if (operation.state == State.WAITING || operation.state == State.RUNNING)
+            operation.repositoryCancellation = cancellation;
+    }
+
+    public Operation trackRepository(
+            CommandSender actor,
+            String capability,
+            String action,
+            String target,
+            UUID id,
+            java.util.function.BooleanSupplier cancellation) {
+        requireOpen();
+        StaffPermissions.require(actor, capability, target);
+        var operation = new Operation(actor.getName(), action, target, "Dungeon repository");
+        operation.id = id;
+        operation.state = State.RUNNING;
+        operation.detail = "Queued repository transfer";
+        operation.repositoryCancellation = cancellation;
+        operations.put(id, operation);
+        remember(operation);
+        trim();
+        audit(actor, action, target, "Dungeon repository", operation.shortId() + " RUNNING");
+        return operation;
+    }
+
+    public void finishRepository(
+            CommandSender actor, Operation operation, String detail, Throwable failure) {
+        if (closed) return;
+        operation.repositoryCancellation = null;
+        if (operation.state != State.CANCELLED) {
+            operation.state = failure == null ? State.SUCCEEDED : State.FAILED;
+            operation.detail =
+                    failure == null
+                            ? detail
+                            : Objects.toString(failure.getMessage(), "Repository operation failed");
+        }
+        remember(operation);
+        audit(
+                actor,
+                operation.action,
+                operation.target,
+                "Dungeon repository",
+                operation.shortId() + " " + operation.state + " " + operation.detail);
     }
 
     public void cancel(CommandSender actor, String id, String reason) {
@@ -424,8 +497,19 @@ public final class StaffOperations implements AutoCloseable {
         requireReason(reason);
         Operation op = operation(id);
         StaffPermissions.require(actor, "maintenance", op.target.equals("all") ? null : op.target);
+        if (op.state == State.RUNNING && op.repositoryCancellation != null) {
+            if (!op.repositoryCancellation.getAsBoolean())
+                throw new IllegalArgumentException(
+                        "Publication is committing; inspect its result before rollback");
+            op.state = State.CANCELLED;
+            op.detail = "Cancellation requested; an in-flight database batch will settle first";
+            remember(op);
+            audit(actor, "cancel", id, reason, op.detail);
+            return;
+        }
         if (op.state != State.WAITING)
-            throw new IllegalArgumentException("Only waiting operations can be cancelled safely");
+            throw new IllegalArgumentException(
+                    "Only waiting operations or uncommitted repository transfers can be cancelled safely");
         pending.remove(op.target);
         disposing.remove(op.target);
         op.state = State.CANCELLED;
@@ -529,6 +613,19 @@ public final class StaffOperations implements AutoCloseable {
     private void finish(Pending pendingWork, String detail, Throwable failure) {
         Operation op = pendingWork.operation;
         if (closed || pending.get(op.target) != pendingWork) return;
+        if (failure == null
+                && pendingWork.resume
+                && Objects.equals(state.get("maintenance." + op.target), op.reason)) {
+            try {
+                persist(
+                        next ->
+                                next.set(
+                                        "maintenance." + op.target,
+                                        pendingWork.previousMaintenance));
+            } catch (RuntimeException persistenceFailure) {
+                failure = persistenceFailure;
+            }
+        }
         pending.remove(op.target, pendingWork);
         disposing.remove(op.target);
         op.state = failure == null ? State.SUCCEEDED : State.FAILED;
@@ -562,7 +659,9 @@ public final class StaffOperations implements AutoCloseable {
                         + op.state
                         + ": "
                         + op.detail
-                        + ". Maintenance remains enabled.");
+                        + (maintenance(op.target)
+                                ? ". Maintenance remains enabled."
+                                : ". Admissions resumed."));
     }
 
     public CompletableFuture<String> archive(DungeonDefinition dungeon) {
@@ -702,7 +801,9 @@ public final class StaffOperations implements AutoCloseable {
     }
 
     public boolean contentBusy(String dungeon) {
-        return pending.containsKey(dungeon) || pending.containsKey("all");
+        return pending.containsKey(dungeon)
+                || pending.containsKey("all")
+                || runtime.contentRepository() != null && runtime.contentRepository().busy(dungeon);
     }
 
     public void requireContentWritable(String dungeon) {

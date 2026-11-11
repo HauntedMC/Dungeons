@@ -111,6 +111,14 @@ final class WorldFixtures {
         config.save(folder.resolve("config.yml").toFile());
         var dungeon = test.runtime().dungeonCatalog().loadDungeon(folder.toFile());
         require(dungeon != null, "Actual catalog rejected " + name);
+        // Test fixtures explicitly represent initialized working copies, unlike legacy discovery.
+        new nl.hauntedmc.dungeons.repository.RepoLocal(
+                        dungeon.getDungeonId(),
+                        null,
+                        nl.hauntedmc.dungeons.repository.RepoVersion.DRAFT,
+                        "0".repeat(64))
+                .write(folder);
+        dungeon.refreshRepositoryState();
         return dungeon;
     }
 

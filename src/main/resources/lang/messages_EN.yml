@@ -55,3 +55,7 @@ commands:
       - '<HauntedMC:Success>/dungeon team leave <HauntedMC:Text>| <HauntedMC:Warning>Leave your team.'
       - '<HauntedMC:Success>/dungeon team disband <HauntedMC:Text>| <HauntedMC:Warning>Disband your team as its leader.'
       - '<HauntedMC:Success>/dungeon team info <HauntedMC:Text>| <HauntedMC:Warning>Show your current team.'
+
+repository:
+  started: '<HauntedMC:Info>Repository operation started.'
+  failed: '<HauntedMC:Error>Repository operation failed: {detail}'

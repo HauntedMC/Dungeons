@@ -433,6 +433,11 @@ class CommandContractTest {
         final GuiService gui = mock(GuiService.class);
 
         CommandFixture(RunFixture f) {
+            var content = mock(nl.hauntedmc.dungeons.repository.RepoService.class);
+            f.paper.runtime.setContentRepository(content);
+            when(content.initialize(anyString(), ArgumentMatchers.any(), ArgumentMatchers.eq(true)))
+                    .thenReturn(
+                            java.util.concurrent.CompletableFuture.completedFuture("Initialized"));
             f.session(caller);
             when(caller.player.hasPermission(anyString()))
                     .thenAnswer(c -> permissions.contains(c.getArgument(0)));

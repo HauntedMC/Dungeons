@@ -8,6 +8,7 @@ import java.util.Map;
 /** Canonical public syntax. Internal operation arguments are not registered public aliases. */
 final class CommandRoutes {
     enum Handler {
+        REPO,
         GAMEPLAY,
         TEAM,
         MAP,
@@ -74,6 +75,74 @@ final class CommandRoutes {
 
     static final List<Route> ALL =
             List.of(
+                    r("repo init <map>", "staff.repo.init", false, Handler.REPO, "init <map>"),
+                    r("repo add <map>", "staff.repo.publish", false, Handler.REPO, "add <map>"),
+                    r(
+                            "repo add <map> *options",
+                            "staff.repo.publish",
+                            false,
+                            Handler.REPO,
+                            "add <map> *options"),
+                    r(
+                            "repo push <map> <bump>",
+                            "staff.repo.publish",
+                            false,
+                            Handler.REPO,
+                            "push <map> <bump>"),
+                    r(
+                            "repo push <map> <bump> *options",
+                            "staff.repo.publish",
+                            false,
+                            Handler.REPO,
+                            "push <map> <bump> *options"),
+                    r("repo fetch", "staff.repo.inspect", false, Handler.REPO, "fetch"),
+                    r("repo pull <map>", "staff.repo.pull", false, Handler.REPO, "pull <map>"),
+                    r(
+                            "repo pull <map> *options",
+                            "staff.repo.pull",
+                            false,
+                            Handler.REPO,
+                            "pull <map> *options"),
+                    r(
+                            "repo rollback <map> <version> <bump>",
+                            "staff.repo.publish",
+                            false,
+                            Handler.REPO,
+                            "rollback <map> <version> <bump>"),
+                    r(
+                            "repo rollback <map> <version> <bump> *options",
+                            "staff.repo.publish",
+                            false,
+                            Handler.REPO,
+                            "rollback <map> <version> <bump> *options"),
+                    r("repo status", "staff.repo.inspect", false, Handler.REPO, "status"),
+                    r(
+                            "repo status <map>",
+                            "staff.repo.inspect",
+                            false,
+                            Handler.REPO,
+                            "status <map>"),
+                    r("repo diff <map>", "staff.repo.inspect", false, Handler.REPO, "diff <map>"),
+                    r(
+                            "repo diff <map> <page>",
+                            "staff.repo.inspect",
+                            false,
+                            Handler.REPO,
+                            "diff <map> <page>"),
+                    r("repo list", "staff.repo.inspect", false, Handler.REPO, "list"),
+                    r("repo list <page>", "staff.repo.inspect", false, Handler.REPO, "list <page>"),
+                    r(
+                            "repo history <map>",
+                            "staff.repo.inspect",
+                            false,
+                            Handler.REPO,
+                            "history <map>"),
+                    r(
+                            "repo history <map> <page>",
+                            "staff.repo.inspect",
+                            false,
+                            Handler.REPO,
+                            "history <map> <page>"),
                     r("list", "play", false, Handler.DISCOVERY, "list"),
                     r("list *filter", "play", false, Handler.DISCOVERY, "list *filter"),
                     r("info <map>", "play", false, Handler.DISCOVERY, "info <map>"),

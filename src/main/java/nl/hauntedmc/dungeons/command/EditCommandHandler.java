@@ -241,7 +241,7 @@ final class EditCommandHandler implements CommandHandler {
             return true;
         }
 
-        if (!this.requireDungeonEditAccess(player, instance.getDungeon())) {
+        if (!this.requireEditorPersistenceAccess(player, instance.getDungeon())) {
             return false;
         }
 
@@ -536,7 +536,7 @@ final class EditCommandHandler implements CommandHandler {
             return true;
         }
 
-        if (!this.requireDungeonEditAccess(player, instance.getDungeon())) {
+        if (!this.requireEditorPersistenceAccess(player, instance.getDungeon())) {
             return false;
         }
 
@@ -549,13 +549,25 @@ final class EditCommandHandler implements CommandHandler {
         return true;
     }
 
-    /** Runs require dungeon edit access. */
+    private boolean requireEditorPersistenceAccess(Player player, DungeonDefinition dungeon) {
+        if (dungeon.getRuntime().staffOperations() != null
+                && dungeon.getRuntime().staffOperations().contentBusy(dungeon.getWorldName())) {
+            if (!CommandUtils.hasDungeonEditAccess(player, dungeon.getWorldName()))
+                throw new IllegalArgumentException("Missing editor permission");
+            if (dungeon.getEditSession() == null
+                    || this.playerManager.get(player) == null
+                    || this.playerManager.get(player).getInstance() != dungeon.getEditSession())
+                throw new IllegalArgumentException("Editor ownership has changed");
+            return true;
+        }
+        return requireDungeonEditAccess(player, dungeon);
+    }
+
     private boolean requireDungeonEditAccess(Player player, DungeonDefinition dungeon) {
         if (dungeon != null && CommandUtils.hasDungeonEditAccess(player, dungeon.getWorldName())) {
             StaffEditGuard.configuration(player, dungeon, "editor");
             return true;
         }
-
         LangUtils.sendMessage(player, "general.errors.no-permission");
         return false;
     }

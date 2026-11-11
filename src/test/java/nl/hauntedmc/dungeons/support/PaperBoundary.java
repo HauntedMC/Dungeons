@@ -82,7 +82,20 @@ public final class PaperBoundary implements AutoCloseable {
         Files.createDirectories(folder);
         runtime.setDefaultDungeonConfig(new YamlConfiguration());
         bukkit.when(Bukkit::getWorldContainer).thenReturn(folder.getParent().toFile());
-        return new StaticDungeon(runtime, folder.toFile(), settings);
+        var dungeon = new StaticDungeon(runtime, folder.toFile(), settings);
+        initializeRepository(dungeon);
+        return dungeon;
+    }
+
+    public static void initializeRepository(
+            nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition dungeon) throws Exception {
+        new nl.hauntedmc.dungeons.repository.RepoLocal(
+                        dungeon.getDungeonId(),
+                        null,
+                        nl.hauntedmc.dungeons.repository.RepoVersion.DRAFT,
+                        "0".repeat(64))
+                .write(dungeon.getFolder().toPath());
+        dungeon.refreshRepositoryState();
     }
 
     @Override

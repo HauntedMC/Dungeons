@@ -67,16 +67,33 @@ final class DatabaseTestHost implements AutoCloseable {
     private final AtomicReference<QueryGate> gate = new AtomicReference<>();
     private final ExecutorService workers = Executors.newFixedThreadPool(4);
 
-    @SuppressWarnings("unchecked")
+    private com.zaxxer.hikari.HikariDataSource boundedPool;
+
     DatabaseTestHost(MySQLContainer mysql, String name) throws Exception {
-        DataSource source = mock(DataSource.class);
-        when(source.getConnection())
-                .thenAnswer(
-                        ignored ->
-                                DriverManager.getConnection(
-                                        mysql.getJdbcUrl(),
-                                        mysql.getUsername(),
-                                        mysql.getPassword()));
+        this(mysql, name, 0);
+    }
+
+    @SuppressWarnings("unchecked")
+    DatabaseTestHost(MySQLContainer mysql, String name, int connections) throws Exception {
+        DataSource source;
+        if (connections > 0) {
+            var settings = new com.zaxxer.hikari.HikariConfig();
+            settings.setJdbcUrl(mysql.getJdbcUrl());
+            settings.setUsername(mysql.getUsername());
+            settings.setPassword(mysql.getPassword());
+            settings.setMaximumPoolSize(connections);
+            settings.setConnectionTimeout(5000);
+            boundedPool = new com.zaxxer.hikari.HikariDataSource(settings);
+            source = boundedPool;
+        } else source = mock(DataSource.class);
+        if (connections == 0)
+            when(source.getConnection())
+                    .thenAnswer(
+                            ignored ->
+                                    DriverManager.getConnection(
+                                            mysql.getJdbcUrl(),
+                                            mysql.getUsername(),
+                                            mysql.getPassword()));
         RelationalDataAccess access = mock(RelationalDataAccess.class);
         when(access.executeTransactionally(any()))
                 .thenAnswer(
@@ -117,6 +134,7 @@ final class DatabaseTestHost implements AutoCloseable {
         var api = mock(DataProviderAPI.class);
         OrmTestSupport.configure(api);
         var plugin = mock(DungeonsPlugin.class);
+        when(plugin.getLogger()).thenReturn(java.util.logging.Logger.getLogger("DatabaseTestHost"));
         when(api.forPlugin(plugin)).thenReturn(api);
         var scope = mock(DataProviderScope.class);
         when(api.scope("dungeons.gameplay")).thenReturn(scope);
@@ -144,7 +162,7 @@ final class DatabaseTestHost implements AutoCloseable {
         when(plugin.getConfig()).thenReturn(config);
         database = new DungeonDatabase(plugin);
         try {
-            database.start().get(15, TimeUnit.SECONDS);
+            database.start().get(60, TimeUnit.SECONDS);
         } catch (Exception failure) {
             try {
                 close();
@@ -216,6 +234,7 @@ final class DatabaseTestHost implements AutoCloseable {
             throw new IllegalStateException("Could not close the test database", failure);
         } finally {
             workers.shutdownNow();
+            if (boundedPool != null) boundedPool.close();
             try {
                 if (!workers.awaitTermination(5, TimeUnit.SECONDS))
                     throw new IllegalStateException("Test database workers did not terminate");

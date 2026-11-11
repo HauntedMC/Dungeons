@@ -13,6 +13,21 @@ commands:
     aliases: [du]
 
 permissions:
+  dungeons.staff.repo.inspect:
+    description: Dungeon repository capability - inspect
+    default: false
+  dungeons.staff.repo.init:
+    description: Dungeon repository capability - init
+    default: false
+  dungeons.staff.repo.publish:
+    description: Dungeon repository capability - publish
+    default: false
+  dungeons.staff.repo.pull:
+    description: Dungeon repository capability - pull
+    default: false
+  dungeons.staff.repo.force:
+    description: Dungeon repository capability - force
+    default: false
   dungeons.staff.queue:
     description: Cancel queued and pending dungeon admissions
     default: false
@@ -89,6 +104,8 @@ permissions:
   dungeons.role.builder:
     default: false
     children:
+      dungeons.staff.repo.inspect: true
+      dungeons.staff.repo.init: true
       dungeons.staff.maintenance: true
       dungeons.core: true
       dungeons.staff.inspect: true
@@ -97,6 +114,11 @@ permissions:
   dungeons.role.administrator:
     default: false
     children:
+      dungeons.staff.repo.inspect: true
+      dungeons.staff.repo.init: true
+      dungeons.staff.repo.publish: true
+      dungeons.staff.repo.pull: true
+      dungeons.staff.repo.force: true
       dungeons.core: true
       dungeons.staff.inspect: true
       dungeons.staff.observe: true
@@ -119,6 +141,11 @@ permissions:
   dungeons.role.operator:
     default: op
     children:
+      dungeons.staff.repo.inspect: true
+      dungeons.staff.repo.init: true
+      dungeons.staff.repo.publish: true
+      dungeons.staff.repo.pull: true
+      dungeons.staff.repo.force: true
       dungeons.core: true
       dungeons.staff.backup: true
       dungeons.staff.cooldown: true

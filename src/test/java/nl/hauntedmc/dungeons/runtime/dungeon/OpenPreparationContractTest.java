@@ -24,6 +24,7 @@ class OpenPreparationContractTest {
 
         PreparedOpen(RunFixture f, Path folder, YamlConfiguration settings) throws Exception {
             super(f.paper.runtime, Files.createDirectories(folder).toFile(), settings);
+            PaperBoundary.initializeRepository(this);
             fixture = f;
             var catalog = mock(DungeonRepository.class);
             when(catalog.get(getWorldName())).thenReturn(this);
