@@ -29,6 +29,7 @@ final class NativeMechanics {
                 .thenCompose(
                         run ->
                                 verifySignal(test, run)
+                                        .thenCompose(ignored -> verifyReactiveMechanics(test, run))
                                         .thenCompose(ignored -> verifyEffects(test, run)));
     }
 
@@ -62,6 +63,66 @@ final class NativeMechanics {
                             return test.await(
                                     "registered remote-trigger to function relay",
                                     () -> "signal-received".equals(run.getStatus()));
+                        });
+    }
+
+    private static CompletionStage<Void> verifyReactiveMechanics(
+            AcceptancePlugin test, PlayableInstance run) {
+        var timerEffect = new SetStatusFunction(Map.of("status", "timer-fired"));
+        timerEffect.setTrigger(
+                new nl.hauntedmc.dungeons.content.trigger.TimerTrigger(
+                        Map.of("delay", 1, "interval", 1)));
+        enable(run, timerEffect, new Location(run.getInstanceWorld(), 2, 65, 1));
+        return test.await("native one-shot timer", () -> "timer-fired".equals(run.getStatus()))
+                .thenCompose(
+                        ignored -> {
+                            run.getInstanceVariables().set("reactive_score", 0);
+                            var watcherEffect =
+                                    new SetStatusFunction(Map.of("status", "variable-fired"));
+                            watcherEffect.setTrigger(
+                                    new nl.hauntedmc.dungeons.content.trigger.VariableChangeTrigger(
+                                            Map.of("variable", "reactive_score")));
+                            enable(
+                                    run,
+                                    watcherEffect,
+                                    new Location(run.getInstanceWorld(), 3, 65, 1));
+                            var writer =
+                                    new nl.hauntedmc.dungeons.content.function.variable
+                                            .InstanceVariableFunction(
+                                            Map.of("varName", "reactive_score", "varValue", "1"));
+                            enable(run, writer, new Location(run.getInstanceWorld(), 4, 65, 1));
+                            writer.runFunction(null, List.of());
+                            return test.await(
+                                    "native variable-change trigger",
+                                    () -> "variable-fired".equals(run.getStatus()));
+                        })
+                .thenAccept(
+                        ignored -> {
+                            var conditional =
+                                    new nl.hauntedmc.dungeons.content.function.meta
+                                            .ConditionalFunction(
+                                            Map.of("comparison", "<reactive_score> = 1"));
+                            conditional.addFunction(
+                                    new SetStatusFunction(Map.of("status", "conditional-fired")));
+                            var location = new Location(run.getInstanceWorld(), 5, 65, 1);
+                            enable(run, conditional, location);
+                            conditional.runFunction(null, List.of());
+                            require(
+                                    "conditional-fired".equals(run.getStatus()),
+                                    "Native conditional group did not execute");
+                            var block = location.clone().add(0, -1, 0).getBlock();
+                            block.setType(Material.REDSTONE_BLOCK);
+                            var condition =
+                                    new nl.hauntedmc.dungeons.content.condition.BlockCondition();
+                            condition.setInstance(run);
+                            condition.setLocation(location);
+                            require(
+                                    condition.check(null),
+                                    "Native block condition did not match its offset material");
+                            block.setType(Material.STONE);
+                            require(
+                                    !condition.check(null),
+                                    "Native block condition ignored a material change");
                         });
     }
 

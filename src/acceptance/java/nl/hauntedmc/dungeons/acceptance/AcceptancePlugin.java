@@ -202,14 +202,47 @@ public final class AcceptancePlugin extends JavaPlugin {
                 runtime().dungeonCatalog().get("current-config") != null,
                 "Fresh dungeon is absent from the actual catalog");
         require(
-                runtime().functionRegistry().getRegisteredFunctions().size() == 30,
+                runtime().functionRegistry().getRegisteredFunctions().size() == 32,
                 "Unexpected function registry contents");
         require(
-                runtime().triggerRegistry().getRegisteredTriggers().size() == 14,
+                runtime().triggerRegistry().getRegisteredTriggers().size() == 16,
                 "Unexpected trigger registry contents");
         require(
-                runtime().conditionRegistry().getRegisteredConditions().size() == 7,
+                runtime().conditionRegistry().getRegisteredConditions().size() == 10,
                 "Unexpected condition registry contents");
+        require(
+                runtime()
+                        .functionRegistry()
+                        .getRegisteredFunctions()
+                        .containsAll(
+                                List.of(
+                                        nl.hauntedmc.dungeons.content.function.HealthFunction.class,
+                                        nl.hauntedmc.dungeons.content.function.meta
+                                                .ConditionalFunction.class)),
+                "New function types are absent from the native registry");
+        require(
+                runtime()
+                        .triggerRegistry()
+                        .getRegisteredTriggers()
+                        .containsAll(
+                                List.of(
+                                        nl.hauntedmc.dungeons.content.trigger.TimerTrigger.class,
+                                        nl.hauntedmc.dungeons.content.trigger.VariableChangeTrigger
+                                                .class)),
+                "New trigger types are absent from the native registry");
+        require(
+                runtime()
+                        .conditionRegistry()
+                        .getRegisteredConditions()
+                        .containsAll(
+                                List.of(
+                                        nl.hauntedmc.dungeons.content.condition
+                                                .PlayerHealthCondition.class,
+                                        nl.hauntedmc.dungeons.content.condition.InventoryCondition
+                                                .class,
+                                        nl.hauntedmc.dungeons.content.condition.BlockCondition
+                                                .class)),
+                "New condition types are absent from the native registry");
         return CompletableFuture.completedFuture(null);
     }
 
