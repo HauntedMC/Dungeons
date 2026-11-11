@@ -94,11 +94,21 @@ public final class RepoContent {
                 throw new IllegalArgumentException("Unsafe repository path");
     }
 
+    /** Hashes the portable working tree without allocating a second map on disk. */
+    public static Snapshot inspect(Path source, Limits limits) throws IOException {
+        return scan(source, null, limits);
+    }
+
     public static Snapshot snapshot(Path source, Path destination, Limits limits)
             throws IOException {
+        Objects.requireNonNull(destination);
+        return scan(source, destination, limits);
+    }
+
+    private static Snapshot scan(Path source, Path destination, Limits limits) throws IOException {
         if (Files.isSymbolicLink(source) || !Files.isDirectory(source, LinkOption.NOFOLLOW_LINKS))
             throw new IOException("Invalid dungeon directory");
-        Files.createDirectories(destination);
+        if (destination != null) Files.createDirectories(destination);
         var items = new ArrayList<Item>();
         var names = new HashSet<String>();
         long total = 0;
@@ -145,29 +155,38 @@ public final class RepoContent {
                     throw new IOException("Case-colliding content paths: " + path);
                 if (items.size() >= limits.files())
                     throw new IOException("Repository file limit exceeded");
-                Path target = destination.resolve(relative);
+                Path target = destination == null ? file : destination.resolve(relative);
                 if (Files.isDirectory(file, LinkOption.NOFOLLOW_LINKS)) {
-                    Files.createDirectories(target);
+                    if (destination != null) Files.createDirectories(target);
                     items.add(new Item(path, -1, DungeonSchema.checksum(new byte[0])));
                 } else if (Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS)) {
                     long size = Files.size(file);
                     if (size > limits.bytes() - total)
                         throw new IOException("Repository byte limit exceeded");
-                    Files.createDirectories(target.getParent());
+                    if (destination != null) Files.createDirectories(target.getParent());
+                    String hash;
                     if (path.equals("config.yml")) {
                         if (size > 4L * CHUNK_BYTES)
                             throw new IOException("Dungeon configuration exceeds 4 MiB");
-                        Files.write(target, portableConfig(Files.readAllBytes(file)));
-                    } else Files.copy(file, target, StandardCopyOption.REPLACE_EXISTING);
-                    size = Files.size(target);
+                        byte[] portable = portableConfig(Files.readAllBytes(file));
+                        if (destination != null) Files.write(target, portable);
+                        size = portable.length;
+                        hash = DungeonSchema.checksum(portable);
+                    } else {
+                        if (destination != null)
+                            Files.copy(file, target, StandardCopyOption.REPLACE_EXISTING);
+                        size = Files.size(target);
+                        hash = hashFile(target);
+                    }
                     total = Math.addExact(total, size);
                     if (total > limits.bytes())
                         throw new IOException("Repository byte limit exceeded");
-                    items.add(new Item(path, size, hashFile(target)));
+                    items.add(new Item(path, size, hash));
                 } else throw new IOException("Special files are not repository content: " + path);
             }
         }
-        return new Snapshot(destination, items, manifestHash(items), total);
+        return new Snapshot(
+                destination == null ? source : destination, items, manifestHash(items), total);
     }
 
     public static String manifestHash(List<Item> items) {

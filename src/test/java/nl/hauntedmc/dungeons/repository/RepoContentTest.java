@@ -23,6 +23,22 @@ class RepoContentTest {
     }
 
     @Test
+    void inspectionMatchesPublicationWithoutChangingTheWorkingTree() throws Exception {
+        Path source = content();
+        Files.createDirectories(source.resolve("rooms/empty"));
+        Files.write(source.resolve("map"), new byte[2 * RepoContent.CHUNK_BYTES + 7]);
+        byte[] original = Files.readAllBytes(source.resolve("config.yml"));
+        var inspected = RepoContent.inspect(source, limits);
+        var copied = RepoContent.snapshot(source, directory.resolve("published"), limits);
+        assertEquals(source, inspected.root());
+        assertEquals(copied.items(), inspected.items());
+        assertEquals(copied.hash(), inspected.hash());
+        assertEquals(copied.bytes(), inspected.bytes());
+        assertArrayEquals(original, Files.readAllBytes(source.resolve("config.yml")));
+        assertFalse(Files.exists(source.resolve(RepoContent.MARKER)));
+    }
+
+    @Test
     void versionsUseStrictArithmeticAndNeverWrap() {
         assertEquals("1.2.4", RepoVersion.parse("1.2.3").bump("patch").toString());
         assertEquals("1.3.0", RepoVersion.parse("1.2.3").bump("minor").toString());

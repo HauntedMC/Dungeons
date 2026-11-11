@@ -188,7 +188,15 @@ public final class RepoService implements AutoCloseable {
                         return null;
                     });
         for (var entry : List.copyOf(waitingPulls.entrySet())) {
-            var operation = runtime.staffOperations().operation(entry.getKey().toString());
+            var operation =
+                    runtime.staffOperations().operations().stream()
+                            .filter(candidate -> candidate.id.equals(entry.getKey()))
+                            .findFirst()
+                            .orElse(null);
+            if (operation == null) {
+                waitingPulls.remove(entry.getKey());
+                continue;
+            }
             if (operation.state == StaffOperations.State.CANCELLED
                     || operation.state == StaffOperations.State.FAILED
                     || operation.state == StaffOperations.State.SUCCEEDED) {
@@ -323,6 +331,12 @@ public final class RepoService implements AutoCloseable {
         return RepoContent.snapshot(target.folder(), stage, limits);
     }
 
+    private RepoContent.Snapshot inspect(Target target) throws IOException {
+        check();
+        files.managed(target.folder());
+        return RepoContent.inspect(target.folder(), limits);
+    }
+
     private long folderSize(Path folder) throws IOException {
         final long[] size = {0};
         Files.walkFileTree(
@@ -446,7 +460,7 @@ public final class RepoService implements AutoCloseable {
                                                         throw new IOException(
                                                                 "Repository identity mismatch");
                                                 } else {
-                                                    var snapshot = snapshot(target, operation);
+                                                    var snapshot = inspect(target);
                                                     RepoValidation.validate(
                                                             snapshot, target.id(), false);
                                                     owner(
@@ -940,7 +954,7 @@ public final class RepoService implements AutoCloseable {
                                 lines.add(target.name() + " UNINITIALIZED (repo init required)");
                                 continue;
                             }
-                            var snapshot = snapshot(target, op);
+                            var snapshot = inspect(target);
                             boolean dirty = !snapshot.hash().equals(local.contentHash());
                             var remote =
                                     catalog.stream()
@@ -1263,8 +1277,8 @@ public final class RepoService implements AutoCloseable {
                         || !prepared.release().dungeon().toString().equals(dungeon.get("id")))
                     throw new IOException("Local dungeon UUID does not match release");
                 var target = new Target(name, prepared.release().dungeon(), live, null);
-                var snapshot = snapshot(target, UUID.randomUUID());
-                try {
+                var snapshot = inspect(target);
+                {
                     RepoLocal local;
                     try {
                         local = RepoLocal.read(live);
@@ -1292,8 +1306,6 @@ public final class RepoService implements AutoCloseable {
                             && local != null
                             && Objects.equals(local.releaseId(), prepared.release().id()))
                         return "Already installed " + prepared.release().version();
-                } finally {
-                    RepoContent.deleteTree(snapshot.root().getParent());
                 }
             }
             String finalRevision = revision;

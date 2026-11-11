@@ -40,12 +40,12 @@ final class RepoApprovals<T> {
         var approval = approvals.get(actor);
         if (approval == null || !approval.token().toString().equals(token))
             throw new IllegalArgumentException(
-                    "Invalid force confirmation; run repo pull --force again");
+                    "Invalid repository confirmation; request a new confirmation");
         approvals.remove(actor);
         if (clock.getAsLong() - approval.expires() >= 0) {
             retired.add(approval.payload());
             throw new IllegalArgumentException(
-                    "Force confirmation expired; run repo pull --force again");
+                    "Repository confirmation expired; request a new confirmation");
         }
         return approval;
     }
