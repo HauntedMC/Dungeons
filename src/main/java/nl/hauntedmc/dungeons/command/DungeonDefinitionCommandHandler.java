@@ -620,7 +620,12 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
                         this.output.formatConfiguredState(sender, dungeon.getLobbySpawn())),
                 LangUtils.placeholder(
                         "start",
-                        this.output.formatConfiguredState(sender, dungeon.getStartSpawn())),
+                        this.output.formatConfiguredState(sender, dungeon.getStartSpawn())
+                                + " ["
+                                + String.join(", ", dungeon.getStartSpawns().keySet())
+                                + "; "
+                                + dungeon.getStartSpawns().size()
+                                + "]"),
                 LangUtils.placeholder(
                         "exit", this.output.formatConfiguredState(sender, dungeon.getExitLoc())));
         LangUtils.sendMessage(

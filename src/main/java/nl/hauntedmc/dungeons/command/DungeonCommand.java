@@ -331,6 +331,13 @@ public final class DungeonCommand implements TabExecutor {
                                     .contentRepository()
                                     .cachedNames(sender, capability));
                 }
+            } else if (next.equals("<spawnpoint>") && sender instanceof Player player) {
+                var session = this.playerManager.get(player);
+                if (session != null && session.isEditMode() && session.getInstance() != null) {
+                    var dungeon = session.getInstance().getDungeon();
+                    if (StaffPermissions.allows(sender, "edit", dungeon.getWorldName()))
+                        suggestions.addAll(dungeon.getStartSpawns().keySet());
+                }
             } else if (next.equals("<bump>")) {
                 suggestions.addAll(List.of("major", "minor", "patch"));
             } else if (next.equals("<player>")) {

@@ -416,7 +416,7 @@ public abstract class DungeonInstance {
     protected void onApplyWorldRules() {}
 
     protected void loadGame() {
-        this.startLocation = this.dungeon.getStartSpawn();
+        this.startLocation = this.resolveStartLocation();
         if (this.startLocation == null) {
             this.startLocation = this.instanceWorld.getSpawnLocation();
         }
@@ -428,6 +428,11 @@ public abstract class DungeonInstance {
         this.onInstanceReady();
         this.ready = !this.disposing;
         this.signalInitializationComplete();
+    }
+
+    /** Editors use the first configured location without rolling a playable version. */
+    protected Location resolveStartLocation() {
+        return this.dungeon.getStartSpawn();
     }
 
     protected void onLoadGame() {}

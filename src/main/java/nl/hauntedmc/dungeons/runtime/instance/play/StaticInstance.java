@@ -24,6 +24,12 @@ public class StaticInstance extends PlayableInstance {
         this.dungeon = dungeon;
     }
 
+    /** Resolve once during initialization, shared by all admissions and respawns. */
+    @Override
+    protected Location resolveStartLocation() {
+        return this.dungeon.selectStartSpawn(java.util.concurrent.ThreadLocalRandom.current());
+    }
+
     /** Performs on load game. */
     @Override
     public void onLoadGame() {

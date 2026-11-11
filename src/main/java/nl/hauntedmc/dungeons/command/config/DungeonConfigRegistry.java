@@ -285,7 +285,7 @@ public final class DungeonConfigRegistry {
         register(
                 main(
                         "start-location",
-                        "Sets the dungeon start location with 'here'.",
+                        "Sets the first dungeon spawnpoint with 'here'; preserves other spawnpoints.",
                         "locations.start",
                         DungeonConfigValueType.LOCATION,
                         suggestions(List.of("here"))));
