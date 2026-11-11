@@ -1,19 +1,17 @@
 package nl.hauntedmc.dungeons.command;
 
-import nl.hauntedmc.dungeons.content.instance.play.BranchingInstance;
+import java.util.ArrayList;
+import java.util.List;
 import nl.hauntedmc.dungeons.generation.room.InstanceRoom;
-import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
-import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
+import nl.hauntedmc.dungeons.localization.LangUtils;
+import nl.hauntedmc.dungeons.runtime.instance.DungeonInstance;
+import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
+import nl.hauntedmc.dungeons.runtime.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
 import nl.hauntedmc.dungeons.runtime.staff.StaffPermissions;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /** Owns the debug command branch and its completions. */
 final class DebugCommandHandler implements CommandHandler {
@@ -64,8 +62,12 @@ final class DebugCommandHandler implements CommandHandler {
     private boolean canDiagnose(CommandSender sender) {
         if (!(sender instanceof Player player)) return false;
         var session = this.playerManager.get(player);
-        var dungeon = session == null || session.getInstance() == null ? null : session.getInstance().getDungeon();
-        return dungeon != null && StaffPermissions.allows(sender, "diagnostics", dungeon.getWorldName());
+        var dungeon =
+                session == null || session.getInstance() == null
+                        ? null
+                        : session.getInstance().getDungeon();
+        return dungeon != null
+                && StaffPermissions.allows(sender, "diagnostics", dungeon.getWorldName());
     }
 
     /** Runs handle test door command. */

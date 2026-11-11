@@ -1,7 +1,9 @@
 package nl.hauntedmc.dungeons.util.entity;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import nl.hauntedmc.dungeons.util.text.ComponentUtils;
-
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -9,10 +11,6 @@ import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 /** Player lookup and display helper utilities. */
 public final class PlayerUtils {

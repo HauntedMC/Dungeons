@@ -3,10 +3,11 @@ package nl.hauntedmc.dungeons.listener;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.nio.file.Path;
+import java.util.*;
 import nl.hauntedmc.dungeons.gui.hotbar.PlayerHotbarMenu;
 import nl.hauntedmc.dungeons.support.*;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
-
 import org.bukkit.Location;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.inventory.*;
@@ -14,9 +15,6 @@ import org.bukkit.event.player.*;
 import org.bukkit.inventory.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-
-import java.nio.file.Path;
-import java.util.*;
 
 class EditorHotbarContractTest {
     @TempDir Path directory;
@@ -26,7 +24,7 @@ class EditorHotbarContractTest {
             managedHotbarsProtectPlayerSlotsAcrossChestViewsAndBackOrCloseRestoresTheCapturedInventory()
                     throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration());
-                var gui = new HeadlessInventoryMenus()) {
+                var _ = new HeadlessInventoryMenus()) {
             var state = new PlayerState();
             state.contents[0] = PlayerState.stack(7);
             var session = f.session(state);
@@ -81,7 +79,7 @@ class EditorHotbarContractTest {
                             eq("minecraft:item.lodestone_compass.lock"),
                             eq(1.0F),
                             eq(1.2F));
-            try (var tools = mockStatic(ItemUtils.class)) {
+            try (var _ = mockStatic(ItemUtils.class)) {
                 session.setEditMode(true);
                 for (int rawSlot : List.of(0, 54)) {
                     var drag = TestEvents.cancellable(InventoryDragEvent.class);

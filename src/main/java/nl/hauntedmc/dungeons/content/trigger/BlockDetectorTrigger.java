@@ -1,16 +1,17 @@
 package nl.hauntedmc.dungeons.content.trigger;
 
+import java.util.Locale;
+import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ChatMenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
 import nl.hauntedmc.dungeons.model.element.TriggerCategory;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.text.MessageUtils;
-
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -22,12 +23,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 
-import java.util.Locale;
-import java.util.Map;
-
-/**
- * Trigger that listens for block placement or breaking at one exact location.
- */
+/** Trigger that listens for block placement or breaking at one exact location. */
 @AutoRegister(id = "dungeons.trigger.block_detector")
 @SerializableAs("dungeons.trigger.block_detector")
 public class BlockDetectorTrigger extends DungeonTrigger {
@@ -35,36 +31,28 @@ public class BlockDetectorTrigger extends DungeonTrigger {
     @PersistedField private String material = "ANY";
     private transient boolean invalidMaterialLogged;
 
-    /**
-     * Creates a new BlockDetectorTrigger instance.
-     */
+    /** Creates a new BlockDetectorTrigger instance. */
     public BlockDetectorTrigger(Map<String, Object> config) {
         super("Block Detector", config);
         this.setCategory(TriggerCategory.PLAYER);
         this.setHasTarget(true);
     }
 
-    /**
-     * Creates a new BlockDetectorTrigger instance.
-     */
+    /** Creates a new BlockDetectorTrigger instance. */
     public BlockDetectorTrigger() {
         super("Block Detector");
         this.setCategory(TriggerCategory.PLAYER);
         this.setHasTarget(true);
     }
 
-    /**
-     * Performs initialize.
-     */
+    /** Performs initialize. */
     @Override
     public void initialize() {
         super.initialize();
         this.setDisplayName(this.material + " Block Detector");
     }
 
-    /**
-     * Performs on block place.
-     */
+    /** Performs on block place. */
     @EventHandler(priority = EventPriority.HIGH)
     public void onBlockPlace(BlockPlaceEvent event) {
         Player player = event.getPlayer();
@@ -85,9 +73,7 @@ public class BlockDetectorTrigger extends DungeonTrigger {
         }
     }
 
-    /**
-     * Performs on block break.
-     */
+    /** Performs on block break. */
     @EventHandler(priority = EventPriority.HIGH)
     public void onBlockBreak(BlockBreakEvent event) {
         Player player = event.getPlayer();
@@ -108,9 +94,7 @@ public class BlockDetectorTrigger extends DungeonTrigger {
         }
     }
 
-    /**
-     * Builds menu button.
-     */
+    /** Builds menu button. */
     @Override
     public MenuButton buildMenuButton() {
         MenuButton button = new MenuButton(Material.OBSERVER);
@@ -123,16 +107,12 @@ public class BlockDetectorTrigger extends DungeonTrigger {
         return button;
     }
 
-    /**
-     * Builds hotbar menu.
-     */
+    /** Builds hotbar menu. */
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
                 new ToggleMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.OBSERVER);
@@ -140,9 +120,7 @@ public class BlockDetectorTrigger extends DungeonTrigger {
                         this.button.setEnchanted(BlockDetectorTrigger.this.onBreak);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         if (!BlockDetectorTrigger.this.onBreak) {
@@ -156,9 +134,7 @@ public class BlockDetectorTrigger extends DungeonTrigger {
                 });
         this.menu.addMenuItem(
                 new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         Material mat;
@@ -175,9 +151,7 @@ public class BlockDetectorTrigger extends DungeonTrigger {
                         this.button.setDisplayName("&d&lSet Block");
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         LangUtils.sendMessage(player, "editor.trigger.block-detector.ask-block");
@@ -187,9 +161,7 @@ public class BlockDetectorTrigger extends DungeonTrigger {
                                 LangUtils.placeholder("block", BlockDetectorTrigger.this.material));
                     }
 
-                    /**
-                     * Performs on input.
-                     */
+                    /** Performs on input. */
                     @Override
                     public void onInput(Player player, String message) {
                         String matString = message.toUpperCase(Locale.ROOT);
@@ -218,16 +190,17 @@ public class BlockDetectorTrigger extends DungeonTrigger {
                                     player, "editor.trigger.block-detector.invalid-material");
                             MessageUtils.sendClickableLink(
                                     player,
-                                    LangUtils.component("editor.trigger.block-detector.valid-materials-link", player, true),
+                                    LangUtils.component(
+                                            "editor.trigger.block-detector.valid-materials-link",
+                                            player,
+                                            true),
                                     "https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Material.html");
                         }
                     }
                 });
     }
 
-    /**
-     * Resolves configured material.
-     */
+    /** Resolves configured material. */
     private Material resolveConfiguredMaterial(boolean logInvalid) {
         try {
             Material configured = Material.valueOf(this.material.toUpperCase(Locale.ROOT));

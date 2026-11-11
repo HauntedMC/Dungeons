@@ -1,7 +1,6 @@
 package nl.hauntedmc.dungeons.plugin;
 
 import nl.hauntedmc.dungeons.bootstrap.DungeonsApplication;
-
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -14,9 +13,9 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Bukkit entrypoint for the plugin.
  *
- * <p>This class is intentionally thin. Bukkit requires lifecycle hooks and plugin-owned
- * integration points such as {@link #getDefaultWorldGenerator(String, String)} to live on the
- * concrete {@link JavaPlugin} subclass.
+ * <p>This class is intentionally thin. Bukkit requires lifecycle hooks and plugin-owned integration
+ * points such as {@link #getDefaultWorldGenerator(String, String)} to live on the concrete {@link
+ * JavaPlugin} subclass.
  */
 public final class DungeonsPlugin extends JavaPlugin implements Listener {
     private final DungeonsApplication application = new DungeonsApplication(this);
@@ -28,7 +27,9 @@ public final class DungeonsPlugin extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(this, this);
     }
 
-    /** Drain while DataProvider still permits work, before its NORMAL disable observer fences us. */
+    /**
+     * Drain while DataProvider still permits work, before its NORMAL disable observer fences us.
+     */
     @EventHandler(priority = EventPriority.LOWEST)
     public void beforeDisable(PluginDisableEvent event) {
         if (event.getPlugin() == this) this.application.stop();
@@ -40,9 +41,7 @@ public final class DungeonsPlugin extends JavaPlugin implements Listener {
         this.application.stop();
     }
 
-    /**
-     * Returns the world generator that matches the requested generator id.
-     */
+    /** Returns the world generator that matches the requested generator id. */
     @Override
     public @Nullable ChunkGenerator getDefaultWorldGenerator(
             @NotNull String worldName, @Nullable String id) {

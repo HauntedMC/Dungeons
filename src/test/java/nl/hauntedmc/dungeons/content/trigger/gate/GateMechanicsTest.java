@@ -7,17 +7,16 @@ import static org.mockito.Mockito.when;
 
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
-import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
+import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.support.PaperBoundary;
-
 import org.bukkit.World;
 import org.junit.jupiter.api.Test;
 
 class GateMechanicsTest {
     @Test
     void andGateRequiresAllChildrenResetsAfterFiringAndIgnoresOtherRuns() {
-        try (var paper = new PaperBoundary()) {
+        try (var _ = new PaperBoundary()) {
             var run = mock(PlayableInstance.class);
             var otherRun = mock(PlayableInstance.class);
             when(run.getInstanceWorld()).thenReturn(mock(World.class));
@@ -50,7 +49,7 @@ class GateMechanicsTest {
 
     @Test
     void orGateFiresForEachChildButNeverForCancelledOrUnrelatedEvents() {
-        try (var paper = new PaperBoundary()) {
+        try (var _ = new PaperBoundary()) {
             var run = mock(PlayableInstance.class);
             when(run.getInstanceWorld()).thenReturn(mock(World.class));
             var child = mock(DungeonTrigger.class);

@@ -3,18 +3,16 @@ package nl.hauntedmc.dungeons.command;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.nio.file.*;
+import java.util.*;
 import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
 import nl.hauntedmc.dungeons.support.*;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
-
 import org.bukkit.*;
 import org.bukkit.command.Command;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-
-import java.nio.file.*;
-import java.util.*;
 
 class CleanInstallContractTest {
     @TempDir Path directory;

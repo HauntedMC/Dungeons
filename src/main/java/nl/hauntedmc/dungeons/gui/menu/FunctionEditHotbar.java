@@ -3,13 +3,12 @@ package nl.hauntedmc.dungeons.gui.menu;
 import nl.hauntedmc.dungeons.gui.hotbar.PlayerHotbarMenu;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuItem;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
-import nl.hauntedmc.dungeons.model.instance.EditableInstance;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
+import nl.hauntedmc.dungeons.runtime.instance.EditableInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -56,8 +55,7 @@ final class FunctionEditHotbar {
             @Override
             public void onSelect(PlayerEvent event) {
                 Player player = event.getPlayer();
-                DungeonPlayerSession playerSession =
-                        RuntimeContext.playerSessions().get(player);
+                DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
                 playerSession.showHotbar(playerSession.getActiveFunction().getMenu(), true);
             }
         };
@@ -90,8 +88,7 @@ final class FunctionEditHotbar {
             @Override
             public void onSelect(PlayerEvent event) {
                 Player player = event.getPlayer();
-                DungeonPlayerSession playerSession =
-                        RuntimeContext.playerSessions().get(player);
+                DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
                 if (playerSession.getActiveFunction() == null) {
                     LangUtils.sendMessage(player, "editor.session.tip-edit-existing");
                     return;
@@ -114,8 +111,7 @@ final class FunctionEditHotbar {
             @Override
             public void onSelect(PlayerEvent event) {
                 Player player = event.getPlayer();
-                DungeonPlayerSession playerSession =
-                        RuntimeContext.playerSessions().get(player);
+                DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
                 if (playerSession.getActiveFunction() == null) {
                     LangUtils.sendMessage(player, "editor.session.tip-edit-existing");
                     return;
@@ -142,26 +138,21 @@ final class FunctionEditHotbar {
                         Player player = event.getPlayer();
                         DungeonPlayerSession playerSession =
                                 RuntimeContext.playerSessions().get(player);
-                        EditableInstance instance =
-                                playerSession.getInstance().asEditInstance();
+                        EditableInstance instance = playerSession.getInstance().asEditInstance();
                         if (instance != null) {
                             Location targetLocation;
                             if (interactEvent.getClickedBlock() != null) {
                                 targetLocation =
                                         normalizeFunctionLocation(
-                                                interactEvent
-                                                        .getClickedBlock()
-                                                        .getLocation());
+                                                interactEvent.getClickedBlock().getLocation());
                             } else {
                                 LangUtils.sendMessage(
-                                        player,
-                                        "editor.session.hotbar.look-at-block-paste");
+                                        player, "editor.session.hotbar.look-at-block-paste");
                                 return;
                             }
                             DungeonDefinition dungeon = instance.getDungeon();
                             if (playerSession.isFunctionCopying()) {
-                                DungeonFunction copiedFunction =
-                                        playerSession.getCopiedFunction();
+                                DungeonFunction copiedFunction = playerSession.getCopiedFunction();
                                 if (copiedFunction == null) {
                                     LangUtils.sendMessage(
                                             player, "editor.session.tip-edit-existing");
@@ -170,8 +161,7 @@ final class FunctionEditHotbar {
                                 }
                                 if (dungeon.getFunctions().containsKey(targetLocation)) {
                                     LangUtils.sendMessage(
-                                            player,
-                                            "editor.session.hotbar.function-already-here");
+                                            player, "editor.session.hotbar.function-already-here");
                                 } else {
                                     DungeonFunction pastedFunction = copiedFunction.clone();
                                     if (pastedFunction == null) {
@@ -185,21 +175,18 @@ final class FunctionEditHotbar {
                                     instance.trackEditorFunction(pastedFunction);
                                     instance.addFunctionLabel(pastedFunction);
                                     LangUtils.sendMessage(
-                                            player,
-                                            "editor.session.hotbar.function-pasted");
+                                            player, "editor.session.hotbar.function-pasted");
                                 }
                             } else {
                                 if (playerSession.isFunctionCutting()) {
-                                    if (dungeon.getFunctions()
-                                            .containsKey(targetLocation)) {
+                                    if (dungeon.getFunctions().containsKey(targetLocation)) {
                                         LangUtils.sendMessage(
                                                 player,
                                                 "editor.session.hotbar.function-already-here");
                                         return;
                                     }
 
-                                    DungeonFunction cutFunction =
-                                            playerSession.getCopiedFunction();
+                                    DungeonFunction cutFunction = playerSession.getCopiedFunction();
                                     if (cutFunction == null) {
                                         playerSession.clearFunctionClipboard();
                                         LangUtils.sendMessage(
@@ -215,8 +202,7 @@ final class FunctionEditHotbar {
                                     instance.addFunctionLabel(cutFunction);
                                     playerSession.setActiveFunction(cutFunction);
                                     LangUtils.sendMessage(
-                                            player,
-                                            "editor.session.hotbar.function-cut-pasted");
+                                            player, "editor.session.hotbar.function-cut-pasted");
                                     playerSession.clearFunctionClipboard();
                                 }
                             }
@@ -238,8 +224,7 @@ final class FunctionEditHotbar {
             @Override
             public void onSelect(PlayerEvent event) {
                 Player player = event.getPlayer();
-                DungeonPlayerSession playerSession =
-                        RuntimeContext.playerSessions().get(player);
+                DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
                 EditableInstance instance = playerSession.getInstance().asEditInstance();
                 if (instance != null) {
                     DungeonFunction activeFunction = playerSession.getActiveFunction();

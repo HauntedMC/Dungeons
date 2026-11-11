@@ -1,11 +1,11 @@
 package nl.hauntedmc.dungeons.gui.hotbar;
 
-import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuAction;
+import java.util.HashMap;
+import java.util.Map.Entry;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuItem;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.runtime.player.PlayerHotbarSnapshot;
-
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -15,16 +15,12 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCreativeEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
-import org.bukkit.event.player.PlayerEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
-
-import java.util.HashMap;
-import java.util.Map.Entry;
 
 /**
  * Hotbar-based menu model used by the dungeon editor.
@@ -34,14 +30,10 @@ import java.util.Map.Entry;
  */
 public abstract class PlayerHotbarMenu extends PlayerHotbarSnapshot implements Listener {
     protected final HashMap<Integer, MenuItem> menuItems = new HashMap<>();
-    protected final HashMap<Integer, MenuAction<PlayerEvent>> selectActions;
-    protected final HashMap<Integer, MenuAction<PlayerItemHeldEvent>> hoverActions;
     protected int selected;
 
-    /** Creates a hotbar menu with default action maps and close button in slot 8. */
+    /** Creates a hotbar menu with a close button in slot 8. */
     public PlayerHotbarMenu() {
-        this.selectActions = new HashMap<>();
-        this.hoverActions = new HashMap<>();
         this.menuItems.put(8, MenuItem.CLOSE);
     }
 

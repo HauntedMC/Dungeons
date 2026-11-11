@@ -1,19 +1,23 @@
 package nl.hauntedmc.dungeons.model.element;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import javax.annotation.Nullable;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
-import nl.hauntedmc.dungeons.content.instance.edit.BranchingEditableInstance;
-import nl.hauntedmc.dungeons.content.instance.play.OpenInstance;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.gui.hotbar.PlayerHotbarMenu;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
-import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
-import nl.hauntedmc.dungeons.model.instance.EditableInstance;
-import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
+import nl.hauntedmc.dungeons.localization.LangUtils;
+import nl.hauntedmc.dungeons.runtime.instance.DungeonInstance;
+import nl.hauntedmc.dungeons.runtime.instance.EditableInstance;
+import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
+import nl.hauntedmc.dungeons.runtime.instance.edit.BranchingEditableInstance;
+import nl.hauntedmc.dungeons.runtime.instance.play.OpenInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
@@ -21,13 +25,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
-import javax.annotation.Nullable;
 
 /**
  * Base class for elements that observe gameplay state and dispatch functions when their conditions
@@ -41,22 +38,20 @@ public abstract class DungeonTrigger extends DungeonElement
     protected final String namespace;
     private String displayName;
     private boolean initialized = false;
-    public TriggerCategory category = TriggerCategory.PLAYER;
+    private TriggerCategory category = TriggerCategory.PLAYER;
     @PersistedField protected boolean allowRetrigger;
     @PersistedField protected List<TriggerCondition> conditions;
     @PersistedField protected boolean limitToRoom;
     @Nullable protected DungeonFunction function;
     protected boolean waitForConditions;
-    protected boolean hasTarget = false;
+    private boolean hasTarget = false;
     protected List<UUID> playersFound;
     protected boolean triggered;
     private PlayerHotbarMenu conditionsMenu;
     private List<BukkitRunnable> conditionWaiters = new ArrayList<>();
     protected List<UUID> playersTriggered = new ArrayList<>();
 
-    /**
-     * Creates a trigger from persisted configuration data.
-     */
+    /** Creates a trigger from persisted configuration data. */
     public DungeonTrigger(String displayName, Map<String, Object> config) {
         super(config);
         this.namespace = displayName;
@@ -68,9 +63,7 @@ public abstract class DungeonTrigger extends DungeonElement
         this.displayName = this.namespace;
     }
 
-    /**
-     * Creates a new trigger with no persisted state.
-     */
+    /** Creates a new trigger with no persisted state. */
     public DungeonTrigger(String displayName) {
         this.namespace = displayName;
         this.conditions = new ArrayList<>();
@@ -78,9 +71,7 @@ public abstract class DungeonTrigger extends DungeonElement
         this.displayName = this.namespace;
     }
 
-    /**
-     * Performs one-time persisted-field and condition initialization.
-     */
+    /** Performs one-time persisted-field and condition initialization. */
     @Override
     public void initialize() {
         if (!this.initialized) {
@@ -107,16 +98,12 @@ public abstract class DungeonTrigger extends DungeonElement
 
     public void onDisable() {}
 
-    /**
-     * Enables the trigger using the bound function's instance.
-     */
+    /** Enables the trigger using the bound function's instance. */
     public void enable(@NotNull DungeonFunction function) {
         this.enable(function, function.getInstance());
     }
 
-    /**
-     * Enables the trigger for the supplied function and instance and registers all conditions.
-     */
+    /** Enables the trigger for the supplied function and instance and registers all conditions. */
     public void enable(@Nullable DungeonFunction function, DungeonInstance instance) {
         if (!this.enabled) {
             this.enabled = true;
@@ -135,9 +122,7 @@ public abstract class DungeonTrigger extends DungeonElement
         }
     }
 
-    /**
-     * Disables the trigger, its condition listeners, and any pending condition wait task.
-     */
+    /** Disables the trigger, its condition listeners, and any pending condition wait task. */
     @Override
     public final void disable() {
         for (TriggerCondition condition : this.conditions) {
@@ -173,9 +158,7 @@ public abstract class DungeonTrigger extends DungeonElement
         this.instance.unregisterTriggerListener(this);
     }
 
-    /**
-     * Initializes all configured conditions after persisted fields have been hydrated.
-     */
+    /** Initializes all configured conditions after persisted fields have been hydrated. */
     public final void initializeConditions() {
         for (TriggerCondition condition : this.conditions) {
             condition.setTrigger(this);
@@ -183,9 +166,7 @@ public abstract class DungeonTrigger extends DungeonElement
         }
     }
 
-    /**
-     * Returns whether every configured condition currently passes for the given trigger event.
-     */
+    /** Returns whether every configured condition currently passes for the given trigger event. */
     public final boolean checkConditions(TriggerFireEvent event) {
         for (TriggerCondition condition : this.conditions) {
             final boolean check;
@@ -283,9 +264,7 @@ public abstract class DungeonTrigger extends DungeonElement
         this.trigger(null);
     }
 
-    /**
-     * Fires the trigger on behalf of a player session, respecting retrigger rules.
-     */
+    /** Fires the trigger on behalf of a player session, respecting retrigger rules. */
     public void trigger(DungeonPlayerSession playerSession) {
         this.trigger(playerSession, !this.allowRetrigger);
     }
@@ -409,6 +388,7 @@ public abstract class DungeonTrigger extends DungeonElement
                     }
                 });
         this.buildHotbarMenu();
+        this.registerEditorListener();
     }
 
     public void addRoomLimitToggleButton() {
@@ -562,7 +542,7 @@ public abstract class DungeonTrigger extends DungeonElement
         return this.category;
     }
 
-    public void setCategory(TriggerCategory category) {
+    public final void setCategory(TriggerCategory category) {
         this.category = category;
     }
 
@@ -599,7 +579,7 @@ public abstract class DungeonTrigger extends DungeonElement
         return this.hasTarget;
     }
 
-    public void setHasTarget(boolean hasTarget) {
+    public final void setHasTarget(boolean hasTarget) {
         this.hasTarget = hasTarget;
     }
 

@@ -1,5 +1,7 @@
 package nl.hauntedmc.dungeons.runtime;
 
+import java.util.Objects;
+import nl.hauntedmc.dungeons.config.PluginConfigView;
 import nl.hauntedmc.dungeons.gui.framework.GuiService;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.registry.ConditionRegistry;
@@ -11,13 +13,9 @@ import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueCoordinator;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry;
 import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
-import nl.hauntedmc.dungeons.util.config.PluginConfigView;
-
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.slf4j.Logger;
-
-import java.util.Objects;
 
 /**
  * Static bridge for utility and GUI code that still cannot receive dependencies directly.
@@ -148,5 +146,4 @@ public final class RuntimeContext {
     public static DungeonTeamService teamService() {
         return runtime().teamService();
     }
-
 }

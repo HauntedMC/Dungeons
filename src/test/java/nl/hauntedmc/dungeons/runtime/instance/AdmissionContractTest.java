@@ -4,14 +4,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import nl.hauntedmc.dungeons.content.instance.play.StaticInstance;
+import java.nio.file.Path;
+import nl.hauntedmc.dungeons.runtime.instance.play.StaticInstance;
 import nl.hauntedmc.dungeons.support.PaperBoundary;
-
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-
-import java.nio.file.Path;
 
 class AdmissionContractTest {
     @TempDir Path directory;

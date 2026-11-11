@@ -2,11 +2,10 @@ package nl.hauntedmc.dungeons.support;
 
 import static org.mockito.Mockito.*;
 
-import org.bukkit.inventory.ItemStack;
-import org.mockito.MockedStatic;
-
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import org.bukkit.inventory.ItemStack;
+import org.mockito.MockedStatic;
 
 /**
  * Native item codec boundary; persisted bytes resolve to independent metadata-preserving clones.

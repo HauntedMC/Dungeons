@@ -1,19 +1,5 @@
 package nl.hauntedmc.dungeons.registry;
 
-import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
-import nl.hauntedmc.dungeons.listener.EventRelayListener;
-import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
-import nl.hauntedmc.dungeons.model.element.TriggerCategory;
-import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
-import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
-import nl.hauntedmc.dungeons.runtime.instance.ActiveInstanceRegistry;
-import nl.hauntedmc.dungeons.util.metadata.TypeMetadataSupport;
-
-import org.apache.commons.lang3.reflect.MethodUtils;
-import org.bukkit.Bukkit;
-import org.bukkit.event.Event;
-import org.bukkit.event.EventHandler;
-
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -21,6 +7,18 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
+import nl.hauntedmc.dungeons.listener.EventRelayListener;
+import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
+import nl.hauntedmc.dungeons.model.element.TriggerCategory;
+import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
+import nl.hauntedmc.dungeons.runtime.instance.ActiveInstanceRegistry;
+import nl.hauntedmc.dungeons.runtime.instance.DungeonInstance;
+import nl.hauntedmc.dungeons.util.metadata.TypeMetadataSupport;
+import org.apache.commons.lang3.reflect.MethodUtils;
+import org.bukkit.Bukkit;
+import org.bukkit.event.Event;
+import org.bukkit.event.EventHandler;
 
 /**
  * Registry for discoverable {@link DungeonTrigger} implementations.
@@ -51,9 +49,7 @@ public final class TriggerRegistry {
         }
     }
 
-    /**
-     * Registers a trigger class, editor metadata, and reflective event handlers.
-     */
+    /** Registers a trigger class, editor metadata, and reflective event handlers. */
     public <T extends DungeonTrigger> void register(Class<T> triggerClass) {
         String triggerId = TypeMetadataSupport.requiredId(triggerClass);
         DungeonTrigger trigger = null;
@@ -68,7 +64,7 @@ public final class TriggerRegistry {
                         .getSLF4JLogger()
                         .warn(
                                 "Trigger '{}' does not expose a menu button and will not appear in"
-                                    + " the editor.",
+                                        + " the editor.",
                                 triggerClass.getSimpleName());
                 return;
             }
@@ -121,10 +117,10 @@ public final class TriggerRegistry {
                                                                     .getSLF4JLogger()
                                                                     .error(
                                                                             "Trigger listener"
-                                                                                + " '{}#{}' failed"
-                                                                                + " for event '{}'"
-                                                                                + " in instance"
-                                                                                + " '{}'.",
+                                                                                    + " '{}#{}' failed"
+                                                                                    + " for event '{}'"
+                                                                                    + " in instance"
+                                                                                    + " '{}'.",
                                                                             triggerClass
                                                                                     .getSimpleName(),
                                                                             method.getName(),

@@ -1,9 +1,5 @@
 package nl.hauntedmc.dungeons.util.time;
 
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
-import org.apache.commons.lang3.time.DurationFormatUtils;
-
 import java.sql.Timestamp;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -11,10 +7,10 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import nl.hauntedmc.dungeons.localization.LangUtils;
+import org.apache.commons.lang3.time.DurationFormatUtils;
 
-/**
- * Time conversion and formatting helpers.
- */
+/** Time conversion and formatting helpers. */
 public final class TimeUtils {
     private TimeUtils() {}
 

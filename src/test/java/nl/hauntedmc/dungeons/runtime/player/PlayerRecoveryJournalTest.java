@@ -3,10 +3,11 @@ package nl.hauntedmc.dungeons.runtime.player;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.nio.file.*;
+import java.util.*;
 import nl.hauntedmc.dungeons.support.*;
 import nl.hauntedmc.dungeons.support.TestStateStore;
 import nl.hauntedmc.dungeons.util.entity.EntityUtils;
-
 import org.bukkit.*;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.player.PlayerTeleportEvent;
@@ -14,15 +15,12 @@ import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import java.nio.file.*;
-import java.util.*;
-
 class PlayerRecoveryJournalTest {
     @TempDir Path directory;
 
     @Test
     void reservationCrashBeforeNativeSaveRestoresExactlyOneKeyFromEscrow() {
-        try (var paper = new PaperBoundary()) {
+        try (var _ = new PaperBoundary()) {
             var before = new PlayerState();
             var path = directory.resolve("escrow.yml");
             var journal = new PlayerRecoveryJournal(TestStateStore.player(path));
@@ -45,7 +43,7 @@ class PlayerRecoveryJournalTest {
 
     @Test
     void reservedKeySurvivesSessionLossButSuccessfulConsumptionDoesNotRefundIt() {
-        try (var paper = new PaperBoundary()) {
+        try (var _ = new PaperBoundary()) {
             var player = new PlayerState();
             var path = directory.resolve("escrow.yml");
             var journal = new PlayerRecoveryJournal(TestStateStore.player(path));
@@ -68,7 +66,7 @@ class PlayerRecoveryJournalTest {
 
     @Test
     void invalidCapturesDoNotLeaveARecoveryRecordThatBlocksTheNextAttempt() {
-        try (var paper = new PaperBoundary()) {
+        try (var _ = new PaperBoundary()) {
             var player = new PlayerState();
             var path = directory.resolve("invalid.yml");
             var journal = new PlayerRecoveryJournal(TestStateStore.player(path));
@@ -87,17 +85,15 @@ class PlayerRecoveryJournalTest {
         try (var paper = new PaperBoundary()) {
             var file = directory.resolve("unsupported.yml");
             paper.state.journal(file, "version: 1\n");
-            assertThrows(IllegalStateException.class, () -> new PlayerRecoveryJournal(TestStateStore.player(file)));
+            assertThrows(
+                    IllegalStateException.class,
+                    () -> new PlayerRecoveryJournal(TestStateStore.player(file)));
             assertThrows(
                     IllegalArgumentException.class,
-                    () ->
-                            PlayerRecoverySnapshot.validateInventoryContents(
-                                    new ItemStack[41]));
+                    () -> PlayerRecoverySnapshot.validateInventoryContents(new ItemStack[41]));
             assertThrows(
                     IllegalArgumentException.class,
-                    () ->
-                            PlayerRecoverySnapshot.validateInventoryContents(
-                                    new ItemStack[42]));
+                    () -> PlayerRecoverySnapshot.validateInventoryContents(new ItemStack[42]));
         }
     }
 
@@ -131,7 +127,7 @@ class PlayerRecoveryJournalTest {
 
     @Test
     void deadOrOfflineClaimsLeaveRefundsDurableUntilThePlayerCanReceiveThem() {
-        try (var paper = new PaperBoundary()) {
+        try (var _ = new PaperBoundary()) {
             var player = new PlayerState();
             var path = directory.resolve("recovery.yml");
             var journal = new PlayerRecoveryJournal(TestStateStore.player(path));
@@ -144,7 +140,12 @@ class PlayerRecoveryJournalTest {
             assertFalse(journal.deliverRefund(player.player, refund));
             verify(player.player, never()).saveData();
             assertNull(player.contents[0]);
-            assertEquals(7, new PlayerRecoveryJournal(TestStateStore.player(path)).refunds().getFirst().getAmount());
+            assertEquals(
+                    7,
+                    new PlayerRecoveryJournal(TestStateStore.player(path))
+                            .refunds()
+                            .getFirst()
+                            .getAmount());
             when(player.player.isDead()).thenReturn(false);
             assertTrue(journal.deliverRefund(player.player, refund));
             assertTrue(new PlayerRecoveryJournal(TestStateStore.player(path)).refunds().isEmpty());
@@ -190,8 +191,7 @@ class PlayerRecoveryJournalTest {
 
     @Test
     void deniedWritesRejectEntryWithoutChangingMembershipOrInventory() throws Exception {
-        try (var f =
-                new RunFixture(directory, new YamlConfiguration())) {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
             var player = new PlayerState();
             var session = f.session(player);
             player.contents[0] = PlayerState.stack(8);
@@ -240,14 +240,18 @@ class PlayerRecoveryJournalTest {
             assertThrows(NullPointerException.class, () -> journal.recover(player.player));
             assertTrue(new PlayerRecoveryJournal(TestStateStore.player(path)).hasRecovery());
             paper.state.journal(path, "version: 1\nrecovery: broken\n");
-            assertThrows(IllegalStateException.class, () -> new PlayerRecoveryJournal(TestStateStore.player(path)));
-            assertEquals("version: 1\nrecovery: broken\n", paper.state.payload("player-recovery", TestStateStore.player(path).toString()));
+            assertThrows(
+                    IllegalStateException.class,
+                    () -> new PlayerRecoveryJournal(TestStateStore.player(path)));
+            assertEquals(
+                    "version: 1\nrecovery: broken\n",
+                    paper.state.payload("player-recovery", TestStateStore.player(path).toString()));
         }
     }
 
     @Test
     void unclaimedRefundsAndPartialDeliverySurviveRestartAndStaleClicks() {
-        try (var paper = new PaperBoundary()) {
+        try (var _ = new PaperBoundary()) {
             var player = new PlayerState();
             var path = directory.resolve("recovery.yml");
             var journal = new PlayerRecoveryJournal(TestStateStore.player(path));
@@ -257,7 +261,12 @@ class PlayerRecoveryJournalTest {
             var restarted = new PlayerRecoveryJournal(TestStateStore.player(path));
             assertTrue(restarted.deliverRefund(player.player, restarted.refunds().getFirst()));
             assertEquals(64, player.contents[0].getAmount());
-            assertEquals(16, new PlayerRecoveryJournal(TestStateStore.player(path)).refunds().getFirst().getAmount());
+            assertEquals(
+                    16,
+                    new PlayerRecoveryJournal(TestStateStore.player(path))
+                            .refunds()
+                            .getFirst()
+                            .getAmount());
             assertFalse(restarted.deliverRefund(player.player, PlayerState.stack(20)));
             assertFalse(restarted.deliverRefund(player.player, restarted.refunds().getFirst()));
             player.contents[1] = null;
@@ -269,7 +278,7 @@ class PlayerRecoveryJournalTest {
 
     @Test
     void crashBeforePlayerSaveReplaysDeliveryInsteadOfLosingRefund() {
-        try (var paper = new PaperBoundary()) {
+        try (var _ = new PaperBoundary()) {
             var path = directory.resolve("recovery.yml");
             var player = new PlayerState();
             var journal = new PlayerRecoveryJournal(TestStateStore.player(path));
@@ -319,7 +328,7 @@ class PlayerRecoveryJournalTest {
 
     @Test
     void normalExitAcknowledgesCurrentConfiguredStateRatherThanReplayingPreEntryInventory() {
-        try (var paper = new PaperBoundary()) {
+        try (var _ = new PaperBoundary()) {
             var player = new PlayerState();
             var path = directory.resolve("recovery.yml");
             var journal = new PlayerRecoveryJournal(TestStateStore.player(path));

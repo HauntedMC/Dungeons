@@ -1,23 +1,18 @@
 package nl.hauntedmc.dungeons.runtime.player;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
-import java.util.ArrayList;
-import java.util.List;
-
-/**
- * Captured copy of the first nine hotbar slots and held-slot index.
- */
+/** Captured copy of the first nine hotbar slots and held-slot index. */
 public class PlayerHotbarSnapshot {
     private final List<ItemStack> items;
     private int heldSlot;
 
-    /**
-     * Captures the current hotbar state from a player inventory.
-     */
+    /** Captures the current hotbar state from a player inventory. */
     public PlayerHotbarSnapshot(Player player) {
         this.items = new ArrayList<>();
         PlayerInventory inventory = player.getInventory();
@@ -33,9 +28,7 @@ public class PlayerHotbarSnapshot {
         }
     }
 
-    /**
-     * Creates an empty snapshot with air in all nine slots.
-     */
+    /** Creates an empty snapshot with air in all nine slots. */
     public PlayerHotbarSnapshot() {
         this.items = new ArrayList<>();
 

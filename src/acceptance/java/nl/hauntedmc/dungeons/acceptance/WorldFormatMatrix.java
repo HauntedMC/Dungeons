@@ -2,15 +2,6 @@ package nl.hauntedmc.dungeons.acceptance;
 
 import static nl.hauntedmc.dungeons.acceptance.AcceptancePlugin.require;
 
-import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
-
-import org.apache.commons.io.FileUtils;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.World;
-import org.bukkit.entity.Endermite;
-import org.bukkit.entity.Minecart;
-
 import java.io.DataOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -21,6 +12,13 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
 import java.util.zip.GZIPOutputStream;
+import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
+import org.apache.commons.io.FileUtils;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.World;
+import org.bukkit.entity.Endermite;
+import org.bukkit.entity.Minecart;
 
 /** Exercises old templates, modern templates and editor conversion in all three environments. */
 final class WorldFormatMatrix {
@@ -95,13 +93,11 @@ final class WorldFormatMatrix {
                                                 world.setChunkForceLoaded(0, 0, true);
                                                 var cart =
                                                         world.spawn(
-                                                                new Location(
-                                                                        world, 5.5, 70, 5.5),
+                                                                new Location(world, 5.5, 70, 5.5),
                                                                 Minecart.class);
                                                 var mite =
                                                         world.spawn(
-                                                                new Location(
-                                                                        world, 5.5, 70, 5.5),
+                                                                new Location(world, 5.5, 70, 5.5),
                                                                 Endermite.class);
                                                 mite.setPersistent(true);
                                                 mite.setRemoveWhenFarAway(false);
@@ -139,9 +135,7 @@ final class WorldFormatMatrix {
                                             () ->
                                                     reopened
                                                             .getInstanceWorld()
-                                                            .getEntitiesByClass(
-                                                                    Minecart
-                                                                            .class)
+                                                            .getEntitiesByClass(Minecart.class)
                                                             .stream()
                                                             .anyMatch(
                                                                     cart ->

@@ -2,17 +2,38 @@ package nl.hauntedmc.dungeons.generation.layout;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.*;
 
+import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
 import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
 import nl.hauntedmc.dungeons.generation.room.Connector;
 import nl.hauntedmc.dungeons.generation.room.InstanceRoom;
+import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
+import nl.hauntedmc.dungeons.support.HeadlessMenus;
 import nl.hauntedmc.dungeons.util.math.RandomCollection;
-
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 
 class LayoutCloneTest {
+    @Test
+    void connectorMenusWaitForLayoutBindingAndClonesBuildIndependentControls() {
+        var dungeon = mock(BranchingDungeon.class);
+        when(dungeon.getRuntime()).thenReturn(mock(DungeonsRuntime.class));
+        try (var _ = new HeadlessMenus()) {
+            var layout = new ConnectorExpansionLayout(dungeon, TestLayout.testConfig());
+            verify(dungeon, never()).getLayout();
+            when(dungeon.getLayout()).thenReturn(layout);
+            var menu = layout.getConnectorEditMenu();
+            verify(menu, times(8)).addMenuItem(any());
+            assertSame(menu, layout.getConnectorEditMenu());
+            var clone = layout.clone();
+            assertNotSame(menu, clone.getConnectorEditMenu());
+        }
+    }
+
     @Test
     void clonesHaveIndependentDiagnosticsAndEmptyGenerationCounts() {
         TestLayout source = new TestLayout();
@@ -46,9 +67,6 @@ class LayoutCloneTest {
             config.set("generator.seal_open_connectors_with", "AIR");
             return config;
         }
-
-        @Override
-        public void initializeConnectorEditMenu() {}
 
         @Override
         protected boolean tryConnectors(InstanceRoom room) {

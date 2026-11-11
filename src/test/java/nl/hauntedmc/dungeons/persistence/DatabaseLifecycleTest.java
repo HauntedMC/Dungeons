@@ -4,8 +4,10 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
-
 import org.bukkit.Server;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.scheduler.BukkitScheduler;
@@ -14,10 +16,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.slf4j.Logger;
 
-import java.time.Duration;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
-
 class DatabaseLifecycleTest {
     static final class Fixture {
         final DungeonsPlugin plugin = mock(DungeonsPlugin.class);
@@ -25,24 +23,28 @@ class DatabaseLifecycleTest {
         final BukkitScheduler scheduler = mock(BukkitScheduler.class);
         final BukkitTask heartbeat = mock(BukkitTask.class);
         final PluginManager plugins = mock(PluginManager.class);
+
         Fixture() {
             var server = mock(Server.class);
             when(plugin.getServer()).thenReturn(server);
             when(server.getScheduler()).thenReturn(scheduler);
             when(server.getPluginManager()).thenReturn(plugins);
             when(plugin.getSLF4JLogger()).thenReturn(mock(Logger.class));
-            when(scheduler.runTaskTimerAsynchronously(eq(plugin), any(Runnable.class), eq(100L), eq(100L)))
+            when(scheduler.runTaskTimerAsynchronously(
+                            eq(plugin), any(Runnable.class), eq(100L), eq(100L)))
                     .thenReturn(heartbeat);
             when(database.start()).thenReturn(CompletableFuture.completedFuture(null));
             when(database.closeAsync()).thenReturn(CompletableFuture.completedFuture(null));
         }
     }
 
-    @Test void heartbeatIsGatedByReadinessAndCloseCancelsItExactlyOnce() {
+    @Test
+    void heartbeatIsGatedByReadinessAndCloseCancelsItExactlyOnce() {
         var f = new Fixture();
         var lifecycle = new DatabaseLifecycle(f.plugin, f.database, 1);
         var work = ArgumentCaptor.forClass(Runnable.class);
-        verify(f.scheduler).runTaskTimerAsynchronously(eq(f.plugin), work.capture(), eq(100L), eq(100L));
+        verify(f.scheduler)
+                .runTaskTimerAsynchronously(eq(f.plugin), work.capture(), eq(100L), eq(100L));
         when(f.database.state()).thenReturn(DungeonDatabase.State.STARTING);
         work.getValue().run();
         verify(f.database, never()).heartbeat();
@@ -57,7 +59,8 @@ class DatabaseLifecycleTest {
         verify(f.database).closeAsync();
     }
 
-    @Test @SuppressWarnings("unchecked")
+    @Test
+    @SuppressWarnings("unchecked")
     void failureDisablesOnTheServerThreadAndStaleCallbacksCannotDisableAfterClose() {
         var f = new Fixture();
         var lifecycle = new DatabaseLifecycle(f.plugin, f.database, 1);
@@ -76,16 +79,20 @@ class DatabaseLifecycleTest {
         verifyNoInteractions(f.plugins);
     }
 
-    @Test void schedulingFailureReleasesAnUnstartedDatabase() {
+    @Test
+    void schedulingFailureReleasesAnUnstartedDatabase() {
         var f = new Fixture();
-        when(f.scheduler.runTaskTimerAsynchronously(eq(f.plugin), any(Runnable.class), anyLong(), anyLong()))
+        when(f.scheduler.runTaskTimerAsynchronously(
+                        eq(f.plugin), any(Runnable.class), anyLong(), anyLong()))
                 .thenThrow(new IllegalStateException("scheduler stopped"));
-        assertThrows(IllegalStateException.class, () -> new DatabaseLifecycle(f.plugin, f.database, 1));
+        assertThrows(
+                IllegalStateException.class, () -> new DatabaseLifecycle(f.plugin, f.database, 1));
         verify(f.database).closeAsync();
         verify(f.database, never()).start();
     }
 
-    @Test void cancellationErrorsCannotSkipDatabaseCleanupOrReplaceStartupFailures() {
+    @Test
+    void cancellationErrorsCannotSkipDatabaseCleanupOrReplaceStartupFailures() {
         var f = new Fixture();
         var lifecycle = new DatabaseLifecycle(f.plugin, f.database, 1);
         doThrow(new IllegalStateException("cancel failed")).when(f.heartbeat).cancel();
@@ -96,13 +103,17 @@ class DatabaseLifecycleTest {
         var original = new IllegalStateException("start failed");
         when(startup.database.start()).thenThrow(original);
         doThrow(new IllegalStateException("cancel failed")).when(startup.heartbeat).cancel();
-        assertSame(original, assertThrows(IllegalStateException.class,
-                () -> new DatabaseLifecycle(startup.plugin, startup.database, 1)));
+        assertSame(
+                original,
+                assertThrows(
+                        IllegalStateException.class,
+                        () -> new DatabaseLifecycle(startup.plugin, startup.database, 1)));
         assertEquals(1, original.getSuppressed().length);
         verify(startup.database).closeAsync();
     }
 
-    @Test void shutdownIsBoundedAndDoesNotCancelTheCleanupWorker() {
+    @Test
+    void shutdownIsBoundedAndDoesNotCancelTheCleanupWorker() {
         var f = new Fixture();
         var pending = new CompletableFuture<Void>();
         when(f.database.closeAsync()).thenReturn(pending);
@@ -112,7 +123,9 @@ class DatabaseLifecycleTest {
         verify(f.heartbeat).cancel();
         pending.complete(null);
     }
-    @Test void startupWaitsForReadinessAndClosesFailedOrIncompleteInitialization() {
+
+    @Test
+    void startupWaitsForReadinessAndClosesFailedOrIncompleteInitialization() {
         var success = new Fixture();
         when(success.database.ready()).thenReturn(true);
         var lifecycle = new DatabaseLifecycle(success.plugin, success.database, 1);
@@ -122,24 +135,30 @@ class DatabaseLifecycleTest {
 
         for (boolean exceptional : new boolean[] {false, true}) {
             var failure = new Fixture();
-            if (exceptional) when(failure.database.start()).thenReturn(CompletableFuture.failedFuture(new IllegalStateException("schema invalid")));
+            if (exceptional)
+                when(failure.database.start())
+                        .thenReturn(
+                                CompletableFuture.failedFuture(
+                                        new IllegalStateException("schema invalid")));
             var rejected = new DatabaseLifecycle(failure.plugin, failure.database, 1);
             assertThrows(IllegalStateException.class, () -> rejected.awaitReady(1));
             assertFalse(rejected.ready());
             verify(failure.database).closeAsync();
         }
     }
-    @Test void startupTimeoutReleasesOwnershipWithoutCancellingAmbiguousInitialization() {
+
+    @Test
+    void startupTimeoutReleasesOwnershipWithoutCancellingAmbiguousInitialization() {
         var f = new Fixture();
         var pending = new CompletableFuture<Void>();
         when(f.database.start()).thenReturn(pending);
         var lifecycle = new DatabaseLifecycle(f.plugin, f.database, 1);
-        assertTimeout(Duration.ofSeconds(3),
+        assertTimeout(
+                Duration.ofSeconds(3),
                 () -> assertThrows(IllegalStateException.class, () -> lifecycle.awaitReady(1)));
         verify(f.database).closeAsync();
         assertFalse(pending.isDone());
         pending.complete(null);
         assertFalse(lifecycle.ready());
     }
-
 }

@@ -1,18 +1,16 @@
 package nl.hauntedmc.dungeons.runtime.dungeon;
 
+import java.util.*;
+import java.util.function.Consumer;
 import nl.hauntedmc.dungeons.config.ConfigurationFile;
 import nl.hauntedmc.dungeons.persistence.StateDocument;
 import nl.hauntedmc.dungeons.persistence.StateStore;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
-
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.*;
-import java.util.function.Consumer;
 
 /** Owns one dungeon's player records and cooldown indexes, independent of worlds and editor UI. */
 public final class DungeonPlayerDataStore {
@@ -46,14 +44,17 @@ public final class DungeonPlayerDataStore {
     }
 
     private StateDocument document(UUID id) {
-        return documents.computeIfAbsent(id, ignored -> store.document(
-                new StateStore.Key(scope, id.toString(), id)));
+        return documents.computeIfAbsent(
+                id, ignored -> store.document(new StateStore.Key(scope, id.toString(), id)));
     }
 
     /** Rebuilds indexes idempotently without duplicating records. */
     public void loadCooldowns(UUID id) {
         requireOwnerThread();
-        if (!records.containsKey(id)) { load(id); return; }
+        if (!records.containsKey(id)) {
+            load(id);
+            return;
+        }
         var data = records.get(id);
         if (data == null) return;
         if (data.get("Finished") != null && !(data.get("Finished") instanceof Boolean)) {
@@ -192,5 +193,4 @@ public final class DungeonPlayerDataStore {
             throw new IllegalStateException("Dungeon player records require the server thread");
         }
     }
-
 }

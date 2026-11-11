@@ -3,6 +3,9 @@ package nl.hauntedmc.dungeons.generation.room;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.nio.file.Path;
+import java.util.*;
+import java.util.stream.Collectors;
 import nl.hauntedmc.dungeons.content.function.CheckpointFunction;
 import nl.hauntedmc.dungeons.content.function.SetStatusFunction;
 import nl.hauntedmc.dungeons.content.function.SpawnMobFunction;
@@ -15,7 +18,6 @@ import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.gui.menu.RoomMenus;
 import nl.hauntedmc.dungeons.support.*;
 import nl.hauntedmc.dungeons.util.world.SimpleLocation;
-
 import org.bukkit.*;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.Event;
@@ -23,10 +25,6 @@ import org.bukkit.util.BoundingBox;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
-
-import java.nio.file.Path;
-import java.util.*;
-import java.util.stream.Collectors;
 
 class RoomMechanicContractTest {
     @TempDir Path directory;
@@ -68,7 +66,7 @@ class RoomMechanicContractTest {
     void roomDoorControllersHonorNamedActionsAdjacentDoorsAndTheEntranceException()
             throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration());
-                var menus = mockStatic(RoomMenus.class)) {
+                var _ = mockStatic(RoomMenus.class)) {
             var b = new BranchingRunFixture(f);
             var room = room(b, "hall", 0);
             var other = room(b, "other", 20);
@@ -102,8 +100,8 @@ class RoomMechanicContractTest {
     @Test
     void doorChangeSignalsExecuteOnlyTheMatchingRoomDoorAndActionGraph() throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration());
-                var menus = mockStatic(RoomMenus.class);
-                var hotbars = new HeadlessMenus()) {
+                var _ = mockStatic(RoomMenus.class);
+                var _ = new HeadlessMenus()) {
             var b = new BranchingRunFixture(f);
             var room = room(b, "hall", 0);
             var other = room(b, "other", 20);
@@ -154,7 +152,7 @@ class RoomMechanicContractTest {
     void wholePartyRoomDetectorsWaitForEveryLivingMemberAndEmitAnIndividualSourceForEach()
             throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration());
-                var menus = mockStatic(RoomMenus.class)) {
+                var _ = mockStatic(RoomMenus.class)) {
             var b = new BranchingRunFixture(f);
             room(b, "hall", 0);
             room(b, "other", 20);
@@ -212,8 +210,8 @@ class RoomMechanicContractTest {
     void rotatedRoomMechanicsTranslatePositionsAndFacingsWithoutMutatingReusableTemplates()
             throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration());
-                var menus = mockStatic(RoomMenus.class);
-                var hotbars = new HeadlessMenus()) {
+                var _ = mockStatic(RoomMenus.class);
+                var _ = new HeadlessMenus()) {
             var b = new BranchingRunFixture(f);
             var definition =
                     new BranchingRoomDefinition(
@@ -277,8 +275,8 @@ class RoomMechanicContractTest {
     void oneFailedRoomMechanicCannotAbandonHealthyMechanicsOrLeaveItsPartialRegistrationBehind()
             throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration());
-                var menus = mockStatic(RoomMenus.class);
-                var hotbars = new HeadlessMenus()) {
+                var _ = mockStatic(RoomMenus.class);
+                var _ = new HeadlessMenus()) {
             var b = new BranchingRunFixture(f);
             var definition =
                     new BranchingRoomDefinition(

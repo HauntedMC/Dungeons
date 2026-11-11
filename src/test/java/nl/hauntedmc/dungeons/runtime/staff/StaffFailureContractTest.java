@@ -3,19 +3,17 @@ package nl.hauntedmc.dungeons.runtime.staff;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
-import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueEntry;
-import nl.hauntedmc.dungeons.support.*;
-
-import org.bukkit.Bukkit;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-
 import java.io.File;
 import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
+import nl.hauntedmc.dungeons.runtime.instance.DungeonInstance;
+import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueEntry;
+import nl.hauntedmc.dungeons.support.*;
+import org.bukkit.Bukkit;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class StaffFailureContractTest {
     @TempDir Path directory;
@@ -211,8 +209,7 @@ class StaffFailureContractTest {
             var other = f.dungeon("other");
             var player = f.player("Player");
             var session = f.runtime.playerSessions().get(player.player);
-            var queue =
-                    new DungeonQueueEntry(session, other, "");
+            var queue = new DungeonQueueEntry(session, other, "");
             f.runtime.queueRegistry().enqueue(queue);
             f.ops.restrict(f.actor, player.player.getUniqueId(), "crypt", 0, "Review");
             assertSame(queue, f.runtime.queueRegistry().getQueue(session));

@@ -3,11 +3,12 @@ package nl.hauntedmc.dungeons.registry;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.nio.file.Path;
+import java.util.*;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.content.function.SetStatusFunction;
 import nl.hauntedmc.dungeons.event.DungeonStartEvent;
 import nl.hauntedmc.dungeons.support.*;
-
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.*;
@@ -16,9 +17,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 
-import java.nio.file.Path;
-import java.util.*;
-
 public class EventRelayContractTest {
     @TempDir Path directory;
 
@@ -26,7 +24,7 @@ public class EventRelayContractTest {
     void reflectiveFunctionRelayHonorsRegistrationAndSnapshotsWhileIsolatingHandlerFailures()
             throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration());
-                var menus = new HeadlessMenus()) {
+                var _ = new HeadlessMenus()) {
             var runtime = f.paper.runtime;
             var relay = runtime.elementEventHandler();
             var registry = new FunctionRegistry(f.paper.plugin, runtime.activeInstances(), relay);

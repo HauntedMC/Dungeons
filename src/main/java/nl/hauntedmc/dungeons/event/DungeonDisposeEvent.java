@@ -1,6 +1,6 @@
 package nl.hauntedmc.dungeons.event;
 
-import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
+import nl.hauntedmc.dungeons.runtime.instance.DungeonInstance;
 
 /** Event fired once an instance has unloaded successfully and released its registration. */
 public class DungeonDisposeEvent extends DungeonEvent {

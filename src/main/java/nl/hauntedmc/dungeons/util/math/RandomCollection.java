@@ -7,9 +7,7 @@ import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.ThreadLocalRandom;
 
-/**
- * Weighted random collection with cumulative weight selection.
- */
+/** Weighted random collection with cumulative weight selection. */
 public class RandomCollection<E> {
     private final NavigableMap<Double, E> map = new TreeMap<>();
     private final Random random;

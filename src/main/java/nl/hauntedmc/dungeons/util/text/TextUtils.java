@@ -1,9 +1,8 @@
 package nl.hauntedmc.dungeons.util.text;
 
-import nl.hauntedmc.dungeons.runtime.RuntimeContext;
-
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
+import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 
 /** Text formatting and lightweight timing helpers. */
 public final class TextUtils {

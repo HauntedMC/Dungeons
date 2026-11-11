@@ -1,47 +1,37 @@
 package nl.hauntedmc.dungeons.content.trigger;
 
+import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
+import nl.hauntedmc.dungeons.config.PluginConfigView;
 import nl.hauntedmc.dungeons.event.DungeonStartEvent;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
 import nl.hauntedmc.dungeons.model.element.TriggerCategory;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
-import nl.hauntedmc.dungeons.util.config.PluginConfigView;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.event.EventHandler;
 
-import java.util.Map;
-
-/**
- * Trigger that fires when the dungeon run starts.
- */
+/** Trigger that fires when the dungeon run starts. */
 @AutoRegister(id = "dungeons.trigger.dungeon_start")
 @SerializableAs("dungeons.trigger.dungeon_start")
 public class DungeonStartTrigger extends DungeonTrigger {
-    /**
-     * Creates a new DungeonStartTrigger instance.
-     */
+    /** Creates a new DungeonStartTrigger instance. */
     public DungeonStartTrigger(Map<String, Object> config) {
         super("Dungeon Start", config);
         this.setCategory(TriggerCategory.DUNGEON);
         this.setHasTarget(true);
     }
 
-    /**
-     * Creates a new DungeonStartTrigger instance.
-     */
+    /** Creates a new DungeonStartTrigger instance. */
     public DungeonStartTrigger() {
         super("Dungeon Start");
         this.setCategory(TriggerCategory.DUNGEON);
         this.setHasTarget(true);
     }
 
-    /**
-     * Builds menu button.
-     */
+    /** Builds menu button. */
     @Override
     public MenuButton buildMenuButton() {
         MenuButton functionButton = new MenuButton(Material.MOSSY_COBBLESTONE);
@@ -51,9 +41,7 @@ public class DungeonStartTrigger extends DungeonTrigger {
         return functionButton;
     }
 
-    /**
-     * Performs on dungeon start.
-     */
+    /** Performs on dungeon start. */
     @EventHandler
     public void onDungeonStart(DungeonStartEvent event) {
         if (event.getInstance() == this.instance) {
@@ -76,9 +64,7 @@ public class DungeonStartTrigger extends DungeonTrigger {
         }
     }
 
-    /**
-     * Builds hotbar menu.
-     */
+    /** Builds hotbar menu. */
     @Override
     public void buildHotbarMenu() {}
 }

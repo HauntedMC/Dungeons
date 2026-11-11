@@ -2,20 +2,6 @@ package nl.hauntedmc.dungeons.acceptance;
 
 import static nl.hauntedmc.dungeons.acceptance.AcceptancePlugin.require;
 
-import net.kyori.adventure.text.Component;
-
-import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
-import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
-import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
-
-import org.bukkit.Bukkit;
-import org.bukkit.Material;
-import org.bukkit.World;
-import org.bukkit.WorldCreator;
-import org.bukkit.block.Chest;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.inventory.ItemStack;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -24,6 +10,17 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import net.kyori.adventure.text.Component;
+import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
+import nl.hauntedmc.dungeons.runtime.instance.DungeonInstance;
+import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.World;
+import org.bukkit.WorldCreator;
+import org.bukkit.block.Chest;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.inventory.ItemStack;
 
 final class WorldFixtures {
     private WorldFixtures() {}
@@ -54,9 +51,7 @@ final class WorldFixtures {
                     Bukkit.createWorld(
                             new WorldCreator(
                                             "acceptance_template_"
-                                                    + environment
-                                                            .name()
-                                                            .toLowerCase(Locale.ROOT))
+                                                    + environment.name().toLowerCase(Locale.ROOT))
                                     .environment(environment)
                                     .generator(generator)
                                     .generateStructures(false)
@@ -136,8 +131,7 @@ final class WorldFixtures {
                 .thenApply(ignored -> run);
     }
 
-    static CompletableFuture<Void> dispose(
-            AcceptancePlugin test, DungeonInstance... runs) {
+    static CompletableFuture<Void> dispose(AcceptancePlugin test, DungeonInstance... runs) {
         var names = Arrays.stream(runs).map(run -> run.getInstanceWorld().getName()).toList();
         var folders =
                 Arrays.stream(runs)

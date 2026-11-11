@@ -1,34 +1,28 @@
 package nl.hauntedmc.dungeons.content.function;
 
-import nl.hauntedmc.dungeons.annotation.AutoRegister;
-import nl.hauntedmc.dungeons.event.TriggerFireEvent;
-import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
-import nl.hauntedmc.dungeons.model.element.DungeonFunction;
-import nl.hauntedmc.dungeons.model.element.FunctionCategory;
-import nl.hauntedmc.dungeons.model.element.FunctionTargetType;
-import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
-import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
-import org.bukkit.Material;
-import org.bukkit.configuration.serialization.SerializableAs;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import nl.hauntedmc.dungeons.annotation.AutoRegister;
+import nl.hauntedmc.dungeons.event.TriggerFireEvent;
+import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
+import nl.hauntedmc.dungeons.localization.LangUtils;
+import nl.hauntedmc.dungeons.model.element.DungeonFunction;
+import nl.hauntedmc.dungeons.model.element.FunctionCategory;
+import nl.hauntedmc.dungeons.model.element.FunctionTargetType;
+import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
+import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
+import org.bukkit.Material;
+import org.bukkit.configuration.serialization.SerializableAs;
 
-/**
- * Function that starts a lobby-enabled dungeon run.
- */
+/** Function that starts a lobby-enabled dungeon run. */
 @AutoRegister(id = "dungeons.function.start_dungeon")
 @SerializableAs("dungeons.function.start_dungeon")
 public class StartDungeonFunction extends DungeonFunction {
     private List<UUID> readyPlayers = new ArrayList<>();
 
-    /**
-     * Creates a new StartDungeonFunction instance.
-     */
+    /** Creates a new StartDungeonFunction instance. */
     public StartDungeonFunction(Map<String, Object> config) {
         super("Start Dungeon", config);
         this.setCategory(FunctionCategory.DUNGEON);
@@ -36,9 +30,7 @@ public class StartDungeonFunction extends DungeonFunction {
         this.setRequiresTarget(true);
     }
 
-    /**
-     * Creates a new StartDungeonFunction instance.
-     */
+    /** Creates a new StartDungeonFunction instance. */
     public StartDungeonFunction() {
         super("Start Dungeon");
         this.targetType = FunctionTargetType.PLAYER;
@@ -47,9 +39,7 @@ public class StartDungeonFunction extends DungeonFunction {
         this.setRequiresTarget(true);
     }
 
-    /**
-     * Builds menu button.
-     */
+    /** Builds menu button. */
     @Override
     public MenuButton buildMenuButton() {
         MenuButton functionButton = new MenuButton(Material.GOLD_BLOCK);
@@ -59,9 +49,7 @@ public class StartDungeonFunction extends DungeonFunction {
         return functionButton;
     }
 
-    /**
-     * Performs run function.
-     */
+    /** Performs run function. */
     @Override
     public void runFunction(TriggerFireEvent triggerEvent, List<DungeonPlayerSession> targets) {
         PlayableInstance instance = this.instance.asPlayInstance();
@@ -95,15 +83,11 @@ public class StartDungeonFunction extends DungeonFunction {
         instance.startGame();
     }
 
-    /**
-     * Builds hotbar menu.
-     */
+    /** Builds hotbar menu. */
     @Override
     public void buildHotbarMenu() {}
 
-    /**
-     * Performs clone.
-     */
+    /** Performs clone. */
     @Override
     public DungeonFunction clone() {
         StartDungeonFunction clone = (StartDungeonFunction) super.clone();

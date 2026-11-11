@@ -1,24 +1,20 @@
 package nl.hauntedmc.dungeons.model.element;
 
+import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.gui.hotbar.PlayerHotbarMenu;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerEvent;
 
-import java.util.Map;
-
-/**
- * Base contract for conditional checks attached to a {@link DungeonTrigger}.
- */
+/** Base contract for conditional checks attached to a {@link DungeonTrigger}. */
 public abstract class TriggerCondition extends DungeonElement
         implements Cloneable, ConfigurationSerializable {
     protected final String namespace;
@@ -26,24 +22,18 @@ public abstract class TriggerCondition extends DungeonElement
     @PersistedField protected boolean inverted = false;
     protected DungeonTrigger trigger;
 
-    /**
-     * Creates a condition from persisted configuration data.
-     */
+    /** Creates a condition from persisted configuration data. */
     public TriggerCondition(String namespace, Map<String, Object> config) {
         super(config);
         this.namespace = namespace;
     }
 
-    /**
-     * Creates a new condition with no persisted state.
-     */
+    /** Creates a new condition with no persisted state. */
     public TriggerCondition(String namespace) {
         this.namespace = namespace;
     }
 
-    /**
-     * Performs one-time field hydration and menu initialization.
-     */
+    /** Performs one-time field hydration and menu initialization. */
     @Override
     public final void initialize() {
         if (!this.initialized) {
@@ -53,24 +43,16 @@ public abstract class TriggerCondition extends DungeonElement
         }
     }
 
-    /**
-     * Evaluates this condition against a trigger dispatch context.
-     */
+    /** Evaluates this condition against a trigger dispatch context. */
     public abstract boolean check(TriggerFireEvent triggerEvent);
 
-    /**
-     * Hook executed when the condition is enabled for a live trigger.
-     */
+    /** Hook executed when the condition is enabled for a live trigger. */
     public void onEnable() {}
 
-    /**
-     * Hook executed when the condition is disabled.
-     */
+    /** Hook executed when the condition is disabled. */
     public void onDisable() {}
 
-    /**
-     * Enables this condition for one concrete trigger instance.
-     */
+    /** Enables this condition for one concrete trigger instance. */
     public final void enable(DungeonTrigger trigger) {
         if (!this.enabled) {
             this.enabled = true;
@@ -81,30 +63,22 @@ public abstract class TriggerCondition extends DungeonElement
         }
     }
 
-    /**
-     * Disables condition-specific resources and shared listeners.
-     */
+    /** Disables condition-specific resources and shared listeners. */
     @Override
     public final void disable() {
         super.disable();
         this.onDisable();
     }
 
-    /**
-     * Builds the menu button used in condition selection lists.
-     */
+    /** Builds the menu button used in condition selection lists. */
     @Override
     public abstract MenuButton buildMenuButton();
 
-    /**
-     * Adds condition-specific controls to the hotbar menu.
-     */
+    /** Adds condition-specific controls to the hotbar menu. */
     @Override
     public abstract void buildHotbarMenu();
 
-    /**
-     * Builds the shared condition hotbar with back and invert toggles.
-     */
+    /** Builds the shared condition hotbar with back and invert toggles. */
     @Override
     protected final void initializeMenu() {
         this.menu = PlayerHotbarMenu.createMenu();
@@ -145,11 +119,10 @@ public abstract class TriggerCondition extends DungeonElement
                     }
                 });
         this.buildHotbarMenu();
+        this.registerEditorListener();
     }
 
-    /**
-     * Clones the condition and rebuilds clone-owned menu state.
-     */
+    /** Clones the condition and rebuilds clone-owned menu state. */
     public TriggerCondition clone() {
         try {
             TriggerCondition newCondition = (TriggerCondition) super.clone();
@@ -165,37 +138,27 @@ public abstract class TriggerCondition extends DungeonElement
         }
     }
 
-    /**
-     * Returns the serialization namespace of this condition.
-     */
+    /** Returns the serialization namespace of this condition. */
     public String getNamespace() {
         return this.namespace;
     }
 
-    /**
-     * Returns whether one-time initialization has completed.
-     */
+    /** Returns whether one-time initialization has completed. */
     public boolean isInitialized() {
         return this.initialized;
     }
 
-    /**
-     * Returns whether this condition result should be inverted.
-     */
+    /** Returns whether this condition result should be inverted. */
     public boolean isInverted() {
         return this.inverted;
     }
 
-    /**
-     * Returns the trigger currently owning this condition.
-     */
+    /** Returns the trigger currently owning this condition. */
     public DungeonTrigger getTrigger() {
         return this.trigger;
     }
 
-    /**
-     * Updates the trigger owning this condition.
-     */
+    /** Updates the trigger owning this condition. */
     public void setTrigger(DungeonTrigger trigger) {
         this.trigger = trigger;
     }

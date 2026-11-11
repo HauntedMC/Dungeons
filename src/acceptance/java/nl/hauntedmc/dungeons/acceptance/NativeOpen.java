@@ -2,10 +2,9 @@ package nl.hauntedmc.dungeons.acceptance;
 
 import static nl.hauntedmc.dungeons.acceptance.AcceptancePlugin.require;
 
-import nl.hauntedmc.dungeons.content.dungeon.OpenDungeon;
-
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
+import nl.hauntedmc.dungeons.content.dungeon.OpenDungeon;
 
 final class NativeOpen {
     private NativeOpen() {}

@@ -1,5 +1,7 @@
 package nl.hauntedmc.dungeons.world.generator;
 
+import java.util.List;
+import java.util.Random;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Biome;
@@ -10,18 +12,11 @@ import org.bukkit.generator.WorldInfo;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
-import java.util.Random;
-
-/**
- * Simple chunk generator that fills generated chunks with one block type.
- */
+/** Simple chunk generator that fills generated chunks with one block type. */
 public class SolidBlockChunkGenerator extends ChunkGenerator {
     protected final Material blockType;
 
-    /**
-     * Creates a solid-block generator, defaulting to stone for invalid materials.
-     */
+    /** Creates a solid-block generator, defaulting to stone for invalid materials. */
     public SolidBlockChunkGenerator(Material blockType) {
         if (!blockType.isBlock()) {
             this.blockType = Material.STONE;
@@ -30,17 +25,13 @@ public class SolidBlockChunkGenerator extends ChunkGenerator {
         }
     }
 
-    /**
-     * Disables default populators for this generated world.
-     */
+    /** Disables default populators for this generated world. */
     @Override
     public @NotNull List<BlockPopulator> getDefaultPopulators(@NotNull World world) {
         return List.of();
     }
 
-    /**
-     * Fills the full chunk area with the configured block type.
-     */
+    /** Fills the full chunk area with the configured block type. */
     @Override
     public void generateNoise(
             @NotNull WorldInfo worldInfo,
@@ -52,18 +43,14 @@ public class SolidBlockChunkGenerator extends ChunkGenerator {
                 0, worldInfo.getMinHeight(), 0, 16, worldInfo.getMaxHeight(), 16, this.blockType);
     }
 
-    /**
-     * Uses a single-biome provider so generated chunks stay in THE_VOID.
-     */
+    /** Uses a single-biome provider so generated chunks stay in THE_VOID. */
     @Override
     @Nullable
     public BiomeProvider getDefaultBiomeProvider(@NotNull WorldInfo worldInfo) {
         return new VoidBiomeProvider();
     }
 
-    /**
-     * Allows spawning at any location in this generated world.
-     */
+    /** Allows spawning at any location in this generated world. */
     @Override
     public boolean canSpawn(@NotNull World world, int x, int z) {
         return true;
@@ -71,18 +58,14 @@ public class SolidBlockChunkGenerator extends ChunkGenerator {
 
     /** Biome provider that forces all generated chunks to THE_VOID. */
     private static class VoidBiomeProvider extends BiomeProvider {
-        /**
-         * Returns THE_VOID for every queried coordinate.
-         */
+        /** Returns THE_VOID for every queried coordinate. */
         @Override
         @NotNull
         public Biome getBiome(@NotNull WorldInfo worldInfo, int x, int y, int z) {
             return Biome.THE_VOID;
         }
 
-        /**
-         * Declares the full biome set used by this provider.
-         */
+        /** Declares the full biome set used by this provider. */
         @Override
         @NotNull
         public List<Biome> getBiomes(@NotNull WorldInfo worldInfo) {

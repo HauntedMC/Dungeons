@@ -1,4 +1,6 @@
 package nl.hauntedmc.dungeons.gui.menu;
+
+import java.util.List;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
 import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
 import nl.hauntedmc.dungeons.generation.room.Connector;
@@ -6,24 +8,19 @@ import nl.hauntedmc.dungeons.generation.room.WhitelistEntry;
 import nl.hauntedmc.dungeons.gui.framework.buttons.Button;
 import nl.hauntedmc.dungeons.gui.framework.window.GuiInventory;
 import nl.hauntedmc.dungeons.gui.framework.window.GuiWindow;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.text.ColorUtils;
-
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import java.util.List;
-
-/**
- * Inventory menu builders for branching room editing.
- */
+/** Inventory menu builders for branching room editing. */
 public class RoomMenus {
     private static ItemStack openSlotItem;
 
@@ -34,8 +31,7 @@ public class RoomMenus {
 
         assert meta != null;
 
-        meta.displayName(
-                LangUtils.component("menus.common.empty-slot", null, false));
+        meta.displayName(LangUtils.component("menus.common.empty-slot", null, false));
         openSlotItem.setItemMeta(meta);
     }
 
@@ -57,8 +53,7 @@ public class RoomMenus {
                     return session != null
                             && session.getInstance() != null
                             && session.getInstance().getDungeon() == dungeon
-                            && StaffEditGuard.editor(
-                                    player, session);
+                            && StaffEditGuard.editor(player, session);
                 });
         tableMenu.setCancelClick(false);
         tableMenu.addOpenAction(

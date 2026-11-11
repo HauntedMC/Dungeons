@@ -1,19 +1,5 @@
 package nl.hauntedmc.dungeons.runtime.player;
 
-import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
-import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
-import nl.hauntedmc.dungeons.util.config.PluginConfigView;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
-import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.scheduler.BukkitTask;
-
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -22,6 +8,18 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Predicate;
+import nl.hauntedmc.dungeons.config.PluginConfigView;
+import nl.hauntedmc.dungeons.localization.LangUtils;
+import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
+import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.scheduler.BukkitTask;
 
 /** Server-thread session ownership with bounded retention for inactive disconnected players. */
 public final class PlayerSessionRegistry implements Listener {
@@ -49,10 +47,12 @@ public final class PlayerSessionRegistry implements Listener {
         requireOwnerThread();
         if (closed) throw new IllegalStateException("Session registry has shut down");
         if (sweepTask != null) return;
-        releaseCachedState = id -> {
-            if (runtime.hasDungeonCatalog())
-                for (var dungeon : runtime.dungeonCatalog().getLoadedDungeons()) dungeon.playerDataStore().evictPlayer(id);
-        };
+        releaseCachedState =
+                id -> {
+                    if (runtime.hasDungeonCatalog())
+                        for (var dungeon : runtime.dungeonCatalog().getLoadedDungeons())
+                            dungeon.playerDataStore().evictPlayer(id);
+                };
         retained =
                 session ->
                         runtime.preparations().contains(session)
@@ -86,7 +86,7 @@ public final class PlayerSessionRegistry implements Listener {
             player.kick(
                     LangUtils.notice(
                             "Your player data could not be loaded safely. Please contact an"
-                                + " administrator."));
+                                    + " administrator."));
             throw failure;
         }
     }
@@ -161,16 +161,21 @@ public final class PlayerSessionRegistry implements Listener {
             if (!session.expire(shutdown)) return false;
             players.remove(id, session);
             disconnected.remove(id);
-            try { releaseCachedState.accept(id); }
-            catch (RuntimeException failure) {
-                plugin.getSLF4JLogger().error("Could not release cached dungeon records for expired player {}", id, failure);
+            try {
+                releaseCachedState.accept(id);
+            } catch (RuntimeException failure) {
+                plugin.getSLF4JLogger()
+                        .error(
+                                "Could not release cached dungeon records for expired player {}",
+                                id,
+                                failure);
             }
             return true;
         } catch (RuntimeException failure) {
             plugin.getSLF4JLogger()
                     .error(
                             "Cannot expire session '{}'; retaining it until its durable checkpoint"
-                                + " succeeds.",
+                                    + " succeeds.",
                             id,
                             failure);
             return false;

@@ -15,23 +15,21 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
-import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
-import nl.hauntedmc.dungeons.registry.DungeonTypeRegistry;
-import nl.hauntedmc.dungeons.support.CapturedScheduler;
-import nl.hauntedmc.dungeons.support.PaperBoundary;
-
-import org.bukkit.Bukkit;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.Player;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
+import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
+import nl.hauntedmc.dungeons.registry.DungeonTypeRegistry;
+import nl.hauntedmc.dungeons.support.CapturedScheduler;
+import nl.hauntedmc.dungeons.support.PaperBoundary;
+import org.bukkit.Bukkit;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class RepositoryContractTest {
     @TempDir Path directory;
@@ -40,7 +38,8 @@ class RepositoryContractTest {
     void invalidUuidIsRejectedBeforeDefaultsRewriteTheMap() throws Exception {
         try (var fixture = new Fixture(directory)) {
             Path folder = Files.createDirectory(directory.resolve("invalid-id"));
-            String original = "# Operator content must remain byte-for-byte intact\ndungeon:\n  type: static\n  id: broken\n";
+            String original =
+                    "# Operator content must remain byte-for-byte intact\ndungeon:\n  type: static\n  id: broken\n";
             Path config = folder.resolve("config.yml");
             Files.writeString(config, original);
             assertNull(fixture.repository.loadDungeon(folder.toFile()));
@@ -55,8 +54,11 @@ class RepositoryContractTest {
             var shared = UUID.randomUUID();
             for (String name : List.of("first", "duplicate", "healthy")) {
                 Path folder = Files.createDirectory(directory.resolve(name));
-                Files.writeString(folder.resolve("config.yml"), "dungeon:\n  type: static\n  id: '"
-                        + (name.equals("healthy") ? UUID.randomUUID() : shared) + "'\n");
+                Files.writeString(
+                        folder.resolve("config.yml"),
+                        "dungeon:\n  type: static\n  id: '"
+                                + (name.equals("healthy") ? UUID.randomUUID() : shared)
+                                + "'\n");
             }
             fixture.scheduler.jobs.getFirst().run();
             assertEquals(2, fixture.repository.getLoadedDungeons().size());
@@ -163,6 +165,7 @@ class RepositoryContractTest {
             paper.close();
         }
     }
+
     @Test
     void unrelatedOrMalformedPlayerFilesCannotPreventLoadingValidDungeonAndPlayerData()
             throws Exception {

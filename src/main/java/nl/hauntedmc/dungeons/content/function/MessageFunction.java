@@ -1,55 +1,45 @@
 package nl.hauntedmc.dungeons.content.function;
 
+import java.util.List;
+import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ChatMenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuItem;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.FunctionCategory;
-import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
+import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.instance.InstanceUtils;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.text.ComponentUtils;
-
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerEvent;
 
-import java.util.List;
-import java.util.Map;
-
-/**
- * Function that sends a configured chat message to its targets.
- */
+/** Function that sends a configured chat message to its targets. */
 @AutoRegister(id = "dungeons.function.message")
 @SerializableAs("dungeons.function.message")
 public class MessageFunction extends DungeonFunction {
     @PersistedField private String message = "DEFAULT";
     @PersistedField private int messageType = 0;
 
-    /**
-     * Creates a new MessageFunction instance.
-     */
+    /** Creates a new MessageFunction instance. */
     public MessageFunction(Map<String, Object> config) {
         super("Message", config);
         this.setCategory(FunctionCategory.PLAYER);
     }
 
-    /**
-     * Creates a new MessageFunction instance.
-     */
+    /** Creates a new MessageFunction instance. */
     public MessageFunction() {
         super("Message");
         this.setCategory(FunctionCategory.PLAYER);
     }
 
-    /**
-     * Performs run function.
-     */
+    /** Performs run function. */
     @Override
     public void runFunction(TriggerFireEvent triggerEvent, List<DungeonPlayerSession> targets) {
         PlayableInstance instance = this.instance.asPlayInstance();
@@ -69,9 +59,7 @@ public class MessageFunction extends DungeonFunction {
         }
     }
 
-    /**
-     * Builds menu button.
-     */
+    /** Builds menu button. */
     @Override
     public MenuButton buildMenuButton() {
         MenuButton functionButton = new MenuButton(Material.PAPER);
@@ -81,25 +69,19 @@ public class MessageFunction extends DungeonFunction {
         return functionButton;
     }
 
-    /**
-     * Builds hotbar menu.
-     */
+    /** Builds hotbar menu. */
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
                 new MenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.KNOWLEDGE_BOOK);
                         this.button.setDisplayName("&d&lMessage Type");
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
@@ -117,18 +99,14 @@ public class MessageFunction extends DungeonFunction {
                 });
         this.menu.addMenuItem(
                 new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.PAPER);
                         this.button.setDisplayName("&d&lEdit Message");
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         LangUtils.sendMessage(player, "editor.function.message.ask-message");
@@ -138,9 +116,7 @@ public class MessageFunction extends DungeonFunction {
                                 LangUtils.placeholder("message", MessageFunction.this.message));
                     }
 
-                    /**
-                     * Performs on input.
-                     */
+                    /** Performs on input. */
                     @Override
                     public void onInput(Player player, String message) {
                         MessageFunction.this.message = message;
@@ -152,16 +128,12 @@ public class MessageFunction extends DungeonFunction {
                 });
     }
 
-    /**
-     * Sets the message.
-     */
+    /** Sets the message. */
     public void setMessage(String message) {
         this.message = message;
     }
 
-    /**
-     * Sets the message type.
-     */
+    /** Sets the message type. */
     public void setMessageType(int messageType) {
         this.messageType = messageType;
     }
@@ -170,9 +142,7 @@ public class MessageFunction extends DungeonFunction {
         CHAT,
         ACTION_BAR;
 
-        /**
-         * Performs int to type.
-         */
+        /** Performs int to type. */
         public static MessageType intToType(int index) {
             return switch (index) {
                 case 1 -> ACTION_BAR;

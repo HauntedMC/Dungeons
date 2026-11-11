@@ -1,12 +1,9 @@
 package nl.hauntedmc.dungeons.runtime.team;
 
+import java.util.UUID;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.UUID;
-
-/**
- * Shared policy helpers for leader-only team requirements.
- */
+/** Shared policy helpers for leader-only team requirements. */
 public final class TeamRequirementPolicy {
     /** Utility class. */
     private TeamRequirementPolicy() {}

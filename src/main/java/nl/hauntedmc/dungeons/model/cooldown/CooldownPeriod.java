@@ -21,43 +21,34 @@ public enum CooldownPeriod {
     public final ChronoUnit period;
     public final int amount;
 
-    /**
-     * Creates a new cooldown period instance.
-     */
+    /** Creates a new cooldown period instance. */
     CooldownPeriod(ChronoUnit period) {
         this.period = period;
         this.amount = 1;
     }
 
-    /**
-     * Creates a new cooldown period instance.
-     */
+    /** Creates a new cooldown period instance. */
     CooldownPeriod(ChronoUnit period, int amount) {
         this.period = period;
         this.amount = amount;
     }
 
-    /**
-     * Creates a value from now.
-     */
+    /** Creates a value from now. */
     public Date fromNow(int amount) {
         return Date.from(ZonedDateTime.now().plus(amount, this.period).toInstant());
     }
 
-    /**
-     * Creates a value from date.
-     */
+    /** Creates a value from date. */
     public Date fromDate(Date date) {
         return this.fromDate(date, this.amount);
     }
 
-    /**
-     * Creates a value from date.
-     */
+    /** Creates a value from date. */
     public Date fromDate(Date date, int amount) {
         return Date.from(
-                date.toInstant().atZone(ZoneId.systemDefault()).plus(amount, this.period).toInstant());
+                date.toInstant()
+                        .atZone(ZoneId.systemDefault())
+                        .plus(amount, this.period)
+                        .toInstant());
     }
-
-
 }

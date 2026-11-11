@@ -2,17 +2,6 @@ package nl.hauntedmc.dungeons.acceptance;
 
 import static nl.hauntedmc.dungeons.acceptance.AcceptancePlugin.require;
 
-import net.kyori.adventure.text.Component;
-
-import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-
-import org.bukkit.*;
-import org.bukkit.attribute.AttributeInstance;
-import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.PlayerInventory;
-import org.bukkit.persistence.PersistentDataType;
-
 import java.io.IOException;
 import java.lang.reflect.Proxy;
 import java.nio.file.Files;
@@ -20,9 +9,18 @@ import java.util.*;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+import net.kyori.adventure.text.Component;
+import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
+import org.bukkit.*;
+import org.bukkit.attribute.AttributeInstance;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.persistence.PersistentDataType;
 
 /**
- * Exercises native Paper player saves, loads, inventory codecs and the journal; network actions use a controlled boundary.
+ * Exercises native Paper player saves, loads, inventory codecs and the journal; network actions use
+ * a controlled boundary.
  */
 final class NativePlayerRecovery {
     private NativePlayerRecovery() {}
@@ -35,11 +33,22 @@ final class NativePlayerRecovery {
         // A standalone Paper backend creates canonical identities after join, not pre-login.
         // Prefetch must probe the database without rejecting or inventing a first-time identity.
         test.runtime().stateStore().prefetch(id).get(5, TimeUnit.SECONDS);
-        require(test.runtime().database().database().players().findIdentity(id).toCompletableFuture()
-                .get(5, TimeUnit.SECONDS).isEmpty(), "Dungeons invented a canonical identity");
+        require(
+                test.runtime()
+                        .database()
+                        .database()
+                        .players()
+                        .findIdentity(id)
+                        .toCompletableFuture()
+                        .get(5, TimeUnit.SECONDS)
+                        .isEmpty(),
+                "Dungeons invented a canonical identity");
         boolean waiting = false;
-        try { test.runtime().stateStore().requirePlayerReady(id); }
-        catch (IllegalArgumentException expected) { waiting = true; }
+        try {
+            test.runtime().stateStore().requirePlayerReady(id);
+        } catch (IllegalArgumentException expected) {
+            waiting = true;
+        }
         require(waiting, "First-time gameplay was admitted before identity readiness");
         test.seedPlayer(id);
         Player nativePlayer = nativePlayer(id);
@@ -112,7 +121,8 @@ final class NativePlayerRecovery {
         initial[41] = new ItemStack(Material.LEATHER_HORSE_ARMOR);
         initial[42] = new ItemStack(Material.SADDLE);
         inventory.setContents(initial);
-        inventory.setArmorContents(new ItemStack[] {new ItemStack(Material.DIAMOND_BOOTS), null, null, null});
+        inventory.setArmorContents(
+                new ItemStack[] {new ItemStack(Material.DIAMOND_BOOTS), null, null, null});
         var registry = test.runtime().playerSessions();
         var first = registry.put(player);
         require(
@@ -136,10 +146,8 @@ final class NativePlayerRecovery {
                                 test.getLogger()
                                         .info(
                                                 "Session expiry pending after 25 ticks; elapsed="
-                                                        + TimeUnit.NANOSECONDS
-                                                                .toMillis(
-                                                                        System.nanoTime()
-                                                                                - disconnectedAt)
+                                                        + TimeUnit.NANOSECONDS.toMillis(
+                                                                System.nanoTime() - disconnectedAt)
                                                         + "ms");
                             }
                             // The retention policy uses monotonic time. Catch-up ticks during
@@ -171,12 +179,16 @@ final class NativePlayerRecovery {
                                 require(
                                         inventory.getContents()[40].getType() == Material.SHIELD,
                                         "Native recovery lost offhand");
-                                require(inventory.getContents()[41].getType() == Material.LEATHER_HORSE_ARMOR,
+                                require(
+                                        inventory.getContents()[41].getType()
+                                                == Material.LEATHER_HORSE_ARMOR,
                                         "Native recovery lost body equipment");
-                                require(inventory.getContents()[42].getType() == Material.SADDLE,
+                                require(
+                                        inventory.getContents()[42].getType() == Material.SADDLE,
                                         "Native recovery lost saddle equipment");
                                 require(
-                                        inventory.getArmorContents()[0].getType() == Material.DIAMOND_BOOTS,
+                                        inventory.getArmorContents()[0].getType()
+                                                == Material.DIAMOND_BOOTS,
                                         "Native recovery lost armor");
                                 require(
                                         player.getGameMode() == GameMode.SURVIVAL
@@ -202,19 +214,34 @@ final class NativePlayerRecovery {
                                         "Offline key refund was lost or duplicated during"
                                                 + " expiry/recovery");
                                 for (int attempt = 0; attempt < 3; attempt++) {
-                                    require(again.prepareRecovery(), "Repeat entry rejected after a completed departure");
+                                    require(
+                                            again.prepareRecovery(),
+                                            "Repeat entry rejected after a completed departure");
                                     inventory.clear();
                                     values.put("GameMode", GameMode.ADVENTURE);
                                     again.completeDeparture(true, true);
-                                    require(inventory.getContents()[0].equals(original),
+                                    require(
+                                            inventory.getContents()[0].equals(original),
                                             "Departure lost the original inventory");
-                                    again = new DungeonPlayerSession(test.runtime().environment().plugin(), player);
-                                    require(again.recoverPendingState(), "Reconnect failed after a completed departure");
+                                    again =
+                                            new DungeonPlayerSession(
+                                                    test.runtime().environment().plugin(), player);
+                                    require(
+                                            again.recoverPendingState(),
+                                            "Reconnect failed after a completed departure");
                                 }
                                 try {
-                                    Files.writeString(test.getDataFolder().toPath().resolve("database-player.txt"), id.toString());
-                                } catch (IOException failure) { throw new CompletionException(failure); }
-                                test.getLogger().info("Native save/load and three entry/departure/reconnect cycles passed");
+                                    Files.writeString(
+                                            test.getDataFolder()
+                                                    .toPath()
+                                                    .resolve("database-player.txt"),
+                                            id.toString());
+                                } catch (IOException failure) {
+                                    throw new CompletionException(failure);
+                                }
+                                test.getLogger()
+                                        .info(
+                                                "Native save/load and three entry/departure/reconnect cycles passed");
                             } finally {
                                 test.runtime()
                                         .config()
@@ -225,18 +252,27 @@ final class NativePlayerRecovery {
 
     /** Uses the actual native player serializer, including its configured storage directory. */
     private static Player nativePlayer(UUID id) throws Exception {
-        Object server = Bukkit.getServer().getClass().getMethod("getServer").invoke(Bukkit.getServer());
-        Object level = Bukkit.getWorlds().getFirst().getClass().getMethod("getHandle")
-                .invoke(Bukkit.getWorlds().getFirst());
+        Object server =
+                Bukkit.getServer().getClass().getMethod("getServer").invoke(Bukkit.getServer());
+        Object level =
+                Bukkit.getWorlds()
+                        .getFirst()
+                        .getClass()
+                        .getMethod("getHandle")
+                        .invoke(Bukkit.getWorlds().getFirst());
         Class<?> serverType = Class.forName("net.minecraft.server.MinecraftServer");
         Class<?> levelType = Class.forName("net.minecraft.server.level.ServerLevel");
         Class<?> profileType = Class.forName("com.mojang.authlib.GameProfile");
         Class<?> informationType = Class.forName("net.minecraft.server.level.ClientInformation");
-        Object profile = profileType.getConstructor(UUID.class, String.class).newInstance(id, "RecoveryProbe");
+        Object profile =
+                profileType
+                        .getConstructor(UUID.class, String.class)
+                        .newInstance(id, "RecoveryProbe");
         Object information = informationType.getMethod("createDefault").invoke(null);
-        Object handle = Class.forName("net.minecraft.server.level.ServerPlayer")
-                .getConstructor(serverType, levelType, profileType, informationType)
-                .newInstance(server, level, profile, information);
+        Object handle =
+                Class.forName("net.minecraft.server.level.ServerPlayer")
+                        .getConstructor(serverType, levelType, profileType, informationType)
+                        .newInstance(server, level, profile, information);
         return (Player) handle.getClass().getMethod("getBukkitEntity").invoke(handle);
     }
 
@@ -246,8 +282,9 @@ final class NativePlayerRecovery {
             Object inventory = handle.getClass().getMethod("getInventory").invoke(handle);
             Class<?> itemType = Class.forName("net.minecraft.world.item.ItemStack");
             var set = inventory.getClass().getMethod("setItem", int.class, itemType);
-            var convert = Class.forName("org.bukkit.craftbukkit.inventory.CraftItemStack")
-                    .getMethod("asNMSCopy", ItemStack.class);
+            var convert =
+                    Class.forName("org.bukkit.craftbukkit.inventory.CraftItemStack")
+                            .getMethod("asNMSCopy", ItemStack.class);
             var contents = source.getContents();
             for (int slot = 0; slot < contents.length; slot++)
                 set.invoke(inventory, slot, convert.invoke(null, contents[slot]));
@@ -256,16 +293,21 @@ final class NativePlayerRecovery {
             Player reloaded = nativePlayer(player.getUniqueId());
             reloaded.loadData();
             var transaction = new NamespacedKey("dungeons", "player_transaction");
-            require(Objects.equals(
-                    player.getPersistentDataContainer().get(transaction, PersistentDataType.STRING),
-                    reloaded.getPersistentDataContainer().get(transaction, PersistentDataType.STRING)),
+            require(
+                    Objects.equals(
+                            player.getPersistentDataContainer()
+                                    .get(transaction, PersistentDataType.STRING),
+                            reloaded.getPersistentDataContainer()
+                                    .get(transaction, PersistentDataType.STRING)),
                     "Native reload did not retain the transaction marker");
             for (int slot = 0; slot < contents.length; slot++) {
                 ItemStack expected = contents[slot];
                 ItemStack actual = reloaded.getInventory().getItem(slot);
-                require(expected == null || expected.getType().isAir()
+                require(
+                        expected == null || expected.getType().isAir()
                                 ? actual == null || actual.getType().isAir()
-                                : actual != null && expected.isSimilar(actual)
+                                : actual != null
+                                        && expected.isSimilar(actual)
                                         && expected.getAmount() == actual.getAmount(),
                         "Native reload lost inventory slot " + slot);
             }
@@ -274,45 +316,63 @@ final class NativePlayerRecovery {
         }
     }
 
-    /** Uses Paper's real inventory and item/equipment containers, excluding network notifications. */
+    /**
+     * Uses Paper's real inventory and item/equipment containers, excluding network notifications.
+     */
     private static PlayerInventory nativeInventory() throws Exception {
         Class<?> playerType = Class.forName("net.minecraft.world.entity.player.Player");
         Class<?> equipmentType = Class.forName("net.minecraft.world.entity.EntityEquipment");
         Class<?> inventoryType = Class.forName("net.minecraft.world.entity.player.Inventory");
         Class<?> itemType = Class.forName("net.minecraft.world.item.ItemStack");
-        Object handle = inventoryType.getConstructor(playerType, equipmentType)
-                .newInstance(null, equipmentType.getConstructor().newInstance());
-        PlayerInventory nativeView = (PlayerInventory) Class.forName(
-                "org.bukkit.craftbukkit.inventory.CraftInventoryPlayer")
-                .getConstructor(inventoryType).newInstance(handle);
+        Object handle =
+                inventoryType
+                        .getConstructor(playerType, equipmentType)
+                        .newInstance(null, equipmentType.getConstructor().newInstance());
+        PlayerInventory nativeView =
+                (PlayerInventory)
+                        Class.forName("org.bukkit.craftbukkit.inventory.CraftInventoryPlayer")
+                                .getConstructor(inventoryType)
+                                .newInstance(handle);
         var set = inventoryType.getMethod("setItem", int.class, itemType);
-        var convert = Class.forName("org.bukkit.craftbukkit.inventory.CraftItemStack")
-                .getMethod("asNMSCopy", ItemStack.class);
-        return proxy(PlayerInventory.class, (method, args) -> {
-            try {
-                return switch (method) {
-                    case "getSize" -> nativeView.getSize();
-                    case "getContents" -> nativeView.getContents();
-                    case "getArmorContents" -> nativeView.getArmorContents();
-                    case "getHeldItemSlot" -> nativeView.getHeldItemSlot();
-                    case "setHeldItemSlot" -> {
-                        inventoryType.getMethod("setSelectedSlot", int.class).invoke(handle, args[0]);
-                        yield null;
+        var convert =
+                Class.forName("org.bukkit.craftbukkit.inventory.CraftItemStack")
+                        .getMethod("asNMSCopy", ItemStack.class);
+        return proxy(
+                PlayerInventory.class,
+                (method, args) -> {
+                    try {
+                        return switch (method) {
+                            case "getSize" -> nativeView.getSize();
+                            case "getContents" -> nativeView.getContents();
+                            case "getArmorContents" -> nativeView.getArmorContents();
+                            case "getHeldItemSlot" -> nativeView.getHeldItemSlot();
+                            case "setHeldItemSlot" -> {
+                                inventoryType
+                                        .getMethod("setSelectedSlot", int.class)
+                                        .invoke(handle, args[0]);
+                                yield null;
+                            }
+                            case "setContents", "setArmorContents", "clear" -> {
+                                int offset = method.equals("setArmorContents") ? 36 : 0;
+                                ItemStack[] items =
+                                        method.equals("clear")
+                                                ? new ItemStack[nativeView.getSize()]
+                                                : (ItemStack[]) args[0];
+                                for (int slot = 0; slot < items.length; slot++)
+                                    set.invoke(
+                                            handle,
+                                            offset + slot,
+                                            convert.invoke(null, items[slot]));
+                                yield null;
+                            }
+                            default ->
+                                    throw new IllegalArgumentException(
+                                            "Unexpected inventory call: " + method);
+                        };
+                    } catch (ReflectiveOperationException failure) {
+                        throw new IllegalStateException(failure);
                     }
-                    case "setContents", "setArmorContents", "clear" -> {
-                        int offset = method.equals("setArmorContents") ? 36 : 0;
-                        ItemStack[] items = method.equals("clear")
-                                ? new ItemStack[nativeView.getSize()] : (ItemStack[]) args[0];
-                        for (int slot = 0; slot < items.length; slot++)
-                            set.invoke(handle, offset + slot, convert.invoke(null, items[slot]));
-                        yield null;
-                    }
-                    default -> throw new IllegalArgumentException("Unexpected inventory call: " + method);
-                };
-            } catch (ReflectiveOperationException failure) {
-                throw new IllegalStateException(failure);
-            }
-        });
+                });
     }
 
     private interface Calls {

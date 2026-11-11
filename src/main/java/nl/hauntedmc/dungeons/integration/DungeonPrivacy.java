@@ -1,10 +1,5 @@
 package nl.hauntedmc.dungeons.integration;
 
-import nl.hauntedmc.dataregistry.api.DataRegistryFeature;
-import nl.hauntedmc.dataregistry.api.player.PlayerData;
-import nl.hauntedmc.dataregistry.api.player.PlayerDataVisibility;
-import nl.hauntedmc.dungeons.api.DungeonsApi.Disclosure;
-
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -18,6 +13,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
+import nl.hauntedmc.dataregistry.api.DataRegistryFeature;
+import nl.hauntedmc.dataregistry.api.player.PlayerData;
+import nl.hauntedmc.dataregistry.api.player.PlayerDataVisibility;
+import nl.hauntedmc.dungeons.api.DungeonsApi.Disclosure;
 
 /** Live disclosure policy. Never cache grants or duplicate the proxy's friendship authority. */
 public final class DungeonPrivacy implements AutoCloseable {

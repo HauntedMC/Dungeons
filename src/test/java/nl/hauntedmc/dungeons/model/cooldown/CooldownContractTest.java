@@ -3,12 +3,11 @@ package nl.hauntedmc.dungeons.model.cooldown;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.jupiter.api.Test;
-
 import java.time.ZonedDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
+import org.junit.jupiter.api.Test;
 
 class CooldownContractTest {
 
@@ -21,9 +20,11 @@ class CooldownContractTest {
             var nextDay = CooldownPeriod.DAILY.fromDate(Date.from(beforeDst.toInstant()));
             assertEquals(beforeDst.plusDays(1).toInstant(), nextDay.toInstant());
             var monthEnd = ZonedDateTime.parse("2028-01-31T12:00+01:00[Europe/Amsterdam]");
-            assertEquals(monthEnd.plusMonths(1).toInstant(),
+            assertEquals(
+                    monthEnd.plusMonths(1).toInstant(),
                     CooldownPeriod.MONTHLY.fromDate(Date.from(monthEnd.toInstant())).toInstant());
-            assertEquals(beforeDst.plusDays(7).toInstant(),
+            assertEquals(
+                    beforeDst.plusDays(7).toInstant(),
                     CooldownPeriod.WEEKLY.fromDate(Date.from(beforeDst.toInstant())).toInstant());
         } finally {
             TimeZone.setDefault(previousZone);
@@ -90,5 +91,4 @@ class CooldownContractTest {
             assertTrue(actual.isAfter(now), c.toString());
         }
     }
-
 }

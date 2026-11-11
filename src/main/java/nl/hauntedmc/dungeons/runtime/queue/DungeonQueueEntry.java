@@ -1,30 +1,29 @@
 package nl.hauntedmc.dungeons.runtime.queue;
-import nl.hauntedmc.dungeons.content.instance.play.OpenInstance;
-import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
-import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
-import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
-import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
-import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
-import nl.hauntedmc.dungeons.runtime.team.TeamRequirementPolicy;
-
-import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
+import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
+import nl.hauntedmc.dungeons.runtime.instance.DungeonInstance;
+import nl.hauntedmc.dungeons.runtime.instance.play.OpenInstance;
+import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
+import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
+import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
+import nl.hauntedmc.dungeons.runtime.team.TeamRequirementPolicy;
+import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitRunnable;
 
-/**
- * Immutable queue intent plus mutable queued-member list for one pending dungeon start.
- */
+/** Immutable queue intent plus mutable queued-member list for one pending dungeon start. */
 public class DungeonQueueEntry {
     private final UUID admissionId = UUID.randomUUID();
     private final long queuedAt = System.nanoTime();
 
-    public UUID getAdmissionId() { return this.admissionId; }
+    public UUID getAdmissionId() {
+        return this.admissionId;
+    }
 
     public long getWaitingSeconds() {
         return TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - queuedAt);
@@ -130,9 +129,7 @@ public class DungeonQueueEntry {
         return this.queuedPlayer;
     }
 
-    /**
-     * Schedules a short retry loop that joins team members once the leader's instance is ready.
-     */
+    /** Schedules a short retry loop that joins team members once the leader's instance is ready. */
     public void scheduleTeamJoin(
             DungeonsPlugin plugin,
             DungeonTeamService teamManager,

@@ -3,11 +3,9 @@ package nl.hauntedmc.dungeons.event;
 import nl.hauntedmc.dungeons.generation.room.ConnectorDoor;
 import nl.hauntedmc.dungeons.generation.room.DoorAction;
 import nl.hauntedmc.dungeons.generation.room.InstanceRoom;
-import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
+import nl.hauntedmc.dungeons.runtime.instance.DungeonInstance;
 
-/**
- * Event fired when a branching room door opens, closes, or toggles.
- */
+/** Event fired when a branching room door opens, closes, or toggles. */
 public class RoomDoorChangeEvent extends DungeonEvent {
     private final InstanceRoom room;
     private final ConnectorDoor door;

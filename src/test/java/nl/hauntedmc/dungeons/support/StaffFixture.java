@@ -2,9 +2,11 @@ package nl.hauntedmc.dungeons.support;
 
 import static org.mockito.Mockito.*;
 
+import java.nio.file.Path;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
-
 import nl.hauntedmc.dungeons.bootstrap.LifecycleCoordinator;
 import nl.hauntedmc.dungeons.config.ConfigurationFile;
 import nl.hauntedmc.dungeons.content.dungeon.StaticDungeon;
@@ -13,15 +15,10 @@ import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
 import nl.hauntedmc.dungeons.runtime.queue.*;
 import nl.hauntedmc.dungeons.runtime.staff.StaffOperations;
 import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
-
 import org.bukkit.*;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
-
-import java.nio.file.Path;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * Real staff/runtime services; Paper storage, schedulers and command output are controlled
@@ -62,8 +59,7 @@ public final class StaffFixture implements AutoCloseable {
         when(repository.get(anyString())).thenAnswer(c -> catalog.get(c.getArgument(0)));
         when(repository.getLoadedDungeons()).thenAnswer(c -> List.copyOf(catalog.values()));
         when(repository.loadFailures()).thenReturn(Map.of());
-        when(repository.reloadAllAsync())
-                .thenReturn(CompletableFuture.completedFuture(Map.of()));
+        when(repository.reloadAllAsync()).thenReturn(CompletableFuture.completedFuture(Map.of()));
         doAnswer(
                         c -> {
                             catalog.remove(((StaticDungeon) c.getArgument(0)).getWorldName());

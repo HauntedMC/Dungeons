@@ -1,27 +1,25 @@
 package nl.hauntedmc.dungeons.content.condition;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ChatMenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.TriggerCondition;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.math.MathUtils;
-
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * Condition that counts nearby non-spectator players.
@@ -36,23 +34,17 @@ public class PlayersWithinCondition extends TriggerCondition {
     @PersistedField private boolean playersExact = false;
     private transient boolean invalidConfigurationLogged;
 
-    /**
-     * Creates a new PlayersWithinCondition instance.
-     */
+    /** Creates a new PlayersWithinCondition instance. */
     public PlayersWithinCondition(Map<String, Object> config) {
         super("playerswithin", config);
     }
 
-    /**
-     * Creates a new PlayersWithinCondition instance.
-     */
+    /** Creates a new PlayersWithinCondition instance. */
     public PlayersWithinCondition() {
         super("playerswithin");
     }
 
-    /**
-     * Performs check.
-     */
+    /** Performs check. */
     @Override
     public boolean check(TriggerFireEvent event) {
         if (this.location == null || this.location.getWorld() == null) {
@@ -100,9 +92,7 @@ public class PlayersWithinCondition extends TriggerCondition {
                 : players.size() >= requiredPlayers;
     }
 
-    /**
-     * Builds menu button.
-     */
+    /** Builds menu button. */
     @Override
     public MenuButton buildMenuButton() {
         MenuButton functionButton = new MenuButton(Material.DETECTOR_RAIL);
@@ -113,16 +103,12 @@ public class PlayersWithinCondition extends TriggerCondition {
         return functionButton;
     }
 
-    /**
-     * Builds hotbar menu.
-     */
+    /** Builds hotbar menu. */
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
                 new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.DETECTOR_RAIL);
@@ -131,17 +117,13 @@ public class PlayersWithinCondition extends TriggerCondition {
                                 (int) MathUtils.round(PlayersWithinCondition.this.radius, 0));
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         LangUtils.sendMessage(player, "editor.condition.players-within.ask-radius");
                     }
 
-                    /**
-                     * Performs on input.
-                     */
+                    /** Performs on input. */
                     @Override
                     public void onInput(Player player, String message) {
                         Optional<Double> value = InputUtils.readDoubleInput(player, message);
@@ -159,9 +141,7 @@ public class PlayersWithinCondition extends TriggerCondition {
                 });
         this.menu.addMenuItem(
                 new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.PLAYER_HEAD);
@@ -172,17 +152,13 @@ public class PlayersWithinCondition extends TriggerCondition {
                         this.button.setAmount(PlayersWithinCondition.this.count);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         LangUtils.sendMessage(player, "editor.condition.players-within.ask-count");
                     }
 
-                    /**
-                     * Performs on input.
-                     */
+                    /** Performs on input. */
                     @Override
                     public void onInput(Player player, String message) {
                         Optional<Integer> value = InputUtils.readIntegerInput(player, message);
@@ -200,9 +176,7 @@ public class PlayersWithinCondition extends TriggerCondition {
                 });
         this.menu.addMenuItem(
                 new ToggleMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.REDSTONE_TORCH);
@@ -210,9 +184,7 @@ public class PlayersWithinCondition extends TriggerCondition {
                         this.button.setEnchanted(PlayersWithinCondition.this.playersExact);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         if (!PlayersWithinCondition.this.playersExact) {
@@ -228,30 +200,22 @@ public class PlayersWithinCondition extends TriggerCondition {
                 });
     }
 
-    /**
-     * Returns the radius.
-     */
+    /** Returns the radius. */
     public double getRadius() {
         return this.radius;
     }
 
-    /**
-     * Sets the radius.
-     */
+    /** Sets the radius. */
     public void setRadius(double radius) {
         this.radius = radius;
     }
 
-    /**
-     * Returns the count.
-     */
+    /** Returns the count. */
     public int getCount() {
         return this.count;
     }
 
-    /**
-     * Sets the count.
-     */
+    /** Sets the count. */
     public void setCount(int count) {
         this.count = count;
     }

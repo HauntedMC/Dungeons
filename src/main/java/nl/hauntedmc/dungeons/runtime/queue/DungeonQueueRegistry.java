@@ -1,27 +1,25 @@
 package nl.hauntedmc.dungeons.runtime.queue;
 
-import nl.hauntedmc.dungeons.event.DungeonDisposeEvent;
-import nl.hauntedmc.dungeons.runtime.instance.ActiveInstanceRegistry;
-import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
-
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerQuitEvent;
-import org.jetbrains.annotations.Nullable;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import nl.hauntedmc.dungeons.event.DungeonDisposeEvent;
+import nl.hauntedmc.dungeons.runtime.instance.ActiveInstanceRegistry;
+import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
+import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * In-memory queue registry for pending dungeon starts.
  *
  * <p>The registry owns queue membership and queue ordering, while the coordinator decides whether a
- * queue can actually be started or should be discarded.</p>
+ * queue can actually be started or should be discarded.
  */
 public final class DungeonQueueRegistry implements Listener {
     private final PlayerSessionRegistry playerManager;
@@ -31,24 +29,21 @@ public final class DungeonQueueRegistry implements Listener {
     private final Map<UUID, DungeonQueueEntry> queueEntriesByPlayer = new ConcurrentHashMap<>();
     private DungeonQueueCoordinator queueCoordinator;
 
-    /**
-     * Creates the queue registry against the shared player and instance services.
-     */
+    /** Creates the queue registry against the shared player and instance services. */
     public DungeonQueueRegistry(
             PlayerSessionRegistry playerManager, ActiveInstanceRegistry activeInstanceManager) {
         this.playerManager = playerManager;
         this.activeInstanceManager = activeInstanceManager;
     }
 
-    /**
-     * Binds the higher-level coordinator used for queue invalidation and launch attempts.
-     */
+    /** Binds the higher-level coordinator used for queue invalidation and launch attempts. */
     public void setQueueCoordinator(DungeonQueueCoordinator queueCoordinator) {
         this.queueCoordinator = queueCoordinator;
     }
 
     /**
-     * Inserts or updates a queue entry and evicts any older queues that still claim the same players.
+     * Inserts or updates a queue entry and evicts any older queues that still claim the same
+     * players.
      */
     public void enqueue(DungeonQueueEntry queue) {
         List<DungeonQueueEntry> overlappingQueues = new ArrayList<>();
@@ -80,9 +75,7 @@ public final class DungeonQueueRegistry implements Listener {
         this.queueEntries.add(queue);
     }
 
-    /**
-     * Removes the queue entry associated with the provided player, if any.
-     */
+    /** Removes the queue entry associated with the provided player, if any. */
     public void unqueue(DungeonPlayerSession player) {
         if (player == null || player.getPlayer() == null) {
             return;
@@ -95,16 +88,12 @@ public final class DungeonQueueRegistry implements Listener {
         }
     }
 
-    /**
-     * Removes a queue and resets waiting state for affected players.
-     */
+    /** Removes a queue and resets waiting state for affected players. */
     public void unqueue(DungeonQueueEntry queue) {
         this.unqueue(queue, true);
     }
 
-    /**
-     * Removes a queue and optionally resets the per-player awaiting-dungeon state.
-     */
+    /** Removes a queue and optionally resets the per-player awaiting-dungeon state. */
     public void unqueue(DungeonQueueEntry queue, boolean resetAwaitingDungeon) {
         if (queue == null) {
             return;
@@ -131,9 +120,7 @@ public final class DungeonQueueRegistry implements Listener {
         }
     }
 
-    /**
-     * Removes a single player from a queue, collapsing the whole queue if the leader leaves.
-     */
+    /** Removes a single player from a queue, collapsing the whole queue if the leader leaves. */
     public void removePlayer(UUID playerId) {
         DungeonQueueEntry queue = this.queueEntriesByPlayer.get(playerId);
         if (queue == null) {
@@ -154,9 +141,7 @@ public final class DungeonQueueRegistry implements Listener {
         }
     }
 
-    /**
-     * Returns the queue currently owned by the supplied player session.
-     */
+    /** Returns the queue currently owned by the supplied player session. */
     public DungeonQueueEntry getQueue(DungeonPlayerSession player) {
         if (player == null || player.getPlayer() == null) {
             return null;
@@ -165,26 +150,20 @@ public final class DungeonQueueRegistry implements Listener {
         return this.queueEntriesByPlayer.get(player.getPlayer().getUniqueId());
     }
 
-    /**
-     * Returns a stable snapshot of the current queue order.
-     */
+    /** Returns a stable snapshot of the current queue order. */
     public List<DungeonQueueEntry> snapshotQueues() {
         synchronized (this.queueEntries) {
             return new ArrayList<>(this.queueEntries);
         }
     }
 
-    /**
-     * Returns the first queue that is still valid and can start immediately.
-     */
+    /** Returns the first queue that is still valid and can start immediately. */
     @Nullable
     public DungeonQueueEntry getNextInLine() {
         return this.getNextInLine(0);
     }
 
-    /**
-     * Returns the next queue at or after the supplied index that can still be started.
-     */
+    /** Returns the next queue at or after the supplied index that can still be started. */
     @Nullable
     public DungeonQueueEntry getNextInLine(int index) {
         synchronized (this.queueEntries) {
@@ -226,9 +205,7 @@ public final class DungeonQueueRegistry implements Listener {
         return null;
     }
 
-    /**
-     * Attempts to start the next queued dungeon when a running dungeon disposes.
-     */
+    /** Attempts to start the next queued dungeon when a running dungeon disposes. */
     @EventHandler
     public void onDungeonEnd(DungeonDisposeEvent event) {
         DungeonQueueEntry nextInLine = this.getNextInLine();
@@ -237,9 +214,7 @@ public final class DungeonQueueRegistry implements Listener {
         }
     }
 
-    /**
-     * Clears ad-hoc queues when a solo player disconnects.
-     */
+    /** Clears ad-hoc queues when a solo player disconnects. */
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         DungeonPlayerSession player = this.playerManager.get(event.getPlayer());

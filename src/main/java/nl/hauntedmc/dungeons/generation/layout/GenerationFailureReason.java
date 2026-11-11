@@ -1,8 +1,6 @@
 package nl.hauntedmc.dungeons.generation.layout;
 
-/**
- * Categorized reasons recorded while layout generation rejects candidates.
- */
+/** Categorized reasons recorded while layout generation rejects candidates. */
 public enum GenerationFailureReason {
     INVALID_CONFIGURATION("Invalid configuration"),
     NO_VALID_CANDIDATE_ROOMS("No valid candidate rooms"),
@@ -18,16 +16,12 @@ public enum GenerationFailureReason {
 
     private final String description;
 
-    /**
-     * Creates a new generation failure reason instance.
-     */
+    /** Creates a new generation failure reason instance. */
     GenerationFailureReason(String description) {
         this.description = description;
     }
 
-    /**
-     * Returns a human-readable description used in logs and diagnostics.
-     */
+    /** Returns a human-readable description used in logs and diagnostics. */
     public String getDescription() {
         return this.description;
     }

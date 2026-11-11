@@ -3,19 +3,17 @@ package nl.hauntedmc.dungeons.runtime.dungeon;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.nio.file.*;
+import java.util.*;
+import java.util.concurrent.CountDownLatch;
 import nl.hauntedmc.dungeons.content.dungeon.OpenDungeon;
-import nl.hauntedmc.dungeons.content.instance.play.OpenInstance;
-import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
+import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
+import nl.hauntedmc.dungeons.runtime.instance.play.OpenInstance;
 import nl.hauntedmc.dungeons.support.*;
-
 import org.bukkit.*;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-
-import java.nio.file.*;
-import java.util.*;
-import java.util.concurrent.CountDownLatch;
 
 class OpenPreparationContractTest {
     @TempDir Path directory;
@@ -98,13 +96,19 @@ class OpenPreparationContractTest {
     @Test
     void rejectedWorkerSchedulingAndShutdownReleaseOpenAdmissionOwnership() throws Exception {
         for (boolean reject : List.of(true, false)) {
-            try (var f = new RunFixture(directory.resolve("case-" + reject), new YamlConfiguration())) {
-                var dungeon = new PreparedOpen(f, directory.resolve("case-" + reject).resolve("open"),
-                        new YamlConfiguration());
+            try (var f =
+                    new RunFixture(directory.resolve("case-" + reject), new YamlConfiguration())) {
+                var dungeon =
+                        new PreparedOpen(
+                                f,
+                                directory.resolve("case-" + reject).resolve("open"),
+                                new YamlConfiguration());
                 var state = new PlayerState();
                 var session = f.session(state);
-                if (reject) when(f.scheduler.scheduler.runTaskAsynchronously(eq(f.paper.plugin), any(Runnable.class)))
-                        .thenThrow(new IllegalStateException("scheduler unavailable"));
+                if (reject)
+                    when(f.scheduler.scheduler.runTaskAsynchronously(
+                                    eq(f.paper.plugin), any(Runnable.class)))
+                            .thenThrow(new IllegalStateException("scheduler unavailable"));
                 assertEquals(!reject, dungeon.prepareInstance(state.player, "DEFAULT", 1, null));
                 if (!reject) f.paper.runtime.preparations().shutdown();
                 assertFalse(f.paper.runtime.preparations().contains(session));

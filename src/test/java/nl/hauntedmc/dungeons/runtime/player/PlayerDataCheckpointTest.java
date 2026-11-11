@@ -3,18 +3,16 @@ package nl.hauntedmc.dungeons.runtime.player;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.*;
 import nl.hauntedmc.dungeons.support.PaperBoundary;
 import nl.hauntedmc.dungeons.support.PlayerState;
 import nl.hauntedmc.dungeons.support.TestStateStore;
-
 import org.bukkit.NamespacedKey;
 import org.bukkit.persistence.PersistentDataType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.*;
 
 class PlayerDataCheckpointTest {
     @TempDir Path directory;
@@ -26,8 +24,11 @@ class PlayerDataCheckpointTest {
             player.contents[0] = PlayerState.stack(4);
             var file = directory.resolve("recovery.yml");
             var journal = new PlayerRecoveryJournal(TestStateStore.player(file));
-            paper.checkpoints.when(PlayerDataCheckpoint::requireStorage)
-                    .thenThrow(new UncheckedIOException(new IOException("unsupported storage adapter")));
+            paper.checkpoints
+                    .when(PlayerDataCheckpoint::requireStorage)
+                    .thenThrow(
+                            new UncheckedIOException(
+                                    new IOException("unsupported storage adapter")));
             assertThrows(UncheckedIOException.class, () -> journal.begin(player.player));
             assertFalse(Files.exists(file));
             assertFalse(journal.hasRecovery());
@@ -40,14 +41,18 @@ class PlayerDataCheckpointTest {
         try (var paper = new PaperBoundary()) {
             var player = new PlayerState();
             Path nativeDirectory = directory.resolve("players/data");
-            paper.checkpoints.when(PlayerDataCheckpoint::playerDataDirectory).thenReturn(nativeDirectory);
+            paper.checkpoints
+                    .when(PlayerDataCheckpoint::playerDataDirectory)
+                    .thenReturn(nativeDirectory);
             paper.checkpoints
                     .when(() -> PlayerDataCheckpoint.verify(player.player, "transaction"))
                     .thenCallRealMethod();
             Path legacy = directory.resolve("playerdata/" + player.player.getUniqueId() + ".dat");
             Files.createDirectories(legacy.getParent());
             Files.writeString(legacy, "stale legacy player data");
-            paper.checkpoints.when(() -> PlayerDataCheckpoint.readMarker(legacy)).thenReturn("transaction");
+            paper.checkpoints
+                    .when(() -> PlayerDataCheckpoint.readMarker(legacy))
+                    .thenReturn("transaction");
             assertThrows(
                     UncheckedIOException.class,
                     () -> PlayerDataCheckpoint.verify(player.player, "transaction"));
@@ -77,13 +82,12 @@ class PlayerDataCheckpointTest {
             journal.addRefunds(PlayerState.stack(5));
             paper.checkpoints
                     .when(() -> PlayerDataCheckpoint.verify(eq(player.player), anyString()))
-                    .thenThrow(
-                            new UncheckedIOException(
-                                    new IOException("native save missing")));
+                    .thenThrow(new UncheckedIOException(new IOException("native save missing")));
             assertThrows(
                     UncheckedIOException.class,
                     () -> journal.deliverRefund(player.player, journal.refunds().getFirst()));
-            assertTrue(new PlayerRecoveryJournal(TestStateStore.player(path)).hasPendingTransaction());
+            assertTrue(
+                    new PlayerRecoveryJournal(TestStateStore.player(path)).hasPendingTransaction());
             assertNull(
                     player.player
                             .getPersistentDataContainer()

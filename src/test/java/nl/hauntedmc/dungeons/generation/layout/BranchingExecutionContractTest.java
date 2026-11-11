@@ -9,6 +9,9 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
 import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
 import nl.hauntedmc.dungeons.generation.room.Connector;
@@ -18,15 +21,10 @@ import nl.hauntedmc.dungeons.generation.room.WhitelistEntry;
 import nl.hauntedmc.dungeons.support.PaperBoundary;
 import nl.hauntedmc.dungeons.util.math.RangedNumber;
 import nl.hauntedmc.dungeons.util.world.SimpleLocation;
-
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.util.BoundingBox;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 class BranchingExecutionContractTest {
     @Test
@@ -178,9 +176,6 @@ class BranchingExecutionContractTest {
         TestLayout(BranchingDungeon dungeon, YamlConfiguration settings) {
             super(dungeon, settings);
         }
-
-        @Override
-        public void initializeConnectorEditMenu() {}
 
         GenerationResult attempt() {
             return tryLayout();

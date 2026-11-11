@@ -1,18 +1,19 @@
 package nl.hauntedmc.dungeons.content.function;
 
+import java.util.List;
+import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.content.trigger.KeyItemTrigger;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.FunctionCategory;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.event.InteractionUtils;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.data.Openable;
@@ -23,9 +24,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * Function that locks, unlocks, opens, or closes a door block at its location.
@@ -39,9 +37,7 @@ public class DoorControlFunction extends DungeonFunction {
     @PersistedField private boolean openOnUnlock = true;
     private boolean locked = true;
 
-    /**
-     * Creates a new DoorControlFunction instance.
-     */
+    /** Creates a new DoorControlFunction instance. */
     public DoorControlFunction(Map<String, Object> config) {
         super("Door Control", config);
         this.setRequiresTrigger(false);
@@ -49,9 +45,7 @@ public class DoorControlFunction extends DungeonFunction {
         this.setCategory(FunctionCategory.LOCATION);
     }
 
-    /**
-     * Creates a new DoorControlFunction instance.
-     */
+    /** Creates a new DoorControlFunction instance. */
     public DoorControlFunction() {
         super("Door Control");
         this.setRequiresTrigger(false);
@@ -59,17 +53,13 @@ public class DoorControlFunction extends DungeonFunction {
         this.setCategory(FunctionCategory.LOCATION);
     }
 
-    /**
-     * Performs on enable.
-     */
+    /** Performs on enable. */
     @Override
     public void onEnable() {
         this.locked = this.lockedByDefault;
     }
 
-    /**
-     * Sets the locked.
-     */
+    /** Sets the locked. */
     public void setLocked(boolean locked) {
         this.locked = locked;
         if (locked) {
@@ -93,9 +83,7 @@ public class DoorControlFunction extends DungeonFunction {
         }
     }
 
-    /**
-     * Opens door.
-     */
+    /** Opens door. */
     public void openDoor() {
         if (this.location.getBlock().getBlockData() instanceof Openable door) {
             door.setOpen(true);
@@ -103,9 +91,7 @@ public class DoorControlFunction extends DungeonFunction {
         }
     }
 
-    /**
-     * Closes door.
-     */
+    /** Closes door. */
     public void closeDoor() {
         if (this.location.getBlock().getBlockData() instanceof Openable door) {
             door.setOpen(false);
@@ -113,9 +99,7 @@ public class DoorControlFunction extends DungeonFunction {
         }
     }
 
-    /**
-     * Performs on interact door.
-     */
+    /** Performs on interact door. */
     @EventHandler(priority = EventPriority.HIGH)
     public void onInteractDoor(PlayerInteractEvent event) {
         if (event.getPlayer().getWorld() == this.instance.getInstanceWorld()) {
@@ -152,17 +136,13 @@ public class DoorControlFunction extends DungeonFunction {
         }
     }
 
-    /**
-     * Performs run function.
-     */
+    /** Performs run function. */
     @Override
     public void runFunction(TriggerFireEvent triggerEvent, List<DungeonPlayerSession> targets) {
         this.setLocked(!this.locked);
     }
 
-    /**
-     * Builds menu button.
-     */
+    /** Builds menu button. */
     @Override
     public MenuButton buildMenuButton() {
         MenuButton functionButton = new MenuButton(Material.IRON_DOOR);
@@ -172,16 +152,12 @@ public class DoorControlFunction extends DungeonFunction {
         return functionButton;
     }
 
-    /**
-     * Builds hotbar menu.
-     */
+    /** Builds hotbar menu. */
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
                 new ToggleMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.IRON_DOOR);
@@ -189,9 +165,7 @@ public class DoorControlFunction extends DungeonFunction {
                         this.button.setEnchanted(DoorControlFunction.this.lockedByDefault);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         if (!DoorControlFunction.this.lockedByDefault) {
@@ -208,9 +182,7 @@ public class DoorControlFunction extends DungeonFunction {
                 });
         this.menu.addMenuItem(
                 new ToggleMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.REDSTONE_TORCH);
@@ -218,9 +190,7 @@ public class DoorControlFunction extends DungeonFunction {
                         this.button.setEnchanted(DoorControlFunction.this.openOnUnlock);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         if (!DoorControlFunction.this.openOnUnlock) {
@@ -235,37 +205,27 @@ public class DoorControlFunction extends DungeonFunction {
                 });
     }
 
-    /**
-     * Returns whether locked by default.
-     */
+    /** Returns whether locked by default. */
     public boolean isLockedByDefault() {
         return this.lockedByDefault;
     }
 
-    /**
-     * Sets the locked by default.
-     */
+    /** Sets the locked by default. */
     public void setLockedByDefault(boolean lockedByDefault) {
         this.lockedByDefault = lockedByDefault;
     }
 
-    /**
-     * Returns whether open on unlock.
-     */
+    /** Returns whether open on unlock. */
     public boolean isOpenOnUnlock() {
         return this.openOnUnlock;
     }
 
-    /**
-     * Sets the open on unlock.
-     */
+    /** Sets the open on unlock. */
     public void setOpenOnUnlock(boolean openOnUnlock) {
         this.openOnUnlock = openOnUnlock;
     }
 
-    /**
-     * Returns whether locked.
-     */
+    /** Returns whether locked. */
     public boolean isLocked() {
         return this.locked;
     }

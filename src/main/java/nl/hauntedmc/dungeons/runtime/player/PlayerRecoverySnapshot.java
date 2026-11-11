@@ -1,7 +1,7 @@
 package nl.hauntedmc.dungeons.runtime.player;
 
+import java.util.*;
 import nl.hauntedmc.dungeons.util.entity.EntityUtils;
-
 import org.bukkit.*;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
@@ -9,8 +9,6 @@ import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.potion.PotionEffect;
-
-import java.util.*;
 
 /** A complete pre-entry snapshot; item bytes preserve Paper data components and custom metadata. */
 record PlayerRecoverySnapshot(

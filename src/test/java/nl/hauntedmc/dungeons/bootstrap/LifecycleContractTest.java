@@ -3,11 +3,16 @@ package nl.hauntedmc.dungeons.bootstrap;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import nl.hauntedmc.dungeons.config.ConfigurationFile;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
-import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
 import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
 import nl.hauntedmc.dungeons.runtime.instance.ActiveInstanceRegistry;
+import nl.hauntedmc.dungeons.runtime.instance.DungeonInstance;
 import nl.hauntedmc.dungeons.runtime.instance.PreparationRegistry;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
@@ -19,18 +24,11 @@ import nl.hauntedmc.dungeons.support.CapturedScheduler;
 import nl.hauntedmc.dungeons.support.PaperBoundary;
 import nl.hauntedmc.dungeons.support.PlayerState;
 import nl.hauntedmc.dungeons.support.RunFixture;
-
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 class LifecycleContractTest {
     @TempDir Path directory;
@@ -50,7 +48,7 @@ class LifecycleContractTest {
             when(editor.isEditInstance()).thenReturn(true);
             var failedSave = new CompletableFuture<Boolean>();
             var retrySave = new CompletableFuture<Boolean>();
-            when(editor.disposeAsync()).thenReturn(failedSave, retrySave);
+            when(editor.disposeAsync()).thenReturn(failedSave).thenReturn(retrySave);
             var lifecycle = new LifecycleCoordinator(paper.runtime, mock(CoreBootstrap.class));
             var first = lifecycle.reloadAllDungeons();
             assertFalse(first.isDone());
@@ -80,7 +78,10 @@ class LifecycleContractTest {
             f.dungeon.getInstances().add(f.run);
             f.paper.runtime.activeInstances().registerActiveInstance(f.run);
             f.paper.bukkit.when(() -> Bukkit.unloadWorld(f.world, false)).thenReturn(true);
-            assertDoesNotThrow(() -> new LifecycleCoordinator(f.paper.runtime, mock(CoreBootstrap.class)).shutdown());
+            assertDoesNotThrow(
+                    () ->
+                            new LifecycleCoordinator(f.paper.runtime, mock(CoreBootstrap.class))
+                                    .shutdown());
             assertNull(f.run.getInstanceWorld());
             assertTrue(f.paper.runtime.activeInstances().getActiveInstances().isEmpty());
         }
@@ -281,6 +282,7 @@ class LifecycleContractTest {
             verify(catalog).loadDungeon(f.dungeon.getFolder());
         }
     }
+
     @Test
     void shutdownSettlesOfflineRunMembersBeforeDisposalAndReleasesDurableSessions()
             throws Exception {

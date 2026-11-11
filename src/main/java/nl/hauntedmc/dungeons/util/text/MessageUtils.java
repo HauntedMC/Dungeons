@@ -1,12 +1,10 @@
 package nl.hauntedmc.dungeons.util.text;
 
+import java.time.Duration;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.title.Title;
-
 import org.bukkit.entity.Player;
-
-import java.time.Duration;
 
 /** Title and clickable-message helpers for player messaging. */
 public final class MessageUtils {
@@ -38,7 +36,6 @@ public final class MessageUtils {
 
     /** Sends a clickable run-command message. */
     public static void sendClickableCommand(Player player, Component message, String command) {
-        player.sendMessage(
-                message.clickEvent(ClickEvent.runCommand("/" + command)));
+        player.sendMessage(message.clickEvent(ClickEvent.runCommand("/" + command)));
     }
 }

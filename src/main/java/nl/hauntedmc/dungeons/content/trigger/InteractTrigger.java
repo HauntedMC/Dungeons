@@ -1,15 +1,15 @@
 package nl.hauntedmc.dungeons.content.trigger;
 
+import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
 import nl.hauntedmc.dungeons.model.element.TriggerCategory;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.event.InteractionUtils;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -21,35 +21,25 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 
-import java.util.Map;
-
-/**
- * Trigger that fires when a player right-clicks the configured block location.
- */
+/** Trigger that fires when a player right-clicks the configured block location. */
 @AutoRegister(id = "dungeons.trigger.interact")
 @SerializableAs("dungeons.trigger.interact")
 public class InteractTrigger extends DungeonTrigger {
-    /**
-     * Creates a new InteractTrigger instance.
-     */
+    /** Creates a new InteractTrigger instance. */
     public InteractTrigger(Map<String, Object> config) {
         super("Right-Click", config);
         this.setCategory(TriggerCategory.PLAYER);
         this.setHasTarget(true);
     }
 
-    /**
-     * Creates a new InteractTrigger instance.
-     */
+    /** Creates a new InteractTrigger instance. */
     public InteractTrigger() {
         super("Right-Click");
         this.setCategory(TriggerCategory.PLAYER);
         this.setHasTarget(true);
     }
 
-    /**
-     * Builds menu button.
-     */
+    /** Builds menu button. */
     @Override
     public MenuButton buildMenuButton() {
         MenuButton functionButton = new MenuButton(Material.OAK_SIGN);
@@ -60,9 +50,7 @@ public class InteractTrigger extends DungeonTrigger {
         return functionButton;
     }
 
-    /**
-     * Performs on interact.
-     */
+    /** Performs on interact. */
     @EventHandler
     public void onInteract(PlayerInteractEvent event) {
         if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
@@ -103,16 +91,12 @@ public class InteractTrigger extends DungeonTrigger {
         }
     }
 
-    /**
-     * Builds hotbar menu.
-     */
+    /** Builds hotbar menu. */
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
                 new ToggleMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.REDSTONE_TORCH);
@@ -120,9 +104,7 @@ public class InteractTrigger extends DungeonTrigger {
                         this.button.setEnchanted(InteractTrigger.this.allowRetrigger);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         if (!InteractTrigger.this.allowRetrigger) {

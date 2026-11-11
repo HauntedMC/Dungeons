@@ -1,14 +1,15 @@
 package nl.hauntedmc.dungeons.registry;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.nio.file.Path;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.content.condition.ChanceCondition;
 import nl.hauntedmc.dungeons.content.function.SetStatusFunction;
 import nl.hauntedmc.dungeons.content.trigger.RemoteTrigger;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.support.*;
-
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.HandlerList;
@@ -17,16 +18,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 
-import java.nio.file.Path;
-
 public class RegistryResourceContractTest {
     @TempDir Path directory;
 
     @Test
-    void discoveryPrototypesReleaseTheirEditorListenersAfterTheirMetadataHasBeenCollected()
-            throws Exception {
+    void discoveryPrototypesDoNotAcquireEditorListeners() throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration());
-                var menus = new HeadlessMenus();
+                var _ = new HeadlessMenus();
                 var handlers = mockStatic(HandlerList.class)) {
             var runtime = f.paper.runtime;
             new FunctionRegistry(
@@ -45,11 +43,30 @@ public class RegistryResourceContractTest {
                             runtime.activeInstances(),
                             runtime.elementEventHandler())
                     .register(BrokenButton.class);
+            verify(Bukkit.getPluginManager(), never()).registerEvents(any(), any());
+            handlers.verifyNoInteractions();
+        }
+    }
+
+    @Test
+    void editorListenersAreAcquiredOnceAndClonesOwnSeparateRegistrations() throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration());
+                var _ = new HeadlessMenus();
+                var handlers = mockStatic(HandlerList.class)) {
+            var function = new SetStatusFunction();
+            function.initialize();
+            function.initializeMenu();
+            var clone = function.clone();
+            assertNotNull(clone);
             var listeners = ArgumentCaptor.forClass(Listener.class);
-            verify(Bukkit.getPluginManager(), times(4))
+            verify(Bukkit.getPluginManager(), times(2))
                     .registerEvents(listeners.capture(), eq(f.paper.plugin));
+            assertNotSame(listeners.getAllValues().get(0), listeners.getAllValues().get(1));
+            function.releaseEditorListener();
+            function.releaseEditorListener();
+            clone.releaseEditorListener();
             for (var listener : listeners.getAllValues())
-                handlers.verify(() -> HandlerList.unregisterAll(listener));
+                handlers.verify(() -> HandlerList.unregisterAll(listener), times(1));
         }
     }
 

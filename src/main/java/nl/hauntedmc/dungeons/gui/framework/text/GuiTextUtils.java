@@ -1,15 +1,11 @@
 package nl.hauntedmc.dungeons.gui.framework.text;
 
+import java.util.List;
 import net.kyori.adventure.text.Component;
-
 import nl.hauntedmc.dungeons.util.text.ColorUtils;
 import nl.hauntedmc.dungeons.util.text.ComponentUtils;
 
-import java.util.List;
-
-/**
- * Public text helpers used by the inventory GUI framework.
- */
+/** Public text helpers used by the inventory GUI framework. */
 public final class GuiTextUtils {
     /** Utility class. */
     private GuiTextUtils() {}

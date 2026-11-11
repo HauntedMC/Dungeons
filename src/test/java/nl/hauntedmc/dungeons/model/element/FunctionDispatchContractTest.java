@@ -4,21 +4,19 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import nl.hauntedmc.dungeons.event.TriggerFireEvent;
-import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
-import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
-import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.support.PaperBoundary;
-
-import org.junit.jupiter.api.Test;
-
 import java.util.ArrayList;
 import java.util.List;
+import nl.hauntedmc.dungeons.event.TriggerFireEvent;
+import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
+import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
+import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
+import nl.hauntedmc.dungeons.support.PaperBoundary;
+import org.junit.jupiter.api.Test;
 
 class FunctionDispatchContractTest {
     @Test
     void onlyTheBoundTriggerCanExecuteAFunctionAndCancellationPreventsAllEffects() {
-        try (var paper = new PaperBoundary()) {
+        try (var _ = new PaperBoundary()) {
             var function = new RecordingFunction();
             var bound = mock(DungeonTrigger.class);
             var unrelated = mock(DungeonTrigger.class);

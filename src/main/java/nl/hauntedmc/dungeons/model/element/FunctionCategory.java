@@ -1,8 +1,6 @@
 package nl.hauntedmc.dungeons.model.element;
 
-/**
- * Groups function types by the gameplay scope they primarily act on.
- */
+/** Groups function types by the gameplay scope they primarily act on. */
 public enum FunctionCategory {
     DUNGEON("#fca103"),
     PLAYER("#0bfc03"),
@@ -12,16 +10,12 @@ public enum FunctionCategory {
 
     private final String color;
 
-    /**
-     * Creates a new function category instance.
-     */
+    /** Creates a new function category instance. */
     FunctionCategory(String hexColor) {
         this.color = hexColor;
     }
 
-    /**
-     * Returns the default UI color for this category as a hex string.
-     */
+    /** Returns the default UI color for this category as a hex string. */
     public String getColor() {
         return this.color;
     }

@@ -1,14 +1,12 @@
 package nl.hauntedmc.dungeons.integration;
 
-import nl.hauntedmc.dungeons.api.DungeonsApi.Disclosure;
-import nl.hauntedmc.serverfeatures.api.ServerFeaturesApi;
-import nl.hauntedmc.serverfeatures.api.capability.privacy.PlayerPrivacyApi;
-
-import org.bukkit.Server;
-
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import nl.hauntedmc.dungeons.api.DungeonsApi.Disclosure;
+import nl.hauntedmc.serverfeatures.api.ServerFeaturesApi;
+import nl.hauntedmc.serverfeatures.api.capability.privacy.PlayerPrivacyApi;
+import org.bukkit.Server;
 
 /** Loaded only when ServerFeatures is installed. Resolve the live capability on every operation. */
 final class ServerFeaturesPrivacy {

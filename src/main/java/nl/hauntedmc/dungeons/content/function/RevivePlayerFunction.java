@@ -1,33 +1,29 @@
 package nl.hauntedmc.dungeons.content.function;
 
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ChatMenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.FunctionCategory;
 import nl.hauntedmc.dungeons.model.element.FunctionTargetType;
-import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
+import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
 import nl.hauntedmc.dungeons.util.entity.EntityUtils;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
 
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-
-/**
- * Function that revives targeted players in a playable instance.
- */
+/** Function that revives targeted players in a playable instance. */
 @AutoRegister(id = "dungeons.function.revive_player")
 @SerializableAs("dungeons.function.revive_player")
 public class RevivePlayerFunction extends DungeonFunction {
@@ -35,9 +31,7 @@ public class RevivePlayerFunction extends DungeonFunction {
     @PersistedField private int livesAfterRevival = 1;
     private int currentRevives = 0;
 
-    /**
-     * Creates a new RevivePlayerFunction instance.
-     */
+    /** Creates a new RevivePlayerFunction instance. */
     public RevivePlayerFunction(Map<String, Object> config) {
         super("Reviver", config);
         this.setTargetType(FunctionTargetType.PLAYER);
@@ -46,9 +40,7 @@ public class RevivePlayerFunction extends DungeonFunction {
         this.setAllowRetriggerByDefault(true);
     }
 
-    /**
-     * Creates a new RevivePlayerFunction instance.
-     */
+    /** Creates a new RevivePlayerFunction instance. */
     public RevivePlayerFunction() {
         super("Reviver");
         this.setTargetType(FunctionTargetType.PLAYER);
@@ -57,9 +49,7 @@ public class RevivePlayerFunction extends DungeonFunction {
         this.setAllowRetriggerByDefault(true);
     }
 
-    /**
-     * Performs run function.
-     */
+    /** Performs run function. */
     @Override
     public void runFunction(TriggerFireEvent triggerEvent, List<DungeonPlayerSession> targets) {
         if (!targets.isEmpty()) {
@@ -84,9 +74,7 @@ public class RevivePlayerFunction extends DungeonFunction {
         }
     }
 
-    /**
-     * Performs revive player.
-     */
+    /** Performs revive player. */
     public void revivePlayer(DungeonPlayerSession playerSession, DungeonPlayerSession reviver) {
         if (this.maxRevives != 0 && this.currentRevives >= this.maxRevives) {
             LangUtils.sendMessage(reviver.getPlayer(), "instance.play.functions.reviver.no-uses");
@@ -146,9 +134,7 @@ public class RevivePlayerFunction extends DungeonFunction {
         }
     }
 
-    /**
-     * Builds menu button.
-     */
+    /** Builds menu button. */
     @Override
     public MenuButton buildMenuButton() {
         MenuButton button = new MenuButton(Material.TOTEM_OF_UNDYING);
@@ -158,16 +144,12 @@ public class RevivePlayerFunction extends DungeonFunction {
         return button;
     }
 
-    /**
-     * Builds hotbar menu.
-     */
+    /** Builds hotbar menu. */
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
                 new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.TOTEM_OF_UNDYING);
@@ -175,18 +157,14 @@ public class RevivePlayerFunction extends DungeonFunction {
                         this.button.setAmount(RevivePlayerFunction.this.maxRevives);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         LangUtils.sendMessage(
                                 player, "editor.function.revive-player.ask-max-revives");
                     }
 
-                    /**
-                     * Performs on input.
-                     */
+                    /** Performs on input. */
                     @Override
                     public void onInput(Player player, String message) {
                         Optional<Integer> value = InputUtils.readIntegerInput(player, message);
@@ -201,9 +179,7 @@ public class RevivePlayerFunction extends DungeonFunction {
                 });
         this.menu.addMenuItem(
                 new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.PLAYER_HEAD);
@@ -211,18 +187,14 @@ public class RevivePlayerFunction extends DungeonFunction {
                         this.button.setAmount(RevivePlayerFunction.this.livesAfterRevival);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         LangUtils.sendMessage(
                                 player, "editor.function.revive-player.ask-lives-after");
                     }
 
-                    /**
-                     * Performs on input.
-                     */
+                    /** Performs on input. */
                     @Override
                     public void onInput(Player player, String message) {
                         Optional<Integer> value = InputUtils.readIntegerInput(player, message);
@@ -238,23 +210,17 @@ public class RevivePlayerFunction extends DungeonFunction {
                 });
     }
 
-    /**
-     * Returns the max revives.
-     */
+    /** Returns the max revives. */
     public int getMaxRevives() {
         return this.maxRevives;
     }
 
-    /**
-     * Returns the lives after revival.
-     */
+    /** Returns the lives after revival. */
     public int getLivesAfterRevival() {
         return this.livesAfterRevival;
     }
 
-    /**
-     * Returns the current revives.
-     */
+    /** Returns the current revives. */
     public int getCurrentRevives() {
         return this.currentRevives;
     }

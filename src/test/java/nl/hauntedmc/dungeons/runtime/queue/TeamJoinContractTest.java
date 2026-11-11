@@ -3,17 +3,15 @@ package nl.hauntedmc.dungeons.runtime.queue;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.nio.file.Path;
+import java.util.*;
 import nl.hauntedmc.dungeons.runtime.team.*;
 import nl.hauntedmc.dungeons.support.*;
-
 import org.bukkit.*;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-
-import java.nio.file.Path;
-import java.util.*;
 
 class TeamJoinContractTest {
     @TempDir Path directory;

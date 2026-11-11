@@ -3,20 +3,6 @@ package nl.hauntedmc.dungeons.config;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import nl.hauntedmc.dungeons.support.CapturedScheduler;
-import nl.hauntedmc.dungeons.support.PaperBoundary;
-
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.plugin.IllegalPluginAccessException;
-import org.bukkit.plugin.Plugin;
-import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
-import org.junit.jupiter.api.io.TempDir;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Proxy;
@@ -34,6 +20,18 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import nl.hauntedmc.dungeons.support.CapturedScheduler;
+import nl.hauntedmc.dungeons.support.PaperBoundary;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.plugin.IllegalPluginAccessException;
+import org.bukkit.plugin.Plugin;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.io.TempDir;
+import org.slf4j.LoggerFactory;
 
 class ConfigurationFileTest {
     @TempDir Path directory;
@@ -166,11 +164,7 @@ class ConfigurationFileTest {
                         });
         doThrow(new IOException("disk full")).when(channel).force(true);
         try (var channels = mockStatic(FileChannel.class)) {
-            channels.when(
-                            () ->
-                                    FileChannel.open(
-                                            any(Path.class),
-                                            eq(StandardOpenOption.WRITE)))
+            channels.when(() -> FileChannel.open(any(Path.class), eq(StandardOpenOption.WRITE)))
                     .thenReturn(channel);
             config.set("value", "replacement");
             assertFalse(config.saveAsync(file.toFile()).join());

@@ -1,18 +1,19 @@
 package nl.hauntedmc.dungeons.content.function;
 
+import java.util.List;
+import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuItem;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.FunctionCategory;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.entity.EntityUtils;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.math.MathUtils;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -22,12 +23,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.util.List;
-import java.util.Map;
-
-/**
- * Function that teleports its targets to the configured destination.
- */
+/** Function that teleports its targets to the configured destination. */
 @AutoRegister(id = "dungeons.function.teleport")
 @SerializableAs("dungeons.function.teleport")
 public class TeleportFunction extends DungeonFunction {
@@ -37,27 +33,21 @@ public class TeleportFunction extends DungeonFunction {
     private BukkitRunnable inputWaiter;
     private BukkitRunnable particleIndicator;
 
-    /**
-     * Creates a new TeleportFunction instance.
-     */
+    /** Creates a new TeleportFunction instance. */
     public TeleportFunction(Map<String, Object> config) {
         super("Teleporter", config);
         this.setCategory(FunctionCategory.PLAYER);
         this.setRequiresTarget(true);
     }
 
-    /**
-     * Creates a new TeleportFunction instance.
-     */
+    /** Creates a new TeleportFunction instance. */
     public TeleportFunction() {
         super("Teleporter");
         this.setCategory(FunctionCategory.PLAYER);
         this.setRequiresTarget(true);
     }
 
-    /**
-     * Performs on enable.
-     */
+    /** Performs on enable. */
     @Override
     public void onEnable() {
         if (this.teleportTarget == null) {
@@ -75,9 +65,7 @@ public class TeleportFunction extends DungeonFunction {
         }
     }
 
-    /**
-     * Performs on disable.
-     */
+    /** Performs on disable. */
     @Override
     public void onDisable() {
         if (this.inputWaiter != null && !this.inputWaiter.isCancelled()) {
@@ -93,9 +81,7 @@ public class TeleportFunction extends DungeonFunction {
         this.particleIndicator = null;
     }
 
-    /**
-     * Performs run function.
-     */
+    /** Performs run function. */
     @Override
     public void runFunction(TriggerFireEvent triggerEvent, List<DungeonPlayerSession> targets) {
         if (this.instanceLoc != null) {
@@ -116,9 +102,7 @@ public class TeleportFunction extends DungeonFunction {
         }
     }
 
-    /**
-     * Builds menu button.
-     */
+    /** Builds menu button. */
     @Override
     public MenuButton buildMenuButton() {
         MenuButton button = new MenuButton(Material.ENDER_PEARL);
@@ -128,25 +112,19 @@ public class TeleportFunction extends DungeonFunction {
         return button;
     }
 
-    /**
-     * Builds hotbar menu.
-     */
+    /** Builds hotbar menu. */
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
                 new MenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.COMPASS);
                         this.button.setDisplayName("&d&lSet Location");
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(PlayerEvent event) {
                         final Player player = event.getPlayer();
@@ -164,9 +142,7 @@ public class TeleportFunction extends DungeonFunction {
                             TeleportFunction.this.awaitingInput = true;
                             TeleportFunction.this.inputWaiter =
                                     new BukkitRunnable() {
-                                        /**
-                                         * Performs run.
-                                         */
+                                        /** Performs run. */
                                         public void run() {
                                             TeleportFunction.this.awaitingInput = false;
                                             if (TeleportFunction.this.particleIndicator != null) {
@@ -190,9 +166,7 @@ public class TeleportFunction extends DungeonFunction {
                             targetLoc.setWorld(TeleportFunction.this.location.getWorld());
                             TeleportFunction.this.particleIndicator =
                                     new BukkitRunnable() {
-                                        /**
-                                         * Performs run.
-                                         */
+                                        /** Performs run. */
                                         public void run() {
                                             if (TeleportFunction.this.instance.isEditInstance()) {
                                                 player.spawnParticle(
@@ -250,23 +224,17 @@ public class TeleportFunction extends DungeonFunction {
                 });
     }
 
-    /**
-     * Returns the teleport target.
-     */
+    /** Returns the teleport target. */
     public Location getTeleportTarget() {
         return this.teleportTarget;
     }
 
-    /**
-     * Sets the teleport target.
-     */
+    /** Sets the teleport target. */
     public void setTeleportTarget(Location teleportTarget) {
         this.teleportTarget = teleportTarget;
     }
 
-    /**
-     * Returns the instance loc.
-     */
+    /** Returns the instance loc. */
     public Location getInstanceLoc() {
         return this.instanceLoc;
     }

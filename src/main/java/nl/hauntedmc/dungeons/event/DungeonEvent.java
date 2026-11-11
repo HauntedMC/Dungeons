@@ -1,15 +1,12 @@
 package nl.hauntedmc.dungeons.event;
 
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
-import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
-
+import nl.hauntedmc.dungeons.runtime.instance.DungeonInstance;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
-/**
- * Base event for runtime events that belong to a dungeon or dungeon instance.
- */
+/** Base event for runtime events that belong to a dungeon or dungeon instance. */
 public abstract class DungeonEvent extends Event {
     protected DungeonInstance instance;
     protected final DungeonDefinition dungeon;

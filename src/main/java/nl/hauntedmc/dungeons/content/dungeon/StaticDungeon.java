@@ -1,22 +1,5 @@
 package nl.hauntedmc.dungeons.content.dungeon;
 
-import nl.hauntedmc.dungeons.config.ConfigurationFile;
-import nl.hauntedmc.dungeons.content.instance.play.StaticInstance;
-import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
-import nl.hauntedmc.dungeons.model.dungeon.DungeonLoadException;
-import nl.hauntedmc.dungeons.model.element.DungeonFunction;
-import nl.hauntedmc.dungeons.model.instance.EditableInstance;
-import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
-import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
-
-import org.bukkit.Location;
-import org.bukkit.configuration.InvalidConfigurationException;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.Player;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import org.yaml.snakeyaml.error.YAMLException;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
@@ -26,6 +9,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import nl.hauntedmc.dungeons.config.ConfigurationFile;
+import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
+import nl.hauntedmc.dungeons.model.dungeon.DungeonLoadException;
+import nl.hauntedmc.dungeons.model.element.DungeonFunction;
+import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
+import nl.hauntedmc.dungeons.runtime.instance.EditableInstance;
+import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
+import nl.hauntedmc.dungeons.runtime.instance.play.StaticInstance;
+import org.bukkit.Location;
+import org.bukkit.configuration.InvalidConfigurationException;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.yaml.snakeyaml.error.YAMLException;
 
 /**
  * Standard dungeon implementation backed by a copied world and a flat function map.
@@ -37,9 +35,7 @@ public class StaticDungeon extends DungeonDefinition {
     private final HashMap<Location, DungeonFunction> functions;
     private boolean functionsChanged = false;
 
-    /**
-     * Creates a new StaticDungeon instance.
-     */
+    /** Creates a new StaticDungeon instance. */
     public StaticDungeon(
             @NotNull DungeonsRuntime runtime,
             @NotNull File folder,
@@ -50,9 +46,7 @@ public class StaticDungeon extends DungeonDefinition {
         this.loadFunctions();
     }
 
-    /**
-     * Creates play session.
-     */
+    /** Creates play session. */
     @Override
     public PlayableInstance createPlaySession(
             CountDownLatch latch, @Nullable UUID startedTeamLeaderId) {
@@ -71,9 +65,7 @@ public class StaticDungeon extends DungeonDefinition {
         }
     }
 
-    /**
-     * Creates edit session.
-     */
+    /** Creates edit session. */
     @Override
     public EditableInstance createEditSession(CountDownLatch latch) {
         EditableInstance instance = new EditableInstance(this, latch);
@@ -89,9 +81,7 @@ public class StaticDungeon extends DungeonDefinition {
         }
     }
 
-    /**
-     * Performs prepare instance.
-     */
+    /** Performs prepare instance. */
     @Override
     public boolean prepareInstance(
             Player player,
@@ -102,9 +92,7 @@ public class StaticDungeon extends DungeonDefinition {
                 player, difficultyName, startedTeamLeaderId, instance -> {}, 0L);
     }
 
-    /**
-     * Adds function.
-     */
+    /** Adds function. */
     @Override
     public void addFunction(Location loc, DungeonFunction function) {
         loc.setWorld(null);
@@ -113,26 +101,20 @@ public class StaticDungeon extends DungeonDefinition {
         this.functions.put(loc, function);
     }
 
-    /**
-     * Removes function.
-     */
+    /** Removes function. */
     @Override
     public void removeFunction(Location loc) {
         loc.setWorld(null);
         this.functions.remove(loc);
     }
 
-    /**
-     * Returns the functions.
-     */
+    /** Returns the functions. */
     @Override
     public Map<Location, DungeonFunction> getFunctions() {
         return this.functions;
     }
 
-    /**
-     * Saves functions.
-     */
+    /** Saves functions. */
     @Override
     public void saveFunctions() {
         ConfigurationFile.onOwnerThread(
@@ -145,9 +127,7 @@ public class StaticDungeon extends DungeonDefinition {
                 });
     }
 
-    /**
-     * Loads functions.
-     */
+    /** Loads functions. */
     public void loadFunctions() throws DungeonLoadException {
         YamlConfiguration functionsYaml = new YamlConfiguration();
         File loadFile = new File(this.folder, "functions.yml");
@@ -174,9 +154,7 @@ public class StaticDungeon extends DungeonDefinition {
         }
     }
 
-    /**
-     * Loads function safely.
-     */
+    /** Loads function safely. */
     private void loadFunctionSafely(Object entry, int index) {
         if (!(entry instanceof DungeonFunction function)) {
             this.logger()
@@ -225,9 +203,7 @@ public class StaticDungeon extends DungeonDefinition {
         }
     }
 
-    /**
-     * Returns the dungeon load exception.
-     */
+    /** Returns the dungeon load exception. */
     private static @NotNull DungeonLoadException getDungeonLoadException(Exception exception) {
         DungeonLoadException ex =
                 new DungeonLoadException(
@@ -247,16 +223,12 @@ public class StaticDungeon extends DungeonDefinition {
         return ex;
     }
 
-    /**
-     * Returns whether functions changed.
-     */
+    /** Returns whether functions changed. */
     public boolean isFunctionsChanged() {
         return this.functionsChanged;
     }
 
-    /**
-     * Sets the functions changed.
-     */
+    /** Sets the functions changed. */
     public void setFunctionsChanged(boolean functionsChanged) {
         this.functionsChanged = functionsChanged;
     }

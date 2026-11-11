@@ -1,30 +1,26 @@
 package nl.hauntedmc.dungeons.content.function;
 
+import java.util.List;
+import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
-import nl.hauntedmc.dungeons.content.instance.edit.BranchingEditableInstance;
-import nl.hauntedmc.dungeons.content.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.FunctionCategory;
+import nl.hauntedmc.dungeons.runtime.instance.edit.BranchingEditableInstance;
+import nl.hauntedmc.dungeons.runtime.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerEvent;
 
-import java.util.List;
-import java.util.Map;
-
-/**
- * Function that updates player respawn and optional save-point locations.
- */
+/** Function that updates player respawn and optional save-point locations. */
 @AutoRegister(id = "dungeons.function.checkpoint")
 @SerializableAs("dungeons.function.checkpoint")
 public class CheckpointFunction extends DungeonFunction {
@@ -32,25 +28,19 @@ public class CheckpointFunction extends DungeonFunction {
     @PersistedField private double pitch = 0.0;
     @PersistedField private boolean savePoint = false;
 
-    /**
-     * Creates a new CheckpointFunction instance.
-     */
+    /** Creates a new CheckpointFunction instance. */
     public CheckpointFunction(Map<String, Object> config) {
         super("Checkpoint", config);
         this.setCategory(FunctionCategory.DUNGEON);
     }
 
-    /**
-     * Creates a new CheckpointFunction instance.
-     */
+    /** Creates a new CheckpointFunction instance. */
     public CheckpointFunction() {
         super("Checkpoint");
         this.setCategory(FunctionCategory.DUNGEON);
     }
 
-    /**
-     * Performs run function.
-     */
+    /** Performs run function. */
     @Override
     public void runFunction(TriggerFireEvent triggerEvent, List<DungeonPlayerSession> targets) {
         for (DungeonPlayerSession playerSession : targets) {
@@ -66,9 +56,7 @@ public class CheckpointFunction extends DungeonFunction {
         }
     }
 
-    /**
-     * Converts the editor block position into a stable standing point for respawn.
-     */
+    /** Converts the editor block position into a stable standing point for respawn. */
     private Location resolveRespawnLocation() {
         Location loc = this.location.clone();
         if (this.isBlockCoordinate(loc.getX())) {
@@ -90,9 +78,7 @@ public class CheckpointFunction extends DungeonFunction {
         return Math.floor(value) == value;
     }
 
-    /**
-     * Builds menu button.
-     */
+    /** Builds menu button. */
     @Override
     public MenuButton buildMenuButton() {
         MenuButton functionButton = new MenuButton(Material.ORANGE_BANNER);
@@ -104,25 +90,19 @@ public class CheckpointFunction extends DungeonFunction {
         return functionButton;
     }
 
-    /**
-     * Builds hotbar menu.
-     */
+    /** Builds hotbar menu. */
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
                 new MenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.COMPASS);
                         this.button.setDisplayName("&d&lPlayer Direction");
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
@@ -137,9 +117,7 @@ public class CheckpointFunction extends DungeonFunction {
                 });
         this.menu.addMenuItem(
                 new ToggleMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         if (CheckpointFunction.this.instance.as(BranchingEditableInstance.class)
@@ -152,9 +130,7 @@ public class CheckpointFunction extends DungeonFunction {
                         }
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         LangUtils.sendMessage(player, "editor.function.checkpoint.rejoin-note");
@@ -169,37 +145,27 @@ public class CheckpointFunction extends DungeonFunction {
                 });
     }
 
-    /**
-     * Returns the yaw.
-     */
+    /** Returns the yaw. */
     public double getYaw() {
         return this.yaw;
     }
 
-    /**
-     * Sets the yaw.
-     */
+    /** Sets the yaw. */
     public void setYaw(double yaw) {
         this.yaw = yaw;
     }
 
-    /**
-     * Returns the pitch.
-     */
+    /** Returns the pitch. */
     public double getPitch() {
         return this.pitch;
     }
 
-    /**
-     * Sets the pitch.
-     */
+    /** Sets the pitch. */
     public void setPitch(double pitch) {
         this.pitch = pitch;
     }
 
-    /**
-     * Returns whether save point.
-     */
+    /** Returns whether save point. */
     public boolean isSavePoint() {
         return this.savePoint;
     }

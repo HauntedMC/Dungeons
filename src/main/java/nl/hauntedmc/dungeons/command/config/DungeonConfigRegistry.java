@@ -1,18 +1,5 @@
 package nl.hauntedmc.dungeons.command.config;
 
-import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
-import nl.hauntedmc.dungeons.content.dungeon.OpenDungeon;
-import nl.hauntedmc.dungeons.model.cooldown.CooldownPeriod;
-import nl.hauntedmc.dungeons.generation.layout.BranchingLayout;
-import nl.hauntedmc.dungeons.generation.layout.ConnectorExpansionLayout;
-import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
-
-import org.bukkit.GameMode;
-import org.bukkit.Material;
-import org.bukkit.World.Environment;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.entity.EntityType;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -24,6 +11,17 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
+import nl.hauntedmc.dungeons.content.dungeon.OpenDungeon;
+import nl.hauntedmc.dungeons.generation.layout.BranchingLayout;
+import nl.hauntedmc.dungeons.generation.layout.ConnectorExpansionLayout;
+import nl.hauntedmc.dungeons.model.cooldown.CooldownPeriod;
+import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
+import org.bukkit.GameMode;
+import org.bukkit.Material;
+import org.bukkit.World.Environment;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.EntityType;
 
 /**
  * Registry of dungeon settings that can be edited through {@code /dungeon map settings}.
@@ -703,7 +701,21 @@ public final class DungeonConfigRegistry {
     /** Returns the dynamic entries. */
     private static List<DungeonConfigEntry> getDynamicEntries(DungeonDefinition dungeon) {
         List<DungeonConfigEntry> entries = new ArrayList<>();
+        addDifficultyEntries(entries, dungeon);
+        BranchingDungeon branching = dungeon.asBranching();
+        if (branching != null && branching.getLayout() instanceof BranchingLayout) {
+            List<String> roomNames =
+                    branching.getUniqueRooms().keySet().stream()
+                            .sorted(String.CASE_INSENSITIVE_ORDER)
+                            .toList();
+            addTrunkEntries(entries, roomNames);
+            addBranchEntries(entries, branching, roomNames);
+        }
+        return entries;
+    }
 
+    private static void addDifficultyEntries(
+            List<DungeonConfigEntry> entries, DungeonDefinition dungeon) {
         // Difficulty presets and branching branches are driven by the current dungeon contents, so
         // their command-visible settings must be rebuilt dynamically instead of being globally
         // static.
@@ -765,23 +777,11 @@ public final class DungeonConfigRegistry {
                                 "Mob damage multiplier for " + readableName + ".",
                                 pathPrefix + "scaling.mob_damage",
                                 DungeonConfigValueType.DECIMAL));
-
             }
         }
+    }
 
-        BranchingDungeon branching = dungeon.asBranching();
-        if (branching == null) {
-            return entries;
-        }
-
-        if (!(branching.getLayout() instanceof BranchingLayout)) {
-            return entries;
-        }
-
-        List<String> roomNames =
-                branching.getUniqueRooms().keySet().stream()
-                        .sorted(String.CASE_INSENSITIVE_ORDER)
-                        .toList();
+    private static void addTrunkEntries(List<DungeonConfigEntry> entries, List<String> roomNames) {
         entries.add(
                 generation(
                         "trunk.room-pool",
@@ -822,7 +822,10 @@ public final class DungeonConfigRegistry {
                         "generator.branching.trunk.room_target.enforce_minimum",
                         DungeonConfigValueType.BOOLEAN,
                         suggestions(BOOLEAN_VALUES)));
+    }
 
+    private static void addBranchEntries(
+            List<DungeonConfigEntry> entries, BranchingDungeon branching, List<String> roomNames) {
         ConfigurationSection branchSettings =
                 branching.getConfig().getConfigurationSection("generator.branching.branches");
         List<String> branchNames =
@@ -849,87 +852,88 @@ public final class DungeonConfigRegistry {
                         ignoredDungeon -> branchNames));
 
         if (branchSettings == null) {
-            return entries;
+            return;
         }
 
         for (String branchName : branchNames) {
-            String pathPrefix = "generator.branching.branches." + branchName + ".";
-            String keyPrefix = "branch." + branchName.toLowerCase(Locale.ROOT) + ".";
-            String readableName = "'" + branchName + "' branch";
-
-            entries.add(
-                    generation(
-                            keyPrefix + "room-pool",
-                            "Comma separated room whitelist for the "
-                                    + readableName
-                                    + ". Use clear to empty.",
-                            pathPrefix + "room_pool",
-                            DungeonConfigValueType.STRING_LIST,
-                            suggestions(roomNames)));
-            entries.add(
-                    generation(
-                            keyPrefix + "end-room-pool",
-                            "Comma separated terminal room whitelist for the "
-                                    + readableName
-                                    + ". Use clear to empty.",
-                            pathPrefix + "end_room_pool",
-                            DungeonConfigValueType.STRING_LIST,
-                            suggestions(roomNames)));
-            entries.add(
-                    generation(
-                            keyPrefix + "straightness",
-                            "How strongly the "
-                                    + readableName
-                                    + " favors straight generation. Range 0.0 to 1.0.",
-                            pathPrefix + "straightness",
-                            DungeonConfigValueType.DECIMAL));
-            entries.add(
-                    generation(
-                            keyPrefix + "room-target-min",
-                            "Minimum rooms for the " + readableName + ".",
-                            pathPrefix + "room_target.min",
-                            DungeonConfigValueType.INTEGER));
-            entries.add(
-                    generation(
-                            keyPrefix + "room-target-max",
-                            "Maximum rooms for the " + readableName + ".",
-                            pathPrefix + "room_target.max",
-                            DungeonConfigValueType.INTEGER));
-            entries.add(
-                    generation(
-                            keyPrefix + "enforce-room-target-minimum",
-                            "Whether the "
-                                    + readableName
-                                    + " must satisfy its minimum room target.",
-                            pathPrefix + "room_target.enforce_minimum",
-                            DungeonConfigValueType.BOOLEAN,
-                            suggestions(BOOLEAN_VALUES)));
-            entries.add(
-                    generation(
-                            keyPrefix + "eligible-depth",
-                            "Depth rule for the " + readableName + ".",
-                            pathPrefix + "eligible_depth",
-                            DungeonConfigValueType.STRING,
-                            suggestions(RANGED_NUMBER_VALUES)));
-            entries.add(
-                    generation(
-                            keyPrefix + "occurrences",
-                            "Occurrence rule for the " + readableName + ".",
-                            pathPrefix + "occurrences",
-                            DungeonConfigValueType.STRING,
-                            suggestions(RANGED_NUMBER_VALUES)));
-            entries.add(
-                    generation(
-                            keyPrefix + "enforce-occurrences",
-                            "Whether the "
-                                    + readableName
-                                    + " must satisfy its branch occurrence target.",
-                            pathPrefix + "enforce_occurrences",
-                            DungeonConfigValueType.BOOLEAN,
-                            suggestions(BOOLEAN_VALUES)));
+            addBranchSettings(entries, branchName, roomNames);
         }
+    }
 
-        return entries;
+    private static void addBranchSettings(
+            List<DungeonConfigEntry> entries, String branchName, List<String> roomNames) {
+        String pathPrefix = "generator.branching.branches." + branchName + ".";
+        String keyPrefix = "branch." + branchName.toLowerCase(Locale.ROOT) + ".";
+        String readableName = "'" + branchName + "' branch";
+
+        entries.add(
+                generation(
+                        keyPrefix + "room-pool",
+                        "Comma separated room whitelist for the "
+                                + readableName
+                                + ". Use clear to empty.",
+                        pathPrefix + "room_pool",
+                        DungeonConfigValueType.STRING_LIST,
+                        suggestions(roomNames)));
+        entries.add(
+                generation(
+                        keyPrefix + "end-room-pool",
+                        "Comma separated terminal room whitelist for the "
+                                + readableName
+                                + ". Use clear to empty.",
+                        pathPrefix + "end_room_pool",
+                        DungeonConfigValueType.STRING_LIST,
+                        suggestions(roomNames)));
+        entries.add(
+                generation(
+                        keyPrefix + "straightness",
+                        "How strongly the "
+                                + readableName
+                                + " favors straight generation. Range 0.0 to 1.0.",
+                        pathPrefix + "straightness",
+                        DungeonConfigValueType.DECIMAL));
+        entries.add(
+                generation(
+                        keyPrefix + "room-target-min",
+                        "Minimum rooms for the " + readableName + ".",
+                        pathPrefix + "room_target.min",
+                        DungeonConfigValueType.INTEGER));
+        entries.add(
+                generation(
+                        keyPrefix + "room-target-max",
+                        "Maximum rooms for the " + readableName + ".",
+                        pathPrefix + "room_target.max",
+                        DungeonConfigValueType.INTEGER));
+        entries.add(
+                generation(
+                        keyPrefix + "enforce-room-target-minimum",
+                        "Whether the " + readableName + " must satisfy its minimum room target.",
+                        pathPrefix + "room_target.enforce_minimum",
+                        DungeonConfigValueType.BOOLEAN,
+                        suggestions(BOOLEAN_VALUES)));
+        entries.add(
+                generation(
+                        keyPrefix + "eligible-depth",
+                        "Depth rule for the " + readableName + ".",
+                        pathPrefix + "eligible_depth",
+                        DungeonConfigValueType.STRING,
+                        suggestions(RANGED_NUMBER_VALUES)));
+        entries.add(
+                generation(
+                        keyPrefix + "occurrences",
+                        "Occurrence rule for the " + readableName + ".",
+                        pathPrefix + "occurrences",
+                        DungeonConfigValueType.STRING,
+                        suggestions(RANGED_NUMBER_VALUES)));
+        entries.add(
+                generation(
+                        keyPrefix + "enforce-occurrences",
+                        "Whether the "
+                                + readableName
+                                + " must satisfy its branch occurrence target.",
+                        pathPrefix + "enforce_occurrences",
+                        DungeonConfigValueType.BOOLEAN,
+                        suggestions(BOOLEAN_VALUES)));
     }
 
     /**

@@ -11,7 +11,7 @@ Thanks for taking the time to contribute.
 ## Setup
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/HauntedMC/Dungeons.git
 cd Dungeons
 ./mvnw -B -ntp -DskipTests compile
 ```
@@ -26,19 +26,41 @@ cd Dungeons
 
 ## Local Validation
 
-Minimum checks:
+Run the complete local unit, formatting, Checkstyle and packaging checks:
 
 ```bash
-./mvnw -B -ntp -DskipTests compile
-./mvnw -B -ntp test
+./mvnw -B -ntp clean verify
+bash scripts/verify-artifact.sh
 ```
 
-Recommended before merge:
+Java sources use Google Java Format 1.33.0 in AOSP mode (four spaces), including
+unit tests, Paper acceptance fixtures and the source inventory tool. Apply the
+pinned formatter before validation:
 
 ```bash
-./mvnw -B -ntp verify
-./mvnw -B -ntp -DskipTests verify
+./mvnw -B -ntp spotless:apply
 ```
+
+`verify` checks formatting; it does not rewrite source files. Avoid generated files
+under `target/` when editing or reviewing changes. Use `git diff -w` to review
+behavioral edits separately from formatting changes.
+
+For persistence or runtime changes, run the corresponding CI checks with Docker
+available for the MySQL fixtures:
+
+```bash
+./mvnw -B -ntp -Pintegration-tests verify
+./mvnw -B -ntp -Pplatform-acceptance verify
+```
+
+The integration profile exercises real MySQL schema and transaction behavior.
+The acceptance profile starts Paper with the real DataProvider/DataRegistry stack
+and checks boot, gameplay and recovery across restarts. Acceptance also requires
+`JAVA_HOME` to point to JDK 25. Neither profile is included by plain `verify`.
+
+Use [the source inventory](tools/architecture/README.md) to locate large classes
+and methods during architecture reviews. Size signals identify review priorities;
+they are not a reason to split cohesive code mechanically.
 
 ## Pull Request Expectations
 

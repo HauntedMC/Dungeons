@@ -10,21 +10,17 @@ import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
  * Initializes the static menu definitions used by the current GUI layer.
  *
  * <p>The GUI layer is still largely static, so startup keeps that initialization contained in one
- * explicit bootstrap stage instead of spreading it across constructors.</p>
+ * explicit bootstrap stage instead of spreading it across constructors.
  */
 final class MenuBootstrap {
     private final DungeonsRuntime runtime;
 
-    /**
-     * Creates the menu bootstrap stage.
-     */
+    /** Creates the menu bootstrap stage. */
     MenuBootstrap(DungeonsRuntime runtime) {
         this.runtime = runtime;
     }
 
-    /**
-     * Initializes all shared GUI and hotbar menus.
-     */
+    /** Initializes all shared GUI and hotbar menus. */
     void initializeMenus() {
         EditorMenus.initializeFunctionMenu();
         EditorMenus.initializeTriggerMenu();

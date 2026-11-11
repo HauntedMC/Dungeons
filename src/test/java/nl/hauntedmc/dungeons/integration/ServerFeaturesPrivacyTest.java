@@ -3,20 +3,18 @@ package nl.hauntedmc.dungeons.integration;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import nl.hauntedmc.dungeons.api.DungeonsApi.Disclosure;
 import nl.hauntedmc.featureframework.api.service.CapabilityRef;
 import nl.hauntedmc.featureframework.api.service.CapabilityRegistry;
 import nl.hauntedmc.serverfeatures.api.ServerFeaturesApi;
 import nl.hauntedmc.serverfeatures.api.capability.privacy.PlayerPrivacyApi;
 import nl.hauntedmc.serverfeatures.api.capability.privacy.PrivacyDecision;
-
 import org.bukkit.Server;
 import org.bukkit.plugin.ServicesManager;
 import org.junit.jupiter.api.Test;
-
-import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 
 class ServerFeaturesPrivacyTest {
     @Test

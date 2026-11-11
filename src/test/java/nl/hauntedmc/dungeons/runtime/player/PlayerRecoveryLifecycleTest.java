@@ -3,22 +3,19 @@ package nl.hauntedmc.dungeons.runtime.player;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.nio.file.*;
 import net.kyori.adventure.text.Component;
-
 import nl.hauntedmc.dungeons.listener.DungeonListener;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry;
 import nl.hauntedmc.dungeons.support.*;
 import nl.hauntedmc.dungeons.support.TestStateStore;
 import nl.hauntedmc.dungeons.util.entity.EntityUtils;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
-
 import org.bukkit.*;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.player.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-
-import java.nio.file.*;
 
 class PlayerRecoveryLifecycleTest {
     @TempDir Path directory;
@@ -33,8 +30,13 @@ class PlayerRecoveryLifecycleTest {
             doThrow(new IllegalStateException("native save failed")).when(state.player).saveData();
             assertTrue(session.refundReservedAccessKey());
             var file = directory.resolve("players/" + state.player.getUniqueId() + ".recovery.yml");
-            assertFalse(f.paper.state.payload("player-recovery", state.player.getUniqueId().toString()).isEmpty());
-            var persisted = f.paper.state.yaml("player-recovery", state.player.getUniqueId().toString());
+            assertFalse(
+                    f.paper
+                            .state
+                            .payload("player-recovery", state.player.getUniqueId().toString())
+                            .isEmpty());
+            var persisted =
+                    f.paper.state.yaml("player-recovery", state.player.getUniqueId().toString());
             assertTrue(persisted.contains("delivery"));
             state.contents[0] = PlayerState.stack(3); // state loaded from the last native save
             doNothing().when(state.player).saveData();
@@ -50,7 +52,7 @@ class PlayerRecoveryLifecycleTest {
     void reconstructedSessionUsesThePersistedBaselineRatherThanDungeonItemsForNormalExit()
             throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration());
-                var menus = new HeadlessInventoryMenus()) {
+                var _ = new HeadlessInventoryMenus()) {
             var player = new PlayerState();
             player.contents[0] = PlayerState.stack(8);
             var first = f.session(player);
@@ -81,8 +83,8 @@ class PlayerRecoveryLifecycleTest {
     void standaloneEditorKeepsRecoveryAfterClosingMenuAndReconnectClearsStaleControls()
             throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration());
-                var menus = new HeadlessInventoryMenus();
-                var tools = mockStatic(ItemUtils.class)) {
+                var _ = new HeadlessInventoryMenus();
+                var _ = mockStatic(ItemUtils.class)) {
             var player = new PlayerState();
             var session = f.session(player);
             f.paper
@@ -198,7 +200,10 @@ class PlayerRecoveryLifecycleTest {
             assertThrows(
                     IllegalStateException.class,
                     () -> f.paper.runtime.playerSessions().put(player.player));
-            assertEquals("broken: [", f.paper.state.payload("player-recovery", player.player.getUniqueId().toString()));
+            assertEquals(
+                    "broken: [",
+                    f.paper.state.payload(
+                            "player-recovery", player.player.getUniqueId().toString()));
             verify(player.player).kick(any(Component.class));
             assertNull(f.paper.runtime.playerSessions().get(player.player));
         }
@@ -207,7 +212,7 @@ class PlayerRecoveryLifecycleTest {
     @Test
     void queuedHotbarCannotReplaceInventoryAfterRecovery() throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration());
-                var menus = new HeadlessInventoryMenus()) {
+                var _ = new HeadlessInventoryMenus()) {
             var player = new PlayerState();
             var session = f.session(player);
             f.paper

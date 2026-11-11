@@ -1,11 +1,16 @@
 package nl.hauntedmc.dungeons.command;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
 import nl.hauntedmc.dungeons.gui.framework.GuiService;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
-import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
-import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
 import nl.hauntedmc.dungeons.runtime.instance.ActiveInstanceRegistry;
+import nl.hauntedmc.dungeons.runtime.instance.DungeonInstance;
+import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueCoordinator;
@@ -16,16 +21,9 @@ import nl.hauntedmc.dungeons.runtime.team.DungeonTeam;
 import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
 import nl.hauntedmc.dungeons.util.command.CommandUtils;
 import nl.hauntedmc.dungeons.util.entity.EntityUtils;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
 
 /** Owns player run commands and play argument completion. */
 final class GameplayCommandHandler implements CommandHandler {
@@ -37,9 +35,14 @@ final class GameplayCommandHandler implements CommandHandler {
     private final DungeonTeamService teamManager;
     private final GuiService guiService;
 
-    GameplayCommandHandler(PlayerSessionRegistry playerManager, DungeonRepository dungeonManager,
-            ActiveInstanceRegistry activeInstanceManager, DungeonQueueCoordinator dungeonQueueCoordinator,
-            DungeonQueueRegistry queueManager, DungeonTeamService teamManager, GuiService guiService) {
+    GameplayCommandHandler(
+            PlayerSessionRegistry playerManager,
+            DungeonRepository dungeonManager,
+            ActiveInstanceRegistry activeInstanceManager,
+            DungeonQueueCoordinator dungeonQueueCoordinator,
+            DungeonQueueRegistry queueManager,
+            DungeonTeamService teamManager,
+            GuiService guiService) {
         this.playerManager = playerManager;
         this.dungeonManager = dungeonManager;
         this.activeInstanceManager = activeInstanceManager;
@@ -63,7 +66,9 @@ final class GameplayCommandHandler implements CommandHandler {
 
     @Override
     public List<String> handleTabComplete(CommandSender sender, String[] args) {
-        return args[0].equalsIgnoreCase("play") ? this.completePlayCommand(sender, args) : List.of();
+        return args[0].equalsIgnoreCase("play")
+                ? this.completePlayCommand(sender, args)
+                : List.of();
     }
 
     /** Runs handle leave command. */
@@ -188,7 +193,8 @@ final class GameplayCommandHandler implements CommandHandler {
     /** Runs handle play command. */
     private boolean handlePlayCommand(CommandSender sender, String[] args) {
         if (!(sender instanceof Player targetPlayer)) {
-            throw new IllegalArgumentException("Use /dungeon player <player> send <dungeon> for another player");
+            throw new IllegalArgumentException(
+                    "Use /dungeon player <player> send <dungeon> for another player");
         }
         if (!CommandUtils.hasPermission(sender, "dungeons.play")) return true;
         if (args.length < 2 || args.length > 3 || args[1].contains(":")) {
@@ -238,8 +244,10 @@ final class GameplayCommandHandler implements CommandHandler {
 
         boolean useDifficulty = dungeon.isUseDifficultyLevels();
         boolean showMenu = dungeon.isShowDifficultyMenu();
-        if (!difficulty.isEmpty() && (!useDifficulty || !dungeon.getDifficultyLevels().containsKey(difficulty))) {
-            throw new IllegalArgumentException("Unknown difficulty for " + dungeonName + ": " + difficulty);
+        if (!difficulty.isEmpty()
+                && (!useDifficulty || !dungeon.getDifficultyLevels().containsKey(difficulty))) {
+            throw new IllegalArgumentException(
+                    "Unknown difficulty for " + dungeonName + ": " + difficulty);
         }
         if (useDifficulty) {
             if (difficulty.isEmpty()) {
@@ -258,40 +266,58 @@ final class GameplayCommandHandler implements CommandHandler {
 
     private boolean handleSendCommand(CommandSender sender, String[] args) {
         if (!CommandUtils.hasPermission(sender, "dungeons.play.send")) return true;
-        if (args.length < 4) throw new IllegalArgumentException("A send operation requires a reason");
+        if (args.length < 4)
+            throw new IllegalArgumentException("A send operation requires a reason");
         Player target = Bukkit.getPlayerExact(args[1]);
-        if (target == null) throw new IllegalArgumentException("Player must be online on this server");
+        if (target == null)
+            throw new IllegalArgumentException("Player must be online on this server");
         var dungeon = this.dungeonManager.get(args[2]);
-        if (dungeon == null || !dungeon.isEnabled()) throw new IllegalArgumentException("Dungeon unavailable");
+        if (dungeon == null || !dungeon.isEnabled())
+            throw new IllegalArgumentException("Dungeon unavailable");
         String difficulty = "";
         int reasonStart = 3;
         if (args[3].equals("--difficulty")) {
-            if (args.length < 6) throw new IllegalArgumentException("Difficulty and reason are required");
+            if (args.length < 6)
+                throw new IllegalArgumentException("Difficulty and reason are required");
             difficulty = args[4];
             reasonStart = 5;
-            if (!dungeon.isUseDifficultyLevels() || !dungeon.getDifficultyLevels().containsKey(difficulty))
+            if (!dungeon.isUseDifficultyLevels()
+                    || !dungeon.getDifficultyLevels().containsKey(difficulty))
                 throw new IllegalArgumentException("Unknown difficulty");
         }
         String reason = String.join(" ", Arrays.copyOfRange(args, reasonStart, args.length));
         StaffOperations.requireReason(reason);
         var session = this.playerManager.get(target);
-        if (session == null || session.isAwaitingDungeon() || session.getInstance() != null
-                || session.isObserving() || this.queueManager.getQueue(session) != null)
+        if (session == null
+                || session.isAwaitingDungeon()
+                || session.getInstance() != null
+                || session.isObserving()
+                || this.queueManager.getQueue(session) != null)
             throw new IllegalArgumentException("Player already has an active dungeon operation");
         this.dungeonQueueCoordinator.sendToDungeon(target, dungeon.getWorldName(), difficulty);
         if (dungeon.getRuntime().staffOperations() != null)
-            dungeon.getRuntime().staffOperations().audit(sender, "send", target.getUniqueId().toString(), reason, "admission requested");
+            dungeon.getRuntime()
+                    .staffOperations()
+                    .audit(
+                            sender,
+                            "send",
+                            target.getUniqueId().toString(),
+                            reason,
+                            "admission requested");
         return true;
     }
 
     /** Runs complete play command. */
     List<String> completePlayCommand(CommandSender sender, String[] args) {
         List<String> options = new ArrayList<>();
-        if (args.length == 2) DungeonCompletions.addMatchingDungeonNames(this.dungeonManager, options, args[1]);
+        if (args.length == 2)
+            DungeonCompletions.addMatchingDungeonNames(this.dungeonManager, options, args[1]);
         if (args.length == 3) {
             var dungeon = this.dungeonManager.get(args[1]);
-            if (dungeon != null) dungeon.getDifficultyLevels().keySet().stream()
-                    .filter(value -> value.startsWith(args[2])).forEach(options::add);
+            if (dungeon != null)
+                dungeon.getDifficultyLevels().keySet().stream()
+                        .filter(value -> value.startsWith(args[2]))
+                        .forEach(options::add);
         }
         return options;
     }

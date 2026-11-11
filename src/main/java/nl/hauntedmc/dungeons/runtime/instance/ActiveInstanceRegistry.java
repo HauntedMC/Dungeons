@@ -1,20 +1,15 @@
 package nl.hauntedmc.dungeons.runtime.instance;
 
-import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
-import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
-import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
-import nl.hauntedmc.dungeons.util.config.PluginConfigView;
-
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import nl.hauntedmc.dungeons.config.PluginConfigView;
+import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
+import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-/**
- * Thread-safe registry of currently active dungeon instances.
- */
+/** Thread-safe registry of currently active dungeon instances. */
 public final class ActiveInstanceRegistry {
     private final DungeonsPlugin plugin;
     private final CopyOnWriteArrayList<DungeonInstance> activeInstances =

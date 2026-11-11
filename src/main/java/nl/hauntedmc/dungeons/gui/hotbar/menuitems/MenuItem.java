@@ -1,20 +1,17 @@
 package nl.hauntedmc.dungeons.gui.hotbar.menuitems;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
 import nl.hauntedmc.dungeons.gui.hotbar.PlayerHotbarMenu;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 
-import java.util.ArrayList;
-import java.util.List;
-
-/**
- * Base model for one hotbar editor action slot.
- */
+/** Base model for one hotbar editor action slot. */
 public abstract class MenuItem {
     public static final MenuItem BACK =
             new MenuItem() {
@@ -58,11 +55,11 @@ public abstract class MenuItem {
 
     protected PlayerHotbarMenu menu;
     protected MenuButton button;
-    protected final List<MenuAction<PlayerEvent>> selectActions = new ArrayList<>();
-    protected final List<MenuAction<PlayerEvent>> clickActions = new ArrayList<>();
+    protected final List<Consumer<PlayerEvent>> selectActions = new ArrayList<>();
+    protected final List<Consumer<PlayerEvent>> clickActions = new ArrayList<>();
     protected final List<ChatInputAction> chatActions = new ArrayList<>();
-    protected final List<MenuAction<PlayerItemHeldEvent>> hoverActions = new ArrayList<>();
-    protected final List<MenuAction<PlayerItemHeldEvent>> unhoverActions = new ArrayList<>();
+    protected final List<Consumer<PlayerItemHeldEvent>> hoverActions = new ArrayList<>();
+    protected final List<Consumer<PlayerItemHeldEvent>> unhoverActions = new ArrayList<>();
 
     /** Builds or rebuilds the button representation for this menu item. */
     public abstract void buildButton();
@@ -85,16 +82,16 @@ public abstract class MenuItem {
     /** Runs select handler plus registered select actions. */
     public void runSelectActions(PlayerEvent event) {
         this.onSelect(event);
-        for (MenuAction<PlayerEvent> action : this.selectActions) {
-            action.run(event);
+        for (Consumer<PlayerEvent> action : this.selectActions) {
+            action.accept(event);
         }
     }
 
     /** Runs click handler plus registered click actions. */
     public void runClickActions(PlayerEvent event) {
         this.onClick(event);
-        for (MenuAction<PlayerEvent> action : this.clickActions) {
-            action.run(event);
+        for (Consumer<PlayerEvent> action : this.clickActions) {
+            action.accept(event);
         }
     }
 
@@ -109,26 +106,26 @@ public abstract class MenuItem {
     /** Runs hover-enter handler plus registered hover actions. */
     public void runHoverActions(PlayerItemHeldEvent event) {
         this.onHover(event);
-        for (MenuAction<PlayerItemHeldEvent> action : this.hoverActions) {
-            action.run(event);
+        for (Consumer<PlayerItemHeldEvent> action : this.hoverActions) {
+            action.accept(event);
         }
     }
 
     /** Runs hover-leave handler plus registered unhover actions. */
     public void runUnhoverActions(PlayerItemHeldEvent event) {
         this.onUnhover(event);
-        for (MenuAction<PlayerItemHeldEvent> action : this.unhoverActions) {
-            action.run(event);
+        for (Consumer<PlayerItemHeldEvent> action : this.unhoverActions) {
+            action.accept(event);
         }
     }
 
     /** Adds a select action callback. */
-    public void addSelectAction(MenuAction<PlayerEvent> action) {
+    public void addSelectAction(Consumer<PlayerEvent> action) {
         this.selectActions.add(action);
     }
 
     /** Adds a click action callback. */
-    public void addClickAction(MenuAction<PlayerEvent> action) {
+    public void addClickAction(Consumer<PlayerEvent> action) {
         this.clickActions.add(action);
     }
 
@@ -138,12 +135,12 @@ public abstract class MenuItem {
     }
 
     /** Adds a hover-enter action callback. */
-    public void addHoverAction(MenuAction<PlayerItemHeldEvent> action) {
+    public void addHoverAction(Consumer<PlayerItemHeldEvent> action) {
         this.hoverActions.add(action);
     }
 
     /** Adds a hover-leave action callback. */
-    public void addUnhoverAction(MenuAction<PlayerItemHeldEvent> action) {
+    public void addUnhoverAction(Consumer<PlayerItemHeldEvent> action) {
         this.unhoverActions.add(action);
     }
 

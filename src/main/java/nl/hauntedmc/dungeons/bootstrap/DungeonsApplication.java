@@ -2,15 +2,14 @@ package nl.hauntedmc.dungeons.bootstrap;
 
 import nl.hauntedmc.dungeons.integration.DungeonService;
 import nl.hauntedmc.dungeons.integration.RegistryProfiles;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.persistence.DatabaseLifecycle;
 import nl.hauntedmc.dungeons.persistence.DatabaseSettings;
 import nl.hauntedmc.dungeons.persistence.DatabaseStateStore;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.featureframework.lifecycle.CleanupSequence;
-
 import org.bukkit.generator.ChunkGenerator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -55,16 +54,15 @@ public final class DungeonsApplication {
 
         try {
             this.initializeCoreState();
-            var databaseSettings = DatabaseSettings.read(
-                    this.runtime.environment().plugin().getConfig());
-            DatabaseLifecycle.requireDependencies(
-                    this.runtime.environment().plugin());
-            this.database = new DatabaseLifecycle(
-                    this.runtime.environment().plugin());
+            var databaseSettings =
+                    DatabaseSettings.read(this.runtime.environment().plugin().getConfig());
+            DatabaseLifecycle.requireDependencies(this.runtime.environment().plugin());
+            this.database = new DatabaseLifecycle(this.runtime.environment().plugin());
             this.runtime.setDatabase(this.database);
             this.database.awaitReady(databaseSettings.startupTimeoutSeconds());
-            this.runtime.setStateStore(new DatabaseStateStore(
-                    this.database.database(), databaseSettings.operationTimeoutMillis()));
+            this.runtime.setStateStore(
+                    new DatabaseStateStore(
+                            this.database.database(), databaseSettings.operationTimeoutMillis()));
             var profiles = new RegistryProfiles(this.database.database().players());
             this.runtime.setProfiles(profiles);
             this.runtime.resources().own(profiles);
@@ -72,15 +70,17 @@ public final class DungeonsApplication {
             this.initializeRuntimeServices();
             this.registerRuntimeTypes();
             this.initializeContentManagers();
-            if (!this.database.ready()) throw new IllegalStateException("Database became unavailable during startup");
+            if (!this.database.ready())
+                throw new IllegalStateException("Database became unavailable during startup");
             this.bindBukkitIntegrations();
             this.initializeUserInterfaces();
             this.restoreRuntimeState();
             new DungeonService(this.runtime).start();
             this.logStartupSummary();
         } catch (RuntimeException | Error exception) {
-            try { this.stop(); }
-            catch (RuntimeException | Error cleanup) {
+            try {
+                this.stop();
+            } catch (RuntimeException | Error cleanup) {
                 if (cleanup != exception) exception.addSuppressed(cleanup);
             }
             throw exception;
@@ -92,9 +92,13 @@ public final class DungeonsApplication {
         try {
             CleanupSequence.run(
                     this.runtime.resources()::quiesce,
-                    () -> { if (this.started) this.lifecycleCoordinator.shutdown(); },
+                    () -> {
+                        if (this.started) this.lifecycleCoordinator.shutdown();
+                    },
                     this.runtime.resources()::cleanup,
-                    () -> { if (this.database != null) this.database.close(); });
+                    () -> {
+                        if (this.database != null) this.database.close();
+                    });
         } finally {
             this.database = null;
             this.runtime.setDatabase(null);

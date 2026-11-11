@@ -1,20 +1,28 @@
 package nl.hauntedmc.dungeons.generation.room;
 
+import java.io.File;
+import java.lang.ref.WeakReference;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 import nl.hauntedmc.dungeons.config.ConfigurationFile;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
 import nl.hauntedmc.dungeons.generation.structure.StructurePiece;
 import nl.hauntedmc.dungeons.gui.menu.RoomMenus;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
-import nl.hauntedmc.dungeons.model.instance.EditableInstance;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
+import nl.hauntedmc.dungeons.runtime.instance.EditableInstance;
 import nl.hauntedmc.dungeons.util.math.MathUtils;
 import nl.hauntedmc.dungeons.util.math.RangedNumber;
 import nl.hauntedmc.dungeons.util.world.LocationUtils;
 import nl.hauntedmc.dungeons.util.world.SchematicUtils;
 import nl.hauntedmc.dungeons.util.world.SimpleLocation;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -26,16 +34,6 @@ import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.entity.Player;
 import org.bukkit.util.BoundingBox;
 import org.slf4j.Logger;
-
-import java.io.File;
-import java.lang.ref.WeakReference;
-import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
 
 /**
  * Persistent definition of one branching room template.
@@ -80,9 +78,7 @@ public class BranchingRoomDefinition {
         return this.dungeon.getEnvironment().logger();
     }
 
-    /**
-     * Returns the cached schematic for this room, loading it from disk when needed.
-     */
+    /** Returns the cached schematic for this room, loading it from disk when needed. */
     public synchronized StructurePiece getSchematic() {
         StructurePiece cached = this.schematic == null ? null : this.schematic.get();
         if (cached == null) {
@@ -92,9 +88,7 @@ public class BranchingRoomDefinition {
         return cached;
     }
 
-    /**
-     * Creates a new in-memory room definition with default generation metadata.
-     */
+    /** Creates a new in-memory room definition with default generation metadata. */
     public BranchingRoomDefinition(BranchingDungeon dungeon, String namespace, BoundingBox bounds) {
         this.dungeon = dungeon;
         this.namespace = namespace;
@@ -122,9 +116,7 @@ public class BranchingRoomDefinition {
         this.rooms.add(new RotatedRoom(this, 270));
     }
 
-    /**
-     * Loads an existing room definition from disk.
-     */
+    /** Loads an existing room definition from disk. */
     public BranchingRoomDefinition(BranchingDungeon dungeon, File configFile)
             throws InvalidConfigurationException {
         this.dungeon = dungeon;
@@ -140,9 +132,7 @@ public class BranchingRoomDefinition {
         this.rooms.add(new RotatedRoom(this, 270));
     }
 
-    /**
-     * Replaces room bounds and warns if existing connectors fall outside the new area.
-     */
+    /** Replaces room bounds and warns if existing connectors fall outside the new area. */
     public void setBounds(Player player, BoundingBox bounds) {
         this.bounds = bounds;
         BoundingBox scaled = bounds.clone().expand(0.0, 0.0, 0.0, 1.0, 1.0, 1.0);
@@ -157,9 +147,7 @@ public class BranchingRoomDefinition {
         this.setChangedSinceLastSave(true);
     }
 
-    /**
-     * Expands room bounds and shifts connectors on the expanded face.
-     */
+    /** Expands room bounds and shifts connectors on the expanded face. */
     public void expand(BlockFace face, int amount) {
         this.bounds.expand(face, amount);
         SimpleLocation.Direction direction = SimpleLocation.Direction.fromBlockFace(face);
@@ -173,9 +161,7 @@ public class BranchingRoomDefinition {
         this.setChangedSinceLastSave(true);
     }
 
-    /**
-     * Sets or clears this room's spawn point and start-room registration.
-     */
+    /** Sets or clears this room's spawn point and start-room registration. */
     public void setSpawn(Location loc) {
         this.dungeon.getStartRooms().remove(this.namespace);
         if (loc == null) {
@@ -187,30 +173,22 @@ public class BranchingRoomDefinition {
         }
     }
 
-    /**
-     * Adds a room-local dungeon function at the given location.
-     */
+    /** Adds a room-local dungeon function at the given location. */
     public void addFunction(Location loc, DungeonFunction function) {
         this.functionsMapRelative.put(loc, function);
     }
 
-    /**
-     * Removes a room-local function at the given location.
-     */
+    /** Removes a room-local function at the given location. */
     public void removeFunction(Location loc) {
         this.functionsMapRelative.remove(loc);
     }
 
-    /**
-     * Saves function metadata to the room configuration asynchronously.
-     */
+    /** Saves function metadata to the room configuration asynchronously. */
     public void saveFunctions() {
         this.saveFunctionsAsync();
     }
 
-    /**
-     * Persists room functions and returns completion state.
-     */
+    /** Persists room functions and returns completion state. */
     public CompletableFuture<Boolean> saveFunctionsAsync() {
         return this.saveOnOwnerThread(
                 () -> {
@@ -238,7 +216,7 @@ public class BranchingRoomDefinition {
             this.logger()
                     .warn(
                             "Skipping invalid or null function entry at index {} in room '{}' of"
-                                + " dungeon '{}'.",
+                                    + " dungeon '{}'.",
                             index,
                             this.namespace,
                             this.dungeon.getWorldName());
@@ -252,7 +230,7 @@ public class BranchingRoomDefinition {
                 this.logger()
                         .warn(
                                 "Skipping function '{}' in room '{}' of dungeon '{}' because it has"
-                                    + " no location.",
+                                        + " no location.",
                                 function.getClass().getSimpleName(),
                                 this.namespace,
                                 this.dungeon.getWorldName());
@@ -266,7 +244,7 @@ public class BranchingRoomDefinition {
                 this.logger()
                         .warn(
                                 "Skipping function '{}' in room '{}' of dungeon '{}' because it is"
-                                    + " out of bounds at {},{},{}.",
+                                        + " out of bounds at {},{},{}.",
                                 function.getClass().getSimpleName(),
                                 this.namespace,
                                 this.dungeon.getWorldName(),
@@ -286,7 +264,7 @@ public class BranchingRoomDefinition {
             this.logger()
                     .warn(
                             "Skipping broken function '{}' in room '{}' of dungeon '{}' at {}."
-                                + " Reason: {}",
+                                    + " Reason: {}",
                             function.getClass().getSimpleName(),
                             this.namespace,
                             this.dungeon.getWorldName(),
@@ -304,9 +282,7 @@ public class BranchingRoomDefinition {
         }
     }
 
-    /**
-     * Adds a connector at the given location if it sits on a room edge.
-     */
+    /** Adds a connector at the given location if it sits on a room edge. */
     public Connector addConnector(SimpleLocation loc) {
         if (!this.applyDirectionAtEdge(loc)) {
             return null;
@@ -317,17 +293,13 @@ public class BranchingRoomDefinition {
         return connector;
     }
 
-    /**
-     * Adds an already created connector to this room.
-     */
+    /** Adds an already created connector to this room. */
     public void addConnector(Connector connector) {
         connector.setDungeon(this.dungeon);
         this.connectors.add(connector);
     }
 
-    /**
-     * Assigns connector direction based on which room boundary the location touches.
-     */
+    /** Assigns connector direction based on which room boundary the location touches. */
     public boolean applyDirectionAtEdge(SimpleLocation loc) {
         boolean success = false;
         if ((int) loc.getX() == (int) this.bounds.getMaxX()) {
@@ -353,9 +325,7 @@ public class BranchingRoomDefinition {
         return success;
     }
 
-    /**
-     * Returns a connector exactly matching the given location, if any.
-     */
+    /** Returns a connector exactly matching the given location, if any. */
     public Connector getConnector(SimpleLocation loc) {
         for (Connector connector : this.connectors) {
             if (connector.getLocation().equals(loc)) {
@@ -366,23 +336,17 @@ public class BranchingRoomDefinition {
         return null;
     }
 
-    /**
-     * Removes a connector from this room definition.
-     */
+    /** Removes a connector from this room definition. */
     public void removeConnector(Connector connector) {
         this.connectors.remove(connector);
     }
 
-    /**
-     * Returns whether this room has exactly one connector.
-     */
+    /** Returns whether this room has exactly one connector. */
     public boolean isTerminalRoom() {
         return this.connectors.size() == 1;
     }
 
-    /**
-     * Returns whether any orientation can accept a connection from the given direction.
-     */
+    /** Returns whether any orientation can accept a connection from the given direction. */
     public boolean canConnectFrom(SimpleLocation.Direction sourceDirection) {
         for (RotatedRoom orientation : this.rooms) {
             for (Connector connector : orientation.getConnectors()) {
@@ -394,9 +358,7 @@ public class BranchingRoomDefinition {
         return false;
     }
 
-    /**
-     * Returns whether all whitelist/blacklist references resolve to existing rooms.
-     */
+    /** Returns whether all whitelist/blacklist references resolve to existing rooms. */
     public boolean hasResolvableReferences() {
         for (WhitelistEntry entry : this.roomWhitelist) {
             if (entry.getRoom(this.dungeon) == null) {
@@ -423,9 +385,7 @@ public class BranchingRoomDefinition {
         return true;
     }
 
-    /**
-     * Builds weighted candidate rooms this room can connect to.
-     */
+    /** Builds weighted candidate rooms this room can connect to. */
     public List<WhitelistEntry> getValidRooms() {
         List<WhitelistEntry> rooms = new ArrayList<>();
         if (this.roomWhitelist != null && !this.roomWhitelist.isEmpty()) {
@@ -452,23 +412,17 @@ public class BranchingRoomDefinition {
         return rooms;
     }
 
-    /**
-     * Returns all precomputed room orientations.
-     */
+    /** Returns all precomputed room orientations. */
     public List<RotatedRoom> getOrientations() {
         return this.rooms;
     }
 
-    /**
-     * Returns one random room orientation.
-     */
+    /** Returns one random room orientation. */
     public RotatedRoom getRandomOrientation() {
         return this.rooms.get(MathUtils.getRandomNumberInRange(0, this.rooms.size() - 1));
     }
 
-    /**
-     * Returns whether this room's whitelist permits generation from the source room.
-     */
+    /** Returns whether this room's whitelist permits generation from the source room. */
     public boolean canGenerate(BranchingRoomDefinition room) {
         if (this.roomWhitelist != null && !this.roomWhitelist.isEmpty()) {
             for (WhitelistEntry entry : this.roomWhitelist) {
@@ -483,9 +437,7 @@ public class BranchingRoomDefinition {
         return true;
     }
 
-    /**
-     * Loads room config, connectors, and functions from disk.
-     */
+    /** Loads room config, connectors, and functions from disk. */
     public void loadRoom(File file) throws InvalidConfigurationException {
         this.roomConfig.load(file);
         Location firstCorner =
@@ -575,16 +527,12 @@ public class BranchingRoomDefinition {
         this.loadFunctions();
     }
 
-    /**
-     * Saves room metadata to disk asynchronously.
-     */
+    /** Saves room metadata to disk asynchronously. */
     public void saveRoom() {
         this.saveRoomAsync();
     }
 
-    /**
-     * Saves room metadata and returns completion state.
-     */
+    /** Saves room metadata and returns completion state. */
     public CompletableFuture<Boolean> saveRoomAsync() {
         return this.saveOnOwnerThread(this::captureRoomSave);
     }
@@ -634,9 +582,7 @@ public class BranchingRoomDefinition {
         return this.roomConfig.saveAsync(this.configFile);
     }
 
-    /**
-     * Captures the current world blocks inside bounds into the room schematic.
-     */
+    /** Captures the current world blocks inside bounds into the room schematic. */
     public void captureSchematic(World world) {
         this.captureSchematic(world, false);
     }
@@ -746,9 +692,7 @@ public class BranchingRoomDefinition {
                 });
     }
 
-    /**
-     * Deletes this room configuration and schematic files.
-     */
+    /** Deletes this room configuration and schematic files. */
     public void delete() {
         this.deleted = true;
         // Deletion joins the same destination lanes as writes. A queued save must never
@@ -764,35 +708,31 @@ public class BranchingRoomDefinition {
                     .whenComplete(
                             (ignored, failure) -> {
                                 if (failure != null)
-                                    this.logger().error("Failed to delete room file '{}'.", destination, failure);
+                                    this.logger()
+                                            .error(
+                                                    "Failed to delete room file '{}'.",
+                                                    destination,
+                                                    failure);
                             });
         }
     }
 
-    /**
-     * Returns the owning branching dungeon.
-     */
+    /** Returns the owning branching dungeon. */
     public BranchingDungeon getDungeon() {
         return this.dungeon;
     }
 
-    /**
-     * Returns the room namespace.
-     */
+    /** Returns the room namespace. */
     public String getNamespace() {
         return this.namespace;
     }
 
-    /**
-     * Returns whether room data changed since last schematic/config save.
-     */
+    /** Returns whether room data changed since last schematic/config save. */
     public boolean isChangedSinceLastSave() {
         return this.changedSinceLastSave;
     }
 
-    /**
-     * Sets the dirty flag used by schematic save decisions.
-     */
+    /** Sets the dirty flag used by schematic save decisions. */
     public synchronized void setChangedSinceLastSave(boolean changedSinceLastSave) {
         if (changedSinceLastSave) {
             this.schematicRevision++;
@@ -801,114 +741,82 @@ public class BranchingRoomDefinition {
         this.changedSinceLastSave = changedSinceLastSave || this.saving;
     }
 
-    /**
-     * Returns room bounds in editor coordinates.
-     */
+    /** Returns room bounds in editor coordinates. */
     public BoundingBox getBounds() {
         return this.bounds;
     }
 
-    /**
-     * Returns serialized occurrence range string.
-     */
+    /** Returns serialized occurrence range string. */
     public String getOccurrencesString() {
         return this.occurrencesString;
     }
 
-    /**
-     * Sets serialized occurrence range string.
-     */
+    /** Sets serialized occurrence range string. */
     public void setOccurrencesString(String occurrencesString) {
         this.occurrencesString = occurrencesString;
     }
 
-    /**
-     * Returns parsed occurrence range.
-     */
+    /** Returns parsed occurrence range. */
     public RangedNumber getOccurrences() {
         return this.occurrences;
     }
 
-    /**
-     * Sets parsed occurrence range.
-     */
+    /** Sets parsed occurrence range. */
     public void setOccurrences(RangedNumber occurrences) {
         this.occurrences = occurrences;
     }
 
-    /**
-     * Returns serialized depth range string.
-     */
+    /** Returns serialized depth range string. */
     public String getDepthString() {
         return this.depthString;
     }
 
-    /**
-     * Sets serialized depth range string.
-     */
+    /** Sets serialized depth range string. */
     public void setDepthString(String depthString) {
         this.depthString = depthString;
     }
 
-    /**
-     * Returns parsed depth range.
-     */
+    /** Returns parsed depth range. */
     public RangedNumber getDepth() {
         return this.depth;
     }
 
-    /**
-     * Sets parsed depth range.
-     */
+    /** Sets parsed depth range. */
     public void setDepth(RangedNumber depth) {
         this.depth = depth;
     }
 
-    /**
-     * Returns room weight for random room selection.
-     */
+    /** Returns room weight for random room selection. */
     public double getWeight() {
         return this.weight;
     }
 
-    /**
-     * Sets room weight for random room selection.
-     */
+    /** Sets room weight for random room selection. */
     public void setWeight(double weight) {
         this.weight = weight;
     }
 
-    /**
-     * Returns optional room-local spawn location.
-     */
+    /** Returns optional room-local spawn location. */
     public Location getSpawn() {
         return this.spawn;
     }
 
-    /**
-     * Returns room-level allowed destination rooms.
-     */
+    /** Returns room-level allowed destination rooms. */
     public List<WhitelistEntry> getRoomWhitelist() {
         return this.roomWhitelist;
     }
 
-    /**
-     * Returns room-level denied destination rooms.
-     */
+    /** Returns room-level denied destination rooms. */
     public List<WhitelistEntry> getRoomBlacklist() {
         return this.roomBlacklist;
     }
 
-    /**
-     * Returns connectors defined on this room.
-     */
+    /** Returns connectors defined on this room. */
     public List<Connector> getConnectors() {
         return this.connectors;
     }
 
-    /**
-     * Returns room-local function map.
-     */
+    /** Returns room-local function map. */
     public Map<Location, DungeonFunction> getFunctionsMapRelative() {
         return this.functionsMapRelative;
     }

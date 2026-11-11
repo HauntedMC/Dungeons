@@ -3,22 +3,20 @@ package nl.hauntedmc.dungeons.generation.room;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.nio.file.Path;
+import java.util.*;
 import nl.hauntedmc.dungeons.config.ConfigSerializableModel;
 import nl.hauntedmc.dungeons.content.function.SetStatusFunction;
 import nl.hauntedmc.dungeons.gui.menu.RoomMenus;
 import nl.hauntedmc.dungeons.model.element.FunctionTargetType;
 import nl.hauntedmc.dungeons.support.*;
 import nl.hauntedmc.dungeons.util.world.SimpleLocation;
-
 import org.bukkit.*;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.util.BoundingBox;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-
-import java.nio.file.Path;
-import java.util.*;
 
 class RoomPersistenceContractTest {
     @TempDir Path directory;
@@ -27,8 +25,8 @@ class RoomPersistenceContractTest {
     void roomSnapshotsMarshalBeforeReadingModelsAndRemainOrderedWhileEditingContinues()
             throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration());
-                var menus = mockStatic(RoomMenus.class);
-                var hotbars = new HeadlessMenus()) {
+                var _ = mockStatic(RoomMenus.class);
+                var _ = new HeadlessMenus()) {
             var branch = new BranchingRunFixture(f);
             var room =
                     new BranchingRoomDefinition(
@@ -74,8 +72,8 @@ class RoomPersistenceContractTest {
         String targetAlias = "dungeons.function_target_type";
         var previousTarget = ConfigurationSerialization.getClassByAlias(targetAlias);
         try (var f = new RunFixture(directory, new YamlConfiguration());
-                var menus = mockStatic(RoomMenus.class);
-                var hotbars = new HeadlessMenus()) {
+                var _ = mockStatic(RoomMenus.class);
+                var _ = new HeadlessMenus()) {
             ConfigSerializableModel.register("nl.hauntedmc.dungeons");
             ConfigurationSerialization.registerClass(SetStatusFunction.class, alias);
             ConfigurationSerialization.registerClass(FunctionTargetType.class, targetAlias);

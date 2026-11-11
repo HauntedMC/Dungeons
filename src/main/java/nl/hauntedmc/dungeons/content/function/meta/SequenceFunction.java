@@ -1,49 +1,39 @@
 package nl.hauntedmc.dungeons.content.function.meta;
 
+import java.util.List;
+import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
 
-import java.util.List;
-import java.util.Map;
-
-/**
- * Composite function that runs its child functions in order.
- */
+/** Composite function that runs its child functions in order. */
 @AutoRegister(id = "dungeons.function.sequence")
 @SerializableAs("dungeons.function.sequence")
 public class SequenceFunction extends CompositeFunction {
     @PersistedField private boolean loop = true;
     private int index = 0;
 
-    /**
-     * Creates a new SequenceFunction instance.
-     */
+    /** Creates a new SequenceFunction instance. */
     public SequenceFunction(Map<String, Object> config) {
         super("Function Sequence", config);
         this.setAllowRetriggerByDefault(true);
     }
 
-    /**
-     * Creates a new SequenceFunction instance.
-     */
+    /** Creates a new SequenceFunction instance. */
     public SequenceFunction() {
         super("Function Sequence");
         this.setAllowRetriggerByDefault(true);
     }
 
-    /**
-     * Performs run function.
-     */
+    /** Performs run function. */
     @Override
     public void runFunction(TriggerFireEvent triggerEvent, List<DungeonPlayerSession> targets) {
         if (!this.functions.isEmpty()) {
@@ -56,9 +46,7 @@ public class SequenceFunction extends CompositeFunction {
         }
     }
 
-    /**
-     * Performs increment.
-     */
+    /** Performs increment. */
     private void increment() {
         this.index++;
         if (this.index >= this.functions.size()) {
@@ -70,9 +58,7 @@ public class SequenceFunction extends CompositeFunction {
         }
     }
 
-    /**
-     * Builds menu button.
-     */
+    /** Builds menu button. */
     @Override
     public MenuButton buildMenuButton() {
         MenuButton button = new MenuButton(Material.CHAIN_COMMAND_BLOCK);
@@ -83,17 +69,13 @@ public class SequenceFunction extends CompositeFunction {
         return button;
     }
 
-    /**
-     * Builds hotbar menu.
-     */
+    /** Builds hotbar menu. */
     @Override
     public void buildHotbarMenu() {
         super.buildHotbarMenu();
         this.menu.addMenuItem(
                 new ToggleMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.REPEATER);
@@ -101,9 +83,7 @@ public class SequenceFunction extends CompositeFunction {
                         this.button.setEnchanted(SequenceFunction.this.loop);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         if (!SequenceFunction.this.loop) {

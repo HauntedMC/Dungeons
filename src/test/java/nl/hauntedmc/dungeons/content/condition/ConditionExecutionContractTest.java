@@ -11,6 +11,8 @@ import static org.mockito.Mockito.anyDouble;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.nio.file.Path;
+import java.util.*;
 import nl.hauntedmc.dungeons.content.function.SetStatusFunction;
 import nl.hauntedmc.dungeons.content.function.variable.InstanceVariableFunction;
 import nl.hauntedmc.dungeons.content.trigger.RemoteTrigger;
@@ -19,15 +21,11 @@ import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDifficulty;
 import nl.hauntedmc.dungeons.model.element.TriggerCondition;
 import nl.hauntedmc.dungeons.support.*;
-
 import org.bukkit.*;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-
-import java.nio.file.Path;
-import java.util.*;
 
 class ConditionExecutionContractTest {
     @TempDir Path directory;
@@ -203,7 +201,7 @@ class ConditionExecutionContractTest {
     void enabledConditionGraphsCombineInversionAndTimeAndFailClosedWhenAChildThrows()
             throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration());
-                var menus = new HeadlessMenus()) {
+                var _ = new HeadlessMenus()) {
             var trigger = new RemoteTrigger();
             var inverted = new ChanceCondition(Map.of("chance", 0.0, "inverted", true));
             var elapsed = new TimeElapsedCondition(Map.of("time", 10));

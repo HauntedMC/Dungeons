@@ -1,25 +1,25 @@
 package nl.hauntedmc.dungeons.gui.menu;
 
+import java.util.Optional;
+import nl.hauntedmc.dungeons.config.PluginConfigView;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
-import nl.hauntedmc.dungeons.content.instance.edit.BranchingEditableInstance;
 import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
 import nl.hauntedmc.dungeons.generation.room.Connector;
 import nl.hauntedmc.dungeons.gui.hotbar.PlayerHotbarMenu;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ChatMenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuItem;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
+import nl.hauntedmc.dungeons.runtime.instance.edit.BranchingEditableInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
-import nl.hauntedmc.dungeons.util.config.PluginConfigView;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.math.MathUtils;
 import nl.hauntedmc.dungeons.util.math.RangedNumber;
 import nl.hauntedmc.dungeons.util.world.DirectionUtils;
 import nl.hauntedmc.dungeons.util.world.LocationUtils;
 import nl.hauntedmc.dungeons.util.world.SimpleLocation;
-
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -28,8 +28,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.util.BoundingBox;
-
-import java.util.Optional;
 
 /** Builds the room editor hotbar workflow. */
 final class RoomEditHotbar {
@@ -79,19 +77,16 @@ final class RoomEditHotbar {
             @Override
             public void onSelect(PlayerEvent event) {
                 Player player = event.getPlayer();
-                DungeonPlayerSession playerSession =
-                        RuntimeContext.playerSessions().get(player);
+                DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
                 Block block = player.getTargetBlockExact(getEditorTargetBlockRange());
                 if (block == null) {
-                    LangUtils.sendMessage(
-                            player, "editor.session.hotbar.look-at-block-connector");
+                    LangUtils.sendMessage(player, "editor.session.hotbar.look-at-block-connector");
                 } else {
                     BranchingEditableInstance instance =
                             playerSession.getInstance().as(BranchingEditableInstance.class);
                     if (instance != null) {
                         BranchingDungeon dungeon = instance.getDungeon();
-                        BranchingRoomDefinition targetRoom =
-                                dungeon.getRoom(block.getLocation());
+                        BranchingRoomDefinition targetRoom = dungeon.getRoom(block.getLocation());
                         BranchingRoomDefinition activeRoom = playerSession.getActiveRoom();
                         SimpleLocation loc = SimpleLocation.from(block);
                         Connector connector = activeRoom.getConnector(loc);
@@ -105,19 +100,16 @@ final class RoomEditHotbar {
                             connector = activeRoom.addConnector(loc);
                             if (connector == null) {
                                 LangUtils.sendMessage(
-                                        player,
-                                        "editor.session.hotbar.connector-edge-only");
+                                        player, "editor.session.hotbar.connector-edge-only");
                                 return;
                             }
 
-                            LangUtils.sendMessage(
-                                    player, "editor.session.hotbar.connector-added");
+                            LangUtils.sendMessage(player, "editor.session.hotbar.connector-added");
                         }
 
                         playerSession.setConfirmRoomAction(false);
                         playerSession.setActiveConnector(connector);
-                        playerSession.showHotbar(
-                                dungeon.getLayout().getConnectorEditMenu(), true);
+                        playerSession.showHotbar(dungeon.getLayout().getConnectorEditMenu(), true);
                     }
                 }
             }
@@ -135,8 +127,7 @@ final class RoomEditHotbar {
             @Override
             public void onSelect(PlayerEvent event) {
                 Player player = event.getPlayer();
-                DungeonPlayerSession playerSession =
-                        RuntimeContext.playerSessions().get(player);
+                DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
                 playerSession.showHotbar(RoomEditHotbar.roomRulesMenu, true);
             }
         };
@@ -154,12 +145,10 @@ final class RoomEditHotbar {
 
             @Override
             public void onSelect(Player player) {
-                DungeonPlayerSession playerSession =
-                        RuntimeContext.playerSessions().get(player);
+                DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
                 BranchingRoomDefinition room = playerSession.getActiveRoom();
                 if (room != null) {
-                    LangUtils.sendMessage(
-                            player, "editor.session.hotbar.room-weight-prompt");
+                    LangUtils.sendMessage(player, "editor.session.hotbar.room-weight-prompt");
                     LangUtils.sendMessage(
                             player,
                             "editor.session.hotbar.room-weight-current",
@@ -171,15 +160,13 @@ final class RoomEditHotbar {
 
             @Override
             public void onInput(Player player, String message) {
-                DungeonPlayerSession playerSession =
-                        RuntimeContext.playerSessions().get(player);
+                DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
                 BranchingRoomDefinition room = playerSession.getActiveRoom();
                 if (room != null) {
                     BranchingEditableInstance instance =
                             playerSession.getInstance().as(BranchingEditableInstance.class);
                     if (instance != null) {
-                        Optional<Double> value =
-                                InputUtils.readDoubleInput(player, message);
+                        Optional<Double> value = InputUtils.readDoubleInput(player, message);
                         room.setWeight(value.orElse(room.getWeight()));
                         instance.setRoomLabel(room);
                         if (value.isPresent()) {
@@ -188,10 +175,8 @@ final class RoomEditHotbar {
                                     player,
                                     "editor.session.hotbar.room-weight-set",
                                     LangUtils.placeholder(
-                                            "weight",
-                                            String.valueOf(MathUtils.round(weight, 2))));
-                            LangUtils.sendMessage(
-                                    player, "editor.session.hotbar.room-weight-note");
+                                            "weight", String.valueOf(MathUtils.round(weight, 2))));
+                            LangUtils.sendMessage(player, "editor.session.hotbar.room-weight-note");
                         }
                     }
                 }
@@ -213,15 +198,13 @@ final class RoomEditHotbar {
             @Override
             public void onSelect(PlayerEvent event) {
                 Player player = event.getPlayer();
-                DungeonPlayerSession playerSession =
-                        RuntimeContext.playerSessions().get(player);
+                DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
                 BranchingRoomDefinition room = playerSession.getActiveRoom();
                 if (room != null) {
                     BranchingEditableInstance instance =
                             playerSession.getInstance().as(BranchingEditableInstance.class);
                     if (instance != null) {
-                        Block block =
-                                player.getTargetBlockExact(getEditorTargetBlockRange());
+                        Block block = player.getTargetBlockExact(getEditorTargetBlockRange());
                         if (block == null) {
                             LangUtils.sendMessage(
                                     player, "editor.session.hotbar.look-at-block-spawn");
@@ -256,8 +239,7 @@ final class RoomEditHotbar {
             @Override
             public void onClick(PlayerEvent event) {
                 Player player = event.getPlayer();
-                DungeonPlayerSession playerSession =
-                        RuntimeContext.playerSessions().get(player);
+                DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
                 BranchingRoomDefinition room = playerSession.getActiveRoom();
                 if (room != null) {
                     BranchingEditableInstance instance =
@@ -293,8 +275,7 @@ final class RoomEditHotbar {
             @Override
             public void onSelect(PlayerEvent event) {
                 Player player = event.getPlayer();
-                DungeonPlayerSession playerSession =
-                        RuntimeContext.playerSessions().get(player);
+                DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
                 BranchingRoomDefinition room = playerSession.getActiveRoom();
                 if (room != null) {
                     BranchingEditableInstance instance =
@@ -318,8 +299,7 @@ final class RoomEditHotbar {
             @Override
             public void onClick(PlayerEvent event) {
                 Player player = event.getPlayer();
-                DungeonPlayerSession playerSession =
-                        RuntimeContext.playerSessions().get(player);
+                DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
                 BranchingRoomDefinition room = playerSession.getActiveRoom();
                 if (room != null) {
                     BranchingEditableInstance instance =
@@ -354,32 +334,25 @@ final class RoomEditHotbar {
             @Override
             public void onSelect(PlayerEvent event) {
                 Player player = event.getPlayer();
-                DungeonPlayerSession playerSession =
-                        RuntimeContext.playerSessions().get(player);
+                DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
                 BranchingRoomDefinition room = playerSession.getActiveRoom();
                 if (room != null) {
                     if (playerSession.getInstance() != null) {
                         BranchingEditableInstance instance =
-                                playerSession
-                                        .getInstance()
-                                        .as(BranchingEditableInstance.class);
+                                playerSession.getInstance().as(BranchingEditableInstance.class);
                         if (instance != null) {
-                            Block block =
-                                    player.getTargetBlockExact(getEditorTargetBlockRange());
+                            Block block = player.getTargetBlockExact(getEditorTargetBlockRange());
                             if (block == null) {
-                                LangUtils.sendMessage(
-                                        player, "editor.session.room-click-required");
+                                LangUtils.sendMessage(player, "editor.session.room-click-required");
                             } else {
-                                LangUtils.sendMessage(
-                                        player, "editor.session.room-select-2");
+                                LangUtils.sendMessage(player, "editor.session.room-select-2");
                                 Location pos1 = block.getLocation();
                                 playerSession.setPos1(pos1);
                                 if (playerSession.getPos2() != null) {
                                     LangUtils.sendMessage(
                                             player,
                                             "editor.session.room-edited",
-                                            LangUtils.placeholder(
-                                                    "room", room.getNamespace()));
+                                            LangUtils.placeholder("room", room.getNamespace()));
                                     BoundingBox bounds =
                                             LocationUtils.captureBoundingBox(
                                                     playerSession.getPos1(),
@@ -401,32 +374,25 @@ final class RoomEditHotbar {
             @Override
             public void onClick(PlayerEvent event) {
                 Player player = event.getPlayer();
-                DungeonPlayerSession playerSession =
-                        RuntimeContext.playerSessions().get(player);
+                DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
                 BranchingRoomDefinition room = playerSession.getActiveRoom();
                 if (room != null) {
                     if (playerSession.getInstance() != null) {
                         BranchingEditableInstance instance =
-                                playerSession
-                                        .getInstance()
-                                        .as(BranchingEditableInstance.class);
+                                playerSession.getInstance().as(BranchingEditableInstance.class);
                         if (instance != null) {
-                            Block block =
-                                    player.getTargetBlockExact(getEditorTargetBlockRange());
+                            Block block = player.getTargetBlockExact(getEditorTargetBlockRange());
                             if (block == null) {
-                                LangUtils.sendMessage(
-                                        player, "editor.session.room-click-required");
+                                LangUtils.sendMessage(player, "editor.session.room-click-required");
                             } else {
-                                LangUtils.sendMessage(
-                                        player, "editor.session.room-select-1");
+                                LangUtils.sendMessage(player, "editor.session.room-select-1");
                                 Location pos2 = block.getLocation();
                                 playerSession.setPos2(pos2);
                                 if (playerSession.getPos1() != null) {
                                     LangUtils.sendMessage(
                                             player,
                                             "editor.session.room-edited",
-                                            LangUtils.placeholder(
-                                                    "room", room.getNamespace()));
+                                            LangUtils.placeholder("room", room.getNamespace()));
                                     BoundingBox bounds =
                                             LocationUtils.captureBoundingBox(
                                                     playerSession.getPos1(),
@@ -448,8 +414,7 @@ final class RoomEditHotbar {
             @Override
             public void onUnhover(PlayerItemHeldEvent event) {
                 Player player = event.getPlayer();
-                DungeonPlayerSession playerSession =
-                        RuntimeContext.playerSessions().get(player);
+                DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
                 if (playerSession.getPos1() != null || playerSession.getPos2() != null) {
                     playerSession.setPos1(null);
                     playerSession.setPos2(null);
@@ -470,11 +435,9 @@ final class RoomEditHotbar {
             @Override
             public void onSelect(PlayerEvent event) {
                 Player player = event.getPlayer();
-                DungeonPlayerSession playerSession =
-                        RuntimeContext.playerSessions().get(player);
+                DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
                 if (!playerSession.isConfirmRoomAction()) {
-                    LangUtils.sendMessage(
-                            player, "editor.session.hotbar.room-delete-confirm");
+                    LangUtils.sendMessage(player, "editor.session.hotbar.room-delete-confirm");
                     playerSession.setConfirmRoomAction(true);
                 } else {
                     playerSession.setConfirmRoomAction(false);
@@ -488,14 +451,11 @@ final class RoomEditHotbar {
                                     playerSession.isFunctionCutting()
                                             && room.getFunctionsMapRelative()
                                                     .containsValue(
-                                                            playerSession
-                                                                    .getCopiedFunction());
+                                                            playerSession.getCopiedFunction());
                             boolean deletedCutConnector =
                                     playerSession.isConnectorCutting()
                                             && room.getConnectors()
-                                                    .contains(
-                                                            playerSession
-                                                                    .getCopiedConnector());
+                                                    .contains(playerSession.getCopiedConnector());
                             dungeon.removeRoom(room);
                             instance.removeRoomLabel(room);
 
@@ -520,8 +480,7 @@ final class RoomEditHotbar {
                             playerSession.setActiveRoom(null);
                             playerSession.setActiveConnector(null);
                             playerSession.setActiveDoor(null);
-                            LangUtils.sendMessage(
-                                    player, "editor.session.hotbar.room-deleted");
+                            LangUtils.sendMessage(player, "editor.session.hotbar.room-deleted");
                             playerSession.restorePreviousHotbar();
                         }
                     }
@@ -544,8 +503,7 @@ final class RoomEditHotbar {
             @Override
             public void onSelect(PlayerEvent event) {
                 Player player = event.getPlayer();
-                DungeonPlayerSession playerSession =
-                        RuntimeContext.playerSessions().get(player);
+                DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
                 BranchingRoomDefinition room = playerSession.getActiveRoom();
                 if (room != null) {
                     RuntimeContext.guiService()
@@ -574,11 +532,9 @@ final class RoomEditHotbar {
 
             @Override
             public void onSelect(Player player) {
-                DungeonPlayerSession playerSession =
-                        RuntimeContext.playerSessions().get(player);
+                DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
                 BranchingRoomDefinition room = playerSession.getActiveRoom();
-                LangUtils.sendMessage(
-                        player, "editor.session.hotbar.room-occurrences-prompt");
+                LangUtils.sendMessage(player, "editor.session.hotbar.room-occurrences-prompt");
                 LangUtils.sendMessage(
                         player,
                         "editor.session.hotbar.current-value",
@@ -587,8 +543,7 @@ final class RoomEditHotbar {
 
             @Override
             public void onInput(Player player, String message) {
-                DungeonPlayerSession playerSession =
-                        RuntimeContext.playerSessions().get(player);
+                DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
                 BranchingEditableInstance instance =
                         playerSession.getInstance().as(BranchingEditableInstance.class);
                 if (instance != null) {
@@ -621,8 +576,7 @@ final class RoomEditHotbar {
 
             @Override
             public void onSelect(Player player) {
-                DungeonPlayerSession playerSession =
-                        RuntimeContext.playerSessions().get(player);
+                DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
                 BranchingRoomDefinition room = playerSession.getActiveRoom();
                 LangUtils.sendMessage(player, "editor.session.hotbar.room-depth-prompt");
                 LangUtils.sendMessage(
@@ -633,8 +587,7 @@ final class RoomEditHotbar {
 
             @Override
             public void onInput(Player player, String message) {
-                DungeonPlayerSession playerSession =
-                        RuntimeContext.playerSessions().get(player);
+                DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
                 BranchingEditableInstance instance =
                         playerSession.getInstance().as(BranchingEditableInstance.class);
                 if (instance != null) {

@@ -1,13 +1,14 @@
 package nl.hauntedmc.dungeons.content.function;
 
+import java.util.List;
+import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.serialization.SerializableAs;
@@ -17,34 +18,23 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
-import java.util.List;
-import java.util.Map;
-
-/**
- * Specialized item-give function for dungeon key items.
- */
+/** Specialized item-give function for dungeon key items. */
 @AutoRegister(id = "dungeons.function.give_key")
 @SerializableAs("dungeons.function.give_key")
 public class GiveKeyFunction extends GiveItemFunction {
-    /**
-     * Creates a new GiveKeyFunction instance.
-     */
+    /** Creates a new GiveKeyFunction instance. */
     public GiveKeyFunction(Map<String, Object> config) {
         super("Key Dispenser", config);
         this.item = ItemUtils.getDefaultKeyItem();
     }
 
-    /**
-     * Creates a new GiveKeyFunction instance.
-     */
+    /** Creates a new GiveKeyFunction instance. */
     public GiveKeyFunction() {
         super("Key Dispenser");
         this.item = ItemUtils.getDefaultKeyItem();
     }
 
-    /**
-     * Performs run function.
-     */
+    /** Performs run function. */
     @Override
     public void runFunction(TriggerFireEvent triggerEvent, List<DungeonPlayerSession> targets) {
         if (this.item != null) {
@@ -75,8 +65,8 @@ public class GiveKeyFunction extends GiveItemFunction {
                     ItemUtils.giveOrDropSilently(player, key);
                     if (this.notify) {
                         this.instance.messagePlayers(
-                                        "instance.play.functions.keys.key-player",
-                                        LangUtils.placeholder("player", player.getName()));
+                                "instance.play.functions.keys.key-player",
+                                LangUtils.placeholder("player", player.getName()));
                     }
                 }
 
@@ -90,9 +80,7 @@ public class GiveKeyFunction extends GiveItemFunction {
         }
     }
 
-    /**
-     * Builds menu button.
-     */
+    /** Builds menu button. */
     @Override
     public MenuButton buildMenuButton() {
         MenuButton functionButton = new MenuButton(Material.TRIPWIRE_HOOK);

@@ -1,20 +1,19 @@
 package nl.hauntedmc.dungeons.gui.menu;
+
+import java.lang.reflect.InvocationTargetException;
+import java.util.Map.Entry;
 import nl.hauntedmc.dungeons.content.trigger.gate.GateTrigger;
 import nl.hauntedmc.dungeons.gui.framework.buttons.Button;
 import nl.hauntedmc.dungeons.gui.framework.window.GuiInventory;
 import nl.hauntedmc.dungeons.gui.framework.window.GuiWindow;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.text.ColorUtils;
 import nl.hauntedmc.dungeons.util.text.ComponentUtils;
-
 import org.bukkit.entity.Player;
-
-import java.lang.reflect.InvocationTargetException;
-import java.util.Map.Entry;
 
 /** Builds the gates editor workflow. */
 final class GateTriggerEditorMenus {
@@ -29,7 +28,8 @@ final class GateTriggerEditorMenus {
 
     /** Builds and registers the trigger-gate browser GUI. */
     private static void initializeGateTriggerBrowser() {
-        GuiWindow gui = EditorMenuSupport.editorWindow("gatetriggersmenu", 54, "&8Select a Trigger");
+        GuiWindow gui =
+                EditorMenuSupport.editorWindow("gatetriggersmenu", 54, "&8Select a Trigger");
         int i = 0;
 
         for (Entry<String, MenuButton> pair :
@@ -107,7 +107,8 @@ final class GateTriggerEditorMenus {
                                 Button button = new Button("trigger_" + slot, menuButton.getItem());
                                 button.addLore("");
                                 button.addLore(ColorUtils.colorize("&6Options:"));
-                                EditorMenuSupport.addPersistedFieldLore(button, trigger, false, "trigger");
+                                EditorMenuSupport.addPersistedFieldLore(
+                                        button, trigger, false, "trigger");
 
                                 if (trigger instanceof GateTrigger subGate) {
                                     button.addLore(ColorUtils.colorize(" &eTriggers:"));
@@ -140,7 +141,8 @@ final class GateTriggerEditorMenus {
 
     /** Builds and registers the trigger-gate removal GUI. */
     private static void initializeGateTriggerRemover() {
-        GuiWindow gui = EditorMenuSupport.editorWindow("removegatetrigger", 54, "&8Remove a Trigger");
+        GuiWindow gui =
+                EditorMenuSupport.editorWindow("removegatetrigger", 54, "&8Remove a Trigger");
         gui.addOpenAction(
                 "populate", event -> reloadTriggerRemovalGui(gui, (Player) event.getPlayer()));
     }
@@ -170,7 +172,10 @@ final class GateTriggerEditorMenus {
                                 LangUtils.sendMessage(
                                         clickPlayer,
                                         "menus.remove.trigger",
-                                        LangUtils.placeholder("name", ComponentUtils.component(menuButton.getDisplayName())));
+                                        LangUtils.placeholder(
+                                                "name",
+                                                ComponentUtils.component(
+                                                        menuButton.getDisplayName())));
                                 reloadTriggerRemovalGui(gui, clickPlayer);
                             });
                     guiInv.setButton(slot, button);

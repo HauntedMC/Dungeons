@@ -3,6 +3,10 @@ package nl.hauntedmc.dungeons.config;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.stream.Collectors;
 import nl.hauntedmc.dungeons.model.element.DungeonElement;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
@@ -10,16 +14,10 @@ import nl.hauntedmc.dungeons.model.element.TriggerCondition;
 import nl.hauntedmc.dungeons.support.*;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import nl.hauntedmc.dungeons.util.metadata.TypeMetadataSupport;
-
 import org.bukkit.Location;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.junit.jupiter.api.Test;
-
-import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
-import java.util.stream.Collectors;
 
 class RegisteredMechanicContractTest {
     static Map<String, String> manifest() throws IOException {
@@ -70,9 +68,9 @@ class RegisteredMechanicContractTest {
             throws Exception {
         var aliases = new LinkedHashMap<String, Class<? extends ConfigurationSerializable>>();
         try (var paper = new PaperBoundary();
-                var menus = new HeadlessMenus();
-                var gui = new HeadlessInventoryMenus();
-                var items = mockStatic(ItemUtils.class)) {
+                var _ = new HeadlessMenus();
+                var _ = new HeadlessInventoryMenus();
+                var _ = mockStatic(ItemUtils.class)) {
             when(paper.plugin.namespace()).thenReturn("dungeons");
             for (var entry : manifest().entrySet()) {
                 var type = Class.forName(entry.getKey()).asSubclass(DungeonElement.class);

@@ -1,20 +1,18 @@
 package nl.hauntedmc.dungeons.content.condition;
 
+import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ChatMenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.TriggerCondition;
-import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
+import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.util.instance.InstanceUtils;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
-
-import java.util.Map;
 
 /**
  * Condition that evaluates an instance-variable comparison expression.
@@ -28,23 +26,17 @@ public class InstanceVariableCondition extends TriggerCondition {
     @PersistedField private String comparison;
     private transient boolean missingComparisonLogged;
 
-    /**
-     * Creates a new InstanceVariableCondition instance.
-     */
+    /** Creates a new InstanceVariableCondition instance. */
     public InstanceVariableCondition(Map<String, Object> config) {
         super("Instance Variable", config);
     }
 
-    /**
-     * Creates a new InstanceVariableCondition instance.
-     */
+    /** Creates a new InstanceVariableCondition instance. */
     public InstanceVariableCondition() {
         super("Instance Variable");
     }
 
-    /**
-     * Performs check.
-     */
+    /** Performs check. */
     @Override
     public boolean check(TriggerFireEvent event) {
         if (this.comparison == null || this.comparison.isBlank()) {
@@ -63,9 +55,7 @@ public class InstanceVariableCondition extends TriggerCondition {
         return instance != null && InstanceUtils.compareVars(instance, this.comparison);
     }
 
-    /**
-     * Builds menu button.
-     */
+    /** Builds menu button. */
     @Override
     public MenuButton buildMenuButton() {
         MenuButton functionButton = new MenuButton(Material.CHAIN_COMMAND_BLOCK);
@@ -75,16 +65,12 @@ public class InstanceVariableCondition extends TriggerCondition {
         return functionButton;
     }
 
-    /**
-     * Builds hotbar menu.
-     */
+    /** Builds hotbar menu. */
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
                 new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.NAME_TAG);
@@ -94,9 +80,7 @@ public class InstanceVariableCondition extends TriggerCondition {
                                         + InstanceVariableCondition.this.comparison);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         LangUtils.sendMessage(
@@ -105,9 +89,7 @@ public class InstanceVariableCondition extends TriggerCondition {
                                 player, "editor.condition.instance-variable.examples");
                     }
 
-                    /**
-                     * Performs on input.
-                     */
+                    /** Performs on input. */
                     @Override
                     public void onInput(Player player, String message) {
                         InstanceVariableCondition.this.comparison = message;

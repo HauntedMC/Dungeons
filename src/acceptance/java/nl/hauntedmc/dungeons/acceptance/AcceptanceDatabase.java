@@ -1,23 +1,30 @@
 package nl.hauntedmc.dungeons.acceptance;
 
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.mysql.MySQLContainer;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.mysql.MySQLContainer;
 
 /** Owns real disposable backends for all native Paper boots, including cold restart. */
 public final class AcceptanceDatabase {
     private AcceptanceDatabase() {}
+
     public static void main(String[] args) throws Exception {
-        try (var mysql = new MySQLContainer("mysql:8.4").withDatabaseName("minecraft")
-                    .withUsername("dungeons").withPassword("acceptance-mysql");
-                var redis = new GenericContainer<>("redis:7.4-alpine").withExposedPorts(6379)
-                        .withCommand("redis-server", "--requirepass", "acceptance-redis")) {
+        try (var mysql =
+                        new MySQLContainer("mysql:8.4")
+                                .withDatabaseName("minecraft")
+                                .withUsername("dungeons")
+                                .withPassword("acceptance-mysql");
+                var redis =
+                        new GenericContainer<>("redis:7.4-alpine")
+                                .withExposedPorts(6379)
+                                .withCommand("redis-server", "--requirepass", "acceptance-redis")) {
             mysql.start();
             redis.start();
-            var process = new ProcessBuilder("bash", Path.of(args[0]).toAbsolutePath().toString()).inheritIO();
+            var process =
+                    new ProcessBuilder("bash", Path.of(args[0]).toAbsolutePath().toString())
+                            .inheritIO();
             var env = process.environment();
             env.put("DUNGEONS_ACCEPTANCE_DB_HOST", mysql.getHost());
             env.put("DUNGEONS_ACCEPTANCE_DB_PORT", mysql.getMappedPort(3306).toString());
@@ -33,7 +40,8 @@ public final class AcceptanceDatabase {
                 }
             }
             int result = child.exitValue();
-            if (result != 0) throw new IllegalStateException("Native database acceptance failed: " + result);
+            if (result != 0)
+                throw new IllegalStateException("Native database acceptance failed: " + result);
         }
     }
 }

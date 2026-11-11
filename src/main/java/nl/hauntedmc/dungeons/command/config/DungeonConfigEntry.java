@@ -1,10 +1,9 @@
 package nl.hauntedmc.dungeons.command.config;
 
-import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
-
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 
 /**
  * Metadata description for a single configurable dungeon setting.

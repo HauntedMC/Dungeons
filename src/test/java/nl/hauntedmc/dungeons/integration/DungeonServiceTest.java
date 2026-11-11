@@ -3,12 +3,13 @@ package nl.hauntedmc.dungeons.integration;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.nio.file.Path;
+import java.util.List;
 import nl.hauntedmc.dataregistry.api.player.PlayerData;
 import nl.hauntedmc.dungeons.api.DungeonsApi;
 import nl.hauntedmc.dungeons.persistence.DungeonDatabase;
 import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
 import nl.hauntedmc.dungeons.support.PaperBoundary;
-
 import org.bukkit.Server;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.ServicesManager;
@@ -16,9 +17,6 @@ import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scheduler.BukkitTask;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-
-import java.nio.file.Path;
-import java.util.List;
 
 class DungeonServiceTest {
     @TempDir Path directory;

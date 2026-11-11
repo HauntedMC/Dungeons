@@ -1,4 +1,11 @@
 package nl.hauntedmc.dungeons.runtime.queue;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
+import nl.hauntedmc.dungeons.localization.LangPlaceholder;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
@@ -10,18 +17,10 @@ import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
 import nl.hauntedmc.dungeons.runtime.team.TeamRequirementPolicy;
 import nl.hauntedmc.dungeons.util.command.CommandUtils;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
-import nl.hauntedmc.dungeons.util.lang.LangPlaceholder;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
 
 /**
  * Coordinates queue creation, validation, and queue-to-instance startup.
@@ -37,9 +36,7 @@ public final class DungeonQueueCoordinator {
     private final DungeonTeamService teamManager;
     private DungeonRepository dungeonManager;
 
-    /**
-     * Creates the coordinator with the services required to validate and launch queued runs.
-     */
+    /** Creates the coordinator with the services required to validate and launch queued runs. */
     public DungeonQueueCoordinator(
             DungeonsPlugin plugin,
             PlayerSessionRegistry playerManager,
@@ -53,16 +50,12 @@ public final class DungeonQueueCoordinator {
         this.teamManager = teamManager;
     }
 
-    /**
-     * Binds the loaded dungeon catalogue after bootstrap has populated it.
-     */
+    /** Binds the loaded dungeon catalogue after bootstrap has populated it. */
     public void setDungeonCatalog(DungeonRepository dungeonManager) {
         this.dungeonManager = dungeonManager;
     }
 
-    /**
-     * Queues or starts a dungeon for a solo player or their active team.
-     */
+    /** Queues or starts a dungeon for a solo player or their active team. */
     public void sendToDungeon(Player player, String dungeonName, String difficulty) {
         DungeonDefinition requested =
                 this.dungeonManager == null ? null : this.dungeonManager.get(dungeonName);
@@ -125,9 +118,7 @@ public final class DungeonQueueCoordinator {
         return true;
     }
 
-    /**
-     * Attempts to start a queue and discards it when it can no longer remain valid.
-     */
+    /** Attempts to start a queue and discards it when it can no longer remain valid. */
     public boolean tryStartQueuedDungeon(DungeonQueueEntry queue) {
         boolean started = this.startQueue(queue);
         if (started) {
@@ -139,9 +130,7 @@ public final class DungeonQueueCoordinator {
         return started;
     }
 
-    /**
-     * Removes a queue and clears any queued state tracked on the owning team.
-     */
+    /** Removes a queue and clears any queued state tracked on the owning team. */
     public void discardQueue(DungeonQueueEntry queue) {
         this.queueManager.unqueue(queue);
         if (queue != null && queue.isTeamQueue()) {
@@ -158,7 +147,7 @@ public final class DungeonQueueCoordinator {
                     .getSLF4JLogger()
                     .warn(
                             "Failed to queue player '{}' for dungeon '{}': player state or dungeon"
-                                + " was missing.",
+                                    + " was missing.",
                             player.getName(),
                             dungeonName);
             return;
@@ -211,7 +200,7 @@ public final class DungeonQueueCoordinator {
                     .getSLF4JLogger()
                     .warn(
                             "Failed to queue team led by '{}' for dungeon '{}': player state or"
-                                + " dungeon was missing.",
+                                    + " dungeon was missing.",
                             leaderName,
                             dungeonName);
             return;
@@ -311,7 +300,7 @@ public final class DungeonQueueCoordinator {
                         .getSLF4JLogger()
                         .warn(
                                 "Refunding stale reserved access key for player '{}' from dungeon"
-                                    + " '{}' before preparing '{}'.",
+                                        + " '{}' before preparing '{}'.",
                                 player.getName(),
                                 dungeonPlayer.getReservedAccessKeyDungeon(),
                                 dungeon.getWorldName());
@@ -342,8 +331,10 @@ public final class DungeonQueueCoordinator {
                 return false;
             }
 
-            ItemStack[] beforeReservation = Arrays.stream(player.getInventory().getContents())
-                    .map(item -> item == null ? null : item.clone()).toArray(ItemStack[]::new);
+            ItemStack[] beforeReservation =
+                    Arrays.stream(player.getInventory().getContents())
+                            .map(item -> item == null ? null : item.clone())
+                            .toArray(ItemStack[]::new);
             ItemStack reservedKey = this.reserveAccessKey(dungeon, player);
             boolean reserved;
             try {
@@ -361,7 +352,11 @@ public final class DungeonQueueCoordinator {
                     dungeon.releaseReservedAccessKey(reservedKey);
                 }
                 this.refundReservedAccessKeys(reservedPlayers, dungeon);
-                this.plugin.getSLF4JLogger().error("Failed to persist access key reservation; entry rejected.", failure);
+                this.plugin
+                        .getSLF4JLogger()
+                        .error(
+                                "Failed to persist access key reservation; entry rejected.",
+                                failure);
                 return false;
             }
             if (!reserved) {
@@ -376,7 +371,7 @@ public final class DungeonQueueCoordinator {
                         .getSLF4JLogger()
                         .warn(
                                 "Failed to reserve an access key for player '{}' while preparing"
-                                    + " dungeon '{}'.",
+                                        + " dungeon '{}'.",
                                 player.getName(),
                                 dungeon.getWorldName());
                 return false;
@@ -956,6 +951,7 @@ public final class DungeonQueueCoordinator {
     }
 
     private boolean hasAccessCooldownBypass(@Nullable Player player) {
-        return player != null && CommandUtils.hasPermissionSilent(player, "dungeons.bypass.cooldown");
+        return player != null
+                && CommandUtils.hasPermissionSilent(player, "dungeons.bypass.cooldown");
     }
 }

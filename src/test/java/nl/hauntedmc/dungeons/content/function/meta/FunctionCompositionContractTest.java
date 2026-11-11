@@ -3,6 +3,8 @@ package nl.hauntedmc.dungeons.content.function.meta;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
@@ -10,16 +12,12 @@ import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.support.PaperBoundary;
 import nl.hauntedmc.dungeons.util.math.MathUtils;
-
 import org.junit.jupiter.api.Test;
-
-import java.util.ArrayList;
-import java.util.List;
 
 class FunctionCompositionContractTest {
     @Test
     void compositesPreserveOrderIsolateTargetsSkipTriggeredChildrenAndContinueAfterAChildFails() {
-        try (var paper = new PaperBoundary()) {
+        try (var _ = new PaperBoundary()) {
             List<String> effects = new ArrayList<>();
             var first = new Effect("first", effects);
             first.clearTargets = true;
@@ -46,7 +44,7 @@ class FunctionCompositionContractTest {
 
     @Test
     void sequencesExecuteExactlyOneStepPerActivationAndLoopInConfiguredOrder() {
-        try (var paper = new PaperBoundary()) {
+        try (var _ = new PaperBoundary()) {
             var sequence = new SequenceFunction();
             var event = mock(TriggerFireEvent.class);
             var source = mock(DungeonPlayerSession.class);
@@ -69,7 +67,7 @@ class FunctionCompositionContractTest {
 
     @Test
     void randomCompositionExecutesOnlyTheChosenChildAndPreservesTheCallersTargets() {
-        try (var paper = new PaperBoundary();
+        try (var _ = new PaperBoundary();
                 var random = mockStatic(MathUtils.class)) {
             var function = new RandomFunction();
             var source = mock(DungeonPlayerSession.class);
@@ -96,7 +94,7 @@ class FunctionCompositionContractTest {
 
     @Test
     void compositeCleanupContinuesAfterOneChildThrows() {
-        try (var paper = new PaperBoundary()) {
+        try (var _ = new PaperBoundary()) {
             var bad = mock(DungeonFunction.class);
             var healthy = mock(DungeonFunction.class);
             doThrow(new IllegalStateException("child cleanup failed")).when(bad).disable();

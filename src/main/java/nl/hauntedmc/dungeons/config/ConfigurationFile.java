@@ -1,13 +1,5 @@
 package nl.hauntedmc.dungeons.config;
 
-import nl.hauntedmc.dungeons.util.metadata.TypeMetadataSupport;
-
-import org.bukkit.Bukkit;
-import org.bukkit.configuration.InvalidConfigurationException;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.plugin.Plugin;
-import org.jetbrains.annotations.NotNull;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -24,6 +16,12 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
+import nl.hauntedmc.dungeons.util.metadata.TypeMetadataSupport;
+import org.bukkit.Bukkit;
+import org.bukkit.configuration.InvalidConfigurationException;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.plugin.Plugin;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Project-specific YAML configuration wrapper.
@@ -52,8 +50,7 @@ public class ConfigurationFile extends YamlConfiguration {
         return saveAsync(this.plugin, this, file);
     }
 
-    private static final Set<SnapshotRequest> PENDING_CAPTURES =
-            ConcurrentHashMap.newKeySet();
+    private static final Set<SnapshotRequest> PENDING_CAPTURES = ConcurrentHashMap.newKeySet();
 
     /** Uses the same snapshot protocol for ordinary Bukkit YAML configurations. */
     public static CompletableFuture<Boolean> saveAsync(
@@ -122,11 +119,9 @@ public class ConfigurationFile extends YamlConfiguration {
         final Plugin plugin;
         final Supplier<CompletableFuture<Boolean>> action;
         final CompletableFuture<Boolean> result = new CompletableFuture<>();
-        final AtomicBoolean claimed =
-                new AtomicBoolean();
+        final AtomicBoolean claimed = new AtomicBoolean();
 
-        SnapshotRequest(
-                Plugin plugin, Supplier<CompletableFuture<Boolean>> action) {
+        SnapshotRequest(Plugin plugin, Supplier<CompletableFuture<Boolean>> action) {
             this.plugin = plugin;
             this.action = action;
         }

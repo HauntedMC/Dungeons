@@ -1,9 +1,12 @@
 package nl.hauntedmc.dungeons.model.dungeon;
 
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import nl.hauntedmc.dungeons.annotation.TypeKey;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
-
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.SerializableAs;
@@ -11,14 +14,7 @@ import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-
-/**
- * Persisted dungeon access-key definition with audit metadata.
- */
+/** Persisted dungeon access-key definition with audit metadata. */
 @TypeKey(id = "dungeons.access.key_definition")
 @SerializableAs("dungeons.access.key_definition")
 public final class AccessKeyDefinition implements ConfigurationSerializable {
@@ -28,9 +24,7 @@ public final class AccessKeyDefinition implements ConfigurationSerializable {
     private final String addedByName;
     private final String addedByUniqueId;
 
-    /**
-     * Restores an access-key definition from serialized config data.
-     */
+    /** Restores an access-key definition from serialized config data. */
     public AccessKeyDefinition(Map<String, Object> config) {
         this.keyId = resolveKeyId(config.get("KeyId"), config.get("Item"));
         Object rawItem = config.get("Item");
@@ -43,9 +37,7 @@ public final class AccessKeyDefinition implements ConfigurationSerializable {
         this.addedByUniqueId = asNormalizedString(config.get("AddedByUniqueId"));
     }
 
-    /**
-     * Creates a new access-key definition.
-     */
+    /** Creates a new access-key definition. */
     public AccessKeyDefinition(
             @NotNull ItemStack item,
             @Nullable Date addedAt,
@@ -58,9 +50,7 @@ public final class AccessKeyDefinition implements ConfigurationSerializable {
         this.addedByUniqueId = addedByUniqueId == null ? null : addedByUniqueId.toString();
     }
 
-    /**
-     * Converts a raw config list entry into an access-key definition.
-     */
+    /** Converts a raw config list entry into an access-key definition. */
     public static @Nullable AccessKeyDefinition fromConfigValue(@Nullable Object value) {
         if (value instanceof AccessKeyDefinition keyDefinition) {
             return keyDefinition.isValid() ? keyDefinition : null;
@@ -102,16 +92,12 @@ public final class AccessKeyDefinition implements ConfigurationSerializable {
         return values;
     }
 
-    /**
-     * Returns whether this definition is usable.
-     */
+    /** Returns whether this definition is usable. */
     public boolean isValid() {
         return this.item != null && this.item.getType() != Material.AIR;
     }
 
-    /**
-     * Returns whether the given item matches this configured key.
-     */
+    /** Returns whether the given item matches this configured key. */
     public boolean matches(@Nullable ItemStack candidate) {
         if (!this.isValid()) {
             return false;
@@ -129,9 +115,7 @@ public final class AccessKeyDefinition implements ConfigurationSerializable {
                 && configuredItem.isSimilar(genericCandidate);
     }
 
-    /**
-     * Returns a clone of the configured key item.
-     */
+    /** Returns a clone of the configured key item. */
     public @Nullable ItemStack createItemCopy() {
         if (this.item == null) {
             return null;
@@ -142,37 +126,27 @@ public final class AccessKeyDefinition implements ConfigurationSerializable {
                 : this.createGenericCandidateCopy(this.item);
     }
 
-    /**
-     * Returns the configured key item.
-     */
+    /** Returns the configured key item. */
     public @Nullable ItemStack getItem() {
         return this.createItemCopy();
     }
 
-    /**
-     * Returns the stable identity of this access key.
-     */
+    /** Returns the stable identity of this access key. */
     public @NotNull String getKeyId() {
         return this.keyId;
     }
 
-    /**
-     * Returns the timestamp at which this key was added.
-     */
+    /** Returns the timestamp at which this key was added. */
     public @Nullable Date getAddedAt() {
         return this.addedAt == null ? null : new Date(this.addedAt.getTime());
     }
 
-    /**
-     * Returns the recorded player name that added this key.
-     */
+    /** Returns the recorded player name that added this key. */
     public @Nullable String getAddedByName() {
         return this.addedByName;
     }
 
-    /**
-     * Returns the recorded player UUID string that added this key.
-     */
+    /** Returns the recorded player UUID string that added this key. */
     public @Nullable String getAddedByUniqueId() {
         return this.addedByUniqueId;
     }

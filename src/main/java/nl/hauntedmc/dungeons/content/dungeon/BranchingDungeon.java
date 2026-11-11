@@ -1,19 +1,26 @@
 package nl.hauntedmc.dungeons.content.dungeon;
 
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.nio.file.NoSuchFileException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import nl.hauntedmc.dungeons.config.ConfigurationFile;
-import nl.hauntedmc.dungeons.content.instance.edit.BranchingEditableInstance;
-import nl.hauntedmc.dungeons.content.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.generation.layout.Layout;
 import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonLoadException;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
-import nl.hauntedmc.dungeons.model.instance.EditableInstance;
-import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.registry.LayoutRegistry;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
+import nl.hauntedmc.dungeons.runtime.instance.EditableInstance;
+import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
+import nl.hauntedmc.dungeons.runtime.instance.edit.BranchingEditableInstance;
+import nl.hauntedmc.dungeons.runtime.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.util.world.GameRuleUtils;
-
 import org.apache.commons.io.FilenameUtils;
 import org.bukkit.Difficulty;
 import org.bukkit.Location;
@@ -25,20 +32,11 @@ import org.bukkit.util.BoundingBox;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.nio.file.NoSuchFileException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-
 /**
  * Dungeon implementation that generates each run from a branching layout and room definitions.
  *
- * <p>Branching dungeons read generation settings from the dungeon config and keep
- * room-scoped function data in the {@code rooms/} folder.
+ * <p>Branching dungeons read generation settings from the dungeon config and keep room-scoped
+ * function data in the {@code rooms/} folder.
  */
 public class BranchingDungeon extends DungeonDefinition {
     private final YamlConfiguration ruleConfig;
@@ -47,9 +45,7 @@ public class BranchingDungeon extends DungeonDefinition {
     private final Map<String, BranchingRoomDefinition> uniqueRooms = new HashMap<>();
     private final Map<String, BranchingRoomDefinition> startRooms = new HashMap<>();
 
-    /**
-     * Creates a new BranchingDungeon instance.
-     */
+    /** Creates a new BranchingDungeon instance. */
     public BranchingDungeon(
             @NotNull DungeonsRuntime runtime,
             @NotNull File folder,
@@ -79,8 +75,7 @@ public class BranchingDungeon extends DungeonDefinition {
 
         try {
             File configFile = new File(folder, "gamerules.yml");
-            ConfigurationFile.loadSnapshot(
-                    this.ruleConfig, configFile);
+            ConfigurationFile.loadSnapshot(this.ruleConfig, configFile);
         } catch (NoSuchFileException absent) {
             // New dungeons have no persisted rule overrides yet.
         } catch (IOException exception) {
@@ -98,9 +93,7 @@ public class BranchingDungeon extends DungeonDefinition {
         this.loadRooms();
     }
 
-    /**
-     * Loads layout from generation config.
-     */
+    /** Loads layout from generation config. */
     private void loadLayoutFromGenerationConfig() {
         try {
             Layout resolved = this.createConfiguredLayout(true);
@@ -120,9 +113,7 @@ public class BranchingDungeon extends DungeonDefinition {
         }
     }
 
-    /**
-     * Creates configured layout.
-     */
+    /** Creates configured layout. */
     private @Nullable Layout createConfiguredLayout(boolean saveCorrection)
             throws InvocationTargetException,
                     InstantiationException,
@@ -147,25 +138,19 @@ public class BranchingDungeon extends DungeonDefinition {
         return LayoutRegistry.createLayoutInstance("branching", this, this.config);
     }
 
-    /**
-     * Performs refresh runtime settings.
-     */
+    /** Performs refresh runtime settings. */
     @Override
     public void refreshRuntimeSettings() {
         super.refreshRuntimeSettings();
         this.lobbyEnabled = false;
     }
 
-    /**
-     * Reloads generation settings.
-     */
+    /** Reloads generation settings. */
     public void reloadGenerationSettings() {
         this.loadLayoutFromGenerationConfig();
     }
 
-    /**
-     * Performs prepare instance.
-     */
+    /** Performs prepare instance. */
     @Override
     public boolean prepareInstance(
             Player player,
@@ -189,9 +174,7 @@ public class BranchingDungeon extends DungeonDefinition {
                 1L);
     }
 
-    /**
-     * Creates play session.
-     */
+    /** Creates play session. */
     @Override
     public PlayableInstance createPlaySession(
             CountDownLatch latch, @Nullable UUID startedTeamLeaderId) {
@@ -209,9 +192,7 @@ public class BranchingDungeon extends DungeonDefinition {
         }
     }
 
-    /**
-     * Creates edit session.
-     */
+    /** Creates edit session. */
     @Override
     public EditableInstance createEditSession(CountDownLatch latch) {
         EditableInstance instance = new BranchingEditableInstance(this, latch);
@@ -227,9 +208,7 @@ public class BranchingDungeon extends DungeonDefinition {
         }
     }
 
-    /**
-     * Saves gamerules from.
-     */
+    /** Saves gamerules from. */
     public void saveGamerulesFrom(World world) {
         ConfigurationFile.onOwnerThread(
                 this.plugin(),
@@ -241,18 +220,14 @@ public class BranchingDungeon extends DungeonDefinition {
                 });
     }
 
-    /**
-     * Loads gamerules to.
-     */
+    /** Loads gamerules to. */
     public void loadGamerulesTo(World world) {
         GameRuleUtils.apply(world, this.ruleConfig);
 
         world.setDifficulty(Difficulty.valueOf(this.ruleConfig.getString("Difficulty", "NORMAL")));
     }
 
-    /**
-     * Loads rooms.
-     */
+    /** Loads rooms. */
     public void loadRooms() {
         if (!this.roomsFolder.exists() && !this.roomsFolder.mkdirs()) {
             this.logger()
@@ -298,9 +273,7 @@ public class BranchingDungeon extends DungeonDefinition {
         }
     }
 
-    /**
-     * Performs define room.
-     */
+    /** Performs define room. */
     public BranchingRoomDefinition defineRoom(String namespace, BoundingBox bounds) {
         if (this.uniqueRooms.containsKey(namespace)) {
             return null;
@@ -316,9 +289,7 @@ public class BranchingDungeon extends DungeonDefinition {
         return newRoom;
     }
 
-    /**
-     * Adds room.
-     */
+    /** Adds room. */
     public void addRoom(BranchingRoomDefinition room) {
         this.uniqueRooms.put(room.getNamespace(), room);
         if (room.getSpawn() != null) {
@@ -326,9 +297,7 @@ public class BranchingDungeon extends DungeonDefinition {
         }
     }
 
-    /**
-     * Removes room.
-     */
+    /** Removes room. */
     public void removeRoom(BranchingRoomDefinition room) {
         this.uniqueRooms.remove(room.getNamespace());
         this.startRooms.remove(room.getNamespace());
@@ -354,9 +323,7 @@ public class BranchingDungeon extends DungeonDefinition {
         return null;
     }
 
-    /**
-     * Adds function.
-     */
+    /** Adds function. */
     @Override
     public void addFunction(Location loc, DungeonFunction function) {
         BranchingRoomDefinition room = this.getRoom(loc);
@@ -376,16 +343,12 @@ public class BranchingDungeon extends DungeonDefinition {
         }
     }
 
-    /**
-     * Adds function.
-     */
+    /** Adds function. */
     public void addFunction(Location loc, DungeonFunction function, BranchingRoomDefinition room) {
         room.addFunction(loc, function);
     }
 
-    /**
-     * Removes function.
-     */
+    /** Removes function. */
     @Override
     public void removeFunction(Location loc) {
         BranchingRoomDefinition room = this.getRoom(loc);
@@ -396,16 +359,12 @@ public class BranchingDungeon extends DungeonDefinition {
         }
     }
 
-    /**
-     * Removes function.
-     */
+    /** Removes function. */
     public void removeFunction(Location loc, BranchingRoomDefinition room) {
         room.removeFunction(loc);
     }
 
-    /**
-     * Saves functions.
-     */
+    /** Saves functions. */
     @Override
     public void saveFunctions() {
         for (BranchingRoomDefinition room : this.uniqueRooms.values()) {
@@ -413,9 +372,7 @@ public class BranchingDungeon extends DungeonDefinition {
         }
     }
 
-    /**
-     * Returns the functions.
-     */
+    /** Returns the functions. */
     @Override
     public Map<Location, DungeonFunction> getFunctions() {
         Map<Location, DungeonFunction> functions = new HashMap<>();
@@ -427,37 +384,27 @@ public class BranchingDungeon extends DungeonDefinition {
         return functions;
     }
 
-    /**
-     * Returns the rule config.
-     */
+    /** Returns the rule config. */
     public YamlConfiguration getRuleConfig() {
         return this.ruleConfig;
     }
 
-    /**
-     * Returns the layout.
-     */
+    /** Returns the layout. */
     public Layout getLayout() {
         return this.layout;
     }
 
-    /**
-     * Returns the rooms folder.
-     */
+    /** Returns the rooms folder. */
     public File getRoomsFolder() {
         return this.roomsFolder;
     }
 
-    /**
-     * Returns the unique rooms.
-     */
+    /** Returns the unique rooms. */
     public Map<String, BranchingRoomDefinition> getUniqueRooms() {
         return this.uniqueRooms;
     }
 
-    /**
-     * Returns the start rooms.
-     */
+    /** Returns the start rooms. */
     public Map<String, BranchingRoomDefinition> getStartRooms() {
         return this.startRooms;
     }

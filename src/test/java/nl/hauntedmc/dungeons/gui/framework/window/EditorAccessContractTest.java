@@ -3,18 +3,19 @@ package nl.hauntedmc.dungeons.gui.framework.window;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import net.kyori.adventure.text.Component;
-
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
 import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
 import nl.hauntedmc.dungeons.gui.menu.EditorMenus;
 import nl.hauntedmc.dungeons.gui.menu.RoomMenus;
-import nl.hauntedmc.dungeons.model.instance.EditableInstance;
+import nl.hauntedmc.dungeons.runtime.instance.EditableInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
 import nl.hauntedmc.dungeons.support.*;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
-
 import org.bukkit.*;
 import org.bukkit.event.inventory.*;
 import org.bukkit.inventory.Inventory;
@@ -22,17 +23,12 @@ import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-
 class EditorAccessContractTest {
     @TempDir Path directory;
 
     @Test
     void editorWindowsRecheckMaintenancePermissionAndOwnershipAtEveryCallback() throws Exception {
-        try (var f = new StaffFixture(directory);
-                var windows = new StaticMapSnapshot(GuiWindowRegistry.class, "windows")) {
+        try (var f = new StaffFixture(directory)) {
             var player = f.player("Builder");
             var session = mock(DungeonPlayerSession.class);
             var sessions = mock(PlayerSessionRegistry.class);
@@ -86,10 +82,9 @@ class EditorAccessContractTest {
         placeholder.setAccessible(true);
         Object previous = placeholder.get(null);
         placeholder.set(null, null);
-        try (var f = new StaffFixture(directory);
-                var windows = new StaticMapSnapshot(GuiWindowRegistry.class, "windows")) {
+        try (var f = new StaffFixture(directory)) {
             var player = f.player("Builder");
-            try (var rendering = new StaffGuiBoundary(f, player);
+            try (var _ = new StaffGuiBoundary(f, player);
                     var items = mockStatic(ItemUtils.class)) {
                 var blocked = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
                 items.when(ItemUtils::getBlockedMenuItem).thenReturn(blocked);
@@ -112,7 +107,7 @@ class EditorAccessContractTest {
                 when(session.getInstance()).thenReturn(editor);
                 f.ops.maintenance(f.actor, "crypt", true, "Editing");
                 RoomMenus.initializeRoomWhitelistMenu(dungeon, room);
-                var window = GuiWindowRegistry.getWindow("whitelist_crypt_hall");
+                var window = f.runtime.guiService().getWindow("whitelist_crypt_hall");
                 assertNotNull(window);
                 var inventory = mock(Inventory.class);
                 f.run.paper

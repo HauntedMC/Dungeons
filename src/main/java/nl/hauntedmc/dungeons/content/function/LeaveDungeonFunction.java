@@ -1,5 +1,7 @@
 package nl.hauntedmc.dungeons.content.function;
 
+import java.util.List;
+import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
@@ -7,22 +9,14 @@ import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.FunctionCategory;
 import nl.hauntedmc.dungeons.model.element.FunctionTargetType;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
 
-import java.util.List;
-import java.util.Map;
-
-/**
- * Function that removes targeted players from the current dungeon instance.
- */
+/** Function that removes targeted players from the current dungeon instance. */
 @AutoRegister(id = "dungeons.function.leave_dungeon")
 @SerializableAs("dungeons.function.leave_dungeon")
 public class LeaveDungeonFunction extends DungeonFunction {
-    /**
-     * Creates a new LeaveDungeonFunction instance.
-     */
+    /** Creates a new LeaveDungeonFunction instance. */
     public LeaveDungeonFunction(Map<String, Object> config) {
         super("Leave Dungeon", config);
         this.targetType = FunctionTargetType.PLAYER;
@@ -30,9 +24,7 @@ public class LeaveDungeonFunction extends DungeonFunction {
         this.setAllowRetriggerByDefault(true);
     }
 
-    /**
-     * Creates a new LeaveDungeonFunction instance.
-     */
+    /** Creates a new LeaveDungeonFunction instance. */
     public LeaveDungeonFunction() {
         super("Leave Dungeon");
         this.targetType = FunctionTargetType.PLAYER;
@@ -40,9 +32,7 @@ public class LeaveDungeonFunction extends DungeonFunction {
         this.setAllowRetriggerByDefault(true);
     }
 
-    /**
-     * Performs run function.
-     */
+    /** Performs run function. */
     @Override
     public void runFunction(TriggerFireEvent triggerEvent, List<DungeonPlayerSession> targets) {
         for (DungeonPlayerSession playerSession : targets) {
@@ -50,9 +40,7 @@ public class LeaveDungeonFunction extends DungeonFunction {
         }
     }
 
-    /**
-     * Builds menu button.
-     */
+    /** Builds menu button. */
     @Override
     public MenuButton buildMenuButton() {
         MenuButton functionButton = new MenuButton(Material.LADDER);
@@ -62,9 +50,7 @@ public class LeaveDungeonFunction extends DungeonFunction {
         return functionButton;
     }
 
-    /**
-     * Builds hotbar menu.
-     */
+    /** Builds hotbar menu. */
     @Override
     public void buildHotbarMenu() {}
 }

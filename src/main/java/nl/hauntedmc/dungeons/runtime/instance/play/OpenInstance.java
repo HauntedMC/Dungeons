@@ -1,0 +1,266 @@
+package nl.hauntedmc.dungeons.runtime.instance.play;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import nl.hauntedmc.dungeons.config.DungeonConfigView;
+import nl.hauntedmc.dungeons.content.dungeon.OpenDungeon;
+import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
+import org.bukkit.Bukkit;
+import org.bukkit.scheduler.BukkitTask;
+
+/**
+ * Playable instance for open dungeons.
+ *
+ * <p>Open instances track reserved team slots separately from active players so a world can be
+ * prepared before the joining team fully arrives.
+ */
+public class OpenInstance extends StaticInstance {
+    protected final OpenDungeon dungeon;
+    private int totalPlayersSinceStart;
+    private final Map<UUID, Integer> reservedSlotsByOwner = new HashMap<>();
+    private boolean readyRegistrationCancelled;
+    private BukkitTask pendingEmptyUnloadTask;
+
+    /** Creates a new OpenInstance instance. */
+    public OpenInstance(OpenDungeon dungeon, CountDownLatch latch) {
+        super(dungeon, latch);
+        this.dungeon = dungeon;
+    }
+
+    /** Performs on instance ready. */
+    @Override
+    protected void onInstanceReady() {
+        if (this.dungeon.publishReadyInstance(this)) {
+            return;
+        }
+
+        Bukkit.getScheduler()
+                .runTask(
+                        OpenInstance.this.plugin(),
+                        () -> {
+                            this.dispose();
+                        });
+    }
+
+    /** Adds player. */
+    @Override
+    public synchronized void addPlayer(DungeonPlayerSession playerSession) {
+        if (this.readyRegistrationCancelled
+                || this.disposing
+                || playerSession.getInstance() != null && playerSession.getInstance() != this) {
+            playerSession.setAwaitingDungeon(false);
+            return;
+        }
+
+        this.cancelPendingEmptyUnload();
+
+        if (!this.getPlayers().contains(playerSession) && !this.hasCapacityFor(1)) {
+            playerSession.setAwaitingDungeon(false);
+            return;
+        }
+
+        this.attachPlayer(playerSession);
+    }
+
+    /** Adds reserved player. */
+    public synchronized boolean addReservedPlayer(
+            DungeonPlayerSession playerSession, UUID reservationId) {
+        if (this.readyRegistrationCancelled
+                || this.disposing
+                || playerSession.getInstance() != null && playerSession.getInstance() != this) {
+            return false;
+        }
+
+        this.cancelPendingEmptyUnload();
+
+        if (this.getPlayers().contains(playerSession)) return true;
+        boolean reserved = this.consumeReservedSlot(reservationId);
+        if (!reserved && !this.hasCapacityFor(1)) return false;
+        try {
+            this.attachPlayer(playerSession);
+            return playerSession.getInstance() == this && this.getPlayers().contains(playerSession);
+        } finally {
+            // A refused recovery snapshot must not consume another member's reserved capacity.
+            if (reserved && playerSession.getInstance() != this)
+                this.reservedSlotsByOwner.merge(reservationId, 1, Integer::sum);
+        }
+    }
+
+    /** Performs attach player. */
+    private void attachPlayer(DungeonPlayerSession playerSession) {
+        int before = this.getPlayers().size();
+        super.addPlayer(playerSession);
+        if (this.getPlayers().size() > before) {
+            this.totalPlayersSinceStart++;
+        }
+    }
+
+    /** Returns whether it has capacity for. */
+    public synchronized boolean hasCapacityFor(int requestedPlayers) {
+        int normalizedPlayers = Math.max(1, requestedPlayers);
+        int maxPlayers = this.dungeon.getConfig().getInt("open.max_players", 0);
+        if (maxPlayers <= 0) {
+            return true;
+        }
+
+        return (long) this.getPlayers().size() + this.getReservedSlotCount() + normalizedPlayers
+                <= maxPlayers;
+    }
+
+    /** Performs reserve team slots. */
+    public synchronized boolean reserveTeamSlots(UUID reservationId, int requestedPlayers) {
+        if (this.disposing
+                || this.readyRegistrationCancelled
+                || !this.hasCapacityFor(requestedPlayers)) {
+            return false;
+        }
+
+        this.cancelPendingEmptyUnload();
+        this.reservedSlotsByOwner.merge(reservationId, Math.max(1, requestedPlayers), Integer::sum);
+        return true;
+    }
+
+    /** Performs release reserved slots. */
+    public synchronized void releaseReservedSlots(UUID reservationId) {
+        this.reservedSlotsByOwner.remove(reservationId);
+        if (this.getPlayers().isEmpty() && !this.hasOutstandingReservations()) {
+            this.scheduleEmptyCleanup();
+        }
+    }
+
+    /** Returns whether it has outstanding reservations. */
+    public synchronized boolean hasOutstandingReservations() {
+        return !this.reservedSlotsByOwner.isEmpty();
+    }
+
+    /** Performs cancel ready registration. */
+    public synchronized void cancelReadyRegistration() {
+        this.readyRegistrationCancelled = true;
+    }
+
+    /** Returns whether ready registration cancelled. */
+    public synchronized boolean isReadyRegistrationCancelled() {
+        return this.readyRegistrationCancelled;
+    }
+
+    /** Performs on dispose. */
+    @Override
+    public synchronized void onDispose() {
+        this.cancelReadyRegistration();
+        this.cancelPendingEmptyUnload();
+        this.reservedSlotsByOwner.clear();
+        super.onDispose();
+    }
+
+    @Override
+    protected void onDisposalComplete() {
+        this.dungeon.onOpenInstanceDisposed(this);
+    }
+
+    /** Performs consume reserved slot. */
+    private boolean consumeReservedSlot(UUID reservationId) {
+        Integer reserved = this.reservedSlotsByOwner.get(reservationId);
+        if (reserved == null || reserved <= 0) {
+            return false;
+        }
+
+        if (reserved == 1) {
+            this.reservedSlotsByOwner.remove(reservationId);
+        } else {
+            this.reservedSlotsByOwner.put(reservationId, reserved - 1);
+        }
+        return true;
+    }
+
+    /** Returns the reserved slot count. */
+    private int getReservedSlotCount() {
+        int reservedSlots = 0;
+        for (int count : this.reservedSlotsByOwner.values()) {
+            reservedSlots += count;
+        }
+        return reservedSlots;
+    }
+
+    @Override
+    public synchronized void scheduleEmptyCleanup() {
+        if (!this.getPlayers().isEmpty() || this.hasOutstandingReservations()) {
+            return;
+        }
+
+        if (this.disposing) {
+            if (this.getDisposalState() == DisposalState.RETRYABLE_FAILURE) this.dispose();
+            return;
+        }
+        if (this.pendingEmptyUnloadTask != null) {
+            return;
+        }
+
+        int delayTicks = DungeonConfigView.getOpenEmptyUnloadDelayTicks(this.dungeon.getConfig());
+        if (!this.plugin().isEnabled() || delayTicks <= 0) {
+            this.dispose();
+            return;
+        }
+
+        try {
+            this.pendingEmptyUnloadTask =
+                    Bukkit.getScheduler()
+                            .runTaskLater(
+                                    this.plugin(),
+                                    () -> {
+                                        synchronized (OpenInstance.this) {
+                                            OpenInstance.this.pendingEmptyUnloadTask = null;
+                                            if (!OpenInstance.this.getPlayers().isEmpty()
+                                                    || OpenInstance.this
+                                                            .hasOutstandingReservations()
+                                                    || OpenInstance.this.disposing) {
+                                                return;
+                                            }
+                                        }
+
+                                        OpenInstance.this.dispose();
+                                    },
+                                    delayTicks);
+        } catch (RuntimeException failure) {
+            this.logger()
+                    .warn(
+                            "Open-instance cleanup scheduling failed; attempting disposal now.",
+                            failure);
+            this.dispose();
+        }
+    }
+
+    /**
+     * Open instances manage their idle timeout before disposal, so once disposal starts it should
+     * proceed without adding the generic play-instance cleanup delay a second time.
+     */
+    @Override
+    protected int resolveCleanupDelayTicks() {
+        return 0;
+    }
+
+    private synchronized void cancelPendingEmptyUnload() {
+        if (this.pendingEmptyUnloadTask == null) {
+            return;
+        }
+
+        this.pendingEmptyUnloadTask.cancel();
+        this.pendingEmptyUnloadTask = null;
+    }
+
+    /** Returns the dungeon. */
+    public OpenDungeon getDungeon() {
+        return this.dungeon;
+    }
+
+    /** Returns the total players since start. */
+    public int getTotalPlayersSinceStart() {
+        return this.totalPlayersSinceStart;
+    }
+
+    /** Sets the total players since start. */
+    public void setTotalPlayersSinceStart(int totalPlayersSinceStart) {
+        this.totalPlayersSinceStart = totalPlayersSinceStart;
+    }
+}

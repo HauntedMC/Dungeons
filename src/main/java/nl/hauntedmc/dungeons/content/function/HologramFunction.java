@@ -1,5 +1,8 @@
 package nl.hauntedmc.dungeons.content.function;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
@@ -7,16 +10,15 @@ import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ChatMenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.FunctionCategory;
 import nl.hauntedmc.dungeons.model.element.FunctionTargetType;
-import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
+import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.math.MathUtils;
-
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -24,10 +26,6 @@ import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerEvent;
 import org.bukkit.scheduler.BukkitRunnable;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * Function that manages a toggleable hologram in a playable instance.
@@ -47,9 +45,7 @@ public class HologramFunction extends DungeonFunction {
     private BukkitRunnable particleIndicator;
     private boolean visible = true;
 
-    /**
-     * Creates a new HologramFunction instance.
-     */
+    /** Creates a new HologramFunction instance. */
     public HologramFunction(Map<String, Object> config) {
         super("Hologram", config);
         this.targetType = FunctionTargetType.NONE;
@@ -57,9 +53,7 @@ public class HologramFunction extends DungeonFunction {
         this.setAllowRetriggerByDefault(true);
     }
 
-    /**
-     * Creates a new HologramFunction instance.
-     */
+    /** Creates a new HologramFunction instance. */
     public HologramFunction() {
         super("Hologram");
         this.setAllowChangingTargetType(false);
@@ -68,9 +62,7 @@ public class HologramFunction extends DungeonFunction {
         this.setAllowRetriggerByDefault(true);
     }
 
-    /**
-     * Performs on enable.
-     */
+    /** Performs on enable. */
     @Override
     public void onEnable() {
         this.visible = this.visibleByDefault;
@@ -82,9 +74,7 @@ public class HologramFunction extends DungeonFunction {
         }
     }
 
-    /**
-     * Performs on disable.
-     */
+    /** Performs on disable. */
     @Override
     public void onDisable() {
         if (this.inputWaiter != null && !this.inputWaiter.isCancelled()) {
@@ -103,9 +93,7 @@ public class HologramFunction extends DungeonFunction {
         }
     }
 
-    /**
-     * Builds menu button.
-     */
+    /** Builds menu button. */
     @Override
     public MenuButton buildMenuButton() {
         MenuButton functionButton = new MenuButton(Material.NAME_TAG);
@@ -116,17 +104,13 @@ public class HologramFunction extends DungeonFunction {
         return functionButton;
     }
 
-    /**
-     * Performs run function.
-     */
+    /** Performs run function. */
     @Override
     public void runFunction(TriggerFireEvent triggerEvent, List<DungeonPlayerSession> targets) {
         this.toggleVisible();
     }
 
-    /**
-     * Toggles visible.
-     */
+    /** Toggles visible. */
     private void toggleVisible() {
         PlayableInstance instance = this.instance.asPlayInstance();
         if (instance != null) {
@@ -139,23 +123,17 @@ public class HologramFunction extends DungeonFunction {
         }
     }
 
-    /**
-     * Returns the hologram loc.
-     */
+    /** Returns the hologram loc. */
     public Location getHologramLoc() {
         return this.hologramLoc == null ? this.location : this.hologramLoc;
     }
 
-    /**
-     * Returns the clean message.
-     */
+    /** Returns the clean message. */
     public String getCleanMessage() {
         return this.message == null ? null : this.message.replace("\\n", "\n");
     }
 
-    /**
-     * Builds hotbar menu.
-     */
+    /** Builds hotbar menu. */
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(createSetLocationItem());
@@ -164,30 +142,22 @@ public class HologramFunction extends DungeonFunction {
         this.menu.addMenuItem(createVisibleByDefaultItem());
     }
 
-    /**
-     * Returns the message.
-     */
+    /** Returns the message. */
     public String getMessage() {
         return this.message;
     }
 
-    /**
-     * Returns the radius.
-     */
+    /** Returns the radius. */
     public int getRadius() {
         return this.radius;
     }
 
-    /**
-     * Returns whether visible by default.
-     */
+    /** Returns whether visible by default. */
     public boolean isVisibleByDefault() {
         return this.visibleByDefault;
     }
 
-    /**
-     * Returns whether visible.
-     */
+    /** Returns whether visible. */
     public boolean isVisible() {
         return this.visible;
     }
@@ -199,6 +169,7 @@ public class HologramFunction extends DungeonFunction {
                 this.button = new MenuButton(Material.COMPASS);
                 this.button.setDisplayName("&d&lSet Location");
             }
+
             @Override
             public void onSelect(PlayerEvent event) {
                 final Player player = event.getPlayer();
@@ -208,15 +179,12 @@ public class HologramFunction extends DungeonFunction {
                     HologramFunction.this.hologramLoc.setWorld(null);
                     HologramFunction.this.hologramLoc.setY(
                             HologramFunction.this.hologramLoc.getY() + 1.75);
-                    LangUtils.sendMessage(
-                            player, "editor.function.hologram.location-set-standing");
+                    LangUtils.sendMessage(player, "editor.function.hologram.location-set-standing");
                 } else {
                     HologramFunction.this.awaitingInput = true;
                     HologramFunction.this.inputWaiter =
                             new BukkitRunnable() {
-                                /**
-                                 * Performs run.
-                                 */
+                                /** Performs run. */
                                 public void run() {
                                     HologramFunction.this.awaitingInput = false;
                                     if (HologramFunction.this.particleIndicator != null) {
@@ -224,37 +192,26 @@ public class HologramFunction extends DungeonFunction {
                                     }
                                 }
                             };
-                    HologramFunction.this.inputWaiter.runTaskLater(
-                            RuntimeContext.plugin(), 200L);
+                    HologramFunction.this.inputWaiter.runTaskLater(RuntimeContext.plugin(), 200L);
                     if (HologramFunction.this.hologramLoc == null) {
                         LangUtils.sendMessage(
                                 player, "editor.function.hologram.current-location-none");
                         LangUtils.sendMessage(
-                                player,
-                                "editor.function.hologram.click-again-set-location");
+                                player, "editor.function.hologram.click-again-set-location");
                         return;
                     }
 
                     final Location targetLoc = HologramFunction.this.hologramLoc.clone();
-                    if (targetLoc.getWorld() == null
-                            && HologramFunction.this.location != null) {
+                    if (targetLoc.getWorld() == null && HologramFunction.this.location != null) {
                         targetLoc.setWorld(HologramFunction.this.location.getWorld());
                     }
                     HologramFunction.this.particleIndicator =
                             new BukkitRunnable() {
-                                /**
-                                 * Performs run.
-                                 */
+                                /** Performs run. */
                                 public void run() {
                                     if (targetLoc.getWorld() != null) {
                                         player.spawnParticle(
-                                                Particle.END_ROD,
-                                                targetLoc,
-                                                4,
-                                                0.1,
-                                                0.1,
-                                                0.1,
-                                                0.0);
+                                                Particle.END_ROD, targetLoc, 4, 0.1, 0.1, 0.1, 0.0);
                                     }
                                 }
                             };
@@ -267,23 +224,17 @@ public class HologramFunction extends DungeonFunction {
                                     "x",
                                     String.valueOf(
                                             MathUtils.round(
-                                                    HologramFunction.this.hologramLoc
-                                                            .getX(),
-                                                    2))),
+                                                    HologramFunction.this.hologramLoc.getX(), 2))),
                             LangUtils.placeholder(
                                     "y",
                                     String.valueOf(
                                             MathUtils.round(
-                                                    HologramFunction.this.hologramLoc
-                                                            .getY(),
-                                                    2))),
+                                                    HologramFunction.this.hologramLoc.getY(), 2))),
                             LangUtils.placeholder(
                                     "z",
                                     String.valueOf(
                                             MathUtils.round(
-                                                    HologramFunction.this.hologramLoc
-                                                            .getZ(),
-                                                    2))));
+                                                    HologramFunction.this.hologramLoc.getZ(), 2))));
                     LangUtils.sendMessage(
                             player, "editor.function.hologram.click-again-set-location");
                 }
@@ -298,11 +249,11 @@ public class HologramFunction extends DungeonFunction {
                 this.button = new MenuButton(Material.NAME_TAG);
                 this.button.setDisplayName("&d&lHologram Message");
             }
+
             @Override
             public void onSelect(Player player) {
                 if (HologramFunction.this.instance.getHologramManager() != null) {
-                    LangUtils.sendMessage(
-                            player, "editor.function.hologram.ask-message-multiline");
+                    LangUtils.sendMessage(player, "editor.function.hologram.ask-message-multiline");
                 } else {
                     LangUtils.sendMessage(player, "editor.function.hologram.ask-message");
                 }
@@ -310,17 +261,16 @@ public class HologramFunction extends DungeonFunction {
                 LangUtils.sendMessage(
                         player,
                         "editor.function.hologram.current-message",
-                        LangUtils.placeholder(
-                                "message", HologramFunction.this.getCleanMessage()));
+                        LangUtils.placeholder("message", HologramFunction.this.getCleanMessage()));
             }
+
             @Override
             public void onInput(Player player, String message) {
                 HologramFunction.this.message = message;
                 LangUtils.sendMessage(
                         player,
                         "editor.function.hologram.message-set",
-                        LangUtils.placeholder(
-                                "message", HologramFunction.this.getCleanMessage()));
+                        LangUtils.placeholder("message", HologramFunction.this.getCleanMessage()));
             }
         };
     }
@@ -333,10 +283,12 @@ public class HologramFunction extends DungeonFunction {
                 this.button.setDisplayName("&d&lView Distance");
                 this.button.setAmount(HologramFunction.this.radius);
             }
+
             @Override
             public void onSelect(Player player) {
                 LangUtils.sendMessage(player, "editor.function.hologram.ask-radius");
             }
+
             @Override
             public void onInput(Player player, String message) {
                 Optional<Integer> value = InputUtils.readIntegerInput(player, message);
@@ -346,8 +298,7 @@ public class HologramFunction extends DungeonFunction {
                             player,
                             "editor.function.hologram.radius-set",
                             LangUtils.placeholder(
-                                    "radius",
-                                    String.valueOf(HologramFunction.this.radius)));
+                                    "radius", String.valueOf(HologramFunction.this.radius)));
                 }
             }
         };
@@ -361,18 +312,16 @@ public class HologramFunction extends DungeonFunction {
                 this.button.setDisplayName("&d&lVisible by Default");
                 this.button.setEnchanted(HologramFunction.this.visibleByDefault);
             }
+
             @Override
             public void onSelect(Player player) {
                 if (!HologramFunction.this.visibleByDefault) {
-                    LangUtils.sendMessage(
-                            player, "editor.function.hologram.default-visible");
+                    LangUtils.sendMessage(player, "editor.function.hologram.default-visible");
                 } else {
-                    LangUtils.sendMessage(
-                            player, "editor.function.hologram.default-invisible");
+                    LangUtils.sendMessage(player, "editor.function.hologram.default-invisible");
                 }
 
-                HologramFunction.this.visibleByDefault =
-                        !HologramFunction.this.visibleByDefault;
+                HologramFunction.this.visibleByDefault = !HologramFunction.this.visibleByDefault;
             }
         };
     }

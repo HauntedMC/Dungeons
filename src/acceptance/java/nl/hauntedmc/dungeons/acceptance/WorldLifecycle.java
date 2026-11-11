@@ -2,11 +2,12 @@ package nl.hauntedmc.dungeons.acceptance;
 
 import static nl.hauntedmc.dungeons.acceptance.AcceptancePlugin.require;
 
+import java.util.List;
+import java.util.concurrent.CompletionStage;
 import nl.hauntedmc.dungeons.content.function.CommandFunction;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
-import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
+import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.util.world.GameRuleUtils;
-
 import org.bukkit.GameRules;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -16,9 +17,6 @@ import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.EnderDragon;
 import org.bukkit.entity.Minecart;
-
-import java.util.List;
-import java.util.concurrent.CompletionStage;
 
 final class WorldLifecycle {
     private WorldLifecycle() {}
@@ -42,7 +40,7 @@ final class WorldLifecycle {
                                                             world.getBlockAt(-1, 64, 15).getType()
                                                                     == Material.GOLD_BLOCK,
                                                             "Template block at negative chunk"
-                                                                + " boundary was lost");
+                                                                    + " boundary was lost");
                                                     var chest =
                                                             (Chest)
                                                                     world.getBlockAt(2, 65, 1)
@@ -54,7 +52,7 @@ final class WorldLifecycle {
                                                                             == Material.DIAMOND
                                                                     && item.getAmount() == 5,
                                                             "Native tile inventory did not survive"
-                                                                + " the world copy");
+                                                                    + " the world copy");
                                                     require(
                                                             Integer.valueOf(0)
                                                                     .equals(
@@ -62,7 +60,7 @@ final class WorldLifecycle {
                                                                                     GameRules
                                                                                             .RANDOM_TICK_SPEED)),
                                                             "Native world game rule was not"
-                                                                + " applied");
+                                                                    + " applied");
                                                     verifyGameRulePersistence(world);
                                                     require(
                                                             !world.isAutoSave(),
@@ -75,7 +73,7 @@ final class WorldLifecycle {
                                                                             .getType()
                                                                     == Material.GOLD_BLOCK,
                                                             "Changing one run mutated another world"
-                                                                + " copy");
+                                                                    + " copy");
                                                     return verifyConsoleSummons(test, first)
                                                             .thenCompose(
                                                                     ignored ->
@@ -105,7 +103,8 @@ final class WorldLifecycle {
                     world.getGameRuleValue(tickRule) == originalTicks,
                     "Integer gamerule did not survive YAML persistence");
             for (String path : saved.getKeys(true)) {
-                if (!saved.isConfigurationSection(path)) saved.set(path, String.valueOf(saved.get(path)));
+                if (!saved.isConfigurationSection(path))
+                    saved.set(path, String.valueOf(saved.get(path)));
             }
             boolean rejected = false;
             try {
@@ -143,9 +142,7 @@ final class WorldLifecycle {
                 "dragon and minecart passenger console summons",
                 () ->
                         !world.getEntitiesByClass(EnderDragon.class).isEmpty()
-                                && world
-                                        .getEntitiesByClass(Minecart.class)
-                                        .stream()
+                                && world.getEntitiesByClass(Minecart.class).stream()
                                         .anyMatch(
                                                 cart ->
                                                         cart.getPassengers().stream()

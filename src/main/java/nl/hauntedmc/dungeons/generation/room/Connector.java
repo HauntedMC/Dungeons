@@ -1,18 +1,16 @@
 package nl.hauntedmc.dungeons.generation.room;
 
+import java.util.ArrayList;
+import java.util.List;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.annotation.TypeKey;
 import nl.hauntedmc.dungeons.config.ConfigSerializableModel;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
 import nl.hauntedmc.dungeons.util.world.SimpleLocation;
-
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.util.Vector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Branching connector describing where one room may attach to another.
@@ -33,9 +31,7 @@ public class Connector implements Cloneable, ConfigSerializableModel {
 
     private Connector() {}
 
-    /**
-     * Creates a connector at the given local room position/direction.
-     */
+    /** Creates a connector at the given local room position/direction. */
     public Connector(SimpleLocation location) {
         this.location = location;
         this.door = new ConnectorDoor(this);
@@ -87,9 +83,7 @@ public class Connector implements Cloneable, ConfigSerializableModel {
         return rooms;
     }
 
-    /**
-     * Returns whether this connector explicitly allows the given destination room.
-     */
+    /** Returns whether this connector explicitly allows the given destination room. */
     public boolean canGenerate(BranchingRoomDefinition room) {
         if (room == null) {
             return false;
@@ -107,9 +101,7 @@ public class Connector implements Cloneable, ConfigSerializableModel {
         return true;
     }
 
-    /**
-     * Sets the owning dungeon context and propagates it to room filters.
-     */
+    /** Sets the owning dungeon context and propagates it to room filters. */
     public void setDungeon(BranchingDungeon dungeon) {
         this.dungeon = dungeon;
         if (this.roomWhitelist != null) {
@@ -121,9 +113,7 @@ public class Connector implements Cloneable, ConfigSerializableModel {
         }
     }
 
-    /**
-     * Creates a translated copy of this connector for a placed room instance.
-     */
+    /** Creates a translated copy of this connector for a placed room instance. */
     public Connector copy(Vector offset) {
         SimpleLocation rotatedLoc = this.location.clone();
         rotatedLoc.shift(offset);
@@ -132,9 +122,7 @@ public class Connector implements Cloneable, ConfigSerializableModel {
         return newCon;
     }
 
-    /**
-     * Creates a copy at a pre-rotated location.
-     */
+    /** Creates a copy at a pre-rotated location. */
     public Connector copy(SimpleLocation rotatedLoc) {
         Connector newCon = new Connector(rotatedLoc);
         newCon.setDungeon(this.dungeon);
@@ -164,9 +152,7 @@ public class Connector implements Cloneable, ConfigSerializableModel {
         }
     }
 
-    /**
-     * Clones this connector while forcing a new facing direction.
-     */
+    /** Clones this connector while forcing a new facing direction. */
     public Connector clone(SimpleLocation.Direction direction) {
         try {
             Connector clone = (Connector) super.clone();
@@ -191,79 +177,57 @@ public class Connector implements Cloneable, ConfigSerializableModel {
         }
     }
 
-    /**
-     * Returns the owning dungeon definition.
-     */
+    /** Returns the owning dungeon definition. */
     public BranchingDungeon getDungeon() {
         return this.dungeon;
     }
 
-    /**
-     * Returns the connector location in room-local coordinates.
-     */
+    /** Returns the connector location in room-local coordinates. */
     public SimpleLocation getLocation() {
         return this.location;
     }
 
-    /**
-     * Sets the connector location in room-local coordinates.
-     */
+    /** Sets the connector location in room-local coordinates. */
     public void setLocation(SimpleLocation location) {
         this.location = location;
     }
 
-    /**
-     * Returns the chance that generation attempts this connector.
-     */
+    /** Returns the chance that generation attempts this connector. */
     public double getSuccessChance() {
         return this.successChance;
     }
 
-    /**
-     * Sets connector usage chance, clamped to {@code [0,1]}.
-     */
+    /** Sets connector usage chance, clamped to {@code [0,1]}. */
     public void setSuccessChance(double successChance) {
         this.successChance = Math.clamp(successChance, 0.0, 1.0);
     }
 
-    /**
-     * Returns connector-specific denied destination rooms.
-     */
+    /** Returns connector-specific denied destination rooms. */
     public List<WhitelistEntry> getRoomBlacklist() {
         return this.roomBlacklist;
     }
 
-    /**
-     * Replaces connector-specific denied destination rooms.
-     */
+    /** Replaces connector-specific denied destination rooms. */
     public void setRoomBlacklist(List<WhitelistEntry> roomBlacklist) {
         this.roomBlacklist = roomBlacklist == null ? new ArrayList<>() : roomBlacklist;
     }
 
-    /**
-     * Returns connector-specific allowed destination rooms.
-     */
+    /** Returns connector-specific allowed destination rooms. */
     public List<WhitelistEntry> getRoomWhitelist() {
         return this.roomWhitelist;
     }
 
-    /**
-     * Replaces connector-specific allowed destination rooms.
-     */
+    /** Replaces connector-specific allowed destination rooms. */
     public void setRoomWhitelist(List<WhitelistEntry> roomWhitelist) {
         this.roomWhitelist = roomWhitelist == null ? new ArrayList<>() : roomWhitelist;
     }
 
-    /**
-     * Returns the door metadata attached to this connector.
-     */
+    /** Returns the door metadata attached to this connector. */
     public ConnectorDoor getDoor() {
         return this.door;
     }
 
-    /**
-     * Sets the connector door metadata; null creates a default door.
-     */
+    /** Sets the connector door metadata; null creates a default door. */
     public void setDoor(ConnectorDoor door) {
         this.door = door == null ? new ConnectorDoor(this) : door;
     }

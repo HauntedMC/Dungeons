@@ -1,14 +1,12 @@
 package nl.hauntedmc.dungeons.registry;
 
-import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
-import nl.hauntedmc.dungeons.generation.layout.Layout;
-
-import org.bukkit.configuration.file.FileConfiguration;
-
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
+import nl.hauntedmc.dungeons.generation.layout.Layout;
+import org.bukkit.configuration.file.FileConfiguration;
 
 /** Static registry for branching layout generator implementations. */
 public final class LayoutRegistry {

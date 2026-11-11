@@ -1,8 +1,8 @@
 package nl.hauntedmc.dungeons.content.trigger.room;
 
+import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
-import nl.hauntedmc.dungeons.content.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.event.RoomDoorChangeEvent;
 import nl.hauntedmc.dungeons.generation.room.DoorAction;
 import nl.hauntedmc.dungeons.generation.room.InstanceRoom;
@@ -10,50 +10,40 @@ import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ChatMenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
 import nl.hauntedmc.dungeons.model.element.TriggerCategory;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
+import nl.hauntedmc.dungeons.runtime.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerEvent;
 
-import java.util.Map;
-
-/**
- * Trigger that listens for open/close/toggle events on branching room doors.
- */
+/** Trigger that listens for open/close/toggle events on branching room doors. */
 @AutoRegister(id = "dungeons.trigger.room_door_change")
 @SerializableAs("dungeons.trigger.room_door_change")
 public class RoomDoorChangeTrigger extends DungeonTrigger {
     @PersistedField private String doorName = "any";
     @PersistedField private int action = 1;
 
-    /**
-     * Creates a new RoomDoorChangeTrigger instance.
-     */
+    /** Creates a new RoomDoorChangeTrigger instance. */
     public RoomDoorChangeTrigger(Map<String, Object> config) {
         super("Room Door", config);
         this.setCategory(TriggerCategory.ROOM);
         this.setHasTarget(false);
     }
 
-    /**
-     * Creates a new RoomDoorChangeTrigger instance.
-     */
+    /** Creates a new RoomDoorChangeTrigger instance. */
     public RoomDoorChangeTrigger() {
         super("Room Door");
         this.setCategory(TriggerCategory.ROOM);
         this.setHasTarget(false);
     }
 
-    /**
-     * Builds menu button.
-     */
+    /** Builds menu button. */
     @Override
     public MenuButton buildMenuButton() {
         MenuButton functionButton = new MenuButton(Material.OAK_DOOR);
@@ -63,9 +53,7 @@ public class RoomDoorChangeTrigger extends DungeonTrigger {
         return functionButton;
     }
 
-    /**
-     * Performs on door change.
-     */
+    /** Performs on door change. */
     @EventHandler
     public void onDoorChange(RoomDoorChangeEvent event) {
         DoorAction[] actions = DoorAction.values();
@@ -86,16 +74,12 @@ public class RoomDoorChangeTrigger extends DungeonTrigger {
         }
     }
 
-    /**
-     * Builds hotbar menu.
-     */
+    /** Builds hotbar menu. */
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
                 new ToggleMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.REDSTONE_TORCH);
@@ -103,9 +87,7 @@ public class RoomDoorChangeTrigger extends DungeonTrigger {
                         this.button.setEnchanted(RoomDoorChangeTrigger.this.allowRetrigger);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         if (!RoomDoorChangeTrigger.this.allowRetrigger) {
@@ -122,18 +104,14 @@ public class RoomDoorChangeTrigger extends DungeonTrigger {
                 });
         this.menu.addMenuItem(
                 new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.NAME_TAG);
                         this.button.setDisplayName("&d&lDoor Name");
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         LangUtils.sendMessage(player, "editor.trigger.room-door-change.ask-door");
@@ -143,9 +121,7 @@ public class RoomDoorChangeTrigger extends DungeonTrigger {
                                 LangUtils.placeholder("door", RoomDoorChangeTrigger.this.doorName));
                     }
 
-                    /**
-                     * Performs on input.
-                     */
+                    /** Performs on input. */
                     @Override
                     public void onInput(Player player, String message) {
                         RoomDoorChangeTrigger.this.doorName = message;
@@ -157,9 +133,7 @@ public class RoomDoorChangeTrigger extends DungeonTrigger {
                 });
         this.menu.addMenuItem(
                 new MenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         DoorAction[] actions = DoorAction.values();
@@ -170,9 +144,7 @@ public class RoomDoorChangeTrigger extends DungeonTrigger {
                                 "&d&lAction: " + actions[RoomDoorChangeTrigger.this.action]);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
@@ -200,16 +172,12 @@ public class RoomDoorChangeTrigger extends DungeonTrigger {
                 });
     }
 
-    /**
-     * Returns the door name.
-     */
+    /** Returns the door name. */
     public String getDoorName() {
         return this.doorName;
     }
 
-    /**
-     * Performs matches any door.
-     */
+    /** Performs matches any door. */
     private boolean matchesAnyDoor() {
         return "any".equalsIgnoreCase(this.doorName) || "all".equalsIgnoreCase(this.doorName);
     }

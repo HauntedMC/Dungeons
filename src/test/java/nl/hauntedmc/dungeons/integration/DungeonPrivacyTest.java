@@ -3,13 +3,6 @@ package nl.hauntedmc.dungeons.integration;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import nl.hauntedmc.dataregistry.api.DataRegistryFeature;
-import nl.hauntedmc.dataregistry.api.player.PlayerData;
-import nl.hauntedmc.dataregistry.api.player.PlayerDataVisibility;
-import nl.hauntedmc.dungeons.api.DungeonsApi.Disclosure;
-
-import org.junit.jupiter.api.Test;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +14,11 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.LongStream;
+import nl.hauntedmc.dataregistry.api.DataRegistryFeature;
+import nl.hauntedmc.dataregistry.api.player.PlayerData;
+import nl.hauntedmc.dataregistry.api.player.PlayerDataVisibility;
+import nl.hauntedmc.dungeons.api.DungeonsApi.Disclosure;
+import org.junit.jupiter.api.Test;
 
 class DungeonPrivacyTest {
     @Test

@@ -3,8 +3,8 @@ package nl.hauntedmc.dungeons.util.math;
 /**
  * Numeric range parser and randomizer.
  *
- * <p>Supports forms such as {@code 5}, {@code 2-8}, {@code 2to8}, {@code 10+}, {@code <=5},
- * and {@code >=3}.</p>
+ * <p>Supports forms such as {@code 5}, {@code 2-8}, {@code 2to8}, {@code 10+}, {@code <=5}, and
+ * {@code >=3}.
  */
 public class RangedNumber {
     private double min;

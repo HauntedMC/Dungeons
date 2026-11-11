@@ -1,9 +1,16 @@
 package nl.hauntedmc.dungeons.command;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.UUID;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
-
 import nl.hauntedmc.dungeons.command.CommandOutput.FilterPageQuery;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.dungeon.AccessKeyDefinition;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.registry.DungeonTypeRegistry;
@@ -17,22 +24,12 @@ import nl.hauntedmc.dungeons.runtime.staff.StaffOperations;
 import nl.hauntedmc.dungeons.runtime.staff.StaffPermissions;
 import nl.hauntedmc.dungeons.util.command.CommandUtils;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.math.MathUtils;
-
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map.Entry;
-import java.util.Optional;
-import java.util.UUID;
 
 /** Owns dungeon administration commands and their completions. */
 final class DungeonDefinitionCommandHandler implements CommandHandler {
@@ -43,9 +40,12 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
     private final CommandOutput output;
     private final DungeonWorldCommandHandler worldCommands;
 
-    DungeonDefinitionCommandHandler(DungeonRepository dungeonManager,
-            PlayerSessionRegistry playerManager, DungeonQueueRegistry queueManager,
-            DungeonQueueCoordinator dungeonQueueCoordinator, CommandOutput output,
+    DungeonDefinitionCommandHandler(
+            DungeonRepository dungeonManager,
+            PlayerSessionRegistry playerManager,
+            DungeonQueueRegistry queueManager,
+            DungeonQueueCoordinator dungeonQueueCoordinator,
+            CommandOutput output,
             DungeonWorldCommandHandler worldCommands) {
         this.dungeonManager = dungeonManager;
         this.playerManager = playerManager;
@@ -70,12 +70,8 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
             case "import" ->
                     this.worldCommands.handleImportCommand(
                             sender, CommandArguments.shiftArgs(args));
-            case "list" ->
-                    this.handleDungeonListCommand(
-                            sender, CommandArguments.shiftArgs(args));
-            case "info" ->
-                    this.handleDungeonInfoCommand(
-                            sender, CommandArguments.shiftArgs(args));
+            case "list" -> this.handleDungeonListCommand(sender, CommandArguments.shiftArgs(args));
+            case "info" -> this.handleDungeonInfoCommand(sender, CommandArguments.shiftArgs(args));
             case "enable" ->
                     this.handleSetDungeonEnabledCommand(
                             sender, CommandArguments.shiftArgs(args), true);
@@ -105,12 +101,14 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
         switch (args[1].toLowerCase(Locale.ROOT)) {
             case "info", "enable", "disable" -> {
                 if (args.length == 3) {
-                    DungeonCompletions.addMatchingDungeonNames(this.dungeonManager, options, args[2]);
+                    DungeonCompletions.addMatchingDungeonNames(
+                            this.dungeonManager, options, args[2]);
                 }
             }
             case "list" -> {
                 if (args.length == 3) {
-                    DungeonCompletions.addMatchingDungeonNames(this.dungeonManager, options, args[2]);
+                    DungeonCompletions.addMatchingDungeonNames(
+                            this.dungeonManager, options, args[2]);
                 } else if (args.length == 4) {
                     CommandArguments.addMatchingLiteralOptions(
                             options, args[3], "1", "2", "3", "4", "5");
@@ -133,14 +131,15 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
                     CommandArguments.addMatchingLiteralOptions(
                             options, args[2], "add", "remove", "clear");
                 else if (args.length == 4)
-                    DungeonCompletions.addMatchingEditableDungeonNames(this.dungeonManager,
-                            sender, options, args[3]);
+                    DungeonCompletions.addMatchingEditableDungeonNames(
+                            this.dungeonManager, sender, options, args[3]);
             }
             case "exit" -> {
                 if (args.length == 3) {
                     CommandArguments.addMatchingLiteralOptions(options, args[2], "set");
                 } else if (args.length == 4 && args[2].equalsIgnoreCase("set")) {
-                    DungeonCompletions.addMatchingDungeonNames(this.dungeonManager, options, args[3]);
+                    DungeonCompletions.addMatchingDungeonNames(
+                            this.dungeonManager, options, args[3]);
                 }
             }
             default -> {
@@ -156,14 +155,16 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
         String token = null;
         int confirmation = input.indexOf("--confirm");
         if (confirmation >= 0) {
-            if (confirmation != input.size() - 2) throw new IllegalArgumentException("Use --confirm <token> at the end");
+            if (confirmation != input.size() - 2)
+                throw new IllegalArgumentException("Use --confirm <token> at the end");
             token = input.removeLast();
             input.removeLast();
         }
         String[] args = input.toArray(String[]::new);
         if (args.length < 5) throw new IllegalArgumentException("A key change requires a reason");
         int reasonStart = args[2].equalsIgnoreCase("remove") ? 5 : 4;
-        if (args.length <= reasonStart) throw new IllegalArgumentException("A key change requires a reason");
+        if (args.length <= reasonStart)
+            throw new IllegalArgumentException("A key change requires a reason");
         var dungeon = this.dungeonManager.get(args[3]);
         if (dungeon == null) throw new IllegalArgumentException("Dungeon not found");
         StaffPermissions.require(sender, "keys", dungeon.getWorldName());
@@ -173,35 +174,54 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
         var ops = dungeon.getRuntime().staffOperations();
         if (ops != null) ops.requireContentWritable(dungeon.getWorldName());
         if (args[2].equalsIgnoreCase("remove") || args[2].equalsIgnoreCase("clear")) {
-            if (ops == null) throw new IllegalStateException("Staff confirmation service unavailable");
-            var next = ops.confirm(sender, "key-" + args[2], dungeon.getWorldName(),
-                    dungeon.getDungeonId() + ":" + dungeon.getConfig().saveToString() + ":" + before,
-                    String.join(" ", input), token);
+            if (ops == null)
+                throw new IllegalStateException("Staff confirmation service unavailable");
+            var next =
+                    ops.confirm(
+                            sender,
+                            "key-" + args[2],
+                            dungeon.getWorldName(),
+                            dungeon.getDungeonId()
+                                    + ":"
+                                    + dungeon.getConfig().saveToString()
+                                    + ":"
+                                    + before,
+                            String.join(" ", input),
+                            token);
             if (next != null) {
-                String command = CommandRoutes.canonicalCommand(CommandRoutes.Handler.MAP, input) + " --confirm " + next;
-                LangUtils.sendRaw(sender, Component.text("[Confirm key change within 30 seconds]")
-                        .clickEvent(ClickEvent.suggestCommand(command)));
+                String command =
+                        CommandRoutes.canonicalCommand(CommandRoutes.Handler.MAP, input)
+                                + " --confirm "
+                                + next;
+                LangUtils.sendRaw(
+                        sender,
+                        Component.text("[Confirm key change within 30 seconds]")
+                                .clickEvent(ClickEvent.suggestCommand(command)));
                 return true;
             }
         }
         String[] operation = Arrays.copyOf(args, reasonStart);
         if (args[2].equalsIgnoreCase("remove")) {
             for (int index = 0; index < dungeon.getAccessKeys().size(); index++) {
-                if (dungeon.getAccessKeys().get(index).getKeyId().equals(operation[4])) operation[4] = String.valueOf(index + 1);
+                if (dungeon.getAccessKeys().get(index).getKeyId().equals(operation[4]))
+                    operation[4] = String.valueOf(index + 1);
             }
         }
         boolean result = this.handleKeysCommand(sender, operation);
         var after = dungeon.getAccessKeys().stream().map(key -> key.getKeyId()).toList();
-        if (ops != null) ops.audit(sender, "key-" + args[2], dungeon.getWorldName(), reason,
-                before.equals(after) ? "unchanged" : "updated");
+        if (ops != null)
+            ops.audit(
+                    sender,
+                    "key-" + args[2],
+                    dungeon.getWorldName(),
+                    reason,
+                    before.equals(after) ? "unchanged" : "updated");
         return result;
     }
 
     /** Runs handle keys command. */
     private boolean handleKeysCommand(CommandSender sender, String[] args) {
-        if (args.length > 3)
-            StaffPermissions.require(
-                    sender, "keys", args[3]);
+        if (args.length > 3) StaffPermissions.require(sender, "keys", args[3]);
         if (args.length < 4) {
             CommandArguments.sendUsageList(sender, "commands.dungeon.help.lines");
             return true;
@@ -210,8 +230,7 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
         return switch (args[2].toLowerCase(Locale.ROOT)) {
             case "add" ->
                     args.length == 4
-                            ? this.handleAddKeyCommand(
-                                    sender, new String[] {"addkey", args[3]})
+                            ? this.handleAddKeyCommand(sender, new String[] {"addkey", args[3]})
                             : this.handleInvalidDungeonKeysUsage(sender);
             case "remove" ->
                     args.length == 4
@@ -219,8 +238,7 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
                                     sender, new String[] {"removekey", args[3]})
                             : args.length == 5
                                     ? this.handleRemoveKeyCommand(
-                                            sender,
-                                            new String[] {"removekey", args[3], args[4]})
+                                            sender, new String[] {"removekey", args[3], args[4]})
                                     : this.handleInvalidDungeonKeysUsage(sender);
             case "clear" ->
                     args.length == 4
@@ -237,8 +255,7 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
     /** Runs handle exit command. */
     private boolean handleExitCommand(CommandSender sender, String[] args) {
         if (args.length == 4 && args[2].equalsIgnoreCase("set")) {
-            return this.handleSetExitCommand(
-                    sender, new String[] {"setexit", args[3]});
+            return this.handleSetExitCommand(sender, new String[] {"setexit", args[3]});
         }
 
         CommandArguments.sendUsageList(sender, "commands.dungeon.help.lines");
@@ -322,7 +339,14 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
         StaffOperations.requireReason(reason);
         dungeon.setSaveConfig("dungeon.enabled", enabled);
         if (dungeon.getRuntime().staffOperations() != null)
-            dungeon.getRuntime().staffOperations().audit(sender, enabled ? "enable" : "disable", dungeon.getWorldName(), reason, "updated");
+            dungeon.getRuntime()
+                    .staffOperations()
+                    .audit(
+                            sender,
+                            enabled ? "enable" : "disable",
+                            dungeon.getWorldName(),
+                            reason,
+                            "updated");
         if (!enabled) {
             this.clearQueuedStartsForDisabledDungeon(dungeon);
             if (dungeon.getRuntime().staffOperations() != null)
@@ -523,7 +547,9 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
         for (DungeonDefinition dungeon : dungeons) {
             lines.add(
                     LangUtils.component(
-                            "commands.dungeon.list.line", sender, false,
+                            "commands.dungeon.list.line",
+                            sender,
+                            false,
                             LangUtils.placeholder("dungeon", dungeon.getWorldName()),
                             LangUtils.placeholder("display", dungeon.getDisplayNameComponent()),
                             LangUtils.placeholder("type", this.output.getDungeonTypeName(dungeon)),
@@ -566,9 +592,10 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
             return true;
         }
 
-        LangUtils.sendMessage(sender,
-                        "commands.dungeon.info.header",
-                        LangUtils.placeholder("dungeon", dungeon.getWorldName()));
+        LangUtils.sendMessage(
+                sender,
+                "commands.dungeon.info.header",
+                LangUtils.placeholder("dungeon", dungeon.getWorldName()));
         LangUtils.sendMessage(
                 sender,
                 "commands.dungeon.info.display",
@@ -589,9 +616,11 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
                 sender,
                 "commands.dungeon.info.locations",
                 LangUtils.placeholder(
-                        "lobby", this.output.formatConfiguredState(sender, dungeon.getLobbySpawn())),
+                        "lobby",
+                        this.output.formatConfiguredState(sender, dungeon.getLobbySpawn())),
                 LangUtils.placeholder(
-                        "start", this.output.formatConfiguredState(sender, dungeon.getStartSpawn())),
+                        "start",
+                        this.output.formatConfiguredState(sender, dungeon.getStartSpawn())),
                 LangUtils.placeholder(
                         "exit", this.output.formatConfiguredState(sender, dungeon.getExitLoc())));
         LangUtils.sendMessage(
@@ -618,7 +647,8 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
                 sender,
                 "commands.dungeon.info.edit-session",
                 LangUtils.placeholder(
-                        "state", this.output.formatYesNoState(sender, dungeon.getEditSession() != null)));
+                        "state",
+                        this.output.formatYesNoState(sender, dungeon.getEditSession() != null)));
         return true;
     }
 
@@ -636,5 +666,4 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
             }
         }
     }
-
 }

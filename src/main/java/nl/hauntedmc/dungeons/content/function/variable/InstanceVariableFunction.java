@@ -1,5 +1,8 @@
 package nl.hauntedmc.dungeons.content.function.variable;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.content.variable.VariableEditMode;
@@ -7,28 +10,21 @@ import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ChatMenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuItem;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.FunctionCategory;
 import nl.hauntedmc.dungeons.model.element.FunctionTargetType;
-import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
+import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerEvent;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
-/**
- * Function that mutates instance-scoped variables for later trigger/condition checks.
- */
+/** Function that mutates instance-scoped variables for later trigger/condition checks. */
 @AutoRegister(id = "dungeons.function.instance_variable")
 @SerializableAs("dungeons.function.instance_variable")
 public class InstanceVariableFunction extends DungeonFunction {
@@ -37,9 +33,7 @@ public class InstanceVariableFunction extends DungeonFunction {
     @PersistedField private VariableEditMode mode = VariableEditMode.SET;
     private int modeIndex;
 
-    /**
-     * Creates a new InstanceVariableFunction instance.
-     */
+    /** Creates a new InstanceVariableFunction instance. */
     public InstanceVariableFunction(Map<String, Object> config) {
         super("Instance Variable", config);
         this.setTargetType(FunctionTargetType.NONE);
@@ -47,9 +41,7 @@ public class InstanceVariableFunction extends DungeonFunction {
         this.setCategory(FunctionCategory.META);
     }
 
-    /**
-     * Creates a new InstanceVariableFunction instance.
-     */
+    /** Creates a new InstanceVariableFunction instance. */
     public InstanceVariableFunction() {
         super("Instance Variable");
         this.setTargetType(FunctionTargetType.NONE);
@@ -57,9 +49,7 @@ public class InstanceVariableFunction extends DungeonFunction {
         this.setCategory(FunctionCategory.META);
     }
 
-    /**
-     * Performs run function.
-     */
+    /** Performs run function. */
     @Override
     public void runFunction(TriggerFireEvent triggerEvent, List<DungeonPlayerSession> targets) {
         Bukkit.getScheduler()
@@ -118,9 +108,7 @@ public class InstanceVariableFunction extends DungeonFunction {
                         1L);
     }
 
-    /**
-     * Builds menu button.
-     */
+    /** Builds menu button. */
     @Override
     public MenuButton buildMenuButton() {
         MenuButton functionButton = new MenuButton(Material.OAK_SIGN);
@@ -131,25 +119,19 @@ public class InstanceVariableFunction extends DungeonFunction {
         return functionButton;
     }
 
-    /**
-     * Builds hotbar menu.
-     */
+    /** Builds hotbar menu. */
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
                 new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.PAPER);
                         this.button.setDisplayName("&d&lEdit Name");
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         LangUtils.sendMessage(player, "editor.function.instance-variable.ask-name");
@@ -160,9 +142,7 @@ public class InstanceVariableFunction extends DungeonFunction {
                                         "name", InstanceVariableFunction.this.varName));
                     }
 
-                    /**
-                     * Performs on input.
-                     */
+                    /** Performs on input. */
                     @Override
                     public void onInput(Player player, String message) {
                         InstanceVariableFunction.this.varName = message;
@@ -175,9 +155,7 @@ public class InstanceVariableFunction extends DungeonFunction {
                 });
         this.menu.addMenuItem(
                 new MenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.OBSERVER);
@@ -185,9 +163,7 @@ public class InstanceVariableFunction extends DungeonFunction {
                                 "&d&lEdit Mode: " + InstanceVariableFunction.this.mode);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
@@ -205,18 +181,14 @@ public class InstanceVariableFunction extends DungeonFunction {
                 });
         this.menu.addMenuItem(
                 new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.PAPER);
                         this.button.setDisplayName("&d&lValue");
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         switch (InstanceVariableFunction.this.mode) {
@@ -242,9 +214,7 @@ public class InstanceVariableFunction extends DungeonFunction {
                                         String.valueOf(InstanceVariableFunction.this.varValue)));
                     }
 
-                    /**
-                     * Performs on input.
-                     */
+                    /** Performs on input. */
                     @Override
                     public void onInput(Player player, String message) {
                         if (InstanceVariableFunction.this.mode != VariableEditMode.SET) {
@@ -276,9 +246,7 @@ public class InstanceVariableFunction extends DungeonFunction {
                 });
     }
 
-    /**
-     * Performs verify mode type.
-     */
+    /** Performs verify mode type. */
     private void verifyModeType() {
         if (this.modeIndex >= VariableEditMode.values().length) {
             this.modeIndex = 0;

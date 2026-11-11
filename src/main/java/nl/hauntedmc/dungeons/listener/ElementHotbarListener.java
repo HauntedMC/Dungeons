@@ -4,26 +4,19 @@ import nl.hauntedmc.dungeons.event.HotbarSetEvent;
 import nl.hauntedmc.dungeons.model.element.DungeonElement;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
-
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 
-/**
- * Keeps the active editor selection in sync with the currently shown hotbar menu.
- */
+/** Keeps the active editor selection in sync with the currently shown hotbar menu. */
 public class ElementHotbarListener implements Listener {
     private final DungeonElement element;
 
-    /**
-     * Creates the listener for one concrete element instance.
-     */
+    /** Creates the listener for one concrete element instance. */
     public ElementHotbarListener(DungeonElement element) {
         this.element = element;
     }
 
-    /**
-     * Marks the wrapped element as active when its hotbar menu becomes visible.
-     */
+    /** Marks the wrapped element as active when its hotbar menu becomes visible. */
     @EventHandler
     public void onHotbarSet(HotbarSetEvent event) {
         if (event.getNewHotbar() == null || this.element.getMenu() == null) {

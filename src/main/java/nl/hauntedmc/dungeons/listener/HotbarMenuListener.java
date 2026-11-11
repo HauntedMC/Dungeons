@@ -1,18 +1,20 @@
 package nl.hauntedmc.dungeons.listener;
 
 import io.papermc.paper.event.player.AsyncChatEvent;
-
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import nl.hauntedmc.dungeons.config.PluginConfigView;
 import nl.hauntedmc.dungeons.gui.hotbar.PlayerHotbarMenu;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuItem;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
 import nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard;
-import nl.hauntedmc.dungeons.util.config.PluginConfigView;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.text.ComponentUtils;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -33,22 +35,13 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-
-/**
- * Global listener for the custom editor hotbar-menu interaction model.
- */
+/** Global listener for the custom editor hotbar-menu interaction model. */
 public final class HotbarMenuListener implements Listener {
     private final DungeonsPlugin plugin;
     private final PlayerSessionRegistry playerManager;
     private final Set<UUID> pendingChatInputs = ConcurrentHashMap.newKeySet();
 
-    /**
-     * Creates the hotbar-menu listener with runtime dependencies.
-     */
+    /** Creates the hotbar-menu listener with runtime dependencies. */
     public HotbarMenuListener(DungeonsPlugin plugin, PlayerSessionRegistry playerManager) {
         this.plugin = plugin;
         this.playerManager = playerManager;
@@ -82,8 +75,7 @@ public final class HotbarMenuListener implements Listener {
         event.setCancelled(true);
         this.playMenuSound(player);
         playerSession.setChatListening(false);
-        if (!playerSession.isEditMode()
-                || StaffEditGuard.editor(player, playerSession))
+        if (!playerSession.isEditMode() || StaffEditGuard.editor(player, playerSession))
             menuItem.runSelectActions(event);
         menu.renderMenu();
     }
@@ -111,8 +103,7 @@ public final class HotbarMenuListener implements Listener {
         event.setCancelled(true);
         this.playMenuSound(player);
         playerSession.setChatListening(false);
-        if (!playerSession.isEditMode()
-                || StaffEditGuard.editor(player, playerSession))
+        if (!playerSession.isEditMode() || StaffEditGuard.editor(player, playerSession))
             menuItem.runSelectActions(event);
         menu.renderMenu();
     }
@@ -145,15 +136,12 @@ public final class HotbarMenuListener implements Listener {
         event.setCancelled(true);
         this.playMenuSound(player);
         playerSession.setChatListening(false);
-        if (!playerSession.isEditMode()
-                || StaffEditGuard.editor(player, playerSession))
+        if (!playerSession.isEditMode() || StaffEditGuard.editor(player, playerSession))
             menuItem.runClickActions(event);
         menu.renderMenu();
     }
 
-    /**
-     * Updates menu hover state when the held hotbar slot changes.
-     */
+    /** Updates menu hover state when the held hotbar slot changes. */
     @EventHandler(priority = EventPriority.LOW)
     public void onHover(PlayerItemHeldEvent event) {
         Player player = event.getPlayer();
@@ -179,9 +167,7 @@ public final class HotbarMenuListener implements Listener {
         menu.renderMenu();
     }
 
-    /**
-     * Routes chat text to chat-aware menu items.
-     */
+    /** Routes chat text to chat-aware menu items. */
     @EventHandler(priority = EventPriority.LOWEST)
     public void onChat(AsyncChatEvent event) {
         String message = ComponentUtils.plainText(event.originalMessage());
@@ -190,9 +176,7 @@ public final class HotbarMenuListener implements Listener {
         }
     }
 
-    /**
-     * Prevents inventory interactions from modifying managed hotbar menu slots.
-     */
+    /** Prevents inventory interactions from modifying managed hotbar menu slots. */
     @EventHandler
     public void onClickHotbarItem(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) {
@@ -231,9 +215,7 @@ public final class HotbarMenuListener implements Listener {
         }
     }
 
-    /**
-     * Creative inventory variant of managed hotbar protection.
-     */
+    /** Creative inventory variant of managed hotbar protection. */
     @EventHandler
     public void onClickHotbarItem(InventoryCreativeEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) {
@@ -272,9 +254,7 @@ public final class HotbarMenuListener implements Listener {
         }
     }
 
-    /**
-     * Prevents drag interactions from rewriting managed hotbar or protected tool slots.
-     */
+    /** Prevents drag interactions from rewriting managed hotbar or protected tool slots. */
     @EventHandler
     public void onDragHotbarItem(InventoryDragEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) {
@@ -315,9 +295,7 @@ public final class HotbarMenuListener implements Listener {
         }
     }
 
-    /**
-     * Uses item drop as the "back" action while a hotbar menu is open.
-     */
+    /** Uses item drop as the "back" action while a hotbar menu is open. */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onDropMenuItem(PlayerDropItemEvent event) {
         Player player = event.getPlayer();
@@ -343,9 +321,7 @@ public final class HotbarMenuListener implements Listener {
         }
     }
 
-    /**
-     * Uses hand-swap as the "close menu" action while a hotbar menu is open.
-     */
+    /** Uses hand-swap as the "close menu" action while a hotbar menu is open. */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onSwapHands(PlayerSwapHandItemsEvent event) {
         Player player = event.getPlayer();
@@ -371,9 +347,7 @@ public final class HotbarMenuListener implements Listener {
         }
     }
 
-    /**
-     * Returns the currently active hotbar menu for a player session.
-     */
+    /** Returns the currently active hotbar menu for a player session. */
     private PlayerHotbarMenu getActiveMenu(DungeonPlayerSession playerSession) {
         if (playerSession == null) {
             return null;
@@ -382,25 +356,19 @@ public final class HotbarMenuListener implements Listener {
         return playerSession.getCurrentHotbar() instanceof PlayerHotbarMenu menu ? menu : null;
     }
 
-    /**
-     * Returns whether the session is in edit mode without an active hotbar menu.
-     */
+    /** Returns whether the session is in edit mode without an active hotbar menu. */
     private boolean isPlainEditMode(DungeonPlayerSession playerSession) {
         return playerSession != null
                 && playerSession.isEditMode()
                 && playerSession.getCurrentHotbar() == null;
     }
 
-    /**
-     * Returns whether an inventory action targets managed hotbar slots.
-     */
+    /** Returns whether an inventory action targets managed hotbar slots. */
     private boolean touchesManagedHotbar(int slot, int hotbarButton) {
         return slot <= 8 || (hotbarButton >= 0 && hotbarButton <= 8);
     }
 
-    /**
-     * Returns whether an inventory action touches protected editor tool items.
-     */
+    /** Returns whether an inventory action touches protected editor tool items. */
     private boolean touchesProtectedEditTool(
             int slot, int hotbarButton, ItemStack current, ItemStack cursor) {
         return this.isProtectedEditToolSlot(slot)
@@ -409,9 +377,7 @@ public final class HotbarMenuListener implements Listener {
                 || this.isEditorTool(cursor);
     }
 
-    /**
-     * Returns whether the given slot is reserved for editor tools.
-     */
+    /** Returns whether the given slot is reserved for editor tools. */
     private boolean isProtectedEditToolSlot(int slot) {
         if (slot < 0) {
             return false;
@@ -422,16 +388,12 @@ public final class HotbarMenuListener implements Listener {
         return slot == functionSlot || slot == roomSlot;
     }
 
-    /**
-     * Returns whether an item is one of the editor tool items.
-     */
+    /** Returns whether an item is one of the editor tool items. */
     private boolean isEditorTool(ItemStack item) {
         return ItemUtils.isFunctionTool(item) || ItemUtils.isRoomTool(item);
     }
 
-    /**
-     * Routes chat actions to the main thread when chat events are asynchronous.
-     */
+    /** Routes chat actions to the main thread when chat events are asynchronous. */
     private boolean handleMenuChat(UUID playerId, String message, boolean asynchronous) {
         if (!asynchronous) {
             return this.handleMenuChatSync(playerId, message);
@@ -455,9 +417,7 @@ public final class HotbarMenuListener implements Listener {
         }
     }
 
-    /**
-     * Processes chat input for players currently listening through a selected menu item.
-     */
+    /** Processes chat input for players currently listening through a selected menu item. */
     private boolean handleMenuChatSync(UUID playerId, String message) {
         Player player = Bukkit.getPlayer(playerId);
         if (player == null || !player.isOnline()) {
@@ -487,8 +447,7 @@ public final class HotbarMenuListener implements Listener {
             if (playerSession.isChatListening()) {
                 if (!message.equalsIgnoreCase("cancel")
                         && (!playerSession.isEditMode()
-                                || StaffEditGuard.editor(
-                                        player, playerSession)))
+                                || StaffEditGuard.editor(player, playerSession)))
                     menuItem.runChatActions(player, message);
                 player.playSound(
                         player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.5F, 1.2F);
@@ -502,9 +461,7 @@ public final class HotbarMenuListener implements Listener {
         return true;
     }
 
-    /**
-     * Plays the shared feedback sound used for hotbar-menu interactions.
-     */
+    /** Plays the shared feedback sound used for hotbar-menu interactions. */
     private void playMenuSound(Player player) {
         player.playSound(player.getLocation(), "minecraft:item.lodestone_compass.lock", 1.0F, 1.2F);
     }

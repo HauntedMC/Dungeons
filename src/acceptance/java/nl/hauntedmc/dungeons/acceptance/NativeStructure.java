@@ -2,22 +2,19 @@ package nl.hauntedmc.dungeons.acceptance;
 
 import static nl.hauntedmc.dungeons.acceptance.AcceptancePlugin.require;
 
-import net.kyori.adventure.text.Component;
-
-import nl.hauntedmc.dungeons.generation.structure.StructurePiece;
-import nl.hauntedmc.dungeons.generation.structure.StructurePieceBlock;
-import nl.hauntedmc.dungeons.util.world.SchematicUtils;
-
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.block.Chest;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.concurrent.CompletionStage;
+import net.kyori.adventure.text.Component;
+import nl.hauntedmc.dungeons.generation.structure.StructurePiece;
+import nl.hauntedmc.dungeons.generation.structure.StructurePieceBlock;
+import nl.hauntedmc.dungeons.util.world.SchematicUtils;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.block.Chest;
 
 final class NativeStructure {
     private NativeStructure() {}
@@ -56,12 +53,12 @@ final class NativeStructure {
                                             && item.getType() == Material.DIAMOND
                                             && item.getAmount() == 5,
                                     "Native tile inventory did not survive capture, file reload and"
-                                        + " placement");
+                                            + " placement");
                             require(
                                     Component.text("Acceptance | chest !")
                                             .equals(chest.customName()),
                                     "Delimiter-bearing tile name did not survive the native SNBT"
-                                        + " path");
+                                            + " path");
                             return WorldFixtures.dispose(test, run);
                         });
     }

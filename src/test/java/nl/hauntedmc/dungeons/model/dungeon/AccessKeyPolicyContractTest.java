@@ -3,15 +3,13 @@ package nl.hauntedmc.dungeons.model.dungeon;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.util.*;
 import nl.hauntedmc.dungeons.support.*;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import nl.hauntedmc.dungeons.util.metadata.TypeMetadataSupport;
-
 import org.bukkit.*;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.junit.jupiter.api.Test;
-
-import java.util.*;
 
 class AccessKeyPolicyContractTest {
 
@@ -19,7 +17,7 @@ class AccessKeyPolicyContractTest {
     void
             serializedKeyDefinitionsKeepAuditAndCopyIsolationWhileGenericAndMetadataPoliciesRemainDistinct()
                     throws Exception {
-        try (var aliases = new StaticMapSnapshot(ConfigurationSerialization.class, "aliases");
+        try (var _ = new StaticMapSnapshot(ConfigurationSerialization.class, "aliases");
                 var paper = new PaperBoundary()) {
             when(paper.plugin.namespace()).thenReturn("dungeons");
             TypeMetadataSupport.registerConfigurationSerializable(AccessKeyDefinition.class);

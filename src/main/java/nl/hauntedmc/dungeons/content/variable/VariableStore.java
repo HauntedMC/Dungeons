@@ -13,9 +13,7 @@ import java.util.Map;
 public class VariableStore {
     private final Map<String, String> values = new HashMap<>();
 
-    /**
-     * Returns the string.
-     */
+    /** Returns the string. */
     public String getString(String key) {
         String value = this.values.get(key);
         if (value == null) {
@@ -32,9 +30,7 @@ public class VariableStore {
         }
     }
 
-    /**
-     * Returns the int.
-     */
+    /** Returns the int. */
     public int getInt(String key) {
         try {
             return Integer.parseInt(this.values.get(key));
@@ -43,9 +39,7 @@ public class VariableStore {
         }
     }
 
-    /**
-     * Returns the double.
-     */
+    /** Returns the double. */
     public double getDouble(String key) {
         String value = this.values.get(key);
         if (value == null) {
@@ -58,38 +52,28 @@ public class VariableStore {
         }
     }
 
-    /**
-     * Performs set.
-     */
+    /** Performs set. */
     public void set(String key, String value) {
         this.values.put(key, value);
     }
 
-    /**
-     * Performs set.
-     */
+    /** Performs set. */
     public void set(String key, int value) {
         this.values.put(key, String.valueOf(value));
     }
 
-    /**
-     * Performs set.
-     */
+    /** Performs set. */
     public void set(String key, double value) {
         this.values.put(key, String.valueOf(value));
     }
 
-    /**
-     * Performs add.
-     */
+    /** Performs add. */
     public void add(String key, double value) {
         double current = this.getDouble(key);
         this.values.put(key, String.valueOf(current + value));
     }
 
-    /**
-     * Performs subtract.
-     */
+    /** Performs subtract. */
     public void subtract(String key, double value) {
         double current = this.getDouble(key);
         this.values.put(key, String.valueOf(current - value));

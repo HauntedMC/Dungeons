@@ -1,13 +1,10 @@
 package nl.hauntedmc.dungeons.event;
 
-import nl.hauntedmc.dungeons.model.instance.PlayableInstance;
+import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-
 import org.bukkit.entity.Player;
 
-/**
- * Event fired when one player finishes a playable dungeon.
- */
+/** Event fired when one player finishes a playable dungeon. */
 public class PlayerFinishDungeonEvent extends DungeonEvent {
     private final DungeonPlayerSession playerSession;
     private final Player player;

@@ -2,15 +2,14 @@ package nl.hauntedmc.dungeons.acceptance;
 
 import static nl.hauntedmc.dungeons.acceptance.AcceptancePlugin.require;
 
-import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
-import nl.hauntedmc.dungeons.runtime.player.StaffPlayerRecords;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
+import nl.hauntedmc.dungeons.runtime.player.StaffPlayerRecords;
 
 final class NativeRestart {
     private NativeRestart() {}
@@ -38,7 +37,10 @@ final class NativeRestart {
 
     static CompletionStage<Void> verify(AcceptancePlugin test) throws Exception {
         NativePersistence.verify(test);
-        var playerId = UUID.fromString(Files.readString(test.getDataFolder().toPath().resolve("database-player.txt")));
+        var playerId =
+                UUID.fromString(
+                        Files.readString(
+                                test.getDataFolder().toPath().resolve("database-player.txt")));
         String recovery = StaffPlayerRecords.inspect(test.runtime(), playerId);
         var branch = test.runtime().dungeonCatalog().get("acceptance_branching");
         require(

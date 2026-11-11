@@ -1,10 +1,9 @@
 package nl.hauntedmc.dungeons.util.command;
 
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.staff.StaffPermissions;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
 import org.bukkit.command.CommandSender;
 
 /** Command permission helpers. */
@@ -29,8 +28,7 @@ public final class CommandUtils {
 
     /** Returns whether sender can edit a specific dungeon by name. */
     public static boolean hasDungeonEditAccess(CommandSender sender, String dungeonName) {
-        return StaffPermissions.allows(
-                sender, "edit", dungeonName);
+        return StaffPermissions.allows(sender, "edit", dungeonName);
     }
 
     /** Returns whether sender has any dungeon-edit access across loaded dungeons. */
@@ -51,5 +49,4 @@ public final class CommandUtils {
 
         return false;
     }
-
 }

@@ -1,5 +1,7 @@
 package nl.hauntedmc.dungeons.runtime;
 
+import java.io.File;
+import java.util.Objects;
 import nl.hauntedmc.dungeons.gui.framework.GuiService;
 import nl.hauntedmc.dungeons.integration.RegistryProfiles;
 import nl.hauntedmc.dungeons.listener.EventRelayListener;
@@ -18,12 +20,8 @@ import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry;
 import nl.hauntedmc.dungeons.runtime.staff.StaffOperations;
 import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
 import nl.hauntedmc.featureframework.resource.FeatureResourceOwner;
-
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
-
-import java.io.File;
-import java.util.Objects;
 
 /**
  * Mutable runtime state assembled by bootstrap and then shared across the application.
@@ -34,18 +32,44 @@ import java.util.Objects;
  */
 public final class DungeonsRuntime {
     private FeatureResourceOwner resources = new FeatureResourceOwner();
-    public FeatureResourceOwner resources() { return resources; }
-    public void resetResources() { resources = new FeatureResourceOwner(); }
+
+    public FeatureResourceOwner resources() {
+        return resources;
+    }
+
+    public void resetResources() {
+        resources = new FeatureResourceOwner();
+    }
+
     private RegistryProfiles profiles;
-    public RegistryProfiles profiles() { return profiles; }
-    public void setProfiles(RegistryProfiles value) { profiles = value; }
+
+    public RegistryProfiles profiles() {
+        return profiles;
+    }
+
+    public void setProfiles(RegistryProfiles value) {
+        profiles = value;
+    }
+
     private DatabaseLifecycle database;
 
     private StateStore stateStore;
-    public StateStore stateStore() { return requireInitialized(stateStore, "stateStore"); }
-    public void setStateStore(StateStore store) { this.stateStore = store; }
-    public DatabaseLifecycle database() { return requireInitialized(database, "database"); }
-    public void setDatabase(DatabaseLifecycle database) { this.database = database; }
+
+    public StateStore stateStore() {
+        return requireInitialized(stateStore, "stateStore");
+    }
+
+    public void setStateStore(StateStore store) {
+        this.stateStore = store;
+    }
+
+    public DatabaseLifecycle database() {
+        return requireInitialized(database, "database");
+    }
+
+    public void setDatabase(DatabaseLifecycle database) {
+        this.database = database;
+    }
 
     private StaffOperations staffOperations;
 
@@ -200,11 +224,25 @@ public final class DungeonsRuntime {
     }
 
     /** Returns the loaded dungeon catalogue. */
-    public boolean hasPlayerSessions() { return this.playerSessions != null; }
-    public boolean hasActiveInstances() { return this.activeInstances != null; }
-    public boolean hasTeamService() { return this.teamService != null; }
-    public boolean hasQueueRegistry() { return this.queueRegistry != null; }
-    public boolean hasDungeonCatalog() { return this.dungeonRepository != null; }
+    public boolean hasPlayerSessions() {
+        return this.playerSessions != null;
+    }
+
+    public boolean hasActiveInstances() {
+        return this.activeInstances != null;
+    }
+
+    public boolean hasTeamService() {
+        return this.teamService != null;
+    }
+
+    public boolean hasQueueRegistry() {
+        return this.queueRegistry != null;
+    }
+
+    public boolean hasDungeonCatalog() {
+        return this.dungeonRepository != null;
+    }
 
     public DungeonRepository dungeonCatalog() {
         return this.requireInitialized(this.dungeonRepository, "dungeonRepository");

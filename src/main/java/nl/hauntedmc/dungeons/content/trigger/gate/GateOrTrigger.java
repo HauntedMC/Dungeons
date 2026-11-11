@@ -1,41 +1,31 @@
 package nl.hauntedmc.dungeons.content.trigger.gate;
 
+import java.util.Map;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
-
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.event.EventHandler;
 
-import java.util.Map;
-
-/**
- * Gate trigger that fires whenever any child trigger fires.
- */
+/** Gate trigger that fires whenever any child trigger fires. */
 @AutoRegister(id = "dungeons.trigger.gate_or")
 @SerializableAs("dungeons.trigger.gate_or")
 public class GateOrTrigger extends GateTrigger {
-    /**
-     * Creates a new GateOrTrigger instance.
-     */
+    /** Creates a new GateOrTrigger instance. */
     public GateOrTrigger(Map<String, Object> config) {
         super("OR Gate", config);
         this.setHasTarget(true);
     }
 
-    /**
-     * Creates a new GateOrTrigger instance.
-     */
+    /** Creates a new GateOrTrigger instance. */
     public GateOrTrigger() {
         super("OR Gate");
         this.setHasTarget(true);
     }
 
-    /**
-     * Performs on child triggered.
-     */
+    /** Performs on child triggered. */
     @EventHandler
     public void onChildTriggered(TriggerFireEvent event) {
         if (!event.isCancelled() && event.getInstance() == this.instance) {
@@ -46,9 +36,7 @@ public class GateOrTrigger extends GateTrigger {
         }
     }
 
-    /**
-     * Builds menu button.
-     */
+    /** Builds menu button. */
     @Override
     public MenuButton buildMenuButton() {
         MenuButton button = new MenuButton(Material.COMPARATOR);

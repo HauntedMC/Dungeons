@@ -4,20 +4,18 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import nl.hauntedmc.dungeons.generation.room.Connector;
-import nl.hauntedmc.dungeons.generation.room.ConnectorDoor;
-import nl.hauntedmc.dungeons.generation.room.WhitelistEntry;
-import nl.hauntedmc.dungeons.support.PaperBoundary;
-import nl.hauntedmc.dungeons.util.world.SimpleLocation;
-
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import nl.hauntedmc.dungeons.generation.room.Connector;
+import nl.hauntedmc.dungeons.generation.room.ConnectorDoor;
+import nl.hauntedmc.dungeons.generation.room.WhitelistEntry;
+import nl.hauntedmc.dungeons.support.PaperBoundary;
+import nl.hauntedmc.dungeons.util.world.SimpleLocation;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class DungeonGraphPersistenceTest {
     @TempDir Path directory;

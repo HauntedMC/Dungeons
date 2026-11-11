@@ -1,10 +1,12 @@
 package nl.hauntedmc.dungeons.gui.framework.buttons;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.function.Consumer;
 import net.kyori.adventure.text.Component;
-
-import nl.hauntedmc.dungeons.gui.framework.actions.Action;
 import nl.hauntedmc.dungeons.gui.framework.text.GuiTextUtils;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -13,19 +15,12 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map.Entry;
-
-/**
- * Clickable inventory button model used by GUI windows.
- */
+/** Clickable inventory button model used by GUI windows. */
 public class Button {
     private final String id;
     private ItemStack item;
     private final ArrayList<String> commands;
-    private final HashMap<String, Action<InventoryClickEvent>> actions;
+    private final HashMap<String, Consumer<InventoryClickEvent>> actions;
 
     /** Creates a button from material and display name. */
     public Button(@NotNull String id, @NotNull Material mat, @NotNull String display) {
@@ -157,19 +152,19 @@ public class Button {
     }
 
     /** Adds a click action callback keyed by id. */
-    public final void addAction(String id, Action<InventoryClickEvent> action) {
+    public final void addAction(String id, Consumer<InventoryClickEvent> action) {
         this.actions.put(id, action);
     }
 
     /** Returns click action callbacks keyed by id. */
-    public final HashMap<String, Action<InventoryClickEvent>> getActions() {
+    public final HashMap<String, Consumer<InventoryClickEvent>> getActions() {
         return this.actions;
     }
 
     /** Runs click action callbacks for this button. */
     public final void runActions(InventoryClickEvent event) {
-        for (Entry<String, Action<InventoryClickEvent>> pair : this.actions.entrySet()) {
-            pair.getValue().run(event);
+        for (Entry<String, Consumer<InventoryClickEvent>> pair : this.actions.entrySet()) {
+            pair.getValue().accept(event);
         }
     }
 
@@ -183,7 +178,7 @@ public class Button {
     public Button clone() {
         Button button = new Button(this.id, this.item);
         button.addCommands(new ArrayList<>(this.commands));
-        for (Entry<String, Action<InventoryClickEvent>> pair : this.actions.entrySet()) {
+        for (Entry<String, Consumer<InventoryClickEvent>> pair : this.actions.entrySet()) {
             button.addAction(pair.getKey(), pair.getValue());
         }
         return button;

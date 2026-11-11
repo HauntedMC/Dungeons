@@ -1,7 +1,8 @@
 package nl.hauntedmc.dungeons.gui.menu;
 
+import java.util.function.IntSupplier;
+import java.util.function.Supplier;
 import nl.hauntedmc.dungeons.content.dungeon.BranchingDungeon;
-import nl.hauntedmc.dungeons.content.instance.edit.BranchingEditableInstance;
 import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
 import nl.hauntedmc.dungeons.generation.room.Connector;
 import nl.hauntedmc.dungeons.generation.room.ConnectorDoor;
@@ -10,13 +11,13 @@ import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ChatMenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
-import nl.hauntedmc.dungeons.model.instance.EditableInstance;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
+import nl.hauntedmc.dungeons.runtime.instance.EditableInstance;
+import nl.hauntedmc.dungeons.runtime.instance.edit.BranchingEditableInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
 import nl.hauntedmc.dungeons.util.world.SimpleLocation;
-
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -25,14 +26,12 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 
-import java.util.function.IntSupplier;
-import java.util.function.Supplier;
-
 /** Builds connector and door editor hotbars independently of layout generation. */
 public final class ConnectorEditorMenus {
     private ConnectorEditorMenus() {}
 
-    public static PlayerHotbarMenu connectorMenu(DungeonsRuntime runtime, Supplier<PlayerHotbarMenu> doorMenu) {
+    public static PlayerHotbarMenu connectorMenu(
+            DungeonsRuntime runtime, Supplier<PlayerHotbarMenu> doorMenu) {
         PlayerHotbarMenu menu = PlayerHotbarMenu.createMenu();
         menu.addMenuItem(backFromConnector(runtime));
         menu.addMenuItem(editDoor(runtime, doorMenu));
@@ -89,8 +88,7 @@ public final class ConnectorEditorMenus {
                 Connector connector = playerSession.getActiveConnector();
                 if (room != null && connector != null) {
                     ConnectorDoor door = connector.getDoor();
-                    LangUtils.sendMessage(
-                            player, "editor.layout.connector-door.open-menu-info");
+                    LangUtils.sendMessage(player, "editor.layout.connector-door.open-menu-info");
                     playerSession.showHotbar(doorMenu.get(), true);
                     playerSession.setActiveDoor(door);
                 }
@@ -176,21 +174,16 @@ public final class ConnectorEditorMenus {
                 if (event instanceof PlayerInteractEvent interactEvent) {
                     if (interactEvent.getAction() == Action.RIGHT_CLICK_BLOCK) {
                         Player player = event.getPlayer();
-                        DungeonPlayerSession playerSession =
-                                runtime.playerSessions().get(player);
+                        DungeonPlayerSession playerSession = runtime.playerSessions().get(player);
                         EditableInstance instance =
-                                playerSession
-                                        .getInstance()
-                                        .as(BranchingEditableInstance.class);
+                                playerSession.getInstance().as(BranchingEditableInstance.class);
                         if (instance != null) {
-                            Location targetLocation =
-                                    interactEvent.getClickedBlock().getLocation();
+                            Location targetLocation = interactEvent.getClickedBlock().getLocation();
                             DungeonDefinition dungeon =
                                     instance.getDungeon().as(BranchingDungeon.class);
                             BranchingRoomDefinition room = playerSession.getActiveRoom();
                             if (dungeon != null && room != null) {
-                                SimpleLocation simpleLoc =
-                                        SimpleLocation.from(targetLocation);
+                                SimpleLocation simpleLoc = SimpleLocation.from(targetLocation);
                                 ConnectorClipboardActions.paste(
                                         player, playerSession, room, simpleLoc);
                             }
@@ -219,8 +212,7 @@ public final class ConnectorEditorMenus {
                     if ((!connector.getRoomBlacklist().isEmpty()
                                     || !connector.getRoomWhitelist().isEmpty())
                             && !playerSession.isConfirmRoomAction()) {
-                        LangUtils.sendMessage(
-                                player, "editor.layout.connector.delete-confirm");
+                        LangUtils.sendMessage(player, "editor.layout.connector.delete-confirm");
                         playerSession.setConfirmRoomAction(true);
                     } else {
                         playerSession.setConfirmRoomAction(false);
@@ -313,8 +305,7 @@ public final class ConnectorEditorMenus {
             @Override
             public void onSelect(PlayerEvent event) {
                 Player player = event.getPlayer();
-                Block block =
-                        player.getTargetBlockExact(targetRange.getAsInt());
+                Block block = player.getTargetBlockExact(targetRange.getAsInt());
                 if (block != null && !block.isEmpty()) {
                     DungeonPlayerSession playerSession = runtime.playerSessions().get(player);
                     BranchingRoomDefinition room = playerSession.getActiveRoom();
@@ -363,11 +354,9 @@ public final class ConnectorEditorMenus {
                     }
 
                     if (!door.isStartOpen()) {
-                        LangUtils.sendMessage(
-                                player, "editor.layout.connector-door.start-open");
+                        LangUtils.sendMessage(player, "editor.layout.connector-door.start-open");
                     } else {
-                        LangUtils.sendMessage(
-                                player, "editor.layout.connector-door.start-closed");
+                        LangUtils.sendMessage(player, "editor.layout.connector-door.start-closed");
                     }
 
                     door.setStartOpen(!door.isStartOpen());
@@ -397,8 +386,7 @@ public final class ConnectorEditorMenus {
                     }
 
                     if (door.isDisableSound()) {
-                        LangUtils.sendMessage(
-                                player, "editor.layout.connector-door.sound-enabled");
+                        LangUtils.sendMessage(player, "editor.layout.connector-door.sound-enabled");
                     } else {
                         LangUtils.sendMessage(
                                 player, "editor.layout.connector-door.sound-disabled");

@@ -4,26 +4,25 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import nl.hauntedmc.dungeons.gui.framework.buttons.Button;
 import nl.hauntedmc.dungeons.gui.framework.window.GuiWindow;
-
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.mockito.MockedConstruction;
 
-import java.util.List;
-
-/** Substitutes rendered GUI items/windows; supplied gameplay stacks retain their stateful fixture. */
+/**
+ * Substitutes rendered GUI items/windows; supplied gameplay stacks retain their stateful fixture.
+ */
 public final class HeadlessInventoryMenus implements AutoCloseable {
     private final MockedConstruction<ItemStack> items =
             mockConstruction(
                     ItemStack.class,
                     (item, context) -> {
                         if (!context.arguments().isEmpty()
-                                && context.arguments().getFirst()
-                                        instanceof Material material) {
+                                && context.arguments().getFirst() instanceof Material material) {
                             when(item.getType()).thenReturn(material);
                         }
                         NativeItemBytes.support(item);

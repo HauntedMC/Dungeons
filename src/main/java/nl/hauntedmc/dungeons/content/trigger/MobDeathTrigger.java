@@ -1,19 +1,21 @@
 package nl.hauntedmc.dungeons.content.trigger;
 
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
-import nl.hauntedmc.dungeons.content.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.generation.room.InstanceRoom;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ChatMenuItem;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
 import nl.hauntedmc.dungeons.model.element.TriggerCategory;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
+import nl.hauntedmc.dungeons.runtime.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.serialization.SerializableAs;
@@ -24,13 +26,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.persistence.PersistentDataType;
 
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-
-/**
- * Trigger that listens for matching mob deaths inside the instance.
- */
+/** Trigger that listens for matching mob deaths inside the instance. */
 @AutoRegister(id = "dungeons.trigger.mob_death")
 @SerializableAs("dungeons.trigger.mob_death")
 public class MobDeathTrigger extends DungeonTrigger {
@@ -40,9 +36,7 @@ public class MobDeathTrigger extends DungeonTrigger {
     private int status;
     private transient boolean invalidConfigurationLogged;
 
-    /**
-     * Creates a new MobDeathTrigger instance.
-     */
+    /** Creates a new MobDeathTrigger instance. */
     public MobDeathTrigger(Map<String, Object> config) {
         super("Mob Death", config);
         this.waitForConditions = true;
@@ -50,9 +44,7 @@ public class MobDeathTrigger extends DungeonTrigger {
         this.setHasTarget(true);
     }
 
-    /**
-     * Creates a new MobDeathTrigger instance.
-     */
+    /** Creates a new MobDeathTrigger instance. */
     public MobDeathTrigger() {
         super("Mob Death");
         this.waitForConditions = true;
@@ -60,18 +52,14 @@ public class MobDeathTrigger extends DungeonTrigger {
         this.setHasTarget(true);
     }
 
-    /**
-     * Performs initialize.
-     */
+    /** Performs initialize. */
     @Override
     public void initialize() {
         super.initialize();
         this.setDisplayName(this.mob + " Death");
     }
 
-    /**
-     * Builds menu button.
-     */
+    /** Builds menu button. */
     @Override
     public MenuButton buildMenuButton() {
         MenuButton functionButton = new MenuButton(Material.ROTTEN_FLESH);
@@ -81,9 +69,7 @@ public class MobDeathTrigger extends DungeonTrigger {
         return functionButton;
     }
 
-    /**
-     * Performs on mob death.
-     */
+    /** Performs on mob death. */
     @EventHandler
     public void onMobDeath(EntityDeathEvent event) {
         if (event.isCancelled()) {
@@ -134,9 +120,7 @@ public class MobDeathTrigger extends DungeonTrigger {
         }
     }
 
-    /**
-     * Performs matches room.
-     */
+    /** Performs matches room. */
     public boolean matchesRoom(Entity ent) {
         if (!this.limitToRoom) {
             return true;
@@ -172,25 +156,19 @@ public class MobDeathTrigger extends DungeonTrigger {
         }
     }
 
-    /**
-     * Builds hotbar menu.
-     */
+    /** Builds hotbar menu. */
     @Override
     public void buildHotbarMenu() {
         this.menu.addMenuItem(
                 new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.PAPER);
                         this.button.setDisplayName("&d&lMob");
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         LangUtils.sendMessage(player, "editor.trigger.mob-death.ask-mob");
@@ -200,9 +178,7 @@ public class MobDeathTrigger extends DungeonTrigger {
                                 LangUtils.placeholder("mob", MobDeathTrigger.this.mob));
                     }
 
-                    /**
-                     * Performs on input.
-                     */
+                    /** Performs on input. */
                     @Override
                     public void onInput(Player player, String message) {
                         MobDeathTrigger.this.mob = message;
@@ -215,9 +191,7 @@ public class MobDeathTrigger extends DungeonTrigger {
                 });
         this.menu.addMenuItem(
                 new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.BONE);
@@ -225,17 +199,13 @@ public class MobDeathTrigger extends DungeonTrigger {
                         this.button.setAmount(MobDeathTrigger.this.count);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         LangUtils.sendMessage(player, "editor.trigger.mob-death.ask-count");
                     }
 
-                    /**
-                     * Performs on input.
-                     */
+                    /** Performs on input. */
                     @Override
                     public void onInput(Player player, String message) {
                         Optional<Integer> value = InputUtils.readIntegerInput(player, message);
@@ -251,9 +221,7 @@ public class MobDeathTrigger extends DungeonTrigger {
                 });
         this.menu.addMenuItem(
                 new ToggleMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.REDSTONE_TORCH);
@@ -261,9 +229,7 @@ public class MobDeathTrigger extends DungeonTrigger {
                         this.button.setEnchanted(MobDeathTrigger.this.allowRetrigger);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         if (!MobDeathTrigger.this.allowRetrigger) {
@@ -278,9 +244,7 @@ public class MobDeathTrigger extends DungeonTrigger {
                 });
         this.menu.addMenuItem(
                 new ChatMenuItem() {
-                    /**
-                     * Builds button.
-                     */
+                    /** Builds button. */
                     @Override
                     public void buildButton() {
                         this.button = new MenuButton(Material.DETECTOR_RAIL);
@@ -288,9 +252,7 @@ public class MobDeathTrigger extends DungeonTrigger {
                         this.button.setAmount((int) MobDeathTrigger.this.radius);
                     }
 
-                    /**
-                     * Performs on select.
-                     */
+                    /** Performs on select. */
                     @Override
                     public void onSelect(Player player) {
                         LangUtils.sendMessage(player, "editor.trigger.mob-death.ask-radius");
@@ -301,9 +263,7 @@ public class MobDeathTrigger extends DungeonTrigger {
                                         "radius", String.valueOf(MobDeathTrigger.this.radius)));
                     }
 
-                    /**
-                     * Performs on input.
-                     */
+                    /** Performs on input. */
                     @Override
                     public void onInput(Player player, String message) {
                         Optional<Double> value = InputUtils.readDoubleInput(player, message);
@@ -320,44 +280,32 @@ public class MobDeathTrigger extends DungeonTrigger {
         this.addRoomLimitToggleButton();
     }
 
-    /**
-     * Returns the mob.
-     */
+    /** Returns the mob. */
     public String getMob() {
         return this.mob;
     }
 
-    /**
-     * Sets the mob.
-     */
+    /** Sets the mob. */
     public void setMob(String mob) {
         this.mob = mob;
     }
 
-    /**
-     * Returns the count.
-     */
+    /** Returns the count. */
     public int getCount() {
         return this.count;
     }
 
-    /**
-     * Sets the count.
-     */
+    /** Sets the count. */
     public void setCount(int count) {
         this.count = count;
     }
 
-    /**
-     * Returns the radius.
-     */
+    /** Returns the radius. */
     public double getRadius() {
         return this.radius;
     }
 
-    /**
-     * Sets the radius.
-     */
+    /** Sets the radius. */
     public void setRadius(double radius) {
         this.radius = radius;
     }

@@ -1,14 +1,19 @@
 package nl.hauntedmc.dungeons.generation.room;
 
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.annotation.TypeKey;
 import nl.hauntedmc.dungeons.config.ConfigSerializableModel;
 import nl.hauntedmc.dungeons.event.RoomDoorChangeEvent;
 import nl.hauntedmc.dungeons.generation.structure.StructurePieceBlock;
-import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
+import nl.hauntedmc.dungeons.runtime.instance.DungeonInstance;
 import nl.hauntedmc.dungeons.util.entity.ParticleUtils;
 import nl.hauntedmc.dungeons.util.world.SimpleLocation;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
@@ -21,18 +26,11 @@ import org.bukkit.entity.Player;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 
-import java.lang.ref.WeakReference;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
 /**
  * Door metadata attached to a room connector.
  *
- * <p>The door stores the blocks that should be restored when the door closes and emits
- * {@link RoomDoorChangeEvent} instances when its state changes at runtime.
+ * <p>The door stores the blocks that should be restored when the door closes and emits {@link
+ * RoomDoorChangeEvent} instances when its state changes at runtime.
  */
 @TypeKey(id = "dungeons.serializable.connector_door")
 @SerializableAs("dungeons.serializable.connector_door")
@@ -49,16 +47,12 @@ public class ConnectorDoor implements ConfigSerializableModel {
 
     private ConnectorDoor() {}
 
-    /**
-     * Creates a connector door using the connector position as default namespace seed.
-     */
+    /** Creates a connector door using the connector position as default namespace seed. */
     public ConnectorDoor(Connector connector) {
         this.namespace = defaultNamespace(connector == null ? null : connector.getLocation());
     }
 
-    /**
-     * Creates a connector door with an explicit namespace.
-     */
+    /** Creates a connector door with an explicit namespace. */
     public ConnectorDoor(String namespace) {
         this.namespace = namespace == null ? "" : namespace;
     }
@@ -81,16 +75,12 @@ public class ConnectorDoor implements ConfigSerializableModel {
         this.blocks = this.blocks == null ? new HashMap<>() : this.blocks;
     }
 
-    /**
-     * Toggles whether a world-space location belongs to this door.
-     */
+    /** Toggles whether a world-space location belongs to this door. */
     public void toggleLocation(Location loc) {
         this.toggleLocation(SimpleLocation.from(loc));
     }
 
-    /**
-     * Toggles whether a room-space location belongs to this door.
-     */
+    /** Toggles whether a room-space location belongs to this door. */
     public void toggleLocation(SimpleLocation loc) {
         if (this.locations.contains(loc)) {
             this.removeLocation(loc);
@@ -99,45 +89,33 @@ public class ConnectorDoor implements ConfigSerializableModel {
         }
     }
 
-    /**
-     * Adds a world-space location to this door.
-     */
+    /** Adds a world-space location to this door. */
     public void addLocation(Location loc) {
         this.addLocation(SimpleLocation.from(loc));
     }
 
-    /**
-     * Adds a room-space location to this door.
-     */
+    /** Adds a room-space location to this door. */
     public void addLocation(SimpleLocation loc) {
         this.locations.add(loc);
     }
 
-    /**
-     * Removes a world-space location from this door.
-     */
+    /** Removes a world-space location from this door. */
     public void removeLocation(Location loc) {
         this.removeLocation(SimpleLocation.from(loc));
     }
 
-    /**
-     * Removes a room-space location from this door.
-     */
+    /** Removes a room-space location from this door. */
     public void removeLocation(SimpleLocation loc) {
         this.locations.remove(loc);
     }
 
-    /**
-     * Binds this door to a runtime room and world.
-     */
+    /** Binds this door to a runtime room and world. */
     public void initialize(InstanceRoom room, World world) {
         this.room = room;
         this.world = new WeakReference<>(world);
     }
 
-    /**
-     * Toggles the door open/closed state.
-     */
+    /** Toggles the door open/closed state. */
     public void toggleDoor() {
         if (this.world != null) {
             if (this.open) {
@@ -148,9 +126,7 @@ public class ConnectorDoor implements ConfigSerializableModel {
         }
     }
 
-    /**
-     * Opens the door by clearing tracked door blocks and firing a change event.
-     */
+    /** Opens the door by clearing tracked door blocks and firing a change event. */
     public void openDoor() {
         if (this.world == null) {
             return;
@@ -181,9 +157,7 @@ public class ConnectorDoor implements ConfigSerializableModel {
         }
     }
 
-    /**
-     * Closes the door by restoring tracked door blocks and firing a change event.
-     */
+    /** Closes the door by restoring tracked door blocks and firing a change event. */
     public void closeDoor() {
         if (this.world == null) {
             return;
@@ -214,9 +188,7 @@ public class ConnectorDoor implements ConfigSerializableModel {
         }
     }
 
-    /**
-     * Renders debug particles at each configured door block for one player.
-     */
+    /** Renders debug particles at each configured door block for one player. */
     public void displayParticles(Player player) {
         for (SimpleLocation rawLoc : this.locations) {
             Location loc = rawLoc.asLocation(player.getWorld());
@@ -237,9 +209,7 @@ public class ConnectorDoor implements ConfigSerializableModel {
         }
     }
 
-    /**
-     * Returns a translated copy of this door.
-     */
+    /** Returns a translated copy of this door. */
     public ConnectorDoor copy(Vector offset) {
         ConnectorDoor newDoor = this.clone();
         newDoor.locations.clear();
@@ -254,9 +224,7 @@ public class ConnectorDoor implements ConfigSerializableModel {
         return newDoor;
     }
 
-    /**
-     * Returns a copy translated/rotated from one origin into a destination offset.
-     */
+    /** Returns a copy translated/rotated from one origin into a destination offset. */
     public ConnectorDoor copy(Vector destOffset, Vector origin, int rotation) {
         ConnectorDoor newDoor = new ConnectorDoor("");
         newDoor.setStartOpen(this.startOpen);
@@ -299,9 +267,7 @@ public class ConnectorDoor implements ConfigSerializableModel {
         return newDoor;
     }
 
-    /**
-     * Returns a copy transformed for a rotated room placement.
-     */
+    /** Returns a copy transformed for a rotated room placement. */
     public ConnectorDoor copy(Vector offset, int rotation, SimpleLocation size) {
         ConnectorDoor newDoor = new ConnectorDoor("");
         newDoor.setStartOpen(this.startOpen);
@@ -330,86 +296,62 @@ public class ConnectorDoor implements ConfigSerializableModel {
         return clone;
     }
 
-    /**
-     * Returns the door namespace.
-     */
+    /** Returns the door namespace. */
     public String getNamespace() {
         return this.namespace;
     }
 
-    /**
-     * Sets the door namespace.
-     */
+    /** Sets the door namespace. */
     public void setNamespace(String namespace) {
         this.namespace = namespace;
     }
 
-    /**
-     * Returns all block locations controlled by this door.
-     */
+    /** Returns all block locations controlled by this door. */
     public List<SimpleLocation> getLocations() {
         return this.locations;
     }
 
-    /**
-     * Returns whether this door starts open when an adjacent room exists.
-     */
+    /** Returns whether this door starts open when an adjacent room exists. */
     public boolean isStartOpen() {
         return this.startOpen;
     }
 
-    /**
-     * Sets whether this door starts open when an adjacent room exists.
-     */
+    /** Sets whether this door starts open when an adjacent room exists. */
     public void setStartOpen(boolean startOpen) {
         this.startOpen = startOpen;
     }
 
-    /**
-     * Returns whether open/close sounds are disabled.
-     */
+    /** Returns whether open/close sounds are disabled. */
     public boolean isDisableSound() {
         return this.disableSound;
     }
 
-    /**
-     * Sets whether open/close sounds are disabled.
-     */
+    /** Sets whether open/close sounds are disabled. */
     public void setDisableSound(boolean disableSound) {
         this.disableSound = disableSound;
     }
 
-    /**
-     * Returns whether the door is currently open.
-     */
+    /** Returns whether the door is currently open. */
     public boolean isOpen() {
         return this.open;
     }
 
-    /**
-     * Sets the tracked open state without applying world changes.
-     */
+    /** Sets the tracked open state without applying world changes. */
     public void setOpen(boolean open) {
         this.open = open;
     }
 
-    /**
-     * Returns captured blocks used to restore this door when closing.
-     */
+    /** Returns captured blocks used to restore this door when closing. */
     public Map<SimpleLocation, StructurePieceBlock> getBlocks() {
         return this.blocks;
     }
 
-    /**
-     * Returns whether this connector currently leads to an adjacent room.
-     */
+    /** Returns whether this connector currently leads to an adjacent room. */
     public boolean isHasAdjacentRoom() {
         return this.hasAdjacentRoom;
     }
 
-    /**
-     * Sets whether this connector currently leads to an adjacent room.
-     */
+    /** Sets whether this connector currently leads to an adjacent room. */
     public void setHasAdjacentRoom(boolean hasAdjacentRoom) {
         this.hasAdjacentRoom = hasAdjacentRoom;
     }

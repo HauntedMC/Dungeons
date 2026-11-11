@@ -1,31 +1,28 @@
 package nl.hauntedmc.dungeons.model.element;
 
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import javax.annotation.Nullable;
 import nl.hauntedmc.dungeons.annotation.EditorHidden;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
-import nl.hauntedmc.dungeons.content.instance.edit.BranchingEditableInstance;
-import nl.hauntedmc.dungeons.content.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.generation.room.InstanceRoom;
 import nl.hauntedmc.dungeons.gui.hotbar.PlayerHotbarMenu;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuItem;
-import nl.hauntedmc.dungeons.model.instance.DungeonInstance;
-import nl.hauntedmc.dungeons.model.instance.EditableInstance;
+import nl.hauntedmc.dungeons.localization.LangUtils;
+import nl.hauntedmc.dungeons.runtime.instance.DungeonInstance;
+import nl.hauntedmc.dungeons.runtime.instance.EditableInstance;
+import nl.hauntedmc.dungeons.runtime.instance.edit.BranchingEditableInstance;
+import nl.hauntedmc.dungeons.runtime.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
-import nl.hauntedmc.dungeons.util.lang.LangUtils;
-
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerEvent;
-
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-
-import javax.annotation.Nullable;
 
 /**
  * Base class for executable dungeon elements.
@@ -41,8 +38,8 @@ public abstract class DungeonFunction extends DungeonElement
     protected String colour;
     private boolean requiresTrigger = true;
     private boolean allowRetriggerByDefault = false;
-    public FunctionCategory category = FunctionCategory.PLAYER;
-    public boolean requiresTarget = false;
+    private FunctionCategory category = FunctionCategory.PLAYER;
+    private boolean requiresTarget = false;
     private boolean allowChangingTargetType = true;
     @PersistedField protected FunctionTargetType targetType = FunctionTargetType.NONE;
     private int targetIndex = 0;
@@ -50,26 +47,20 @@ public abstract class DungeonFunction extends DungeonElement
     @PersistedField @EditorHidden protected Location location;
     @Nullable protected DungeonFunction parentFunction;
 
-    /**
-     * Creates a function from persisted configuration.
-     */
+    /** Creates a function from persisted configuration. */
     public DungeonFunction(String namespace, Map<String, Object> config) {
         super(config);
         this.namespace = namespace;
         this.displayName = namespace;
     }
 
-    /**
-     * Creates a new function without persisted state.
-     */
+    /** Creates a new function without persisted state. */
     public DungeonFunction(String namespace) {
         this.namespace = namespace;
         this.displayName = namespace;
     }
 
-    /**
-     * Performs one-time initialization after persisted fields have been loaded.
-     */
+    /** Performs one-time initialization after persisted fields have been loaded. */
     @Override
     public void initialize() {
         if (!this.initialized) {
@@ -122,9 +113,7 @@ public abstract class DungeonFunction extends DungeonElement
         }
     }
 
-    /**
-     * Disables the function, its trigger, and any registered listeners.
-     */
+    /** Disables the function, its trigger, and any registered listeners. */
     @Override
     public final void disable() {
         super.disable();
@@ -136,9 +125,7 @@ public abstract class DungeonFunction extends DungeonElement
         this.onDisable();
     }
 
-    /**
-     * Binds a trigger to this function and eagerly initializes the trigger editor state.
-     */
+    /** Binds a trigger to this function and eagerly initializes the trigger editor state. */
     public void setTrigger(DungeonTrigger trigger) {
         this.trigger = trigger;
         if (trigger != null) {
@@ -147,7 +134,7 @@ public abstract class DungeonFunction extends DungeonElement
         }
     }
 
-    public void setCategory(FunctionCategory category) {
+    public final void setCategory(FunctionCategory category) {
         this.category = category;
         this.setColour(category.getColor());
     }
@@ -163,9 +150,7 @@ public abstract class DungeonFunction extends DungeonElement
     public abstract void runFunction(
             TriggerFireEvent triggerEvent, List<DungeonPlayerSession> targets);
 
-    /**
-     * Optional pre-execution hook for validation or state mutation before targets are resolved.
-     */
+    /** Optional pre-execution hook for validation or state mutation before targets are resolved. */
     public void onExecute(TriggerFireEvent triggerEvent) {}
 
     /**
@@ -180,7 +165,7 @@ public abstract class DungeonFunction extends DungeonElement
             this.logger()
                     .warn(
                             "Skipping function '{}' in dungeon '{}' at {} because it has no bound"
-                                + " trigger.",
+                                    + " trigger.",
                             this.getClass().getSimpleName(),
                             this.dungeonNameForLogs(),
                             this.locationForLogs());
@@ -211,9 +196,7 @@ public abstract class DungeonFunction extends DungeonElement
         this.runFunctionSafely(event, this.resolveTargets(event));
     }
 
-    /**
-     * Resolves the effective player targets for the current target mode.
-     */
+    /** Resolves the effective player targets for the current target mode. */
     protected final List<DungeonPlayerSession> resolveTargets(TriggerFireEvent event) {
         LinkedHashSet<DungeonPlayerSession> targets = new LinkedHashSet<>();
         DungeonPlayerSession source = event.getPlayerSession();
@@ -292,7 +275,7 @@ public abstract class DungeonFunction extends DungeonElement
             this.logger()
                     .warn(
                             "Skipping nested function execution in '{}' for dungeon '{}' at {}"
-                                + " because no function was configured.",
+                                    + " because no function was configured.",
                             this.getClass().getSimpleName(),
                             this.dungeonNameForLogs(),
                             this.locationForLogs());
@@ -397,6 +380,7 @@ public abstract class DungeonFunction extends DungeonElement
         }
 
         this.buildHotbarMenu();
+        this.registerEditorListener();
     }
 
     private void verifyTargetType() {
@@ -429,7 +413,7 @@ public abstract class DungeonFunction extends DungeonElement
         }
 
         if (this.trigger != null
-                && !this.trigger.hasTarget
+                && !this.trigger.isHasTarget()
                 && (candidate == FunctionTargetType.PLAYER
                         || candidate == FunctionTargetType.TEAM)) {
             return false;
@@ -494,7 +478,7 @@ public abstract class DungeonFunction extends DungeonElement
         return this.colour;
     }
 
-    protected void setColour(String colour) {
+    protected final void setColour(String colour) {
         this.colour = colour;
     }
 
@@ -502,7 +486,7 @@ public abstract class DungeonFunction extends DungeonElement
         return this.requiresTrigger;
     }
 
-    public void setRequiresTrigger(boolean requiresTrigger) {
+    public final void setRequiresTrigger(boolean requiresTrigger) {
         this.requiresTrigger = requiresTrigger;
     }
 
@@ -510,7 +494,7 @@ public abstract class DungeonFunction extends DungeonElement
         return this.allowRetriggerByDefault;
     }
 
-    public void setAllowRetriggerByDefault(boolean allowRetriggerByDefault) {
+    public final void setAllowRetriggerByDefault(boolean allowRetriggerByDefault) {
         this.allowRetriggerByDefault = allowRetriggerByDefault;
     }
 
@@ -522,7 +506,7 @@ public abstract class DungeonFunction extends DungeonElement
         return this.requiresTarget;
     }
 
-    public void setRequiresTarget(boolean requiresTarget) {
+    public final void setRequiresTarget(boolean requiresTarget) {
         this.requiresTarget = requiresTarget;
     }
 
@@ -530,7 +514,7 @@ public abstract class DungeonFunction extends DungeonElement
         return this.allowChangingTargetType;
     }
 
-    public void setAllowChangingTargetType(boolean allowChangingTargetType) {
+    public final void setAllowChangingTargetType(boolean allowChangingTargetType) {
         this.allowChangingTargetType = allowChangingTargetType;
     }
 

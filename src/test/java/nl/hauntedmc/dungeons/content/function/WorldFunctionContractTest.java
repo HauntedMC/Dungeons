@@ -18,8 +18,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.nio.file.Path;
+import java.util.*;
+import java.util.function.BiFunction;
 import nl.hauntedmc.dungeons.support.*;
-
 import org.bukkit.*;
 import org.bukkit.Axis;
 import org.bukkit.block.Block;
@@ -40,10 +42,6 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-
-import java.nio.file.Path;
-import java.util.*;
-import java.util.function.BiFunction;
 
 class WorldFunctionContractTest {
     @TempDir Path directory;
@@ -209,7 +207,7 @@ class WorldFunctionContractTest {
     @Test
     void clonedRedstoneMechanicsCannotCancelTheirSourcesScheduledPulseOrReset() throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration());
-                var menus = new HeadlessMenus()) {
+                var _ = new HeadlessMenus()) {
             var block = mock(Block.class);
             when(f.world.getBlockAt(any(Location.class))).thenReturn(block);
             var pulse =
@@ -229,7 +227,7 @@ class WorldFunctionContractTest {
     @Test
     void clonedMobSpawnersKeepActivationCountsAndPendingTasksIndependent() throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration());
-                var menus = new HeadlessMenus()) {
+                var _ = new HeadlessMenus()) {
             var block = mock(Block.class);
             when(f.world.getBlockAt(any(Location.class))).thenReturn(block);
             // Count and placement contracts stop at Paper's spawn boundary; entity attributes need

@@ -1,12 +1,5 @@
 package nl.hauntedmc.dungeons.integration;
 
-import nl.hauntedmc.dataregistry.api.DataRegistryFeature;
-import nl.hauntedmc.dataregistry.api.player.PlayerData;
-import nl.hauntedmc.dataregistry.api.player.PlayerIdentity;
-import nl.hauntedmc.featureframework.toolkit.io.localization.Language;
-
-import org.bukkit.entity.Player;
-
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -16,6 +9,11 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongSupplier;
+import nl.hauntedmc.dataregistry.api.DataRegistryFeature;
+import nl.hauntedmc.dataregistry.api.player.PlayerData;
+import nl.hauntedmc.dataregistry.api.player.PlayerIdentity;
+import nl.hauntedmc.featureframework.toolkit.io.localization.Language;
+import org.bukkit.entity.Player;
 
 /** Bounded, identity-bound language snapshots. No SQL or future waits occur on message delivery. */
 public final class RegistryProfiles implements AutoCloseable {

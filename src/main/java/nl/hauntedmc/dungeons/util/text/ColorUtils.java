@@ -1,10 +1,9 @@
 package nl.hauntedmc.dungeons.util.text;
 
-import org.bukkit.Color;
-
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.bukkit.Color;
 
 /** Legacy and hex color translation helpers. */
 public final class ColorUtils {
