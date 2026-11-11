@@ -14,7 +14,6 @@ import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuItem;
 import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
-import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
 import org.bukkit.Material;
@@ -60,8 +59,8 @@ public class RepeaterFunction extends CompositeFunction {
     @Override
     public void onEnable() {
         if (this.function == null) {
-            RuntimeContext.plugin()
-                    .getSLF4JLogger()
+            RepeaterFunction.this
+                    .logger()
                     .warn(
                             "Function repeater in dungeon '{}' has no nested function at {},{},{}.",
                             this.instance.getDungeon().getWorldName(),
@@ -100,8 +99,8 @@ public class RepeaterFunction extends CompositeFunction {
     public void runFunction(
             final TriggerFireEvent triggerEvent, List<DungeonPlayerSession> targets) {
         if (this.function == null) {
-            RuntimeContext.plugin()
-                    .getSLF4JLogger()
+            RepeaterFunction.this
+                    .logger()
                     .warn(
                             "Skipping function repeater in dungeon '{}' at {},{},{} because nested function is missing.",
                             this.instance.getDungeon().getWorldName(),
@@ -113,8 +112,8 @@ public class RepeaterFunction extends CompositeFunction {
 
         int effectiveInterval = Math.max(1, this.interval);
         if (effectiveInterval != this.interval) {
-            RuntimeContext.plugin()
-                    .getSLF4JLogger()
+            RepeaterFunction.this
+                    .logger()
                     .warn(
                             "Function repeater in dungeon '{}' had invalid interval {} at {},{},{}; using 1 tick.",
                             this.instance.getDungeon().getWorldName(),
@@ -148,7 +147,7 @@ public class RepeaterFunction extends CompositeFunction {
                 };
         this.repeaters.add(repeater);
         try {
-            repeater.runTaskTimer(RuntimeContext.plugin(), this.delay, effectiveInterval);
+            repeater.runTaskTimer(RepeaterFunction.this.plugin(), this.delay, effectiveInterval);
         } catch (RuntimeException exception) {
             this.repeaters.remove(repeater);
             throw exception;
@@ -200,7 +199,7 @@ public class RepeaterFunction extends CompositeFunction {
             @Override
             public void onSelect(PlayerEvent event) {
                 Player player = event.getPlayer();
-                RuntimeContext.guiService().openGui(player, "functionmenu");
+                RepeaterFunction.this.guiService().openGui(player, "functionmenu");
             }
         };
     }
@@ -216,7 +215,8 @@ public class RepeaterFunction extends CompositeFunction {
             @Override
             public void onSelect(PlayerEvent event) {
                 Player player = event.getPlayer();
-                DungeonPlayerSession playerSession = RuntimeContext.playerSessions().get(player);
+                DungeonPlayerSession playerSession =
+                        RepeaterFunction.this.runtime().playerSessions().get(player);
                 if (RepeaterFunction.this.function != null) {
                     playerSession.showHotbar(RepeaterFunction.this.function.getMenu());
                 } else {

@@ -22,7 +22,7 @@ class DungeonPlayerDataStoreTest {
                     player.getUniqueId().toString(),
                     player.getUniqueId(),
                     "Finished: false\nExtensionField: retained\n");
-            var store = new DungeonPlayerDataStore(paper.plugin, dungeon);
+            var store = new DungeonPlayerDataStore(paper.plugin, dungeon, paper.state);
             paper.state.failWrites = true;
             assertThrows(
                     RuntimeException.class, () -> store.setCompleted(player.getUniqueId(), true));
@@ -44,7 +44,7 @@ class DungeonPlayerDataStoreTest {
     void accessDatesAreDetachedAndWorkerMutationsAreRejected() throws Exception {
         try (var paper = new PaperBoundary()) {
             var id = UUID.randomUUID();
-            var store = new DungeonPlayerDataStore(paper.plugin, UUID.randomUUID());
+            var store = new DungeonPlayerDataStore(paper.plugin, UUID.randomUUID(), paper.state);
             var date = new Date(System.currentTimeMillis() + 60000);
             long expected = date.getTime();
             store.setAccessCooldown(id, date);
@@ -65,7 +65,7 @@ class DungeonPlayerDataStoreTest {
                 String scope = "dungeon-progress/" + dungeon;
                 paper.state.seed(
                         scope, player.getUniqueId().toString(), player.getUniqueId(), payload);
-                var store = new DungeonPlayerDataStore(paper.plugin, dungeon);
+                var store = new DungeonPlayerDataStore(paper.plugin, dungeon, paper.state);
                 assertThrows(IllegalStateException.class, () -> store.save(player));
                 assertEquals(payload, paper.state.payload(scope, player.getUniqueId().toString()));
             }

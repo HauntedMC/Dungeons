@@ -14,7 +14,6 @@ import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
 import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
 import nl.hauntedmc.dungeons.model.element.TriggerCategory;
-import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
 import org.bukkit.Location;
@@ -77,7 +76,8 @@ public class PlayerDeathTrigger extends DungeonTrigger {
                     if (this.matchesRoom(player.getLocation())) {
                         this.playerDeaths.add(player.getUniqueId());
                         if (this.playerDeaths.size() >= requiredDeaths) {
-                            this.trigger(RuntimeContext.playerSessions().get(player));
+                            this.trigger(
+                                    PlayerDeathTrigger.this.runtime().playerSessions().get(player));
                             if (this.allowRetrigger) {
                                 this.playerDeaths.clear();
                             }

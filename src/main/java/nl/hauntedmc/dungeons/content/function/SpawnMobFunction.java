@@ -16,7 +16,6 @@ import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDifficulty;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.FunctionCategory;
-import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.runtime.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
@@ -113,8 +112,8 @@ public class SpawnMobFunction extends DungeonFunction {
                 try {
                     resolvedType = EntityType.valueOf(this.mob.toUpperCase(Locale.ROOT));
                 } catch (IllegalArgumentException exception) {
-                    RuntimeContext.plugin()
-                            .getSLF4JLogger()
+                    SpawnMobFunction.this
+                            .logger()
                             .warn(
                                     "Invalid mob type '{}' on SpawnMobFunction at {} in dungeon '{}'. Falling back to ZOMBIE.",
                                     this.mob,
@@ -196,7 +195,8 @@ public class SpawnMobFunction extends DungeonFunction {
                                                 .addModifier(
                                                         new AttributeModifier(
                                                                 new NamespacedKey(
-                                                                        RuntimeContext.plugin(),
+                                                                        SpawnMobFunction.this
+                                                                                .plugin(),
                                                                         "dungeon_level"),
                                                                 finalDamageMod - 1.0,
                                                                 Operation.MULTIPLY_SCALAR_1));
@@ -207,7 +207,8 @@ public class SpawnMobFunction extends DungeonFunction {
                             }
                         }
                     };
-            spawner.runTaskTimer(RuntimeContext.plugin(), this.delay, Math.max(this.interval, 1));
+            spawner.runTaskTimer(
+                    SpawnMobFunction.this.plugin(), this.delay, Math.max(this.interval, 1));
             this.spawners.add(spawner);
         }
     }
@@ -222,7 +223,7 @@ public class SpawnMobFunction extends DungeonFunction {
             if (room != null) {
                 ent.getPersistentDataContainer()
                         .set(
-                                new NamespacedKey(RuntimeContext.plugin(), "originroom"),
+                                new NamespacedKey(SpawnMobFunction.this.plugin(), "originroom"),
                                 PersistentDataType.STRING,
                                 room.getUuid().toString());
             }

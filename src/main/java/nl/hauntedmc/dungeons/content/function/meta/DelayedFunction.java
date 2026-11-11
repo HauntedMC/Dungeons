@@ -13,7 +13,6 @@ import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuItem;
 import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
-import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
 import org.bukkit.Material;
@@ -55,8 +54,8 @@ public class DelayedFunction extends CompositeFunction {
     @Override
     public void onEnable() {
         if (this.function == null) {
-            RuntimeContext.plugin()
-                    .getSLF4JLogger()
+            DelayedFunction.this
+                    .logger()
                     .warn(
                             "Delayed function in dungeon '{}' has no nested function at {},{},{}.",
                             this.instance.getDungeon().getWorldName(),
@@ -116,14 +115,14 @@ public class DelayedFunction extends CompositeFunction {
                     };
             this.tasks.add(task);
             try {
-                task.runTaskLater(RuntimeContext.plugin(), this.delay);
+                task.runTaskLater(DelayedFunction.this.plugin(), this.delay);
             } catch (RuntimeException exception) {
                 this.tasks.remove(task);
                 throw exception;
             }
         } else {
-            RuntimeContext.plugin()
-                    .getSLF4JLogger()
+            DelayedFunction.this
+                    .logger()
                     .warn(
                             "Skipping delayed function in dungeon '{}' at {},{},{} because nested function is missing.",
                             this.instance.getDungeon().getWorldName(),
@@ -159,7 +158,7 @@ public class DelayedFunction extends CompositeFunction {
                     @Override
                     public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
-                        RuntimeContext.guiService().openGui(player, "functionmenu");
+                        DelayedFunction.this.guiService().openGui(player, "functionmenu");
                     }
                 });
         this.menu.addMenuItem(
@@ -176,7 +175,7 @@ public class DelayedFunction extends CompositeFunction {
                     public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
                         DungeonPlayerSession playerSession =
-                                RuntimeContext.playerSessions().get(player);
+                                DelayedFunction.this.runtime().playerSessions().get(player);
                         if (DelayedFunction.this.function != null) {
                             playerSession.showHotbar(DelayedFunction.this.function.getMenu());
                         } else {

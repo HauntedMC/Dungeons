@@ -9,7 +9,7 @@ public final class StaffPlayerRecords {
     private StaffPlayerRecords() {}
 
     private static PlayerRecoveryJournal journal(DungeonsRuntime runtime, UUID id) {
-        return new PlayerRecoveryJournal(id);
+        return new PlayerRecoveryJournal(runtime.stateStore(), id);
     }
 
     public static String inspect(DungeonsRuntime runtime, UUID id) {

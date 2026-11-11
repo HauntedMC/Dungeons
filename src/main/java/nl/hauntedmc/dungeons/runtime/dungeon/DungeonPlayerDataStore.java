@@ -5,7 +5,6 @@ import java.util.function.Consumer;
 import nl.hauntedmc.dungeons.config.ConfigurationFile;
 import nl.hauntedmc.dungeons.persistence.StateDocument;
 import nl.hauntedmc.dungeons.persistence.StateStore;
-import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.entity.Player;
@@ -23,11 +22,11 @@ public final class DungeonPlayerDataStore {
     private final Map<UUID, Date> access = new HashMap<>();
     private final Set<UUID> readOnly = new HashSet<>();
 
-    public DungeonPlayerDataStore(Plugin plugin, UUID dungeonId) {
+    public DungeonPlayerDataStore(Plugin plugin, UUID dungeonId, StateStore store) {
         requireOwnerThread();
         this.plugin = plugin;
         this.scope = "dungeon-progress/" + dungeonId;
-        this.store = RuntimeContext.runtime().stateStore();
+        this.store = Objects.requireNonNull(store, "store");
     }
 
     private void load(UUID id) {

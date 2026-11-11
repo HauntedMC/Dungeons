@@ -12,7 +12,6 @@ import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
 import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
 import nl.hauntedmc.dungeons.model.element.TriggerCategory;
-import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
@@ -105,7 +104,11 @@ public class MobDeathTrigger extends DungeonTrigger {
                                 Player killer = ent.getKiller();
                                 DungeonPlayerSession playerSession = null;
                                 if (killer != null) {
-                                    playerSession = RuntimeContext.playerSessions().get(killer);
+                                    playerSession =
+                                            MobDeathTrigger.this
+                                                    .runtime()
+                                                    .playerSessions()
+                                                    .get(killer);
                                 }
 
                                 this.trigger(playerSession);
@@ -136,7 +139,7 @@ public class MobDeathTrigger extends DungeonTrigger {
         String uuidString =
                 ent.getPersistentDataContainer()
                         .get(
-                                new NamespacedKey(RuntimeContext.plugin(), "originroom"),
+                                new NamespacedKey(MobDeathTrigger.this.plugin(), "originroom"),
                                 PersistentDataType.STRING);
         if (uuidString == null) {
             return false;

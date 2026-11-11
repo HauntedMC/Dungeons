@@ -173,7 +173,9 @@ public abstract class DungeonDefinition {
         this.loadRuntimeSettingsFromConfig();
         this.accessKeyService =
                 new DungeonAccessKeyService(runtime, folder, this.dungeonId, () -> this.accessKeys);
-        this.playerDataStore = new DungeonPlayerDataStore(this.plugin(), this.dungeonId);
+        this.playerDataStore =
+                new DungeonPlayerDataStore(
+                        this.plugin(), this.dungeonId, this.runtime.stateStore());
 
         this.instances = new ArrayList<>();
         this.cleanDeadInstances();

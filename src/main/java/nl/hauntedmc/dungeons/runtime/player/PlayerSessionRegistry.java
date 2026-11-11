@@ -24,6 +24,7 @@ import org.bukkit.scheduler.BukkitTask;
 /** Server-thread session ownership with bounded retention for inactive disconnected players. */
 public final class PlayerSessionRegistry implements Listener {
     private final DungeonsPlugin plugin;
+    private final DungeonsRuntime runtime;
     private static final int MAX_EXPIRATIONS_PER_SWEEP = 8;
     private final LinkedHashMap<UUID, DungeonPlayerSession> players = new LinkedHashMap<>();
     private final HashMap<UUID, Long> disconnected = new HashMap<>();
@@ -33,17 +34,18 @@ public final class PlayerSessionRegistry implements Listener {
     private BukkitTask sweepTask;
     private boolean closed;
 
-    public PlayerSessionRegistry(DungeonsPlugin plugin) {
-        this(plugin, System::nanoTime);
+    public PlayerSessionRegistry(DungeonsRuntime runtime) {
+        this(runtime, System::nanoTime);
     }
 
-    PlayerSessionRegistry(DungeonsPlugin plugin, LongSupplier clock) {
-        this.plugin = plugin;
+    PlayerSessionRegistry(DungeonsRuntime runtime, LongSupplier clock) {
+        this.runtime = runtime;
+        this.plugin = runtime.environment().plugin();
         this.clock = clock;
     }
 
     /** Starts one bounded sweep after the runtime's queue and preparation services exist. */
-    public void start(DungeonsRuntime runtime) {
+    public void start() {
         requireOwnerThread();
         if (closed) throw new IllegalStateException("Session registry has shut down");
         if (sweepTask != null) return;
@@ -70,7 +72,7 @@ public final class PlayerSessionRegistry implements Listener {
         try {
             DungeonPlayerSession session = players.get(player.getUniqueId());
             if (session == null) {
-                session = new DungeonPlayerSession(plugin, player);
+                session = new DungeonPlayerSession(runtime, player);
                 players.put(player.getUniqueId(), session);
             } else {
                 session.setPlayer(player);

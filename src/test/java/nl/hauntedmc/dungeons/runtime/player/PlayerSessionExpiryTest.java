@@ -28,7 +28,7 @@ class PlayerSessionExpiryTest {
 
     static PlayerSessionRegistry registry(RunFixture fixture, AtomicLong clock) {
         fixture.paper.config.set("sessions.offline_retention_seconds", 1);
-        var registry = new PlayerSessionRegistry(fixture.paper.plugin, clock::get);
+        var registry = new PlayerSessionRegistry(fixture.paper.runtime, clock::get);
         fixture.paper.runtime.setPlayerSessions(registry);
         return registry;
     }
@@ -110,7 +110,7 @@ class PlayerSessionExpiryTest {
             var catalog = mock(DungeonRepository.class);
             when(catalog.getLoadedDungeons()).thenReturn(List.of(f.dungeon));
             f.paper.runtime.setDungeonCatalog(catalog);
-            registry.start(f.paper.runtime);
+            registry.start();
             var player = new PlayerState();
             registry.put(player.player);
             var id = player.player.getUniqueId();
@@ -307,8 +307,8 @@ class PlayerSessionExpiryTest {
             var registry = registry(f, clock);
             var queues = mock(DungeonQueueRegistry.class);
             f.paper.runtime.setQueueRegistry(queues);
-            registry.start(f.paper.runtime);
-            registry.start(f.paper.runtime);
+            registry.start();
+            registry.start();
             var ticker = f.scheduler.jobs.getLast();
             assertEquals(20L, ticker.period);
             assertEquals(1, f.scheduler.jobs.size());

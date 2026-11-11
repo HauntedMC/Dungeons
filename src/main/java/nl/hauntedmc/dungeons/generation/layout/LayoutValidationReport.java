@@ -3,7 +3,7 @@ package nl.hauntedmc.dungeons.generation.layout;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import nl.hauntedmc.dungeons.runtime.RuntimeContext;
+import org.slf4j.Logger;
 
 /** Collects warnings and errors discovered while validating a layout configuration. */
 public class LayoutValidationReport {
@@ -73,17 +73,12 @@ public class LayoutValidationReport {
      *
      * @param dungeonName dungeon being validated
      */
-    public void log(String dungeonName) {
+    public void log(Logger logger, String dungeonName) {
         for (String warning : this.warnings) {
-            RuntimeContext.logger()
-                    .warn(
-                            "Generation validation warning for dungeon '{}': {}",
-                            dungeonName,
-                            warning);
+            logger.warn("Generation validation warning for dungeon '{}': {}", dungeonName, warning);
         }
         for (String error : this.errors) {
-            RuntimeContext.logger()
-                    .error("Generation validation error for dungeon '{}': {}", dungeonName, error);
+            logger.error("Generation validation error for dungeon '{}': {}", dungeonName, error);
         }
     }
 }

@@ -16,7 +16,6 @@ import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
 import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.FunctionCategory;
-import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.instance.edit.BranchingEditableInstance;
 import nl.hauntedmc.dungeons.runtime.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
@@ -120,7 +119,7 @@ public class RoomDoorFunction extends DungeonFunction {
                     @Override
                     public void onInput(Player player, String message) {
                         DungeonPlayerSession playerSession =
-                                RuntimeContext.playerSessions().get(player);
+                                RoomDoorFunction.this.runtime().playerSessions().get(player);
                         RoomDoorFunction.this.doorName = message;
                         LangUtils.sendMessage(
                                 player,
@@ -166,7 +165,7 @@ public class RoomDoorFunction extends DungeonFunction {
                     public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
                         DungeonPlayerSession playerSession =
-                                RuntimeContext.playerSessions().get(player);
+                                RoomDoorFunction.this.runtime().playerSessions().get(player);
                         RoomDoorFunction.this.action++;
                         if (RoomDoorFunction.this.action >= DoorAction.values().length) {
                             RoomDoorFunction.this.action = 0;

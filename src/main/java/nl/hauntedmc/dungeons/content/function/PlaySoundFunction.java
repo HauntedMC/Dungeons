@@ -14,7 +14,6 @@ import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
 import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.FunctionCategory;
-import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
 import org.bukkit.Location;
@@ -55,8 +54,8 @@ public class PlaySoundFunction extends DungeonFunction {
             try {
                 category = SoundCategory.valueOf(this.soundCategory);
             } catch (IllegalArgumentException exception) {
-                RuntimeContext.plugin()
-                        .getSLF4JLogger()
+                PlaySoundFunction.this
+                        .logger()
                         .warn(
                                 "Invalid sound category '{}' on PlaySoundFunction at {}. Falling back to MASTER.",
                                 this.soundCategory,

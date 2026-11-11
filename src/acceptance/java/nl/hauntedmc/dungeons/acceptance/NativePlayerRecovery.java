@@ -194,9 +194,7 @@ final class NativePlayerRecovery {
                                         player.getGameMode() == GameMode.SURVIVAL
                                                 && player.getExp() == .6f,
                                         "Native recovery lost game mode or XP");
-                                var again =
-                                        new DungeonPlayerSession(
-                                                test.runtime().environment().plugin(), player);
+                                var again = new DungeonPlayerSession(test.runtime(), player);
                                 require(
                                         again.recoverPendingState(),
                                         "Native delivery was not acknowledged");
@@ -223,9 +221,7 @@ final class NativePlayerRecovery {
                                     require(
                                             inventory.getContents()[0].equals(original),
                                             "Departure lost the original inventory");
-                                    again =
-                                            new DungeonPlayerSession(
-                                                    test.runtime().environment().plugin(), player);
+                                    again = new DungeonPlayerSession(test.runtime(), player);
                                     require(
                                             again.recoverPendingState(),
                                             "Reconnect failed after a completed departure");

@@ -23,7 +23,7 @@ class PlayerDataCheckpointTest {
             var player = new PlayerState();
             player.contents[0] = PlayerState.stack(4);
             var file = directory.resolve("recovery.yml");
-            var journal = new PlayerRecoveryJournal(TestStateStore.player(file));
+            var journal = new PlayerRecoveryJournal(paper.state, TestStateStore.player(file));
             paper.checkpoints
                     .when(PlayerDataCheckpoint::requireStorage)
                     .thenThrow(
@@ -78,7 +78,7 @@ class PlayerDataCheckpointTest {
         try (var paper = new PaperBoundary()) {
             var path = directory.resolve("recovery.yml");
             var player = new PlayerState();
-            var journal = new PlayerRecoveryJournal(TestStateStore.player(path));
+            var journal = new PlayerRecoveryJournal(paper.state, TestStateStore.player(path));
             journal.addRefunds(PlayerState.stack(5));
             paper.checkpoints
                     .when(() -> PlayerDataCheckpoint.verify(eq(player.player), anyString()))
@@ -87,7 +87,8 @@ class PlayerDataCheckpointTest {
                     UncheckedIOException.class,
                     () -> journal.deliverRefund(player.player, journal.refunds().getFirst()));
             assertTrue(
-                    new PlayerRecoveryJournal(TestStateStore.player(path)).hasPendingTransaction());
+                    new PlayerRecoveryJournal(paper.state, TestStateStore.player(path))
+                            .hasPendingTransaction());
             assertNull(
                     player.player
                             .getPersistentDataContainer()
@@ -95,7 +96,8 @@ class PlayerDataCheckpointTest {
                                     new NamespacedKey("dungeons", "player_transaction"),
                                     PersistentDataType.STRING));
             var reconnected = new PlayerState();
-            new PlayerRecoveryJournal(TestStateStore.player(path)).recover(reconnected.player);
+            new PlayerRecoveryJournal(paper.state, TestStateStore.player(path))
+                    .recover(reconnected.player);
             assertEquals(5, reconnected.contents[0].getAmount());
         }
     }

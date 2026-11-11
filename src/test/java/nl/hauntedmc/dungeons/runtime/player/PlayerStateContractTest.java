@@ -17,7 +17,7 @@ class PlayerStateContractTest {
         try (var paper = new PaperBoundary()) {
             when(paper.plugin.getDataFolder()).thenReturn(directory.toFile());
             var state = new PlayerState();
-            var session = new DungeonPlayerSession(paper.plugin, state.player);
+            var session = new DungeonPlayerSession(paper.runtime, state.player);
             session.saveInventory();
             state.health = 1;
             state.food = 0;
@@ -35,7 +35,7 @@ class PlayerStateContractTest {
             when(paper.plugin.getDataFolder()).thenReturn(directory.toFile());
             var state = new PlayerState();
             state.contents[0] = PlayerState.stack(7);
-            var session = new DungeonPlayerSession(paper.plugin, state.player);
+            var session = new DungeonPlayerSession(paper.runtime, state.player);
             session.restoreInventory();
             session.setEditMode(false);
             assertEquals(7, state.contents[0].getAmount());
@@ -55,7 +55,7 @@ class PlayerStateContractTest {
             state.contents[0] = PlayerState.stack(7);
             state.contents[40] = PlayerState.stack(2);
             state.armor[0] = PlayerState.stack(1);
-            var session = new DungeonPlayerSession(paper.plugin, state.player);
+            var session = new DungeonPlayerSession(paper.runtime, state.player);
             session.saveInventory();
             state.contents[0].setAmount(1);
             state.contents[40].setAmount(1);
@@ -76,7 +76,7 @@ class PlayerStateContractTest {
             when(paper.plugin.getDataFolder()).thenReturn(directory.toFile());
             var scheduler = new CapturedScheduler(paper);
             var state = new PlayerState();
-            var session = new DungeonPlayerSession(paper.plugin, state.player);
+            var session = new DungeonPlayerSession(paper.runtime, state.player);
             session.setSavedExp(.65f);
             session.setSavedLevel(24);
             when(paper.plugin.isEnabled()).thenReturn(true);
@@ -127,7 +127,7 @@ class PlayerStateContractTest {
             state.contents[0] = PlayerState.stack(8);
             state.contents[40] = PlayerState.stack(3);
             state.armor[0] = PlayerState.stack(1);
-            var session = new DungeonPlayerSession(paper.plugin, state.player);
+            var session = new DungeonPlayerSession(paper.runtime, state.player);
             session.saveEditInventory();
             state.contents[0].setAmount(1);
             state.contents[40].setAmount(1);
@@ -150,7 +150,7 @@ class PlayerStateContractTest {
             when(paper.plugin.getDataFolder()).thenReturn(directory.toFile());
             when(paper.plugin.isEnabled()).thenReturn(true);
             var state = new PlayerState();
-            var session = new DungeonPlayerSession(paper.plugin, state.player);
+            var session = new DungeonPlayerSession(paper.runtime, state.player);
             session.saveInventory();
             state.health = 1;
             state.food = 0;

@@ -30,7 +30,7 @@ public final class RunFixture implements AutoCloseable {
         paper.bukkit.when(Bukkit::isPrimaryThread).thenReturn(true);
         paper.bukkit.when(Bukkit::getDefaultGameMode).thenReturn(GameMode.SURVIVAL);
         paper.runtime.setPreparations(new PreparationRegistry());
-        paper.runtime.setPlayerSessions(new PlayerSessionRegistry(paper.plugin));
+        paper.runtime.setPlayerSessions(new PlayerSessionRegistry(paper.runtime));
         paper.runtime.setActiveInstances(new ActiveInstanceRegistry(paper.plugin));
         when(world.getName()).thenReturn("crypt_0");
         var worldId = UUID.randomUUID();

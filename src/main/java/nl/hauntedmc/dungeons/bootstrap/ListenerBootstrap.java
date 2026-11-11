@@ -23,9 +23,9 @@ final class ListenerBootstrap {
     void registerCoreListeners() {
         DungeonsPlugin plugin = this.runtime.environment().plugin();
         register(new DatabaseLoginListener(this.runtime));
-        register(new ProfileListener(this.runtime));
+        register(new ProfileListener(this.runtime.profiles()));
         register(this.runtime.playerSessions());
-        this.runtime.playerSessions().start(this.runtime);
+        this.runtime.playerSessions().start();
         register(
                 new DungeonListener(
                         plugin,

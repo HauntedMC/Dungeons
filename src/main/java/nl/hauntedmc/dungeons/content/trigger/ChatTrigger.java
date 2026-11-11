@@ -14,7 +14,6 @@ import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
 import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
 import nl.hauntedmc.dungeons.model.element.TriggerCategory;
-import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.text.ComponentUtils;
@@ -119,14 +118,15 @@ public class ChatTrigger extends DungeonTrigger {
             // must still be checked on the main thread.
             return Bukkit.getScheduler()
                     .callSyncMethod(
-                            RuntimeContext.plugin(), () -> this.handleTriggerChatSync(playerId))
+                            ChatTrigger.this.plugin(), () -> this.handleTriggerChatSync(playerId))
                     .get();
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             return false;
         } catch (ExecutionException exception) {
             Throwable root = exception.getCause() == null ? exception : exception.getCause();
-            RuntimeContext.logger()
+            ChatTrigger.this
+                    .logger()
                     .error(
                             "Failed to process chat trigger '{}' for player '{}'.",
                             this.getNamespace(),
@@ -138,7 +138,7 @@ public class ChatTrigger extends DungeonTrigger {
 
     /** Performs handle trigger chat sync. */
     private boolean handleTriggerChatSync(UUID playerId) {
-        DungeonPlayerSession session = RuntimeContext.playerSessions().get(playerId);
+        DungeonPlayerSession session = ChatTrigger.this.runtime().playerSessions().get(playerId);
         if (session == null || session.getInstance() != this.instance) {
             return false;
         }

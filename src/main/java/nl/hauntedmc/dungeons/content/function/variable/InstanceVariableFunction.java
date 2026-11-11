@@ -14,7 +14,6 @@ import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.FunctionCategory;
 import nl.hauntedmc.dungeons.model.element.FunctionTargetType;
-import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
@@ -54,7 +53,7 @@ public class InstanceVariableFunction extends DungeonFunction {
     public void runFunction(TriggerFireEvent triggerEvent, List<DungeonPlayerSession> targets) {
         Bukkit.getScheduler()
                 .runTaskLater(
-                        RuntimeContext.plugin(),
+                        InstanceVariableFunction.this.plugin(),
                         () -> {
                             PlayableInstance play = this.instance.asPlayInstance();
                             if (play != null) {
@@ -69,8 +68,8 @@ public class InstanceVariableFunction extends DungeonFunction {
                                             change = Double.parseDouble(this.varValue);
                                             play.getInstanceVariables().add(this.varName, change);
                                         } catch (NumberFormatException exception) {
-                                            RuntimeContext.plugin()
-                                                    .getSLF4JLogger()
+                                            InstanceVariableFunction.this
+                                                    .logger()
                                                     .warn(
                                                             "Failed to add value '{}' to instance variable '{}' in dungeon '{}' at {},{},{}: value is not numeric.",
                                                             this.varValue,
@@ -89,8 +88,8 @@ public class InstanceVariableFunction extends DungeonFunction {
                                             play.getInstanceVariables()
                                                     .subtract(this.varName, change);
                                         } catch (NumberFormatException exception) {
-                                            RuntimeContext.plugin()
-                                                    .getSLF4JLogger()
+                                            InstanceVariableFunction.this
+                                                    .logger()
                                                     .warn(
                                                             "Failed to subtract value '{}' from instance variable '{}' in dungeon '{}' at {},{},{}: value is not numeric.",
                                                             this.varValue,
@@ -168,7 +167,10 @@ public class InstanceVariableFunction extends DungeonFunction {
                     public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
                         DungeonPlayerSession playerSession =
-                                RuntimeContext.playerSessions().get(player);
+                                InstanceVariableFunction.this
+                                        .runtime()
+                                        .playerSessions()
+                                        .get(player);
                         InstanceVariableFunction.this.modeIndex++;
                         InstanceVariableFunction.this.verifyModeType();
                         LangUtils.sendMessage(

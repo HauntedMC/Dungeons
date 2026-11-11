@@ -7,7 +7,6 @@ import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
 import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
 import nl.hauntedmc.dungeons.model.element.TriggerCategory;
-import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.event.InteractionUtils;
 import org.bukkit.GameMode;
@@ -67,7 +66,7 @@ public class InteractTrigger extends DungeonTrigger {
                             if (event.getHand() != EquipmentSlot.OFF_HAND) {
                                 Player player = event.getPlayer();
                                 DungeonPlayerSession dungeonPlayer =
-                                        RuntimeContext.playerSessions().get(player);
+                                        InteractTrigger.this.runtime().playerSessions().get(player);
                                 if (this.allowRetrigger || !this.hasTrackedTarget(dungeonPlayer)) {
                                     event.setCancelled(true);
                                     if (this.function != null

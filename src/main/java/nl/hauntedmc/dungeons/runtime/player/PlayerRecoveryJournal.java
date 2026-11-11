@@ -5,7 +5,6 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import nl.hauntedmc.dungeons.persistence.StateDocument;
 import nl.hauntedmc.dungeons.persistence.StateStore;
-import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.InvalidConfigurationException;
@@ -24,13 +23,10 @@ final class PlayerRecoveryJournal {
     private final StateDocument document;
     private YamlConfiguration state;
 
-    PlayerRecoveryJournal(UUID playerId) {
+    PlayerRecoveryJournal(StateStore store, UUID playerId) {
         this.document =
-                RuntimeContext.runtime()
-                        .stateStore()
-                        .document(
-                                new StateStore.Key(
-                                        "player-recovery", playerId.toString(), playerId));
+                store.document(
+                        new StateStore.Key("player-recovery", playerId.toString(), playerId));
         state = new YamlConfiguration();
         try {
             document.loadInto(state);
