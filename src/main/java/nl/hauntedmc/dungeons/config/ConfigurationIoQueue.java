@@ -125,6 +125,21 @@ final class ConfigurationIoQueue {
         return operation.result.join();
     }
 
+    static CompletableFuture<Void> barrier(Path directory) {
+        synchronized (LANES) {
+            var barriers = new ArrayList<CompletableFuture<?>>();
+            for (var entry : LANES.entrySet()) {
+                if (!entry.getKey().startsWith(directory)) continue;
+                if (entry.getValue().running != null) barriers.add(entry.getValue().running.result);
+                for (var pending : entry.getValue().pending) barriers.add(pending.result);
+                var operation = new Operation<Void>(() -> null);
+                entry.getValue().pending.addLast(operation);
+                barriers.add(operation.result);
+            }
+            return CompletableFuture.allOf(barriers.toArray(CompletableFuture[]::new));
+        }
+    }
+
     static void flush() {
         while (true) {
             List<Lane> pending;
@@ -147,8 +162,12 @@ final class ConfigurationIoQueue {
                         LANES.remove(lane.file, lane);
                         return;
                     }
+                    lane.running = operation;
                 }
                 operation.execute();
+                synchronized (LANES) {
+                    lane.running = null;
+                }
             }
         } finally {
             lane.disk.unlock();
@@ -198,6 +217,7 @@ final class ConfigurationIoQueue {
         final Path file;
         final ReentrantLock disk = new ReentrantLock();
         final Deque<Operation<?>> pending = new ArrayDeque<>();
+        Operation<?> running;
 
         Lane(Path file) {
             this.file = file;

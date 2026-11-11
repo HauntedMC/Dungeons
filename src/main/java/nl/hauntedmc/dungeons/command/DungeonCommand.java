@@ -54,6 +54,7 @@ public final class DungeonCommand implements TabExecutor {
     private final CommandOutput output;
     private final DungeonConfigCommandHandler configCommandHandler;
     private final CommandHandler teamCommandGroup;
+    private final RepoCommandHandler repoCommands;
 
     private final CommandHandler dungeonCommandGroup;
     private final CommandHandler editCommandGroup;
@@ -83,6 +84,7 @@ public final class DungeonCommand implements TabExecutor {
                         teamManager,
                         guiService);
         this.plugin = plugin;
+        this.repoCommands = new RepoCommandHandler(RuntimeContext.runtime());
         this.playerManager = playerManager;
         this.dungeonManager = dungeonManager;
         this.configCommandHandler =
@@ -180,6 +182,7 @@ public final class DungeonCommand implements TabExecutor {
                 RuntimeContext.runtime().stateStore().requirePlayerReady(player.getUniqueId());
             String[] operation = route.arguments(values);
             return switch (route.handler()) {
+                case REPO -> this.repoCommands.handleCommand(sender, operation);
                 case GAMEPLAY -> this.gameplayCommands.handleCommand(sender, operation);
                 case TEAM -> this.teamCommandGroup.handleCommand(sender, operation);
                 case MAP -> this.dungeonCommandGroup.handleCommand(sender, operation);
@@ -228,11 +231,22 @@ public final class DungeonCommand implements TabExecutor {
         if (map != null) {
             var dungeon = this.dungeonManager.get(map.getFirst());
             String scope = dungeon == null ? map.getFirst() : dungeon.getWorldName();
+            if (dungeon == null
+                    && route.handler() == CommandRoutes.Handler.REPO
+                    && RuntimeContext.runtime().contentRepository() != null)
+                scope = RuntimeContext.runtime().contentRepository().cachedScope(scope);
             if (!scope.equals("all") && !scope.equals("current")) {
                 return StaffPermissions.allows(sender, capability, scope);
             }
         }
         if (StaffPermissions.allows(sender, capability, null)) return true;
+        if (route.handler() == CommandRoutes.Handler.REPO
+                && !route.syntax().equals("repo fetch")
+                && RuntimeContext.runtime().contentRepository() != null
+                && !RuntimeContext.runtime()
+                        .contentRepository()
+                        .cachedNames(sender, capability.substring("repo.".length()))
+                        .isEmpty()) return true;
         if (route.syntax().startsWith("server")
                 || route.syntax().startsWith("map archive ")
                 || route.syntax().equals("instance list")
@@ -270,7 +284,7 @@ public final class DungeonCommand implements TabExecutor {
                 usage = usage.replace("<" + value.getKey() + ">", value.getValue().getFirst());
             if (prefix.isBlank()) {
                 String root = usage.split(" ")[0];
-                if (List.of("map", "edit", "player", "instance", "queue", "server", "team")
+                if (List.of("map", "edit", "player", "instance", "queue", "server", "team", "repo")
                         .contains(root)) usage = root + " … (use /dungeon help " + root + ")";
             }
             lines.add("/dungeon " + usage);
@@ -309,6 +323,16 @@ public final class DungeonCommand implements TabExecutor {
                     if (this.allowed(sender, route, candidate))
                         suggestions.add(dungeon.getWorldName());
                 }
+                if (route.handler() == CommandRoutes.Handler.REPO
+                        && RuntimeContext.runtime().contentRepository() != null) {
+                    String capability = route.permission().substring("staff.repo.".length());
+                    suggestions.addAll(
+                            RuntimeContext.runtime()
+                                    .contentRepository()
+                                    .cachedNames(sender, capability));
+                }
+            } else if (next.equals("<bump>")) {
+                suggestions.addAll(List.of("major", "minor", "patch"));
             } else if (next.equals("<player>")) {
                 Bukkit.getOnlinePlayers().forEach(player -> suggestions.add(player.getName()));
             } else if (next.equals("<difficulty>") && values.containsKey("map")) {

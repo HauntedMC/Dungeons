@@ -432,10 +432,14 @@ final class DungeonWorldCommandHandler {
 
         importDungeon.setSaveConfig("dungeon.environment", captured.environment());
         importDungeon.setLobbySpawn(captured.spawn());
-        LangUtils.sendMessage(
+        initializeCreated(
                 sender,
-                "commands.dungeon.import.success",
-                LangUtils.placeholder("world", captured.name()));
+                importDungeon,
+                () ->
+                        LangUtils.sendMessage(
+                                sender,
+                                "commands.dungeon.import.success",
+                                LangUtils.placeholder("world", captured.name())));
     }
 
     private record ImportedWorld(
@@ -538,10 +542,40 @@ final class DungeonWorldCommandHandler {
         }
 
         newDungeon.saveConfig();
-        LangUtils.sendMessage(
+        initializeCreated(
                 player,
-                "commands.dungeon.create.success",
-                LangUtils.placeholder("dungeon", captured.name()));
+                newDungeon,
+                () ->
+                        LangUtils.sendMessage(
+                                player,
+                                "commands.dungeon.create.success",
+                                LangUtils.placeholder("dungeon", captured.name())));
+    }
+
+    private void initializeCreated(
+            CommandSender actor, DungeonDefinition dungeon, Runnable success) {
+        var repository = dungeon.getRuntime().contentRepository();
+        if (repository == null) throw new IllegalStateException("Repository service unavailable");
+        repository
+                .initialize(dungeon.getWorldName(), actor, true)
+                .whenComplete(
+                        (result, failure) ->
+                                Bukkit.getScheduler()
+                                        .runTask(
+                                                this.plugin,
+                                                () -> {
+                                                    if (failure == null) success.run();
+                                                    else {
+                                                        this.plugin
+                                                                .getSLF4JLogger()
+                                                                .error(
+                                                                        "Created dungeon could not be initialized",
+                                                                        failure);
+                                                        LangUtils.sendRaw(
+                                                                actor,
+                                                                "Dungeon created but disabled: repository initialization failed. Use /dungeon repo init after checking the log.");
+                                                    }
+                                                }));
     }
 
     private record CreatedWorld(

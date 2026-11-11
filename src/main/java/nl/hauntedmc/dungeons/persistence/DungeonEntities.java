@@ -19,6 +19,11 @@ public final class DungeonEntities {
 
     public static Class<?>[] types() {
         return new Class<?>[] {
+            RepoEntities.Entry.class,
+            RepoEntities.Release.class,
+            RepoEntities.File.class,
+            RepoEntities.Chunk.class,
+            RepoEntities.FileChunk.class,
             StateDocumentRow.class,
             PlayerReference.class,
             Server.class,

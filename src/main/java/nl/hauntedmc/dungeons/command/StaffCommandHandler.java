@@ -833,6 +833,10 @@ public final class StaffCommandHandler implements CommandHandler {
 
     public List<String> validation(DungeonDefinition d) {
         var result = new ArrayList<String>();
+        if (!d.isRepositoryInitialized())
+            result.add(
+                    "DISABLED: Missing or invalid repository metadata; use /dungeon repo init "
+                            + d.getWorldName());
         if (d.getStartSpawn() == null) result.add("ERROR: Start location is missing");
         if (d.getConfig().contains("locations.exit") && d.getExitLoc() == null)
             result.add("ERROR: Exit world is missing/unloaded; set the external exit again");

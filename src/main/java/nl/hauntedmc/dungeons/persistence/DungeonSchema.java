@@ -239,7 +239,16 @@ public final class DungeonSchema {
             if (!actual.containsValue(
                     new ForeignKey(columns, target, references, rule, "RESTRICT")))
                 throw new SQLException(
-                        "Missing or incompatible foreign key: " + table + " -> " + target);
+                        "Missing or incompatible foreign key: "
+                                + table
+                                + " -> "
+                                + target
+                                + "; expected "
+                                + columns
+                                + " -> "
+                                + references
+                                + "; actual "
+                                + actual.values());
         }
     }
 

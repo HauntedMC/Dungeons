@@ -225,6 +225,14 @@ public final class DungeonRepository {
                 this.loadFailures.put(folder.getName(), "Initialization failed; see server log");
                 return null;
             }
+            if (!dungeon.isRepositoryInitialized())
+                this.runtime
+                        .environment()
+                        .logger()
+                        .warn(
+                                "Dungeon '{}' is disabled: repository metadata is missing or invalid. Use /dungeon repo init {}.",
+                                folder.getName(),
+                                folder.getName());
             dungeon.setGenerator(generator);
             if (dungeon.isUseDifficultyLevels()) {
                 PlayMenus.initializeDifficultySelector(dungeon);

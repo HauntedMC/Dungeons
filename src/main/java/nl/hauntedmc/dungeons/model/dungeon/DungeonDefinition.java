@@ -110,6 +110,16 @@ public abstract class DungeonDefinition {
     protected EditableInstance editSession;
     protected volatile boolean saving;
     private String durableConfiguration;
+    private boolean repositoryInitialized;
+
+    public boolean isRepositoryInitialized() {
+        return repositoryInitialized;
+    }
+
+    public void refreshRepositoryState() {
+        repositoryInitialized =
+                nl.hauntedmc.dungeons.repository.RepoLocal.valid(folder.toPath(), dungeonId);
+    }
 
     /** Loads a dungeon definition from disk or from a preloaded configuration snapshot. */
     public DungeonDefinition(
@@ -158,6 +168,7 @@ public abstract class DungeonDefinition {
         this.dungeonId =
                 DungeonIdentity.initialize(
                         this.plugin(), this.config, new File(folder, "config.yml"));
+        this.refreshRepositoryState();
         this.syncConfigWithDefaults();
         this.loadRuntimeSettingsFromConfig();
         this.accessKeyService =
@@ -244,6 +255,11 @@ public abstract class DungeonDefinition {
      * fields for faster access during play.
      */
     protected void loadRuntimeSettingsFromConfig() {
+        this.config.setComments(
+                "dungeon.enabled", List.of("LOCAL — NOT SYNCED: playable on this server only."));
+        this.config.setComments(
+                "locations.exit",
+                List.of("LOCAL — NOT SYNCED: external destination on this server."));
         this.enabled = this.config.getBoolean("dungeon.enabled", true);
         this.displayName =
                 ColorUtils.fullColor(
@@ -1022,6 +1038,7 @@ public abstract class DungeonDefinition {
 
     public boolean isEnabled() {
         return this.enabled
+                && this.repositoryInitialized
                 && this.runtime.database().ready()
                 && (this.runtime.staffOperations() == null
                         || !this.runtime.staffOperations().maintenance(this.worldName));

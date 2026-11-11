@@ -165,3 +165,10 @@ global_rules:
     # lists of Bukkit entity type names.
     damage_protected: []
     interact_protected: []
+
+# Shared content repository; credentials and pools remain owned by DataProvider.
+repository:
+  max-snapshot-bytes: 17179869184
+  max-files: 100000
+  queued-operations: 8
+  operation-timeout-seconds: 1800

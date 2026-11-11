@@ -92,9 +92,15 @@ final class CoreBootstrap {
 
     /** Creates the dungeon repository after all registry-backed types have been registered. */
     void initializeDungeonCatalog() {
+        var repository = new nl.hauntedmc.dungeons.repository.RepoService(this.runtime);
+        this.runtime.setContentRepository(repository);
+        this.runtime
+                .resources()
+                .ownIngress(repository, nl.hauntedmc.dungeons.repository.RepoService::close);
         DungeonRepository dungeonRepository = new DungeonRepository(this.runtime);
         this.runtime.setDungeonCatalog(dungeonRepository);
         this.runtime.dungeonQueueCoordinator().setDungeonCatalog(dungeonRepository);
+        repository.start();
     }
 
     /**

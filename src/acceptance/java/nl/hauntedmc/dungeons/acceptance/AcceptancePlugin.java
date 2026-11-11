@@ -122,6 +122,8 @@ public final class AcceptancePlugin extends JavaPlugin {
                 args[0].equals("restart")
                         ? List.of(
                                 new Scenario(
+                                        "repository-restart", () -> NativeRepository.restart(this)),
+                                new Scenario(
                                         "cold-restart-persistence-and-cleanup",
                                         () -> NativeRestart.verify(this)))
                         : List.of(
@@ -154,6 +156,9 @@ public final class AcceptancePlugin extends JavaPlugin {
                                         "native-branching-generation",
                                         () -> NativeBranching.run(this)),
                                 new Scenario("native-open-warm-pool", () -> NativeOpen.run(this)),
+                                new Scenario(
+                                        "native-content-repository",
+                                        () -> NativeRepository.run(this)),
                                 new Scenario(
                                         "prepare-live-world-shutdown",
                                         () -> NativeRestart.prepare(this)));
