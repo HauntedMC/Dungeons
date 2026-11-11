@@ -127,7 +127,24 @@ public abstract class DungeonElement implements ConfigurationSerializable {
 
     /** Releases shared listeners owned by the base element implementation. */
     public void disable() {
+        this.enabled = false;
         this.releaseEditorListener();
+    }
+
+    /** Releases independent resources even when another resource's cleanup fails. */
+    protected final void cleanupOwnedResource(String resource, Runnable cleanup) {
+        try {
+            cleanup.run();
+        } catch (RuntimeException exception) {
+            this.logger()
+                    .error(
+                            "Failed to release {} on '{}' in dungeon '{}' at {}.",
+                            resource,
+                            this.getClass().getSimpleName(),
+                            this.dungeonNameForLogs(),
+                            this.locationForLogs(),
+                            exception);
+        }
     }
 
     /** Releases editor listener ownership, including for metadata-only registry prototypes. */

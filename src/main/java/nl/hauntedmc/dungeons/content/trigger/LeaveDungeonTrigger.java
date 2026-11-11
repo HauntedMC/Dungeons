@@ -52,6 +52,11 @@ public class LeaveDungeonTrigger extends DungeonTrigger {
         this.trigger(playerSession, !this.allowRetrigger);
     }
 
+    @Override
+    protected boolean acceptsDepartedSource() {
+        return true;
+    }
+
     /** Builds menu button. */
     @Override
     public MenuButton buildMenuButton() {

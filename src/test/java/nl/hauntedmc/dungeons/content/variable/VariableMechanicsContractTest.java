@@ -30,4 +30,17 @@ class VariableMechanicsContractTest {
             assertEquals("score=3000000000", InstanceUtils.parseVars(run, "score=<score>"));
         }
     }
+
+    @Test
+    void placeholderValuesAreLiteralAndNeverExpandedASecondTime() throws Exception {
+        try (var paper = new PaperBoundary()) {
+            var dungeon = paper.dungeon(directory.resolve("crypt"), new YamlConfiguration());
+            var run = new StaticInstance(dungeon, null);
+            run.getInstanceVariables().set("first", "<second>\\$1");
+            run.getInstanceVariables().set("second", "value");
+            assertEquals(
+                    "<second>\\$1 value <second>\\$1",
+                    InstanceUtils.parseVars(run, "<first> <second> <first>"));
+        }
+    }
 }

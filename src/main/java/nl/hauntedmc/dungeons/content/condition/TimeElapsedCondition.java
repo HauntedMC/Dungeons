@@ -77,8 +77,8 @@ public class TimeElapsedCondition extends TriggerCondition {
                         this.button = new MenuButton(Material.CLOCK);
                         this.button.setDisplayName(
                                 TimeElapsedCondition.this.inverted
-                                        ? "&d&lMinimum Time"
-                                        : "&d&lMaximum Time");
+                                        ? "&d&lMaximum Time"
+                                        : "&d&lMinimum Time");
                     }
 
                     /** Performs on select. */

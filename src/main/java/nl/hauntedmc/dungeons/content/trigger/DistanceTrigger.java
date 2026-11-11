@@ -40,6 +40,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 @SerializableAs("dungeons.trigger.distance")
 public class DistanceTrigger extends DungeonTrigger {
     private BukkitRunnable playerScan;
+    private List<DungeonPlayerSession> detectedTargets = new ArrayList<>();
     @PersistedField private double radius = 3.0;
     @PersistedField private int count = 1;
     @PersistedField private boolean forEachPlayer = false;
@@ -64,7 +65,7 @@ public class DistanceTrigger extends DungeonTrigger {
     @Override
     public MenuButton buildMenuButton() {
         MenuButton functionButton = new MenuButton(Material.DETECTOR_RAIL);
-        functionButton.setDisplayName("&playerSession Detector");
+        functionButton.setDisplayName("&aPlayer Detector");
         functionButton.addLore("&eTriggered when a player or players");
         functionButton.addLore("&eare within range of this location.");
         return functionButton;
@@ -75,6 +76,9 @@ public class DistanceTrigger extends DungeonTrigger {
     public void onEnable() {
         final PlayableInstance instance = this.instance.asPlayInstance();
         if (instance != null) {
+            if (this.location == null
+                    || this.location.getWorld() == null
+                    || !Double.isFinite(this.radius)) return;
             double effectiveRadius = Math.max(0.0, this.radius);
             if ((effectiveRadius != this.radius || this.count < -1 || this.count == 0)
                     && !this.invalidConfigurationLogged) {
@@ -94,7 +98,6 @@ public class DistanceTrigger extends DungeonTrigger {
                 this.finalCount = Math.max(1, this.count);
             }
 
-            final TriggerFireEvent event = new TriggerFireEvent(instance, this);
             this.playerScan =
                     new BukkitRunnable() {
                         /** Performs run. */
@@ -106,7 +109,7 @@ public class DistanceTrigger extends DungeonTrigger {
 
                             if (!DistanceTrigger.this.location.isWorldLoaded()) {
                                 this.cancel();
-                            } else if (DistanceTrigger.this.checkConditions(event)) {
+                            } else {
                                 List<Player> players =
                                         PlayerUtils.getPlayersWithin(
                                                 DistanceTrigger.this.location,
@@ -144,6 +147,15 @@ public class DistanceTrigger extends DungeonTrigger {
                                     }
                                 }
 
+                                DistanceTrigger.this.detectedTargets =
+                                        players.stream()
+                                                .map(
+                                                        p ->
+                                                                DistanceTrigger.this
+                                                                        .runtime()
+                                                                        .playerSessions()
+                                                                        .get(p))
+                                                .toList();
                                 if (players.size() >= DistanceTrigger.this.finalCount) {
                                     if (DistanceTrigger.this.forEachPlayer) {
                                         for (Player player : players) {
@@ -154,8 +166,6 @@ public class DistanceTrigger extends DungeonTrigger {
                                                             .get(player);
                                             if (!DistanceTrigger.this.hasTrackedTarget(
                                                     dungeonPlayer)) {
-                                                DistanceTrigger.this.rememberTriggeredTargets(
-                                                        dungeonPlayer);
                                                 DistanceTrigger.this.trigger(dungeonPlayer, false);
                                             }
                                         }
@@ -172,8 +182,6 @@ public class DistanceTrigger extends DungeonTrigger {
                                                         .playerSessions()
                                                         .get(candidatePlayer);
                                         if (!DistanceTrigger.this.hasTrackedTarget(dungeonPlayer)) {
-                                            DistanceTrigger.this.rememberTriggeredTargets(
-                                                    dungeonPlayer);
                                             foundNewTarget = true;
                                             if (triggerSource == null) {
                                                 triggerSource = dungeonPlayer;
@@ -194,6 +202,14 @@ public class DistanceTrigger extends DungeonTrigger {
         }
     }
 
+    @Override
+    public DistanceTrigger clone() {
+        DistanceTrigger copy = (DistanceTrigger) super.clone();
+        copy.playerScan = null;
+        copy.detectedTargets = new ArrayList<>();
+        return copy;
+    }
+
     /** Performs matches room. */
     private boolean matchesRoom(Location origin) {
         BranchingInstance instance = this.instance.as(BranchingInstance.class);
@@ -204,7 +220,7 @@ public class DistanceTrigger extends DungeonTrigger {
         } else {
             InstanceRoom originRoom = instance.getRoom(origin);
             InstanceRoom thisRoom = instance.getRoom(this.location);
-            return thisRoom == originRoom;
+            return thisRoom != null && thisRoom == originRoom;
         }
     }
 
@@ -220,7 +236,14 @@ public class DistanceTrigger extends DungeonTrigger {
     /** Performs on trigger. */
     @Override
     public void onTrigger(TriggerFireEvent event) {
+        if (this.forEachPlayer) {
+            this.rememberTriggeredTargets(event.getPlayerSession());
+        } else {
+            for (DungeonPlayerSession target : this.detectedTargets)
+                this.rememberTriggeredTargets(target);
+        }
         if (!this.allowRetrigger
+                && !this.forEachPlayer
                 && !(this.instance instanceof OpenInstance)
                 && this.playerScan != null
                 && !this.playerScan.isCancelled()) {

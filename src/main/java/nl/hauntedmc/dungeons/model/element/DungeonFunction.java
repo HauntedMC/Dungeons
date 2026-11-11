@@ -104,12 +104,17 @@ public abstract class DungeonFunction extends DungeonElement
             this.enabled = true;
             this.instance = instance;
             this.location = loc;
-            this.register();
-            if (this.trigger != null) {
-                this.trigger.enable(this);
-            }
+            try {
+                this.register();
+                if (this.trigger != null) {
+                    this.trigger.enable(this);
+                }
 
-            this.onEnable();
+                this.onEnable();
+            } catch (RuntimeException exception) {
+                this.disable();
+                throw exception;
+            }
         }
     }
 
@@ -118,11 +123,10 @@ public abstract class DungeonFunction extends DungeonElement
     public final void disable() {
         super.disable();
         if (this.trigger != null) {
-            this.trigger.disable();
+            this.cleanupOwnedResource("function trigger", this.trigger::disable);
         }
-
-        this.unregister();
-        this.onDisable();
+        this.cleanupOwnedResource("function listener", this::unregister);
+        this.cleanupOwnedResource("function resources", this::onDisable);
     }
 
     /** Binds a trigger to this function and eagerly initializes the trigger editor state. */
@@ -144,7 +148,7 @@ public abstract class DungeonFunction extends DungeonElement
     }
 
     public final void unregister() {
-        this.instance.unregisterFunctionListener(this);
+        if (this.instance != null) this.instance.unregisterFunctionListener(this);
     }
 
     public abstract void runFunction(
@@ -157,7 +161,9 @@ public abstract class DungeonFunction extends DungeonElement
      * Validates the incoming trigger event and then runs the function against its resolved targets.
      */
     public final void execute(TriggerFireEvent event) {
-        if (event.isCancelled()) {
+        if (event == null
+                || event.isCancelled()
+                || (this.instance != null && event.getInstance() != this.instance)) {
             return;
         }
 
@@ -199,7 +205,7 @@ public abstract class DungeonFunction extends DungeonElement
     /** Resolves the effective player targets for the current target mode. */
     protected final List<DungeonPlayerSession> resolveTargets(TriggerFireEvent event) {
         LinkedHashSet<DungeonPlayerSession> targets = new LinkedHashSet<>();
-        DungeonPlayerSession source = event.getPlayerSession();
+        DungeonPlayerSession source = event == null ? null : event.getPlayerSession();
 
         switch (this.targetType) {
             case PLAYER -> this.addTarget(targets, source);
@@ -282,13 +288,14 @@ public abstract class DungeonFunction extends DungeonElement
             return;
         }
 
-        nestedFunction.runFunctionSafely(event, targets);
+        nestedFunction.runFunctionSafely(event, this.filterCurrentTargets(targets));
     }
 
     private void runFunctionSafely(TriggerFireEvent event, List<DungeonPlayerSession> targets) {
-        if (event.getPlayerSession() != null && event.getPlayerSession().isObserving()) return;
-        targets =
-                new ArrayList<>(targets.stream().filter(target -> !target.isObserving()).toList());
+        if (event != null
+                && event.getPlayerSession() != null
+                && event.getPlayerSession().isObserving()) return;
+        targets = this.filterCurrentTargets(targets);
         try {
             this.runFunction(event, targets);
         } catch (Exception exception) {
@@ -300,6 +307,18 @@ public abstract class DungeonFunction extends DungeonElement
                             this.locationForLogs(),
                             exception);
         }
+    }
+
+    private List<DungeonPlayerSession> filterCurrentTargets(List<DungeonPlayerSession> targets) {
+        return new ArrayList<>(
+                targets.stream()
+                        .filter(
+                                target ->
+                                        target != null
+                                                && !target.isObserving()
+                                                && (this.instance == null
+                                                        || target.getInstance() == this.instance))
+                        .toList());
     }
 
     @Override

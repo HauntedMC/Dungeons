@@ -68,11 +68,14 @@ public class RemoteTrigger extends DungeonTrigger {
         }
         if (this.instance == event.getInstance()) {
             if (event.getTriggerName().equals(this.triggerName)) {
+                if (!Double.isFinite(event.getRange()) || event.getRange() < 0) return;
                 Location origin = event.getOrigin();
                 boolean withinRange =
                         origin == null
                                 || event.getRange() == 0.0
-                                || origin.getWorld() == this.location.getWorld()
+                                || this.location != null
+                                        && this.location.getWorld() != null
+                                        && origin.getWorld() == this.location.getWorld()
                                         && !(this.location.distance(origin) > event.getRange());
                 if (withinRange) {
                     // Remote signals can optionally be spatially bounded, which lets one signal
@@ -97,7 +100,7 @@ public class RemoteTrigger extends DungeonTrigger {
         } else {
             InstanceRoom originRoom = instance.getRoom(origin);
             InstanceRoom thisRoom = instance.getRoom(this.location);
-            return thisRoom == originRoom;
+            return thisRoom != null && thisRoom == originRoom;
         }
     }
 
@@ -204,5 +207,6 @@ public class RemoteTrigger extends DungeonTrigger {
     /** Sets the await conditions. */
     public void setAwaitConditions(boolean awaitConditions) {
         this.awaitConditions = awaitConditions;
+        this.waitForConditions = awaitConditions;
     }
 }

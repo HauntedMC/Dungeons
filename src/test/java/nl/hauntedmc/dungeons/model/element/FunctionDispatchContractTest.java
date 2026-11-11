@@ -35,6 +35,29 @@ class FunctionDispatchContractTest {
         }
     }
 
+    @Test
+    void foreignInstanceEventsAndDepartedTargetsCannotReachFunctionEffects() {
+        try (var paper = new PaperBoundary()) {
+            var function = new RecordingFunction();
+            var bound = mock(DungeonTrigger.class);
+            function.setTrigger(bound);
+            function.setTargetType(FunctionTargetType.PLAYER);
+            var run = mock(PlayableInstance.class);
+            var other = mock(PlayableInstance.class);
+            when(run.getEnvironment()).thenReturn(paper.runtime.environment());
+            function.setInstance(run);
+            function.execute(new TriggerFireEvent(other, bound));
+            function.execute(null);
+            assertEquals(0, function.calls);
+            var source = mock(DungeonPlayerSession.class);
+            when(source.getInstance()).thenReturn(run);
+            var event = new TriggerFireEvent(source, bound);
+            when(source.getInstance()).thenReturn(other);
+            function.execute(event);
+            assertEquals(List.of(), function.targets);
+        }
+    }
+
     static class RecordingFunction extends DungeonFunction {
         int calls;
         List<DungeonPlayerSession> targets = new ArrayList<>();

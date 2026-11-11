@@ -226,6 +226,11 @@ it does not claim to supply a working leaderboard. Existing self/gameplay state 
 staff inspection/recovery retain their separate authorization rules. Privacy controls disclosure,
 not durability of progression or recovery state.
 
+## Dungeon scripting
+
+See the [mechanics guide](docs/MECHANICS.md) for timer and variable-change triggers,
+player/world conditions, health effects, conditional groups and runtime validation behavior.
+
 ## Administration
 
 Use `/dungeon help` to discover commands; staff inspection and confirmations appear in chat.

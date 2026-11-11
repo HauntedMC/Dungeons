@@ -86,7 +86,7 @@ public class ChatTrigger extends DungeonTrigger {
         } else {
             InstanceRoom originRoom = instance.getRoom(origin);
             InstanceRoom thisRoom = instance.getRoom(this.location);
-            return thisRoom == originRoom;
+            return thisRoom != null && thisRoom == originRoom;
         }
     }
 

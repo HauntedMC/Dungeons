@@ -58,6 +58,7 @@ public class PlayersWithinCondition extends TriggerCondition {
             return false;
         }
 
+        if (!Double.isFinite(this.radius)) return false;
         double effectiveRadius = Math.max(0.0, this.radius);
         int requiredPlayers = Math.max(0, this.count);
         if ((effectiveRadius != this.radius || requiredPlayers != this.count)

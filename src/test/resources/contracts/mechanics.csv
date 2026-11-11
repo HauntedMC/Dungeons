@@ -50,3 +50,10 @@ dungeons.trigger.player_death,nl.hauntedmc.dungeons.content.trigger.PlayerDeathT
 dungeons.trigger.redstone,nl.hauntedmc.dungeons.content.trigger.RedstoneTrigger
 dungeons.trigger.remote,nl.hauntedmc.dungeons.content.trigger.RemoteTrigger
 dungeons.trigger.room_door_change,nl.hauntedmc.dungeons.content.trigger.room.RoomDoorChangeTrigger
+dungeons.trigger.timer,nl.hauntedmc.dungeons.content.trigger.TimerTrigger
+dungeons.trigger.variable_change,nl.hauntedmc.dungeons.content.trigger.VariableChangeTrigger
+dungeons.condition.player_health,nl.hauntedmc.dungeons.content.condition.PlayerHealthCondition
+dungeons.condition.inventory,nl.hauntedmc.dungeons.content.condition.InventoryCondition
+dungeons.function.health,nl.hauntedmc.dungeons.content.function.HealthFunction
+dungeons.function.conditional,nl.hauntedmc.dungeons.content.function.meta.ConditionalFunction
+dungeons.condition.block,nl.hauntedmc.dungeons.content.condition.BlockCondition

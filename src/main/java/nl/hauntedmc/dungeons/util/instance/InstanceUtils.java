@@ -1,5 +1,6 @@
 package nl.hauntedmc.dungeons.util.instance;
 
+import java.math.BigDecimal;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -10,7 +11,7 @@ public final class InstanceUtils {
     private InstanceUtils() {}
 
     private static final Pattern COMPARISON_PATTERN =
-            Pattern.compile("([^<=>]*)(>=|<=|=+|>|<)([^<=>]*)");
+            Pattern.compile("([^<=>!]*)(>=|<=|!=|==|=|>|<)([^<=>!]*)");
     private static final Pattern VARIABLE_PATTERN = Pattern.compile("<[^<>]*>");
 
     /** Resolves placeholders and evaluates one simple comparison expression. */
@@ -20,24 +21,36 @@ public final class InstanceUtils {
             return false;
         }
         Matcher matcher = COMPARISON_PATTERN.matcher(parsed);
-        if (!matcher.find()) {
+        if (!matcher.matches()) {
             return false;
         }
         String left = matcher.group(1).trim();
         String right = matcher.group(3).trim();
-        return switch (matcher.group(2)) {
-            case "=", "==" -> equalOperands(left, right);
-            case ">" -> Double.parseDouble(left) > Double.parseDouble(right);
-            case ">=" -> Double.parseDouble(left) >= Double.parseDouble(right);
-            case "<" -> Double.parseDouble(left) < Double.parseDouble(right);
-            case "<=" -> Double.parseDouble(left) <= Double.parseDouble(right);
-            default -> false;
-        };
+        if (left.isEmpty() || right.isEmpty()) return false;
+        try {
+            return switch (matcher.group(2)) {
+                case "=", "==" -> equalOperands(left, right);
+                case "!=" -> !equalOperands(left, right);
+                case ">" -> compareNumbers(left, right) > 0;
+                case ">=" -> compareNumbers(left, right) >= 0;
+                case "<" -> compareNumbers(left, right) < 0;
+                case "<=" -> compareNumbers(left, right) <= 0;
+                default -> false;
+            };
+        } catch (NumberFormatException exception) {
+            return false;
+        }
+    }
+
+    private static int compareNumbers(String left, String right) {
+        return new BigDecimal(left).compareTo(new BigDecimal(right));
     }
 
     private static boolean equalOperands(String left, String right) {
+        if (left.matches("[+-]?(NaN|Infinity)") || right.matches("[+-]?(NaN|Infinity)"))
+            return false;
         try {
-            return Double.parseDouble(left) == Double.parseDouble(right);
+            return compareNumbers(left, right) == 0;
         } catch (NumberFormatException exception) {
             return left.equals(right);
         }
@@ -48,12 +61,14 @@ public final class InstanceUtils {
         if (text == null) return null;
         Matcher matcher = VARIABLE_PATTERN.matcher(text);
 
+        StringBuilder result = new StringBuilder();
         while (matcher.find()) {
             String parsed = parseVar(instance, matcher.group(0));
-            text = text.replace(matcher.group(0), Objects.requireNonNullElse(parsed, "null"));
+            matcher.appendReplacement(
+                    result, Matcher.quoteReplacement(Objects.requireNonNullElse(parsed, "null")));
         }
-
-        return text;
+        matcher.appendTail(result);
+        return result.toString();
     }
 
     /** Resolves one {@code <variable>} placeholder against instance variable storage. */

@@ -37,6 +37,7 @@ class RuntimeOwnershipTest {
                 var state = new PlayerState();
                 var session = new DungeonPlayerSession(owner, state.player);
                 assertNotNull(session);
+                session.setInstance(fixture.run);
                 var records =
                         new DungeonPlayerDataStore(
                                 fixture.paper.plugin, UUID.randomUUID(), owner.stateStore());

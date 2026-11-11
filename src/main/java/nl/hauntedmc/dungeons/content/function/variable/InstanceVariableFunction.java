@@ -1,8 +1,10 @@
 package nl.hauntedmc.dungeons.content.function.variable;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
 import nl.hauntedmc.dungeons.content.variable.VariableEditMode;
@@ -17,11 +19,11 @@ import nl.hauntedmc.dungeons.model.element.FunctionTargetType;
 import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerEvent;
+import org.bukkit.scheduler.BukkitRunnable;
 
 /** Function that mutates instance-scoped variables for later trigger/condition checks. */
 @AutoRegister(id = "dungeons.function.instance_variable")
@@ -31,6 +33,7 @@ public class InstanceVariableFunction extends DungeonFunction {
     @PersistedField private String varValue;
     @PersistedField private VariableEditMode mode = VariableEditMode.SET;
     private int modeIndex;
+    private Set<BukkitRunnable> tasks = new HashSet<>();
 
     /** Creates a new InstanceVariableFunction instance. */
     public InstanceVariableFunction(Map<String, Object> config) {
@@ -51,60 +54,73 @@ public class InstanceVariableFunction extends DungeonFunction {
     /** Performs run function. */
     @Override
     public void runFunction(TriggerFireEvent triggerEvent, List<DungeonPlayerSession> targets) {
-        Bukkit.getScheduler()
-                .runTaskLater(
-                        InstanceVariableFunction.this.plugin(),
-                        () -> {
-                            PlayableInstance play = this.instance.asPlayInstance();
-                            if (play != null) {
-                                double change;
-                                switch (this.mode) {
-                                    case SET:
-                                        play.getInstanceVariables()
-                                                .set(this.varName, this.varValue);
-                                        break;
-                                    case ADD:
-                                        try {
-                                            change = Double.parseDouble(this.varValue);
-                                            play.getInstanceVariables().add(this.varName, change);
-                                        } catch (NumberFormatException exception) {
-                                            InstanceVariableFunction.this
-                                                    .logger()
-                                                    .warn(
-                                                            "Failed to add value '{}' to instance variable '{}' in dungeon '{}' at {},{},{}: value is not numeric.",
-                                                            this.varValue,
-                                                            this.varName,
-                                                            this.instance
-                                                                    .getDungeon()
-                                                                    .getWorldName(),
-                                                            this.location.getBlockX(),
-                                                            this.location.getBlockY(),
-                                                            this.location.getBlockZ());
-                                        }
-                                        break;
-                                    case SUBTRACT:
-                                        try {
-                                            change = Double.parseDouble(this.varValue);
-                                            play.getInstanceVariables()
-                                                    .subtract(this.varName, change);
-                                        } catch (NumberFormatException exception) {
-                                            InstanceVariableFunction.this
-                                                    .logger()
-                                                    .warn(
-                                                            "Failed to subtract value '{}' from instance variable '{}' in dungeon '{}' at {},{},{}: value is not numeric.",
-                                                            this.varValue,
-                                                            this.varName,
-                                                            this.instance
-                                                                    .getDungeon()
-                                                                    .getWorldName(),
-                                                            this.location.getBlockX(),
-                                                            this.location.getBlockY(),
-                                                            this.location.getBlockZ());
-                                        }
-                                }
+        if (this.instance == null
+                || this.varName == null
+                || this.varName.isBlank()
+                || this.mode == null) return;
+        final PlayableInstance play = this.instance.asPlayInstance();
+        if (play == null) return;
+        final String name = this.varName;
+        final String value = this.varValue;
+        final VariableEditMode operation = this.mode;
+        final double change;
+        if (operation != VariableEditMode.SET) {
+            try {
+                change = Double.parseDouble(value);
+                if (!Double.isFinite(change)) return;
+            } catch (IllegalArgumentException | NullPointerException exception) {
+                this.logger()
+                        .warn(
+                                "Skipping nonnumeric instance variable change '{}' for '{}' in dungeon '{}'.",
+                                value,
+                                name,
+                                this.dungeonNameForLogs());
+                return;
+            }
+        } else {
+            change = 0;
+        }
+        BukkitRunnable task =
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            switch (operation) {
+                                case SET -> play.getInstanceVariables().set(name, value);
+                                case ADD -> play.getInstanceVariables().add(name, change);
+                                case SUBTRACT -> play.getInstanceVariables().subtract(name, change);
                             }
-                        },
-                        1L);
+                        } finally {
+                            tasks.remove(this);
+                        }
+                    }
+                };
+        tasks.add(task);
+        try {
+            task.runTaskLater(this.plugin(), 1L);
+        } catch (RuntimeException exception) {
+            tasks.remove(task);
+            throw exception;
+        }
+    }
+
+    @Override
+    public void onDisable() {
+        for (BukkitRunnable task : tasks) {
+            this.cleanupOwnedResource(
+                    "variable change",
+                    () -> {
+                        if (!task.isCancelled()) task.cancel();
+                    });
+        }
+        tasks.clear();
+    }
+
+    @Override
+    public InstanceVariableFunction clone() {
+        InstanceVariableFunction copy = (InstanceVariableFunction) super.clone();
+        copy.tasks = new HashSet<>();
+        return copy;
     }
 
     /** Builds menu button. */

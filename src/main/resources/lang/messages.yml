@@ -907,3 +907,8 @@ internal:
 repository:
   started: '<HauntedMC:Info>Repository operation started.'
   failed: '<HauntedMC:Error>Repository operation failed: {detail}'
+
+mechanic-editor:
+  ask-value: '&eVoer {setting} in. Huidige waarde: {value}'
+  value-set: '&a{setting}: {value}'
+  invalid-value: '&cOngeldige waarde. De vorige instelling blijft behouden.'
