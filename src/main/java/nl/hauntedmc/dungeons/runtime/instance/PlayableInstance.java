@@ -354,7 +354,7 @@ public abstract class PlayableInstance extends DungeonInstance {
 
         if (savePoint == null) {
             Location destination = this.startLocation;
-            if (this.dungeon.isLobbyEnabled()) {
+            if (this.dungeon.isLobbyEnabled() && !this.started) {
                 destination = this.lobbyLocation;
             }
 

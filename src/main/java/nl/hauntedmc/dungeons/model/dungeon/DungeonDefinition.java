@@ -78,7 +78,7 @@ public abstract class DungeonDefinition {
     protected int maxTeamSize;
     protected boolean lobbyEnabled;
     protected Location lobbySpawn;
-    protected Location startSpawn;
+    private DungeonSpawnPoints startSpawns;
     protected Location exitLoc;
     protected boolean alwaysUseExit;
     protected boolean useDifficultyLevels;
@@ -170,7 +170,15 @@ public abstract class DungeonDefinition {
                         this.plugin(), this.config, new File(folder, "config.yml"));
         this.refreshRepositoryState();
         this.syncConfigWithDefaults();
-        this.loadRuntimeSettingsFromConfig();
+        try {
+            this.loadRuntimeSettingsFromConfig();
+        } catch (IllegalArgumentException invalid) {
+            DungeonLoadException failure =
+                    new DungeonLoadException(
+                            "Dungeon config is invalid!", true, invalid.getMessage());
+            failure.initCause(invalid);
+            throw failure;
+        }
         this.accessKeyService =
                 new DungeonAccessKeyService(runtime, folder, this.dungeonId, () -> this.accessKeys);
         this.playerDataStore =
@@ -202,6 +210,7 @@ public abstract class DungeonDefinition {
                 this.config,
                 Set.of(
                         "rules",
+                        "locations.starts",
                         "dungeon.id",
                         "statistics.custom_metrics",
                         "statistics.rankings"))) {
@@ -291,14 +300,7 @@ public abstract class DungeonDefinition {
                             new Location(null, 0.0, 64.0, 0.0));
         }
 
-        genericLoc = this.config.get("locations.start");
-        if (genericLoc instanceof Location) {
-            this.startSpawn = (Location) genericLoc;
-        } else {
-            this.startSpawn =
-                    LocationUtils.readLocation(
-                            this.config.getConfigurationSection("locations.start"));
-        }
+        this.startSpawns = DungeonSpawnPoints.read(this.config);
 
         ConfigurationSection exitLocSect = this.config.getConfigurationSection("locations.exit");
         this.exitLoc = exitLocSect == null ? null : LocationUtils.readExternalLocation(exitLocSect);
@@ -944,10 +946,40 @@ public abstract class DungeonDefinition {
     }
 
     public void setStartSpawn(Location startSpawn) {
-        this.startSpawn = startSpawn;
-        Location startLocation = startSpawn.clone();
-        startLocation.setWorld(null);
-        LocationUtils.writeLocation("locations.start", this.config, startLocation);
+        this.startSpawns.setFirst(startSpawn);
+        this.saveStartSpawns();
+    }
+
+    public Map<String, Location> getStartSpawns() {
+        return this.startSpawns.all();
+    }
+
+    public Location selectStartSpawn(java.util.random.RandomGenerator random) {
+        return this.startSpawns.select(random);
+    }
+
+    public String addStartSpawn(String name, Location location) {
+        String id = this.startSpawns.add(name, location);
+        this.saveStartSpawns();
+        return id;
+    }
+
+    public void updateStartSpawn(String id, Location location) {
+        this.startSpawns.update(id, location);
+        this.saveStartSpawns();
+    }
+
+    public void removeStartSpawn(String id) {
+        this.startSpawns.remove(id);
+        this.saveStartSpawns();
+    }
+
+    public Location getStartSpawn(String id) {
+        return this.startSpawns.get(id);
+    }
+
+    private void saveStartSpawns() {
+        this.startSpawns.write(this.config);
         this.saveConfig();
     }
 
@@ -1063,7 +1095,7 @@ public abstract class DungeonDefinition {
     }
 
     public Location getStartSpawn() {
-        return this.startSpawn;
+        return this.startSpawns.first();
     }
 
     public Location getExitLoc() {

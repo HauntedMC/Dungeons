@@ -15,6 +15,35 @@ Dungeons is a Paper plugin for creating, editing, and running configurable dunge
 4. Create or edit dungeon content with `/dungeon` editor commands.
 5. Start a run with `/dungeon play <dungeon> [difficulty]`.
 
+## Dungeon starting locations
+
+Static and open dungeons can have multiple starting locations in the same map. Each playable
+instance chooses one uniformly at random during initialization. All teammates and late joiners
+use that start, including its facing direction. Death returns a player there until a checkpoint
+changes their respawn. Saved progress still takes priority. Open instances keep their selection
+for their entire lifetime; branching dungeons use their generated first-room spawn.
+
+In an authorized editor, use `/dungeon edit start add [name]` at each desired position. Omitting
+the name assigns the lowest unused positive number. Names are case insensitive and may contain
+letters, digits, hyphens and underscores. Use `list`, `tp <id>`, `set <id>` and `remove <id>`
+under `/dungeon edit start` to inspect or change them. Removing an entry does not renumber others.
+`/dungeon edit start set` and the `start-location here` config command update the first entry
+without deleting the others. Removing all entries restores the world-spawn fallback.
+
+Existing `locations.start` configurations remain supported and convert on the first spawnpoint
+edit. New collections use world-relative locations:
+
+```yaml
+locations:
+  starts:
+    crypt: {x: 10.5, y: 64.0, z: 20.5, yaw: 90.0, pitch: 0.0}
+    '1': {x: 100.5, y: 64.0, z: 20.5, yaw: 180.0, pitch: 0.0}
+```
+
+To replace an entry randomizer, add its destinations as spawnpoints, then manually remove the
+entry random teleport graph and any checkpoint used only to establish the initial respawn.
+Keep checkpoints that represent progression, then save and publish the content as usual.
+
 ## Database configuration
 
 Database persistence is mandatory. DataProvider owns credentials, pools, timeouts and ORM policy;

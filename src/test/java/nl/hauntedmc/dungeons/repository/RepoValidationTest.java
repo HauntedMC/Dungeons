@@ -36,6 +36,37 @@ class RepoValidationTest {
     }
 
     @Test
+    void namedSpawnPointsCanBePublishedAndInvalidCollectionsCannot() throws Exception {
+        for (String type : List.of("static", "open")) {
+            var source =
+                    scan(
+                            snapshot(
+                                    "  type: "
+                                            + type
+                                            + "\nlocations:\n  starts:\n    crypt: {x: 1.5, y: 70, z: 2.5, yaw: 90, pitch: 0}\n    '1': {x: 10.5, y: 70, z: 20.5}\n"));
+            assertEquals(type, RepoValidation.validate(source, id, true).type());
+        }
+        for (String collection :
+                List.of(
+                        "{}",
+                        "[]",
+                        "{crypt: {x: 1, y: 2}}",
+                        "{crypt: {x: .inf, y: 2, z: 3}}",
+                        "{Crypt: {x: 1, y: 2, z: 3}, crypt: {x: 4, y: 5, z: 6}}")) {
+            var source =
+                    scan(
+                            snapshot(
+                                    "  type: static\nlocations:\n  start: {x: 0, y: 70, z: 0}\n  starts: "
+                                            + collection
+                                            + "\n"));
+            assertThrows(
+                    java.io.IOException.class,
+                    () -> RepoValidation.validate(source, id, true),
+                    collection);
+        }
+    }
+
+    @Test
     void branchingUsesRoomSpawnsAndValidatesSchematicsWithoutBukkit() throws Exception {
         var source = snapshot("  type: branching\n");
         Files.createDirectories(source.root().resolve("rooms"));

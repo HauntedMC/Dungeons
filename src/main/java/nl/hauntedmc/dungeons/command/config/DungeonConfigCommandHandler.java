@@ -364,8 +364,7 @@ public final class DungeonConfigCommandHandler {
             }
             case "start-location" -> {
                 dungeon.setStartSpawn(player.getLocation());
-                this.sendUpdated(
-                        sender, dungeon, entry, this.formatLocation(dungeon.getStartSpawn()), true);
+                this.sendUpdated(sender, dungeon, entry, this.formatStartSpawns(dungeon), true);
                 return true;
             }
             case "exit-location" -> {
@@ -569,13 +568,24 @@ public final class DungeonConfigCommandHandler {
         return true;
     }
 
+    private String formatStartSpawns(DungeonDefinition dungeon) {
+        var points = dungeon.getStartSpawns();
+        String first = points.isEmpty() ? "-" : points.keySet().iterator().next();
+        return this.formatLocation(dungeon.getStartSpawn())
+                + " ["
+                + first
+                + "; "
+                + points.size()
+                + "]";
+    }
+
     /** Returns the current value. */
     private Object getCurrentValue(
             CommandSender audience, DungeonDefinition dungeon, DungeonConfigEntry entry) {
         if (entry.getValueType() == DungeonConfigValueType.LOCATION) {
             return switch (entry.getKey()) {
                 case "lobby-location" -> this.formatLocation(dungeon.getLobbySpawn());
-                case "start-location" -> this.formatLocation(dungeon.getStartSpawn());
+                case "start-location" -> this.formatStartSpawns(dungeon);
                 case "exit-location" -> this.formatLocation(dungeon.getExitLoc());
                 default -> "<unknown>";
             };

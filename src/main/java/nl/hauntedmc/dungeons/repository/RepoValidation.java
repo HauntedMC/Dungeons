@@ -24,8 +24,7 @@ public final class RepoValidation {
         String type = String.valueOf(value(config, "dungeon", "type")).toLowerCase(Locale.ROOT);
         if (!Set.of("static", "open", "branching").contains(type))
             throw new IOException("Unsupported dungeon type: " + type);
-        if (publishing && !type.equals("branching") && value(config, "locations", "start") == null)
-            throw new IOException("Set a start location before publication");
+        validateSpawnPoints(config, publishing && !type.equals("branching"));
         var aliases = new HashSet<String>();
         var models = new HashSet<String>();
         var blockData = new HashSet<String>();
@@ -72,6 +71,39 @@ public final class RepoValidation {
                         || models.contains("dungeons.function.command");
         return new Result(
                 type, scripts, Set.copyOf(aliases), Set.copyOf(models), Set.copyOf(blockData));
+    }
+
+    /** Validate portable coordinates without deserializing Bukkit objects or resolving worlds. */
+    private static void validateSpawnPoints(Map<?, ?> config, boolean requireStart)
+            throws IOException {
+        Object starts = value(config, "locations", "starts");
+        if (starts == null) {
+            if (requireStart && value(config, "locations", "start") == null)
+                throw new IOException("Set a start location before publication");
+            return;
+        }
+        if (!(starts instanceof Map<?, ?> points))
+            throw new IOException("locations.starts must be a section of named locations");
+        if (requireStart && points.isEmpty())
+            throw new IOException("Set a start location before publication");
+        var ids = new HashSet<String>();
+        for (var entry : points.entrySet()) {
+            String id = String.valueOf(entry.getKey());
+            if (!id.matches("[a-zA-Z0-9_-]+") || !ids.add(id.toLowerCase(Locale.ROOT)))
+                throw new IOException("Invalid or duplicate spawnpoint ID: " + id);
+            if (!(entry.getValue() instanceof Map<?, ?> location))
+                throw new IOException("Invalid spawnpoint: " + id);
+            for (String key : List.of("x", "y", "z", "yaw", "pitch")) {
+                Object coordinate = location.get(key);
+                if ((key.equals("yaw") || key.equals("pitch")) && !location.containsKey(key))
+                    continue;
+                if (!(coordinate instanceof Number number)
+                        || !Double.isFinite(number.doubleValue())
+                        || ((key.equals("yaw") || key.equals("pitch"))
+                                && !Float.isFinite(number.floatValue())))
+                    throw new IOException("Invalid locations.starts." + id + "." + key);
+            }
+        }
     }
 
     private static void scan(Object value, Set<String> aliases, Set<String> models)

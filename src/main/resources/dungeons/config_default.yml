@@ -28,7 +28,11 @@ locations:
     # location or null. Keys: x, y, z, yaw, pitch.
     spawn: null
   # location or null. Player entry point for the dungeon.
+  # Legacy single spawn; converted to starts when spawnpoints are edited.
   start: null
+  # Multiple starts: /dungeon edit start add [name]. One random choice per instance.
+  # starts:
+  #   crypt: {x: 0.5, y: 64.0, z: 0.5, yaw: 0.0, pitch: 0.0}
   # LOCAL — NOT SYNCED. External destination on this server.
   exit: null
   # bool. True = always send leaving players to locations.exit.

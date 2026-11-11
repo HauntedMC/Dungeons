@@ -6,6 +6,7 @@ import java.util.Locale;
 import nl.hauntedmc.dungeons.config.PluginConfigView;
 import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
+import nl.hauntedmc.dungeons.model.dungeon.DungeonSpawnPoints;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
 import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
 import nl.hauntedmc.dungeons.runtime.instance.DungeonInstance;
@@ -15,6 +16,7 @@ import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
 import nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard;
 import nl.hauntedmc.dungeons.util.command.CommandUtils;
+import nl.hauntedmc.dungeons.util.entity.EntityUtils;
 import nl.hauntedmc.dungeons.util.math.MathUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -87,9 +89,28 @@ final class EditCommandHandler implements CommandHandler {
         }
 
         switch (args[1].toLowerCase(Locale.ROOT)) {
-            case "lobby", "start" -> {
+            case "lobby" -> {
                 if (args.length == 3) {
                     CommandArguments.addMatchingLiteralOptions(options, args[2], "set");
+                }
+            }
+            case "start" -> {
+                if (args.length == 3) {
+                    CommandArguments.addMatchingLiteralOptions(
+                            options, args[2], "add", "set", "list", "tp", "remove");
+                } else if (args.length == 4
+                        && List.of("set", "tp", "remove").contains(args[2].toLowerCase(Locale.ROOT))
+                        && sender instanceof Player player) {
+                    DungeonPlayerSession session = this.playerManager.get(player);
+                    if (session != null
+                            && session.isEditMode()
+                            && CommandUtils.hasDungeonEditAccess(
+                                    player, session.getInstance().getDungeon().getWorldName())) {
+                        for (String id :
+                                session.getInstance().getDungeon().getStartSpawns().keySet()) {
+                            CommandArguments.addMatchingLiteralOptions(options, args[3], id);
+                        }
+                    }
                 }
             }
             case "items" -> {
@@ -142,8 +163,103 @@ final class EditCommandHandler implements CommandHandler {
         if (args.length == 3 && args[2].equalsIgnoreCase("set")) {
             return this.handleSetSpawnCommand(sender, new String[] {"setspawn"});
         }
-
-        CommandArguments.sendUsageList(sender, "commands.edit.help.lines");
+        if (!(sender instanceof Player player)) {
+            LangUtils.sendMessage(sender, "general.errors.players-only");
+            return true;
+        }
+        DungeonPlayerSession session = this.playerManager.get(player);
+        if (session == null || !session.isEditMode()) {
+            LangUtils.sendMessage(player, "commands.edit.start.set.not-in-dungeon");
+            return true;
+        }
+        if (!StaffEditGuard.editor(player, session)
+                || player.getWorld() != session.getInstance().getInstanceWorld()) {
+            LangUtils.sendMessage(player, "commands.edit.start.set.not-in-dungeon");
+            return true;
+        }
+        DungeonDefinition dungeon = session.getInstance().getDungeon();
+        if (!this.requireDungeonEditAccess(player, dungeon)) return true;
+        if (dungeon.asBranching() != null) {
+            LangUtils.sendMessage(player, "commands.edit.start.points.branching");
+            return true;
+        }
+        if (args.length < 3 || args.length > 4) {
+            LangUtils.sendMessage(player, "commands.edit.start.points.usage");
+            return true;
+        }
+        String action = args[2].toLowerCase(Locale.ROOT);
+        String id = args.length == 4 ? args[3] : null;
+        if ((!action.equals("add") && !action.equals("list") && id == null)
+                || (action.equals("list") && id != null)) {
+            LangUtils.sendMessage(player, "commands.edit.start.points.usage");
+            return true;
+        }
+        try {
+            switch (action) {
+                case "add" -> {
+                    id = dungeon.addStartSpawn(id, player.getLocation());
+                    LangUtils.sendMessage(
+                            player,
+                            "commands.edit.start.points.added",
+                            LangUtils.placeholder("id", id));
+                }
+                case "set" -> {
+                    dungeon.updateStartSpawn(id, player.getLocation());
+                    LangUtils.sendMessage(
+                            player,
+                            "commands.edit.start.points.updated",
+                            LangUtils.placeholder("id", DungeonSpawnPoints.normalizeId(id)));
+                }
+                case "remove" -> {
+                    dungeon.removeStartSpawn(id);
+                    LangUtils.sendMessage(
+                            player,
+                            "commands.edit.start.points.removed",
+                            LangUtils.placeholder("id", DungeonSpawnPoints.normalizeId(id)));
+                    if (dungeon.getStartSpawns().isEmpty())
+                        LangUtils.sendMessage(player, "commands.edit.start.points.empty");
+                }
+                case "tp" -> {
+                    Location location = dungeon.getStartSpawn(id);
+                    location.setWorld(session.getInstance().getInstanceWorld());
+                    EntityUtils.forceTeleport(player, location);
+                }
+                case "list" -> {
+                    LangUtils.sendMessage(
+                            player,
+                            "commands.edit.start.points.header",
+                            LangUtils.placeholder(
+                                    "count", String.valueOf(dungeon.getStartSpawns().size())));
+                    dungeon.getStartSpawns()
+                            .forEach(
+                                    (name, location) ->
+                                            LangUtils.sendMessage(
+                                                    player,
+                                                    "commands.edit.start.points.entry",
+                                                    LangUtils.placeholder("id", name),
+                                                    LangUtils.placeholder(
+                                                            "location",
+                                                            location.getX()
+                                                                    + ", "
+                                                                    + location.getY()
+                                                                    + ", "
+                                                                    + location.getZ()
+                                                                    + " ("
+                                                                    + location.getYaw()
+                                                                    + ", "
+                                                                    + location.getPitch()
+                                                                    + ")")));
+                    if (dungeon.getStartSpawns().isEmpty())
+                        LangUtils.sendMessage(player, "commands.edit.start.points.empty");
+                }
+                default -> LangUtils.sendMessage(player, "commands.edit.start.points.usage");
+            }
+        } catch (IllegalArgumentException invalid) {
+            LangUtils.sendMessage(
+                    player,
+                    "commands.edit.start.points.invalid",
+                    LangUtils.placeholder("reason", invalid.getMessage()));
+        }
         return true;
     }
 
@@ -448,12 +564,17 @@ final class EditCommandHandler implements CommandHandler {
         }
 
         DungeonPlayerSession playerSession = this.playerManager.get(player);
-        if (!playerSession.isEditMode()) {
+        if (playerSession == null || !playerSession.isEditMode()) {
             LangUtils.sendMessage(player, "commands.edit.start.set.not-in-dungeon");
             LangUtils.sendMessage(player, "commands.edit.start.set.not-editing");
             return true;
         }
 
+        if (!StaffEditGuard.editor(player, playerSession)
+                || player.getWorld() != playerSession.getInstance().getInstanceWorld()) {
+            LangUtils.sendMessage(player, "commands.edit.start.set.not-in-dungeon");
+            return true;
+        }
         DungeonDefinition dungeon = playerSession.getInstance().getDungeon();
         if (!this.requireDungeonEditAccess(player, dungeon)) {
             return false;

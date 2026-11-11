@@ -157,6 +157,9 @@ public final class AcceptancePlugin extends JavaPlugin {
                                         () -> NativeBranching.run(this)),
                                 new Scenario("native-open-warm-pool", () -> NativeOpen.run(this)),
                                 new Scenario(
+                                        "native-random-spawnpoints",
+                                        () -> NativeSpawnPoints.run(this)),
+                                new Scenario(
                                         "native-content-repository",
                                         () -> NativeRepository.run(this)),
                                 new Scenario(
