@@ -10,7 +10,6 @@ import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuItem;
 import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
 import nl.hauntedmc.dungeons.model.element.TriggerCategory;
-import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerEvent;
@@ -96,7 +95,7 @@ public abstract class GateTrigger extends DungeonTrigger {
                             LangUtils.sendMessage(
                                     player, "editor.trigger.gate.max-triggers-reached");
                         } else {
-                            RuntimeContext.guiService().openGui(player, "triggermenu");
+                            GateTrigger.this.guiService().openGui(player, "triggermenu");
                         }
                     }
                 });
@@ -113,7 +112,7 @@ public abstract class GateTrigger extends DungeonTrigger {
                     @Override
                     public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
-                        RuntimeContext.guiService().openGui(player, "editgatetrigger");
+                        GateTrigger.this.guiService().openGui(player, "editgatetrigger");
                     }
                 });
         this.menu.addMenuItem(
@@ -129,7 +128,7 @@ public abstract class GateTrigger extends DungeonTrigger {
                     @Override
                     public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
-                        RuntimeContext.guiService().openGui(player, "removegatetrigger");
+                        GateTrigger.this.guiService().openGui(player, "removegatetrigger");
                     }
                 });
     }

@@ -11,7 +11,6 @@ import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuItem;
 import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.FunctionCategory;
-import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.instance.DungeonInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import org.bukkit.Location;
@@ -147,7 +146,7 @@ public class CompositeFunction extends DungeonFunction {
                             LangUtils.sendMessage(
                                     player, "editor.function.multi.max-functions-reached");
                         } else {
-                            RuntimeContext.guiService().openGui(player, "functionmenu");
+                            CompositeFunction.this.guiService().openGui(player, "functionmenu");
                         }
                     }
                 });
@@ -164,7 +163,7 @@ public class CompositeFunction extends DungeonFunction {
                     @Override
                     public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
-                        RuntimeContext.guiService().openGui(player, "editmultifunction");
+                        CompositeFunction.this.guiService().openGui(player, "editmultifunction");
                     }
                 });
         this.menu.addMenuItem(
@@ -180,7 +179,7 @@ public class CompositeFunction extends DungeonFunction {
                     @Override
                     public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
-                        RuntimeContext.guiService().openGui(player, "removemultifunction");
+                        CompositeFunction.this.guiService().openGui(player, "removemultifunction");
                     }
                 });
         this.menu.addMenuItem(
@@ -196,7 +195,9 @@ public class CompositeFunction extends DungeonFunction {
                     @Override
                     public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
-                        RuntimeContext.guiService().openGui(player, "editmultifunctiontriggers");
+                        CompositeFunction.this
+                                .guiService()
+                                .openGui(player, "editmultifunctiontriggers");
                     }
                 });
     }

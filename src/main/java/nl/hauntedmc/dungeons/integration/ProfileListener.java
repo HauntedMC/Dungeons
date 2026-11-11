@@ -1,6 +1,6 @@
 package nl.hauntedmc.dungeons.integration;
 
-import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
+import java.util.Objects;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -12,19 +12,19 @@ import org.bukkit.event.player.PlayerQuitEvent;
  * initialization.
  */
 public final class ProfileListener implements Listener {
-    private final DungeonsRuntime runtime;
+    private final RegistryProfiles profiles;
 
-    public ProfileListener(DungeonsRuntime runtime) {
-        this.runtime = runtime;
+    public ProfileListener(RegistryProfiles profiles) {
+        this.profiles = Objects.requireNonNull(profiles, "profiles");
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void join(PlayerJoinEvent event) {
-        runtime.profiles().refresh(event.getPlayer().getUniqueId());
+        profiles.refresh(event.getPlayer().getUniqueId());
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void quit(PlayerQuitEvent event) {
-        runtime.profiles().forget(event.getPlayer().getUniqueId());
+        profiles.forget(event.getPlayer().getUniqueId());
     }
 }

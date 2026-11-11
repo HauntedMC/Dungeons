@@ -10,6 +10,7 @@ import java.util.concurrent.CompletionStage;
 import nl.hauntedmc.dungeons.api.DungeonsApi;
 import nl.hauntedmc.dungeons.persistence.DatabaseLifecycle;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
+import nl.hauntedmc.featureframework.lifecycle.CleanupSequence;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.ServicePriority;
 import org.bukkit.scheduler.BukkitTask;
@@ -22,6 +23,8 @@ public final class DungeonService implements DungeonsApi, AutoCloseable {
     private final DungeonPrivacy privacy;
     private volatile List<Dungeon> catalog = List.of();
     private volatile boolean closed;
+    private boolean started;
+    private BukkitTask refreshTask;
 
     public DungeonService(DungeonsRuntime runtime) {
         this.runtime = runtime;
@@ -39,15 +42,28 @@ public final class DungeonService implements DungeonsApi, AutoCloseable {
                         });
     }
 
+    /** Publishes this service once; its refresh task shares the service's lifetime. */
     public void start() {
-        var plugin = runtime.environment().plugin();
-        refresh();
+        if (closed) throw new IllegalStateException("Dungeon service is closed");
+        if (started) return;
+        started = true;
         runtime.resources().ownIngress(this, DungeonService::close);
-        plugin.getServer()
-                .getServicesManager()
-                .register(DungeonsApi.class, this, plugin, ServicePriority.Normal);
-        var task = plugin.getServer().getScheduler().runTaskTimer(plugin, this::refresh, 20L, 20L);
-        runtime.resources().ownIngress(task, BukkitTask::cancel);
+        var plugin = runtime.environment().plugin();
+        try {
+            refresh();
+            plugin.getServer()
+                    .getServicesManager()
+                    .register(DungeonsApi.class, this, plugin, ServicePriority.Normal);
+            refreshTask =
+                    plugin.getServer().getScheduler().runTaskTimer(plugin, this::refresh, 20L, 20L);
+        } catch (RuntimeException | Error failure) {
+            try {
+                close();
+            } catch (RuntimeException | Error cleanup) {
+                if (cleanup != failure) failure.addSuppressed(cleanup);
+            }
+            throw failure;
+        }
     }
 
     public void refresh() {
@@ -98,13 +114,19 @@ public final class DungeonService implements DungeonsApi, AutoCloseable {
 
     @Override
     public void close() {
+        if (closed) return;
         closed = true;
         catalog = List.of();
-        privacy.close();
-        runtime.environment()
-                .plugin()
-                .getServer()
-                .getServicesManager()
-                .unregister(DungeonsApi.class, this);
+        CleanupSequence.run(
+                privacy::close,
+                () -> {
+                    if (refreshTask != null) refreshTask.cancel();
+                },
+                () ->
+                        runtime.environment()
+                                .plugin()
+                                .getServer()
+                                .getServicesManager()
+                                .unregister(DungeonsApi.class, this));
     }
 }

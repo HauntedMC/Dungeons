@@ -18,7 +18,7 @@ import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
 import nl.hauntedmc.dungeons.persistence.StateDocument;
 import nl.hauntedmc.dungeons.persistence.StateStore;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
-import nl.hauntedmc.dungeons.runtime.RuntimeContext;
+import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import nl.hauntedmc.dungeons.runtime.dungeon.DungeonAccessKeyService;
 import nl.hauntedmc.dungeons.runtime.instance.DungeonInstance;
 import nl.hauntedmc.dungeons.util.entity.EntityUtils;
@@ -124,21 +124,22 @@ public final class DungeonPlayerSession {
     private final List<ItemStack> pendingAccessKeyRefunds = new ArrayList<>();
 
     /** Creates a session for an online player and loads their global persisted data. */
-    public DungeonPlayerSession(DungeonsPlugin plugin, Player player) {
+    public DungeonPlayerSession(DungeonsRuntime runtime, Player player) {
+        DungeonsPlugin plugin = runtime.environment().plugin();
         this.plugin = plugin;
         this.player = player;
         this.hotbarHistory = new ArrayList<>();
         this.savedGameMode = Bukkit.getDefaultGameMode();
         this.playerData = new ConfigurationFile(plugin);
         this.playerDocument =
-                RuntimeContext.runtime()
-                        .stateStore()
+                runtime.stateStore()
                         .document(
                                 new StateStore.Key(
                                         "player-profile",
                                         player.getUniqueId().toString(),
                                         player.getUniqueId()));
-        this.recoveryJournal = new PlayerRecoveryJournal(player.getUniqueId());
+        this.recoveryJournal =
+                new PlayerRecoveryJournal(runtime.stateStore(), player.getUniqueId());
         try {
             this.playerDocument.loadInto(this.playerData);
             this.completedDungeons = this.playerData.getStringList("CompletedDungeons");

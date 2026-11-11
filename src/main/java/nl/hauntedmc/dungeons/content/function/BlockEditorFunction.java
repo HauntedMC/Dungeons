@@ -14,7 +14,6 @@ import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
 import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.FunctionCategory;
-import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.text.MessageUtils;
 import org.bukkit.Axis;
@@ -92,8 +91,8 @@ public class BlockEditorFunction extends DungeonFunction {
                         state.setBlockData(dirData);
                         state.update(true);
                     } catch (IllegalArgumentException exception) {
-                        RuntimeContext.plugin()
-                                .getSLF4JLogger()
+                        BlockEditorFunction.this
+                                .logger()
                                 .error(
                                         "Block editor function in dungeon '{}' has invalid direction '{}' at {},{},{}. Valid values: {}",
                                         this.instance.getDungeon().getWorldName(),
@@ -111,8 +110,8 @@ public class BlockEditorFunction extends DungeonFunction {
                         state.setBlockData(rotData);
                         state.update(true);
                     } catch (IllegalArgumentException exception) {
-                        RuntimeContext.plugin()
-                                .getSLF4JLogger()
+                        BlockEditorFunction.this
+                                .logger()
                                 .error(
                                         "Block editor function in dungeon '{}' has invalid rotation '{}' at {},{},{}. Valid values: {}",
                                         this.instance.getDungeon().getWorldName(),
@@ -130,8 +129,8 @@ public class BlockEditorFunction extends DungeonFunction {
                         state.setBlockData(rotData);
                         state.update(true);
                     } catch (IllegalArgumentException exception) {
-                        RuntimeContext.plugin()
-                                .getSLF4JLogger()
+                        BlockEditorFunction.this
+                                .logger()
                                 .error(
                                         "Block editor function in dungeon '{}' has invalid axis '{}' at {},{},{}. Valid values: {}",
                                         this.instance.getDungeon().getWorldName(),

@@ -10,7 +10,6 @@ import nl.hauntedmc.dungeons.generation.room.BranchingRoomDefinition;
 import nl.hauntedmc.dungeons.generation.room.Connector;
 import nl.hauntedmc.dungeons.generation.room.InstanceRoom;
 import nl.hauntedmc.dungeons.generation.room.WhitelistEntry;
-import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.util.math.MathUtils;
 import nl.hauntedmc.dungeons.util.math.RandomCollection;
 import nl.hauntedmc.dungeons.util.math.RangedNumber;
@@ -87,7 +86,9 @@ public class BranchingLayout extends Layout {
 
     @Override
     protected Layout.GenerationResult tryLayout() {
-        RuntimeContext.logger()
+        this.dungeon
+                .getEnvironment()
+                .logger()
                 .info("Generating branching layout for dungeon '{}'.", this.dungeon.getWorldName());
 
         this.roomWhitelist =
@@ -153,8 +154,9 @@ public class BranchingLayout extends Layout {
         if (!result.isPassed()) {
             return result;
         }
-        RuntimeContext.plugin()
-                .getSLF4JLogger()
+        this.dungeon
+                .getEnvironment()
+                .logger()
                 .info(
                         "Generated trunk for dungeon '{}' with {} rooms.",
                         this.dungeon.getWorldName(),
@@ -166,12 +168,15 @@ public class BranchingLayout extends Layout {
         } else if (!this.verifyLayout()) {
             return Layout.GenerationResult.BAD_LAYOUT;
         } else {
-            RuntimeContext.logger()
+            this.dungeon
+                    .getEnvironment()
+                    .logger()
                     .info(
                             "Found valid branching layout for dungeon '{}'.",
                             this.dungeon.getWorldName());
-            RuntimeContext.plugin()
-                    .getSLF4JLogger()
+            this.dungeon
+                    .getEnvironment()
+                    .logger()
                     .info(
                             "Dungeon '{}' layout contains {} rooms across {} branches.",
                             this.dungeon.getWorldName(),
@@ -207,8 +212,9 @@ public class BranchingLayout extends Layout {
 
             Layout.GenerationResult result = this.processQueue(25);
             if (!result.isPassed()) {
-                RuntimeContext.plugin()
-                        .getSLF4JLogger()
+                this.dungeon
+                        .getEnvironment()
+                        .logger()
                         .warn(
                                 "Trunk segment generation failed for dungeon '{}': {}",
                                 this.dungeon.getWorldName(),
@@ -230,8 +236,9 @@ public class BranchingLayout extends Layout {
                 this.roomsToAdd = savedRoomsToAdd;
             } else {
                 this.queue.add(this.generationCheckpoint);
-                RuntimeContext.plugin()
-                        .getSLF4JLogger()
+                this.dungeon
+                        .getEnvironment()
+                        .logger()
                         .info(
                                 "Generating trunk for dungeon '{}': {} / {} rooms.",
                                 this.dungeon.getWorldName(),
@@ -244,8 +251,9 @@ public class BranchingLayout extends Layout {
 
         if (this.strictRooms && this.queuedRoomCount < this.minBranchRooms) {
             this.recordFailure(GenerationFailureReason.BRANCH_TARGET_TOO_SMALL);
-            RuntimeContext.plugin()
-                    .getSLF4JLogger()
+            this.dungeon
+                    .getEnvironment()
+                    .logger()
                     .warn(
                             "Failed to generate trunk for dungeon '{}': required at least {} rooms but generated {}.",
                             this.dungeon.getWorldName(),
@@ -289,7 +297,9 @@ public class BranchingLayout extends Layout {
                 this.strictBranches =
                         branchesSection.getBoolean(path + ".enforce_occurrences", true);
 
-                RuntimeContext.logger()
+                this.dungeon
+                        .getEnvironment()
+                        .logger()
                         .info(
                                 "Generating branch '{}' for dungeon '{}'.",
                                 path,
@@ -297,7 +307,9 @@ public class BranchingLayout extends Layout {
 
                 Layout.GenerationResult result = this.generateBranches();
                 if (!result.isPassed()) {
-                    RuntimeContext.logger()
+                    this.dungeon
+                            .getEnvironment()
+                            .logger()
                             .warn(
                                     "Failed to generate branch '{}' for dungeon '{}'.",
                                     path,
@@ -397,8 +409,9 @@ public class BranchingLayout extends Layout {
                 }
 
                 branchTries = 0;
-                RuntimeContext.plugin()
-                        .getSLF4JLogger()
+                this.dungeon
+                        .getEnvironment()
+                        .logger()
                         .info(
                                 "Generated branch {} for dungeon '{}' with {} rooms.",
                                 this.branchCount,
@@ -409,8 +422,9 @@ public class BranchingLayout extends Layout {
                     rooms.remove(branchRoom);
                 }
             } else {
-                RuntimeContext.plugin()
-                        .getSLF4JLogger()
+                this.dungeon
+                        .getEnvironment()
+                        .logger()
                         .warn(
                                 "Failed to generate branch for dungeon '{}': {}",
                                 this.dungeon.getWorldName(),
@@ -455,8 +469,9 @@ public class BranchingLayout extends Layout {
 
             Layout.GenerationResult result = this.processQueue(25);
             if (!result.isPassed()) {
-                RuntimeContext.plugin()
-                        .getSLF4JLogger()
+                this.dungeon
+                        .getEnvironment()
+                        .logger()
                         .warn(
                                 "Branch segment generation failed for dungeon '{}': {}",
                                 this.dungeon.getWorldName(),

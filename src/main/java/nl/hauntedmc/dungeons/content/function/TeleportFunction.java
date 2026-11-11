@@ -10,7 +10,6 @@ import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuItem;
 import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.FunctionCategory;
-import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.entity.EntityUtils;
 import nl.hauntedmc.dungeons.util.math.MathUtils;
@@ -51,8 +50,8 @@ public class TeleportFunction extends DungeonFunction {
     @Override
     public void onEnable() {
         if (this.teleportTarget == null) {
-            RuntimeContext.plugin()
-                    .getSLF4JLogger()
+            TeleportFunction.this
+                    .logger()
                     .error(
                             "Teleport function in dungeon '{}' has no target location at {},{},{}.",
                             this.instance.getDungeon().getWorldName(),
@@ -91,8 +90,8 @@ public class TeleportFunction extends DungeonFunction {
                 }
             }
         } else {
-            RuntimeContext.plugin()
-                    .getSLF4JLogger()
+            TeleportFunction.this
+                    .logger()
                     .warn(
                             "Skipping teleport function in dungeon '{}' at {},{},{} because no runtime target was initialized.",
                             this.instance.getDungeon().getWorldName(),
@@ -151,7 +150,7 @@ public class TeleportFunction extends DungeonFunction {
                                         }
                                     };
                             TeleportFunction.this.inputWaiter.runTaskLater(
-                                    RuntimeContext.plugin(), 200L);
+                                    TeleportFunction.this.plugin(), 200L);
                             if (TeleportFunction.this.teleportTarget == null) {
                                 LangUtils.sendMessage(
                                         player, "editor.function.teleport.current-location-none");
@@ -181,10 +180,10 @@ public class TeleportFunction extends DungeonFunction {
                                         }
                                     };
                             TeleportFunction.this.particleIndicator.runTaskTimer(
-                                    RuntimeContext.plugin(), 0L, 10L);
+                                    TeleportFunction.this.plugin(), 0L, 10L);
                             Bukkit.getScheduler()
                                     .runTaskLater(
-                                            RuntimeContext.plugin(),
+                                            TeleportFunction.this.plugin(),
                                             () -> {
                                                 if (TeleportFunction.this.particleIndicator
                                                         != null) {

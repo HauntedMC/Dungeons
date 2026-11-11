@@ -56,7 +56,7 @@ final class CoreBootstrap {
         var guiService = new GuiService(plugin);
         this.runtime.setGuiService(guiService);
         this.runtime.resources().own(guiService);
-        this.runtime.setPlayerSessions(new PlayerSessionRegistry(plugin));
+        this.runtime.setPlayerSessions(new PlayerSessionRegistry(this.runtime));
 
         ActiveInstanceRegistry activeInstanceManager = new ActiveInstanceRegistry(plugin);
         this.runtime.setActiveInstances(activeInstanceManager);

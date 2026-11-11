@@ -13,7 +13,6 @@ import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuItem;
 import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.FunctionCategory;
-import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
@@ -51,7 +50,7 @@ public class LivesFunction extends DungeonFunction {
                 this.logger()
                         .info(
                                 "{}{}",
-                                RuntimeContext.logPrefix(),
+                                LivesFunction.this.runtime().logPrefix(),
                                 ColorUtils.colorize(
                                         "&cUnable to edit player lives: Lives are disable in dungeon "
                                                 + instance.getDungeon().getWorldName()
@@ -59,7 +58,7 @@ public class LivesFunction extends DungeonFunction {
                 this.logger()
                         .info(
                                 "{}{}",
-                                RuntimeContext.logPrefix(),
+                                LivesFunction.this.runtime().logPrefix(),
                                 ColorUtils.colorize(
                                         "&cMake sure '&ePlayerLives&c' are set to &61 or more &cin the dungeon's config!"));
             } else {

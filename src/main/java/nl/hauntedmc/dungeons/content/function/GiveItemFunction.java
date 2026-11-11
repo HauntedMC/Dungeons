@@ -12,7 +12,6 @@ import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.FunctionCategory;
 import nl.hauntedmc.dungeons.model.element.FunctionTargetType;
-import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import org.bukkit.Material;
@@ -77,7 +76,7 @@ public class GiveItemFunction extends DungeonFunction {
                 if (preMeta != null) {
                     PersistentDataContainer data = preMeta.getPersistentDataContainer();
                     data.set(
-                            new NamespacedKey(RuntimeContext.plugin(), "DungeonItem"),
+                            new NamespacedKey(GiveItemFunction.this.plugin(), "DungeonItem"),
                             PersistentDataType.INTEGER,
                             1);
                     item.setItemMeta(preMeta);
@@ -139,7 +138,7 @@ public class GiveItemFunction extends DungeonFunction {
                     @Override
                     public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
-                        RuntimeContext.guiService().openGui(player, "selectitem_function");
+                        GiveItemFunction.this.guiService().openGui(player, "selectitem_function");
                     }
                 });
         this.menu.addMenuItem(

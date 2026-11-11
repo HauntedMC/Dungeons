@@ -85,6 +85,7 @@ class ScheduledFunctionContractTest {
             var run = mock(PlayableInstance.class);
             var dungeon = mock(DungeonDefinition.class);
             when(run.getDungeon()).thenReturn(dungeon);
+            when(run.getEnvironment()).thenReturn(paper.runtime.environment());
             repeat.setInstance(run);
             repeat.setLocation(new Location(null, 0, 64, 0));
             var player = mock(DungeonPlayerSession.class);

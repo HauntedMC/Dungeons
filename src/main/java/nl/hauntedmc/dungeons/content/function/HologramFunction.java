@@ -14,7 +14,6 @@ import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.FunctionCategory;
 import nl.hauntedmc.dungeons.model.element.FunctionTargetType;
-import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
@@ -192,7 +191,8 @@ public class HologramFunction extends DungeonFunction {
                                     }
                                 }
                             };
-                    HologramFunction.this.inputWaiter.runTaskLater(RuntimeContext.plugin(), 200L);
+                    HologramFunction.this.inputWaiter.runTaskLater(
+                            HologramFunction.this.plugin(), 200L);
                     if (HologramFunction.this.hologramLoc == null) {
                         LangUtils.sendMessage(
                                 player, "editor.function.hologram.current-location-none");
@@ -216,7 +216,7 @@ public class HologramFunction extends DungeonFunction {
                                 }
                             };
                     HologramFunction.this.particleIndicator.runTaskTimer(
-                            RuntimeContext.plugin(), 0L, 10L);
+                            HologramFunction.this.plugin(), 0L, 10L);
                     LangUtils.sendMessage(
                             player,
                             "editor.function.hologram.current-location",

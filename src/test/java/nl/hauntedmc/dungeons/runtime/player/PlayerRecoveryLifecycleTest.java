@@ -40,7 +40,7 @@ class PlayerRecoveryLifecycleTest {
             assertTrue(persisted.contains("delivery"));
             state.contents[0] = PlayerState.stack(3); // state loaded from the last native save
             doNothing().when(state.player).saveData();
-            var restarted = new DungeonPlayerSession(f.paper.plugin, state.player);
+            var restarted = new DungeonPlayerSession(f.paper.runtime, state.player);
             assertTrue(restarted.recoverPendingState());
             assertEquals(4, state.contents[0].getAmount());
             assertTrue(restarted.recoverPendingState());
@@ -62,14 +62,16 @@ class PlayerRecoveryLifecycleTest {
             player.exp = 0;
             player.level = 0;
             player.heldSlot = 6;
-            var reconstructed = new DungeonPlayerSession(f.paper.plugin, player.player);
+            var reconstructed = new DungeonPlayerSession(f.paper.runtime, player.player);
             reconstructed.saveInventory();
             reconstructed.captureAndShowHotbar(mock(PlayerHotbarSnapshot.class));
             f.scheduler.jobs.getLast().run();
             reconstructed.restoreCapturedHotbar();
             Path path =
                     directory.resolve("players/" + player.player.getUniqueId() + ".recovery.yml");
-            assertTrue(new PlayerRecoveryJournal(TestStateStore.player(path)).hasRecovery());
+            assertTrue(
+                    new PlayerRecoveryJournal(f.paper.state, TestStateStore.player(path))
+                            .hasRecovery());
             reconstructed.completeDeparture(true, true);
             assertEquals(8, player.contents[0].getAmount());
             assertEquals(GameMode.SURVIVAL, player.gameMode);
@@ -99,7 +101,9 @@ class PlayerRecoveryLifecycleTest {
             session.restoreCapturedHotbar();
             Path path =
                     directory.resolve("players/" + player.player.getUniqueId() + ".recovery.yml");
-            assertTrue(new PlayerRecoveryJournal(TestStateStore.player(path)).hasRecovery());
+            assertTrue(
+                    new PlayerRecoveryJournal(f.paper.state, TestStateStore.player(path))
+                            .hasRecovery());
             assertTrue(session.isEditMode());
             session.setChatListening(true);
             var listener =
@@ -118,7 +122,9 @@ class PlayerRecoveryLifecycleTest {
             assertFalse(session.isChatListening());
             assertNull(session.getSavedHotbar());
             assertNull(session.getCurrentHotbar());
-            assertFalse(new PlayerRecoveryJournal(TestStateStore.player(path)).hasRecovery());
+            assertFalse(
+                    new PlayerRecoveryJournal(f.paper.state, TestStateStore.player(path))
+                            .hasRecovery());
             player.contents[0].setAmount(3);
             session.restoreCapturedHotbar();
             session.restoreInventory();
@@ -141,7 +147,7 @@ class PlayerRecoveryLifecycleTest {
             player.inventory.clear();
             player.gameMode = GameMode.ADVENTURE;
             player.exp = 0;
-            var registry = new PlayerSessionRegistry(f.paper.plugin);
+            var registry = new PlayerSessionRegistry(f.paper.runtime);
             var listener =
                     new DungeonListener(
                             f.paper.plugin, registry, mock(DungeonQueueRegistry.class), null, null);
@@ -171,7 +177,7 @@ class PlayerRecoveryLifecycleTest {
             assertTrue(session.prepareRecovery());
             player.inventory.clear();
             player.vanillaDead = true;
-            var registry = new PlayerSessionRegistry(f.paper.plugin);
+            var registry = new PlayerSessionRegistry(f.paper.runtime);
             var listener =
                     new DungeonListener(
                             f.paper.plugin, registry, mock(DungeonQueueRegistry.class), null, null);

@@ -10,7 +10,6 @@ import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
 import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
 import nl.hauntedmc.dungeons.model.element.TriggerCategory;
-import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.util.text.MessageUtils;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -66,7 +65,8 @@ public class BlockDetectorTrigger extends DungeonTrigger {
                 if (this.material.equalsIgnoreCase("ANY")
                         || configuredMaterial != null && block.getType() == configuredMaterial) {
                     if (!this.onBreak) {
-                        this.trigger(RuntimeContext.playerSessions().get(player));
+                        this.trigger(
+                                BlockDetectorTrigger.this.runtime().playerSessions().get(player));
                     }
                 }
             }
@@ -87,7 +87,8 @@ public class BlockDetectorTrigger extends DungeonTrigger {
                 if (this.material.equalsIgnoreCase("ANY")
                         || configuredMaterial != null && block.getType() == configuredMaterial) {
                     if (this.onBreak) {
-                        this.trigger(RuntimeContext.playerSessions().get(player));
+                        this.trigger(
+                                BlockDetectorTrigger.this.runtime().playerSessions().get(player));
                     }
                 }
             }

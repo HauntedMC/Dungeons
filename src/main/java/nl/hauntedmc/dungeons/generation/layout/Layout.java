@@ -222,7 +222,7 @@ public abstract class Layout implements Cloneable {
         this.cancelled = false;
         this.failureReasons.clear();
         LayoutValidationReport report = this.validateConfiguration();
-        report.log(this.dungeon.getWorldName());
+        report.log(this.dungeon.getEnvironment().logger(), this.dungeon.getWorldName());
         if (report.hasErrors()) {
             this.recordFailure(GenerationFailureReason.INVALID_CONFIGURATION);
             return GenerationResult.INVALID_CONFIGURATION;

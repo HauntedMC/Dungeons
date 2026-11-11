@@ -25,7 +25,7 @@ class AccessKeyReservationContractTest {
             when(paper.plugin.getDataFolder()).thenReturn(directory.toFile());
             var state = new PlayerState();
             var key = PlayerState.stack(1);
-            var session = new DungeonPlayerSession(paper.plugin, state.player);
+            var session = new DungeonPlayerSession(paper.runtime, state.player);
             assertTrue(session.reserveAccessKey("crypt", key));
             state.online = false;
             assertFalse(session.reserveAccessKey("other", key));
@@ -36,7 +36,7 @@ class AccessKeyReservationContractTest {
             session.flushPendingAccessKeyRefund();
             Assertions.assertNull(state.contents[0]);
             // The old session is deliberately abandoned: offline refunds must survive recreation.
-            var reloaded = new DungeonPlayerSession(paper.plugin, state.player);
+            var reloaded = new DungeonPlayerSession(paper.runtime, state.player);
             state.online = true;
             reloaded.flushPendingAccessKeyRefund();
             reloaded.flushPendingAccessKeyRefund();
@@ -54,7 +54,7 @@ class AccessKeyReservationContractTest {
             var player = state.player;
             var inventory = state.inventory;
             var key = PlayerState.stack(1);
-            var session = new DungeonPlayerSession(paper.plugin, player);
+            var session = new DungeonPlayerSession(paper.runtime, player);
             assertTrue(session.reserveAccessKey("crypt", key));
             assertFalse(session.completeReservedAccessKey("other", null));
             assertTrue(session.hasReservedAccessKey("crypt"));

@@ -13,7 +13,6 @@ import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.FunctionCategory;
 import nl.hauntedmc.dungeons.model.element.FunctionTargetType;
-import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
@@ -69,7 +68,7 @@ public class RevivePlayerFunction extends DungeonFunction {
                 }
 
                 playerSession.setActiveFunction(this);
-                RuntimeContext.guiService().openGui(player, "revivalmenu");
+                RevivePlayerFunction.this.guiService().openGui(player, "revivalmenu");
             }
         }
     }

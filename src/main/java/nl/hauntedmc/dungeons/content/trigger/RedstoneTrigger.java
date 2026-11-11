@@ -7,7 +7,6 @@ import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
 import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
 import nl.hauntedmc.dungeons.model.element.TriggerCategory;
-import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -94,7 +93,7 @@ public class RedstoneTrigger extends DungeonTrigger {
                         RedstoneTrigger.this.rateLimited = false;
                     }
                 };
-        this.rateLimiter.runTaskLater(RuntimeContext.plugin(), 2L);
+        this.rateLimiter.runTaskLater(RedstoneTrigger.this.plugin(), 2L);
     }
 
     /** Builds hotbar menu. */

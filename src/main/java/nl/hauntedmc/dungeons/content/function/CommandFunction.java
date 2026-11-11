@@ -15,7 +15,6 @@ import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.FunctionCategory;
 import nl.hauntedmc.dungeons.model.element.FunctionTargetType;
-import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -59,8 +58,8 @@ public class CommandFunction extends DungeonFunction {
 
         String commandToRunTemplate = this.sanitizeCommand(this.command);
         if (commandToRunTemplate.isEmpty()) {
-            RuntimeContext.plugin()
-                    .getSLF4JLogger()
+            CommandFunction.this
+                    .logger()
                     .warn(
                             "Command function in dungeon '{}' has an empty command at {},{},{}.",
                             this.instance.getDungeon().getWorldName(),
@@ -72,8 +71,8 @@ public class CommandFunction extends DungeonFunction {
 
         List<Player> players = this.resolvePlayers(triggerEvent, targets);
         if (this.commandType == PLAYER_COMMAND_TYPE && players.isEmpty()) {
-            RuntimeContext.plugin()
-                    .getSLF4JLogger()
+            CommandFunction.this
+                    .logger()
                     .warn(
                             "Command function in dungeon '{}' at {},{},{} was skipped because no valid player context was available.",
                             this.instance.getDungeon().getWorldName(),
@@ -92,8 +91,8 @@ public class CommandFunction extends DungeonFunction {
             String commandToRun = this.resolveCommand(commandToRunTemplate, player);
 
             if (commandToRun.isEmpty()) {
-                RuntimeContext.plugin()
-                        .getSLF4JLogger()
+                CommandFunction.this
+                        .logger()
                         .warn(
                                 "Command function in dungeon '{}' resolved to an empty player command for '{}'.",
                                 this.instance.getDungeon().getWorldName(),
@@ -103,8 +102,8 @@ public class CommandFunction extends DungeonFunction {
 
             try {
                 if (!Bukkit.dispatchCommand(player, commandToRun)) {
-                    RuntimeContext.plugin()
-                            .getSLF4JLogger()
+                    CommandFunction.this
+                            .logger()
                             .warn(
                                     "Player command failed for '{}' in dungeon '{}': {}",
                                     player.getName(),
@@ -112,8 +111,8 @@ public class CommandFunction extends DungeonFunction {
                                     commandToRun);
                 }
             } catch (Exception exception) {
-                RuntimeContext.plugin()
-                        .getSLF4JLogger()
+                CommandFunction.this
+                        .logger()
                         .error(
                                 "Player command threw an exception for '{}' in dungeon '{}': {}",
                                 player.getName(),
@@ -186,8 +185,8 @@ public class CommandFunction extends DungeonFunction {
     /** Dispatches one console command and logs failures. */
     private void dispatchConsoleCommand(String commandToRun, Player player) {
         if (commandToRun.isEmpty()) {
-            RuntimeContext.plugin()
-                    .getSLF4JLogger()
+            CommandFunction.this
+                    .logger()
                     .warn(
                             "Command function in dungeon '{}' resolved to an empty console command{}.",
                             this.instance.getDungeon().getWorldName(),
@@ -197,8 +196,8 @@ public class CommandFunction extends DungeonFunction {
 
         try {
             if (!Bukkit.dispatchCommand(Bukkit.getConsoleSender(), commandToRun)) {
-                RuntimeContext.plugin()
-                        .getSLF4JLogger()
+                CommandFunction.this
+                        .logger()
                         .warn(
                                 "Console command failed{} in dungeon '{}': {}",
                                 player == null ? "" : " for '" + player.getName() + "'",
@@ -206,8 +205,8 @@ public class CommandFunction extends DungeonFunction {
                                 commandToRun);
             }
         } catch (Exception exception) {
-            RuntimeContext.plugin()
-                    .getSLF4JLogger()
+            CommandFunction.this
+                    .logger()
                     .error(
                             "Console command threw an exception{} in dungeon '{}': {}",
                             player == null ? "" : " for '" + player.getName() + "'",

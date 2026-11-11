@@ -198,7 +198,7 @@ class QueueLaunchContractTest {
 
     static class Fixture implements AutoCloseable {
         final PaperBoundary paper = new PaperBoundary();
-        final PlayerSessionRegistry sessions = new PlayerSessionRegistry(paper.plugin);
+        final PlayerSessionRegistry sessions = new PlayerSessionRegistry(paper.runtime);
         final ActiveInstanceRegistry capacity = mock(ActiveInstanceRegistry.class);
         final DungeonQueueRegistry queues = new DungeonQueueRegistry(sessions, capacity);
         final DungeonTeamService teams = mock(DungeonTeamService.class);

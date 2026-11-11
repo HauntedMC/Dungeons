@@ -13,7 +13,6 @@ import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
 import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
 import nl.hauntedmc.dungeons.model.element.TriggerCategory;
-import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import org.bukkit.Material;
@@ -149,7 +148,7 @@ public class RoomDoorChangeTrigger extends DungeonTrigger {
                     public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
                         DungeonPlayerSession playerSession =
-                                RuntimeContext.playerSessions().get(player);
+                                RoomDoorChangeTrigger.this.runtime().playerSessions().get(player);
                         RoomDoorChangeTrigger.this.action++;
                         if (RoomDoorChangeTrigger.this.action >= DoorAction.values().length) {
                             RoomDoorChangeTrigger.this.action = 1;

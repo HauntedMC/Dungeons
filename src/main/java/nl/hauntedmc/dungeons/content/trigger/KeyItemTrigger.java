@@ -12,7 +12,6 @@ import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
 import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
 import nl.hauntedmc.dungeons.model.element.TriggerCategory;
-import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import org.bukkit.Location;
@@ -109,7 +108,7 @@ public class KeyItemTrigger extends DungeonTrigger {
                             }
 
                             DungeonPlayerSession playerSession =
-                                    RuntimeContext.playerSessions().get(player);
+                                    KeyItemTrigger.this.runtime().playerSessions().get(player);
                             this.trigger(playerSession);
                             event.setCancelled(true);
                         }
@@ -167,7 +166,7 @@ public class KeyItemTrigger extends DungeonTrigger {
                     @Override
                     public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
-                        RuntimeContext.guiService().openGui(player, "selectitem_trigger");
+                        KeyItemTrigger.this.guiService().openGui(player, "selectitem_trigger");
                     }
                 });
         this.menu.addMenuItem(
@@ -229,7 +228,7 @@ public class KeyItemTrigger extends DungeonTrigger {
                     public void onSelect(PlayerEvent event) {
                         Player player = event.getPlayer();
                         DungeonPlayerSession playerSession =
-                                RuntimeContext.playerSessions().get(player);
+                                KeyItemTrigger.this.runtime().playerSessions().get(player);
                         String currentClickType = KeyItemTrigger.this.clickType;
                         switch (currentClickType) {
                             case "RIGHT":

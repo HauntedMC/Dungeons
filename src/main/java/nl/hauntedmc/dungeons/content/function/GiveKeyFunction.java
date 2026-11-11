@@ -6,7 +6,6 @@ import nl.hauntedmc.dungeons.annotation.AutoRegister;
 import nl.hauntedmc.dungeons.event.TriggerFireEvent;
 import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.localization.LangUtils;
-import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.item.ItemUtils;
 import org.bukkit.Material;
@@ -48,7 +47,7 @@ public class GiveKeyFunction extends GiveItemFunction {
                         if (preMeta != null) {
                             PersistentDataContainer data = preMeta.getPersistentDataContainer();
                             data.set(
-                                    new NamespacedKey(RuntimeContext.plugin(), "DungeonItem"),
+                                    new NamespacedKey(GiveKeyFunction.this.plugin(), "DungeonItem"),
                                     PersistentDataType.INTEGER,
                                     1);
                             key.setItemMeta(preMeta);

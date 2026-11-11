@@ -72,3 +72,12 @@ moves require rebuilding code that imported internal classes; no compatibility
 wrappers are retained for those packages. Serialized mechanic IDs, configuration
 keys, message resource paths and database mappings do not depend on these moves.
 Use a clean build after moving packages so stale class files cannot enter the jar.
+
+## Integration ownership review
+
+See [the architecture review](../../docs/architecture-review.md) for traced ownership
+issues, the implemented changes and remaining migration boundaries. Content mechanics
+use `DungeonElement` owner accessors. Player sessions receive their owning runtime;
+recovery journals and dungeon progression stores receive `StateStore` explicitly.
+Do not select persistence through the static runtime bridge when constructing these
+objects. The public service owns its refresh timer and closes it with publication.

@@ -15,7 +15,6 @@ import nl.hauntedmc.dungeons.gui.hotbar.menuitems.ToggleMenuItem;
 import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonTrigger;
 import nl.hauntedmc.dungeons.model.element.TriggerCategory;
-import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.runtime.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.runtime.instance.play.OpenInstance;
@@ -117,7 +116,9 @@ public class DistanceTrigger extends DungeonTrigger {
                                 players.removeIf(
                                         candidatePlayer -> {
                                             DungeonPlayerSession session =
-                                                    RuntimeContext.playerSessions()
+                                                    DistanceTrigger.this
+                                                            .runtime()
+                                                            .playerSessions()
                                                             .get(candidatePlayer);
                                             return session == null
                                                     || session.getInstance() != instance
@@ -147,7 +148,10 @@ public class DistanceTrigger extends DungeonTrigger {
                                     if (DistanceTrigger.this.forEachPlayer) {
                                         for (Player player : players) {
                                             DungeonPlayerSession dungeonPlayer =
-                                                    RuntimeContext.playerSessions().get(player);
+                                                    DistanceTrigger.this
+                                                            .runtime()
+                                                            .playerSessions()
+                                                            .get(player);
                                             if (!DistanceTrigger.this.hasTrackedTarget(
                                                     dungeonPlayer)) {
                                                 DistanceTrigger.this.rememberTriggeredTargets(
@@ -163,7 +167,9 @@ public class DistanceTrigger extends DungeonTrigger {
                                     DungeonPlayerSession triggerSource = null;
                                     for (Player candidatePlayer : players) {
                                         DungeonPlayerSession dungeonPlayer =
-                                                RuntimeContext.playerSessions()
+                                                DistanceTrigger.this
+                                                        .runtime()
+                                                        .playerSessions()
                                                         .get(candidatePlayer);
                                         if (!DistanceTrigger.this.hasTrackedTarget(dungeonPlayer)) {
                                             DistanceTrigger.this.rememberTriggeredTargets(
@@ -184,7 +190,7 @@ public class DistanceTrigger extends DungeonTrigger {
                             }
                         }
                     };
-            this.playerScan.runTaskTimer(RuntimeContext.plugin(), 0L, 10L);
+            this.playerScan.runTaskTimer(DistanceTrigger.this.plugin(), 0L, 10L);
         }
     }
 

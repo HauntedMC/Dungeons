@@ -315,7 +315,7 @@ class LifecycleContractTest {
                     .thenReturn(offline.originWorld);
             f.paper.bukkit.when(() -> Bukkit.getWorld("overworld")).thenReturn(offline.originWorld);
             offline.online = true;
-            var recreated = new PlayerSessionRegistry(f.paper.plugin).put(offline.player);
+            var recreated = new PlayerSessionRegistry(f.paper.runtime).put(offline.player);
             assertTrue(recreated.recoverPendingState());
             assertEquals(12, offline.contents[0].getAmount());
         }

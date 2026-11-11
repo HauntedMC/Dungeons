@@ -11,7 +11,6 @@ import nl.hauntedmc.dungeons.gui.hotbar.menuitems.MenuButton;
 import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.element.DungeonFunction;
 import nl.hauntedmc.dungeons.model.element.FunctionCategory;
-import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
 import org.bukkit.Bukkit;
@@ -83,7 +82,7 @@ public class RedstoneBlockFunction extends DungeonFunction {
                             RedstoneBlockFunction.this.pendingReset =
                                     Bukkit.getScheduler()
                                             .runTaskLater(
-                                                    RuntimeContext.plugin(),
+                                                    RedstoneBlockFunction.this.plugin(),
                                                     () -> {
                                                         world.getBlockAt(
                                                                         RedstoneBlockFunction.this
@@ -96,7 +95,8 @@ public class RedstoneBlockFunction extends DungeonFunction {
                         }
                     }
                 };
-        this.repeater.runTaskTimer(RuntimeContext.plugin(), effectiveDelay, effectiveRate);
+        this.repeater.runTaskTimer(
+                RedstoneBlockFunction.this.plugin(), effectiveDelay, effectiveRate);
     }
 
     /** Builds menu button. */
