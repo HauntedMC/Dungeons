@@ -59,7 +59,7 @@ public abstract class GateTrigger extends DungeonTrigger {
     @Override
     public void onDisable() {
         for (DungeonTrigger trigger : this.triggers) {
-            trigger.disable();
+            this.cleanupOwnedResource("gate child", trigger::disable);
         }
 
         this.triggerTracker.clear();

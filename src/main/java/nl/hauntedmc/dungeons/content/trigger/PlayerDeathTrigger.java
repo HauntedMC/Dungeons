@@ -98,7 +98,7 @@ public class PlayerDeathTrigger extends DungeonTrigger {
         } else {
             InstanceRoom originRoom = instance.getRoom(origin);
             InstanceRoom thisRoom = instance.getRoom(this.location);
-            return thisRoom == originRoom;
+            return thisRoom != null && thisRoom == originRoom;
         }
     }
 
@@ -106,7 +106,7 @@ public class PlayerDeathTrigger extends DungeonTrigger {
     @Override
     public MenuButton buildMenuButton() {
         MenuButton functionButton = new MenuButton(Material.PLAYER_HEAD);
-        functionButton.setDisplayName("&playerSession Death Counter");
+        functionButton.setDisplayName("&aPlayer Death Counter");
         functionButton.addLore("&eTriggered when a certain number of");
         functionButton.addLore("&eplayers have died.");
         return functionButton;

@@ -47,12 +47,21 @@ public class PlaySoundFunction extends DungeonFunction {
     /** Performs run function. */
     @Override
     public void runFunction(TriggerFireEvent triggerEvent, List<DungeonPlayerSession> targets) {
-        if (!this.sound.isEmpty()) {
+        if (this.sound != null
+                && !this.sound.isBlank()
+                && Double.isFinite(this.volume)
+                && this.volume >= 0
+                && this.volume <= Float.MAX_VALUE
+                && Double.isFinite(this.pitch)
+                && this.pitch >= 0
+                && this.pitch <= Float.MAX_VALUE) {
             Location loc = this.location;
             SoundCategory category = SoundCategory.MASTER;
 
             try {
-                category = SoundCategory.valueOf(this.soundCategory);
+                category =
+                        SoundCategory.valueOf(
+                                this.soundCategory == null ? "MASTER" : this.soundCategory);
             } catch (IllegalArgumentException exception) {
                 PlaySoundFunction.this
                         .logger()

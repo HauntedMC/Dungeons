@@ -113,8 +113,12 @@ class TriggerLifecycleContractTest {
             var trigger = new WaitingTrigger();
             trigger.addCondition(condition);
             trigger.enable(function, run);
-            trigger.trigger();
-            trigger.trigger();
+            var first = mock(DungeonPlayerSession.class);
+            var second = mock(DungeonPlayerSession.class);
+            when(first.getInstance()).thenReturn(run);
+            when(second.getInstance()).thenReturn(run);
+            trigger.trigger(first);
+            trigger.trigger(second);
             assertEquals(2, scheduler.jobs.size());
             trigger.disable();
             assertTrue(scheduler.jobs.stream().allMatch(job -> job.cancelled));
@@ -144,6 +148,118 @@ class TriggerLifecycleContractTest {
             assertTrue(scheduler.jobs.getFirst().cancelled);
             verify(healthy).disable();
             verify(run).unregisterTriggerListener(trigger);
+        }
+    }
+
+    @Test
+    void openWaitingTriggerStopsAfterSuccessWithoutDisablingOtherPlayers() {
+        try (var paper = new PaperBoundary()) {
+            var scheduler = new CapturedScheduler(paper);
+            var run = mock(nl.hauntedmc.dungeons.runtime.instance.play.OpenInstance.class);
+            when(run.asPlayInstance()).thenReturn(run);
+            when(run.getEnvironment()).thenReturn(paper.runtime.environment());
+            var source = mock(DungeonPlayerSession.class);
+            var player = mock(org.bukkit.entity.Player.class);
+            when(player.getUniqueId()).thenReturn(java.util.UUID.randomUUID());
+            when(source.getPlayer()).thenReturn(player);
+            when(source.getInstance()).thenReturn(run);
+            var function = mock(DungeonFunction.class);
+            var trigger = new WaitingTrigger();
+            trigger.enable(function, run);
+            trigger.trigger(source);
+            var pending = scheduler.jobs.getFirst();
+            pending.run();
+            assertTrue(pending.cancelled);
+            pending.run();
+            verify(function).execute(any());
+            trigger.trigger(source);
+            assertEquals(1, scheduler.jobs.size());
+            var second = mock(DungeonPlayerSession.class);
+            var secondPlayer = mock(org.bukkit.entity.Player.class);
+            when(secondPlayer.getUniqueId()).thenReturn(java.util.UUID.randomUUID());
+            when(second.getPlayer()).thenReturn(secondPlayer);
+            when(second.getInstance()).thenReturn(run);
+            trigger.trigger(second);
+            scheduler.jobs.getLast().run();
+            verify(function, times(2)).execute(any());
+            trigger.disable();
+        }
+    }
+
+    @Test
+    void cancelledOpenAttemptDoesNotConsumePlayerAndRetriesResetCancellation() {
+        try (var paper = new PaperBoundary()) {
+            var scheduler = new CapturedScheduler(paper);
+            var run = mock(nl.hauntedmc.dungeons.runtime.instance.play.OpenInstance.class);
+            when(run.asPlayInstance()).thenReturn(run);
+            when(run.getEnvironment()).thenReturn(paper.runtime.environment());
+            var source = mock(DungeonPlayerSession.class);
+            var player = mock(org.bukkit.entity.Player.class);
+            when(player.getUniqueId()).thenReturn(java.util.UUID.randomUUID());
+            when(source.getPlayer()).thenReturn(player);
+            when(source.getInstance()).thenReturn(run);
+            var function = mock(DungeonFunction.class);
+            var trigger = new WaitingTrigger();
+            trigger.enable(function, run);
+            var first = new AtomicBoolean(true);
+            var manager = Bukkit.getPluginManager();
+            doAnswer(
+                            call -> {
+                                TriggerFireEvent event = call.getArgument(0);
+                                assertFalse(event.isCancelled());
+                                event.setCancelled(first.getAndSet(false));
+                                return null;
+                            })
+                    .when(manager)
+                    .callEvent(any(TriggerFireEvent.class));
+            trigger.trigger(source);
+            var work = scheduler.jobs.getFirst();
+            work.run();
+            verify(function, never()).execute(any());
+            assertFalse(work.cancelled);
+            work.run();
+            verify(function).execute(any());
+            assertTrue(work.cancelled);
+            trigger.disable();
+        }
+    }
+
+    @Test
+    void disabledTriggerRejectsNewDispatchAndCanBeEnabledAgain() {
+        try (var paper = new PaperBoundary()) {
+            var scheduler = new CapturedScheduler(paper);
+            var run = mock(PlayableInstance.class);
+            when(run.asPlayInstance()).thenReturn(run);
+            when(run.getEnvironment()).thenReturn(paper.runtime.environment());
+            var function = mock(DungeonFunction.class);
+            var trigger = new WaitingTrigger();
+            trigger.enable(function, run);
+            trigger.disable();
+            trigger.trigger();
+            assertTrue(scheduler.jobs.isEmpty());
+            trigger.enable(function, run);
+            trigger.trigger();
+            scheduler.jobs.getFirst().run();
+            verify(function).execute(any());
+        }
+    }
+
+    @Test
+    void sourceFreeOpenTriggersRetainOneShotSemantics() {
+        try (var paper = new PaperBoundary()) {
+            var scheduler = new CapturedScheduler(paper);
+            var run = mock(nl.hauntedmc.dungeons.runtime.instance.play.OpenInstance.class);
+            when(run.asPlayInstance()).thenReturn(run);
+            when(run.getEnvironment()).thenReturn(paper.runtime.environment());
+            var function = mock(DungeonFunction.class);
+            var trigger = new WaitingTrigger();
+            trigger.enable(function, run);
+            trigger.trigger();
+            scheduler.jobs.getFirst().run();
+            verify(function).execute(any());
+            verify(run).unregisterTriggerListener(trigger);
+            trigger.trigger();
+            assertEquals(1, scheduler.jobs.size());
         }
     }
 

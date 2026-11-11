@@ -71,7 +71,7 @@ public class MobDeathTrigger extends DungeonTrigger {
     /** Performs on mob death. */
     @EventHandler
     public void onMobDeath(EntityDeathEvent event) {
-        if (event.isCancelled()) {
+        if (event.isCancelled() || !Double.isFinite(this.radius) || this.mob == null) {
             return;
         }
         if (event.getEntity().getWorld() == this.instance.getInstanceWorld()) {

@@ -1,8 +1,10 @@
 package nl.hauntedmc.dungeons.model.element;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import nl.hauntedmc.dungeons.annotation.PersistedField;
@@ -47,6 +49,8 @@ public abstract class DungeonTrigger extends DungeonElement
     private boolean hasTarget = false;
     protected List<UUID> playersFound;
     protected boolean triggered;
+    private boolean stopped;
+    private Set<DungeonPlayerSession> waitingSources = new HashSet<>();
     private PlayerHotbarMenu conditionsMenu;
     private List<BukkitRunnable> conditionWaiters = new ArrayList<>();
     protected List<UUID> playersTriggered = new ArrayList<>();
@@ -107,46 +111,46 @@ public abstract class DungeonTrigger extends DungeonElement
     public void enable(@Nullable DungeonFunction function, DungeonInstance instance) {
         if (!this.enabled) {
             this.enabled = true;
+            this.stopped = false;
             this.instance = instance;
-            this.register();
-            if (function != null) {
-                this.function = function;
-                this.location = function.location;
-            }
+            try {
+                this.register();
+                if (function != null) {
+                    this.function = function;
+                    this.location = function.location;
+                }
 
-            for (TriggerCondition condition : this.conditions) {
-                condition.enable(this);
-            }
+                for (TriggerCondition condition : this.conditions) {
+                    condition.enable(this);
+                }
 
-            this.onEnable();
+                this.onEnable();
+            } catch (RuntimeException exception) {
+                this.disable();
+                throw exception;
+            }
         }
     }
 
     /** Disables the trigger, its condition listeners, and any pending condition wait task. */
     @Override
     public final void disable() {
+        this.stopped = true;
+        this.enabled = false;
         for (TriggerCondition condition : this.conditions) {
-            try {
-                condition.disable();
-            } catch (RuntimeException exception) {
-                this.logger()
-                        .error(
-                                "Failed to disable condition '{}' in dungeon '{}'.",
-                                condition.getClass().getSimpleName(),
-                                this.dungeonNameForLogs(),
-                                exception);
-            }
+            this.cleanupOwnedResource("condition", condition::disable);
         }
-
-        for (BukkitRunnable waiter : this.conditionWaiters) {
-            if (!waiter.isCancelled()) {
-                waiter.cancel();
-            }
+        for (BukkitRunnable waiter : new ArrayList<>(this.conditionWaiters)) {
+            this.cleanupOwnedResource(
+                    "condition waiter",
+                    () -> {
+                        if (!waiter.isCancelled()) waiter.cancel();
+                    });
         }
         this.conditionWaiters.clear();
-
-        this.unregister();
-        this.onDisable();
+        this.waitingSources.clear();
+        this.cleanupOwnedResource("trigger listener", this::unregister);
+        this.cleanupOwnedResource("trigger resources", this::onDisable);
         super.disable();
     }
 
@@ -155,7 +159,7 @@ public abstract class DungeonTrigger extends DungeonElement
     }
 
     public final void unregister() {
-        this.instance.unregisterTriggerListener(this);
+        if (this.instance != null) this.instance.unregisterTriggerListener(this);
     }
 
     /** Initializes all configured conditions after persisted fields have been hydrated. */
@@ -222,7 +226,8 @@ public abstract class DungeonTrigger extends DungeonElement
 
     protected final void rememberTriggeredTargets(DungeonPlayerSession player) {
         for (DungeonPlayerSession target : this.resolveTrackedTargets(player)) {
-            this.playersFound.add(target.getPlayer().getUniqueId());
+            UUID id = target.getPlayer().getUniqueId();
+            if (!this.playersFound.contains(id)) this.playersFound.add(id);
         }
     }
 
@@ -260,6 +265,11 @@ public abstract class DungeonTrigger extends DungeonElement
         return List.of(player);
     }
 
+    /** Departure listeners may retain their original event source after it has left the run. */
+    protected boolean acceptsDepartedSource() {
+        return false;
+    }
+
     public final void trigger() {
         this.trigger(null);
     }
@@ -270,9 +280,13 @@ public abstract class DungeonTrigger extends DungeonElement
     }
 
     public final void trigger(DungeonPlayerSession playerSession, boolean disable) {
-        if (playerSession != null && playerSession.isObserving()) return;
+        if (this.stopped || this.instance == null) return;
+        if (playerSession != null
+                && (playerSession.isObserving() || playerSession.getInstance() != this.instance))
+            return;
         PlayableInstance instance = this.instance.asPlayInstance();
         if (instance != null) {
+            final boolean polling = !this.allowRetrigger && this.waitForConditions;
             this.triggered = true;
             final TriggerFireEvent event;
             if (playerSession != null && playerSession.getInstance() != null) {
@@ -286,28 +300,57 @@ public abstract class DungeonTrigger extends DungeonElement
                     if (this.hasOpenlyTriggeredTarget(playerSession)) {
                         return;
                     }
-
-                    if (disable) {
-                        this.rememberOpenlyTriggeredTargets(playerSession);
-                    }
                 }
 
-                disable = false;
+                if (playerSession != null) disable = false;
             }
 
+            if (polling && !this.waitingSources.add(playerSession)) return;
             final boolean finalDisable = disable;
-            boolean polling = !this.allowRetrigger && this.waitForConditions;
+            final boolean trackOpenTarget =
+                    instance instanceof OpenInstance
+                            && playerSession != null
+                            && !this.allowRetrigger;
             BukkitRunnable conditionWaiter =
                     new BukkitRunnable() {
                         public void run() {
                             try {
+                                if (DungeonTrigger.this.stopped
+                                        || (playerSession != null
+                                                && (playerSession.isObserving()
+                                                        || (!DungeonTrigger.this
+                                                                        .acceptsDepartedSource()
+                                                                && playerSession.getInstance()
+                                                                        != instance)))) {
+                                    this.cancel();
+                                    return;
+                                }
+                                if (trackOpenTarget
+                                        && DungeonTrigger.this.hasOpenlyTriggeredTarget(
+                                                playerSession)) {
+                                    this.cancel();
+                                    return;
+                                }
                                 // Waiting triggers reuse the same event object so conditions and
                                 // downstream
                                 // listeners observe a consistent cause while the polling task
                                 // retries.
                                 if (DungeonTrigger.this.checkConditions(event)) {
+                                    event.setCancelled(false);
                                     Bukkit.getPluginManager().callEvent(event);
-                                    if (!event.isCancelled()) {
+                                    if (!event.isCancelled()
+                                            && !DungeonTrigger.this.stopped
+                                            && (playerSession == null
+                                                    || (!playerSession.isObserving()
+                                                            && (DungeonTrigger.this
+                                                                            .acceptsDepartedSource()
+                                                                    || playerSession.getInstance()
+                                                                            == instance)))) {
+                                        if (trackOpenTarget) {
+                                            DungeonTrigger.this.rememberOpenlyTriggeredTargets(
+                                                    playerSession);
+                                        }
+                                        if (polling) this.cancel();
                                         if (DungeonTrigger.this.function != null) {
                                             DungeonTrigger.this.function.execute(event);
                                         }
@@ -332,15 +375,23 @@ public abstract class DungeonTrigger extends DungeonElement
                             } finally {
                                 if (!polling || this.isCancelled()) {
                                     DungeonTrigger.this.conditionWaiters.remove(this);
+                                    if (polling)
+                                        DungeonTrigger.this.waitingSources.remove(playerSession);
                                 }
                             }
                         }
                     };
             this.conditionWaiters.add(conditionWaiter);
-            if (polling) {
-                conditionWaiter.runTaskTimer(this.plugin(), 0L, 20L);
-            } else {
-                conditionWaiter.runTask(this.plugin());
+            try {
+                if (polling) {
+                    conditionWaiter.runTaskTimer(this.plugin(), 0L, 20L);
+                } else {
+                    conditionWaiter.runTask(this.plugin());
+                }
+            } catch (RuntimeException exception) {
+                this.conditionWaiters.remove(conditionWaiter);
+                if (polling) this.waitingSources.remove(playerSession);
+                throw exception;
             }
         }
     }
@@ -510,7 +561,9 @@ public abstract class DungeonTrigger extends DungeonElement
 
             clone.conditions = newConditions;
             clone.conditionWaiters = new ArrayList<>();
+            clone.waitingSources = new HashSet<>();
             clone.triggered = false;
+            clone.stopped = false;
             clone.playersFound = new ArrayList<>();
             clone.playersTriggered = new ArrayList<>();
             clone.initializeMenu();

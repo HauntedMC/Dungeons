@@ -418,6 +418,7 @@ class TriggerExecutionContractTest {
             nearby.addAll(List.of(first.player, second.player));
             scan.run();
             assertEquals(1, f.scheduler.immediate.size());
+            f.scheduler.immediate.getFirst().run();
             scan.run();
             assertEquals(1, f.scheduler.immediate.size());
             nearby.clear();
@@ -501,6 +502,43 @@ class TriggerExecutionContractTest {
             verify(Bukkit.getPluginManager()).callEvent(event.capture());
             assertSame(session, event.getValue().getPlayerSession());
             assertSame(trigger, event.getValue().getTrigger());
+        }
+    }
+
+    @Test
+    void proximityPlayerConditionsRetryUntilSuccessfulAndEvaluateWithTheActualSource()
+            throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var state = new PlayerState();
+            source(f, state);
+            f.paper.bukkit.when(Bukkit::getOnlinePlayers).thenReturn(List.of(state.player));
+            f.paper
+                    .bukkit
+                    .when(() -> Bukkit.getPlayer(state.player.getUniqueId()))
+                    .thenReturn(state.player);
+            when(f.world.getNearbyEntities(
+                            any(Location.class), anyDouble(), anyDouble(), anyDouble(), any()))
+                    .thenReturn(List.of(state.player));
+            var trigger = bind(new DistanceTrigger(), f);
+            var condition =
+                    new nl.hauntedmc.dungeons.content.condition.PlayerHealthCondition(
+                            Map.of("minimum", 15));
+            condition.initializeFields();
+            condition.setInstance(f.run);
+            trigger.addCondition(condition);
+            trigger.onEnable();
+            var scan = f.scheduler.jobs.getFirst();
+            state.health = 10;
+            scan.run();
+            f.scheduler.immediate.getLast().run();
+            verify(Bukkit.getPluginManager(), never()).callEvent(any(TriggerFireEvent.class));
+            state.health = 20;
+            scan.run();
+            f.scheduler.immediate.getLast().run();
+            verify(Bukkit.getPluginManager()).callEvent(any(TriggerFireEvent.class));
+            scan.run();
+            assertEquals(2, f.scheduler.immediate.size());
+            trigger.onDisable();
         }
     }
 }

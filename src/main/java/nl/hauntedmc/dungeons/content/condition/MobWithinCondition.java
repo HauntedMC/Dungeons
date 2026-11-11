@@ -61,6 +61,7 @@ public class MobWithinCondition extends TriggerCondition {
             return false;
         }
 
+        if (!Double.isFinite(this.radius)) return false;
         double effectiveRadius = Math.max(0.0, this.radius);
         int requiredMobs = Math.max(0, this.count);
         Collection<Entity> entities =
@@ -72,7 +73,11 @@ public class MobWithinCondition extends TriggerCondition {
         EntityType type = null;
 
         try {
-            type = EntityType.valueOf(this.entityName.toUpperCase(Locale.ROOT));
+            type =
+                    EntityType.valueOf(
+                            this.entityName == null
+                                    ? ""
+                                    : this.entityName.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException exception) {
             if (!this.invalidConfigurationLogged) {
                 this.invalidConfigurationLogged = true;

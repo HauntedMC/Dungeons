@@ -106,6 +106,63 @@ class FunctionCompositionContractTest {
         }
     }
 
+    @Test
+    void sequenceClonesAndReenabledRunsBeginAtTheFirstStep() {
+        try (var paper = new PaperBoundary();
+                var menus = new nl.hauntedmc.dungeons.support.HeadlessMenus()) {
+            List<String> effects = new ArrayList<>();
+            var sequence = new SequenceFunction();
+            sequence.addFunction(new Effect("first", effects));
+            sequence.addFunction(new Effect("second", effects));
+            var event = mock(TriggerFireEvent.class);
+            var source = mock(DungeonPlayerSession.class);
+            sequence.runFunction(event, List.of(source));
+            var clone = sequence.clone();
+            clone.runFunction(event, List.of(source));
+            sequence.runFunction(event, List.of(source));
+            assertEquals(List.of("first", "first", "second"), effects);
+        }
+    }
+
+    @Test
+    void completedNonLoopingSequencesStayCompleteUntilEnabledAgain() {
+        try (var paper = new PaperBoundary()) {
+            List<String> effects = new ArrayList<>();
+            var sequence = new SequenceFunction(java.util.Map.of("loop", false));
+            sequence.initializeFields();
+            sequence.addFunction(new Effect("first", effects));
+            var run = mock(nl.hauntedmc.dungeons.runtime.instance.PlayableInstance.class);
+            when(run.getEnvironment()).thenReturn(paper.runtime.environment());
+            sequence.setInstance(run);
+            var event = mock(TriggerFireEvent.class);
+            var source = mock(DungeonPlayerSession.class);
+            when(source.getInstance()).thenReturn(run);
+            sequence.runFunction(event, List.of(source));
+            sequence.runFunction(event, List.of(source));
+            assertEquals(List.of("first"), effects);
+            sequence.enable(run, null);
+            sequence.runFunction(event, List.of(source));
+            assertEquals(List.of("first", "first"), effects);
+        }
+    }
+
+    @Test
+    void sequencesTolerateRemovalOfThePreviouslySelectedNextStep() {
+        try (var paper = new PaperBoundary()) {
+            List<String> effects = new ArrayList<>();
+            var sequence = new SequenceFunction();
+            sequence.addFunction(new Effect("first", effects));
+            var second = new Effect("second", effects);
+            sequence.addFunction(second);
+            var event = mock(TriggerFireEvent.class);
+            var targets = List.of(mock(DungeonPlayerSession.class));
+            sequence.runFunction(event, targets);
+            sequence.removeFunction(second);
+            assertDoesNotThrow(() -> sequence.runFunction(event, targets));
+            assertEquals(List.of("first", "first"), effects);
+        }
+    }
+
     static class Effect extends DungeonFunction {
         final String name;
         final List<String> effects;

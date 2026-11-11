@@ -20,6 +20,7 @@ import org.bukkit.entity.Player;
 public class SequenceFunction extends CompositeFunction {
     @PersistedField private boolean loop = true;
     private int index = 0;
+    private boolean completed;
 
     /** Creates a new SequenceFunction instance. */
     public SequenceFunction(Map<String, Object> config) {
@@ -33,10 +34,26 @@ public class SequenceFunction extends CompositeFunction {
         this.setAllowRetriggerByDefault(true);
     }
 
+    @Override
+    public void onEnable() {
+        this.index = 0;
+        this.completed = false;
+        super.onEnable();
+    }
+
+    @Override
+    public SequenceFunction clone() {
+        SequenceFunction copy = (SequenceFunction) super.clone();
+        copy.index = 0;
+        copy.completed = false;
+        return copy;
+    }
+
     /** Performs run function. */
     @Override
     public void runFunction(TriggerFireEvent triggerEvent, List<DungeonPlayerSession> targets) {
-        if (!this.functions.isEmpty()) {
+        if (!this.completed && !this.functions.isEmpty()) {
+            if (this.index >= this.functions.size()) this.index = 0;
             DungeonFunction function = this.functions.get(this.index);
             this.executeNestedFunction(
                     function,
@@ -51,6 +68,7 @@ public class SequenceFunction extends CompositeFunction {
         this.index++;
         if (this.index >= this.functions.size()) {
             if (!this.loop) {
+                this.completed = true;
                 this.disable();
             }
 

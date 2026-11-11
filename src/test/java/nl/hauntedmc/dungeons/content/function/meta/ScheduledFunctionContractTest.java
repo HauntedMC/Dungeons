@@ -89,6 +89,7 @@ class ScheduledFunctionContractTest {
             repeat.setInstance(run);
             repeat.setLocation(new Location(null, 0, 64, 0));
             var player = mock(DungeonPlayerSession.class);
+            when(player.getInstance()).thenReturn(run);
             repeat.runFunction(mock(TriggerFireEvent.class), List.of(player));
             var work = scheduler.jobs.getFirst();
             assertEquals(1, work.period);
@@ -124,6 +125,25 @@ class ScheduledFunctionContractTest {
             assertTrue(scheduler.jobs.stream().allMatch(job -> job.cancelled));
             scheduler.jobs.forEach(CapturedScheduler.Job::run);
             verify(child, times(4)).runFunction(eq(event), anyList());
+        }
+    }
+
+    @Test
+    void delayedNestedEffectsExcludePlayersWhoLeftBeforeExecution() {
+        try (var paper = new PaperBoundary()) {
+            var scheduler = new CapturedScheduler(paper);
+            var child = new FunctionCompositionContractTest.Effect("child", new ArrayList<>());
+            var delayed = new DelayedFunction();
+            delayed.addFunction(child);
+            var run = mock(PlayableInstance.class);
+            when(run.getEnvironment()).thenReturn(paper.runtime.environment());
+            delayed.setInstance(run);
+            var source = mock(DungeonPlayerSession.class);
+            when(source.getInstance()).thenReturn(run);
+            delayed.runFunction(mock(TriggerFireEvent.class), List.of(source));
+            when(source.getInstance()).thenReturn(null);
+            scheduler.jobs.getFirst().run();
+            assertEquals(List.of(), child.received);
         }
     }
 }
