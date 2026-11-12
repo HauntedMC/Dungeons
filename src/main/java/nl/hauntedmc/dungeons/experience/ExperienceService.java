@@ -92,9 +92,11 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
 
     private final Map<UUID, Waiting> waiting = new HashMap<>();
 
-    private record Exit(UUID instance, String signature, String token, long expires) {}
+    private record Exit(
+            Participation participation, String signature, String token, long expires) {}
 
     private final DungeonsRuntime runtime;
+    private final java.util.function.LongSupplier nanoTime;
     private final Map<PlayableInstance, ExperienceRun> runs = new LinkedHashMap<>();
     private final Map<PlayableInstance, ExperiencePresentation> presentations = new HashMap<>();
     private final java.util.Set<PlayableInstance> invalidPresentations = new java.util.HashSet<>();
@@ -119,7 +121,12 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
     private boolean warned;
 
     public ExperienceService(DungeonsRuntime runtime) {
+        this(runtime, System::nanoTime);
+    }
+
+    ExperienceService(DungeonsRuntime runtime, java.util.function.LongSupplier nanoTime) {
         this.runtime = runtime;
+        this.nanoTime = nanoTime;
     }
 
     public void start() {
@@ -248,7 +255,7 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
         if (observers != null) observers.tick();
         if (ticks % 20 == 0) queueFeedback();
         previews.values().removeIf(lease -> !lease.active());
-        exits.values().removeIf(exit -> exit.expires < System.nanoTime());
+        exits.values().removeIf(exit -> exit.expires <= nanoTime.getAsLong());
     }
 
     public ExperienceRun mechanics(PlayableInstance instance) {
@@ -262,6 +269,7 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
         Participation existing = players.get(player.getUniqueId());
         if (existing != null && existing.instance == instance) return;
         if (existing != null) release(existing);
+        exits.remove(player.getUniqueId());
         Participation value = new Participation(instance);
         value.lastLives = instance.getConfig().getInt("players.lives", 0);
         var queued = waiting.remove(player.getUniqueId());
@@ -801,8 +809,9 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
 
     public void departed(PlayableInstance instance, DungeonPlayerSession session) {
         UUID id = session.getPlayer().getUniqueId();
-        var state = players.remove(id);
+        var state = players.get(id);
         if (state == null || state.instance != instance) return;
+        players.remove(id);
         release(state);
         exits.remove(id);
         var report = new ArrayList<Component>();
@@ -1000,6 +1009,13 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                 + ":"
                 + dungeon.isAccessCooldownEnabled()
                 + ":"
+                + dungeon.shouldApplyAccessCooldown(
+                        state.instance, session.getPlayer().getUniqueId())
+                + ":"
+                + state.instance.getConfig().getBoolean("access.keys.consume_on_entry", true)
+                + ":"
+                + state.instance.getConfig().getList("access.keys.items", List.of())
+                + ":"
                 + session.getDungeonSavePoint(dungeon.getWorldName());
     }
 
@@ -1007,27 +1023,33 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
      * Returns true only for an immediate exit or a matching, unexpired consequence confirmation.
      */
     public boolean requestExit(Player player, String token) {
+        requireThread();
         var state = players.get(player.getUniqueId());
-        if (state == null
-                || state.outcome != null
-                || !enabled(state.instance, "confirm_exit", true)) return true;
         var session = runtime.playerSessions().get(player);
-        String signature = exitSignature(session, state);
+        if (session == null || state != null && session.getInstance() != state.instance) {
+            exits.remove(player.getUniqueId());
+            return token == null && (session == null || session.getInstance() == null);
+        }
         Exit pending = exits.remove(player.getUniqueId());
+        if (state == null) return token == null;
+        String signature = exitSignature(session, state);
         if (token != null
                 && pending != null
                 && pending.token.equals(token)
-                && pending.instance.equals(state.instance.getInstanceId())
+                && pending.participation == state
                 && pending.signature.equals(signature)
-                && pending.expires > System.nanoTime()) return true;
+                && pending.expires > nanoTime.getAsLong()) return true;
+        if (token == null
+                && (state.outcome != null || !enabled(state.instance, "confirm_exit", true)))
+            return true;
         String next = UUID.randomUUID().toString();
         exits.put(
                 player.getUniqueId(),
                 new Exit(
-                        state.instance.getInstanceId(),
+                        state,
                         signature,
                         next,
-                        System.nanoTime() + Duration.ofSeconds(30).toNanos()));
+                        nanoTime.getAsLong() + Duration.ofSeconds(30).toNanos()));
         notify(player, "exit-confirm", null);
         player.sendMessage(
                 text(
