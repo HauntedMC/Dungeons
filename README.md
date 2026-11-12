@@ -259,12 +259,10 @@ not durability of progression or recovery state.
 
 Every dungeon has an adaptive HUD, guide, entry information and exit confirmation. Vanilla loot maps need no objectives or extra mechanics file. Optional flat objectives, staged tracks, existing bosses and wave encounters can be combined independently. Use `/dungeon guide`, `/dungeon hud` and `/dungeon edit experience`.
 
-See [the player experience guide](docs/PLAYER_EXPERIENCE.md) for configuration, in-game recipes, graph integration, persistence and the coordinated ServerFeatures HUD update.
-
 ## Dungeon scripting
 
-See the [mechanics guide](docs/MECHANICS.md) for timer and variable-change triggers,
-player/world conditions, health effects, conditional groups and runtime validation behavior.
+Dungeon scripting supports timer and variable-change triggers, player/world conditions,
+health effects, conditional groups and runtime validation.
 
 ## Administration
 
