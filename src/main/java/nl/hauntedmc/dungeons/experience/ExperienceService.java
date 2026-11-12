@@ -114,6 +114,7 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
     private BukkitTask ticker;
     private int ticks;
     private boolean closed;
+    private boolean started;
     private boolean warned;
 
     public ExperienceService(DungeonsRuntime runtime) {
@@ -121,6 +122,10 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
     }
 
     public void start() {
+        requireThread();
+        if (closed) throw new IllegalStateException("Experience service is closed");
+        if (started) return;
+        started = true;
         runtime.resources().ownIngress(this, ExperienceService::close);
         Bukkit.getPluginManager().registerEvents(this, runtime.environment().plugin());
         Bukkit.getServicesManager()
