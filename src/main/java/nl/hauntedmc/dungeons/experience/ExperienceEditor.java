@@ -2,6 +2,7 @@ package nl.hauntedmc.dungeons.experience;
 
 import io.papermc.paper.event.player.AsyncChatEvent;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -188,7 +189,7 @@ public final class ExperienceEditor implements Listener, AutoCloseable {
             if (inventory != null
                     && player.getOpenInventory().getTopInventory() == inventory.inventory())
                 show(player, drafts.get(player.getUniqueId()), "", 0);
-        } catch (IOException failure) {
+        } catch (IOException | UncheckedIOException failure) {
             throw new IllegalArgumentException(
                     "Could not save experience: " + failure.getMessage(), failure);
         }
