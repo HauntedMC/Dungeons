@@ -53,6 +53,15 @@ public class SpawnMobFunction extends DungeonFunction {
     @PersistedField private int delay = 0;
     @PersistedField private int interval = 0;
     @PersistedField private double yaw = 0.0;
+    private transient java.util.function.Consumer<LivingEntity> spawnObserver = entity -> {};
+    private transient Runnable spawnComplete = () -> {};
+
+    public void observeSpawns(
+            java.util.function.Consumer<LivingEntity> observer, Runnable complete) {
+        this.spawnObserver = observer;
+        this.spawnComplete = complete;
+    }
+
     private int count;
     private List<BukkitRunnable> spawners;
 
@@ -79,6 +88,8 @@ public class SpawnMobFunction extends DungeonFunction {
         if (clone != null) {
             clone.spawners = new ArrayList<>();
             clone.count = 0;
+            clone.spawnObserver = entity -> {};
+            clone.spawnComplete = () -> {};
         }
         return clone;
     }
@@ -168,6 +179,7 @@ public class SpawnMobFunction extends DungeonFunction {
                         public void run() {
                             if (this.spawned >= finalMaxCountMod) {
                                 this.cancel();
+                                SpawnMobFunction.this.spawnComplete.run();
                             } else {
                                 // Offset the spawn into the center of the block and nudge upward
                                 // when the target
@@ -188,6 +200,7 @@ public class SpawnMobFunction extends DungeonFunction {
                                             EntityUtils.getMaxHealth(living) * finalHealthMod);
                                     living.setHealth(EntityUtils.getMaxHealth(living));
                                     SpawnMobFunction.this.applyRoomTag(living);
+                                    SpawnMobFunction.this.spawnObserver.accept(living);
                                     AttributeInstance attrib =
                                             living.getAttribute(Attribute.ATTACK_DAMAGE);
                                     if (attrib != null) {

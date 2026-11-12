@@ -57,7 +57,11 @@ final class GameplayCommandHandler implements CommandHandler {
         return switch (args[0].toLowerCase(Locale.ROOT)) {
             case "play" -> this.handlePlayCommand(sender, args);
             case "send" -> this.handleSendCommand(sender, args);
-            case "leave" -> this.handleLeaveCommand(sender);
+            case "leave" -> this.handleLeaveCommand(sender, args);
+            case "guide", "status", "objectives", "hud", "spectate" ->
+                    sender instanceof Player player
+                            && playerManager.runtimeExperience() != null
+                            && playerManager.runtimeExperience().handle(player, args);
             case "lives" -> this.handleLivesCommand(sender);
             case "stuck" -> this.handleStuckCommand(sender, args);
             default -> false;
@@ -72,7 +76,7 @@ final class GameplayCommandHandler implements CommandHandler {
     }
 
     /** Runs handle leave command. */
-    private boolean handleLeaveCommand(CommandSender sender) {
+    private boolean handleLeaveCommand(CommandSender sender, String[] args) {
         if (!(sender instanceof Player player)) {
             return false;
         }
@@ -81,6 +85,14 @@ final class GameplayCommandHandler implements CommandHandler {
         if (playerSession != null && playerSession.isObserving()) {
             playerSession.stopObservation();
             LangUtils.sendRaw(player, "Observation ended");
+            return true;
+        }
+        if (playerSession == null) return true;
+        if (playerSession.getInstance() == null
+                && this.playerManager.cancelPreparation(playerSession)) {
+            if (playerManager.runtimeExperience() != null)
+                playerManager.runtimeExperience().waitingChanged();
+            LangUtils.sendMessage(player, "commands.leave.left-queue");
             return true;
         }
         if (playerSession.getInstance() == null) {
@@ -98,6 +110,8 @@ final class GameplayCommandHandler implements CommandHandler {
                     this.queueManager.unqueue(playerSession);
                 }
 
+                if (playerManager.runtimeExperience() != null)
+                    playerManager.runtimeExperience().waitingChanged();
                 LangUtils.sendMessage(player, "commands.leave.left-queue");
                 return true;
             }
@@ -122,6 +136,10 @@ final class GameplayCommandHandler implements CommandHandler {
             return true;
         }
 
+        var experience = playerManager.runtimeExperience();
+        if (experience != null
+                && playerSession.getInstance() instanceof PlayableInstance
+                && !experience.requestExit(player, args.length > 1 ? args[1] : null)) return true;
         var dungeonName = playerSession.getInstance().getDungeon().getDisplayNameComponent();
         playerSession.getInstance().removePlayer(playerSession);
         LangUtils.sendMessage(

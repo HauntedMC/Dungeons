@@ -53,6 +53,13 @@ import org.bukkit.scheduler.BukkitRunnable;
  * <p>This instance type owns match lifecycle state such as participants, lives and run timers.
  */
 public abstract class PlayableInstance extends DungeonInstance {
+    private nl.hauntedmc.dungeons.experience.ExperienceDefinition experienceDefinition =
+            nl.hauntedmc.dungeons.experience.ExperienceDefinition.empty();
+
+    public nl.hauntedmc.dungeons.experience.ExperienceDefinition experienceDefinition() {
+        return experienceDefinition;
+    }
+
     protected boolean livesEnabled;
     protected DungeonDifficulty difficulty;
     protected BukkitRunnable instanceTicker;
@@ -100,6 +107,15 @@ public abstract class PlayableInstance extends DungeonInstance {
     /** Loads the game and resolves a world-bound lobby location if configured. */
     @Override
     public final void loadGame() {
+        try {
+            experienceDefinition =
+                    nl.hauntedmc.dungeons.experience.ExperienceDefinition.load(
+                            this.dungeon.getFolder().toPath());
+            nl.hauntedmc.dungeons.experience.ExperienceReferences.dungeon(
+                    this.dungeon, experienceDefinition);
+        } catch (java.io.IOException failure) {
+            throw new IllegalStateException("Invalid dungeon experience", failure);
+        }
         if (this.dungeon.getLobbySpawn() != null) {
             this.lobbyLocation = this.dungeon.getLobbySpawn().clone();
             this.lobbyLocation.setWorld(this.instanceWorld);
@@ -155,6 +171,11 @@ public abstract class PlayableInstance extends DungeonInstance {
                                     PlayableInstance.this.messagePlayers(
                                             "instance.play.time-limit.times-up");
                                     this.cancel();
+                                    if (PlayableInstance.this.runtime().experience() != null)
+                                        PlayableInstance.this
+                                                .runtime()
+                                                .experience()
+                                                .failed(PlayableInstance.this, "timeout");
 
                                     for (DungeonPlayerSession playerSession :
                                             new ArrayList<>(PlayableInstance.this.players)) {
@@ -165,13 +186,14 @@ public abstract class PlayableInstance extends DungeonInstance {
                         }
                     };
             this.instanceTicker.runTaskTimer(this.plugin(), 0L, 20L);
+            this.discoverCustomDragonBossBars();
             this.dragonBossBarTicker =
                     new BukkitRunnable() {
                         public void run() {
                             PlayableInstance.this.updateCustomDragonBossBars();
                         }
                     };
-            this.dragonBossBarTicker.runTaskTimer(this.plugin(), 0L, 1L);
+            this.dragonBossBarTicker.runTaskTimer(this.plugin(), 0L, 5L);
             Bukkit.getPluginManager().callEvent(new DungeonStartEvent(this, this.players));
             this.onStart();
         }
@@ -198,6 +220,7 @@ public abstract class PlayableInstance extends DungeonInstance {
     /** Disables function listeners and clears runtime run-state caches. */
     @Override
     public void onDispose() {
+        if (this.runtime().experience() != null) this.runtime().experience().dispose(this);
         for (DungeonFunction function : this.functions.values()) {
             try {
                 function.disable();
@@ -345,11 +368,24 @@ public abstract class PlayableInstance extends DungeonInstance {
                 && !this.dungeon.completeReservedAccessKey(playerSession))
             throw new IllegalStateException("Could not commit dungeon access key usage");
         Player player = playerSession.getPlayer();
+        if (this.runtime().experience() != null)
+            this.runtime().experience().joined(this, playerSession);
         this.livingPlayers.add(playerSession);
         this.showCustomDragonBossBars(player);
         this.executeJoinCommands(player);
 
-        Location storedSavePoint = playerSession.getDungeonSavePoint(this.dungeon.getWorldName());
+        Location storedSavePoint =
+                this.runtime().experience() == null
+                        ? playerSession.getDungeonSavePoint(this.dungeon.getWorldName())
+                        : playerSession.getExperienceSavePoint(
+                                this.dungeon.getWorldName(),
+                                this.dungeon.getDungeonId().toString());
+        if (this.runtime().experience() != null
+                && playerSession.incompatibleExperienceCheckpoint(
+                        this.dungeon.getDungeonId().toString(),
+                        this.experienceDefinition.fingerprint(),
+                        this.difficulty == null ? "" : this.difficulty.getNamespace()))
+            storedSavePoint = null;
         Location savePoint = storedSavePoint == null ? null : storedSavePoint.clone();
 
         if (savePoint == null) {
@@ -490,6 +526,8 @@ public abstract class PlayableInstance extends DungeonInstance {
                 return;
             }
             Player player = playerSession.getPlayer();
+            if (this.runtime().experience() != null)
+                this.runtime().experience().departed(this, playerSession);
             BukkitRunnable offlineTracker = this.offlineTrackers.remove(player.getUniqueId());
             if (offlineTracker != null && !offlineTracker.isCancelled()) {
                 offlineTracker.cancel();
@@ -639,12 +677,39 @@ public abstract class PlayableInstance extends DungeonInstance {
         return this.entities;
     }
 
+    /** Immutable views of the existing dragon tracker; rendering performs no entity discovery. */
+    public java.util.List<nl.hauntedmc.featureframework.hud.HudFrame.Bar> dragonHudBars() {
+        return this.customDragonBossBars.values().stream()
+                .limit(2)
+                .map(
+                        bar ->
+                                new nl.hauntedmc.featureframework.hud.HudFrame.Bar(
+                                        bar.name(), bar.progress(), bar.color(), bar.overlay()))
+                .toList();
+    }
+
+    public static boolean usesNativeDragonBar(EnderDragon dragon) {
+        var battle = dragon.getDragonBattle();
+        return battle != null
+                && battle.getEnderDragon() != null
+                && battle.getEnderDragon().getUniqueId().equals(dragon.getUniqueId())
+                && battle.getBossBar().isVisible();
+    }
+
+    public void refreshDragonHudOwnership(Player player) {
+        if (this.runtime().experience() != null
+                && this.runtime().experience().managesBossBars(player))
+            this.hideCustomDragonBossBars(player);
+        else this.showCustomDragonBossBars(player);
+    }
+
     /** Ensures manually spawned dragons in this instance still show a boss bar. */
     public void trackCustomDragonBossBar(Entity entity) {
         if (!(entity instanceof EnderDragon dragon)) {
             return;
         }
 
+        if (usesNativeDragonBar(dragon)) return;
         if (this.customDragonBossBars.containsKey(dragon.getUniqueId())) {
             return;
         }
@@ -657,7 +722,6 @@ public abstract class PlayableInstance extends DungeonInstance {
 
     /** Updates custom dragon boss bars and removes stale ones. */
     private void updateCustomDragonBossBars() {
-        this.discoverCustomDragonBossBars();
         List<UUID> staleBars = new ArrayList<>();
 
         for (Entry<UUID, BossBar> entry : this.customDragonBossBars.entrySet()) {
@@ -672,6 +736,11 @@ public abstract class PlayableInstance extends DungeonInstance {
                 continue;
             }
 
+            if (usesNativeDragonBar(dragon)) {
+                this.hideCustomDragonBossBarFromAll(bossBar);
+                staleBars.add(entry.getKey());
+                continue;
+            }
             double maxHealth =
                     dragon.getAttribute(Attribute.MAX_HEALTH) == null
                             ? 200.0
@@ -698,7 +767,8 @@ public abstract class PlayableInstance extends DungeonInstance {
         }
 
         for (EnderDragon dragon : this.instanceWorld.getEntitiesByClass(EnderDragon.class)) {
-            if (!this.customDragonBossBars.containsKey(dragon.getUniqueId())) {
+            if (!usesNativeDragonBar(dragon)
+                    && !this.customDragonBossBars.containsKey(dragon.getUniqueId())) {
                 BossBar bossBar = this.createCustomDragonBossBar();
                 this.customDragonBossBars.put(dragon.getUniqueId(), bossBar);
                 this.showCustomDragonBossBars();
@@ -716,7 +786,9 @@ public abstract class PlayableInstance extends DungeonInstance {
     /** Adds one player to every tracked custom dragon boss bar. */
     private void showCustomDragonBossBars(Player player) {
         for (BossBar bossBar : this.customDragonBossBars.values()) {
-            player.showBossBar(bossBar);
+            if (this.runtime().experience() == null
+                    || !this.runtime().experience().managesBossBars(player))
+                player.showBossBar(bossBar);
         }
     }
 

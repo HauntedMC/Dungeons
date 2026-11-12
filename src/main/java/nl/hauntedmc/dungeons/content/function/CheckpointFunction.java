@@ -49,10 +49,20 @@ public class CheckpointFunction extends DungeonFunction {
             loc.setPitch((float) this.pitch);
             playerSession.setDungeonRespawn(loc);
             if (this.savePoint && this.instance.as(BranchingInstance.class) == null) {
-                playerSession.setDungeonSavePoint(loc, this.instance.getDungeon().getWorldName());
+                if (this.runtime() != null && this.runtime().experience() != null)
+                    this.runtime().experience().savePoint(playerSession);
+                else
+                    playerSession.setDungeonSavePoint(
+                            loc, this.instance.getDungeon().getWorldName());
             }
 
-            LangUtils.sendMessage(playerSession.getPlayer(), "instance.play.functions.checkpoint");
+            if (this.runtime() != null && this.runtime().experience() != null)
+                this.runtime()
+                        .experience()
+                        .notify(playerSession.getPlayer(), "checkpoint-activated", null);
+            else
+                LangUtils.sendMessage(
+                        playerSession.getPlayer(), "instance.play.functions.checkpoint");
         }
     }
 

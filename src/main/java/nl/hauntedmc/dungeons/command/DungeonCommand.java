@@ -50,6 +50,7 @@ public final class DungeonCommand implements TabExecutor {
 
     private final DungeonsPlugin plugin;
     private final PlayerSessionRegistry playerManager;
+    private final DungeonQueueRegistry selfQueues;
     private final DungeonRepository dungeonManager;
     private final CommandOutput output;
     private final DungeonConfigCommandHandler configCommandHandler;
@@ -86,6 +87,7 @@ public final class DungeonCommand implements TabExecutor {
         this.plugin = plugin;
         this.repoCommands = new RepoCommandHandler(RuntimeContext.runtime());
         this.playerManager = playerManager;
+        this.selfQueues = queueManager;
         this.dungeonManager = dungeonManager;
         this.configCommandHandler =
                 new DungeonConfigCommandHandler(
@@ -116,7 +118,9 @@ public final class DungeonCommand implements TabExecutor {
             @NotNull Command cmd,
             @NotNull String label,
             @NotNull String @NotNull [] args) {
-        if (!sender.hasPermission(this.getPermissionNode())) {
+        if (!sender.hasPermission(this.getPermissionNode())
+                && !(selfControl(args.length == 0 ? "guide" : args[0])
+                        && activeSelfContext(sender))) {
             LangUtils.sendMessage(sender, "general.errors.no-permission");
             return true;
         }
@@ -149,7 +153,7 @@ public final class DungeonCommand implements TabExecutor {
             @NotNull Command cmd,
             @NotNull String label,
             @NotNull String @NotNull [] args) {
-        if (!sender.hasPermission(this.getPermissionNode())) {
+        if (!sender.hasPermission(this.getPermissionNode()) && !activeSelfContext(sender)) {
             return List.of();
         }
 
@@ -158,6 +162,15 @@ public final class DungeonCommand implements TabExecutor {
 
     private boolean handleCommand(CommandSender sender, String[] args) {
         if (args.length == 0) {
+            if (sender instanceof Player player
+                    && this.playerManager.runtimeExperience() != null
+                    && this.playerManager
+                            .runtimeExperience()
+                            .view(player.getUniqueId())
+                            .isPresent()) {
+                this.playerManager.runtimeExperience().handle(player, new String[] {"guide"});
+                return true;
+            }
             this.canonicalHelp(sender, new String[0]);
             return true;
         }
@@ -220,9 +233,26 @@ public final class DungeonCommand implements TabExecutor {
         return true;
     }
 
+    private static boolean selfControl(String root) {
+        return java.util.Set.of("guide", "status", "objectives", "hud", "spectate", "help", "leave")
+                .contains(root.toLowerCase(Locale.ROOT));
+    }
+
+    private boolean activeSelfContext(CommandSender sender) {
+        if (!(sender instanceof Player player)) return false;
+        var session = playerManager.get(player);
+        return session != null
+                && (session.getInstance()
+                                instanceof nl.hauntedmc.dungeons.runtime.instance.PlayableInstance
+                        || session.isObserving()
+                        || session.isAwaitingDungeon()
+                        || selfQueues.getQueue(session) != null);
+    }
+
     private boolean allowed(
             CommandSender sender, CommandRoutes.Route route, Map<String, List<String>> values) {
         if (route.playerOnly() && !(sender instanceof Player)) return false;
+        if (selfControl(route.syntax().split(" ", 2)[0]) && activeSelfContext(sender)) return true;
         if (!route.permission().startsWith("staff.")) {
             return sender.hasPermission("dungeons." + route.permission());
         }
@@ -383,6 +413,8 @@ public final class DungeonCommand implements TabExecutor {
                         + dungeon.isEnabled()
                         + "; keys required: "
                         + !dungeon.getAccessKeys().isEmpty());
+        if (sender instanceof Player player && this.playerManager.runtimeExperience() != null)
+            this.playerManager.runtimeExperience().briefing(player, dungeon);
         return true;
     }
 

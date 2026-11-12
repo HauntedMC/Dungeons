@@ -194,8 +194,8 @@ maps deliberately. Repository rollback changes content only and never resets pla
 
 ## HauntedMC integration
 
-Dungeons bundles FeatureFramework 2.2.4 and the HauntedMC Theme adapter 1.2.5 (palette 1.2.3),
-matching ServerFeatures and ProxyFeatures. These are libraries, so no additional server plugin is
+Dungeons bundles FeatureFramework 2.2.5, including the shared HUD API, and the HauntedMC Theme adapter 1.2.5 (palette 1.2.3),
+aligned with the companion ServerFeatures HUD update. These are libraries, so no additional server plugin is
 needed. The shared classes retain their public package identities; DataProvider/DataRegistry APIs
 and Adventure stay provided by the server.
 
@@ -254,6 +254,12 @@ statistics tables are not populated by gameplay. The API exposes the policy boun
 it does not claim to supply a working leaderboard. Existing self/gameplay state and capability-checked
 staff inspection/recovery retain their separate authorization rules. Privacy controls disclosure,
 not durability of progression or recovery state.
+
+## Player experience
+
+Every dungeon has an adaptive HUD, guide, entry information and exit confirmation. Vanilla loot maps need no objectives or extra mechanics file. Optional flat objectives, staged tracks, existing bosses and wave encounters can be combined independently. Use `/dungeon guide`, `/dungeon hud` and `/dungeon edit experience`.
+
+See [the player experience guide](docs/PLAYER_EXPERIENCE.md) for configuration, in-game recipes, graph integration, persistence and the coordinated ServerFeatures HUD update.
 
 ## Dungeon scripting
 

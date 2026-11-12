@@ -36,7 +36,7 @@
         <connection>scm:git:https://github.com/HauntedMC/Dungeons.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/HauntedMC/Dungeons.git</developerConnection>
         <url>https://github.com/HauntedMC/Dungeons</url>
-        <tag>v1.5.2</tag>
+        <tag>v1.5.3</tag>
     </scm>
     <issueManagement>
         <system>GitHub</system>
@@ -54,10 +54,10 @@
         </repository>
     </distributionManagement>
     <properties>
-        <revision>1.5.2</revision>
+        <revision>1.5.3</revision>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.build.outputTimestamp>2026-11-11T00:00:00Z</project.build.outputTimestamp>
-        <haunted.featureframework.version>2.2.4</haunted.featureframework.version>
+        <project.build.outputTimestamp>2026-11-12T00:00:00Z</project.build.outputTimestamp>
+        <haunted.featureframework.version>2.2.5</haunted.featureframework.version>
         <haunted.theme.version>1.2.5</haunted.theme.version>
         <reflections.version>0.10.2</reflections.version>
         <commons-io.version>2.22.0</commons-io.version>
@@ -78,11 +78,23 @@
             <url>https://repo.codemc.io/repository/maven-releases/</url>
         </repository>
     </repositories>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>nl.hauntedmc.featureframework</groupId>
+                <artifactId>featureframework-bom</artifactId>
+                <version>${haunted.featureframework.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
     <dependencies>
+        <dependency><groupId>nl.hauntedmc.featureframework</groupId><artifactId>featureframework-hud-api</artifactId><version>${haunted.featureframework.version}</version></dependency>
         <dependency>
             <groupId>nl.hauntedmc.serverfeatures</groupId>
             <artifactId>serverfeatures-api</artifactId>
-            <version>5.2.6</version>
+            <version>5.4.7</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

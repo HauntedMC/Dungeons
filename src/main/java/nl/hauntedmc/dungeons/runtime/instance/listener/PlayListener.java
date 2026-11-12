@@ -309,6 +309,14 @@ public class PlayListener extends InstanceListener {
         }
     }
 
+    /** Restored template entities do not fire spawn events. Discover dragons at chunk load. */
+    @EventHandler
+    public void onEntitiesLoaded(org.bukkit.event.world.EntitiesLoadEvent event) {
+        if (event.getWorld() == this.instance.getInstanceWorld())
+            for (org.bukkit.entity.Entity entity : event.getEntities())
+                this.instance.trackCustomDragonBossBar(entity);
+    }
+
     /** Applies configured natural mob spawning restrictions in the instance world. */
     @EventHandler
     public void onMobSpawn(CreatureSpawnEvent event) {
@@ -630,6 +638,12 @@ public class PlayListener extends InstanceListener {
                 command = command.substring(1);
             }
             String trimmed = command.toLowerCase(Locale.ROOT);
+            String canonical =
+                    trimmed.replaceFirst("^(?:dungeons:)?(?:du|dungeon)(?= |$)", "dungeon");
+            boolean participantControl =
+                    canonical.matches(
+                            "dungeon(?: (?:guide|status|objectives|hud|spectate|help|leave)(?: .*)?)?");
+            if (participantControl) return;
             boolean commandAllowed = false;
             if (!this.instance.getConfig().getBoolean("rules.commands.allow_all")) {
                 for (String cmd :

@@ -36,6 +36,7 @@ class ApplicationFailureTest {
                 var _ = mockConstruction(ListenerBootstrap.class);
                 var _ = mockConstruction(MenuBootstrap.class);
                 var _ = mockConstruction(DungeonService.class);
+                var _ = mockConstruction(nl.hauntedmc.dungeons.experience.ExperienceService.class);
                 var _ = mockConstruction(CommandBootstrap.class);
                 var lifecycle =
                         mockConstruction(

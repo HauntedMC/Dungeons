@@ -41,6 +41,16 @@ public final class DungeonsRuntime {
         resources = new FeatureResourceOwner();
     }
 
+    private nl.hauntedmc.dungeons.experience.ExperienceService experience;
+
+    public nl.hauntedmc.dungeons.experience.ExperienceService experience() {
+        return experience;
+    }
+
+    public void setExperience(nl.hauntedmc.dungeons.experience.ExperienceService value) {
+        experience = value;
+    }
+
     private RegistryProfiles profiles;
 
     public RegistryProfiles profiles() {

@@ -172,3 +172,21 @@ repository:
   max-files: 100000
   queued-operations: 8
   operation-timeout-seconds: 1800
+
+# Presentation defaults only: these never add gameplay objectives or encounters.
+experience:
+  defaults:
+    enabled: true
+    profile: balanced # balanced | minimal | immersive
+    confirm_exit: true
+    channels:
+      sidebar: true
+      actionbar: true
+      bossbar: true
+      titles: true
+    widgets:
+      elapsed: auto # auto | shown | hidden
+      lives: auto
+      party: auto
+      remaining: auto
+      respawn: auto

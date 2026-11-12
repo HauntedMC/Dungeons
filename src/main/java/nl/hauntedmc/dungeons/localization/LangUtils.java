@@ -92,6 +92,16 @@ public final class LangUtils {
                 .toComponent();
     }
 
+    /**
+     * Trusted layout with literal component substitutions; never reparse player-controlled values.
+     */
+    public static Component trusted(String template, Map<String, ?> values) {
+        var current = messages;
+        return current == null
+                ? Component.text(template == null ? "" : template)
+                : current.render(template, values);
+    }
+
     public static Component notice(String text) {
         return notice(Component.text(text == null ? "" : text));
     }
@@ -122,7 +132,14 @@ public final class LangUtils {
 
     public static void sendMessage(CommandSender target, String key, LangPlaceholder... values) {
         Component message = component(key, target, true, values(values));
-        if (!message.equals(Component.empty())) target.sendMessage(message);
+        if (!message.equals(Component.empty())) {
+            target.sendMessage(message);
+            var experience = RuntimeContext.experience();
+            if (experience != null
+                    && target instanceof Player player
+                    && (key.startsWith("instance.play.") || key.equals("commands.stuck.success")))
+                experience.record(player, message);
+        }
     }
 
     /** Legacy string boundary for inventory title APIs; delivery uses components directly. */

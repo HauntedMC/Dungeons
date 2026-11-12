@@ -8,6 +8,16 @@ public final class SettingValidation {
     private SettingValidation() {}
 
     public static void validate(DungeonDefinition dungeon, String path, Object value) {
+        if (path.equals("experience.sidebar.rows")
+                && value instanceof List<?> rows
+                && rows.size() > 15)
+            throw new IllegalArgumentException("A sidebar supports at most 15 rows");
+        if (path.equals("experience.profile")
+                && !List.of("balanced", "minimal", "immersive").contains(String.valueOf(value)))
+            throw new IllegalArgumentException("Profile must be balanced, minimal or immersive");
+        if (path.startsWith("experience.widgets.")
+                && !List.of("auto", "shown", "hidden").contains(String.valueOf(value)))
+            throw new IllegalArgumentException("Widget visibility must be auto, shown or hidden");
         if (path.endsWith("cooldown.period")) {
             String prefix = path.substring(0, path.length() - "period".length());
             String period = String.valueOf(value);
