@@ -108,6 +108,87 @@ class ExperienceServiceTest {
         }
     }
 
+    @Test
+    void schedulingFailureImmediatelyRemovesListenersAndClosesService() {
+        try (var paper = new PaperBoundary();
+                var handlers = mockStatic(HandlerList.class)) {
+            var services = mock(ServicesManager.class);
+            var scheduler = mock(BukkitScheduler.class);
+            paper.bukkit.when(Bukkit::getServicesManager).thenReturn(services);
+            paper.bukkit.when(Bukkit::getScheduler).thenReturn(scheduler);
+            var failure = new IllegalStateException("scheduler stopped");
+            when(scheduler.runTaskTimer(eq(paper.plugin), any(Runnable.class), eq(1L), eq(5L)))
+                    .thenThrow(failure);
+            var service = new ExperienceService(paper.runtime);
+            assertSame(failure, assertThrows(IllegalStateException.class, service::start));
+            handlers.verify(() -> HandlerList.unregisterAll(service));
+            handlers.verify(() -> HandlerList.unregisterAll(any(ExperienceEditor.class)));
+            verify(services, never()).register(any(), any(), any(), any());
+            verify(services).unregister(DungeonExperienceApi.class, service);
+            assertThrows(IllegalStateException.class, service::start);
+            paper.runtime.resources().quiesce();
+            verify(services).unregister(DungeonExperienceApi.class, service);
+            paper.runtime.resources().cleanup();
+        }
+    }
+
+    @Test
+    void publicationFailureCancelsTimerAndSuppressesRollbackFailure() {
+        try (var paper = new PaperBoundary();
+                var handlers = mockStatic(HandlerList.class)) {
+            var services = mock(ServicesManager.class);
+            var scheduler = mock(BukkitScheduler.class);
+            var task = mock(BukkitTask.class);
+            paper.bukkit.when(Bukkit::getServicesManager).thenReturn(services);
+            paper.bukkit.when(Bukkit::getScheduler).thenReturn(scheduler);
+            when(scheduler.runTaskTimer(eq(paper.plugin), any(Runnable.class), eq(1L), eq(5L)))
+                    .thenReturn(task);
+            var service = new ExperienceService(paper.runtime);
+            var failure = new IllegalStateException("publication failed");
+            var cleanup = new IllegalArgumentException("cancel failed");
+            doThrow(failure)
+                    .when(services)
+                    .register(
+                            DungeonExperienceApi.class,
+                            service,
+                            paper.plugin,
+                            ServicePriority.Normal);
+            doThrow(cleanup).when(task).cancel();
+            assertSame(failure, assertThrows(IllegalStateException.class, service::start));
+            assertArrayEquals(new Throwable[] {cleanup}, failure.getSuppressed());
+            verify(task).cancel();
+            handlers.verify(() -> HandlerList.unregisterAll(service));
+            handlers.verify(() -> HandlerList.unregisterAll(any(ExperienceEditor.class)));
+            verify(services).unregister(DungeonExperienceApi.class, service);
+            assertThrows(IllegalStateException.class, service::start);
+            paper.runtime.resources().quiesce();
+            verify(task).cancel();
+            paper.runtime.resources().cleanup();
+        }
+    }
+
+    @Test
+    void editorRegistrationFailureRemovesPartiallyRegisteredEditor() {
+        try (var paper = new PaperBoundary();
+                var handlers = mockStatic(HandlerList.class)) {
+            var services = mock(ServicesManager.class);
+            paper.bukkit.when(Bukkit::getServicesManager).thenReturn(services);
+            var failure = new IllegalStateException("listener registration failed");
+            var plugins = Bukkit.getPluginManager();
+            doThrow(failure)
+                    .when(plugins)
+                    .registerEvents(any(ExperienceEditor.class), eq(paper.plugin));
+            var service = new ExperienceService(paper.runtime);
+            assertSame(failure, assertThrows(IllegalStateException.class, service::start));
+            handlers.verify(() -> HandlerList.unregisterAll(any(ExperienceEditor.class)));
+            handlers.verify(() -> HandlerList.unregisterAll(service));
+            verify(services, never()).register(any(), any(), any(), any());
+            assertThrows(IllegalStateException.class, service::start);
+            paper.runtime.resources().quiesce();
+            paper.runtime.resources().cleanup();
+        }
+    }
+
     @SuppressWarnings("unchecked")
     private static <T> T field(Object owner, String name) throws Exception {
         var field = owner.getClass().getDeclaredField(name);

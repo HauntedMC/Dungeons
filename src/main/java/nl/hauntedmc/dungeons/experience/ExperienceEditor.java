@@ -43,7 +43,16 @@ public final class ExperienceEditor implements Listener, AutoCloseable {
 
     public ExperienceEditor(DungeonsRuntime runtime) {
         this.runtime = runtime;
-        Bukkit.getPluginManager().registerEvents(this, runtime.environment().plugin());
+        try {
+            Bukkit.getPluginManager().registerEvents(this, runtime.environment().plugin());
+        } catch (RuntimeException | Error failure) {
+            try {
+                close();
+            } catch (RuntimeException | Error cleanup) {
+                if (cleanup != failure) failure.addSuppressed(cleanup);
+            }
+            throw failure;
+        }
     }
 
     private void guard(Player player, Draft draft) {

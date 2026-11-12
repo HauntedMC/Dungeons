@@ -127,20 +127,29 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
         if (closed) throw new IllegalStateException("Experience service is closed");
         if (started) return;
         started = true;
-        runtime.resources().ownIngress(this, ExperienceService::close);
-        Bukkit.getPluginManager().registerEvents(this, runtime.environment().plugin());
-        Bukkit.getServicesManager()
-                .register(
-                        DungeonExperienceApi.class,
-                        this,
-                        runtime.environment().plugin(),
-                        ServicePriority.Normal);
-        selectBackend();
-        editor = new ExperienceEditor(runtime);
-        observers = new ObservationHud(runtime, () -> backend, this::presentation);
-        ticker =
-                Bukkit.getScheduler()
-                        .runTaskTimer(runtime.environment().plugin(), this::tick, 1, 5);
+        try {
+            runtime.resources().ownIngress(this, ExperienceService::close);
+            Bukkit.getPluginManager().registerEvents(this, runtime.environment().plugin());
+            selectBackend();
+            editor = new ExperienceEditor(runtime);
+            observers = new ObservationHud(runtime, () -> backend, this::presentation);
+            ticker =
+                    Bukkit.getScheduler()
+                            .runTaskTimer(runtime.environment().plugin(), this::tick, 1, 5);
+            Bukkit.getServicesManager()
+                    .register(
+                            DungeonExperienceApi.class,
+                            this,
+                            runtime.environment().plugin(),
+                            ServicePriority.Normal);
+        } catch (RuntimeException | Error failure) {
+            try {
+                close();
+            } catch (RuntimeException | Error cleanup) {
+                if (cleanup != failure) failure.addSuppressed(cleanup);
+            }
+            throw failure;
+        }
     }
 
     private static void requireThread() {
