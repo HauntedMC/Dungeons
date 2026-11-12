@@ -15,6 +15,7 @@ import nl.hauntedmc.dungeons.event.ExperienceEvent;
 import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
 import nl.hauntedmc.featureframework.hud.HudFrame;
+import nl.hauntedmc.featureframework.lifecycle.CleanupSequence;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
@@ -458,13 +459,16 @@ public final class ExperienceRun implements AutoCloseable {
 
     @Override
     public void close() {
+        if (closed) return;
         closed = true;
-        spawners.forEach(SpawnMobFunction::disable);
+        var steps = new ArrayList<Runnable>();
+        spawners.forEach(spawner -> steps.add(spawner::disable));
         spawners.clear();
         entities.clear();
         encounters.clear();
         captured.clear();
         restored.clear();
         phases.clear();
+        CleanupSequence.run(steps);
     }
 }

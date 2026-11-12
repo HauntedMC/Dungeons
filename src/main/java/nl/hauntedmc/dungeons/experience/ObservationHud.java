@@ -16,6 +16,7 @@ import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
 import nl.hauntedmc.featureframework.hud.HudFrame;
 import nl.hauntedmc.featureframework.hud.HudService;
+import nl.hauntedmc.featureframework.lifecycle.CleanupSequence;
 import org.bukkit.Bukkit;
 
 /** Read-only observer presentation. Observers never enter player progression or completion maps. */
@@ -107,7 +108,9 @@ final class ObservationHud implements AutoCloseable {
 
     @Override
     public void close() {
-        leases.values().forEach(HudService.Lease::close);
+        var steps = new ArrayList<Runnable>();
+        leases.values().forEach(lease -> steps.add(lease::close));
         leases.clear();
+        CleanupSequence.run(steps);
     }
 }
