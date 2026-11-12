@@ -26,7 +26,8 @@ public record ExperienceDefinition(
         Map<String, Group> groups,
         Map<String, Encounter> encounters,
         String completion,
-        String fingerprint) {
+        String fingerprint,
+        String legacyFingerprint) {
     public enum Source {
         SIGNAL,
         KILL,
@@ -92,7 +93,7 @@ public record ExperienceDefinition(
     }
 
     public static ExperienceDefinition empty() {
-        return new ExperienceDefinition(Map.of(), Map.of(), Map.of(), Map.of(), "manual", "");
+        return new ExperienceDefinition(Map.of(), Map.of(), Map.of(), Map.of(), "manual", "", "");
     }
 
     public boolean hasMechanics() {
@@ -289,7 +290,90 @@ public record ExperienceDefinition(
                         groups.containsKey(goal.selector().substring(6)),
                         "Unknown group: " + goal.selector());
         return new ExperienceDefinition(
-                goals, tracks, groups, encounters, completion, fingerprint(yaml.saveToString()));
+                goals,
+                tracks,
+                groups,
+                encounters,
+                completion,
+                progressionFingerprint(goals, tracks, groups, encounters, completion),
+                fingerprint(yaml.saveToString()));
+    }
+
+    /** Only parsed mechanics enter the versioned compatibility hash; labels never do. */
+    private static String progressionFingerprint(
+            Map<String, Objective> goals,
+            Map<String, Track> tracks,
+            Map<String, Group> groups,
+            Map<String, Encounter> encounters,
+            String completion) {
+        var structure = new YamlConfiguration();
+        structure.set("completion", completion);
+        var objectives = new java.util.TreeMap<String, Object>();
+        goals.forEach(
+                (id, goal) ->
+                        objectives.put(
+                                id,
+                                java.util.Arrays.asList(
+                                        goal.source().name(),
+                                        goal.scope().name(),
+                                        goal.selector(),
+                                        goal.target(),
+                                        goal.capture(),
+                                        goal.optional(),
+                                        goal.hidden(),
+                                        pointValues(goal.point()),
+                                        goal.persistent())));
+        structure.set("objectives", objectives);
+        var paths = new java.util.TreeMap<String, Object>();
+        tracks.forEach(
+                (id, track) ->
+                        paths.put(
+                                id,
+                                List.of(
+                                        track.scope().name(),
+                                        track.autoStart(),
+                                        track.optional(),
+                                        track.stages().stream()
+                                                .map(
+                                                        stage ->
+                                                                List.of(
+                                                                        stage.id(),
+                                                                        stage.objectives()))
+                                                .toList())));
+        structure.set("tracks", paths);
+        var mobs = new java.util.TreeMap<String, Object>();
+        groups.forEach(
+                (id, group) ->
+                        mobs.put(
+                                id,
+                                List.of(
+                                        group.entity(),
+                                        group.count(),
+                                        pointValues(group.point()),
+                                        group.phases(),
+                                        group.existing())));
+        structure.set("groups", mobs);
+        var fights = new java.util.TreeMap<String, Object>();
+        encounters.forEach(
+                (id, encounter) ->
+                        fights.put(
+                                id,
+                                List.of(
+                                        encounter.waves(),
+                                        encounter.preparationSeconds(),
+                                        encounter.timeoutSeconds(),
+                                        encounter.autoStart())));
+        structure.set("encounters", fights);
+        return "progress-v2:" + fingerprint(structure.saveToString());
+    }
+
+    private static List<Double> pointValues(Point point) {
+        return point == null ? List.of() : List.of(point.x(), point.y(), point.z(), point.radius());
+    }
+
+    /** Legacy hashes are accepted only against unchanged source; the next save upgrades them. */
+    public boolean acceptsFingerprint(String saved) {
+        return fingerprint.equals(saved) || legacyFingerprint.equals(saved);
     }
 
     private static Point point(ConfigurationSection node) {

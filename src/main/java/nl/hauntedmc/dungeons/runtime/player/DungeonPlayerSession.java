@@ -714,6 +714,31 @@ public final class DungeonPlayerSession {
                         || !difficulty.equals(this.playerData.getString(base + ".difficulty", "")));
     }
 
+    public Map<String, Integer> experienceCheckpoint(
+            String dungeonId,
+            nl.hauntedmc.dungeons.experience.ExperienceDefinition definition,
+            String difficulty) {
+        String saved =
+                this.playerData.getString(
+                        "Experience.Checkpoints." + dungeonId + ".fingerprint", "");
+        return definition.acceptsFingerprint(saved)
+                ? experienceCheckpoint(dungeonId, saved, difficulty)
+                : Map.of();
+    }
+
+    public boolean incompatibleExperienceCheckpoint(
+            String dungeonId,
+            nl.hauntedmc.dungeons.experience.ExperienceDefinition definition,
+            String difficulty) {
+        String saved =
+                this.playerData.getString(
+                        "Experience.Checkpoints." + dungeonId + ".fingerprint", "");
+        return incompatibleExperienceCheckpoint(
+                dungeonId,
+                definition.acceptsFingerprint(saved) ? saved : definition.fingerprint(),
+                difficulty);
+    }
+
     /** Position and personal progress share one revision and durability barrier. */
     public void setExperienceSavePoint(
             Location loc,

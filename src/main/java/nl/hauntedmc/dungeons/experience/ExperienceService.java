@@ -896,7 +896,7 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
     private boolean incompatible(DungeonPlayerSession session, PlayableInstance instance) {
         return session.incompatibleExperienceCheckpoint(
                 instance.getDungeon().getDungeonId().toString(),
-                instance.experienceDefinition().fingerprint(),
+                instance.experienceDefinition(),
                 instance.getDifficulty() == null ? "" : instance.getDifficulty().getNamespace());
     }
 

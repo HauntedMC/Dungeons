@@ -304,3 +304,18 @@ See [Contributing](CONTRIBUTING.md) for development guidelines.
 - [Support](SUPPORT.md)
 - [Security Policy](SECURITY.md)
 - [Code of Conduct](CODE_OF_CONDUCT.md)
+
+### Experience checkpoint compatibility
+
+New checkpoints use a `progress-v2:` fingerprint of parsed mechanics. Objective,
+stage and encounter titles, descriptions, hints and boss labels can change without
+resetting saved progression. Objective IDs, targets, scopes, persistence rules,
+track/stage structure, spawn groups, encounter rules and completion policy remain
+compatibility boundaries. Difficulty must still match exactly.
+
+Existing checkpoints retain their original full-YAML hash. They can be restored
+against unchanged content and are upgraded on the next successful checkpoint save.
+A legacy hash cannot establish which fields changed; edits made before that upgrade
+remain incompatible, including cosmetic edits. Keep the original content until
+players have saved again, or have them explicitly start fresh. Incompatible saves
+are preserved until the player chooses a fresh start.

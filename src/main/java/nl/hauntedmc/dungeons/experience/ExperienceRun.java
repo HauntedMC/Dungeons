@@ -83,12 +83,8 @@ public final class ExperienceRun implements AutoCloseable {
         if (!restored.add(id)) return;
         String dungeonId = instance.getDungeon().getDungeonId().toString();
         if (session.getExperienceSavePoint(instance.getDungeon().getWorldName(), dungeonId) != null
-                && !session.incompatibleExperienceCheckpoint(
-                        dungeonId, definition.fingerprint(), difficulty())) {
-            progress.restore(
-                    id,
-                    session.experienceCheckpoint(
-                            dungeonId, definition.fingerprint(), difficulty()));
+                && !session.incompatibleExperienceCheckpoint(dungeonId, definition, difficulty())) {
+            progress.restore(id, session.experienceCheckpoint(dungeonId, definition, difficulty()));
             progress.restoreMetadata(
                     id,
                     session.experienceSavedReveals(dungeonId),
