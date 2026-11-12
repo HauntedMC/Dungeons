@@ -27,6 +27,7 @@ import nl.hauntedmc.dungeons.util.text.ComponentUtils;
 import nl.hauntedmc.featureframework.hud.HudCoordinator;
 import nl.hauntedmc.featureframework.hud.HudFrame;
 import nl.hauntedmc.featureframework.hud.HudService;
+import nl.hauntedmc.featureframework.lifecycle.CleanupSequence;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
@@ -560,10 +561,12 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
     }
 
     private void release(Participation state) {
-        for (var lease : state.channels.values()) lease.close();
-        for (var lease : state.feedback.values()) lease.close();
+        var steps = new ArrayList<Runnable>();
+        state.channels.values().forEach(lease -> steps.add(lease::close));
+        state.feedback.values().forEach(lease -> steps.add(lease::close));
         state.channels.clear();
         state.feedback.clear();
+        CleanupSequence.run(steps);
     }
 
     public boolean managesBossBars(Player player) {
@@ -1696,28 +1699,30 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
     public void close() {
         if (closed) return;
         closed = true;
-        if (editor != null) editor.close();
-        if (observers != null) observers.close();
-        if (ticker != null) ticker.cancel();
-        players.values().forEach(this::release);
-        players.clear();
-        runs.values().forEach(ExperienceRun::close);
-        runs.clear();
-        presentations.clear();
-        invalidPresentations.clear();
-        previews.values().forEach(HudService.Lease::close);
-        previews.clear();
+        var steps = new ArrayList<Runnable>();
+        if (editor != null) steps.add(editor::close);
+        if (observers != null) steps.add(observers::close);
+        if (ticker != null) steps.add(ticker::cancel);
+        players.values().forEach(value -> steps.add(() -> release(value)));
+        runs.values().forEach(run -> steps.add(run::close));
+        previews.values().forEach(lease -> steps.add(lease::close));
         waiting.values()
                 .forEach(
                         value -> {
-                            if (value.sidebar != null) value.sidebar.close();
+                            if (value.sidebar != null) steps.add(value.sidebar::close);
                         });
+        steps.add(standalone::close);
+        steps.add(subscriptions::close);
+        steps.add(() -> HandlerList.unregisterAll(this));
+        steps.add(() -> Bukkit.getServicesManager().unregister(DungeonExperienceApi.class, this));
+        players.clear();
+        runs.clear();
+        presentations.clear();
+        invalidPresentations.clear();
+        previews.clear();
         waiting.clear();
-        standalone.close();
-        subscriptions.close();
         exits.clear();
         reports.clear();
-        HandlerList.unregisterAll(this);
-        Bukkit.getServicesManager().unregister(DungeonExperienceApi.class, this);
+        CleanupSequence.run(steps);
     }
 }
