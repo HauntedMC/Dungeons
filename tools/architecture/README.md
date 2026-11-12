@@ -23,6 +23,7 @@ substitute for reviewing behavior, ownership, dependencies and test boundaries.
 | --- | --- |
 | `bootstrap` | Builds the runtime graph and orders startup, quiescing and cleanup. |
 | `api` | Public service contract for peer plugins; does not expose mutable engine objects. |
+| `experience` | Optional progression/encounters, validated presentation snapshots, HUD ownership, observer views and in-game experience authoring. |
 | `integration` | External identity, language preferences, privacy capabilities and the public service adapter. |
 | `config` | YAML I/O, serialization, rule fallback, typed configuration views and default synchronization. |
 | `localization` | Message resource loading, formatting, language selection and delivery. |

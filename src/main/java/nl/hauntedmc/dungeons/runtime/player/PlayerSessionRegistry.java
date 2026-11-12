@@ -197,6 +197,16 @@ public final class PlayerSessionRegistry implements Listener {
     }
 
     /** A late event from an old connection must not operate on a reconnected player's session. */
+    public boolean cancelPreparation(DungeonPlayerSession session) {
+        if (!runtime.preparations().contains(session)) return false;
+        runtime.preparations().cancel(session);
+        return true;
+    }
+
+    public nl.hauntedmc.dungeons.experience.ExperienceService runtimeExperience() {
+        return runtime.experience();
+    }
+
     public DungeonPlayerSession get(Player player) {
         DungeonPlayerSession session = players.get(player.getUniqueId());
         return session != null && session.getPlayer() == player ? session : null;

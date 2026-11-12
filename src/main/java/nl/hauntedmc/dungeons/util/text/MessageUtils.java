@@ -21,7 +21,16 @@ public final class MessageUtils {
         Title adventureTitle =
                 Title.title(
                         ComponentUtils.component(title), ComponentUtils.component(subtitle), times);
-        player.showTitle(adventureTitle);
+        var experience = nl.hauntedmc.dungeons.runtime.RuntimeContext.experience();
+        if (experience == null
+                || !experience.title(
+                        player,
+                        new nl.hauntedmc.featureframework.hud.HudFrame.Title(
+                                adventureTitle.title(),
+                                adventureTitle.subtitle(),
+                                times.fadeIn(),
+                                times.stay(),
+                                times.fadeOut()))) player.showTitle(adventureTitle);
     }
 
     /** Resets any active title for a player. */

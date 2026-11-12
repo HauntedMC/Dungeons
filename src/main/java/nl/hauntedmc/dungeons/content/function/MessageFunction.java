@@ -53,7 +53,15 @@ public class MessageFunction extends DungeonFunction {
                         player.sendMessage(ComponentUtils.component(message));
                         break;
                     case 1:
-                        player.sendActionBar(ComponentUtils.component(message));
+                        if (this.runtime() != null && this.runtime().experience() != null)
+                            this.runtime()
+                                    .experience()
+                                    .actionBar(
+                                            player,
+                                            ComponentUtils.component(message),
+                                            3,
+                                            nl.hauntedmc.featureframework.hud.HudService.CONTEXT);
+                        else player.sendActionBar(ComponentUtils.component(message));
                 }
             }
         }

@@ -47,6 +47,11 @@ public final class RuntimeContext {
         return runtime;
     }
 
+    /** Optional presentation bridge for text utilities outside the active application lifetime. */
+    public static nl.hauntedmc.dungeons.experience.ExperienceService experience() {
+        return runtime == null ? null : runtime.experience();
+    }
+
     /** Returns the runtime plugin environment adapter. */
     public static PluginEnvironment environment() {
         return runtime().environment();

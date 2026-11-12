@@ -54,6 +54,21 @@ class CommandContractTest {
     @TempDir Path directory;
 
     @Test
+    void anAdmittedPlayerCanLeaveWithoutGainingPermissionToStartOtherDungeons() throws Exception {
+        try (var fixture = new RunFixture(directory, new YamlConfiguration())) {
+            var commands = new CommandFixture(fixture);
+            var session = fixture.paper.runtime.playerSessions().get(commands.caller.player);
+            fixture.run.addPlayer(session);
+            commands.permissions.clear();
+            commands.execute("play", "crypt");
+            verifyNoInteractions(commands.coordinator);
+            assertEquals(fixture.run, session.getInstance());
+            commands.execute("leave");
+            assertEquals(null, session.getInstance());
+        }
+    }
+
+    @Test
     void listLabelsKeepTheirComponentsAndCommandOutputHasNoEscapedFormattingCodes()
             throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {

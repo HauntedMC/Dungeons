@@ -74,6 +74,9 @@ public final class DungeonsApplication {
                 throw new IllegalStateException("Database became unavailable during startup");
             this.bindBukkitIntegrations();
             this.initializeUserInterfaces();
+            var experience = new nl.hauntedmc.dungeons.experience.ExperienceService(this.runtime);
+            this.runtime.setExperience(experience);
+            experience.start();
             this.restoreRuntimeState();
             new DungeonService(this.runtime).start();
             this.logStartupSummary();

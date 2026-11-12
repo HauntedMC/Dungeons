@@ -31,7 +31,12 @@ wait_for_log() {
 }
 start_server() {
   paper_log="$work_directory/paper/$1"
-  (cd "$work_directory/paper" && exec "${JAVA_HOME:?Set JAVA_HOME to JDK 25}/bin/java" -Xms512M -Xmx1G -jar paper.jar --nogui <console.in >"$paper_log" 2>&1) &
+  local debug_options=()
+  if [[ "$1" == paper.log && -n "${DUNGEONS_ACCEPTANCE_DEBUG_PORT:-}" ]]; then
+    [[ "$DUNGEONS_ACCEPTANCE_DEBUG_PORT" =~ ^[0-9]+$ ]] || fail 'Debug port must be numeric'
+    debug_options=("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=127.0.0.1:$DUNGEONS_ACCEPTANCE_DEBUG_PORT")
+  fi
+  (cd "$work_directory/paper" && exec "${JAVA_HOME:?Set JAVA_HOME to JDK 25}/bin/java" "${debug_options[@]}" -Xms512M -Xmx1G -jar paper.jar --nogui <console.in >"$paper_log" 2>&1) &
   paper_pid=$!
   exec {paper_input_fd}>"$work_directory/paper/console.in"
   wait_for_log 'Done \('

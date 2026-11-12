@@ -64,16 +64,23 @@ public class FinishDungeonFunction extends DungeonFunction {
             PlayableInstance instance = (PlayableInstance) this.instance;
 
             for (DungeonPlayerSession playerSession : targets) {
+                if (this.runtime() != null
+                        && this.runtime().experience() != null
+                        && this.runtime()
+                                .experience()
+                                .completed(playerSession.getPlayer().getUniqueId(), instance))
+                    continue;
                 PlayerFinishDungeonEvent finishEvent =
                         new PlayerFinishDungeonEvent(instance, playerSession);
-                Bukkit.getPluginManager().callEvent(finishEvent);
+
                 instance.setDungeonFinished(true);
                 Player player = playerSession.getPlayer();
-                LangUtils.sendMessage(
-                        player,
-                        "instance.play.functions.finish-dungeon",
-                        LangUtils.placeholder(
-                                "dungeon", instance.getDungeon().getDisplayNameComponent()));
+                if ((this.runtime() == null || this.runtime().experience() == null))
+                    LangUtils.sendMessage(
+                            player,
+                            "instance.play.functions.finish-dungeon",
+                            LangUtils.placeholder(
+                                    "dungeon", instance.getDungeon().getDisplayNameComponent()));
                 DungeonDefinition dungeon = instance.getDungeon();
                 if (!dungeon.hasPlayerCompletedDungeon(player)) {
                     dungeon.setPlayerCompletedDungeon(player);
@@ -85,6 +92,9 @@ public class FinishDungeonFunction extends DungeonFunction {
                     instance.getDungeon().addAccessCooldown(player);
                 }
 
+                if (this.runtime() != null && this.runtime().experience() != null)
+                    this.runtime().experience().finished(instance, playerSession);
+                Bukkit.getPluginManager().callEvent(finishEvent);
                 if (this.leave) {
                     Location exitLoc = dungeon.getExitLoc();
                     if (exitLoc != null) {

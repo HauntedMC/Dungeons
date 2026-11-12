@@ -53,6 +53,9 @@ final class EditCommandHandler implements CommandHandler {
         }
 
         return switch (args[1].toLowerCase(Locale.ROOT)) {
+            case "experience" ->
+                    sender instanceof Player player
+                            && playerManager.runtimeExperience().edit(player, args);
             case "close" -> this.handleEditCloseCommand(sender, args);
             case "save" -> this.handleSaveCommand(sender, args);
             case "lobby" -> this.handleLobbyCommand(sender, args);
@@ -366,6 +369,8 @@ final class EditCommandHandler implements CommandHandler {
             return true;
         }
 
+        if (playerManager.runtimeExperience() != null)
+            playerManager.runtimeExperience().saveDraft(player);
         LangUtils.sendMessage(player, "commands.edit.save.saving");
         editable.saveWorldAsync()
                 .whenComplete(

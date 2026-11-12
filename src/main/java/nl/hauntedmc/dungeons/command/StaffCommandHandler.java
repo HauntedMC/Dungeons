@@ -840,7 +840,14 @@ public final class StaffCommandHandler implements CommandHandler {
         if (d.getStartSpawn() == null) result.add("ERROR: Start location is missing");
         if (d.getConfig().contains("locations.exit") && d.getExitLoc() == null)
             result.add("ERROR: Exit world is missing/unloaded; set the external exit again");
-        if (d.getFunctions().isEmpty()) result.add("WARNING: No functions are configured");
+        try {
+            var definition =
+                    nl.hauntedmc.dungeons.experience.ExperienceDefinition.load(
+                            d.getFolder().toPath());
+            nl.hauntedmc.dungeons.experience.ExperienceReferences.dungeon(d, definition);
+        } catch (java.io.IOException | IllegalArgumentException failure) {
+            result.add("ERROR: " + failure.getMessage());
+        }
         ContentReferences.dungeon(
                 d,
                 value -> {

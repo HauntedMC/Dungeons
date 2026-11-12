@@ -36,6 +36,14 @@ public class PlayMenus {
                                     "difficulty_" + dungeon.getWorldName(),
                                     guiSize,
                                     LangUtils.getMessage("menus.difficulty-select.title", false));
+            gui.addOpenAction(
+                    "experience-briefing",
+                    event -> {
+                        if (RuntimeContext.runtime().experience() != null)
+                            RuntimeContext.runtime()
+                                    .experience()
+                                    .briefing((Player) event.getPlayer(), dungeon);
+                    });
             if (!difficulties.isEmpty()) {
                 for (int i = 0; i < difficulties.size(); i++) {
                     DungeonDifficulty difficulty = difficulties.get(i);

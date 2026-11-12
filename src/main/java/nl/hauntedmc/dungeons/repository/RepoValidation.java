@@ -17,6 +17,8 @@ public final class RepoValidation {
 
     public static Result validate(RepoContent.Snapshot snapshot, UUID dungeon, boolean publishing)
             throws IOException {
+        var experience =
+                nl.hauntedmc.dungeons.experience.ExperienceDefinition.load(snapshot.root());
         var config = RepoContent.readYaml(snapshot.root().resolve("config.yml"));
         Object identity = value(config, "dungeon", "id");
         if (!(identity instanceof String id) || !dungeon.toString().equalsIgnoreCase(id))
@@ -40,6 +42,11 @@ public final class RepoValidation {
                     || item.path().equals("gamerules.yml")
                     || item.path().startsWith("rooms/") && item.path().endsWith(".yml")) {
                 var yaml = RepoContent.readYaml(snapshot.root().resolve(item.path()));
+                try {
+                    nl.hauntedmc.dungeons.experience.ExperienceReferences.yaml(yaml, experience);
+                } catch (IllegalArgumentException failure) {
+                    throw new IOException(failure.getMessage(), failure);
+                }
                 scan(yaml, aliases, models);
                 if (item.path().startsWith("rooms/") && item.path().endsWith(".yml")) {
                     String room = item.path().substring(6, item.path().length() - 4);

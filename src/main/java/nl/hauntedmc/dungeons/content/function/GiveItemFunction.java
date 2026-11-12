@@ -105,6 +105,17 @@ public class GiveItemFunction extends DungeonFunction {
                     }
 
                     ItemUtils.giveOrDropSilently(player, item.clone());
+                    if (this.runtime() != null && this.runtime().experience() != null)
+                        this.runtime()
+                                .experience()
+                                .reward(
+                                        player,
+                                        item.getItemMeta() != null
+                                                        && item.getItemMeta().displayName() != null
+                                                ? item.getItemMeta().displayName()
+                                                : net.kyori.adventure.text.Component.translatable(
+                                                        item.getType().translationKey()),
+                                        item.getAmount());
                 }
             } else {
                 this.instance.getInstanceWorld().dropItem(this.location, item.clone());

@@ -3,6 +3,7 @@ package nl.hauntedmc.dungeons.runtime.player;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 import nl.hauntedmc.dungeons.config.ConfigurationFile;
@@ -68,6 +69,8 @@ public final class DungeonPlayerSession {
     }
 
     public boolean stopObservation() {
+        var experience = nl.hauntedmc.dungeons.runtime.RuntimeContext.experience();
+        if (experience != null) experience.observationEnded(this.player.getUniqueId());
         this.observing = null;
         return !this.player.isOnline() || this.recoverPendingState();
     }
@@ -677,10 +680,96 @@ public final class DungeonPlayerSession {
                 });
     }
 
+    /** Cached profile access; callers cannot mutate the durable document through this view. */
+    public String experiencePreference(String key, String fallback) {
+        return this.playerData.getString("Experience.Preferences." + key, fallback);
+    }
+
+    public void setExperiencePreference(String key, String value) {
+        if (!java.util.Set.of("profile", "sounds", "titles", "navigation").contains(key))
+            throw new IllegalArgumentException("Unknown presentation preference");
+        this.updateProfile(candidate -> candidate.set("Experience.Preferences." + key, value));
+    }
+
+    public Map<String, Integer> experienceCheckpoint(
+            String dungeonId, String fingerprint, String difficulty) {
+        String base = "Experience.Checkpoints." + dungeonId;
+        if (this.playerData.getInt(base + ".version", 0) != 1
+                || !fingerprint.equals(this.playerData.getString(base + ".fingerprint"))
+                || !difficulty.equals(this.playerData.getString(base + ".difficulty", "")))
+            return Map.of();
+        var section = this.playerData.getConfigurationSection(base + ".objectives");
+        var result = new java.util.LinkedHashMap<String, Integer>();
+        if (section != null)
+            for (String id : section.getKeys(false)) result.put(id, section.getInt(id));
+        return Map.copyOf(result);
+    }
+
+    public boolean incompatibleExperienceCheckpoint(
+            String dungeonId, String fingerprint, String difficulty) {
+        String base = "Experience.Checkpoints." + dungeonId;
+        return this.playerData.contains(base)
+                && (this.playerData.getInt(base + ".version", 0) != 1
+                        || !fingerprint.equals(this.playerData.getString(base + ".fingerprint"))
+                        || !difficulty.equals(this.playerData.getString(base + ".difficulty", "")));
+    }
+
+    /** Position and personal progress share one revision and durability barrier. */
+    public void setExperienceSavePoint(
+            Location loc,
+            String dungeon,
+            String dungeonId,
+            String fingerprint,
+            String difficulty,
+            Map<String, Integer> objectives) {
+        setExperienceSavePoint(
+                loc, dungeon, dungeonId, fingerprint, difficulty, objectives, List.of(), List.of());
+    }
+
+    public List<String> experienceSavedReveals(String dungeonId) {
+        return List.copyOf(
+                this.playerData.getStringList("Experience.Checkpoints." + dungeonId + ".revealed"));
+    }
+
+    public List<String> experienceSavedTracks(String dungeonId) {
+        return List.copyOf(
+                this.playerData.getStringList("Experience.Checkpoints." + dungeonId + ".tracks"));
+    }
+
+    public void setExperienceSavePoint(
+            Location loc,
+            String dungeon,
+            String dungeonId,
+            String fingerprint,
+            String difficulty,
+            Map<String, Integer> objectives,
+            List<String> revealed,
+            List<String> tracks) {
+        Location saved = loc.clone();
+        saved.setWorld(null);
+        this.updateProfile(
+                candidate -> {
+                    candidate.set("SavePoints." + dungeon, saved);
+                    String base = "Experience.Checkpoints." + dungeonId;
+                    candidate.set(base + ".version", 1);
+                    candidate.set(base + ".position", saved);
+                    candidate.set(base + ".legacy_name", dungeon);
+                    candidate.set(base + ".fingerprint", fingerprint);
+                    candidate.set(base + ".difficulty", difficulty);
+                    candidate.set(base + ".objectives", objectives);
+                    candidate.set(base + ".revealed", revealed);
+                    candidate.set(base + ".tracks", tracks);
+                });
+    }
+
     public void setDungeonSavePoint(Location loc, String dungeon) {
         Location saved = loc.clone();
         saved.setWorld(null);
-        this.updateProfile(candidate -> candidate.set("SavePoints." + dungeon, saved));
+        this.updateProfile(
+                candidate -> {
+                    removeExperienceCheckpoint(candidate, dungeon);
+                    candidate.set("SavePoints." + dungeon, saved);
+                });
     }
 
     @Nullable
@@ -689,8 +778,39 @@ public final class DungeonPlayerSession {
         return saved == null ? null : saved.clone();
     }
 
+    public Location getExperienceSavePoint(String dungeon, String dungeonId) {
+        Location position =
+                this.playerData.getLocation("Experience.Checkpoints." + dungeonId + ".position");
+        return position == null ? getDungeonSavePoint(dungeon) : position.clone();
+    }
+
+    public void discardExperienceCheckpoint(String dungeon, String dungeonId) {
+        this.updateProfile(
+                candidate -> {
+                    String previous =
+                            candidate.getString(
+                                    "Experience.Checkpoints." + dungeonId + ".legacy_name",
+                                    dungeon);
+                    candidate.set("SavePoints." + previous, null);
+                    candidate.set("SavePoints." + dungeon, null);
+                    candidate.set("Experience.Checkpoints." + dungeonId, null);
+                });
+    }
+
+    private static void removeExperienceCheckpoint(YamlConfiguration candidate, String dungeon) {
+        var section = candidate.getConfigurationSection("Experience.Checkpoints");
+        if (section != null)
+            for (String id : new ArrayList<>(section.getKeys(false)))
+                if (dungeon.equals(section.getString(id + ".legacy_name")))
+                    candidate.set("Experience.Checkpoints." + id, null);
+    }
+
     public void clearDungeonSavePoint(String dungeon) {
-        this.updateProfile(candidate -> candidate.set("SavePoints." + dungeon, null));
+        this.updateProfile(
+                candidate -> {
+                    removeExperienceCheckpoint(candidate, dungeon);
+                    candidate.set("SavePoints." + dungeon, null);
+                });
     }
 
     public void queueReload() {

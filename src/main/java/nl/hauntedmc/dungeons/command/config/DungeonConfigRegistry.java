@@ -70,6 +70,61 @@ public final class DungeonConfigRegistry {
     static {
         register(
                 main(
+                        "experience-sidebar-title",
+                        "Optional sidebar title template.",
+                        "experience.sidebar.title",
+                        DungeonConfigValueType.COLOR_STRING));
+        register(
+                main(
+                        "experience-sidebar-rows",
+                        "Widget IDs or trusted text templates; empty lists replace the default rows.",
+                        "experience.sidebar.rows",
+                        DungeonConfigValueType.STRING_LIST));
+
+        register(
+                main(
+                        "experience-enabled",
+                        "Enable the dungeon presentation; mechanics remain independent.",
+                        "experience.enabled",
+                        DungeonConfigValueType.BOOLEAN,
+                        suggestions(BOOLEAN_VALUES)));
+        register(
+                main(
+                        "experience-profile",
+                        "balanced | minimal | immersive",
+                        "experience.profile",
+                        DungeonConfigValueType.STRING));
+        register(
+                main(
+                        "experience-description",
+                        "Briefing description.",
+                        "experience.description",
+                        DungeonConfigValueType.COLOR_STRING));
+        register(
+                main(
+                        "experience-confirm-exit",
+                        "Confirm voluntary active exits.",
+                        "experience.confirm_exit",
+                        DungeonConfigValueType.BOOLEAN,
+                        suggestions(BOOLEAN_VALUES)));
+        for (String channel : List.of("sidebar", "actionbar", "bossbar", "titles"))
+            register(
+                    main(
+                            "experience-" + channel,
+                            "Enable this presentation channel.",
+                            "experience.channels." + channel,
+                            DungeonConfigValueType.BOOLEAN,
+                            suggestions(BOOLEAN_VALUES)));
+        for (String widget : nl.hauntedmc.dungeons.experience.ExperiencePresentation.WIDGETS)
+            register(
+                    main(
+                            "experience-widget-" + widget,
+                            "auto | shown | hidden",
+                            "experience.widgets." + widget,
+                            DungeonConfigValueType.STRING));
+
+        register(
+                main(
                         "enabled",
                         "Enables or disables joining this dungeon.",
                         "dungeon.enabled",

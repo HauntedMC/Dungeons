@@ -13,6 +13,8 @@ grep -Fq 'nl/hauntedmc/dungeons/libs/nbtapi/NBT.class' <<<"$entries"
 grep -Fq 'nl/hauntedmc/theme/HauntedMcColor.class' <<<"$entries"
 grep -Fq 'nl/hauntedmc/theme/featureframework/HauntedMcTheme.class' <<<"$entries"
 grep -Fq 'nl/hauntedmc/featureframework/localization/ComponentLocalization.class' <<<"$entries"
+grep -Fxq 'nl/hauntedmc/featureframework/hud/HudService.class' <<<"$entries"
+grep -Fxq 'nl/hauntedmc/dungeons/api/DungeonExperienceApi.class' <<<"$entries"
 grep -Fq 'lang/messages.yml' <<<"$entries"
 grep -Fxq 'lang/messages_EN.yml' <<<"$entries"
 if grep -Fxq 'messages.yml' <<<"$entries"; then

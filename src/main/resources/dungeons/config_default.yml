@@ -246,3 +246,15 @@ generator:
 map:
   # int blocks. Floor depth used by dungeon maps.
   floor_depth: 3
+
+# Optional presentation overrides. No objectives/stages/waves are enabled by these settings.
+# Omitted values inherit experience.defaults from the plugin config.
+# experience:
+#   profile: balanced
+#   description: "Explore and collect loot at your own pace."
+#   confirm_exit: true
+#   channels:
+#     sidebar: true
+#   widgets:
+#     elapsed: shown
+# Authored mechanics live in an OPTIONAL experience.yml. No file = no added mechanics.

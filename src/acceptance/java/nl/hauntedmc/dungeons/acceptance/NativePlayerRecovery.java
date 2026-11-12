@@ -247,7 +247,7 @@ final class NativePlayerRecovery {
     }
 
     /** Uses the actual native player serializer, including its configured storage directory. */
-    private static Player nativePlayer(UUID id) throws Exception {
+    static Player nativePlayer(UUID id) throws Exception {
         Object server =
                 Bukkit.getServer().getClass().getMethod("getServer").invoke(Bukkit.getServer());
         Object level =

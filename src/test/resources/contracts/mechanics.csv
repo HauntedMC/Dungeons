@@ -57,3 +57,6 @@ dungeons.condition.inventory,nl.hauntedmc.dungeons.content.condition.InventoryCo
 dungeons.function.health,nl.hauntedmc.dungeons.content.function.HealthFunction
 dungeons.function.conditional,nl.hauntedmc.dungeons.content.function.meta.ConditionalFunction
 dungeons.condition.block,nl.hauntedmc.dungeons.content.condition.BlockCondition
+dungeons.function.experience,nl.hauntedmc.dungeons.content.function.ExperienceFunction
+dungeons.trigger.experience,nl.hauntedmc.dungeons.content.trigger.ExperienceTrigger
+dungeons.condition.objective,nl.hauntedmc.dungeons.content.condition.ObjectiveCondition

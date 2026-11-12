@@ -155,6 +155,9 @@ public final class AcceptancePlugin extends JavaPlugin {
                                 new Scenario(
                                         "native-branching-generation",
                                         () -> NativeBranching.run(this)),
+                                new Scenario(
+                                        "native-optional-experience",
+                                        () -> NativeExperience.run(this)),
                                 new Scenario("native-open-warm-pool", () -> NativeOpen.run(this)),
                                 new Scenario(
                                         "native-random-spawnpoints",
@@ -205,13 +208,13 @@ public final class AcceptancePlugin extends JavaPlugin {
                 runtime().dungeonCatalog().get("current-config") != null,
                 "Fresh dungeon is absent from the actual catalog");
         require(
-                runtime().functionRegistry().getRegisteredFunctions().size() == 32,
+                runtime().functionRegistry().getRegisteredFunctions().size() == 33,
                 "Unexpected function registry contents");
         require(
-                runtime().triggerRegistry().getRegisteredTriggers().size() == 16,
+                runtime().triggerRegistry().getRegisteredTriggers().size() == 17,
                 "Unexpected trigger registry contents");
         require(
-                runtime().conditionRegistry().getRegisteredConditions().size() == 10,
+                runtime().conditionRegistry().getRegisteredConditions().size() == 11,
                 "Unexpected condition registry contents");
         require(
                 runtime()
