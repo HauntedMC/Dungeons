@@ -166,6 +166,10 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
 
     private void selectBackend() {
         HudService shared = Bukkit.getServicesManager().load(HudService.class);
+        if (shared == null)
+            shared =
+                    SharedHudBackend.discover(
+                            Bukkit.getPluginManager().getPlugin("ServerFeatures"), backend);
         HudService next =
                 shared != null
                         ? shared
@@ -1703,12 +1707,14 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
 
     @EventHandler
     public void hudRegistered(org.bukkit.event.server.ServiceRegisterEvent event) {
-        if (event.getProvider().getService() == HudService.class) selectBackend();
+        if (event.getProvider().getService().getName().equals(HudService.class.getName()))
+            selectBackend();
     }
 
     @EventHandler
     public void hudUnregistered(org.bukkit.event.server.ServiceUnregisterEvent event) {
-        if (event.getProvider().getService() == HudService.class) selectBackend();
+        if (event.getProvider().getService().getName().equals(HudService.class.getName()))
+            selectBackend();
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
