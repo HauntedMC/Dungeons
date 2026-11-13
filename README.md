@@ -104,6 +104,9 @@ configured deadline; cleanup continues on its worker. `/dungeon server status` r
 without issuing SQL. One-connection pools are supported. Native Paper acceptance runs the real
 DataProvider/DataRegistry stack, rejects invalid connection/schema boots, and verifies healthy boot
 and cold-restart recovery; MySQL integration tests cover schema ownership and transactional failures.
+The same acceptance installation runs ServerFeatures and checks native sidebar, actionbar and bossbar
+restoration after dungeon participation, observation, editor previews and HUD-service replacement.
+Only the remote Minecraft client is replaced by an in-memory packet sink.
 
 ## Dungeon content repository
 
@@ -197,7 +200,8 @@ maps deliberately. Repository rollback changes content only and never resets pla
 Dungeons bundles FeatureFramework 2.2.5, including the shared HUD API, and the HauntedMC Theme adapter 1.2.5 (palette 1.2.3),
 aligned with the companion ServerFeatures HUD update. These are libraries, so no additional server plugin is
 needed. The shared classes retain their public package identities; DataProvider/DataRegistry APIs
-and Adventure stay provided by the server.
+and Adventure stay provided by the server. When ServerFeatures is installed, Dungeons bridges its
+bundled HUD API across Paper plugin class loaders so both plugins arbitrate through one coordinator.
 
 `lang/messages.yml` is the single default message resource. Existing installations move the old
 root `messages.yml` there once, preserving their text and formatting. If both files already exist,
@@ -259,12 +263,10 @@ not durability of progression or recovery state.
 
 Every dungeon has an adaptive HUD, guide, entry information and exit confirmation. Vanilla loot maps need no objectives or extra mechanics file. Optional flat objectives, staged tracks, existing bosses and wave encounters can be combined independently. Use `/dungeon guide`, `/dungeon hud` and `/dungeon edit experience`.
 
-See [the player experience guide](docs/PLAYER_EXPERIENCE.md) for configuration, in-game recipes, graph integration, persistence and the coordinated ServerFeatures HUD update.
-
 ## Dungeon scripting
 
-See the [mechanics guide](docs/MECHANICS.md) for timer and variable-change triggers,
-player/world conditions, health effects, conditional groups and runtime validation behavior.
+Dungeon scripting supports timer and variable-change triggers, player/world conditions,
+health effects, conditional groups and runtime validation.
 
 ## Administration
 
@@ -283,7 +285,7 @@ for Paper conversion. Current dimension templates keep their flat terrain layout
 
 - Java 25
 - Paper 26.x
-- DataProvider 3.5.2 and DataRegistry 1.19.2, configured with MySQL
+- DataProvider 3.5.3 and DataRegistry 1.19.2, configured with MySQL
 
 ## Build From Source
 
@@ -306,3 +308,18 @@ See [Contributing](CONTRIBUTING.md) for development guidelines.
 - [Support](SUPPORT.md)
 - [Security Policy](SECURITY.md)
 - [Code of Conduct](CODE_OF_CONDUCT.md)
+
+### Experience checkpoint compatibility
+
+New checkpoints use a `progress-v2:` fingerprint of parsed mechanics. Objective,
+stage and encounter titles, descriptions, hints and boss labels can change without
+resetting saved progression. Objective IDs, targets, scopes, persistence rules,
+track/stage structure, spawn groups, encounter rules and completion policy remain
+compatibility boundaries. Difficulty must still match exactly.
+
+Existing checkpoints retain their original full-YAML hash. They can be restored
+against unchanged content and are upgraded on the next successful checkpoint save.
+A legacy hash cannot establish which fields changed; edits made before that upgrade
+remain incompatible, including cosmetic edits. Keep the original content until
+players have saved again, or have them explicitly start fresh. Incompatible saves
+are preserved until the player chooses a fresh start.

@@ -260,7 +260,8 @@ public final class RepoContent {
     private static Yaml yaml() {
         var loader = new LoaderOptions();
         loader.setAllowDuplicateKeys(false);
-        loader.setMaxAliasesForCollections(0);
+        // Bukkit emits aliases for shared serialized values (for example function targets).
+        loader.setMaxAliasesForCollections(10_000);
         loader.setCodePointLimit(4 * CHUNK_BYTES);
         loader.setNestingDepthLimit(64);
         loader.setProcessComments(true);
@@ -275,6 +276,13 @@ public final class RepoContent {
             throw new IOException("YAML exceeds 4 MiB: " + file.getFileName());
         try {
             Object value = yaml().load(Files.readString(file));
+            // Downstream validators walk values recursively. Bound their expanded work and
+            // reject cycles while accepting ordinary shared, non-recursive aliases.
+            validateYamlGraph(
+                    value,
+                    Collections.newSetFromMap(new IdentityHashMap<>()),
+                    0,
+                    new int[] {1_000_000});
             if (!(value instanceof Map<?, ?> map))
                 throw new IOException("Expected YAML mapping: " + file.getFileName());
             var result = new LinkedHashMap<String, Object>();
@@ -286,6 +294,27 @@ public final class RepoContent {
             return result;
         } catch (RuntimeException invalid) {
             throw new IOException("Invalid YAML: " + file.getFileName(), invalid);
+        }
+    }
+
+    private static void validateYamlGraph(
+            Object value, Set<Object> ancestors, int depth, int[] remaining) throws IOException {
+        if (--remaining[0] < 0 || depth > 64)
+            throw new IOException("YAML expanded content exceeds validation limits");
+        if (!(value instanceof Map<?, ?>) && !(value instanceof Collection<?>)) return;
+        if (!ancestors.add(value)) throw new IOException("Recursive YAML aliases are unsupported");
+        try {
+            if (value instanceof Map<?, ?> map) {
+                for (var entry : map.entrySet()) {
+                    validateYamlGraph(entry.getKey(), ancestors, depth + 1, remaining);
+                    validateYamlGraph(entry.getValue(), ancestors, depth + 1, remaining);
+                }
+            } else {
+                for (Object child : (Collection<?>) value)
+                    validateYamlGraph(child, ancestors, depth + 1, remaining);
+            }
+        } finally {
+            ancestors.remove(value);
         }
     }
 

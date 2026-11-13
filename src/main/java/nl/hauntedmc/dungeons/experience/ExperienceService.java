@@ -27,6 +27,7 @@ import nl.hauntedmc.dungeons.util.text.ComponentUtils;
 import nl.hauntedmc.featureframework.hud.HudCoordinator;
 import nl.hauntedmc.featureframework.hud.HudFrame;
 import nl.hauntedmc.featureframework.hud.HudService;
+import nl.hauntedmc.featureframework.lifecycle.CleanupSequence;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
@@ -91,9 +92,11 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
 
     private final Map<UUID, Waiting> waiting = new HashMap<>();
 
-    private record Exit(UUID instance, String signature, String token, long expires) {}
+    private record Exit(
+            Participation participation, String signature, String token, long expires) {}
 
     private final DungeonsRuntime runtime;
+    private final java.util.function.LongSupplier nanoTime;
     private final Map<PlayableInstance, ExperienceRun> runs = new LinkedHashMap<>();
     private final Map<PlayableInstance, ExperiencePresentation> presentations = new HashMap<>();
     private final java.util.Set<PlayableInstance> invalidPresentations = new java.util.HashSet<>();
@@ -114,27 +117,46 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
     private BukkitTask ticker;
     private int ticks;
     private boolean closed;
+    private boolean started;
     private boolean warned;
 
     public ExperienceService(DungeonsRuntime runtime) {
+        this(runtime, System::nanoTime);
+    }
+
+    ExperienceService(DungeonsRuntime runtime, java.util.function.LongSupplier nanoTime) {
         this.runtime = runtime;
+        this.nanoTime = nanoTime;
     }
 
     public void start() {
-        runtime.resources().ownIngress(this, ExperienceService::close);
-        Bukkit.getPluginManager().registerEvents(this, runtime.environment().plugin());
-        Bukkit.getServicesManager()
-                .register(
-                        DungeonExperienceApi.class,
-                        this,
-                        runtime.environment().plugin(),
-                        ServicePriority.Normal);
-        selectBackend();
-        editor = new ExperienceEditor(runtime);
-        observers = new ObservationHud(runtime, () -> backend, this::presentation);
-        ticker =
-                Bukkit.getScheduler()
-                        .runTaskTimer(runtime.environment().plugin(), this::tick, 1, 5);
+        requireThread();
+        if (closed) throw new IllegalStateException("Experience service is closed");
+        if (started) return;
+        started = true;
+        try {
+            runtime.resources().ownIngress(this, ExperienceService::close);
+            Bukkit.getPluginManager().registerEvents(this, runtime.environment().plugin());
+            selectBackend();
+            editor = new ExperienceEditor(runtime);
+            observers = new ObservationHud(runtime, () -> backend, this::presentation);
+            ticker =
+                    Bukkit.getScheduler()
+                            .runTaskTimer(runtime.environment().plugin(), this::tick, 1, 5);
+            Bukkit.getServicesManager()
+                    .register(
+                            DungeonExperienceApi.class,
+                            this,
+                            runtime.environment().plugin(),
+                            ServicePriority.Normal);
+        } catch (RuntimeException | Error failure) {
+            try {
+                close();
+            } catch (RuntimeException | Error cleanup) {
+                if (cleanup != failure) failure.addSuppressed(cleanup);
+            }
+            throw failure;
+        }
     }
 
     private static void requireThread() {
@@ -144,6 +166,10 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
 
     private void selectBackend() {
         HudService shared = Bukkit.getServicesManager().load(HudService.class);
+        if (shared == null)
+            shared =
+                    SharedHudBackend.discover(
+                            Bukkit.getPluginManager().getPlugin("ServerFeatures"), backend);
         HudService next =
                 shared != null
                         ? shared
@@ -233,7 +259,7 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
         if (observers != null) observers.tick();
         if (ticks % 20 == 0) queueFeedback();
         previews.values().removeIf(lease -> !lease.active());
-        exits.values().removeIf(exit -> exit.expires < System.nanoTime());
+        exits.values().removeIf(exit -> exit.expires <= nanoTime.getAsLong());
     }
 
     public ExperienceRun mechanics(PlayableInstance instance) {
@@ -247,6 +273,7 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
         Participation existing = players.get(player.getUniqueId());
         if (existing != null && existing.instance == instance) return;
         if (existing != null) release(existing);
+        exits.remove(player.getUniqueId());
         Participation value = new Participation(instance);
         value.lastLives = instance.getConfig().getInt("players.lives", 0);
         var queued = waiting.remove(player.getUniqueId());
@@ -555,10 +582,12 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
     }
 
     private void release(Participation state) {
-        for (var lease : state.channels.values()) lease.close();
-        for (var lease : state.feedback.values()) lease.close();
+        var steps = new ArrayList<Runnable>();
+        state.channels.values().forEach(lease -> steps.add(lease::close));
+        state.feedback.values().forEach(lease -> steps.add(lease::close));
         state.channels.clear();
         state.feedback.clear();
+        CleanupSequence.run(steps);
     }
 
     public boolean managesBossBars(Player player) {
@@ -784,8 +813,9 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
 
     public void departed(PlayableInstance instance, DungeonPlayerSession session) {
         UUID id = session.getPlayer().getUniqueId();
-        var state = players.remove(id);
+        var state = players.get(id);
         if (state == null || state.instance != instance) return;
+        players.remove(id);
         release(state);
         exits.remove(id);
         var report = new ArrayList<Component>();
@@ -879,7 +909,7 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
     private boolean incompatible(DungeonPlayerSession session, PlayableInstance instance) {
         return session.incompatibleExperienceCheckpoint(
                 instance.getDungeon().getDungeonId().toString(),
-                instance.experienceDefinition().fingerprint(),
+                instance.experienceDefinition(),
                 instance.getDifficulty() == null ? "" : instance.getDifficulty().getNamespace());
     }
 
@@ -983,6 +1013,13 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                 + ":"
                 + dungeon.isAccessCooldownEnabled()
                 + ":"
+                + dungeon.shouldApplyAccessCooldown(
+                        state.instance, session.getPlayer().getUniqueId())
+                + ":"
+                + state.instance.getConfig().getBoolean("access.keys.consume_on_entry", true)
+                + ":"
+                + state.instance.getConfig().getList("access.keys.items", List.of())
+                + ":"
                 + session.getDungeonSavePoint(dungeon.getWorldName());
     }
 
@@ -990,27 +1027,33 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
      * Returns true only for an immediate exit or a matching, unexpired consequence confirmation.
      */
     public boolean requestExit(Player player, String token) {
+        requireThread();
         var state = players.get(player.getUniqueId());
-        if (state == null
-                || state.outcome != null
-                || !enabled(state.instance, "confirm_exit", true)) return true;
         var session = runtime.playerSessions().get(player);
-        String signature = exitSignature(session, state);
+        if (session == null || state != null && session.getInstance() != state.instance) {
+            exits.remove(player.getUniqueId());
+            return token == null && (session == null || session.getInstance() == null);
+        }
         Exit pending = exits.remove(player.getUniqueId());
+        if (state == null) return token == null;
+        String signature = exitSignature(session, state);
         if (token != null
                 && pending != null
                 && pending.token.equals(token)
-                && pending.instance.equals(state.instance.getInstanceId())
+                && pending.participation == state
                 && pending.signature.equals(signature)
-                && pending.expires > System.nanoTime()) return true;
+                && pending.expires > nanoTime.getAsLong()) return true;
+        if (token == null
+                && (state.outcome != null || !enabled(state.instance, "confirm_exit", true)))
+            return true;
         String next = UUID.randomUUID().toString();
         exits.put(
                 player.getUniqueId(),
                 new Exit(
-                        state.instance.getInstanceId(),
+                        state,
                         signature,
                         next,
-                        System.nanoTime() + Duration.ofSeconds(30).toNanos()));
+                        nanoTime.getAsLong() + Duration.ofSeconds(30).toNanos()));
         notify(player, "exit-confirm", null);
         player.sendMessage(
                 text(
@@ -1664,12 +1707,14 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
 
     @EventHandler
     public void hudRegistered(org.bukkit.event.server.ServiceRegisterEvent event) {
-        if (event.getProvider().getService() == HudService.class) selectBackend();
+        if (event.getProvider().getService().getName().equals(HudService.class.getName()))
+            selectBackend();
     }
 
     @EventHandler
     public void hudUnregistered(org.bukkit.event.server.ServiceUnregisterEvent event) {
-        if (event.getProvider().getService() == HudService.class) selectBackend();
+        if (event.getProvider().getService().getName().equals(HudService.class.getName()))
+            selectBackend();
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -1691,28 +1736,30 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
     public void close() {
         if (closed) return;
         closed = true;
-        if (editor != null) editor.close();
-        if (observers != null) observers.close();
-        if (ticker != null) ticker.cancel();
-        players.values().forEach(this::release);
-        players.clear();
-        runs.values().forEach(ExperienceRun::close);
-        runs.clear();
-        presentations.clear();
-        invalidPresentations.clear();
-        previews.values().forEach(HudService.Lease::close);
-        previews.clear();
+        var steps = new ArrayList<Runnable>();
+        if (editor != null) steps.add(editor::close);
+        if (observers != null) steps.add(observers::close);
+        if (ticker != null) steps.add(ticker::cancel);
+        players.values().forEach(value -> steps.add(() -> release(value)));
+        runs.values().forEach(run -> steps.add(run::close));
+        previews.values().forEach(lease -> steps.add(lease::close));
         waiting.values()
                 .forEach(
                         value -> {
-                            if (value.sidebar != null) value.sidebar.close();
+                            if (value.sidebar != null) steps.add(value.sidebar::close);
                         });
+        steps.add(standalone::close);
+        steps.add(subscriptions::close);
+        steps.add(() -> HandlerList.unregisterAll(this));
+        steps.add(() -> Bukkit.getServicesManager().unregister(DungeonExperienceApi.class, this));
+        players.clear();
+        runs.clear();
+        presentations.clear();
+        invalidPresentations.clear();
+        previews.clear();
         waiting.clear();
-        standalone.close();
-        subscriptions.close();
         exits.clear();
         reports.clear();
-        HandlerList.unregisterAll(this);
-        Bukkit.getServicesManager().unregister(DungeonExperienceApi.class, this);
+        CleanupSequence.run(steps);
     }
 }

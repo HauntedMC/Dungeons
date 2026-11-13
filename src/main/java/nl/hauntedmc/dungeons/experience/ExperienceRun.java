@@ -15,6 +15,7 @@ import nl.hauntedmc.dungeons.event.ExperienceEvent;
 import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
 import nl.hauntedmc.featureframework.hud.HudFrame;
+import nl.hauntedmc.featureframework.lifecycle.CleanupSequence;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
@@ -82,12 +83,8 @@ public final class ExperienceRun implements AutoCloseable {
         if (!restored.add(id)) return;
         String dungeonId = instance.getDungeon().getDungeonId().toString();
         if (session.getExperienceSavePoint(instance.getDungeon().getWorldName(), dungeonId) != null
-                && !session.incompatibleExperienceCheckpoint(
-                        dungeonId, definition.fingerprint(), difficulty())) {
-            progress.restore(
-                    id,
-                    session.experienceCheckpoint(
-                            dungeonId, definition.fingerprint(), difficulty()));
+                && !session.incompatibleExperienceCheckpoint(dungeonId, definition, difficulty())) {
+            progress.restore(id, session.experienceCheckpoint(dungeonId, definition, difficulty()));
             progress.restoreMetadata(
                     id,
                     session.experienceSavedReveals(dungeonId),
@@ -272,10 +269,7 @@ public final class ExperienceRun implements AutoCloseable {
         for (var entry : encounters.entrySet())
             if (entry.getValue().alive.contains(entity.getUniqueId())
                     && entry.getValue().state.equals("active")) {
-                entry.getValue().state = "failed";
-                entry.getValue().generation++;
-                entry.getValue().spawners.forEach(SpawnMobFunction::disable);
-                emit("encounter-failed", entry.getKey(), 0);
+                fail(entry.getKey(), entry.getValue());
             }
     }
 
@@ -293,10 +287,8 @@ public final class ExperienceRun implements AutoCloseable {
     public void reset(String id) {
         var state = encounters.get(id);
         if (state == null) throw new IllegalArgumentException("Unknown encounter: " + id);
-        state.generation++;
         state.state = "idle";
-        state.spawners.forEach(SpawnMobFunction::disable);
-        state.spawners.clear();
+        cancelSpawns(state);
         for (UUID entity : new HashSet<>(state.alive)) {
             Entity live = Bukkit.getEntity(entity);
             if (live != null) live.remove();
@@ -309,20 +301,34 @@ public final class ExperienceRun implements AutoCloseable {
         emit("encounter-reset", id, 0);
     }
 
+    private void fail(String id, EncounterState state) {
+        if (state.state.equals("failed")) return;
+        state.state = "failed";
+        cancelSpawns(state);
+        emit("encounter-failed", id, 0);
+    }
+
+    private void cancelSpawns(EncounterState state) {
+        state.generation++;
+        var pending = new ArrayList<>(state.spawners);
+        state.spawners.clear();
+        spawners.removeAll(pending);
+        state.pending = 0;
+        CleanupSequence.run(pending.stream().<Runnable>map(spawner -> spawner::disable).toList());
+    }
+
     private void tickEncounter(String id, EncounterState state) {
         var spec = definition.encounters().get(id);
         if (state.state.equals("active")) {
             if (spec.timeoutSeconds() > 0
                     && instance.getTimeElapsed() - state.starts >= spec.timeoutSeconds()) {
-                state.state = "failed";
-                emit("encounter-failed", id, 0);
+                fail(id, state);
                 return;
             }
             for (UUID entity : state.alive) {
                 Entity live = Bukkit.getEntity(entity);
                 if (live != null && !live.isValid() && !live.isDead()) {
-                    state.state = "failed";
-                    emit("encounter-failed", id, 0);
+                    fail(id, state);
                     return;
                 }
             }
@@ -349,8 +355,7 @@ public final class ExperienceRun implements AutoCloseable {
                                                         * instance.getDifficulty()
                                                                 .getMobSpawnScale())
                                         <= 0) {
-                    state.state = "failed";
-                    emit("encounter-failed", id, 0);
+                    fail(id, state);
                     return;
                 }
                 int generation = state.generation;
@@ -458,13 +463,16 @@ public final class ExperienceRun implements AutoCloseable {
 
     @Override
     public void close() {
+        if (closed) return;
         closed = true;
-        spawners.forEach(SpawnMobFunction::disable);
+        var steps = new ArrayList<Runnable>();
+        spawners.forEach(spawner -> steps.add(spawner::disable));
         spawners.clear();
         entities.clear();
         encounters.clear();
         captured.clear();
         restored.clear();
         phases.clear();
+        CleanupSequence.run(steps);
     }
 }

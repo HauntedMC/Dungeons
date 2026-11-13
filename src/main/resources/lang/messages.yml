@@ -355,13 +355,13 @@ commands:
         success: '<HauntedMC:Success>Lobby spawn ingesteld op <HauntedMC:Text>{x}, {y}, {z}<HauntedMC:Success> met yaw <HauntedMC:Text>{yaw}<HauntedMC:Success>.'
     start:
       points:
-        usage: '<HauntedMC:Info>/dungeon edit start add [naam] | set [id] | list | tp <id> | remove <id>'
+        usage: '<HauntedMC:Text>/dungeon edit start add [naam] | set [id] | list | tp <id> | remove <id>'
         branching: '<HauntedMC:Error>Branching dungeons gebruiken de gegenereerde spawn van de eerste kamer.'
         added: '<HauntedMC:Success>Startpunt {id} toegevoegd.'
         updated: '<HauntedMC:Success>Startpunt {id} bijgewerkt.'
         removed: '<HauntedMC:Success>Startpunt {id} verwijderd.'
         empty: '<HauntedMC:Warning>Geen startpunten ingesteld; de wereldspawn wordt gebruikt.'
-        header: '<HauntedMC:Info>{count} startpunten. Elk instance kiest een willekeurig startpunt voor alle spelers.'
+        header: '<HauntedMC:Text>{count} startpunten. Elk instance kiest een willekeurig startpunt voor alle spelers.'
         entry: '<HauntedMC:Text>{id}: {location}'
         invalid: '<HauntedMC:Error>{reason}'
       set:
@@ -916,7 +916,7 @@ internal:
   render: "{text}"
 
 repository:
-  started: '<HauntedMC:Info>Repository operation started.'
+  started: '<HauntedMC:Text>Repository operation started.'
   failed: '<HauntedMC:Error>Repository operation failed: {detail}'
 
 mechanic-editor:

@@ -383,7 +383,7 @@ public abstract class PlayableInstance extends DungeonInstance {
         if (this.runtime().experience() != null
                 && playerSession.incompatibleExperienceCheckpoint(
                         this.dungeon.getDungeonId().toString(),
-                        this.experienceDefinition.fingerprint(),
+                        this.experienceDefinition,
                         this.difficulty == null ? "" : this.difficulty.getNamespace()))
             storedSavePoint = null;
         Location savePoint = storedSavePoint == null ? null : storedSavePoint.clone();

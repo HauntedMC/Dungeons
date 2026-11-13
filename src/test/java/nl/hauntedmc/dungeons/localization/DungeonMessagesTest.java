@@ -30,6 +30,14 @@ class DungeonMessagesTest {
     }
 
     @Test
+    void olderInfoReferencesRenderLikeTextWithoutEditingTranslations() {
+        var messages = messages();
+        assertEquals(
+                messages.render("<HauntedMC:Text>Operation started.", Map.of()),
+                messages.render("<HauntedMC:Info>Operation started.", Map.of()));
+    }
+
+    @Test
     void sharedThemeAndLegacyTemplatesProduceActualAdventureColors() {
         var messages = messages();
         var text = messages.render("<HauntedMC:Success>Ready &cError <map>", Map.of());

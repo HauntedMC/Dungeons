@@ -26,6 +26,40 @@ class RepoValidationTest {
     }
 
     @Test
+    void generatedFunctionAliasesValidateWithoutRewritingTheFile() throws Exception {
+        var source = snapshot("  type: static\n");
+        var functions = source.root().resolve("functions.yml");
+        String yaml =
+                "Functions:\n- ==: dungeons.function.checkpoint\n"
+                        + "  targetType: &id001 {==: dungeons.function_target_type, value: TEAM}\n"
+                        + "- &command {TYPE--: dungeons.function.command, command: test}\n"
+                        + "- *command\n"
+                        + "- {==: dungeons.function.checkpoint, targetType: *id001}\n".repeat(100);
+        Files.writeString(functions, yaml);
+        var result = RepoValidation.validate(scan(source), id, false);
+        assertTrue(result.scripts());
+        assertTrue(result.bukkitAliases().contains("dungeons.function_target_type"));
+        assertEquals(yaml, Files.readString(functions));
+    }
+
+    @Test
+    void recursiveAndExcessivelyExpandedAliasesAreRejected() throws Exception {
+        var file = directory.resolve("functions.yml");
+        for (String yaml :
+                List.of(
+                        "Functions: &loop [*loop]\n",
+                        "a: &a [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]\n"
+                                + "b: &b [*a, *a, *a, *a, *a, *a, *a, *a, *a, *a]\n"
+                                + "c: &c [*b, *b, *b, *b, *b, *b, *b, *b, *b, *b]\n"
+                                + "d: &d [*c, *c, *c, *c, *c, *c, *c, *c, *c, *c]\n"
+                                + "e: &e [*d, *d, *d, *d, *d, *d, *d, *d, *d, *d]\n"
+                                + "f: &f [*e, *e, *e, *e, *e, *e, *e, *e, *e, *e]\n")) {
+            Files.writeString(file, yaml);
+            assertThrows(java.io.IOException.class, () -> RepoContent.readYaml(file));
+        }
+    }
+
+    @Test
     void draftsMayBeIncompleteButPublishingRequiresPlayableAnchors() throws Exception {
         var draft = scan(snapshot("  type: static\n"));
         assertEquals("static", RepoValidation.validate(draft, id, false).type());
