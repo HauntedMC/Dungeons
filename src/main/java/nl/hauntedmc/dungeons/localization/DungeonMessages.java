@@ -118,6 +118,11 @@ public final class DungeonMessages extends ComponentLocalization {
 
     public synchronized Component render(String template, Map<String, ?> values) {
         if (template == null || template.isEmpty()) return Component.empty();
+        // Older bundled messages used Info, which is not part of the HauntedMC palette.
+        // Keep existing server translations usable without rewriting operator edits.
+        template =
+                template.replace("<HauntedMC:Info>", "<HauntedMC:Text>")
+                        .replace("</HauntedMC:Info>", "</HauntedMC:Text>");
         if (values == null) values = Map.of();
         // One-character sentinels survive gradients/rainbows, which split text into individual
         // components. Substitute all of them in one pass so inserted values are never reparsed.

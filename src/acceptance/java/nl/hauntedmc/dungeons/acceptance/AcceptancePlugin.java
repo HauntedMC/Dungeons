@@ -158,6 +158,7 @@ public final class AcceptancePlugin extends JavaPlugin {
                                 new Scenario(
                                         "native-optional-experience",
                                         () -> NativeExperience.run(this)),
+                                new Scenario("native-coordinated-hud", () -> NativeHud.run(this)),
                                 new Scenario("native-open-warm-pool", () -> NativeOpen.run(this)),
                                 new Scenario(
                                         "native-random-spawnpoints",

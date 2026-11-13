@@ -106,7 +106,7 @@ for command in curl sha256sum java javac jar python3; do command -v "$command" >
 [[ -n "$acceptance_classpath" ]] || fail 'Empty acceptance compilation classpath'
 [[ ! -e "$work_directory/paper/server.properties" ]] || fail 'Use a fresh acceptance work directory'
 mkdir -p "$work_directory/paper/plugins" "$work_directory/consumer/classes"
-"${JAVA_HOME:?Set JAVA_HOME to JDK 25}/bin/javac" --release 25 \
+"${JAVA_HOME:?Set JAVA_HOME to JDK 25}/bin/javac" -g --release 25 \
   -cp "$artifact:$acceptance_classpath" -d "$work_directory/consumer/classes" \
   "$root_directory"/src/acceptance/java/nl/hauntedmc/dungeons/acceptance/*.java
 "$JAVA_HOME/bin/jar" --create --file "$work_directory/paper/plugins/DungeonsAcceptance.jar" \
@@ -122,6 +122,17 @@ fi
 cp "$artifact" "$work_directory/paper/plugins/Dungeons.jar"
 cp "$root_directory/target/acceptance-plugins/DataProvider.jar" "$work_directory/paper/plugins/DataProvider.jar"
 cp "$root_directory/target/acceptance-plugins/DataRegistry.jar" "$work_directory/paper/plugins/DataRegistry.jar"
+cp "$root_directory/target/acceptance-plugins/ServerFeatures.jar" "$work_directory/paper/plugins/ServerFeatures.jar"
+mkdir -p "$work_directory/paper/plugins/ServerFeatures/features/PlayerPrivacy"
+printf 'enabled: false\n' >"$work_directory/paper/plugins/ServerFeatures/features/PlayerPrivacy/config.yml"
+cat >"$work_directory/paper/plugins/ServerFeatures/cluster.yml" <<'YAML'
+mode: standalone
+node-id: acceptance-dungeons
+YAML
+cat >"$work_directory/paper/plugins/ServerFeatures/config.yml" <<'YAML'
+global:
+  display_name: Dungeons Acceptance
+YAML
 printf 'Multi-Release: true\n\n' >"$work_directory/multi-release.mf"
 jar --update --file "$work_directory/paper/plugins/DataProvider.jar" --manifest "$work_directory/multi-release.mf" >/dev/null 2>&1
 mkdir -p "$work_directory/paper/plugins/DataProvider/databases" "$work_directory/paper/plugins/DataRegistry" "$work_directory/paper/plugins/Dungeons"
@@ -224,7 +235,9 @@ expect_database_failure=false
 start_server paper.log
 wait_for_log 'Enabling Dungeons'
 [[ -d "$work_directory/paper/plugins/Dungeons" ]] || fail 'Plugin did not initialize its data directory'
-wait_for_log "Loaded dungeon 'current-config' successfully"
+# This existing map deliberately has no repository marker: it loads for editing, with gameplay
+# disabled until explicitly initialized. Do not expect the enabled-dungeon success message.
+wait_for_log "Dungeon 'current-config' is disabled: repository metadata is missing or invalid"
 grep -Fq 'straightness: 0.8' "$current_map/config.yml" || fail 'Current generator configuration was not loaded'
 printf 'dungeon map maintenance current-config on Acceptance configuration mutations\n' >&"$paper_input_fd"
 wait_for_log 'Maintenance on for current-config'
