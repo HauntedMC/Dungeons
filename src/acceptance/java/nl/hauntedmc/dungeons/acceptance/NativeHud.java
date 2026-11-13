@@ -36,6 +36,10 @@ final class NativeHud {
         test.seedPlayer(id);
         var probe = new NativeHudPlayer(id);
         var player = probe.player;
+        player.addAttachment(test, "dungeons.staff.observe", true);
+        require(
+                player.hasPermission("dungeons.staff.observe"),
+                "HUD observer fixture lacks permission");
         var loader = registration.getPlugin().getClass().getClassLoader();
         var scoreboards =
                 loader.loadClass(
