@@ -60,6 +60,8 @@ final class NativeHudPlayer implements AutoCloseable {
         ((Map<String, Object>) field("playersByName"))
                 .put(player.getName().toLowerCase(java.util.Locale.ROOT), handle);
         ((List<Object>) field("players")).add(handle);
+        // Native admission normally sets this flag; Paper rejects recovery teleports without it.
+        handle.getClass().getField("valid").setBoolean(handle, true);
         AcceptancePlugin.require(player.isOnline(), "Native HUD probe is not online");
     }
 
@@ -97,6 +99,7 @@ final class NativeHudPlayer implements AutoCloseable {
             ((Map<?, ?>) field("playersByName"))
                     .remove(player.getName().toLowerCase(java.util.Locale.ROOT));
             ((List<?>) field("players")).remove(handle);
+            handle.getClass().getField("valid").setBoolean(handle, false);
             channel.getClass().getMethod("finishAndReleaseAll").invoke(channel);
         } catch (Exception failure) {
             throw new IllegalStateException(failure);
