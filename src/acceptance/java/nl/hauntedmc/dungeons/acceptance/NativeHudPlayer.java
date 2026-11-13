@@ -100,6 +100,8 @@ final class NativeHudPlayer implements AutoCloseable {
                     .remove(player.getName().toLowerCase(java.util.Locale.ROOT));
             ((List<?>) field("players")).remove(handle);
             handle.getClass().getField("valid").setBoolean(handle, false);
+            // Scoreboard teardown queues native writes; drain them before closing the sink.
+            actionBar();
             channel.getClass().getMethod("finishAndReleaseAll").invoke(channel);
         } catch (Exception failure) {
             throw new IllegalStateException(failure);
