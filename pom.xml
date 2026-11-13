@@ -59,6 +59,7 @@
         <project.build.outputTimestamp>2026-11-12T00:00:00Z</project.build.outputTimestamp>
         <haunted.featureframework.version>2.2.5</haunted.featureframework.version>
         <haunted.theme.version>1.2.5</haunted.theme.version>
+        <haunted.serverfeatures.version>5.4.7</haunted.serverfeatures.version>
         <reflections.version>0.10.2</reflections.version>
         <commons-io.version>2.22.0</commons-io.version>
         <commons-lang3.version>3.20.0</commons-lang3.version>
@@ -94,7 +95,7 @@
         <dependency>
             <groupId>nl.hauntedmc.serverfeatures</groupId>
             <artifactId>serverfeatures-api</artifactId>
-            <version>5.4.7</version>
+            <version>${haunted.serverfeatures.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -307,6 +308,13 @@
                                         <version>1.19.2</version><classifier>bundled</classifier><type>jar</type>
                                         <outputDirectory>${project.build.directory}/acceptance-plugins</outputDirectory>
                                         <destFileName>DataRegistry.jar</destFileName>
+                                    </artifactItem>
+                                    <artifactItem>
+                                        <groupId>nl.hauntedmc.serverfeatures</groupId>
+                                        <artifactId>serverfeatures</artifactId>
+                                        <version>${haunted.serverfeatures.version}</version><type>jar</type>
+                                        <outputDirectory>${project.build.directory}/acceptance-plugins</outputDirectory>
+                                        <destFileName>ServerFeatures.jar</destFileName>
                                     </artifactItem>
                                 </artifactItems></configuration>
                             </execution>
