@@ -68,6 +68,7 @@ final class NativeHudPlayer implements AutoCloseable {
     String actionBar() {
         try {
             channel.getClass().getMethod("runPendingTasks").invoke(channel);
+            channel.getClass().getMethod("flush").invoke(channel);
             Object packet;
             while ((packet = channel.getClass().getMethod("readOutbound").invoke(channel))
                     != null) {
