@@ -235,7 +235,9 @@ expect_database_failure=false
 start_server paper.log
 wait_for_log 'Enabling Dungeons'
 [[ -d "$work_directory/paper/plugins/Dungeons" ]] || fail 'Plugin did not initialize its data directory'
-wait_for_log "Loaded dungeon 'current-config' successfully"
+# This existing map deliberately has no repository marker: it loads for editing, with gameplay
+# disabled until explicitly initialized. Do not expect the enabled-dungeon success message.
+wait_for_log "Dungeon 'current-config' is disabled: repository metadata is missing or invalid"
 grep -Fq 'straightness: 0.8' "$current_map/config.yml" || fail 'Current generator configuration was not loaded'
 printf 'dungeon map maintenance current-config on Acceptance configuration mutations\n' >&"$paper_input_fd"
 wait_for_log 'Maintenance on for current-config'
