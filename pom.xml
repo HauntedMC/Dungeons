@@ -56,6 +56,8 @@
     <properties>
         <revision>1.5.4</revision>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- Isolate javac from Maven: the in-process JDK 25 compiler crashes on this test classpath. -->
+        <maven.compiler.fork>true</maven.compiler.fork>
         <project.build.outputTimestamp>2026-11-13T00:00:00Z</project.build.outputTimestamp>
         <haunted.featureframework.version>2.2.5</haunted.featureframework.version>
         <haunted.theme.version>1.2.5</haunted.theme.version>
