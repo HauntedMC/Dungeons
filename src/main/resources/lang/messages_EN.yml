@@ -19,17 +19,17 @@ commands:
   edit:
     start:
       points:
-        usage: '<HauntedMC:Info>/dungeon edit start add [name] | set [id] | list | tp <id> | remove <id>'
+        usage: '<HauntedMC:Text>/dungeon edit start add [name] | set [id] | list | tp <id> | remove <id>'
         branching: '<HauntedMC:Error>Branching dungeons use the generated first-room spawn.'
         added: '<HauntedMC:Success>Added spawnpoint {id}.'
         updated: '<HauntedMC:Success>Updated spawnpoint {id}.'
         removed: '<HauntedMC:Success>Removed spawnpoint {id}.'
         empty: '<HauntedMC:Warning>No spawnpoints configured; using the world spawn.'
-        header: '<HauntedMC:Info>{count} spawnpoints. Each instance picks one random start for all players.'
+        header: '<HauntedMC:Text>{count} spawnpoints. Each instance picks one random start for all players.'
         entry: '<HauntedMC:Text>{id}: {location}'
         invalid: '<HauntedMC:Error>{reason}'
       set:
-        usage: '<HauntedMC:Info>/dungeon edit start set [id]'
+        usage: '<HauntedMC:Text>/dungeon edit start set [id]'
         not-in-dungeon: '<HauntedMC:Error>Open a dungeon editor first.'
         not-editing: '<HauntedMC:Error>You are not editing a dungeon.'
         success: '<HauntedMC:Success>First spawnpoint set to {x}, {y}, {z} with yaw {yaw}.'
@@ -74,7 +74,7 @@ commands:
       - '<HauntedMC:Success>/dungeon team info <HauntedMC:Text>| <HauntedMC:Warning>Show your current team.'
 
 repository:
-  started: '<HauntedMC:Info>Repository operation started.'
+  started: '<HauntedMC:Text>Repository operation started.'
   failed: '<HauntedMC:Error>Repository operation failed: {detail}'
 
 mechanic-editor:

@@ -114,7 +114,7 @@
         <dependency>
             <groupId>nl.hauntedmc.dataprovider</groupId>
             <artifactId>dataprovider-api</artifactId>
-            <version>3.5.2</version>
+            <version>3.5.3</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -162,7 +162,7 @@
         <dependency>
             <groupId>nl.hauntedmc.dataprovider</groupId>
             <artifactId>dataprovider-core</artifactId>
-            <version>3.5.2</version>
+            <version>3.5.3</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -300,7 +300,7 @@
                                     <artifactItem>
                                         <groupId>nl.hauntedmc.dataprovider</groupId>
                                         <artifactId>dataprovider-platform-paper</artifactId>
-                                        <version>3.5.2</version><classifier>bundled</classifier><type>jar</type>
+                                        <version>3.5.3</version><classifier>bundled</classifier><type>jar</type>
                                         <outputDirectory>${project.build.directory}/acceptance-plugins</outputDirectory>
                                         <destFileName>DataProvider.jar</destFileName>
                                     </artifactItem>

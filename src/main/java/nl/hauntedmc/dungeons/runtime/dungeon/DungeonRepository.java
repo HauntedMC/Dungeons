@@ -241,10 +241,11 @@ public final class DungeonRepository {
 
             this.loadFailures.remove(folder.getName());
 
-            this.runtime
-                    .environment()
-                    .logger()
-                    .info("Loaded dungeon '{}' successfully.", dungeon.getWorldName());
+            if (dungeon.isRepositoryInitialized())
+                this.runtime
+                        .environment()
+                        .logger()
+                        .info("Loaded dungeon '{}' successfully.", dungeon.getWorldName());
 
             return dungeon;
 

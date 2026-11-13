@@ -285,7 +285,7 @@ for Paper conversion. Current dimension templates keep their flat terrain layout
 
 - Java 25
 - Paper 26.x
-- DataProvider 3.5.2 and DataRegistry 1.19.2, configured with MySQL
+- DataProvider 3.5.3 and DataRegistry 1.19.2, configured with MySQL
 
 ## Build From Source
 
