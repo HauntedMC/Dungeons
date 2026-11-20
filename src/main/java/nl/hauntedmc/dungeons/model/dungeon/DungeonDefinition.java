@@ -1010,12 +1010,20 @@ public abstract class DungeonDefinition {
     }
 
     public void setExit(@Nullable Location exitLoc) {
+        if (exitLoc != null) {
+            var world = exitLoc.getWorld();
+            if (world == null
+                    || this.activeInstances() != null
+                            && this.activeInstances().getDungeonInstance(world.getName()) != null)
+                throw new IllegalArgumentException(
+                        "Set the exit from a permanent world using /dungeon map settings "
+                                + this.worldName
+                                + " set exit-location here");
+        }
         this.exitLoc = exitLoc;
         if (exitLoc == null) {
             this.config.set("locations.exit", null);
         } else {
-            Location target = exitLoc.clone();
-            target.setWorld(null);
             LocationUtils.writeExternalLocation("locations.exit", this.config, exitLoc);
         }
         this.saveConfig();

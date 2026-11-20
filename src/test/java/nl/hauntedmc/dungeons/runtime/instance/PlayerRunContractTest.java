@@ -72,6 +72,17 @@ class PlayerRunContractTest {
     }
 
     @Test
+    void anInstanceWorldCannotBeSavedAsAPermanentExit() throws Exception {
+        try (var f = new RunFixture(directory, settings())) {
+            f.paper.runtime.activeInstances().registerActiveInstance(f.run);
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> f.dungeon.setExit(new Location(f.world, 0, 70, 0)));
+            assertNull(f.dungeon.getExitLoc());
+        }
+    }
+
+    @Test
     void acceptedDepartureUsesTheConfiguredExitWhileCancelledDepartureKeepsTheReturnPosition()
             throws Exception {
         for (boolean useExit : List.of(false, true)) {
