@@ -998,6 +998,7 @@ experience:
   ui-revive-title: 'Revive een teamgenoot'
   ui-hud-difficulty: '<HauntedMC:Muted>Difficulty  <HauntedMC:Text>{value}'
   ui-hud-remaining: "<HauntedMC:Muted>Tijd over  <HauntedMC:Text>{value}"
+  ui-hud-run-time: "<HauntedMC:Muted>Runtijd  <HauntedMC:Text>{value}"
   ui-hud-elapsed: "<HauntedMC:Muted>Verstreken  <HauntedMC:Text>{value}"
   ui-hud-lives: "<HauntedMC:Muted>Levens  <HauntedMC:Text>{value}"
   ui-hud-party: '<HauntedMC:Muted>Team  <HauntedMC:Text>{value}'

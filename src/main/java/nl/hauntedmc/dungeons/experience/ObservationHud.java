@@ -13,10 +13,8 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import nl.hauntedmc.dungeons.api.DungeonExperienceApi;
 import nl.hauntedmc.dungeons.localization.LangUtils;
-import nl.hauntedmc.dungeons.presentation.DungeonUi;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
-import nl.hauntedmc.featureframework.hud.HudFrame;
 import nl.hauntedmc.featureframework.hud.HudService;
 import nl.hauntedmc.featureframework.lifecycle.CleanupSequence;
 import org.bukkit.Bukkit;
@@ -89,20 +87,22 @@ final class ObservationHud implements AutoCloseable {
                 leases.put(id, lease);
             }
             lease.renew(Duration.ofSeconds(10));
-            var lines = new ArrayList<Component>();
-            lines.add(
-                    Component.text("● ", NamedTextColor.AQUA)
-                            .append(LangUtils.component("experience.ui-observing", player, false)));
-            lines.add(Component.empty());
-            lines.add(Component.text("/dungeon leave", NamedTextColor.GRAY));
-            String profile = policy.profile(session.experiencePreference("profile", "inherit"));
+            var board =
+                    new DungeonSidebar(
+                            policy,
+                            player,
+                            instance.getDungeon().getDisplayNameComponent(),
+                            Component.text("● ", NamedTextColor.AQUA)
+                                    .append(
+                                            LangUtils.component(
+                                                    "experience.ui-observing", player, false)));
+            board.runDetails(instance);
+            board.row("leave", Component.text("/dungeon leave", NamedTextColor.GRAY));
             lease.update(
-                    profile.equals("immersive")
+                    policy.profile(session.experiencePreference("profile", "inherit"))
+                                    .equals("immersive")
                             ? null
-                            : new HudFrame.Sidebar(
-                                    DungeonUi.heading(
-                                            instance.getDungeon().getDisplayNameComponent()),
-                                    lines));
+                            : board.frame());
         }
         for (UUID id : new ArrayList<>(leases.keySet())) if (!seen.contains(id)) release(id);
     }

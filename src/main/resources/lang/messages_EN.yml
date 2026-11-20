@@ -166,6 +166,7 @@ experience:
   ui-revive-title: "Revive a teammate"
   ui-hud-difficulty: "<HauntedMC:Muted>Difficulty  <HauntedMC:Text>{value}"
   ui-hud-remaining: "<HauntedMC:Muted>Time left  <HauntedMC:Text>{value}"
+  ui-hud-run-time: "<HauntedMC:Muted>Run time  <HauntedMC:Text>{value}"
   ui-hud-elapsed: "<HauntedMC:Muted>Elapsed  <HauntedMC:Text>{value}"
   ui-hud-lives: "<HauntedMC:Muted>Lives  <HauntedMC:Text>{value}"
   ui-hud-party: "<HauntedMC:Muted>Party  <HauntedMC:Text>{value}"

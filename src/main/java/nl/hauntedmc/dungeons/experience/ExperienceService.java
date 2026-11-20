@@ -379,35 +379,6 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
         return DungeonUi.action(text(player, label).color(color), command, color);
     }
 
-    private void line(Map<String, Component> widgets, Player player, String key, Object value) {
-        Component valueText =
-                value instanceof Component component
-                        ? component
-                        : Component.text(String.valueOf(value));
-        if (key.equals("state")) {
-            widgets.put(key, valueText);
-        } else {
-            widgets.put(
-                    key,
-                    Component.text(
-                                    switch (key) {
-                                        case "lives" -> "♥ ";
-                                        case "remaining", "elapsed" -> "◷ ";
-                                        case "respawn" -> "⚑ ";
-                                        default -> "› ";
-                                    },
-                                    key.equals("lives")
-                                            ? NamedTextColor.RED
-                                            : NamedTextColor.DARK_AQUA)
-                            .append(
-                                    text(
-                                            player,
-                                            "ui-hud-" + key,
-                                            "value",
-                                            valueText.color(NamedTextColor.WHITE))));
-        }
-    }
-
     private HudService.Lease channel(
             Player player, Participation state, HudService.Channel channel) {
         var lease = state.channels.get(channel);
@@ -431,18 +402,22 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
         boolean balanced = profile.equals("balanced"), immersive = profile.equals("immersive");
         var run = runs.get(instance);
         if (enabled(instance, "channels.sidebar", true)) {
-            var widgetRows = new LinkedHashMap<String, Component>();
             if (!immersive) {
-                line(widgetRows, player, "state", runState(player, state));
-                if (instance.getDifficulty() != null)
-                    line(widgetRows, player, "difficulty", instance.getDifficulty().getNamespace());
+                var board =
+                        new DungeonSidebar(
+                                presentation(instance),
+                                player,
+                                instance.getDungeon().getDisplayNameComponent(),
+                                runState(player, state));
+                board.placeholder("state", text(player, stateName(player, state)));
+                board.runDetails(instance);
                 if (run != null
                         && (balanced
                                 || setting(instance, "widgets.stage", "auto").equals("shown"))) {
                     for (var track : run.definition().tracks().values()) {
                         var stage = run.progress().currentStage(track, player.getUniqueId());
                         if (stage != null) {
-                            widgetRows.put("stage", LangUtils.trusted(stage.title()));
+                            board.row("stage", LangUtils.trusted(stage.title()));
                             break;
                         }
                     }
@@ -452,36 +427,21 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                                 || setting(instance, "widgets.objective", "auto")
                                         .equals("shown"))) {
                     currentObjective(run, state, player)
-                            .ifPresent(objective -> widgetRows.put("objective", objective));
+                            .ifPresent(objective -> board.row("objective", objective));
                 }
-                if (instance.getConfig().getInt("runs.time_limit_minutes", 0) > 0
-                        && !setting(instance, "widgets.remaining", "auto").equals("hidden"))
-                    line(widgetRows, player, "remaining", clock(instance.getTimeLeft()));
-                String elapsedVisibility = setting(instance, "widgets.elapsed", "auto");
-                if (elapsedVisibility.equals("shown")
-                        || elapsedVisibility.equals("auto")
-                                && instance.isStarted()
-                                && instance.getConfig().getInt("runs.time_limit_minutes", 0) == 0)
-                    line(
-                            widgetRows,
-                            player,
-                            "elapsed",
-                            clock(instance.getTimeElapsed() - state.entered));
-                Integer lives = instance.getPlayerLives().get(player.getUniqueId());
-                if (lives != null && !setting(instance, "widgets.lives", "auto").equals("hidden"))
-                    line(widgetRows, player, "lives", lives);
-                else if (setting(instance, "widgets.lives", "auto").equals("shown"))
-                    line(widgetRows, player, "lives", text(player, "unlimited"));
-                long count =
-                        instance.getPlayers().stream()
-                                .filter(
-                                        member ->
-                                                member.getPlayer() == player
-                                                        || player.canSee(member.getPlayer()))
-                                .count();
-                if ((count > 1 || setting(instance, "widgets.party", "auto").equals("shown"))
-                        && !setting(instance, "widgets.party", "auto").equals("hidden"))
-                    line(widgetRows, player, "party", count);
+                if (instance.isLivesEnabled())
+                    board.metric(
+                            "lives",
+                            instance.getPlayerLives()
+                                    .getOrDefault(
+                                            player.getUniqueId(),
+                                            instance.getConfig().getInt("players.lives")));
+                else board.placeholder("lives", text(player, "unlimited"));
+                var team =
+                        runtime.hasTeamService()
+                                ? runtime.teamService().getTeam(player.getUniqueId())
+                                : null;
+                if (team != null) board.metric("party", team.size());
                 var respawn = session.getDungeonRespawn();
                 String visibility = setting(instance, "widgets.respawn", "auto");
                 if (respawn != null && !visibility.equals("hidden")) {
@@ -494,58 +454,11 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                     if (visibility.equals("shown")
                             || presentation(instance).rows().isPresent()
                             || balanced && checkpoint)
-                        line(
-                                widgetRows,
-                                player,
-                                "respawn",
-                                text(player, checkpoint ? "checkpoint" : "spawn"));
+                        board.metric("respawn", text(player, checkpoint ? "checkpoint" : "spawn"));
                 }
-                for (String key : List.of("help", "leave")) {
-                    if (presentation(instance).rows().isPresent()
-                            || setting(instance, "widgets." + key, "auto").equals("shown"))
-                        widgetRows.put(
-                                key,
-                                key.equals("help")
-                                        ? text(player, "ui-hud-tip").color(NamedTextColor.GRAY)
-                                        : Component.text("/dungeon leave", NamedTextColor.GRAY));
-                }
-            }
-            Map<String, Object> substitutions = new LinkedHashMap<>();
-            substitutions.put("dungeon", instance.getDungeon().getDisplayNameComponent());
-            substitutions.put(
-                    "difficulty",
-                    instance.getDifficulty() == null
-                            ? ""
-                            : instance.getDifficulty().getNamespace());
-            substitutions.put("state", text(player, stateName(player, state)));
-            substitutions.put(
-                    "time_left",
-                    instance.getConfig().getInt("runs.time_limit_minutes", 0) > 0
-                            ? clock(instance.getTimeLeft())
-                            : "");
-            substitutions.put("elapsed", clock(instance.getTimeElapsed() - state.entered));
-            substitutions.put(
-                    "lives",
-                    instance.getPlayerLives().containsKey(player.getUniqueId())
-                            ? instance.getPlayerLives().get(player.getUniqueId())
-                            : text(player, "unlimited"));
-            for (String key : List.of("stage", "objective", "party", "respawn"))
-                substitutions.put(key, widgetRows.getOrDefault(key, Component.empty()));
-            String titleTemplate = setting(instance, "sidebar.title", "");
-            Component sidebarTitle =
-                    titleTemplate.isBlank()
-                            ? instance.getDungeon()
-                                    .getDisplayNameComponent()
-                                    .decorate(TextDecoration.BOLD)
-                            : LangUtils.trusted(titleTemplate, substitutions);
-            channel(player, state, HudService.Channel.SIDEBAR)
-                    .update(
-                            immersive
-                                    ? null
-                                    : new HudFrame.Sidebar(
-                                            sidebarTitle,
-                                            presentation(instance)
-                                                    .layout(widgetRows, substitutions)));
+                sidebarActions(board, presentation(instance), player);
+                channel(player, state, HudService.Channel.SIDEBAR).update(board.frame());
+            } else channel(player, state, HudService.Channel.SIDEBAR).update(null);
         } else closeChannel(state, HudService.Channel.SIDEBAR);
         if (enabled(instance, "channels.actionbar", true))
             channel(player, state, HudService.Channel.ACTION_BAR)
@@ -597,6 +510,14 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
         }
     }
 
+    private void sidebarActions(
+            DungeonSidebar board, ExperiencePresentation policy, Player player) {
+        if (policy.rows().isPresent() || policy.text().get("widgets.help").equals("shown"))
+            board.row("help", text(player, "ui-hud-tip").color(NamedTextColor.GRAY));
+        if (policy.rows().isPresent() || policy.text().get("widgets.leave").equals("shown"))
+            board.row("leave", Component.text("/dungeon leave", NamedTextColor.GRAY));
+    }
+
     private HudFrame.ActionBar navigation(
             Player player, DungeonPlayerSession session, Participation state, ExperienceRun run) {
         if (session.experiencePreference("navigation", "false").equals("true")
@@ -628,7 +549,7 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
         return null;
     }
 
-    private static String clock(int seconds) {
+    static String clock(int seconds) {
         return "%d:%02d".formatted(Math.max(0, seconds) / 60, Math.max(0, seconds) % 60);
     }
 
@@ -1282,6 +1203,7 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
         }
         var lines = new ArrayList<Component>();
         lines.add(Component.text("● ", NamedTextColor.AQUA).append(text(player, "playing")));
+        lines.add(text(player, "ui-hud-run-time", "value", clock(0)));
         int time = dungeon.getConfig().getInt("runs.time_limit_minutes", 0);
         int lives = dungeon.getConfig().getInt("players.lives", 0);
         if (time > 0) lines.add(text(player, "ui-hud-remaining", "value", clock(time * 60)));

@@ -28,12 +28,13 @@ public record ExperiencePresentation(
                     "leave");
     private static final List<String> DEFAULT_ROWS =
             List.of(
-                    "state",
                     "difficulty",
+                    "state",
                     "stage",
                     "objective",
-                    "remaining",
+                    "",
                     "elapsed",
+                    "remaining",
                     "lives",
                     "party",
                     "respawn",
