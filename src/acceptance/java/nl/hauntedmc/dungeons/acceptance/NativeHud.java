@@ -219,6 +219,38 @@ final class NativeHud {
                         })
                 .thenCompose(
                         ignored -> {
+                            var before = player.getOpenInventory().getTopInventory();
+                            var session = test.runtime().playerSessions().get(player);
+                            boolean wasOn =
+                                    Boolean.parseBoolean(
+                                            session.experiencePreference("navigation", "false"));
+                            require(
+                                    Boolean.valueOf(wasOn)
+                                            .equals(
+                                                    before.getItem(24)
+                                                            .getItemMeta()
+                                                            .getEnchantmentGlintOverride()),
+                                    "Navigation icon did not match the saved preference");
+                            click(player, 24);
+                            return test.await(
+                                    "Navigation icon reflects the new preference",
+                                    () -> {
+                                        var after = player.getOpenInventory().getTopInventory();
+                                        return after != before
+                                                && after.getSize() == 36
+                                                && Boolean.toString(!wasOn)
+                                                        .equals(
+                                                                session.experiencePreference(
+                                                                        "navigation", "false"))
+                                                && Boolean.valueOf(!wasOn)
+                                                        .equals(
+                                                                after.getItem(24)
+                                                                        .getItemMeta()
+                                                                        .getEnchantmentGlintOverride());
+                                    });
+                        })
+                .thenCompose(
+                        ignored -> {
                             click(player, 28);
                             return test.await(
                                     "HUD settings return to guide",

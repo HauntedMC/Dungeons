@@ -1654,6 +1654,7 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                                 icons.get(i),
                                 on ? "ui-switch-on" : "ui-switch-off",
                                 on ? NamedTextColor.GREEN : NamedTextColor.GRAY);
+                button.setEnchanted(on);
                 button.addAction(
                         toggle,
                         event -> {
