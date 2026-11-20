@@ -208,7 +208,6 @@ experience:
   ui-leave-short: 'Leave'
   ui-status-action: 'Status'
   ui-cancel-action: 'Cancel'
-  ui-report-action: 'Run details'
   ui-info-action: 'Dungeon info'
   ui-replay-action: 'Play again'
   ui-hud-heading: 'HUD preferences'
@@ -325,7 +324,6 @@ experience:
   death-spectator: "<HauntedMC:Warning> ! Your lives are exhausted. You are now spectating. /dungeon guide · /dungeon leave"
   death-eliminated: "<HauntedMC:Error> ! Your lives are exhausted. You are leaving this dungeon."
   objective-revealed: "<HauntedMC:Accent> ◆ New objective discovered: {value}"
-  report-details: "<HauntedMC:Text>[Run details]"
   dungeon-info: "<HauntedMC:Text>[Dungeon info]"
   play-again: "<HauntedMC:Text>[Play again]"
   checkpoint-activated: "<HauntedMC:Accent> ◆ Respawn checkpoint activated."

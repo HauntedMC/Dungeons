@@ -1040,7 +1040,6 @@ experience:
   ui-leave-short: 'Verlaten'
   ui-status-action: 'Status'
   ui-cancel-action: 'Annuleren'
-  ui-report-action: 'Details'
   ui-info-action: 'Dungeoninfo'
   ui-replay-action: 'Opnieuw spelen'
   ui-hud-heading: 'HUD-voorkeuren'
@@ -1157,7 +1156,6 @@ experience:
   death-spectator: '<HauntedMC:Warning> ! Je levens zijn op. Je zit nu in Spectator Mode. /dungeon guide · /dungeon leave'
   death-eliminated: "<HauntedMC:Error> ! Je levens zijn op. Je verlaat deze dungeon."
   objective-revealed: '<HauntedMC:Accent> ◆ Nieuw objective · {value}'
-  report-details: "<HauntedMC:Text>[Runverslag]"
   dungeon-info: "<HauntedMC:Text>[Dungeoninformatie]"
   play-again: "<HauntedMC:Text>[Opnieuw spelen]"
   checkpoint-activated: '<HauntedMC:Accent> ◆ Checkpoint geactiveerd.'

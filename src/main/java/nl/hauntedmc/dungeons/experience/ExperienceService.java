@@ -109,7 +109,6 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
     private final Map<UUID, Exit> exits = new HashMap<>();
     private final ExperienceSubscriptions subscriptions =
             new ExperienceSubscriptions(ExperienceService::requireThread);
-    private final Map<UUID, List<Component>> reports = new HashMap<>();
     private final HudCoordinator standalone =
             new HudCoordinator(
                     new StandaloneHudRenderer(),
@@ -367,7 +366,6 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                     case "guide" -> "ui-guide-action";
                     case "leave" -> "ui-leave-short";
                     case "cancel" -> "ui-cancel-action";
-                    case "report-details" -> "ui-report-action";
                     case "dungeon-info" -> "ui-info-action";
                     case "play-again" -> "ui-replay-action";
                     default -> key;
@@ -851,28 +849,29 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
     }
 
     public void departed(PlayableInstance instance, DungeonPlayerSession session) {
-        UUID id = session.getPlayer().getUniqueId();
+        Player player = session.getPlayer();
+        UUID id = player.getUniqueId();
         var state = players.get(id);
         if (state == null || state.instance != instance) return;
         players.remove(id);
         release(state);
         exits.remove(id);
+        if (!player.isOnline()) return;
+
         var report = new ArrayList<Component>();
         report.add(
                 DungeonUi.heading(
                         DungeonUi.join(
                                 instance.getDungeon().getDisplayNameComponent(),
-                                text(session.getPlayer(), "ui-run-summary")
-                                        .color(NamedTextColor.GRAY))));
-        if (state.outcome != null) report.add(runState(session.getPlayer(), state));
+                                text(player, "ui-run-summary").color(NamedTextColor.GRAY))));
+        if (state.outcome != null) report.add(runState(player, state));
         report.add(
                 DungeonUi.join(
                         stat(
-                                session.getPlayer(),
+                                player,
                                 "elapsed",
                                 Component.text(clock(instance.getTimeElapsed() - state.entered))),
-                        stat(session.getPlayer(), "deaths", Component.text(state.lostLives))));
-        int summarySize = report.size();
+                        stat(player, "deaths", Component.text(state.lostLives))));
         var mechanics = runs.get(instance);
         if (mechanics != null) {
             long completed =
@@ -885,16 +884,15 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                                                             .completed(goal.id(), id))
                             .count();
             if (!mechanics.definition().objectives().isEmpty())
-                report.add(text(session.getPlayer(), "objectives-finished", "value", completed));
-            if (state.kills > 0)
-                report.add(text(session.getPlayer(), "tracked-kills", "value", state.kills));
+                report.add(text(player, "objectives-finished", "value", completed));
+            if (state.kills > 0) report.add(text(player, "tracked-kills", "value", state.kills));
         }
         report.addAll(state.rewards);
-        var cooldown = instance.getDungeon().getAccessCooldown(session.getPlayer());
+        var cooldown = instance.getDungeon().getAccessCooldown(player);
         if (cooldown != null)
             report.add(
                     text(
-                            session.getPlayer(),
+                            player,
                             "next-entry",
                             "value",
                             clock(
@@ -907,33 +905,23 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                                                                             - System
                                                                                     .currentTimeMillis())
                                                             / 1000))));
-        reports.put(id, List.copyOf(report));
-        if (session.getPlayer().isOnline()) {
-            Player player = session.getPlayer();
-            showReport(player, report.subList(0, summarySize));
-            String map = instance.getDungeon().getWorldName();
-            String difficulty =
-                    instance.getDifficulty() == null
-                                    || !player.hasPermission("dungeons.play.difficulty")
-                            ? ""
-                            : " " + instance.getDifficulty().getNamespace();
-            player.sendMessage(
-                    DungeonUi.detail(
-                            DungeonUi.join(
-                                    report.size() > summarySize
-                                            ? action(player, "report-details", "/dungeon status")
-                                            : Component.empty(),
-                                    action(player, "dungeon-info", "/dungeon info " + map),
-                                    action(
-                                            player,
-                                            "play-again",
-                                            "/dungeon play " + map + difficulty))));
-        }
-    }
-
-    private void showReport(Player player, List<Component> report) {
         player.sendMessage(report.getFirst());
         report.stream().skip(1).forEach(line -> player.sendMessage(DungeonUi.detail(line)));
+
+        String map = instance.getDungeon().getWorldName();
+        String difficulty =
+                instance.getDifficulty() == null
+                                || !player.hasPermission("dungeons.play.difficulty")
+                        ? ""
+                        : " " + instance.getDifficulty().getNamespace();
+        player.sendMessage(
+                DungeonUi.detail(
+                        DungeonUi.join(
+                                action(player, "dungeon-info", "/dungeon info " + map),
+                                action(
+                                        player,
+                                        "play-again",
+                                        "/dungeon play " + map + difficulty))));
     }
 
     public void dispose(PlayableInstance instance) {
@@ -1385,9 +1373,7 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                 player.sendMessage(DungeonUi.detail(DungeonUi.join(details)));
                 return true;
             }
-            var report = reports.get(player.getUniqueId());
-            if (report != null && command.equals("status")) showReport(player, report);
-            else notify(player, "not-participating", null);
+            notify(player, "not-participating", null);
             return true;
         }
         var run = runs.get(state.instance);
@@ -2154,7 +2140,6 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
         }
         var preview = previews.remove(event.getPlayer().getUniqueId());
         if (preview != null) preview.close();
-        reports.remove(event.getPlayer().getUniqueId());
         exits.remove(event.getPlayer().getUniqueId());
         var window =
                 runtime.guiService().getWindow("experience_" + event.getPlayer().getUniqueId());
@@ -2215,7 +2200,6 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
         previews.clear();
         waiting.clear();
         exits.clear();
-        reports.clear();
         CleanupSequence.run(steps);
     }
 }
