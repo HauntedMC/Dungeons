@@ -942,6 +942,7 @@ public final class RepoService implements AutoCloseable {
         return submit(
                 () -> {
                     var lines = new ArrayList<String>();
+                    var changes = new ArrayList<String>();
                     lines.add(catalogHealth());
                     for (var target : targets) {
                         UUID op = UUID.randomUUID();
@@ -970,7 +971,10 @@ public final class RepoService implements AutoCloseable {
                                                     : !remote.head().id().equals(local.releaseId())
                                                             ? " BEHIND " + remote.head().version()
                                                             : " UP TO DATE"));
-                            if (diff && local.releaseId() != null) {
+                            if (diff && local.releaseId() == null) {
+                                lines.add(
+                                        "Publish the draft before comparing it against a release");
+                            } else if (diff) {
                                 var base = store.published(local.releaseId());
                                 if (base == null || !base.dungeon().equals(target.id()))
                                     throw new IOException("Base release missing");
@@ -978,10 +982,10 @@ public final class RepoService implements AutoCloseable {
                                 for (var item : store.manifest(base)) before.put(item.path(), item);
                                 for (var item : snapshot.items()) {
                                     var old = before.remove(item.path());
-                                    if (old == null) lines.add("+ " + item.path());
-                                    else if (!old.equals(item)) lines.add("~ " + item.path());
+                                    if (old == null) changes.add("+ " + item.path());
+                                    else if (!old.equals(item)) changes.add("~ " + item.path());
                                 }
-                                before.keySet().forEach(path -> lines.add("- " + path));
+                                before.keySet().forEach(path -> changes.add("- " + path));
                             }
                         } catch (IOException | IllegalArgumentException invalid) {
                             lines.add(target.name() + " INVALID: " + invalid.getMessage());
@@ -990,21 +994,8 @@ public final class RepoService implements AutoCloseable {
                         }
                     }
                     if (diff) {
-                        var output = new ArrayList<String>();
-                        output.add(lines.getFirst());
-                        if (lines.size() > 1) output.add(lines.get(1));
-                        output.addAll(
-                                lines.stream()
-                                        .skip(2L + (long) (page - 1) * 20)
-                                        .limit(20)
-                                        .toList());
-                        output.add(
-                                "Diff page "
-                                        + page
-                                        + "; "
-                                        + Math.max(0, lines.size() - 2)
-                                        + " changed paths");
-                        return List.copyOf(output);
+                        changes.stream().skip((long) (page - 1) * 20).limit(20).forEach(lines::add);
+                        lines.add("Diff page " + page + "; " + changes.size() + " changed paths");
                     }
                     return List.copyOf(lines);
                 });
