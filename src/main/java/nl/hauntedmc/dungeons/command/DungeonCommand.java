@@ -412,7 +412,11 @@ public final class DungeonCommand implements TabExecutor {
             } else if (next.equals("<bump>")) {
                 suggestions.addAll(List.of("major", "minor", "patch"));
             } else if (next.equals("<player>")) {
-                Bukkit.getOnlinePlayers().forEach(player -> suggestions.add(player.getName()));
+                for (var candidate : Bukkit.getOnlinePlayers()) {
+                    if (route.handler() != CommandRoutes.Handler.TEAM
+                            || !(sender instanceof Player player)
+                            || player.canSee(candidate)) suggestions.add(candidate.getName());
+                }
             } else if (next.equals("<difficulty>") && values.containsKey("map")) {
                 var dungeon = this.dungeonManager.get(values.get("map").getFirst());
                 if (dungeon != null

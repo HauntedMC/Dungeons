@@ -84,8 +84,8 @@ final class TeamCommandHandler implements CommandHandler {
             return true;
         }
 
-        Player target = Bukkit.getPlayer(args[2]);
-        if (target == null || !target.isOnline()) {
+        Player target = Bukkit.getPlayerExact(args[2]);
+        if (target == null || !target.isOnline() || !player.canSee(target)) {
             LangUtils.sendMessage(
                     player,
                     "commands.play.player-not-found",
@@ -103,7 +103,7 @@ final class TeamCommandHandler implements CommandHandler {
             return true;
         }
 
-        Player target = Bukkit.getPlayer(args[2]);
+        Player target = Bukkit.getPlayerExact(args[2]);
         if (target == null || !target.isOnline()) {
             LangUtils.sendMessage(
                     player,
@@ -122,7 +122,7 @@ final class TeamCommandHandler implements CommandHandler {
             return true;
         }
 
-        Player target = Bukkit.getPlayer(args[2]);
+        Player target = Bukkit.getPlayerExact(args[2]);
         if (target == null || !target.isOnline()) {
             LangUtils.sendMessage(
                     player,
