@@ -1096,6 +1096,10 @@ public abstract class DungeonDefinition {
         return LangUtils.trusted(this.displayName);
     }
 
+    public boolean isConfiguredEnabled() {
+        return this.enabled;
+    }
+
     public boolean isEnabled() {
         return this.enabled
                 && this.repositoryInitialized

@@ -325,28 +325,52 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
         }
 
         StaffPermissions.require(sender, "edit", dungeon.getWorldName());
-        if (dungeon.isEnabled() == enabled) {
+        String name = dungeon.getWorldName();
+        var ops = dungeon.getRuntime().staffOperations();
+        if (ops != null) ops.requireContentWritable(name);
+        String reason = String.join(" ", Arrays.copyOfRange(args, 2, args.length));
+        StaffOperations.requireReason(reason);
+        boolean changed = dungeon.isConfiguredEnabled() != enabled;
+        if (changed) {
+            dungeon.setSaveConfig("dungeon.enabled", enabled);
+            if (ops != null)
+                ops.audit(sender, enabled ? "enable" : "disable", name, reason, "updated");
+        }
+        if (enabled && !dungeon.isRepositoryInitialized()) {
+            LangUtils.sendRaw(
+                    sender,
+                    "Initialize this map with /dungeon repo init " + name + " before playing.");
+            return true;
+        }
+        if (enabled && ops != null && ops.mapMaintenance(name)) {
+            if (!StaffPermissions.allows(sender, "maintenance", name)) {
+                LangUtils.sendRaw(
+                        sender,
+                        "Map maintenance is on. Ask an administrator to run /dungeon map maintenance "
+                                + name
+                                + " off.");
+                return true;
+            }
+            ops.maintenance(sender, name, false, reason);
+            changed = true;
+        }
+        if (enabled && ops != null && ops.maintenance(name)) {
+            LangUtils.sendRaw(
+                    sender,
+                    "Server maintenance is on. Resume admissions with /dungeon server maintenance off.");
+            return true;
+        }
+        if (!changed) {
             LangUtils.sendMessage(
                     sender,
                     enabled
                             ? "commands.dungeon.enable.already-enabled"
                             : "commands.dungeon.disable.already-disabled",
-                    LangUtils.placeholder("dungeon", dungeon.getWorldName()));
+                    LangUtils.placeholder("dungeon", name));
             return true;
         }
+        if (enabled) dungeon.refreshRuntimeSettings();
 
-        String reason = String.join(" ", Arrays.copyOfRange(args, 2, args.length));
-        StaffOperations.requireReason(reason);
-        dungeon.setSaveConfig("dungeon.enabled", enabled);
-        if (dungeon.getRuntime().staffOperations() != null)
-            dungeon.getRuntime()
-                    .staffOperations()
-                    .audit(
-                            sender,
-                            enabled ? "enable" : "disable",
-                            dungeon.getWorldName(),
-                            reason,
-                            "updated");
         if (!enabled) {
             this.clearQueuedStartsForDisabledDungeon(dungeon);
             if (dungeon.getRuntime().staffOperations() != null)

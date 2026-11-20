@@ -210,6 +210,10 @@ public final class StaffOperations implements AutoCloseable {
                 || state.contains("maintenance." + dungeon);
     }
 
+    public boolean mapMaintenance(String dungeon) {
+        return state.contains("maintenance." + dungeon);
+    }
+
     public String maintenanceReason(String dungeon) {
         return state.getString(
                 "maintenance." + dungeon, state.getString("maintenance.all", "Maintenance"));
