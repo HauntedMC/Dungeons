@@ -124,11 +124,6 @@ public final class DungeonCommand implements TabExecutor {
             return true;
         }
 
-        if (!this.isConsoleFriendly() && !(sender instanceof Player)) {
-            LangUtils.sendMessage(sender, "general.errors.players-only");
-            return true;
-        }
-
         try {
             if (!RuntimeContext.runtime().database().ready())
                 throw new IllegalArgumentException("Dungeons database is unavailable");
@@ -192,6 +187,10 @@ public final class DungeonCommand implements TabExecutor {
                     && !route.operation().startsWith("restrict "))
                 throw new IllegalArgumentException(
                         "Select one dungeon. Use /dungeon help server for server-wide commands.");
+            if (route.playerOnly() && !(sender instanceof Player)) {
+                LangUtils.sendMessage(sender, "general.errors.players-only");
+                return true;
+            }
             if (!this.allowed(sender, route, values)) {
                 LangUtils.sendMessage(sender, "general.errors.no-permission");
                 return true;
@@ -309,7 +308,9 @@ public final class DungeonCommand implements TabExecutor {
         var lines = new LinkedHashSet<String>();
         for (var route : CommandRoutes.ALL) {
             String[] pattern = route.syntax().split(" ");
-            if (path.length > pattern.length) continue;
+            if (path.length > pattern.length
+                    || !sender.hasPermission(this.getPermissionNode()) && !selfControl(pattern[0]))
+                continue;
             var values = new LinkedHashMap<String, List<String>>();
             boolean matches = true;
             for (int index = 0; index < path.length; index++) {
@@ -344,9 +345,14 @@ public final class DungeonCommand implements TabExecutor {
         var suggestions = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
         if (args.length == 0) return List.of();
         if (args.length == 1) suggestions.add("help");
+        if (!sender.hasPermission(this.getPermissionNode())) {
+            if (args.length > 1 && !selfControl(args[0])) return List.of();
+        }
         for (var route : CommandRoutes.ALL) {
             String[] pattern = route.syntax().split(" ");
-            if (args.length > pattern.length) continue;
+            if (args.length > pattern.length
+                    || !sender.hasPermission(this.getPermissionNode()) && !selfControl(pattern[0]))
+                continue;
             var values = new LinkedHashMap<String, List<String>>();
             boolean matches = true;
             for (int index = 0; index < args.length - 1; index++) {
@@ -512,10 +518,6 @@ public final class DungeonCommand implements TabExecutor {
 
     private String getPermissionNode() {
         return "dungeons.core";
-    }
-
-    private boolean isConsoleFriendly() {
-        return true;
     }
 
     private boolean canUseDiscoveryCommands(CommandSender sender) {
