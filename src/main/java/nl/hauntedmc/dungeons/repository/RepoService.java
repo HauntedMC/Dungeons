@@ -207,7 +207,10 @@ public final class RepoService implements AutoCloseable {
     }
 
     public boolean busy(String dungeon) {
-        return closed || reservations.containsKey(dungeon);
+        return closed
+                || (dungeon.equals("all")
+                        ? !reservations.isEmpty()
+                        : reservations.containsKey(dungeon));
     }
 
     private void reserve(Target target, UUID operation) {
