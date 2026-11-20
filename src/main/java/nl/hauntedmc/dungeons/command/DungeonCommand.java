@@ -289,7 +289,7 @@ public final class DungeonCommand implements TabExecutor {
                         .contentRepository()
                         .cachedNames(sender, capability.substring("repo.".length()))
                         .isEmpty()) return true;
-        if (route.syntax().startsWith("server")
+        if (route.syntax().startsWith("server") && !route.syntax().endsWith("<operation>")
                 || route.syntax().startsWith("map archive ")
                 || route.syntax().equals("instance list")
                 || route.syntax().equals("queue list")) return false;
@@ -383,6 +383,29 @@ public final class DungeonCommand implements TabExecutor {
                                     .contentRepository()
                                     .cachedNames(sender, capability));
                 }
+            } else if (next.equals("<key>") && values.containsKey("map")) {
+                var dungeon = this.dungeonManager.get(values.get("map").getFirst());
+                if (dungeon != null) {
+                    var keys = dungeon.getAccessKeys();
+                    for (int index = 0; index < keys.size(); index++) {
+                        suggestions.add(Integer.toString(index + 1));
+                        suggestions.add(keys.get(index).getKeyId());
+                    }
+                }
+            } else if (this.staffCommandHandler != null
+                    && route.handler() == CommandRoutes.Handler.STAFF
+                    && List.of("<instance>", "<admission>", "<operation>", "<archive>", "<backup>")
+                            .contains(next)) {
+                var map =
+                        values.containsKey("map")
+                                ? this.dungeonManager.get(values.get("map").getFirst())
+                                : null;
+                suggestions.addAll(
+                        this.staffCommandHandler.completeTargets(
+                                sender,
+                                next,
+                                route.permission().substring("staff.".length()),
+                                map == null ? null : map.getWorldName()));
             } else if (next.equals("<spawnpoint>") && sender instanceof Player player) {
                 var session = this.playerManager.get(player);
                 if (session != null && session.isEditMode() && session.getInstance() != null) {

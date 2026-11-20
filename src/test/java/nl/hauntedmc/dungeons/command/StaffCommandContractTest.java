@@ -159,6 +159,19 @@ class StaffCommandContractTest {
     }
 
     @Test
+    void scopedMapListShowsOnlyAuthorizedMaps() throws Exception {
+        try (var f = new StaffFixture(directory)) {
+            var h = handler(f);
+            f.dungeon("private");
+            f.grants.clear();
+            f.grants.add("dungeons.staff.inspect.crypt");
+            execute(h, f, "dungeons");
+            assertTrue(f.messages.stream().anyMatch(line -> line.contains("crypt")));
+            assertFalse(f.messages.stream().anyMatch(line -> line.contains("private")));
+        }
+    }
+
+    @Test
     void scopedQueueCancellationUsesTheQueueDungeonAndRefundsTheWholeQueue() throws Exception {
         try (var f = new StaffFixture(directory)) {
             var h = handler(f);

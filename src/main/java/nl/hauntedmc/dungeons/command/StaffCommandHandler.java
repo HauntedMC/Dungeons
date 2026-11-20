@@ -173,13 +173,28 @@ public final class StaffCommandHandler implements CommandHandler {
             }
             case "overview" -> overview(actor);
             case "dungeons" -> {
-                StaffPermissions.require(actor, "inspect", null);
-                for (var d : sortedDungeons())
-                    if (a.length == 1
-                            || d.getWorldName()
-                                    .toLowerCase(Locale.ROOT)
-                                    .contains(a[1].toLowerCase(Locale.ROOT)))
-                        tell(actor, describe(d));
+                if (!allowsAnyScope(actor, "inspect"))
+                    StaffPermissions.require(actor, "inspect", null);
+                String filter =
+                        String.join(" ", Arrays.copyOfRange(a, 1, a.length))
+                                .toLowerCase(Locale.ROOT);
+                var visible =
+                        sortedDungeons().stream()
+                                .filter(
+                                        d ->
+                                                StaffPermissions.allows(
+                                                        actor, "inspect", d.getWorldName()))
+                                .filter(
+                                        d ->
+                                                d.getWorldName()
+                                                                .toLowerCase(Locale.ROOT)
+                                                                .contains(filter)
+                                                        || d.getDisplayName()
+                                                                .toLowerCase(Locale.ROOT)
+                                                                .contains(filter))
+                                .toList();
+                if (visible.isEmpty()) tell(actor, "No matching maps");
+                else visible.forEach(d -> tell(actor, describe(d)));
             }
             case "dungeon" -> {
                 need(a, 2, "dungeon <name> [validate]");
@@ -195,7 +210,12 @@ public final class StaffCommandHandler implements CommandHandler {
             case "instances" -> {
                 String target = a.length > 1 ? a[1] : "all";
                 StaffPermissions.require(actor, "inspect", target.equals("all") ? null : target);
-                ops.instances(target).forEach(i -> tell(actor, describe(i)));
+                ops.instances(target).stream()
+                        .filter(
+                                i ->
+                                        StaffPermissions.allows(
+                                                actor, "inspect", i.getDungeon().getWorldName()))
+                        .forEach(i -> tell(actor, describe(i)));
             }
             case "instance" -> instance(actor, a, input);
             case "player" -> player(actor, a);
@@ -259,6 +279,12 @@ public final class StaffCommandHandler implements CommandHandler {
                 String scope = a.length > 1 ? dungeon(a[1]).getWorldName() : null;
                 StaffPermissions.require(actor, "inspect", scope);
                 runtime.queueRegistry().snapshotQueues().stream()
+                        .filter(
+                                queue ->
+                                        StaffPermissions.allows(
+                                                actor,
+                                                "inspect",
+                                                queue.getDungeon().getWorldName()))
                         .filter(
                                 queue ->
                                         scope == null
@@ -347,7 +373,15 @@ public final class StaffCommandHandler implements CommandHandler {
             }
             case "operations" -> {
                 StaffPermissions.require(actor, "inspect", null);
-                ops.operations()
+                ops.operations().stream()
+                        .filter(
+                                operation ->
+                                        StaffPermissions.allows(
+                                                actor,
+                                                "inspect",
+                                                operation.target.equals("all")
+                                                        ? null
+                                                        : operation.target))
                         .forEach(
                                 o ->
                                         tell(
@@ -365,7 +399,8 @@ public final class StaffCommandHandler implements CommandHandler {
             case "operation" -> {
                 need(a, 2, "operation <id>");
                 var op = ops.operation(a[1]);
-                StaffPermissions.require(actor, "inspect", op.target);
+                StaffPermissions.require(
+                        actor, "inspect", op.target.equals("all") ? null : op.target);
                 tell(
                         actor,
                         op.shortId() + " " + op.state + ": " + op.detail + " (" + op.actor + ")");
@@ -960,6 +995,50 @@ public final class StaffCommandHandler implements CommandHandler {
 
     public static void tell(CommandSender actor, String text) {
         LangUtils.sendRaw(actor, text);
+    }
+
+    List<String> completeTargets(
+            CommandSender actor, String parameter, String capability, String map) {
+        return switch (parameter) {
+            case "<instance>" ->
+                    ops.instances("all").stream()
+                            .filter(
+                                    instance ->
+                                            StaffPermissions.allows(
+                                                    actor,
+                                                    capability,
+                                                    instance.getDungeon().getWorldName()))
+                            .map(instance -> instance.getInstanceId().toString())
+                            .toList();
+            case "<admission>" ->
+                    runtime.queueRegistry().snapshotQueues().stream()
+                            .filter(
+                                    queue ->
+                                            StaffPermissions.allows(
+                                                    actor,
+                                                    capability,
+                                                    queue.getDungeon().getWorldName()))
+                            .map(queue -> queue.getAdmissionId().toString())
+                            .toList();
+            case "<operation>" ->
+                    ops.operations().stream()
+                            .filter(
+                                    operation ->
+                                            StaffPermissions.allows(
+                                                    actor,
+                                                    capability,
+                                                    operation.target.equals("all")
+                                                            ? null
+                                                            : operation.target))
+                            .map(operation -> operation.id.toString())
+                            .toList();
+            case "<archive>" ->
+                    StaffPermissions.allows(actor, capability, null)
+                            ? content.archives()
+                            : List.of();
+            case "<backup>" -> map == null ? List.of() : content.backups(map);
+            default -> List.of();
+        };
     }
 
     @Override
