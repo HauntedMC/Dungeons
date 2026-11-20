@@ -79,6 +79,10 @@ commands:
     usage: '<HauntedMC:Success>/dungeon play <HauntedMC:Warning><dungeon> [difficulty] <HauntedMC:Text>| <HauntedMC:Warning>Start een dungeonrun voor de speler.'
     console-needs-player: '<HauntedMC:Error>De console moet een speler opgeven.'
     player-not-found: '<HauntedMC:Error>Speler ''<HauntedMC:Warning>{player}<HauntedMC:Error>'' is niet online of bestaat niet.'
+    self-waiting: "Je wacht al op toegang tot een dungeon."
+    self-observing: "Je kijkt al mee met een run."
+    self-playing: "Je zit al in een run."
+    self-editing: "Sluit de editor met /dungeon edit close voordat je een run start."
     already-in-queue: '<HauntedMC:Error>Die speler staat al in de dungeon queue.'
     already-in-dungeon: '<HauntedMC:Error>Die speler zit al in een dungeon.'
     already-in-dungeon-self: '<HauntedMC:Error>Je zit al in een dungeon.'

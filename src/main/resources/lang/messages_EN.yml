@@ -86,6 +86,10 @@ commands:
     usage: '<HauntedMC:Success>/dungeon play <HauntedMC:Warning><dungeon> [difficulty] <HauntedMC:Text>| <HauntedMC:Warning>Start a dungeon run.'
     dungeon-not-found: '<HauntedMC:Error>Dungeon ''<HauntedMC:Warning>{dungeon}<HauntedMC:Error>'' does not exist.'
     disabled: '<HauntedMC:Error>Dungeon ''<HauntedMC:Warning>{dungeon}<HauntedMC:Error>'' is currently unavailable.'
+    self-waiting: "Your dungeon entry is already pending."
+    self-observing: "You’re already observing a run."
+    self-playing: "You’re already in a run."
+    self-editing: "Close the editor with /dungeon edit close before starting a run."
     already-in-queue: '<HauntedMC:Error>That player is already queued for a dungeon.'
     already-in-dungeon: '<HauntedMC:Error>That player is already in a dungeon.'
     already-in-dungeon-self: '<HauntedMC:Error>You are already in a dungeon.'

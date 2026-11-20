@@ -3,6 +3,8 @@ package nl.hauntedmc.dungeons.command;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import net.kyori.adventure.text.format.NamedTextColor;
+import nl.hauntedmc.dungeons.presentation.DungeonUi;
 import nl.hauntedmc.dungeons.gui.framework.GuiService;
 import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
@@ -236,6 +238,12 @@ final class GameplayCommandHandler implements CommandHandler {
         return true;
     }
 
+    private void showPlayConflict(Player player, String message, String action, String command) {
+        player.sendMessage(DungeonUi.join(
+                LangUtils.component("commands.play." + message, player, false).color(NamedTextColor.GOLD),
+                DungeonUi.action(LangUtils.component("experience." + action, player, false), command, NamedTextColor.AQUA)));
+    }
+
     /** Runs handle play command. */
     private boolean handlePlayCommand(CommandSender sender, String[] args) {
         if (!(sender instanceof Player targetPlayer)) {
@@ -249,18 +257,20 @@ final class GameplayCommandHandler implements CommandHandler {
         DungeonPlayerSession playerSession = this.playerManager.get(targetPlayer);
         if (playerSession == null)
             throw new IllegalArgumentException("Player dungeon session is unavailable");
-        if (playerSession.isAwaitingDungeon()) {
-            LangUtils.sendMessage(sender, "commands.play.already-in-queue");
+        if (playerSession.isAwaitingDungeon() || this.queueManager.getQueue(playerSession) != null) {
+            showPlayConflict(targetPlayer, "self-waiting", "ui-cancel-action", "/dungeon leave");
             return true;
         }
-
-        if (playerSession.getInstance() != null || playerSession.isObserving()) {
-            LangUtils.sendMessage(sender, "commands.play.already-in-dungeon");
+        if (playerSession.isObserving()) {
+            showPlayConflict(targetPlayer, "self-observing", "ui-leave-short", "/dungeon leave");
             return true;
         }
-
-        if (this.queueManager.getQueue(playerSession) != null) {
-            LangUtils.sendMessage(sender, "commands.play.already-in-queue");
+        if (playerSession.getInstance() != null) {
+            if (playerSession.getInstance().isEditInstance()) {
+                LangUtils.sendMessage(targetPlayer, "commands.play.self-editing");
+            } else {
+                showPlayConflict(targetPlayer, "self-playing", "ui-status-action", "/dungeon status");
+            }
             return true;
         }
 
