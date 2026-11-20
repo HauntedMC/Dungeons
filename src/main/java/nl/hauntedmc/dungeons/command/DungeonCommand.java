@@ -125,7 +125,7 @@ public final class DungeonCommand implements TabExecutor {
         }
 
         try {
-            if (!RuntimeContext.runtime().database().ready())
+            if (!availableWithoutDatabase(args) && !RuntimeContext.runtime().database().ready())
                 throw new IllegalArgumentException("Dungeons database is unavailable");
             return this.handleCommand(sender, args);
         } catch (IllegalArgumentException rejected) {
@@ -138,6 +138,16 @@ public final class DungeonCommand implements TabExecutor {
             LangUtils.sendRaw(sender, "Change failed; check the server log before retrying.");
             return true;
         }
+    }
+
+    private static boolean availableWithoutDatabase(String[] args) {
+        if (args.length == 0) return false;
+        if (args[0].equalsIgnoreCase("help")) return true;
+        if (!args[0].equalsIgnoreCase("server")) return false;
+        return args.length == 1
+                || args.length == 2
+                        && (args[1].equalsIgnoreCase("status")
+                                || args[1].equalsIgnoreCase("problems"));
     }
 
     /** Produces tab completions for the root command and its nested subcommands. */

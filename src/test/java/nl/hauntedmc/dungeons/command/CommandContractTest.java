@@ -89,6 +89,28 @@ class CommandContractTest {
     }
 
     @Test
+    void databaseOutagesStillAllowReadOnlyServerDiagnostics() throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var command = new CommandFixture(f);
+            command.permissions.add("dungeons.staff.inspect");
+            command.permissions.add("dungeons.staff.reload");
+            var staff = mock(StaffCommandHandler.class);
+            command.root.setStaffCommandHandler(staff);
+            when(f.paper.runtime.database().ready()).thenReturn(false);
+            command.execute("server", "status");
+            command.execute("server", "reload", "config");
+            verify(staff)
+                    .handleCommand(
+                            eq(command.caller.player),
+                            AdditionalMatchers.aryEq(new String[] {"overview"}));
+            verify(staff, never())
+                    .handleCommand(
+                            eq(command.caller.player),
+                            AdditionalMatchers.aryEq(new String[] {"reload-config"}));
+        }
+    }
+
+    @Test
     void mapSpecificStaffCommandsCannotDispatchServerWideOperations() throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
             var command = new CommandFixture(f);
