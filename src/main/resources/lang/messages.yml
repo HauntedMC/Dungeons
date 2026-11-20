@@ -974,6 +974,7 @@ mechanic-editor:
 
 # Dungeon experience (all authored mechanics are optional).
 experience:
+  ui-revive-empty: "Iedereen is in leven"
   ui-open-status: "› Bekijk runstatus"
   ui-guide-hud: "HUD-profiel en meldingen instellen"
   ui-guide-back: "Terug naar het runoverzicht"

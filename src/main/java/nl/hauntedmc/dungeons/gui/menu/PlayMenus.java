@@ -136,6 +136,7 @@ public class PlayMenus {
                                 "revivalmenu",
                                 27,
                                 LangUtils.getMessage("experience.ui-revive-title", false));
+        MenuFrame.apply(gui);
         gui.addOpenAction(
                 "populate",
                 event -> {
@@ -154,46 +155,61 @@ public class PlayMenus {
                     } else {
                         GuiInventory inv = gui.getInventoryFor(player);
 
-                        for (int i = 0; i < 27; i++) {
-                            inv.removeButton(i);
+                        var living = instance.getLivingPlayers();
+                        var targets =
+                                instance.getPlayers().stream()
+                                        .filter(member -> !living.contains(member))
+                                        .limit(27)
+                                        .toList();
+                        // Small groups use the center row. Large groups can use the full inventory.
+                        if (targets.size() > 9) {
+                            for (int i = 0; i < 27; i++) inv.removeButton(i);
                         }
+                        if (targets.isEmpty()) {
+                            inv.setButton(
+                                    13,
+                                    new Button(
+                                            "ready",
+                                            Material.TOTEM_OF_UNDYING,
+                                            ComponentUtils.serialize(
+                                                    LangUtils.component(
+                                                            "experience.ui-revive-empty",
+                                                            player,
+                                                            false))));
+                        }
+                        for (int i = 0; i < targets.size(); i++) {
+                            var playerSession = targets.get(i);
+                            Player instancePlayer = playerSession.getPlayer();
+                            ItemStack skull = new ItemStack(Material.PLAYER_HEAD);
+                            SkullMeta meta = (SkullMeta) skull.getItemMeta();
 
-                        int slot = 0;
+                            assert meta != null;
 
-                        for (DungeonPlayerSession playerSession : instance.getPlayers()) {
-                            if (slot < 27 && !instance.getLivingPlayers().contains(playerSession)) {
-                                Player instancePlayer = playerSession.getPlayer();
-                                ItemStack skull = new ItemStack(Material.PLAYER_HEAD);
-                                SkullMeta meta = (SkullMeta) skull.getItemMeta();
-
-                                assert meta != null;
-
-                                meta.setOwningPlayer(instancePlayer);
-                                skull.setItemMeta(meta);
-                                Button button =
-                                        new Button("revive_" + instancePlayer.getName(), skull);
-                                button.setDisplayName(
-                                        ComponentUtils.serialize(
-                                                Component.text(
-                                                                instancePlayer.getName(),
-                                                                NamedTextColor.AQUA)
-                                                        .decorate(TextDecoration.BOLD)));
-                                button.addLore(
-                                        ComponentUtils.serialize(
-                                                LangUtils.component(
-                                                                "experience.ui-revive-action",
-                                                                player,
-                                                                false)
-                                                        .color(NamedTextColor.GREEN)));
-                                button.addAction(
-                                        "revive",
-                                        clickEvent -> {
-                                            reviver.revivePlayer(playerSession, dungeonPlayer);
-                                            player.closeInventory();
-                                        });
-                                inv.setButton(slot, button);
-                                slot++;
-                            }
+                            meta.setOwningPlayer(instancePlayer);
+                            skull.setItemMeta(meta);
+                            Button button = new Button("revive_" + instancePlayer.getName(), skull);
+                            button.setDisplayName(
+                                    ComponentUtils.serialize(
+                                            Component.text(
+                                                            instancePlayer.getName(),
+                                                            NamedTextColor.AQUA)
+                                                    .decorate(TextDecoration.BOLD)));
+                            button.addLore(
+                                    ComponentUtils.serialize(
+                                            LangUtils.component(
+                                                            "experience.ui-revive-action",
+                                                            player,
+                                                            false)
+                                                    .color(NamedTextColor.GREEN)));
+                            button.addAction(
+                                    "revive",
+                                    clickEvent -> {
+                                        reviver.revivePlayer(playerSession, dungeonPlayer);
+                                        player.closeInventory();
+                                    });
+                            int count = Math.min(9, targets.size() - i / 9 * 9);
+                            int row = targets.size() <= 9 ? 1 : i / 9;
+                            inv.setButton(row * 9 + (9 - count) / 2 + i % 9, button);
                         }
                     }
                 });
