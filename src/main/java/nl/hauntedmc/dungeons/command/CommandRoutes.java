@@ -32,14 +32,14 @@ final class CommandRoutes {
             int position = 0;
             for (String part : pattern) {
                 if (part.startsWith("*")) {
-                    if (position >= arguments.length) return null;
+                    if (position >= arguments.length || arguments[position].isBlank()) return null;
                     values.put(
                             part.substring(1),
                             List.of(arguments).subList(position, arguments.length));
                     position = arguments.length;
                     break;
                 }
-                if (position >= arguments.length) return null;
+                if (position >= arguments.length || arguments[position].isBlank()) return null;
                 if (variable(part))
                     values.put(part.substring(1, part.length() - 1), List.of(arguments[position]));
                 else if (!part.equalsIgnoreCase(arguments[position])) return null;
