@@ -638,8 +638,11 @@ public abstract class PlayableInstance extends DungeonInstance {
         this.timeLeft = Math.addExact(this.timeLeft, seconds);
     }
 
+    /** The configured duration in the lobby, then the live countdown once the run starts. */
     public int getTimeLeft() {
-        return this.timeLeft;
+        return this.started
+                ? this.timeLeft
+                : Math.max(0, this.config.getInt("runs.time_limit_minutes", 0)) * 60;
     }
 
     /** Returns the current run status text. */

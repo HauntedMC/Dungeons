@@ -558,6 +558,7 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                             : new ArrayList<>(run == null ? List.of() : run.bars());
             if (!immersive && bars.isEmpty()) bars.addAll(instance.dragonHudBars());
             if (!immersive
+                    && instance.isStarted()
                     && instance.getConfig().getInt("runs.time_limit_minutes", 0) > 0
                     && instance.getTimeLeft() <= 60
                     && instance.getTimeLeft() > 0) {
@@ -1116,18 +1117,7 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                         "lives",
                         lives == null ? text(player, "ui-no-limit") : Component.text(lives)));
         if (instance.getConfig().getInt("runs.time_limit_minutes", 0) > 0)
-            values.add(
-                    stat(
-                            player,
-                            "time",
-                            Component.text(
-                                    clock(
-                                            instance.isStarted()
-                                                    ? instance.getTimeLeft()
-                                                    : instance.getConfig()
-                                                                    .getInt(
-                                                                            "runs.time_limit_minutes")
-                                                            * 60))));
+            values.add(stat(player, "time", Component.text(clock(instance.getTimeLeft()))));
         else if (instance.isStarted())
             values.add(
                     stat(

@@ -230,6 +230,7 @@ class PlayerRunContractTest {
         var settings = settings();
         settings.set("runs.time_limit_minutes", 1);
         try (var fixture = new RunFixture(directory, settings)) {
+            assertEquals(60, fixture.run.getTimeLeft(), "Lobby countdown");
             var first = fixture.session(new PlayerState());
             var second = fixture.session(new PlayerState());
             fixture.run.addPlayer(first);
