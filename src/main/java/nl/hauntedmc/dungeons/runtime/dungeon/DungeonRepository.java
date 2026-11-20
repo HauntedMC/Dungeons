@@ -286,6 +286,12 @@ public final class DungeonRepository {
     public DungeonDefinition get(String dungeonName) {
         var named = this.dungeons.get(dungeonName);
         if (named != null || dungeonName == null) return named;
+        var matchingNames =
+                this.dungeons.entrySet().stream()
+                        .filter(entry -> entry.getKey().equalsIgnoreCase(dungeonName))
+                        .limit(2)
+                        .toList();
+        if (matchingNames.size() == 1) return matchingNames.getFirst().getValue();
         try {
             var id = UUID.fromString(dungeonName);
             if (!id.toString().equalsIgnoreCase(dungeonName)) return null;
