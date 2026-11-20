@@ -159,7 +159,7 @@ final class GameplayCommandHandler implements CommandHandler {
         }
 
         DungeonPlayerSession playerSession = this.playerManager.get(player);
-        DungeonInstance instance = playerSession.getInstance();
+        DungeonInstance instance = playerSession == null ? null : playerSession.getInstance();
         if (instance == null) {
             LangUtils.sendMessage(player, "commands.lives.not-in-dungeon");
             return true;
@@ -197,13 +197,15 @@ final class GameplayCommandHandler implements CommandHandler {
         }
 
         DungeonPlayerSession playerSession = this.playerManager.get(player);
-        if (playerSession.getInstance() == null) {
+        if (playerSession == null || playerSession.getInstance() == null) {
             LangUtils.sendMessage(player, "commands.stuck.not-in-dungeon");
             return true;
         }
+        if (playerSession.getDungeonRespawn() == null)
+            throw new IllegalArgumentException("There is no checkpoint to return to yet");
 
-        LangUtils.sendMessage(player, "commands.stuck.success");
         playerSession.sendToCheckpoint();
+        LangUtils.sendMessage(player, "commands.stuck.success");
         return true;
     }
 
@@ -241,12 +243,14 @@ final class GameplayCommandHandler implements CommandHandler {
             throw new IllegalArgumentException("Usage: /dungeon play <dungeon> [difficulty]");
         }
         DungeonPlayerSession playerSession = this.playerManager.get(targetPlayer);
+        if (playerSession == null)
+            throw new IllegalArgumentException("Player dungeon session is unavailable");
         if (playerSession.isAwaitingDungeon()) {
             LangUtils.sendMessage(sender, "commands.play.already-in-queue");
             return true;
         }
 
-        if (playerSession.getInstance() != null) {
+        if (playerSession.getInstance() != null || playerSession.isObserving()) {
             LangUtils.sendMessage(sender, "commands.play.already-in-dungeon");
             return true;
         }
@@ -310,7 +314,7 @@ final class GameplayCommandHandler implements CommandHandler {
             throw new IllegalArgumentException(
                     "Use /dungeon player <player> send <map> [--difficulty <difficulty>]");
         Player target = Bukkit.getPlayerExact(args[1]);
-        if (target == null)
+        if (target == null || !target.isOnline())
             throw new IllegalArgumentException("Player must be online on this server");
         var dungeon = this.dungeonManager.get(args[2]);
         if (dungeon == null || !dungeon.isEnabled())
@@ -343,10 +347,17 @@ final class GameplayCommandHandler implements CommandHandler {
     List<String> completePlayCommand(CommandSender sender, String[] args) {
         List<String> options = new ArrayList<>();
         if (args.length == 2)
-            DungeonCompletions.addMatchingDungeonNames(this.dungeonManager, options, args[1]);
-        if (args.length == 3) {
+            this.dungeonManager.getLoadedDungeons().stream()
+                    .filter(DungeonDefinition::isEnabled)
+                    .map(DungeonDefinition::getWorldName)
+                    .filter(
+                            name ->
+                                    name.toLowerCase(Locale.ROOT)
+                                            .startsWith(args[1].toLowerCase(Locale.ROOT)))
+                    .forEach(options::add);
+        if (args.length == 3 && sender.hasPermission("dungeons.play.difficulty")) {
             var dungeon = this.dungeonManager.get(args[1]);
-            if (dungeon != null)
+            if (dungeon != null && dungeon.isEnabled() && dungeon.isUseDifficultyLevels())
                 dungeon.getDifficultyLevels().keySet().stream()
                         .filter(value -> value.startsWith(args[2]))
                         .forEach(options::add);

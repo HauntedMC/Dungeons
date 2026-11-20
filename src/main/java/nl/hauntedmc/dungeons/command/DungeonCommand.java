@@ -254,7 +254,9 @@ public final class DungeonCommand implements TabExecutor {
         if (route.playerOnly() && !(sender instanceof Player)) return false;
         if (selfControl(route.syntax().split(" ", 2)[0]) && activeSelfContext(sender)) return true;
         if (!route.permission().startsWith("staff.")) {
-            return sender.hasPermission("dungeons." + route.permission());
+            return sender.hasPermission("dungeons." + route.permission())
+                    && (!route.syntax().equals("play <map> <difficulty>")
+                            || sender.hasPermission("dungeons.play.difficulty"));
         }
         String capability = route.permission().substring(6);
         var map = values.get("map");
@@ -419,9 +421,7 @@ public final class DungeonCommand implements TabExecutor {
                 }
             } else if (next.equals("<difficulty>") && values.containsKey("map")) {
                 var dungeon = this.dungeonManager.get(values.get("map").getFirst());
-                if (dungeon != null
-                        && (route.handler() != CommandRoutes.Handler.GAMEPLAY
-                                || dungeon.isEnabled()))
+                if (dungeon != null && dungeon.isEnabled() && dungeon.isUseDifficultyLevels())
                     suggestions.addAll(dungeon.getDifficultyLevels().keySet());
             } else if (next.equals("<setting>") && values.containsKey("map")) {
                 var dungeon =
