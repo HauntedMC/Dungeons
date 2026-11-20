@@ -30,10 +30,12 @@ public final class GuiTextUtils {
     /** Chest titles sit on a light surface and need a darker accent than chat. */
     public static Component title(String text) {
         return Component.text("◆ ", NamedTextColor.DARK_AQUA)
-                .append(
-                        component(text)
-                                .colorIfAbsent(NamedTextColor.DARK_GRAY)
-                                .decorate(TextDecoration.BOLD));
+                .append(inventoryTitle(component(text)).decorate(TextDecoration.BOLD));
+    }
+
+    private static Component inventoryTitle(Component text) {
+        return text.color(NamedTextColor.DARK_GRAY)
+                .children(text.children().stream().map(GuiTextUtils::inventoryTitle).toList());
     }
 
     public static Component itemName(String text) {
