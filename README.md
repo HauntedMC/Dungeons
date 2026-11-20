@@ -210,11 +210,11 @@ root `messages.yml` there once, preserving their text and formatting. If both fi
 the canonical `lang/messages.yml` stays authoritative and the old file moves to
 `backups/messages-legacy-<id>.yml`. Fresh installs never create a root message file. Missing bundled
 keys are merged; custom keys and translations are retained. Restart or use
-`/dungeon server reload config <reason>` to reload messages.
+`/dungeon server reload config` to reload messages.
 
 Templates accept legacy formatting, MiniMessage and `<HauntedMC:Brand>`, `<HauntedMC:Success>`,
 `<HauntedMC:Warning>`, `<HauntedMC:Error>` and the other shared theme items. Placeholder strings are
-literal components, so a player name or staff reason cannot inject colors or click actions. Explicit
+literal components, so a player name cannot inject colors or click actions. Explicit
 component placeholders preserve intentionally supplied interactive actions. Legacy UI conversion
 does not parse the resulting text a second time. Chat, action bars, kick notices and command output
 share the theme; authored dungeon narrative retains its configured formatting.
@@ -275,7 +275,7 @@ health effects, conditional groups and runtime validation.
 Use `/dungeon help` to discover commands; staff inspection and confirmations appear in chat.
 There is no admin dashboard inventory.
 
-- `/dungeon edit open <dungeon>` opens the world editor; an optional reason may follow the name.
+- `/dungeon edit open <dungeon>` opens the world editor.
 - `/dungeon edit save` saves changes, and `/dungeon edit close` leaves the editor.
 - `/dungeon help map` covers creation, imports, validation, settings, keys, backups and archives.
 - `/dungeon help instance`, `/dungeon help player`, `/dungeon help queue` and `/dungeon help server` cover runtime administration.

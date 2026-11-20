@@ -1,7 +1,6 @@
 package nl.hauntedmc.dungeons.command;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import nl.hauntedmc.dungeons.gui.framework.GuiService;
@@ -16,7 +15,6 @@ import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueCoordinator;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueEntry;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry;
-import nl.hauntedmc.dungeons.runtime.staff.StaffOperations;
 import nl.hauntedmc.dungeons.runtime.team.DungeonTeam;
 import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
 import nl.hauntedmc.dungeons.util.command.CommandUtils;
@@ -308,8 +306,9 @@ final class GameplayCommandHandler implements CommandHandler {
 
     private boolean handleSendCommand(CommandSender sender, String[] args) {
         if (!CommandUtils.hasPermission(sender, "dungeons.play.send")) return true;
-        if (args.length < 4)
-            throw new IllegalArgumentException("A send operation requires a reason");
+        if (args.length != 3 && args.length != 5)
+            throw new IllegalArgumentException(
+                    "Use /dungeon player <player> send <map> [--difficulty <difficulty>]");
         Player target = Bukkit.getPlayerExact(args[1]);
         if (target == null)
             throw new IllegalArgumentException("Player must be online on this server");
@@ -317,18 +316,14 @@ final class GameplayCommandHandler implements CommandHandler {
         if (dungeon == null || !dungeon.isEnabled())
             throw new IllegalArgumentException("Dungeon unavailable");
         String difficulty = "";
-        int reasonStart = 3;
-        if (args[3].equals("--difficulty")) {
-            if (args.length < 6)
-                throw new IllegalArgumentException("Difficulty and reason are required");
+        if (args.length == 5) {
+            if (!args[3].equals("--difficulty"))
+                throw new IllegalArgumentException("Use --difficulty <difficulty>");
             difficulty = args[4];
-            reasonStart = 5;
             if (!dungeon.isUseDifficultyLevels()
                     || !dungeon.getDifficultyLevels().containsKey(difficulty))
                 throw new IllegalArgumentException("Unknown difficulty");
         }
-        String reason = String.join(" ", Arrays.copyOfRange(args, reasonStart, args.length));
-        StaffOperations.requireReason(reason);
         var session = this.playerManager.get(target);
         if (session == null
                 || session.isAwaitingDungeon()
@@ -340,12 +335,7 @@ final class GameplayCommandHandler implements CommandHandler {
         if (dungeon.getRuntime().staffOperations() != null)
             dungeon.getRuntime()
                     .staffOperations()
-                    .audit(
-                            sender,
-                            "send",
-                            target.getUniqueId().toString(),
-                            reason,
-                            "admission requested");
+                    .audit(sender, "send", target.getUniqueId().toString(), "admission requested");
         return true;
     }
 

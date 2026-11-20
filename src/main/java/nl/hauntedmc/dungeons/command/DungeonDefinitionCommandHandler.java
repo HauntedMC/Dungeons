@@ -1,14 +1,12 @@
 package nl.hauntedmc.dungeons.command;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.UUID;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.event.ClickEvent;
 import nl.hauntedmc.dungeons.command.CommandOutput.FilterPageQuery;
 import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.dungeon.AccessKeyDefinition;
@@ -20,7 +18,6 @@ import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueCoordinator;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueEntry;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry;
-import nl.hauntedmc.dungeons.runtime.staff.StaffOperations;
 import nl.hauntedmc.dungeons.runtime.staff.StaffPermissions;
 import nl.hauntedmc.dungeons.util.command.CommandUtils;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
@@ -150,61 +147,42 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
         return options;
     }
 
-    private boolean handleAuditedKeys(CommandSender sender, String[] raw) {
-        var input = new ArrayList<>(List.of(raw));
-        String token = null;
-        int confirmation = input.indexOf("--confirm");
-        if (confirmation >= 0) {
-            if (confirmation != input.size() - 2)
-                throw new IllegalArgumentException("Use --confirm <token> at the end");
-            token = input.removeLast();
-            input.removeLast();
-        }
-        String[] args = input.toArray(String[]::new);
-        if (args.length < 5) throw new IllegalArgumentException("A key change requires a reason");
-        int reasonStart = args[2].equalsIgnoreCase("remove") ? 5 : 4;
-        if (args.length <= reasonStart)
-            throw new IllegalArgumentException("A key change requires a reason");
+    private boolean handleAuditedKeys(CommandSender sender, String[] args) {
+        if (args.length < 4) throw new IllegalArgumentException("Specify a dungeon");
         var dungeon = this.dungeonManager.get(args[3]);
         if (dungeon == null) throw new IllegalArgumentException("Dungeon not found");
         StaffPermissions.require(sender, "keys", dungeon.getWorldName());
-        String reason = String.join(" ", Arrays.copyOfRange(args, reasonStart, args.length));
-        StaffOperations.requireReason(reason);
         var before = dungeon.getAccessKeys().stream().map(key -> key.getKeyId()).toList();
         var ops = dungeon.getRuntime().staffOperations();
         if (ops != null) ops.requireContentWritable(dungeon.getWorldName());
         if (args[2].equalsIgnoreCase("remove") || args[2].equalsIgnoreCase("clear")) {
             if (ops == null)
                 throw new IllegalStateException("Staff confirmation service unavailable");
-            var next =
-                    ops.confirm(
-                            sender,
-                            "key-" + args[2],
-                            dungeon.getWorldName(),
-                            dungeon.getDungeonId()
-                                    + ":"
-                                    + dungeon.getConfig().saveToString()
-                                    + ":"
-                                    + before,
-                            String.join(" ", input),
-                            token);
-            if (next != null) {
-                String command =
-                        CommandRoutes.canonicalCommand(CommandRoutes.Handler.MAP, input)
-                                + " --confirm "
-                                + next;
+            if (!ops.confirm(
+                    sender,
+                    "key-" + args[2],
+                    dungeon.getWorldName(),
+                    dungeon.getDungeonId()
+                            + ":"
+                            + dungeon.getConfig().saveToString()
+                            + ":"
+                            + before,
+                    String.join(" ", args))) {
                 LangUtils.sendRaw(
                         sender,
-                        Component.text("[Confirm key change within 30 seconds]")
-                                .clickEvent(ClickEvent.suggestCommand(command)));
+                        "Repeat this command within 10 seconds to confirm: "
+                                + CommandRoutes.canonicalCommand(
+                                        CommandRoutes.Handler.MAP, List.of(args)));
                 return true;
             }
         }
-        String[] operation = Arrays.copyOf(args, reasonStart);
-        if (args[2].equalsIgnoreCase("remove")) {
+        var operation = args.clone();
+        if (args[2].equalsIgnoreCase("remove") && args.length == 5) {
             for (int index = 0; index < dungeon.getAccessKeys().size(); index++) {
-                if (dungeon.getAccessKeys().get(index).getKeyId().equals(operation[4]))
+                if (dungeon.getAccessKeys().get(index).getKeyId().equals(args[4])) {
                     operation[4] = String.valueOf(index + 1);
+                    break;
+                }
             }
         }
         boolean result = this.handleKeysCommand(sender, operation);
@@ -214,7 +192,6 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
                     sender,
                     "key-" + args[2],
                     dungeon.getWorldName(),
-                    reason,
                     before.equals(after) ? "unchanged" : "updated");
         return result;
     }
@@ -306,7 +283,7 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
     /** Runs handle set dungeon enabled command. */
     private boolean handleSetDungeonEnabledCommand(
             CommandSender sender, String[] args, boolean enabled) {
-        if (args.length < 3) {
+        if (args.length < 2) {
             LangUtils.sendMessage(
                     sender,
                     enabled ? "commands.dungeon.enable.usage" : "commands.dungeon.disable.usage");
@@ -328,13 +305,10 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
         String name = dungeon.getWorldName();
         var ops = dungeon.getRuntime().staffOperations();
         if (ops != null) ops.requireContentWritable(name);
-        String reason = String.join(" ", Arrays.copyOfRange(args, 2, args.length));
-        StaffOperations.requireReason(reason);
         boolean changed = dungeon.isConfiguredEnabled() != enabled;
         if (changed) {
             dungeon.setSaveConfig("dungeon.enabled", enabled);
-            if (ops != null)
-                ops.audit(sender, enabled ? "enable" : "disable", name, reason, "updated");
+            if (ops != null) ops.audit(sender, enabled ? "enable" : "disable", name, "updated");
         }
         if (enabled && !dungeon.isRepositoryInitialized()) {
             LangUtils.sendRaw(
@@ -351,7 +325,7 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
                                 + " off.");
                 return true;
             }
-            ops.maintenance(sender, name, false, reason);
+            ops.maintenance(sender, name, false, "Map enabled");
             changed = true;
         }
         if (enabled && ops != null && ops.maintenance(name)) {

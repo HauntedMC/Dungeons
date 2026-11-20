@@ -101,8 +101,7 @@ class CommandContractTest {
             verify(staff)
                     .handleCommand(
                             eq(command.caller.player),
-                            AdditionalMatchers.aryEq(
-                                    new String[] {"edit", "crypt", "editor-command"}));
+                            AdditionalMatchers.aryEq(new String[] {"edit", "crypt"}));
             assertEquals(
                     List.of("crypt"),
                     command.root.onTabComplete(
@@ -123,12 +122,14 @@ class CommandContractTest {
             f.paper.runtime.setStaffOperations(operations);
             Mockito.doReturn(0).when(dungeon).removeAllAccessKeys();
             command.permissions.add("dungeons.staff.keys.crypt");
-            command.execute("map", "keys", "clear", "crypt", "Retire unused keys");
+            when(operations.confirm(any(), anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(true, false);
+            command.execute("map", "keys", "clear", "crypt");
             verify(dungeon).removeAllAccessKeys();
             var first = dungeon.getDungeonId();
             var second = UUID.randomUUID();
             when(dungeon.getDungeonId()).thenReturn(second);
-            command.execute("map", "keys", "clear", "crypt", "Retire unused keys");
+            command.execute("map", "keys", "clear", "crypt");
             var revisions = ArgumentCaptor.forClass(String.class);
             verify(operations, Mockito.times(2))
                     .confirm(
@@ -136,8 +137,7 @@ class CommandContractTest {
                             eq("key-clear"),
                             eq("crypt"),
                             revisions.capture(),
-                            anyString(),
-                            ArgumentMatchers.isNull());
+                            anyString());
             assertTrue(revisions.getAllValues().getFirst().contains(first.toString()));
             assertTrue(revisions.getAllValues().getLast().contains(second.toString()));
             Assertions.assertNotEquals(
@@ -154,7 +154,7 @@ class CommandContractTest {
             String id = f.dungeon.getDungeonId().toString();
             when(command.catalog.get(id)).thenReturn(f.dungeon);
             command.permissions.add("dungeons.staff.edit.crypt");
-            command.execute("map", "disable", id, "Scoped maintenance");
+            command.execute("map", "disable", id);
             assertFalse(f.dungeon.isEnabled());
             command.execute("help", "map", "settings", "crypt");
             verify(command.caller.player, Mockito.atLeastOnce())
@@ -205,19 +205,19 @@ class CommandContractTest {
             command.execute("play", "crypt", "Other");
             verifyNoInteractions(command.coordinator);
             command.permissions.add("dungeons.play.send");
-            command.execute("player", "Other", "send", "crypt", "Testing");
+            command.execute("player", "Other", "send", "crypt");
             verify(command.coordinator).sendToDungeon(other.player, "crypt", "");
             clearInvocations(command.coordinator);
             session.setAwaitingDungeon(true);
-            command.execute("player", "Other", "send", "crypt", "Testing");
+            command.execute("player", "Other", "send", "crypt");
             verifyNoInteractions(command.coordinator);
             session.setAwaitingDungeon(false);
             session.setInstance(f.run);
-            command.execute("player", "Other", "send", "crypt", "Testing");
+            command.execute("player", "Other", "send", "crypt");
             verifyNoInteractions(command.coordinator);
             session.setInstance(null);
             f.dungeon.setSaveConfig("dungeon.enabled", false);
-            command.execute("player", "Other", "send", "crypt", "Testing");
+            command.execute("player", "Other", "send", "crypt");
             verifyNoInteractions(command.coordinator);
         }
     }
@@ -242,6 +242,57 @@ class CommandContractTest {
     }
 
     @Test
+    void playCompletionRequiresRepositoryInitializationButTestplayUsesLocalMaps() throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var command = new CommandFixture(f);
+            var uninitialized = Mockito.spy(f.dungeon);
+            Mockito.doReturn(false).when(uninitialized).isEnabled();
+            Mockito.doReturn(true).when(uninitialized).prepareTestPlay(command.caller.player);
+            when(command.catalog.getLoadedDungeons()).thenReturn(List.of(uninitialized));
+            when(command.catalog.get("crypt")).thenReturn(uninitialized);
+            command.permissions.add("dungeons.play");
+            var bukkitCommand = mock(Command.class);
+            assertEquals(
+                    List.of(),
+                    command.root.onTabComplete(
+                            command.caller.player,
+                            bukkitCommand,
+                            "dungeon",
+                            new String[] {"play", ""}));
+            command.execute("edit", "testplay", "crypt");
+            verify(uninitialized, never()).prepareTestPlay(any());
+            command.permissions.add("dungeons.staff.testplay.crypt");
+            assertEquals(
+                    List.of("crypt"),
+                    command.root.onTabComplete(
+                            command.caller.player,
+                            bukkitCommand,
+                            "dungeon",
+                            new String[] {"edit", "testplay", ""}));
+            command.execute("edit", "testplay", "crypt");
+            verify(uninitialized).prepareTestPlay(command.caller.player);
+        }
+    }
+
+    @Test
+    void enablingAMapResumesLocalMaintenanceWithPermission() throws Exception {
+        try (var f = new StaffFixture(directory)) {
+            var command = new CommandFixture(f.run);
+            command.permissions.add("dungeons.staff.edit");
+            f.ops.maintenance(f.actor, "crypt", true, "open-editor");
+            assertFalse(f.run.dungeon.isEnabled());
+
+            command.execute("map", "enable", "crypt");
+            assertTrue(f.ops.mapMaintenance("crypt"));
+
+            command.permissions.add("dungeons.staff.maintenance");
+            command.execute("map", "enable", "crypt");
+            assertTrue(f.run.dungeon.isEnabled());
+            assertFalse(f.ops.mapMaintenance("crypt"));
+        }
+    }
+
+    @Test
     void disablingPersistsTheSettingAndInvalidatesOnlyQueuesForThatDungeon() throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
             var command = new CommandFixture(f);
@@ -253,7 +304,7 @@ class CommandContractTest {
             var otherSession = f.session(new PlayerState());
             var other = new DungeonQueueEntry(otherSession, otherDungeon, "");
             command.queues.enqueue(other);
-            command.execute("map", "disable", "crypt", "Maintenance");
+            command.execute("map", "disable", "crypt");
             assertFalse(f.dungeon.isEnabled());
             assertFalse(
                     YamlConfiguration.loadConfiguration(
@@ -280,7 +331,7 @@ class CommandContractTest {
                             console,
                             mock(Command.class),
                             "dungeon",
-                            new String[] {"player", "Explorer", "send", "crypt", "Testing"}));
+                            new String[] {"player", "Explorer", "send", "crypt"}));
             verify(command.coordinator).sendToDungeon(command.caller.player, "crypt", "");
             command.root.onCommand(
                     console, mock(Command.class), "dungeon", new String[] {"edit", "crypt"});

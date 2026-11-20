@@ -29,10 +29,7 @@ class StaffCommandContractTest {
 
     private static void confirm(StaffCommandHandler h, StaffFixture f, String... args) {
         execute(h, f, args);
-        var confirmed = new ArrayList<>(List.of(args));
-        confirmed.add("--confirm");
-        confirmed.add(f.token());
-        execute(h, f, confirmed.toArray(String[]::new));
+        execute(h, f, args);
     }
 
     @Test
@@ -87,8 +84,7 @@ class StaffCommandContractTest {
             h.executeChecked(p.player, new String[] {"operations"});
             verify(p.player, atLeastOnce()).sendMessage(any(Component.class));
             assertTrue(h.handleCommand(f.actor, new String[] {"no-such-command"}));
-            assertThrows(
-                    IllegalArgumentException.class, () -> execute(h, f, "overview", "--confirm"));
+            assertThrows(IllegalArgumentException.class, () -> execute(h, f, "archive"));
             assertThrows(IllegalArgumentException.class, () -> h.playerId("Unknown"));
             assertEquals(p.player.getUniqueId(), h.playerId("Staff"));
             assertEquals(60000, StaffCommandHandler.duration("1M"));
@@ -100,46 +96,26 @@ class StaffCommandContractTest {
     }
 
     @Test
-    void correctionsRequireValidInputsConfirmationPermissionAndDurableWrites() throws Exception {
+    void correctionsRequireValidInputsPermissionAndDurableWrites() throws Exception {
         try (var f = new StaffFixture(directory)) {
             var h = handler(f);
             UUID id = UUID.randomUUID();
-            execute(h, f, "completion", id.toString(), "crypt", "true", "Verified");
-            assertFalse(f.run.dungeon.playerDataStore().isCompleted(id));
-            var token = f.token();
-            execute(
-                    h,
-                    f,
-                    "completion",
-                    id.toString(),
-                    "crypt",
-                    "true",
-                    "Verified",
-                    "--confirm",
-                    token);
+            execute(h, f, "completion", id.toString(), "crypt", "true");
             assertTrue(f.run.dungeon.playerDataStore().isCompleted(id));
-            confirm(h, f, "cooldown", id.toString(), "crypt", "1h", "Repair");
+            execute(h, f, "cooldown", id.toString(), "crypt", "1h");
             assertNotNull(f.run.dungeon.playerDataStore().getAccessCooldown(id));
-            confirm(h, f, "cooldown", id.toString(), "crypt", "clear", "Repair");
+            execute(h, f, "cooldown", id.toString(), "crypt", "clear");
             assertNull(f.run.dungeon.playerDataStore().getAccessCooldown(id));
             assertThrows(
                     IllegalArgumentException.class,
-                    () -> execute(h, f, "completion", id.toString(), "crypt", "maybe", "Repair"));
+                    () -> execute(h, f, "completion", id.toString(), "crypt", "maybe"));
             assertThrows(
                     IllegalArgumentException.class,
-                    () ->
-                            execute(
-                                    h,
-                                    f,
-                                    "cooldown",
-                                    id.toString(),
-                                    "crypt",
-                                    "bad-duration",
-                                    "Repair"));
+                    () -> execute(h, f, "cooldown", id.toString(), "crypt", "bad-duration"));
             f.denials.add("dungeons.staff.progression");
             assertThrows(
                     IllegalArgumentException.class,
-                    () -> execute(h, f, "completion", id.toString(), "crypt", "false", "Repair"));
+                    () -> execute(h, f, "completion", id.toString(), "crypt", "false"));
             assertTrue(f.run.dungeon.playerDataStore().isCompleted(id));
         }
     }
@@ -149,12 +125,12 @@ class StaffCommandContractTest {
         try (var f = new StaffFixture(directory)) {
             var h = handler(f);
             UUID id = UUID.randomUUID();
-            execute(h, f, "RELOAD", "config", "Refresh");
+            execute(h, f, "RELOAD", "config");
             verify(f.lifecycle).reloadConfigs();
-            execute(h, f, "reload", "all", "Refresh");
+            execute(h, f, "reload", "all");
             when(f.repository.loadDungeon(f.run.dungeon.getFolder())).thenReturn(f.run.dungeon);
-            execute(h, f, "reload", "crypt", "Refresh");
-            execute(h, f, "backup", "crypt", "Safety copy");
+            execute(h, f, "reload", "crypt");
+            execute(h, f, "backup", "crypt");
             f.flush();
             assertFalse(new StaffContentStorage(f.runtime).backups("crypt").isEmpty());
             var completion = new CompletableFuture<String>();
@@ -168,10 +144,10 @@ class StaffCommandContractTest {
                             () -> completion);
             assertThrows(
                     IllegalArgumentException.class,
-                    () -> execute(h, f, "completion", id.toString(), "crypt", "true", "Repair"));
+                    () -> execute(h, f, "completion", id.toString(), "crypt", "true"));
             assertThrows(
                     IllegalArgumentException.class,
-                    () -> execute(h, f, "maintenance", "crypt", "off", "Resume"));
+                    () -> execute(h, f, "maintenance", "crypt", "off"));
             assertDoesNotThrow(() -> execute(h, f, "operation", op.shortId()));
             completion.complete("done");
             f.flush();
@@ -189,7 +165,7 @@ class StaffCommandContractTest {
             f.runtime.queueRegistry().enqueue(queue);
             f.grants.clear();
             f.grants.add("dungeons.staff.queue.crypt");
-            execute(h, f, "player", p.player.getUniqueId().toString(), "queue-clear", "Requested");
+            execute(h, f, "player", p.player.getUniqueId().toString(), "queue-clear");
             assertNull(f.runtime.queueRegistry().getQueue(session));
             assertFalse(session.isAwaitingDungeon());
         }
@@ -283,7 +259,7 @@ class StaffCommandContractTest {
                             })
                     .when(dungeon)
                     .editAsync(playerId);
-            h.executeChecked(player.player, new String[] {"edit", "crypt", "Open editor"});
+            h.executeChecked(player.player, new String[] {"edit", "crypt"});
             f.flush();
             verify(dungeon).editAsync(playerId);
             assertEquals(StaffOperations.State.SUCCEEDED, f.ops.operations().getLast().state);
@@ -297,14 +273,14 @@ class StaffCommandContractTest {
             var h = handler(f);
             var p = f.player("Player");
             UUID id = p.player.getUniqueId();
-            execute(h, f, "restrict", id.toString(), "crypt", "1h", "Review");
-            assertTrue(f.ops.entryBlock(id, "crypt").contains("Review"));
+            execute(h, f, "restrict", id.toString(), "crypt", "1h");
+            assertTrue(f.ops.entryBlock(id, "crypt").contains("Contact staff"));
             assertNull(f.ops.entryBlock(id, "other"));
-            execute(h, f, "restrict", id.toString(), "crypt", "clear", "Done");
+            execute(h, f, "restrict", id.toString(), "crypt", "clear");
             assertNull(f.ops.entryBlock(id, "crypt"));
-            execute(h, f, "restrict", id.toString(), "all", "forever", "Review");
+            execute(h, f, "restrict", id.toString(), "all", "forever");
             assertNotNull(f.ops.entryBlock(id, "other"));
-            execute(h, f, "restrict", id.toString(), "all", "clear", "Done");
+            execute(h, f, "restrict", id.toString(), "all", "clear");
         }
     }
 
@@ -324,24 +300,20 @@ class StaffCommandContractTest {
             int before = f.run.run.getTimeLeft();
             assertThrows(
                     IllegalArgumentException.class,
-                    () -> execute(h, f, "instance", instance, "extend", "60", "a".repeat(257)));
+                    () -> execute(h, f, "instance", instance, "extend", "invalid"));
             assertEquals(before, f.run.run.getTimeLeft());
-            execute(h, f, "instance", instance, "extend", "60", "Downtime");
+            execute(h, f, "instance", instance, "extend", "60");
             assertEquals(before + 60, f.run.run.getTimeLeft());
-            execute(h, f, "player", id, "lives", "3", "Repair");
+            execute(h, f, "player", id, "lives", "3");
             assertEquals(3, f.run.run.getPlayerLives().get(p.player.getUniqueId()));
             assertThrows(
-                    IllegalArgumentException.class,
-                    () -> execute(h, f, "player", id, "revive", "Repair"));
+                    IllegalArgumentException.class, () -> execute(h, f, "player", id, "revive"));
             f.run.run.getLivingPlayers().remove(session);
-            execute(h, f, "player", id, "revive", "Repair");
+            execute(h, f, "player", id, "revive");
             assertTrue(f.run.run.getLivingPlayers().contains(session));
-            execute(h, f, "player", id, "rescue", "Stuck");
+            execute(h, f, "player", id, "rescue");
             assertNull(session.getInstance());
-            execute(h, f, "player", id, "recover", "Retry");
-            assertThrows(
-                    IllegalArgumentException.class,
-                    () -> execute(h, f, "instance", instance, "evacuate", "a".repeat(257)));
+            execute(h, f, "player", id, "recover");
         }
     }
 
@@ -361,13 +333,7 @@ class StaffCommandContractTest {
             assertTrue(f.runtime.playerSessions().get(staff.player).isObserving());
             h.executeChecked(staff.player, new String[] {"stop-observing"});
             assertFalse(f.runtime.playerSessions().get(staff.player).isObserving());
-            confirm(
-                    h,
-                    f,
-                    "instance",
-                    f.run.run.getInstanceId().toString(),
-                    "evacuate",
-                    "Emergency");
+            confirm(h, f, "instance", f.run.run.getInstanceId().toString(), "evacuate");
             assertTrue(f.run.run.getPlayers().isEmpty());
         }
     }
@@ -381,10 +347,9 @@ class StaffCommandContractTest {
             f.run.run.completeInitialization(false);
             f.run.run.addPlayer(f.runtime.playerSessions().get(player.player));
             String instance = f.run.run.getInstanceId().toString();
-            execute(h, f, "instance", instance, "evacuate", "Emergency");
-            String token = f.token();
+            execute(h, f, "instance", instance, "evacuate");
             f.run.run.elapsed(5);
-            execute(h, f, "instance", instance, "evacuate", "Emergency", "--confirm", token);
+            execute(h, f, "instance", instance, "evacuate");
             assertTrue(f.run.run.getPlayers().isEmpty());
         }
         try (var f = new StaffFixture(directory.resolve("roster"))) {
@@ -397,13 +362,12 @@ class StaffCommandContractTest {
             f.run.run.completeInitialization(false);
             f.run.run.addPlayer(original);
             String instance = f.run.run.getInstanceId().toString();
-            execute(h, f, "instance", instance, "evacuate", "Emergency");
-            String token = f.token();
+            execute(h, f, "instance", instance, "evacuate");
             f.run.run.getPlayers().clear();
             f.run.run.getPlayers().add(replacement);
-            execute(h, f, "instance", instance, "evacuate", "Emergency", "--confirm", token);
+            execute(h, f, "instance", instance, "evacuate");
             assertEquals(List.of(replacement), List.copyOf(f.run.run.getPlayers()));
-            assertNotEquals(token, f.token());
+            assertTrue(f.messages.getLast().contains("Repeat this command"));
             f.run.run.getPlayers().clear();
             f.run.run.getPlayers().add(original);
         }
@@ -413,18 +377,13 @@ class StaffCommandContractTest {
     void archiveRestorePurgeAndMalformattedCommandsCannotSkipConfirmation() throws Exception {
         try (var f = new StaffFixture(directory)) {
             var h = handler(f);
-            assertThrows(
-                    IllegalArgumentException.class,
-                    () -> execute(h, f, "archive", "all", "Invalid"));
-            execute(h, f, "archive", "crypt", "Retired");
+            assertThrows(IllegalArgumentException.class, () -> execute(h, f, "archive", "all"));
+            execute(h, f, "archive", "crypt");
             assertTrue(f.run.dungeon.getFolder().exists());
-            String token = f.token();
             f.denials.add("dungeons.staff.delete");
-            assertThrows(
-                    IllegalArgumentException.class,
-                    () -> execute(h, f, "archive", "crypt", "Retired", "--confirm", token));
+            assertThrows(IllegalArgumentException.class, () -> execute(h, f, "archive", "crypt"));
             f.denials.clear();
-            execute(h, f, "archive", "crypt", "Retired", "--confirm", token);
+            execute(h, f, "archive", "crypt");
             f.flush();
             var storage = new StaffContentStorage(f.runtime);
             String archive = storage.archives().getFirst();
@@ -435,13 +394,13 @@ class StaffCommandContractTest {
                                 f.catalog.put("crypt", f.run.dungeon);
                                 return f.run.dungeon;
                             });
-            confirm(h, f, "unarchive", archive, "Reopen");
+            execute(h, f, "unarchive", archive);
             f.flush();
             assertTrue(f.run.dungeon.getFolder().exists());
-            confirm(h, f, "archive", "crypt", "Retire again");
+            confirm(h, f, "archive", "crypt");
             f.flush();
             String newer = storage.archives().getFirst();
-            confirm(h, f, "purge", newer, "Permanent removal");
+            confirm(h, f, "purge", newer);
             f.flush();
             assertTrue(storage.archives().isEmpty());
         }

@@ -239,7 +239,7 @@ wait_for_log 'Enabling Dungeons'
 # disabled until explicitly initialized. Do not expect the enabled-dungeon success message.
 wait_for_log "Dungeon 'current-config' is disabled: repository metadata is missing or invalid"
 grep -Fq 'straightness: 0.8' "$current_map/config.yml" || fail 'Current generator configuration was not loaded'
-printf 'dungeon map maintenance current-config on Acceptance configuration mutations\n' >&"$paper_input_fd"
+printf 'dungeon map maintenance current-config on\n' >&"$paper_input_fd"
 wait_for_log 'Maintenance on for current-config'
 printf 'dungeon map settings current-config set branch.add command_side\n' >&"$paper_input_fd"
 wait_for_log 'branch.add.*command_side'
@@ -257,7 +257,7 @@ printf 'dungeon map settings current-config set layout branching\n' >&"$paper_in
 wait_for_log 'layout.*branching'
 grep -Fq 'layout: branching' "$current_map/config.yml" || fail 'Layout switch back was not saved'
 before_lines=$(wc -l <"$paper_log")
-printf 'dungeon map maintenance current-config off Acceptance configuration complete\n' >&"$paper_input_fd"
+printf 'dungeon map maintenance current-config off\n' >&"$paper_input_fd"
 wait_for_log 'Maintenance off for current-config'
 printf 'dungeon help\n' >&"$paper_input_fd"
 local_deadline=$((SECONDS + 45))

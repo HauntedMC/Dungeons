@@ -3,7 +3,7 @@
 # DataRegistry's effective language takes precedence over the Minecraft client locale.
 # This is a partial override: omitted keys use lang/messages.yml (Dutch by default).
 # Keep {placeholders} unchanged. HauntedMC theme tags work in every language.
-# Reload changes with /dungeon server reload config <reason>.
+# Reload changes with /dungeon server reload config.
 
 general:
   labels:

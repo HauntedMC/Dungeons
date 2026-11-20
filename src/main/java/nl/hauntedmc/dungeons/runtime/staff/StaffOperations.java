@@ -62,13 +62,7 @@ public final class StaffOperations implements AutoCloseable {
     }
 
     private record Confirmation(
-            String actor,
-            String action,
-            String target,
-            String revision,
-            String parameters,
-            long expires,
-            UUID token) {}
+            String action, String target, String revision, String parameters, long expires) {}
 
     private record Pending(
             Operation operation,
@@ -361,41 +355,30 @@ public final class StaffOperations implements AutoCloseable {
     }
 
     /** Confirmation authorizes exactly one actor, action, revision and parameter set. */
-    public UUID confirm(
-            CommandSender actor,
-            String action,
-            String target,
-            String revision,
-            String parameters,
-            String token) {
+    public boolean confirm(
+            CommandSender actor, String action, String target, String revision, String parameters) {
         requireOpen();
         String identity =
                 actor instanceof Player p
                         ? p.getUniqueId().toString()
                         : "console:" + actor.getName();
-        Confirmation previous = confirmations.get(identity);
+        long now = clock.getAsLong();
+        confirmations.values().removeIf(entry -> now - entry.expires >= 0);
+        Confirmation previous = confirmations.remove(identity);
         if (previous != null
-                && previous.expires > clock.getAsLong()
                 && previous.action.equals(action)
                 && previous.target.equals(target)
                 && previous.revision.equals(revision)
-                && previous.parameters.equals(parameters)
-                && previous.token.toString().equals(token)) {
-            confirmations.remove(identity);
-            return null;
-        }
-        UUID next = UUID.randomUUID();
+                && previous.parameters.equals(parameters)) return true;
         confirmations.put(
                 identity,
                 new Confirmation(
-                        identity,
-                        action,
-                        target,
-                        revision,
-                        parameters,
-                        clock.getAsLong() + TimeUnit.SECONDS.toNanos(30),
-                        next));
-        return next;
+                        action, target, revision, parameters, now + TimeUnit.SECONDS.toNanos(10)));
+        return false;
+    }
+
+    public void audit(CommandSender actor, String action, String target, String outcome) {
+        audit(actor, action, target, null, outcome);
     }
 
     public Operation drain(
@@ -717,7 +700,7 @@ public final class StaffOperations implements AutoCloseable {
 
     public void audit(
             CommandSender actor, String action, String target, String reason, String outcome) {
-        requireReason(reason);
+        if (reason != null) requireReason(reason);
         String line =
                 Instant.now()
                         + " actor="
@@ -726,8 +709,7 @@ public final class StaffOperations implements AutoCloseable {
                         + safe(action)
                         + " target="
                         + safe(target)
-                        + " reason="
-                        + safe(reason)
+                        + (reason == null ? "" : " reason=" + safe(reason))
                         + " result="
                         + safe(outcome)
                         + "\n";

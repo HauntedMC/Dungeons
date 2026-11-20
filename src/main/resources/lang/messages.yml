@@ -188,8 +188,8 @@ commands:
       lines:
       - '<HauntedMC:Success>/dungeon map create <HauntedMC:Warning><name> <type> [--generator <generator>] <HauntedMC:Text>| <HauntedMC:Warning>Maak een nieuwe dungeon.'
       - '<HauntedMC:Success>/dungeon map import <HauntedMC:Warning><world> <name> [--environment <environment>] <HauntedMC:Text>| <HauntedMC:Warning>Importeer een world als dungeon.'
-      - '<HauntedMC:Success>/dungeon map enable <HauntedMC:Warning><dungeon> <reason> <HauntedMC:Text>| <HauntedMC:Warning>Schakel een dungeon in voor spelen.'
-      - '<HauntedMC:Success>/dungeon map disable <HauntedMC:Warning><dungeon> <reason> <HauntedMC:Text>| <HauntedMC:Warning>Schakel een dungeon uit voor spelen.'
+      - '<HauntedMC:Success>/dungeon map enable <HauntedMC:Warning><dungeon> <HauntedMC:Text>| <HauntedMC:Warning>Schakel een dungeon in voor spelen.'
+      - '<HauntedMC:Success>/dungeon map disable <HauntedMC:Warning><dungeon> <HauntedMC:Text>| <HauntedMC:Warning>Schakel een dungeon uit voor spelen.'
       - '<HauntedMC:Success>/dungeon map list <HauntedMC:Accent>[filter] [pagina] <HauntedMC:Text>| <HauntedMC:Warning>Bekijk opgeslagen dungeons.'
       - '<HauntedMC:Success>/dungeon map info <HauntedMC:Warning><dungeon> <HauntedMC:Text>| <HauntedMC:Warning>Toon statische dungeon info.'
       - '<HauntedMC:Success>/dungeon map keys <add|remove|clear|list|give> <HauntedMC:Warning><dungeon> <HauntedMC:Text>| <HauntedMC:Warning>Beheer access keys.'
@@ -209,7 +209,7 @@ commands:
       failed: '<HauntedMC:Error>Importeren van de dungeon is mislukt. Controleer de console voor details.'
       success: '<HauntedMC:Success>World <HauntedMC:Warning>{world}<HauntedMC:Success> is succesvol geïmporteerd als dungeon.'
     delete:
-      usage: '<HauntedMC:Success>/dungeon map archive create <HauntedMC:Warning><dungeon> <reason> <HauntedMC:Text>| <HauntedMC:Warning>Verwijder een dungeon. Gebruik het nogmaals om te bevestigen.'
+      usage: '<HauntedMC:Success>/dungeon map archive create <HauntedMC:Warning><dungeon> <HauntedMC:Text>| <HauntedMC:Warning>Verwijder een dungeon. Gebruik het nogmaals om te bevestigen.'
       dungeon-not-found: '<HauntedMC:Error>Dungeon ''<HauntedMC:Warning>{dungeon}<HauntedMC:Error>'' bestaat niet.'
       edit-in-progress: '<HauntedMC:Error>Deze dungeon wordt momenteel bewerkt en kan nu niet verwijderd worden.'
       delete-warning: '<HauntedMC:Warning>Je staat op het punt deze dungeon te verwijderen.'
@@ -217,7 +217,7 @@ commands:
       notification: '<HauntedMC:Error>De dungeon waarin je zat is verwijderd.'
       success: '<HauntedMC:Success>Dungeon <HauntedMC:Warning>{dungeon}<HauntedMC:Success> is verwijderd.'
     reload:
-      usage: '<HauntedMC:Success>/dungeon map reload <HauntedMC:Accent><dungeon> <reason> <HauntedMC:Text>| <HauntedMC:Warning>Herlaad configs of een dungeon.'
+      usage: '<HauntedMC:Success>/dungeon map reload <HauntedMC:Accent><dungeon> <HauntedMC:Text>| <HauntedMC:Warning>Herlaad configs of een dungeon.'
       failed: '<HauntedMC:Error>Herladen mislukt of al bezig. De huidige dungeondata blijft behouden; controleer de console.'
       config-reloading: '<HauntedMC:Warning>Configs worden herladen...'
       config-reloaded: '<HauntedMC:Success>Configs zijn herladen.'
@@ -230,12 +230,12 @@ commands:
       reload-dungeon-confirm: '<HauntedMC:Warning>Gebruik hetzelfde command opnieuw om het herladen te forceren.'
       reloaded-by-admin: '<HauntedMC:Error>De dungeon is herladen door een admin.'
     enable:
-      usage: '<HauntedMC:Success>/dungeon map enable <HauntedMC:Warning><dungeon> <reason> <HauntedMC:Text>| <HauntedMC:Warning>Schakel een dungeon in voor spelen.'
+      usage: '<HauntedMC:Success>/dungeon map enable <HauntedMC:Warning><dungeon> <HauntedMC:Text>| <HauntedMC:Warning>Schakel een dungeon in voor spelen.'
       dungeon-not-found: '<HauntedMC:Error>Dungeon ''<HauntedMC:Warning>{dungeon}<HauntedMC:Error>'' bestaat niet.'
       already-enabled: '<HauntedMC:Warning>Dungeon ''<HauntedMC:Warning>{dungeon}<HauntedMC:Warning>'' is al ingeschakeld.'
       success: '<HauntedMC:Success>Dungeon ''<HauntedMC:Warning>{dungeon}<HauntedMC:Success>'' is nu ingeschakeld voor spelen.'
     disable:
-      usage: '<HauntedMC:Success>/dungeon map disable <HauntedMC:Warning><dungeon> <reason> <HauntedMC:Text>| <HauntedMC:Warning>Schakel een dungeon uit voor spelen.'
+      usage: '<HauntedMC:Success>/dungeon map disable <HauntedMC:Warning><dungeon> <HauntedMC:Text>| <HauntedMC:Warning>Schakel een dungeon uit voor spelen.'
       dungeon-not-found: '<HauntedMC:Error>Dungeon ''<HauntedMC:Warning>{dungeon}<HauntedMC:Error>'' bestaat niet.'
       already-disabled: '<HauntedMC:Warning>Dungeon ''<HauntedMC:Warning>{dungeon}<HauntedMC:Warning>'' is al uitgeschakeld.'
       success: '<HauntedMC:Success>Dungeon ''<HauntedMC:Warning>{dungeon}<HauntedMC:Success>'' is nu uitgeschakeld voor spelen.'
@@ -279,14 +279,14 @@ commands:
       player-line: '<HauntedMC:Warning> • {player}'
     keys:
       add:
-        usage: '<HauntedMC:Success>/dungeon map keys add <HauntedMC:Warning><dungeon> <reason> <HauntedMC:Text>| <HauntedMC:Warning>Maak het item in je hand een access key.'
+        usage: '<HauntedMC:Success>/dungeon map keys add <HauntedMC:Warning><dungeon> <HauntedMC:Text>| <HauntedMC:Warning>Maak het item in je hand een access key.'
         dungeon-not-found: '<HauntedMC:Error>Dungeon ''<HauntedMC:Warning>{dungeon}<HauntedMC:Error>'' bestaat niet.'
         no-permission: '<HauntedMC:Error>Je hebt geen permissie om deze dungeon te bewerken.'
         no-held-item: '<HauntedMC:Error>Je moet een item in je hand hebben.'
         issue-failed: '<HauntedMC:Error>Access key <HauntedMC:Warning>#{id}<HauntedMC:Error> is toegevoegd, maar de fysieke key kon niet veilig worden uitgegeven.'
         success: '<HauntedMC:Success>Het item in je hand is toegevoegd als access key <HauntedMC:Warning>#{id}<HauntedMC:Success>.'
       remove:
-        usage: '<HauntedMC:Success>/dungeon map keys remove <HauntedMC:Warning><dungeon> <key-id> <reason> <HauntedMC:Text>| <HauntedMC:Warning>Verwijder een access key via item in hand of key id.'
+        usage: '<HauntedMC:Success>/dungeon map keys remove <HauntedMC:Warning><dungeon> <key-id> <HauntedMC:Text>| <HauntedMC:Warning>Verwijder een access key via item in hand of key id.'
         dungeon-not-found: '<HauntedMC:Error>Dungeon ''<HauntedMC:Warning>{dungeon}<HauntedMC:Error>'' bestaat niet.'
         no-permission: '<HauntedMC:Error>Je hebt geen permissie om deze dungeon te bewerken.'
         no-held-item: '<HauntedMC:Error>Je moet een item in je hand hebben.'
@@ -295,7 +295,7 @@ commands:
         no-key-found: '<HauntedMC:Error>Er is geen bijpassende access key gevonden.'
         no-key-found-detail: '<HauntedMC:Error>Er is voor deze dungeon geen access key gevonden die overeenkomt met het item in je hand.'
       clear:
-        usage: '<HauntedMC:Success>/dungeon map keys clear <HauntedMC:Warning><dungeon> <reason> <HauntedMC:Text>| <HauntedMC:Warning>Verwijder alle access keys.'
+        usage: '<HauntedMC:Success>/dungeon map keys clear <HauntedMC:Warning><dungeon> <HauntedMC:Text>| <HauntedMC:Warning>Verwijder alle access keys.'
         dungeon-not-found: '<HauntedMC:Error>Dungeon ''<HauntedMC:Warning>{dungeon}<HauntedMC:Error>'' bestaat niet.'
         no-permission: '<HauntedMC:Error>Je hebt geen permissie om deze dungeon te bewerken.'
         success: '<HauntedMC:Success>Alle access keys zijn verwijderd. Totaal: <HauntedMC:Warning>{count}<HauntedMC:Success>.'
@@ -309,7 +309,7 @@ commands:
         labels:
           unknown: onbekend
       give:
-        usage: '<HauntedMC:Success>/dungeon map keys give <HauntedMC:Warning><dungeon> <player> <key-id> <reason> <HauntedMC:Text>| <HauntedMC:Warning>Geef een geconfigureerde access key.'
+        usage: '<HauntedMC:Success>/dungeon map keys give <HauntedMC:Warning><dungeon> <player> <key-id> <HauntedMC:Text>| <HauntedMC:Warning>Geef een geconfigureerde access key.'
         dungeon-not-found: '<HauntedMC:Error>Dungeon ''<HauntedMC:Warning>{dungeon}<HauntedMC:Error>'' bestaat niet.'
         player-not-found: '<HauntedMC:Error>Speler ''<HauntedMC:Warning>{player}<HauntedMC:Error>'' is niet online of bestaat niet.'
         invalid-key: '<HauntedMC:Error>Access key <HauntedMC:Warning>#{id}<HauntedMC:Error> bestaat niet voor dungeon <HauntedMC:Warning>{dungeon}<HauntedMC:Error>.'
