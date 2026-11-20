@@ -918,6 +918,7 @@ internal:
 repository:
   started: '<HauntedMC:Text>Repository operation started.'
   failed: '<HauntedMC:Error>Repository operation failed: {detail}'
+  list-empty: '<HauntedMC:Text>Geen gepubliceerde dungeons gevonden op deze pagina.'
 
 mechanic-editor:
   ask-value: '&eVoer {setting} in. Huidige waarde: {value}'

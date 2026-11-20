@@ -125,13 +125,18 @@ final class RepoCommandHandler implements CommandHandler {
                                                                 Objects.toString(
                                                                         detail.getMessage(),
                                                                         "Operation failed")));
-                                            } else if (value instanceof Collection<?> lines)
-                                                lines.forEach(
-                                                        line ->
-                                                                LangUtils.sendRaw(
-                                                                        actor,
-                                                                        String.valueOf(line)));
-                                            else LangUtils.sendRaw(actor, String.valueOf(value));
+                                            } else if (value instanceof Collection<?> lines) {
+                                                if (lines.isEmpty() && action.equals("list")) {
+                                                    LangUtils.sendMessage(
+                                                            actor, "repository.list-empty");
+                                                } else {
+                                                    lines.forEach(
+                                                            line ->
+                                                                    LangUtils.sendRaw(
+                                                                            actor,
+                                                                            String.valueOf(line)));
+                                                }
+                                            } else LangUtils.sendRaw(actor, String.valueOf(value));
                                         });
                     } catch (RuntimeException shuttingDown) {
                         /* Durable journals own interrupted outcomes. */
