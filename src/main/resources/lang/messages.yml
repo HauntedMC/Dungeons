@@ -44,20 +44,20 @@ commands:
     topic-list: 'Overzicht'
     topic-info: 'Dungeoninfo'
     topic-play: 'Spelen'
-    topic-guide: 'Wijzer'
+    topic-guide: 'Guide'
     topic-status: 'Status'
-    topic-objectives: 'Doelen'
+    topic-objectives: 'Objectives'
     topic-lives: 'Levens'
     topic-stuck: 'Vast?'
     topic-leave: 'Verlaten'
-    topic-spectate: 'Toekijken'
+    topic-spectate: 'Spectate'
     topic-hud: 'HUD'
     topic-team: 'Team'
     topic-map: 'Mappen'
     topic-edit: 'Editor'
     topic-player: 'Spelers'
-    topic-instance: 'Instanties'
-    topic-queue: 'Wachtrijen'
+    topic-instance: 'Instances'
+    topic-queue: 'Queues'
     topic-server: 'Server'
     topic-repo: 'Repository'
   list:
@@ -68,7 +68,7 @@ commands:
     footer: <HauntedMC:Muted>Pagina {page} / {total_pages}
     default-difficulty: standaard
   play:
-    usage: '<HauntedMC:Success>/dungeon play <HauntedMC:Warning><dungeon> [difficulty] <HauntedMC:Text>| <HauntedMC:Warning>Start een dungeon run voor de speler.'
+    usage: '<HauntedMC:Success>/dungeon play <HauntedMC:Warning><dungeon> [difficulty] <HauntedMC:Text>| <HauntedMC:Warning>Start een dungeonrun voor de speler.'
     console-needs-player: '<HauntedMC:Error>De console moet een speler opgeven.'
     player-not-found: '<HauntedMC:Error>Speler ''<HauntedMC:Warning>{player}<HauntedMC:Error>'' is niet online of bestaat niet.'
     already-in-queue: '<HauntedMC:Error>Die speler staat al in de dungeon queue.'
@@ -78,15 +78,15 @@ commands:
     disabled: '<HauntedMC:Error>Dungeon ''<HauntedMC:Warning>{dungeon}<HauntedMC:Error>'' is momenteel uitgeschakeld.'
     instances-full: '<HauntedMC:Error>Er is momenteel geen vrije instance beschikbaar voor deze dungeon.'
     how-to-cancel: '<HauntedMC:Muted>Gebruik <HauntedMC:Social>/dungeon leave <HauntedMC:Muted>om de queue te verlaten.'
-    on-cooldown: '<HauntedMC:Error>Je hebt nog access cooldown voor <HauntedMC:Warning>{dungeon}<HauntedMC:Error>.'
-    missing-key: '<HauntedMC:Error>Je hebt de benodigde key voor <HauntedMC:Warning>{dungeon}<HauntedMC:Error> niet.'
+    on-cooldown: '<HauntedMC:Error>Je kunt <HauntedMC:Warning>{dungeon}<HauntedMC:Error> pas na de cooldown opnieuw spelen.'
+    missing-key: '<HauntedMC:Error>Je hebt de Dungeon Key voor <HauntedMC:Warning>{dungeon}<HauntedMC:Error> nodig.'
     team:
-      only-leader-start: '<HauntedMC:Error>Alleen de team leider kan de dungeon starten.'
-      already-locked: '<HauntedMC:Error>Je team staat al in de wachtrij of draait al een dungeon.'
+      only-leader-start: '<HauntedMC:Error>Alleen de teamleider kan de dungeon starten.'
+      already-locked: '<HauntedMC:Error>Je team staat al in de queue of draait al een dungeon.'
       members-must-be-online: '<HauntedMC:Error>Alle teamleden moeten online zijn voordat je de dungeon kunt starten.'
       members-must-be-free: '<HauntedMC:Error>Alle teamleden moeten vrij zijn voordat je de dungeon kunt starten.'
-      member-on-cooldown: '<HauntedMC:Error>{player} staat nog op access cooldown voor <HauntedMC:Warning>{dungeon}<HauntedMC:Error>.'
-      member-missing-key: '<HauntedMC:Error>{player} heeft de benodigde key voor <HauntedMC:Warning>{dungeon}<HauntedMC:Error> niet.'
+      member-on-cooldown: '<HauntedMC:Error>{player} kan <HauntedMC:Warning>{dungeon}<HauntedMC:Error> pas na de cooldown opnieuw spelen.'
+      member-missing-key: '<HauntedMC:Error>{player} heeft de Dungeon Key voor <HauntedMC:Warning>{dungeon}<HauntedMC:Error> nodig.'
       team-too-large: '<HauntedMC:Error>Deze groep is te groot voor deze dungeon ({count}/{max} spelers).'
       open-too-large: '<HauntedMC:Error>Deze groep is te groot voor een open dungeon instance ({count}/{max} spelers).'
   leave:
@@ -118,7 +118,7 @@ commands:
     no-team-create-hint: '<HauntedMC:Error>Je hebt geen dungeon team. Maak er een met <HauntedMC:Social>/dungeon team create<HauntedMC:Error>.'
     not-in-team: '<HauntedMC:Error>Je zit niet in een dungeon team.'
     already-in-team: '<HauntedMC:Error>Je zit al in een dungeon team.'
-    locked: '<HauntedMC:Error>Je kunt het team niet meer aanpassen nadat het in de wachtrij staat of is gestart.'
+    locked: '<HauntedMC:Error>Je kunt het team niet meer aanpassen nadat het in de queue staat of is gestart.'
     create:
       in-dungeon: '<HauntedMC:Error>Je kunt geen team maken terwijl je in een dungeon zit.'
       in-queue: '<HauntedMC:Error>Je kunt geen team maken terwijl je in de dungeon queue staat of al onderweg bent naar een dungeon.'
@@ -126,7 +126,7 @@ commands:
       expiry-info: '<HauntedMC:Muted>Als er niet op tijd een dungeon wordt gestart, wordt het team automatisch verwijderd.'
     invite:
       usage: '<HauntedMC:Success>/dungeon team invite <HauntedMC:Warning><player> <HauntedMC:Text>| <HauntedMC:Warning>Nodig een speler uit voor je tijdelijke dungeon team.'
-      only-leader: '<HauntedMC:Error>Alleen de team leider kan spelers uitnodigen.'
+      only-leader: '<HauntedMC:Error>Alleen de teamleider kan spelers uitnodigen.'
       self: '<HauntedMC:Error>Je kunt jezelf niet uitnodigen.'
       already-member: '<HauntedMC:Error>Die speler zit al in jouw team.'
       target-in-team: '<HauntedMC:Error>Die speler zit al in een dungeon team.'
@@ -137,13 +137,13 @@ commands:
       none: '<HauntedMC:Error>Je hebt geen openstaande dungeon team invite.'
       expired: '<HauntedMC:Error>Die dungeon team invite is verlopen.'
       team-missing: '<HauntedMC:Error>Dat dungeon team bestaat niet meer.'
-      team-locked: '<HauntedMC:Error>Dat dungeon team staat al in de wachtrij of zit al in een dungeon.'
+      team-locked: '<HauntedMC:Error>Dat dungeon team staat al in de queue of zit al in een dungeon.'
       target-busy-self: '<HauntedMC:Error>Je kunt geen dungeon team accepteren terwijl je in een dungeon zit, in queue staat, of al onderweg bent naar een dungeon.'
       denied-self: '<HauntedMC:Muted>Je hebt de dungeon team invite geweigerd.'
       denied-other: '<HauntedMC:Error>{player} heeft je dungeon team invite geweigerd.'
     kick:
       usage: '<HauntedMC:Success>/dungeon team kick <HauntedMC:Warning><player> <HauntedMC:Text>| <HauntedMC:Warning>Zet een teamlid uit je team zolang jullie niet in een dungeon zitten.'
-      only-leader: '<HauntedMC:Error>Alleen de team leider kan teamleden verwijderen.'
+      only-leader: '<HauntedMC:Error>Alleen de teamleider kan teamleden verwijderen.'
       self: '<HauntedMC:Error>Je kunt jezelf niet uit het team zetten.'
       not-member: '<HauntedMC:Error>Die speler zit niet in jouw dungeon team.'
       started: '<HauntedMC:Error>Je kunt geen teamleden verwijderen terwijl jullie in een dungeon zitten.'
@@ -151,7 +151,7 @@ commands:
       removed-other: '<HauntedMC:Warning>{player} is uit het dungeon team gezet.'
     revoke:
       usage: '<HauntedMC:Success>/dungeon team cancel-invite <HauntedMC:Warning><player> <HauntedMC:Text>| <HauntedMC:Warning>Trek een openstaande invite in.'
-      only-leader: '<HauntedMC:Error>Alleen de team leider kan invites intrekken.'
+      only-leader: '<HauntedMC:Error>Alleen de teamleider kan invites intrekken.'
       no-invite: '<HauntedMC:Error>Er staat geen openstaande invite voor die speler vanuit jouw team.'
       success: '<HauntedMC:Success>De dungeon team invite voor <HauntedMC:Social>{player}<HauntedMC:Success> is ingetrokken.'
       notified: '<HauntedMC:Warning>Je dungeon team invite van <HauntedMC:Social>{leader}<HauntedMC:Warning> is ingetrokken.'
@@ -159,12 +159,12 @@ commands:
     joined: '<HauntedMC:Success>Je bent toegetreden tot het dungeon team van <HauntedMC:Social>{leader}<HauntedMC:Success>.'
     leave-hint: '<HauntedMC:Muted>Gebruik <HauntedMC:Social>/dungeon team leave <HauntedMC:Muted>als je het team later wilt verlaten.'
     delete:
-      only-leader: '<HauntedMC:Error>Alleen de team leider kan het team verwijderen.'
+      only-leader: '<HauntedMC:Error>Alleen de teamleider kan het team verwijderen.'
       started: '<HauntedMC:Error>Je team zit al in een dungeon. Gebruik <HauntedMC:Social>/dungeon leave <HauntedMC:Error>om de run als leider te stoppen.'
       starting: '<HauntedMC:Error>Je team is al bezig met starten en kan niet meer aangepast worden.'
     deleted-by-leader: '<HauntedMC:Error>Het dungeon team is verwijderd door de leider.'
     leave:
-      leader-cannot-leave: '<HauntedMC:Error>Je bent de team leider en kunt je eigen team niet verlaten.'
+      leader-cannot-leave: '<HauntedMC:Error>Je bent de teamleider en kunt je eigen team niet verlaten.'
       leader-started-hint: '<HauntedMC:Muted>Gebruik <HauntedMC:Social>/dungeon leave <HauntedMC:Muted>om de run te stoppen, of <HauntedMC:Social>/dungeon team disband <HauntedMC:Muted>voordat de dungeon start.'
       self: '<HauntedMC:Success>Je hebt het dungeon team verlaten.'
       other: '<HauntedMC:Warning>{player} heeft het dungeon team verlaten.'
@@ -181,11 +181,11 @@ commands:
       member-controls-idle: '<HauntedMC:Social>Lid opties: <HauntedMC:Text>Gebruik /dungeon team leave om het team te verlaten.'
       states:
         running: actief
-        queued: in wachtrij
+        queued: 'in queue'
         idle: gereed
       labels:
         default-difficulty: standaard
-    queued: '<HauntedMC:Success>Het team staat nu in de wachtrij voor <HauntedMC:Social>{dungeon}<HauntedMC:Success>. De leider neemt iedereen mee naar dezelfde instance.'
+    queued: '<HauntedMC:Success>Het team staat nu in de queue voor <HauntedMC:Social>{dungeon}<HauntedMC:Success>. De leider neemt iedereen mee naar dezelfde instance.'
     started: '<HauntedMC:Success>Je dungeon team is instance <HauntedMC:Social>{instance}<HauntedMC:Success> binnengegaan.'
     started-hint: '<HauntedMC:Muted>Als de leider vertrekt of het team ontbindt, blijft de dungeon tijdelijk open voor de overgebleven spelers.'
     expired: '<HauntedMC:Error>Je dungeon team is verlopen omdat er niet op tijd een dungeon is gestart.'
@@ -362,8 +362,8 @@ commands:
       - '<HauntedMC:Success>/dungeon edit close <HauntedMC:Text>| <HauntedMC:Warning>Sluit je huidige edit sessie.'
       - '<HauntedMC:Success>/dungeon edit save <HauntedMC:Text>| <HauntedMC:Warning>Sla de huidige edit sessie op.'
       - '<HauntedMC:Success>/dungeon edit location lobby set <HauntedMC:Text>| <HauntedMC:Warning>Stel de lobby spawn in.'
-      - '<HauntedMC:Success>/dungeon edit start set <HauntedMC:Text>| <HauntedMC:Warning>Stel de start spawn in.'
-      - '<HauntedMC:Success>/dungeon edit start add [naam] | set [id] | list | tp <id> | remove <id> <HauntedMC:Text>| <HauntedMC:Warning>Beheer willekeurige startpunten.'
+      - '<HauntedMC:Success>/dungeon edit start set <HauntedMC:Text>| <HauntedMC:Warning>Stel het spawnpoint in.'
+      - '<HauntedMC:Success>/dungeon edit start add [naam] | set [id] | list | tp <id> | remove <id> <HauntedMC:Text>| <HauntedMC:Warning>Beheer de mogelijke spawnpoints.'
       - '<HauntedMC:Success>/dungeon edit items <ban|unban|mark-dungeon> <HauntedMC:Text>| <HauntedMC:Warning>Beheer items in de editor.'
       - '<HauntedMC:Success>/dungeon edit tools <function|room> <HauntedMC:Text>| <HauntedMC:Warning>Herstel editor tools.'
       - '<HauntedMC:Success>/dungeon edit signs clean <HauntedMC:Text>| <HauntedMC:Warning>Verwijder function signs.'
@@ -390,19 +390,19 @@ commands:
     start:
       points:
         usage: '<HauntedMC:Text>/dungeon edit start add [naam] | set [id] | list | tp <id> | remove <id>'
-        branching: '<HauntedMC:Error>Branching dungeons gebruiken de gegenereerde spawn van de eerste kamer.'
-        added: '<HauntedMC:Success>Startpunt {id} toegevoegd.'
-        updated: '<HauntedMC:Success>Startpunt {id} bijgewerkt.'
-        removed: '<HauntedMC:Success>Startpunt {id} verwijderd.'
-        empty: '<HauntedMC:Warning>Geen startpunten ingesteld; de wereldspawn wordt gebruikt.'
-        header: '<HauntedMC:Text>{count} startpunten. Elk instance kiest een willekeurig startpunt voor alle spelers.'
+        branching: '<HauntedMC:Error>Branching dungeons gebruiken het spawnpoint van de eerste room.'
+        added: '<HauntedMC:Success>Spawnpoint {id} toegevoegd.'
+        updated: '<HauntedMC:Success>Spawnpoint {id} bijgewerkt.'
+        removed: '<HauntedMC:Success>Spawnpoint {id} verwijderd.'
+        empty: '<HauntedMC:Warning>Geen spawnpoints ingesteld. De world spawn wordt gebruikt.'
+        header: '<HauntedMC:Text>{count} spawnpoints · Per instance wordt één spawnpoint gekozen voor alle spelers.'
         entry: '<HauntedMC:Text>{id}: {location}'
         invalid: '<HauntedMC:Error>{reason}'
       set:
-        usage: '<HauntedMC:Success>/dungeon edit start set <HauntedMC:Text>| <HauntedMC:Warning>Stel de start spawn van de dungeon in.'
+        usage: '<HauntedMC:Success>/dungeon edit start set <HauntedMC:Text>| <HauntedMC:Warning>Stel het spawnpoint van de dungeon in.'
         not-in-dungeon: '<HauntedMC:Error>Je zit niet in een dungeon editor.'
         not-editing: '<HauntedMC:Error>Je bent momenteel geen dungeon aan het bewerken.'
-        success: '<HauntedMC:Success>Start spawn ingesteld op <HauntedMC:Text>{x}, {y}, {z}<HauntedMC:Success> met yaw <HauntedMC:Text>{yaw}<HauntedMC:Success>.'
+        success: '<HauntedMC:Success>Spawnpoint ingesteld op <HauntedMC:Text>{x}, {y}, {z}<HauntedMC:Success> met yaw <HauntedMC:Text>{yaw}<HauntedMC:Success>.'
     items:
       ban:
         usage: '<HauntedMC:Success>/dungeon edit items ban <HauntedMC:Text>| <HauntedMC:Warning>Blokkeer het item in je hand in deze dungeon.'
@@ -466,25 +466,25 @@ instance:
       team-disbanded-timeout: '<HauntedMC:Error>De uitlooptijd na het ontbinden van het team is verstreken. De dungeon wordt nu gesloten.'
       life-lost: '<HauntedMC:Warning>{player} verloor een leven. <HauntedMC:Muted>Nog over: <HauntedMC:Text>{lives}'
       all-lives-lost: '<HauntedMC:Error>{player} heeft alle levens verloren.'
-      all-lives-lost-and-spectating: '<HauntedMC:Error>{player} heeft alle levens verloren en spectate nu.'
-      all-lives-lost-and-spectating-auto-close: '<HauntedMC:Error>Iedereen spectate nu. De dungeon wordt gesloten.'
-      bucket-deny: '<HauntedMC:Error>Emmers zijn niet toegestaan in deze dungeon.'
-      chorus-fruit-deny: '<HauntedMC:Error>Chorus fruit is niet toegestaan in deze dungeon.'
+      all-lives-lost-and-spectating: '<HauntedMC:Warning>{player} heeft alle levens verloren en zit nu in Spectator Mode.'
+      all-lives-lost-and-spectating-auto-close: '<HauntedMC:Warning>Iedereen zit in Spectator Mode. De dungeon sluit.'
+      bucket-deny: '<HauntedMC:Error>Buckets zijn niet toegestaan in deze dungeon.'
+      chorus-fruit-deny: '<HauntedMC:Error>Chorus Fruit is niet toegestaan in deze dungeon.'
       command-deny: '<HauntedMC:Error>Dat command is niet toegestaan in deze dungeon.'
       dungeon-item-inheritance: '<HauntedMC:Warning>Dungeon items zijn overgedragen aan {player}.'
-      key-inheritance: '<HauntedMC:Warning>Keys zijn overgedragen aan {player}.'
-      enderpearl-deny: '<HauntedMC:Error>Ender pearls zijn niet toegestaan in deze dungeon.'
+      key-inheritance: '<HauntedMC:Warning>Dungeon Keys zijn overgedragen aan {player}.'
+      enderpearl-deny: '<HauntedMC:Error>Ender Pearls zijn niet toegestaan in deze dungeon.'
       item-banned: '<HauntedMC:Error>Dat item is niet toegestaan in deze dungeon.'
-      spectate-deny: '<HauntedMC:Error>Je kunt dat niet doen terwijl je spectate.'
+      spectate-deny: '<HauntedMC:Error>Je kunt dat niet doen in Spectator Mode.'
     functions:
-      checkpoint: '<HauntedMC:Success>Checkpoint opgeslagen.'
+      checkpoint: '<HauntedMC:Success>Checkpoint geactiveerd.'
       savepoint: '<HauntedMC:Success>Je bent teruggezet naar je savepoint.'
       start-dungeon-ready: '<HauntedMC:Success>De dungeon is klaar om te starten.'
       finish-dungeon: '<HauntedMC:Success>Dungeon <HauntedMC:Warning>{dungeon}<HauntedMC:Success> voltooid.'
       item-dispenser: '<HauntedMC:Success>Je ontving <HauntedMC:Warning>{amount}x<HauntedMC:Success> <HauntedMC:Text>{item}<HauntedMC:Success>.'
       keys:
-        key-player: '<HauntedMC:Warning>{player} ontving een dungeon key.'
-        key-ground: '<HauntedMC:Warning>Er is een dungeon key op de grond gevallen.'
+        key-player: '<HauntedMC:Warning>{player} ontving een Dungeon Key.'
+        key-ground: '<HauntedMC:Warning>Er is een Dungeon Key op de grond gevallen.'
       lives-editor: '<HauntedMC:Success>Levens aangepast naar <HauntedMC:Warning>{lives}<HauntedMC:Success> ({operation}).'
       doors:
         lock: '<HauntedMC:Error>Deur vergrendeld.'
@@ -496,7 +496,7 @@ instance:
         no-uses: '<HauntedMC:Error>Deze reviver kan niet meer worden gebruikt.'
         not-dead: '<HauntedMC:Error>Die speler is niet dood.'
         not-in-dungeon: '<HauntedMC:Error>{player} zit niet in deze dungeon.'
-        revived: '<HauntedMC:Success>{player} is weer tot leven gewekt.'
+        revived: '<HauntedMC:Success>{player} is weer in de run.'
         uses-remaining: '<HauntedMC:Warning>Nog <HauntedMC:Warning>{uses}<HauntedMC:Warning> gebruik(en) over.'
 editor:
   session:
@@ -639,7 +639,7 @@ editor:
       direction-set: '<HauntedMC:Success>Richting ingesteld op ''<HauntedMC:Warning>{yaw}<HauntedMC:Success>'''
       disabled: '<HauntedMC:Error>&lUITGESCHAKELD'
       enabled: '<HauntedMC:Success>&lINGESCHAKELD'
-      rejoin-note: '<HauntedMC:Accent>Als de speler vertrekt zonder de dungeon af te maken, start die de volgende keer hier.'
+      rejoin-note: '<HauntedMC:Accent>Als savepoint bewaart dit checkpoint de voortgang voor een volgende run.'
     chunk-load:
       ask-radius: '<HauntedMC:Warning>Wat moet de straal in blokken zijn?'
       radius-set: '<HauntedMC:Success>Straal ingesteld op ''<HauntedMC:Warning>{radius}<HauntedMC:Success>'''
@@ -971,34 +971,34 @@ experience:
   ui-toggle-navigation: "Navigatie"
   ui-inherit: "Serverstandaard"
   ui-run-summary: "Runverslag"
-  ui-observing: "Kijkt toe"
-  ui-revive-action: "Klik om op te wekken"
-  ui-revive-title: "Teamgenoot opwekken"
-  ui-hud-difficulty: "<HauntedMC:Muted>Moeilijkheid  <HauntedMC:Text>{value}"
+  ui-observing: 'Spectator'
+  ui-revive-action: 'Klik om te reviven'
+  ui-revive-title: 'Revive een teamgenoot'
+  ui-hud-difficulty: '<HauntedMC:Muted>Difficulty  <HauntedMC:Text>{value}'
   ui-hud-remaining: "<HauntedMC:Muted>Tijd over  <HauntedMC:Text>{value}"
   ui-hud-elapsed: "<HauntedMC:Muted>Verstreken  <HauntedMC:Text>{value}"
   ui-hud-lives: "<HauntedMC:Muted>Levens  <HauntedMC:Text>{value}"
-  ui-hud-party: "<HauntedMC:Muted>Groep  <HauntedMC:Text>{value}"
-  ui-hud-respawn: "<HauntedMC:Muted>Terugkeer  <HauntedMC:Text>{value}"
+  ui-hud-party: '<HauntedMC:Muted>Team  <HauntedMC:Text>{value}'
+  ui-hud-respawn: '<HauntedMC:Muted>Respawn  <HauntedMC:Text>{value}'
   ui-enter-action: "Starten"
   ui-settings-saved: "HUD-instellingen opgeslagen."
   ui-available: 'Open'
   ui-unavailable: 'Niet beschikbaar'
   ui-time-label: 'Tijd'
   ui-lives-label: 'Levens'
-  ui-party-label: 'Max. groep'
+  ui-party-label: 'Teamlimiet'
   ui-no-limit: 'Onbeperkt'
   ui-rules-heading: 'RUNREGELS'
-  ui-key-kept: 'Toegangssleutel nodig · je behoudt hem'
-  ui-key-spent: 'Toegangssleutel nodig · wordt verbruikt'
+  ui-key-kept: 'Dungeon Key nodig · je houdt de key'
+  ui-key-spent: 'Dungeon Key nodig · wordt verbruikt'
   ui-leave-heading: 'Deze run verlaten?'
-  ui-leave-repeat: '/dungeon leave · 10s'
-  ui-leave-progress: 'Voortgang sinds je laatste opslagpunt gaat verloren.'
+  ui-leave-repeat: 'Bevestig binnen 10 s'
+  ui-leave-progress: 'Voortgang sinds je laatste savepoint gaat verloren.'
   ui-leave-unsaved: 'Niet-opgeslagen voortgang gaat verloren.'
-  ui-leave-cooldown: 'Start een toegangswachttijd.'
-  ui-leave-key: 'Gebruikte sleutels blijven verbruikt.'
-  ui-leave-action: 'Vertrek bevestigen'
-  ui-guide-action: 'Wijzer'
+  ui-leave-cooldown: 'De cooldown om opnieuw te spelen gaat in.'
+  ui-leave-key: 'Je krijgt verbruikte Dungeon Keys niet terug.'
+  ui-leave-action: 'Bevestigen'
+  ui-guide-action: 'Guide'
   ui-leave-short: 'Verlaten'
   ui-status-action: 'Status'
   ui-cancel-action: 'Annuleren'
@@ -1010,113 +1010,113 @@ experience:
   ui-no-history: 'Geen recente runmeldingen.'
   ui-active: 'Geselecteerd'
   ui-menu-status: 'Bekijk levens, tijd en je huidige status.'
-  ui-menu-party-guide: 'Bekijk wie speelt of toekijkt.'
-  ui-menu-rules: 'Bekijk de regels voor toegang en herstel.'
-  ui-menu-objectives: 'Bekijk onthulde doelen en hints.'
+  ui-menu-party-guide: 'Bekijk wie speelt of in Spectator Mode zit.'
+  ui-menu-rules: 'Bekijk de regels voor toegang en respawn.'
+  ui-menu-objectives: 'Bekijk je objectives en hints.'
   ui-menu-leave: 'Bekijk wat je verliest als je vertrekt.'
-  ui-menu-fresh-start: 'Verwijder het onbruikbare opslagpunt.'
-  ui-menu-balanced: 'Toon doelen en rundetails.'
-  ui-menu-minimal: 'Toon een kleiner scorebord.'
-  ui-menu-immersive: 'Verberg het dungeonscorebord.'
+  ui-menu-fresh-start: 'Verwijder je oude savepoint en begin opnieuw.'
+  ui-menu-balanced: 'Toon objectives en rundetails.'
+  ui-menu-minimal: 'Toon een kleiner scoreboard.'
+  ui-menu-immersive: 'Verberg het dungeon-scoreboard.'
   ui-menu-history: 'Lees recente runmeldingen.'
   ui-menu-inherit: 'Volg de serverinstelling.'
   ui-menu-click: 'Klik om te openen'
   ui-menu-select: 'Klik om te kiezen'
-  ui-menu-difficulty: 'Kies moeilijkheid'
+  ui-menu-difficulty: 'Kies een difficulty'
   ui-menu-join: 'Klik om te starten'
-  ui-elapsed-label: 'Gespeeld'
-  ui-deaths-label: 'Sterfgevallen'
+  ui-elapsed-label: 'Speeltijd'
+  ui-deaths-label: 'Deaths'
   ui-started: 'Run begonnen'
   welcome: "<HauntedMC:Text>Welkom in {value}."
-  guide: "<HauntedMC:Text>[Dungeonwijzer]"
-  guide-title: "<HauntedMC:Text>Dungeonwijzer"
+  guide: '<HauntedMC:Text>Dungeon Guide'
+  guide-title: '<HauntedMC:Text>Dungeon Guide'
   leave: "<HauntedMC:Text>[Verlaten]"
   stay: "<HauntedMC:Text>[Verder spelen]"
-  cancel: "<HauntedMC:Text>[Wachtrij verlaten]"
-  objectives: "<HauntedMC:Text>Doelen"
-  rules: "<HauntedMC:Text>Regels en herstel"
+  cancel: '<HauntedMC:Text>[Queue verlaten]'
+  objectives: '<HauntedMC:Text>Objectives'
+  rules: '<HauntedMC:Text>Regels & respawn'
   status: "<HauntedMC:Text>Huidige status"
   history: "<HauntedMC:Text>Recente meldingen"
-  balanced: "<HauntedMC:Text>Gebalanceerd"
-  minimal: "<HauntedMC:Text>Minimaal"
-  immersive: "<HauntedMC:Text>Meeslepend"
+  balanced: '<HauntedMC:Text>Balanced'
+  minimal: '<HauntedMC:Text>Minimal'
+  immersive: '<HauntedMC:Text>Immersive'
   state: "<HauntedMC:Text>{value}"
   playing: "<HauntedMC:Text>Bezig"
-  lobby: "<HauntedMC:Text>Wachten op de start"
+  lobby: '<HauntedMC:Text>Lobby'
   completed: "<HauntedMC:Success>Dungeon voltooid!"
-  spectating: "<HauntedMC:Text>Toeschouwer"
-  difficulty: "<HauntedMC:Text>Moeilijkheid  {value}"
+  spectating: '<HauntedMC:Text>Spectator Mode'
+  difficulty: '<HauntedMC:Text>Difficulty  {value}'
   remaining: "<HauntedMC:Text>Tijd over  {value}"
   elapsed: "<HauntedMC:Text>Speeltijd  {value}"
   lives: "<HauntedMC:Text>Levens  {value}"
-  party: "<HauntedMC:Text>Groep  {value} spelers"
-  respawn: "<HauntedMC:Text>Terugkeer  {value}"
-  spawn: "<HauntedMC:Text>Startpunt"
+  party: '<HauntedMC:Text>Team  {value} spelers'
+  respawn: '<HauntedMC:Text>Respawn  {value}'
+  spawn: '<HauntedMC:Text>Spawnpoint'
   checkpoint: "<HauntedMC:Text>Checkpoint"
   unlimited: "<HauntedMC:Text>Onbeperkt"
-  spawn-explanation: "<HauntedMC:Text>Na je dood keer je terug naar je huidige respawnpunt zolang je levens hebt. Een respawncheckpoint bewaart niet automatisch je voortgang voor een volgend bezoek."
-  inventory-restored: "<HauntedMC:Text>Je inventaris van buiten wordt bewaard en hersteld bij vertrek. Dungeonbuit volgt de inventarisregels van deze map."
-  hint-available: "<HauntedMC:Text>Er is een hint beschikbaar: /dungeon objectives hint"
+  spawn-explanation: '<HauntedMC:Text>Met levens over respawn je bij je spawnpoint of laatste checkpoint. Alleen een savepoint bewaart voortgang voor je volgende run.'
+  inventory-restored: '<HauntedMC:Text>Bij vertrek krijg je je oorspronkelijke inventaris terug. De dungeonregels bepalen welke loot je meeneemt.'
+  hint-available: '<HauntedMC:Text>Hint beschikbaar · /dungeon objectives hint'
   progress: "<HauntedMC:Text>{value}: {count}/{target}"
-  objective-completed: "<HauntedMC:Success> ✓ Doel voltooid: {value}"
-  stage-started: "<HauntedMC:Accent> ◆ Nieuwe fase: {value}"
-  stage-completed: "<HauntedMC:Success> ✓ Fase voltooid: {value}"
-  track-completed: "<HauntedMC:Success> ✓ Avontuur voltooid: {value}"
-  encounter-started: "<HauntedMC:Warning> ◆ Gevecht begonnen: {value}"
-  encounter-completed: "<HauntedMC:Success> ✓ Gevecht voltooid: {value}"
-  encounter-failed: "<HauntedMC:Error> ! Gevecht gestopt: {value}. Bekijk de dungeonwijzer."
-  encounter-reset: "<HauntedMC:Text>Gevecht opnieuw ingesteld: {value}"
-  wave-started: "<HauntedMC:Warning> ◆ Volgende golf: {value}"
-  boss-phase: "<HauntedMC:Warning> ◆ Bossfase gewijzigd: {value}"
+  objective-completed: '<HauntedMC:Success> ✓ Objective voltooid · {value}'
+  stage-started: '<HauntedMC:Accent> ◆ Nieuwe stage · {value}'
+  stage-completed: '<HauntedMC:Success> ✓ Stage voltooid · {value}'
+  track-completed: '<HauntedMC:Success> ✓ Track voltooid · {value}'
+  encounter-started: '<HauntedMC:Warning> ◆ Encounter begonnen · {value}'
+  encounter-completed: '<HauntedMC:Success> ✓ Encounter voltooid · {value}'
+  encounter-failed: '<HauntedMC:Error> ! Encounter gestopt · {value}. Bekijk de Dungeon Guide.'
+  encounter-reset: '<HauntedMC:Text>Encounter gereset · {value}'
+  wave-started: '<HauntedMC:Warning> ◆ Volgende wave · {value}'
+  boss-phase: '<HauntedMC:Warning> ◆ Boss phase · {value}'
   victory: "<HauntedMC:Success>OVERWINNING"
-  expedition-ended: "<HauntedMC:Text>Expeditie beëindigd."
-  lives-lost: "<HauntedMC:Text>Sterfgevallen  {value}"
-  saved: "<HauntedMC:Success> ✓ Je opslagpunt is bewaard."
+  expedition-ended: '<HauntedMC:Text>Run afgelopen.'
+  lives-lost: '<HauntedMC:Text>Deaths  {value}'
+  saved: '<HauntedMC:Success> ✓ Savepoint opgeslagen.'
   exit-confirm: "<HauntedMC:Text>Herhaal /dungeon leave binnen 10 seconden om te bevestigen."
-  exit-unsaved: "<HauntedMC:Text>Je huidige voortgang wordt niet door vertrek opgeslagen. Een volgend bezoek begint bij de ingestelde ingang of een eerder opslagpunt."
-  exit-saved: "<HauntedMC:Text>Je laatste opslagpunt blijft beschikbaar; voortgang sinds die opslag wordt niet door vertrek bewaard."
-  exit-cooldown: "<HauntedMC:Text>Bij vertrek geldt de toegangscooldown van deze dungeon."
-  exit-key: "<HauntedMC:Text>Verbruikte toegangssleutels worden bij vertrek niet teruggegeven."
-  not-participating: "<HauntedMC:Text>Je zit momenteel niet in een dungeon. Gebruik /dungeon info <map> voor informatie."
-  exploration: "<HauntedMC:Text>Deze dungeon heeft geen zichtbare taken. Verken op je eigen tempo."
+  exit-unsaved: '<HauntedMC:Text>Je voortgang wordt bij vertrek niet opgeslagen. Je volgende run begint bij het spawnpoint of je laatste savepoint.'
+  exit-saved: '<HauntedMC:Text>Je kunt vanaf je laatste savepoint verder. Voortgang sinds dat savepoint gaat verloren.'
+  exit-cooldown: '<HauntedMC:Text>Als je vertrekt, gaat de cooldown om opnieuw te spelen in.'
+  exit-key: '<HauntedMC:Text>Je krijgt verbruikte Dungeon Keys niet terug.'
+  not-participating: '<HauntedMC:Text>Je zit niet in een dungeon. Bekijk de regels met /dungeon info <map>.'
+  exploration: '<HauntedMC:Text>Er zijn nog geen objectives zichtbaar. Verken de dungeon op je eigen tempo.'
   settings-updated: "<HauntedMC:Text>Je weergave-instellingen zijn opgeslagen."
   queued: "<HauntedMC:Text>Wachten op {value} · {time}"
   started: "<HauntedMC:Text>Je dungeonrun is begonnen. /dungeon guide · /dungeon leave"
   death: "<HauntedMC:Text>Je levens en respawnstatus zijn bijgewerkt. /dungeon status"
   reconnected: "<HauntedMC:Text>Welkom terug. Je voortgang in de actieve dungeon is behouden."
-  navigation: "<HauntedMC:Text>Doelrichting {bearing}° · {value} blokken (rechtstreeks)"
-  incompatible-save: "<HauntedMC:Text>Deze opgeslagen doelvoortgang hoort bij een andere dungeonversie of moeilijkheid. Kies een nieuwe start via /dungeon guide."
-  fresh-start: "<HauntedMC:Text>[Opnieuw beginnen]"
-  editor-title: "<HauntedMC:Text>Dungeonervaring bewerken"
-  editor-saved: "<HauntedMC:Success>Ervaring opgeslagen en gevalideerd. Actieve runs behouden hun definities."
-  editor-valid: "<HauntedMC:Text>De ervaringsconfiguratie is geldig."
-  editor-preview: "<HauntedMC:Text>HUD-voorbeeld · sluit automatisch na 10 seconden."
-  party-guide: "<HauntedMC:Text>Groepsstatus"
+  navigation: '<HauntedMC:Text>Objective {bearing}° · {value} blokken hemelsbreed'
+  incompatible-save: '<HauntedMC:Text>Je savepoint hoort bij een andere dungeonversie of difficulty. Open de Dungeon Guide om opnieuw te beginnen.'
+  fresh-start: '<HauntedMC:Text>Opnieuw beginnen'
+  editor-title: '<HauntedMC:Text>Dungeon Experience Editor'
+  editor-saved: '<HauntedMC:Success>Experience-instellingen opgeslagen en gevalideerd. Actieve runs houden hun huidige instellingen.'
+  editor-valid: '<HauntedMC:Text>De experience-configuratie is geldig.'
+  editor-preview: '<HauntedMC:Text>HUD-preview · sluit na 10 seconden.'
+  party-guide: '<HauntedMC:Text>Teamstatus'
   offline: "<HauntedMC:Text>Offline"
-  reconnect-deadline: "<HauntedMC:Text>Tijd om terug te keren: {value}"
-  teammate-offline: "<HauntedMC:Text>{value} is offline. Bekijk de terugkeertermijn in de dungeonwijzer."
-  fresh-confirmed: "<HauntedMC:Text>Je oude opslagpunt is verwijderd. Je persoonlijke voortgang begint opnieuw."
+  reconnect-deadline: '<HauntedMC:Text>Opnieuw verbinden binnen {value}'
+  teammate-offline: '<HauntedMC:Text>{value} is offline. Bekijk in de Dungeon Guide hoeveel tijd diegene heeft om weer te verbinden.'
+  fresh-confirmed: '<HauntedMC:Text>Je savepoint is verwijderd. Je begint opnieuw.'
   preparing: "<HauntedMC:Text>{value} wordt voorbereid · {time}"
   preparing-label: "<HauntedMC:Text>Dungeon voorbereiden"
-  queue-label: "<HauntedMC:Text>In de wachtrij"
+  queue-label: '<HauntedMC:Text>In de queue'
   timeout: "<HauntedMC:Warning> ! De tijd is op. Je dungeonrun is afgelopen."
   untimed: "<HauntedMC:Text>Geen tijdslimiet."
-  party-limit: "<HauntedMC:Text>Groepslimiet: {value}"
-  entry-key-consumed: "<HauntedMC:Text>Bij toegang wordt een passende toegangssleutel verbruikt."
-  entry-key-required: "<HauntedMC:Text>Een passende toegangssleutel is vereist en blijft behouden."
-  entry-spectator: "<HauntedMC:Text>Als je levens op zijn, word je toeschouwer."
+  party-limit: '<HauntedMC:Text>Teamlimiet · {value}'
+  entry-key-consumed: '<HauntedMC:Text>Een Dungeon Key wordt bij binnenkomst verbruikt.'
+  entry-key-required: '<HauntedMC:Text>Je hebt een Dungeon Key nodig. Je mag hem houden.'
+  entry-spectator: '<HauntedMC:Text>Als je levens op zijn, ga je naar Spectator Mode.'
   entry-eliminated: "<HauntedMC:Text>Als je levens op zijn, verlaat je de dungeon."
   entry-inventory-kept: "<HauntedMC:Text>Je neemt je huidige inventaris mee in deze dungeon."
-  entry-cooldown: "<HauntedMC:Text>Toegangscooldowns volgen de ingestelde regels voor starten, voltooien, sterven en verlaten."
+  entry-cooldown: '<HauntedMC:Text>Starten, voltooien, sterven of vertrekken kan een cooldown activeren.'
   reward: "<HauntedMC:Text>Ontvangen: {amount} × {value}"
-  objectives-finished: "<HauntedMC:Text>Doelen voltooid: {value}"
-  tracked-kills: "<HauntedMC:Text>Gevechtskills: {value}"
-  next-entry: "<HauntedMC:Text>Volgende toegang over {value}"
-  death-spectator: "<HauntedMC:Warning> ! Je levens zijn op. Je bent nu toeschouwer. /dungeon guide · /dungeon leave"
+  objectives-finished: '<HauntedMC:Text>Objectives voltooid · {value}'
+  tracked-kills: '<HauntedMC:Text>Encounter kills · {value}'
+  next-entry: '<HauntedMC:Text>Opnieuw spelen over {value}'
+  death-spectator: '<HauntedMC:Warning> ! Je levens zijn op. Je zit nu in Spectator Mode. /dungeon guide · /dungeon leave'
   death-eliminated: "<HauntedMC:Error> ! Je levens zijn op. Je verlaat deze dungeon."
-  objective-revealed: "<HauntedMC:Accent> ◆ Nieuw doel ontdekt: {value}"
+  objective-revealed: '<HauntedMC:Accent> ◆ Nieuw objective · {value}'
   report-details: "<HauntedMC:Text>[Runverslag]"
   dungeon-info: "<HauntedMC:Text>[Dungeoninformatie]"
   play-again: "<HauntedMC:Text>[Opnieuw spelen]"
-  checkpoint-activated: "<HauntedMC:Accent> ◆ Respawncheckpoint geactiveerd."
-  observing: "<HauntedMC:Text>Toeschouwen · geen deelnemer"
+  checkpoint-activated: '<HauntedMC:Accent> ◆ Checkpoint geactiveerd.'
+  observing: '<HauntedMC:Text>Spectator · buiten de run'

@@ -209,8 +209,9 @@ bundled HUD API across Paper plugin class loaders so both plugins arbitrate thro
 root `messages.yml` there once, preserving their text and formatting. If both files already exist,
 the canonical `lang/messages.yml` stays authoritative and the old file moves to
 `backups/messages-legacy-<id>.yml`. Fresh installs never create a root message file. Missing bundled
-keys are merged; custom keys and translations are retained. Restart or use
-`/dungeon server reload config` to reload messages.
+keys are merged. On startup, the gameplay terminology update replaces values that exactly match
+the previous bundled text. Edited values and explicit Dutch overrides are retained. Restart or
+use `/dungeon server reload config` to reload messages.
 
 Templates accept legacy formatting, MiniMessage and `<HauntedMC:Brand>`, `<HauntedMC:Success>`,
 `<HauntedMC:Warning>`, `<HauntedMC:Error>` and the other shared theme items. Placeholder strings are

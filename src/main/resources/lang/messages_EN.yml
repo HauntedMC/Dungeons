@@ -160,8 +160,8 @@ experience:
   ui-key-kept: 'Entry key required · kept on entry'
   ui-key-spent: 'Entry key required · consumed on entry'
   ui-leave-heading: 'Leave this run?'
-  ui-leave-repeat: '/dungeon leave · 10s'
-  ui-leave-progress: 'Progress since your last save will be lost.'
+  ui-leave-repeat: 'Confirm within 10s'
+  ui-leave-progress: 'Progress since your last savepoint will be lost.'
   ui-leave-unsaved: 'Unsaved progress will be lost.'
   ui-leave-cooldown: 'Starts an access cooldown.'
   ui-leave-key: 'Used keys stay spent.'
@@ -182,7 +182,7 @@ experience:
   ui-menu-rules: 'Review entry and recovery rules.'
   ui-menu-objectives: 'See revealed objectives and hints.'
   ui-menu-leave: 'Review what you lose when you leave.'
-  ui-menu-fresh-start: 'Discard the incompatible checkpoint.'
+  ui-menu-fresh-start: 'Discard your old savepoint and start fresh.'
   ui-menu-balanced: 'Show objectives and run details.'
   ui-menu-minimal: 'Show a smaller scoreboard.'
   ui-menu-immersive: 'Hide the dungeon scoreboard.'
@@ -219,10 +219,10 @@ experience:
   lives: "<HauntedMC:Text>Lives  {value}"
   party: "<HauntedMC:Text>Party  {value} players"
   respawn: "<HauntedMC:Text>Respawn  {value}"
-  spawn: "<HauntedMC:Text>Start"
+  spawn: '<HauntedMC:Text>Spawnpoint'
   checkpoint: "<HauntedMC:Text>Checkpoint"
   unlimited: "<HauntedMC:Text>Unlimited"
-  spawn-explanation: "<HauntedMC:Text>Death returns you to your current respawn point while you have lives. A respawn checkpoint does not automatically save progress for a future visit."
+  spawn-explanation: '<HauntedMC:Text>While you have lives left, you respawn at your spawnpoint or last checkpoint. A savepoint also saves progress for your next run.'
   inventory-restored: "<HauntedMC:Text>Your outside inventory is stored and restored when you leave. Dungeon loot follows this map’s inventory rules."
   hint-available: "<HauntedMC:Text>A hint is available: /dungeon objectives hint"
   progress: "<HauntedMC:Text>{value}: {count}/{target}"
@@ -237,9 +237,9 @@ experience:
   wave-started: "<HauntedMC:Warning> ◆ Next wave: {value}"
   boss-phase: "<HauntedMC:Warning> ◆ Boss phase changed: {value}"
   victory: "<HauntedMC:Success>VICTORY"
-  expedition-ended: "<HauntedMC:Text>Expedition ended."
+  expedition-ended: '<HauntedMC:Text>Run ended.'
   lives-lost: "<HauntedMC:Text>Deaths  {value}"
-  saved: "<HauntedMC:Success> ✓ Your save point has been saved."
+  saved: '<HauntedMC:Success> ✓ Savepoint reached. Progress saved.'
   exit-confirm: "<HauntedMC:Text>Repeat /dungeon leave within 10 seconds to confirm."
   exit-unsaved: "<HauntedMC:Text>Live run progress is not saved by leaving. A future visit starts from its configured entry or a previously saved point."
   exit-saved: "<HauntedMC:Text>Your last durable save point remains available; progress since that save is not saved by leaving."
@@ -253,8 +253,8 @@ experience:
   death: "<HauntedMC:Text>Your lives and respawn status have updated. /dungeon status"
   reconnected: "<HauntedMC:Text>Welcome back. Your live dungeon progress has been retained."
   navigation: "<HauntedMC:Text>Target bearing {bearing}° · {value} blocks (direct distance)"
-  incompatible-save: "<HauntedMC:Text>This saved objective progress belongs to another dungeon version or difficulty. Use /dungeon guide to choose a fresh start."
-  fresh-start: "<HauntedMC:Text>[Start fresh]"
+  incompatible-save: '<HauntedMC:Text>Your savepoint belongs to another dungeon version or difficulty. Open the Dungeon Guide to start fresh.'
+  fresh-start: '<HauntedMC:Text>Start fresh'
   editor-title: "<HauntedMC:Text>Dungeon experience editor"
   editor-saved: "<HauntedMC:Success>Experience saved and validated. Active runs retain their definitions."
   editor-valid: "<HauntedMC:Text>Experience configuration is valid."
