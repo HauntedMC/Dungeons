@@ -273,6 +273,8 @@ health effects, conditional groups and runtime validation.
 ## Administration
 
 Use `/dungeon help` to discover commands; staff inspection and confirmations appear in chat.
+Destructive commands such as archiving or restoring a map and purging an archive ask you to
+repeat the same command within 10 seconds.
 There is no admin dashboard inventory.
 
 - `/dungeon edit open <dungeon>` opens the world editor.
