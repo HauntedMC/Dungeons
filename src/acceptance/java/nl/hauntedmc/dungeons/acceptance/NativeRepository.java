@@ -110,6 +110,18 @@ final class NativeRepository {
                                     !restored.getConfig().getBoolean("dungeon.enabled"),
                                     "First install was enabled automatically");
                             require(
+                                    ops.mapMaintenance(restored.getWorldName()),
+                                    "Repository installation unexpectedly cleared previous maintenance");
+                            require(
+                                    Bukkit.dispatchCommand(
+                                            console,
+                                            "dungeon map enable " + restored.getWorldName()),
+                                    "Map enable was not dispatched");
+                            require(
+                                    restored.isEnabled()
+                                            && !ops.mapMaintenance(restored.getWorldName()),
+                                    "Map enable did not reopen a synced map left in maintenance");
+                            require(
                                     restored.getConfig().get("locations.exit") == null,
                                     "Publisher's external exit leaked to a first installation");
                             require(
