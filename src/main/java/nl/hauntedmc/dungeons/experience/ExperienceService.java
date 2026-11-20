@@ -1136,19 +1136,26 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
             player.setSpectatorTarget(target);
             return true;
         }
-        if (state == null && command.equals("hud")) {
-            if (args.length > 1
-                    && List.of("balanced", "minimal", "immersive", "inherit").contains(args[1]))
-                session.setExperiencePreference("profile", args[1]);
-            else if (args.length == 3
-                    && List.of("sounds", "titles", "navigation").contains(args[1])
-                    && List.of("true", "false").contains(args[2]))
-                session.setExperiencePreference(args[1], args[2]);
-            else
+        if (command.equals("hud")) {
+            if (args.length == 1) {
                 for (String profile : List.of("balanced", "minimal", "immersive", "inherit"))
                     player.sendMessage(
                             Component.text(profile)
                                     .clickEvent(ClickEvent.runCommand("/dungeon hud " + profile)));
+                return true;
+            }
+            String option = args[1].toLowerCase(Locale.ROOT);
+            if (args.length == 2
+                    && List.of("balanced", "minimal", "immersive", "inherit").contains(option)) {
+                session.setExperiencePreference("profile", option);
+            } else if (args.length == 3
+                    && List.of("sounds", "titles", "navigation").contains(option)
+                    && List.of("true", "false").contains(args[2].toLowerCase(Locale.ROOT))) {
+                session.setExperiencePreference(option, args[2].toLowerCase(Locale.ROOT));
+            } else {
+                throw new IllegalArgumentException("Use /dungeon help hud");
+            }
+            notify(player, "settings-updated", null);
             return true;
         }
         if (state == null
@@ -1181,24 +1188,11 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
             return true;
         }
         var run = runs.get(state.instance);
-        if (command.equals("hud") && args.length > 1) {
-            String option = args[1].toLowerCase(Locale.ROOT);
-            if (List.of("balanced", "minimal", "immersive", "inherit").contains(option))
-                session.setExperiencePreference("profile", option);
-            else if (List.of("sounds", "titles", "navigation").contains(option)
-                    && args.length == 3
-                    && List.of("true", "false").contains(args[2]))
-                session.setExperiencePreference(option, args[2]);
-            else
-                throw new IllegalArgumentException(
-                        "/dungeon hud balanced|minimal|immersive|inherit|sounds|titles|navigation [true|false]");
-            notify(player, "settings-updated", null);
-            return true;
-        }
         if (command.equals("objectives")) {
-            if (args.length == 2
-                    && args[1].equals("fresh")
-                    && incompatible(session, state.instance)) {
+            if (args.length == 2 && args[1].equals("fresh")) {
+                if (!incompatible(session, state.instance))
+                    throw new IllegalArgumentException(
+                            "There is no incompatible checkpoint to discard");
                 session.discardExperienceCheckpoint(
                         state.instance.getDungeon().getWorldName(),
                         state.instance.getDungeon().getDungeonId().toString());
@@ -1207,6 +1201,8 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                 return true;
             }
             if (run == null || run.progress().views(player.getUniqueId()).isEmpty()) {
+                if (args.length == 3 && args[1].equals("pin"))
+                    throw new IllegalArgumentException("Objective is not currently visible");
                 notify(player, "exploration", null);
                 return true;
             }

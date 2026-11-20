@@ -415,7 +415,21 @@ public final class DungeonCommand implements TabExecutor {
             else if (next.equals("<type>"))
                 suggestions.addAll(List.of("static", "branching", "open"));
             else if (next.equals("<state>")) suggestions.addAll(List.of("on", "off"));
-            else if (next.equals("<target>")) suggestions.addAll(List.of("config", "maps", "all"));
+            else if (next.equals("<enabled>")) suggestions.addAll(List.of("true", "false"));
+            else if (next.equals("<objective>")
+                    && sender instanceof Player player
+                    && this.playerManager.runtimeExperience() != null) {
+                this.playerManager
+                        .runtimeExperience()
+                        .view(player.getUniqueId())
+                        .ifPresent(
+                                snapshot ->
+                                        snapshot.objectives()
+                                                .forEach(
+                                                        objective ->
+                                                                suggestions.add(objective.id())));
+            } else if (next.equals("<target>"))
+                suggestions.addAll(List.of("config", "maps", "all"));
         }
         String query = args[args.length - 1].toLowerCase(Locale.ROOT);
         return suggestions.stream()
