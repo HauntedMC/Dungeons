@@ -273,27 +273,34 @@ public final class DungeonCommand implements TabExecutor {
                     && route.handler() == CommandRoutes.Handler.REPO
                     && RuntimeContext.runtime().contentRepository() != null)
                 scope = RuntimeContext.runtime().contentRepository().cachedScope(scope);
-            if (!scope.equals("all") && !scope.equals("current")) {
-                return StaffPermissions.allows(sender, capability, scope);
+            if (!scope.equals("all") || dungeon != null) {
+                return this.staffAllowed(sender, capability, scope);
             }
         }
-        if (StaffPermissions.allows(sender, capability, null)) return true;
+        if (this.staffAllowed(sender, capability, null)) return true;
         if (route.handler() == CommandRoutes.Handler.REPO
                 && !route.syntax().equals("repo fetch")
                 && RuntimeContext.runtime().contentRepository() != null
-                && !RuntimeContext.runtime()
+                && RuntimeContext.runtime()
                         .contentRepository()
                         .cachedNames(sender, capability.substring("repo.".length()))
-                        .isEmpty()) return true;
+                        .stream()
+                        .map(RuntimeContext.runtime().contentRepository()::cachedScope)
+                        .anyMatch(scope -> this.staffAllowed(sender, capability, scope)))
+            return true;
         if (route.syntax().startsWith("server") && !route.syntax().endsWith("<operation>")
                 || route.syntax().startsWith("map archive ")
+                || route.syntax().equals("repo fetch")
                 || route.syntax().equals("instance list")
                 || route.syntax().equals("queue list")) return false;
         return this.dungeonManager.getLoadedDungeons().stream()
-                .anyMatch(
-                        dungeon ->
-                                StaffPermissions.allows(
-                                        sender, capability, dungeon.getWorldName()));
+                .anyMatch(dungeon -> this.staffAllowed(sender, capability, dungeon.getWorldName()));
+    }
+
+    private boolean staffAllowed(CommandSender sender, String capability, String scope) {
+        return StaffPermissions.allows(sender, capability, scope)
+                && (!capability.equals("repo.force")
+                        || StaffPermissions.allows(sender, "repo.pull", scope));
     }
 
     private void canonicalHelp(CommandSender sender, String[] path) {
@@ -372,12 +379,18 @@ public final class DungeonCommand implements TabExecutor {
                         suggestions.add(dungeon.getWorldName());
                 }
                 if (route.handler() == CommandRoutes.Handler.REPO
+                        && !List.of("init", "add", "push")
+                                .contains(route.operation().split(" ", 2)[0])
                         && RuntimeContext.runtime().contentRepository() != null) {
                     String capability = route.permission().substring("staff.repo.".length());
-                    suggestions.addAll(
+                    for (String remote :
                             RuntimeContext.runtime()
                                     .contentRepository()
-                                    .cachedNames(sender, capability));
+                                    .cachedNames(sender, capability)) {
+                        var candidate = new LinkedHashMap<>(values);
+                        candidate.put("map", List.of(remote));
+                        if (this.allowed(sender, route, candidate)) suggestions.add(remote);
+                    }
                 }
             } else if (next.equals("<door>")) {
                 suggestions.addAll(this.debugCommandGroup.handleTabComplete(sender, args));
