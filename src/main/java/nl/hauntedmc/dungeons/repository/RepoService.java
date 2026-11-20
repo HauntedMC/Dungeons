@@ -590,7 +590,10 @@ public final class RepoService implements AutoCloseable {
                                                         .equalsIgnoreCase(selector))
                         .findFirst()
                         .orElse(null);
-        if (entry == null) return selector;
+        return entry == null ? selector : scope(entry);
+    }
+
+    private String scope(RepoStore.Entry entry) {
         var local = runtime.dungeonCatalog().get(entry.head().dungeon().toString());
         return local == null ? entry.name() : local.getWorldName();
     }
@@ -863,7 +866,7 @@ public final class RepoService implements AutoCloseable {
                                                                     StaffPermissions.allows(
                                                                             actor,
                                                                             "repo.inspect",
-                                                                            e.name()))
+                                                                            scope(e)))
                                                     .skip((long) (page - 1) * 20)
                                                     .limit(20)
                                                     .map(
@@ -884,7 +887,7 @@ public final class RepoService implements AutoCloseable {
                     var entry = remote(selector);
                     owner(
                                     () -> {
-                                        require(actor, "inspect", entry.name());
+                                        require(actor, "inspect", scope(entry));
                                         return null;
                                     })
                             .join();
@@ -918,7 +921,7 @@ public final class RepoService implements AutoCloseable {
                         var entry = remote(selector);
                         owner(
                                         () -> {
-                                            require(actor, "inspect", entry.name());
+                                            require(actor, "inspect", scope(entry));
                                             return null;
                                         })
                                 .join();
@@ -1478,7 +1481,7 @@ public final class RepoService implements AutoCloseable {
                                                                             actor,
                                                                             "repo.publish",
                                                                             "repo-rollback",
-                                                                            entry.name(),
+                                                                            scope(entry),
                                                                             operation,
                                                                             job::cancel))
                                             .join());
@@ -1492,7 +1495,7 @@ public final class RepoService implements AutoCloseable {
                                                     validatePermissions(
                                                             actor,
                                                             "publish",
-                                                            entry.name(),
+                                                            scope(entry),
                                                             validation);
                                                     return null;
                                                 })
@@ -1527,7 +1530,7 @@ public final class RepoService implements AutoCloseable {
                                                     validatePermissions(
                                                             actor,
                                                             "publish",
-                                                            entry.name(),
+                                                            scope(entry),
                                                             validation);
                                                     return null;
                                                 })
