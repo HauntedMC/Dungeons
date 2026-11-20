@@ -115,6 +115,41 @@ class PresentationContractTest {
         }
     }
 
+    @Test
+    void hudMarksTheSelectedProfileAndUsesDistinctToggleSymbols() throws Exception {
+        try (var fixture = new RunFixture(directory, new YamlConfiguration())) {
+            var command = new CommandContractTest.CommandFixture(fixture);
+            var player = command.caller.player;
+            when(player.locale()).thenReturn(Locale.forLanguageTag("nl-NL"));
+            command.permissions.add("dungeons.play");
+            fixture.paper.runtime.setExperience(new ExperienceService(fixture.paper.runtime));
+            LangUtils.initialize();
+            var session = fixture.paper.runtime.playerSessions().get(player);
+            session.setExperiencePreference("profile", "minimal");
+            session.setExperiencePreference("sounds", "false");
+
+            command.execute("hud");
+
+            var capture = ArgumentCaptor.forClass(Component.class);
+            verify(player, atLeastOnce()).sendMessage(capture.capture());
+            var lines = capture.getAllValues().stream().map(ComponentUtils::plainText).toList();
+            assertTrue(lines.stream().anyMatch(line -> line.contains("[Minimal ✓]")));
+            assertTrue(lines.stream().anyMatch(line -> line.contains("[Balanced]")));
+            assertTrue(lines.stream().anyMatch(line -> line.contains("[Geluid ×]")));
+            assertTrue(lines.stream().anyMatch(line -> line.contains("[Titels ✓]")));
+            assertTrue(
+                    capture.getAllValues().stream()
+                            .anyMatch(
+                                    line ->
+                                            containsClick(
+                                                    line,
+                                                    ClickEvent.runCommand(
+                                                            "/dungeon hud sounds true"))));
+        } finally {
+            LangUtils.clear();
+        }
+    }
+
     private static boolean containsClick(Component line, ClickEvent click) {
         for (Component part : line.iterable(ComponentIteratorType.DEPTH_FIRST))
             if (click.equals(part.clickEvent())) return true;

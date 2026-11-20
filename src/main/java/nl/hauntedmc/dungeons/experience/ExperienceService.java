@@ -1000,10 +1000,9 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
         NamedTextColor availability = available ? NamedTextColor.GREEN : NamedTextColor.RED;
         viewer.sendMessage(
                 DungeonUi.detail(
-                        Component.text("● ", availability)
-                                .append(
-                                        text(viewer, available ? "ui-available" : "ui-unavailable")
-                                                .color(availability))));
+                        runIndicator(
+                                text(viewer, available ? "ui-available" : "ui-unavailable"),
+                                availability)));
         String description = dungeon.getConfig().getString("experience.description", "");
         if (!description.isBlank())
             viewer.sendMessage(DungeonUi.detail(LangUtils.trusted(description)));
@@ -1105,7 +1104,11 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                     case "lobby", "spectating" -> NamedTextColor.GOLD;
                     default -> NamedTextColor.RED;
                 };
-        return Component.text("● ", color).append(text(player, key).color(color));
+        return runIndicator(text(player, key), color);
+    }
+
+    private static Component runIndicator(Component state, NamedTextColor color) {
+        return Component.text("● ", color).append(state.color(color));
     }
 
     private void runRules(Player player, PlayableInstance instance) {
@@ -1255,9 +1258,10 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                     || target == null
                     || !player.canSee(target)
                     || instance.getLivingPlayers().stream()
-                            .noneMatch(member -> member.getPlayer() == target))
-                throw new IllegalArgumentException(
-                        "Choose an online living teammate while spectating");
+                            .noneMatch(member -> member.getPlayer() == target)) {
+                LangUtils.sendMessage(player, "experience.spectate-invalid-target");
+                return true;
+            }
             player.setSpectatorTarget(target);
             return true;
         }
@@ -1266,19 +1270,17 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                 player.sendMessage(DungeonUi.heading(text(player, "ui-hud-heading")));
                 String selected = session.experiencePreference("profile", "inherit");
                 for (String profile : List.of("balanced", "minimal", "immersive", "inherit")) {
+                    boolean active = profile.equals(selected);
                     Component label =
-                            text(player, profile.equals("inherit") ? "ui-inherit" : profile)
-                                    .color(
-                                            profile.equals(selected)
-                                                    ? NamedTextColor.GREEN
-                                                    : NamedTextColor.AQUA);
+                            text(player, profile.equals("inherit") ? "ui-inherit" : profile);
+                    if (active) label = label.append(Component.text(" ✓"));
                     player.sendMessage(
                             DungeonUi.detail(
                                     DungeonUi.join(
                                             DungeonUi.action(
                                                     label,
                                                     "/dungeon hud " + profile,
-                                                    profile.equals(selected)
+                                                    active
                                                             ? NamedTextColor.GREEN
                                                             : NamedTextColor.AQUA),
                                             text(player, "ui-menu-" + profile)
@@ -1289,7 +1291,7 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                     boolean on = session.experiencePreference(toggle, "true").equals("true");
                     Component label =
                             text(player, "ui-toggle-" + toggle)
-                                    .append(Component.text(on ? " ✓" : " –"));
+                                    .append(Component.text(on ? " ✓" : " ×"));
                     toggles.add(
                             DungeonUi.action(
                                     label,
@@ -1308,7 +1310,8 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                     && List.of("true", "false").contains(args[2].toLowerCase(Locale.ROOT))) {
                 session.setExperiencePreference(option, args[2].toLowerCase(Locale.ROOT));
             } else {
-                throw new IllegalArgumentException("Use /dungeon help hud");
+                LangUtils.sendMessage(player, "experience.hud-invalid-option");
+                return true;
             }
             Component saved = text(player, "ui-settings-saved").color(NamedTextColor.GREEN);
             if (state != null
@@ -1324,24 +1327,29 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                 && observers != null
                 && observers.view(player.getUniqueId()).isPresent()) {
             var observed = observers.view(player.getUniqueId()).orElseThrow();
+            player.sendMessage(DungeonUi.heading(observed.title()));
             player.sendMessage(
-                    observed.title().append(Component.space()).append(text(player, "observing")));
-            player.sendMessage(action(player, "leave", "/dungeon leave"));
+                    DungeonUi.detail(
+                            DungeonUi.join(
+                                    runIndicator(text(player, "observing"), NamedTextColor.AQUA),
+                                    action(player, "leave", "/dungeon leave"))));
             return true;
         }
         if (state == null) {
             var queue = runtime.queueRegistry().getQueue(session);
             if (queue != null) {
+                player.sendMessage(DungeonUi.heading(queue.getDungeon().getDisplayNameComponent()));
                 player.sendMessage(
-                        text(
-                                        player,
-                                        "queued",
-                                        "value",
-                                        queue.getDungeon().getDisplayNameComponent(),
-                                        "time",
-                                        clock((int) queue.getWaitingSeconds()))
-                                .append(Component.space())
-                                .append(action(player, "cancel", "/dungeon leave")));
+                        DungeonUi.detail(
+                                DungeonUi.join(
+                                        runIndicator(
+                                                text(player, "queue-label"), NamedTextColor.GOLD),
+                                        text(
+                                                player,
+                                                "ui-hud-elapsed",
+                                                "value",
+                                                clock((int) queue.getWaitingSeconds())),
+                                        action(player, "cancel", "/dungeon leave"))));
                 return true;
             }
             var report = reports.get(player.getUniqueId());
@@ -1352,9 +1360,10 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
         var run = runs.get(state.instance);
         if (command.equals("objectives")) {
             if (args.length == 2 && args[1].equals("fresh")) {
-                if (!incompatible(session, state.instance))
-                    throw new IllegalArgumentException(
-                            "There is no incompatible checkpoint to discard");
+                if (!incompatible(session, state.instance)) {
+                    LangUtils.sendMessage(player, "experience.no-incompatible-save");
+                    return true;
+                }
                 session.discardExperienceCheckpoint(
                         state.instance.getDungeon().getWorldName(),
                         state.instance.getDungeon().getDungeonId().toString());
@@ -1364,14 +1373,16 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
             }
             if (run == null || run.progress().views(player.getUniqueId()).isEmpty()) {
                 if (args.length == 3 && args[1].equals("pin"))
-                    throw new IllegalArgumentException("Objective is not currently visible");
-                notify(player, "exploration", null);
+                    LangUtils.sendMessage(player, "experience.objective-not-visible");
+                else notify(player, "exploration", null);
                 return true;
             }
             if (args.length > 2 && args[1].equals("pin")) {
                 if (run.progress().views(player.getUniqueId()).stream()
-                        .noneMatch(goal -> goal.id().equals(args[2])))
-                    throw new IllegalArgumentException("Objective is not currently visible");
+                        .noneMatch(goal -> goal.id().equals(args[2]))) {
+                    LangUtils.sendMessage(player, "experience.objective-not-visible");
+                    return true;
+                }
                 state.pinned = args[2];
             }
             if (args.length > 1 && args[1].equals("hint")) {

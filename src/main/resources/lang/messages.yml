@@ -992,12 +992,12 @@ experience:
   ui-key-kept: 'Dungeon Key nodig · je houdt de key'
   ui-key-spent: 'Dungeon Key nodig · wordt verbruikt'
   ui-leave-heading: 'Deze run verlaten?'
-  ui-leave-repeat: 'Bevestig binnen 10 s'
+  ui-leave-repeat: 'Binnen 10 s'
   ui-leave-progress: 'Voortgang sinds je laatste savepoint gaat verloren.'
   ui-leave-unsaved: 'Niet-opgeslagen voortgang gaat verloren.'
   ui-leave-cooldown: 'De cooldown om opnieuw te spelen gaat in.'
   ui-leave-key: 'Je krijgt verbruikte Dungeon Keys niet terug.'
-  ui-leave-action: 'Bevestigen'
+  ui-leave-action: 'Run verlaten'
   ui-guide-action: 'Guide'
   ui-leave-short: 'Verlaten'
   ui-status-action: 'Status'
@@ -1009,7 +1009,7 @@ experience:
   ui-hud-tip: '/dungeon guide'
   ui-no-history: 'Geen recente runmeldingen.'
   ui-active: 'Geselecteerd'
-  ui-menu-status: 'Bekijk levens, tijd en je huidige status.'
+  ui-menu-status: 'Bekijk je levens en resterende tijd.'
   ui-menu-party-guide: 'Bekijk wie speelt of in Spectator Mode zit.'
   ui-menu-rules: 'Bekijk de regels voor toegang en respawn.'
   ui-menu-objectives: 'Bekijk je objectives en hints.'
@@ -1019,7 +1019,7 @@ experience:
   ui-menu-minimal: 'Toon een kleiner scoreboard.'
   ui-menu-immersive: 'Verberg het dungeon-scoreboard.'
   ui-menu-history: 'Lees recente runmeldingen.'
-  ui-menu-inherit: 'Volg de serverinstelling.'
+  ui-menu-inherit: 'Volg het serverprofiel.'
   ui-menu-click: 'Klik om te openen'
   ui-menu-select: 'Klik om te kiezen'
   ui-menu-difficulty: 'Kies een difficulty'
@@ -1080,6 +1080,10 @@ experience:
   not-participating: '<HauntedMC:Text>Je zit niet in een dungeon. Bekijk de regels met /dungeon info <map>.'
   exploration: '<HauntedMC:Text>Er zijn nog geen objectives zichtbaar. Verken de dungeon op je eigen tempo.'
   settings-updated: "<HauntedMC:Text>Je weergave-instellingen zijn opgeslagen."
+  hud-invalid-option: "<HauntedMC:Error>Onbekende HUD-optie. <HauntedMC:Social>/dungeon help hud"
+  spectate-invalid-target: "<HauntedMC:Error>Kies in Spectator Mode een speler die nog meespeelt."
+  objective-not-visible: "<HauntedMC:Error>Dit objective is nog niet zichtbaar."
+  no-incompatible-save: "<HauntedMC:Error>Je hebt geen onbruikbaar savepoint om te verwijderen."
   queued: "<HauntedMC:Text>Wachten op {value} · {time}"
   started: "<HauntedMC:Text>Je dungeonrun is begonnen. /dungeon guide · /dungeon leave"
   death: "<HauntedMC:Text>Je levens en respawnstatus zijn bijgewerkt. /dungeon status"

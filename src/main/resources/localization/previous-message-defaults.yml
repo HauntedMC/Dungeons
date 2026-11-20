@@ -92,6 +92,7 @@ nl:
     ui-leave-key: Gebruikte sleutels blijven verbruikt.
     ui-leave-action: Vertrek bevestigen
     ui-guide-action: Wijzer
+    ui-menu-status: Bekijk levens, tijd en je huidige status.
     ui-menu-party-guide: Bekijk wie speelt of toekijkt.
     ui-menu-rules: Bekijk de regels voor toegang en herstel.
     ui-menu-objectives: Bekijk onthulde doelen en hints.
@@ -99,6 +100,7 @@ nl:
     ui-menu-balanced: Toon doelen en rundetails.
     ui-menu-minimal: Toon een kleiner scorebord.
     ui-menu-immersive: Verberg het dungeonscorebord.
+    ui-menu-inherit: Volg de serverinstelling.
     ui-menu-difficulty: Kies moeilijkheid
     ui-elapsed-label: Gespeeld
     ui-deaths-label: Sterfgevallen
@@ -166,6 +168,8 @@ en:
   experience:
     ui-leave-repeat: /dungeon leave · 10s
     ui-leave-progress: Progress since your last save will be lost.
+    ui-leave-action: Confirm leave
+    ui-menu-status: Check lives, time and your current state.
     ui-menu-fresh-start: Discard the incompatible checkpoint.
     spawn: <HauntedMC:Text>Start
     spawn-explanation: <HauntedMC:Text>Death returns you to your current respawn point while you have lives. A respawn checkpoint does not automatically save progress for a future visit.

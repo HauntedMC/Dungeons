@@ -160,12 +160,12 @@ experience:
   ui-key-kept: 'Entry key required · kept on entry'
   ui-key-spent: 'Entry key required · consumed on entry'
   ui-leave-heading: 'Leave this run?'
-  ui-leave-repeat: 'Confirm within 10s'
+  ui-leave-repeat: 'Within 10s'
   ui-leave-progress: 'Progress since your last savepoint will be lost.'
   ui-leave-unsaved: 'Unsaved progress will be lost.'
   ui-leave-cooldown: 'Starts an access cooldown.'
   ui-leave-key: 'Used keys stay spent.'
-  ui-leave-action: 'Confirm leave'
+  ui-leave-action: 'Leave run'
   ui-guide-action: 'Guide'
   ui-leave-short: 'Leave'
   ui-status-action: 'Status'
@@ -177,7 +177,7 @@ experience:
   ui-hud-tip: '/dungeon guide'
   ui-no-history: 'No recent run feedback.'
   ui-active: 'Selected'
-  ui-menu-status: 'Check lives, time and your current state.'
+  ui-menu-status: 'Check your remaining lives and time.'
   ui-menu-party-guide: 'See who is active or spectating.'
   ui-menu-rules: 'Review entry and recovery rules.'
   ui-menu-objectives: 'See revealed objectives and hints.'
@@ -248,6 +248,10 @@ experience:
   not-participating: "<HauntedMC:Text>You are not currently in a dungeon. Use /dungeon info <map> for a briefing."
   exploration: "<HauntedMC:Text>This dungeon has no revealed tasks. Explore at your own pace."
   settings-updated: "<HauntedMC:Text>Your presentation settings have been saved."
+  hud-invalid-option: "<HauntedMC:Error>Unknown HUD option. <HauntedMC:Social>/dungeon help hud"
+  spectate-invalid-target: "<HauntedMC:Error>Choose an active player while in Spectator Mode."
+  objective-not-visible: "<HauntedMC:Error>This objective is currently hidden."
+  no-incompatible-save: "<HauntedMC:Error>You have no incompatible savepoint to discard."
   queued: "<HauntedMC:Text>Waiting for {value} · {time}"
   started: "<HauntedMC:Text>Your dungeon run has started. /dungeon guide · /dungeon leave"
   death: "<HauntedMC:Text>Your lives and respawn status have updated. /dungeon status"
