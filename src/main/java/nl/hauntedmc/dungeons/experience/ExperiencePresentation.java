@@ -30,17 +30,15 @@ public record ExperiencePresentation(
             List.of(
                     "state",
                     "difficulty",
-                    "",
-                    "remaining",
-                    "lives",
-                    "elapsed",
-                    "party",
-                    "respawn",
-                    "",
                     "stage",
                     "objective",
-                    "",
-                    "help");
+                    "remaining",
+                    "elapsed",
+                    "lives",
+                    "party",
+                    "respawn",
+                    "help",
+                    "leave");
 
     public ExperiencePresentation {
         flags = Map.copyOf(flags);

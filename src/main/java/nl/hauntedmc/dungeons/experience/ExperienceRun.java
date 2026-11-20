@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import net.kyori.adventure.bossbar.BossBar;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import nl.hauntedmc.dungeons.content.function.FinishDungeonFunction;
 import nl.hauntedmc.dungeons.content.function.SpawnMobFunction;
 import nl.hauntedmc.dungeons.event.ExperienceEvent;
@@ -421,7 +423,8 @@ public final class ExperienceRun implements AutoCloseable {
                     && !living.isDead()) {
                 result.add(
                         new HudFrame.Bar(
-                                LangUtils.trusted(group.boss()),
+                                Component.text("BOSS  ", NamedTextColor.LIGHT_PURPLE)
+                                        .append(LangUtils.trusted(group.boss())),
                                 (float)
                                         (living.getHealth()
                                                 / Math.max(
@@ -429,7 +432,7 @@ public final class ExperienceRun implements AutoCloseable {
                                                         nl.hauntedmc.dungeons.util.entity
                                                                 .EntityUtils.getMaxHealth(living))),
                                 BossBar.Color.PURPLE,
-                                BossBar.Overlay.PROGRESS));
+                                BossBar.Overlay.NOTCHED_10));
                 if (result.size() == 2) return result;
             }
         }
@@ -441,13 +444,14 @@ public final class ExperienceRun implements AutoCloseable {
                         new HudFrame.Bar(
                                 LangUtils.trusted(spec.title())
                                         .append(
-                                                net.kyori.adventure.text.Component.text(
-                                                        " · "
+                                                Component.text(
+                                                        "   Wave "
                                                                 + Math.max(
                                                                         1,
                                                                         entry.getValue().wave + 1)
                                                                 + "/"
-                                                                + spec.waves().size())),
+                                                                + spec.waves().size(),
+                                                        NamedTextColor.AQUA)),
                                 Math.max(0, entry.getValue().wave) / (float) spec.waves().size(),
                                 BossBar.Color.BLUE,
                                 BossBar.Overlay.PROGRESS));

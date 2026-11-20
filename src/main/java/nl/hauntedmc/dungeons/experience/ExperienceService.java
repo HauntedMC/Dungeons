@@ -387,7 +387,22 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
         } else {
             widgets.put(
                     key,
-                    text(player, "ui-hud-" + key, "value", valueText.color(NamedTextColor.WHITE)));
+                    Component.text(
+                                    switch (key) {
+                                        case "lives" -> "♥ ";
+                                        case "remaining", "elapsed" -> "◷ ";
+                                        case "respawn" -> "⚑ ";
+                                        default -> "› ";
+                                    },
+                                    key.equals("lives")
+                                            ? NamedTextColor.RED
+                                            : NamedTextColor.DARK_AQUA)
+                            .append(
+                                    text(
+                                            player,
+                                            "ui-hud-" + key,
+                                            "value",
+                                            valueText.color(NamedTextColor.WHITE))));
         }
     }
 
@@ -459,7 +474,11 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                 if (instance.getConfig().getInt("runs.time_limit_minutes", 0) > 0
                         && !setting(instance, "widgets.remaining", "auto").equals("hidden"))
                     line(widgetRows, player, "remaining", clock(instance.getTimeLeft()));
-                if (setting(instance, "widgets.elapsed", "auto").equals("shown"))
+                String elapsedVisibility = setting(instance, "widgets.elapsed", "auto");
+                if (elapsedVisibility.equals("shown")
+                        || elapsedVisibility.equals("auto")
+                                && instance.isStarted()
+                                && instance.getConfig().getInt("runs.time_limit_minutes", 0) == 0)
                     line(
                             widgetRows,
                             player,
@@ -480,22 +499,33 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                 if ((count > 1 || setting(instance, "widgets.party", "auto").equals("shown"))
                         && !setting(instance, "widgets.party", "auto").equals("hidden"))
                     line(widgetRows, player, "party", count);
-                if ((balanced || setting(instance, "widgets.respawn", "auto").equals("shown"))
-                        && !setting(instance, "widgets.respawn", "auto").equals("hidden")
-                        && session.getDungeonRespawn() != null)
-                    line(
-                            widgetRows,
-                            player,
-                            "respawn",
-                            text(
-                                    player,
-                                    session.getDungeonRespawn()
-                                                            .distanceSquared(instance.getStartLoc())
-                                                    < 0.01
-                                            ? "spawn"
-                                            : "checkpoint"));
-                widgetRows.put("help", text(player, "ui-hud-tip").color(NamedTextColor.GRAY));
-                widgetRows.put("leave", Component.text("/dungeon leave", NamedTextColor.GRAY));
+                var respawn = session.getDungeonRespawn();
+                String visibility = setting(instance, "widgets.respawn", "auto");
+                if (respawn != null && !visibility.equals("hidden")) {
+                    var start = instance.getStartLoc();
+                    boolean checkpoint =
+                            start != null
+                                    && (!java.util.Objects.equals(
+                                                    start.getWorld(), respawn.getWorld())
+                                            || start.distanceSquared(respawn) >= 0.01);
+                    if (visibility.equals("shown")
+                            || presentation(instance).rows().isPresent()
+                            || balanced && checkpoint)
+                        line(
+                                widgetRows,
+                                player,
+                                "respawn",
+                                text(player, checkpoint ? "checkpoint" : "spawn"));
+                }
+                for (String key : List.of("help", "leave")) {
+                    if (presentation(instance).rows().isPresent()
+                            || setting(instance, "widgets." + key, "auto").equals("shown"))
+                        widgetRows.put(
+                                key,
+                                key.equals("help")
+                                        ? text(player, "ui-hud-tip").color(NamedTextColor.GRAY)
+                                        : Component.text("/dungeon leave", NamedTextColor.GRAY));
+                }
             }
             Map<String, Object> substitutions = new LinkedHashMap<>();
             substitutions.put("dungeon", instance.getDungeon().getDisplayNameComponent());
@@ -521,7 +551,9 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
             String titleTemplate = setting(instance, "sidebar.title", "");
             Component sidebarTitle =
                     titleTemplate.isBlank()
-                            ? DungeonUi.heading(instance.getDungeon().getDisplayNameComponent())
+                            ? instance.getDungeon()
+                                    .getDisplayNameComponent()
+                                    .decorate(TextDecoration.BOLD)
                             : LangUtils.trusted(titleTemplate, substitutions);
             channel(player, state, HudService.Channel.SIDEBAR)
                     .update(
@@ -533,7 +565,8 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                                                     .layout(widgetRows, substitutions)));
         } else closeChannel(state, HudService.Channel.SIDEBAR);
         if (enabled(instance, "channels.actionbar", true))
-            channel(player, state, HudService.Channel.ACTION_BAR).update(null);
+            channel(player, state, HudService.Channel.ACTION_BAR)
+                    .update(navigation(player, session, state, run));
         else closeChannel(state, HudService.Channel.ACTION_BAR);
         if (enabled(instance, "channels.bossbar", true)) {
             var bars =
@@ -549,8 +582,10 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                         new HudFrame.Bar(
                                 text(player, "remaining", "value", clock(instance.getTimeLeft())),
                                 instance.getTimeLeft() / 60f,
-                                BossBar.Color.RED,
-                                BossBar.Overlay.PROGRESS));
+                                instance.getTimeLeft() <= 10
+                                        ? BossBar.Color.RED
+                                        : BossBar.Color.YELLOW,
+                                BossBar.Overlay.NOTCHED_6));
             }
             channel(player, state, HudService.Channel.BOSS_BAR)
                     .update(
@@ -576,6 +611,10 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
             state.hintOffered = true;
             notify(player, "hint-available", null);
         }
+    }
+
+    private HudFrame.ActionBar navigation(
+            Player player, DungeonPlayerSession session, Participation state, ExperienceRun run) {
         if (session.experiencePreference("navigation", "false").equals("true")
                 && state.pinned != null
                 && run != null) {
@@ -587,19 +626,21 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                 var point = goal.point();
                 double dx = point.x() - player.getLocation().getX(),
                         dz = point.z() - player.getLocation().getZ();
-                actionBar(
-                        player,
-                        text(
-                                player,
-                                "navigation",
-                                "value",
-                                Math.round(Math.sqrt(dx * dx + dz * dz)),
-                                "bearing",
-                                Math.round(Math.toDegrees(Math.atan2(-dx, dz)))),
-                        2,
-                        HudService.CONTEXT);
+                double relative =
+                        Math.toDegrees(Math.atan2(-dx, dz)) - player.getLocation().getYaw();
+                String arrow =
+                        List.of("↑", "↗", "→", "↘", "↓", "↙", "←", "↖")
+                                .get(Math.floorMod((int) Math.round(relative / 45), 8));
+                return new HudFrame.ActionBar(
+                        Component.text(arrow + "  ", NamedTextColor.AQUA)
+                                .append(LangUtils.trusted(goal.title()))
+                                .append(
+                                        Component.text(
+                                                "   " + Math.round(Math.hypot(dx, dz)) + " m",
+                                                NamedTextColor.WHITE)));
             }
         }
+        return null;
     }
 
     private static String clock(int seconds) {
@@ -1288,7 +1329,10 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                 }
                 var toggles = new ArrayList<Component>();
                 for (String toggle : List.of("sounds", "titles", "navigation")) {
-                    boolean on = session.experiencePreference(toggle, "true").equals("true");
+                    boolean on =
+                            session.experiencePreference(
+                                            toggle, toggle.equals("navigation") ? "false" : "true")
+                                    .equals("true");
                     Component label =
                             text(player, "ui-toggle-" + toggle)
                                     .append(Component.text(on ? " ✓" : " ×"));
