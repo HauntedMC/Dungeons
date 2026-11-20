@@ -43,6 +43,32 @@ import org.jetbrains.annotations.NotNull;
  * plugin's command tree. Focused handlers own gameplay, authoring and staff command branches.
  */
 public final class DungeonCommand implements TabExecutor {
+    private static final List<Map.Entry<String, List<String>>> HELP_SECTIONS =
+            List.of(
+                    Map.entry("discovery", List.of("list", "info", "play")),
+                    Map.entry(
+                            "run",
+                            List.of(
+                                    "guide",
+                                    "status",
+                                    "objectives",
+                                    "lives",
+                                    "stuck",
+                                    "leave",
+                                    "spectate",
+                                    "hud")),
+                    Map.entry("party", List.of("team")),
+                    Map.entry(
+                            "staff",
+                            List.of(
+                                    "map",
+                                    "edit",
+                                    "player",
+                                    "instance",
+                                    "queue",
+                                    "server",
+                                    "repo")));
+
     private StaffCommandHandler staffCommandHandler;
 
     public void setStaffCommandHandler(StaffCommandHandler handler) {
@@ -321,6 +347,14 @@ public final class DungeonCommand implements TabExecutor {
             if (page < 1) throw new IllegalArgumentException("Page must be positive");
             path = Arrays.copyOf(path, path.length - 2);
         }
+        String category = "";
+        if (path.length == 1 && path[0].startsWith("@")) {
+            String requested = path[0].substring(1).toLowerCase(Locale.ROOT);
+            if (HELP_SECTIONS.stream().anyMatch(section -> section.getKey().equals(requested))) {
+                category = requested;
+                path = new String[0];
+            }
+        }
         String prefix = String.join(" ", path);
         var lines = new LinkedHashSet<String>();
         var topics = new LinkedHashSet<String>();
@@ -348,7 +382,13 @@ public final class DungeonCommand implements TabExecutor {
             topics.add(pattern[0]);
             lines.add("/dungeon " + usage);
         }
-        Component heading = LangUtils.component("commands.ui.help", sender, false);
+        Component heading =
+                LangUtils.component(
+                        category.isEmpty()
+                                ? "commands.ui.help"
+                                : "commands.ui.category-" + category,
+                        sender,
+                        false);
         sender.sendMessage(
                 DungeonUi.heading(
                         prefix.isBlank()
@@ -361,7 +401,7 @@ public final class DungeonCommand implements TabExecutor {
             return;
         }
         if (prefix.isBlank()) {
-            sendHelpTopics(sender, topics);
+            sendHelpTopics(sender, topics, category);
             return;
         }
         int totalPages = (lines.size() + 8) / 9;
@@ -391,71 +431,68 @@ public final class DungeonCommand implements TabExecutor {
         }
     }
 
-    private void sendHelpTopics(CommandSender sender, java.util.Set<String> topics) {
-        var sections =
-                List.of(
-                        Map.entry("discovery", List.of("list", "info", "play")),
-                        Map.entry(
-                                "run",
-                                List.of(
-                                        "guide",
-                                        "status",
-                                        "objectives",
-                                        "lives",
-                                        "stuck",
-                                        "leave",
-                                        "spectate",
-                                        "hud")),
-                        Map.entry("party", List.of("team")),
-                        Map.entry(
-                                "staff",
-                                List.of(
-                                        "map",
-                                        "edit",
-                                        "player",
-                                        "instance",
-                                        "queue",
-                                        "server",
-                                        "repo")));
-        for (var section : sections) {
-            var buttons =
-                    section.getValue().stream()
-                            .filter(topics::contains)
-                            .map(
-                                    topic ->
-                                            DungeonUi.action(
+    private void sendHelpTopics(
+            CommandSender sender, java.util.Set<String> topics, String category) {
+        for (var section : HELP_SECTIONS) {
+            var available = section.getValue().stream().filter(topics::contains).toList();
+            if (available.isEmpty()) {
+                if (section.getKey().equals(category))
+                    sender.sendMessage(
+                            DungeonUi.detail(
+                                    LangUtils.component("commands.ui.help-empty", sender, false)));
+                continue;
+            }
+            if (category.isEmpty()) {
+                Component label =
+                        LangUtils.component(
+                                "commands.ui.category-" + section.getKey(), sender, false);
+                Component hint =
+                        LangUtils.component(
+                                "commands.ui.caption-" + section.getKey(), sender, false);
+                sender.sendMessage(
+                        DungeonUi.detail(
+                                DungeonUi.action(
+                                                label,
+                                                "/dungeon help @" + section.getKey(),
+                                                NamedTextColor.AQUA)
+                                        .append(Component.text("   "))
+                                        .append(hint.color(NamedTextColor.GRAY))));
+            } else if (category.equals(section.getKey())) {
+                for (String topic : available) {
+                    String command =
+                            List.of("list", "guide", "status", "objectives", "hud").contains(topic)
+                                    ? "/dungeon " + topic
+                                    : "/dungeon help " + topic;
+                    sender.sendMessage(
+                            DungeonUi.detail(
+                                    DungeonUi.action(
                                                     LangUtils.component(
                                                             "commands.ui.topic-" + topic,
                                                             sender,
                                                             false),
-                                                    (List.of(
-                                                                                    "list",
-                                                                                    "guide",
-                                                                                    "status",
-                                                                                    "objectives",
-                                                                                    "hud",
-                                                                                    "team")
-                                                                            .contains(topic)
-                                                                    ? "/dungeon "
-                                                                    : "/dungeon help ")
-                                                            + topic,
-                                                    NamedTextColor.AQUA))
-                            .toList();
-            if (buttons.isEmpty()) continue;
-            sender.sendMessage(
-                    DungeonUi.detail(
-                            LangUtils.component(
-                                    "commands.ui.section-" + section.getKey(), sender, false)));
-            for (int offset = 0; offset < buttons.size(); offset += 4)
-                sender.sendMessage(
-                        DungeonUi.detail(
-                                DungeonUi.join(
-                                        buttons.subList(
-                                                offset, Math.min(offset + 4, buttons.size())))));
+                                                    command,
+                                                    NamedTextColor.AQUA)
+                                            .append(
+                                                    Component.text(
+                                                            "   /dungeon " + topic,
+                                                            NamedTextColor.GRAY))));
+                }
+            }
         }
     }
 
     private List<String> completeCanonical(CommandSender sender, String[] args) {
+        if (args.length == 2 && args[0].equalsIgnoreCase("help") && args[1].startsWith("@")) {
+            var allowedTopics = this.completeCanonical(sender, new String[] {""});
+            String prefix = args[1].toLowerCase(Locale.ROOT);
+            return HELP_SECTIONS.stream()
+                    .filter(
+                            section ->
+                                    section.getValue().stream().anyMatch(allowedTopics::contains))
+                    .map(section -> "@" + section.getKey())
+                    .filter(name -> name.startsWith(prefix))
+                    .toList();
+        }
         if (args.length > 1 && args[0].equalsIgnoreCase("help"))
             return this.completeCanonical(sender, Arrays.copyOfRange(args, 1, args.length));
         var suggestions = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);

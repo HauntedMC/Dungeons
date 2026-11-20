@@ -50,7 +50,8 @@ class PresentationContractTest {
                                     line ->
                                             containsClick(
                                                     line,
-                                                    ClickEvent.runCommand("/dungeon help play"))));
+                                                    ClickEvent.runCommand(
+                                                            "/dungeon help @discovery"))));
             assertTrue(
                     messages.stream()
                             .noneMatch(
@@ -59,9 +60,25 @@ class PresentationContractTest {
                                                     .startsWith("Dungeons ›")));
 
             clearInvocations(player);
+            command.execute("help", "@discovery");
+            var discovery = ArgumentCaptor.forClass(Component.class);
+            verify(player, atLeastOnce()).sendMessage(discovery.capture());
+            assertTrue(
+                    discovery.getAllValues().stream()
+                            .anyMatch(
+                                    line ->
+                                            containsClick(
+                                                    line,
+                                                    ClickEvent.runCommand("/dungeon help play"))));
+            clearInvocations(player);
+            command.permissions.add("dungeons.staff.inspect");
             command.execute("help", "play");
             var usage = ArgumentCaptor.forClass(Component.class);
             verify(player, atLeastOnce()).sendMessage(usage.capture());
+            assertTrue(
+                    usage.getAllValues().stream()
+                            .map(ComponentUtils::plainText)
+                            .noneMatch(line -> line.contains("/dungeon player")));
             assertTrue(
                     usage.getAllValues().stream()
                             .anyMatch(
@@ -133,10 +150,10 @@ class PresentationContractTest {
             var capture = ArgumentCaptor.forClass(Component.class);
             verify(player, atLeastOnce()).sendMessage(capture.capture());
             var lines = capture.getAllValues().stream().map(ComponentUtils::plainText).toList();
-            assertTrue(lines.stream().anyMatch(line -> line.contains("[Minimal ✓]")));
-            assertTrue(lines.stream().anyMatch(line -> line.contains("[Balanced]")));
-            assertTrue(lines.stream().anyMatch(line -> line.contains("[Geluid ×]")));
-            assertTrue(lines.stream().anyMatch(line -> line.contains("[Titels ✓]")));
+            assertTrue(lines.stream().anyMatch(line -> line.contains("› Minimal ✓")));
+            assertTrue(lines.stream().anyMatch(line -> line.contains("› Balanced")));
+            assertTrue(lines.stream().anyMatch(line -> line.contains("› Geluid ×")));
+            assertTrue(lines.stream().anyMatch(line -> line.contains("› Titels ✓")));
             assertTrue(
                     capture.getAllValues().stream()
                             .anyMatch(

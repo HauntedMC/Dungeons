@@ -13,12 +13,13 @@ public final class DungeonUi {
     private DungeonUi() {}
 
     public static Component heading(Component title) {
-        return Component.text("◆ ", NamedTextColor.GOLD)
+        return Component.text("▌ ", NamedTextColor.DARK_AQUA)
                 .append(title.colorIfAbsent(NamedTextColor.WHITE).decorate(TextDecoration.BOLD));
     }
 
     public static Component detail(Component content) {
-        return Component.text("  ").append(content);
+        return Component.text("│  ", NamedTextColor.DARK_GRAY)
+                .append(content.colorIfAbsent(NamedTextColor.WHITE));
     }
 
     public static Component metric(Component label, Component value) {
@@ -33,14 +34,13 @@ public final class DungeonUi {
 
     public static Component join(List<Component> parts) {
         return Component.join(
-                JoinConfiguration.separator(Component.text("  ·  ", NamedTextColor.GRAY)),
+                JoinConfiguration.separator(Component.text("  ·  ", NamedTextColor.DARK_GRAY)),
                 parts.stream().filter(part -> !part.equals(Component.empty())).toList());
     }
 
     public static Component action(Component label, String command, NamedTextColor color) {
-        return Component.text("[", NamedTextColor.GRAY)
+        return Component.text("› ", color)
                 .append(label.color(color))
-                .append(Component.text("]", NamedTextColor.GRAY))
                 .hoverEvent(HoverEvent.showText(Component.text(command, NamedTextColor.WHITE)))
                 .clickEvent(ClickEvent.runCommand(command));
     }
@@ -54,7 +54,11 @@ public final class DungeonUi {
             row.append(
                     Component.text(
                             token,
-                            token.startsWith("<") ? NamedTextColor.GRAY : NamedTextColor.AQUA));
+                            index == 0
+                                    ? NamedTextColor.GRAY
+                                    : token.startsWith("<")
+                                            ? NamedTextColor.GOLD
+                                            : NamedTextColor.WHITE));
         }
         int argument = command.indexOf(" <");
         String suggestion = argument < 0 ? command : command.substring(0, argument + 1);

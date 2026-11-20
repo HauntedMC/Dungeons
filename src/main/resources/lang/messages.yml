@@ -27,6 +27,14 @@ general:
       - '<HauntedMC:Muted>en branching room instellingen te bewerken.'
 commands:
   ui:
+    category-discovery: "Dungeons"
+    caption-discovery: "Bekijk maps en kies een difficulty"
+    category-run: "Run"
+    caption-run: "Guide, objectives en HUD"
+    category-party: "Team"
+    caption-party: "Samen een dungeon spelen"
+    category-staff: "Beheer"
+    caption-staff: "Maps, instances en repository"
     team-title: "Dungeonteam"
     team-accept: "Accepteren"
     team-decline: "Weigeren"

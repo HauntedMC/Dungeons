@@ -17,6 +17,14 @@ general:
 
 commands:
   ui:
+    category-discovery: "Dungeons"
+    caption-discovery: "Browse maps and choose a difficulty"
+    category-run: "Run"
+    caption-run: "Guide, objectives and HUD"
+    category-party: "Team"
+    caption-party: "Play a dungeon together"
+    category-staff: "Staff"
+    caption-staff: "Maps, instances and repository"
     team-title: "Dungeon team"
     team-accept: "Accept"
     team-decline: "Decline"
