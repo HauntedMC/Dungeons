@@ -153,7 +153,19 @@ public final class StaffContentStorage {
                                                                         RepoContent.deleteTree(
                                                                                 files.stage(
                                                                                         operation));
-                                                                        files.prune(name);
+                                                                        try {
+                                                                            files.prune(
+                                                                                    name,
+                                                                                    operation);
+                                                                        } catch (
+                                                                                IOException
+                                                                                        cleanup) {
+                                                                            runtime.environment()
+                                                                                    .logger()
+                                                                                    .warn(
+                                                                                            "Backup restored; could not prune old safety backups",
+                                                                                            cleanup);
+                                                                        }
                                                                         return "Restored "
                                                                                 + id
                                                                                 + "; safety backup repo-"

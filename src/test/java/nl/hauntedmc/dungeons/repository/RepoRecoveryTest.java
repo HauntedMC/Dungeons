@@ -62,6 +62,23 @@ class RepoRecoveryTest {
     }
 
     @Test
+    void pruningKeepsTheCurrentSafetyBackupEvenIfItsTimestampIsOld() throws Exception {
+        var files = new RepoFiles(root, Files.createDirectories(root.resolve("dungeons")));
+        UUID installed = UUID.randomUUID();
+        Path backups = Files.createDirectories(root.resolve("backups/crypt"));
+        Path safety = Files.createDirectory(backups.resolve("repo-" + installed));
+        for (int i = 0; i < 10; i++) Files.createDirectory(backups.resolve("backup-" + i));
+        Files.setLastModifiedTime(safety, java.nio.file.attribute.FileTime.fromMillis(1));
+
+        files.prune("crypt", installed);
+
+        assertTrue(Files.isDirectory(safety));
+        try (var remaining = Files.list(backups)) {
+            assertEquals(10, remaining.count());
+        }
+    }
+
+    @Test
     void interruptedFirstInstallIsQuarantinedAndUnsafeJournalsFailClosed() throws Exception {
         Path dungeons = Files.createDirectories(root.resolve("dungeons"));
         var files = new RepoFiles(root, dungeons);

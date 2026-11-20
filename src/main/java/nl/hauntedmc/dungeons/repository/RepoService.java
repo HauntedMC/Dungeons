@@ -1368,7 +1368,7 @@ public final class RepoService implements AutoCloseable {
             files.commit(prepared.operation(), name, previous);
             swapped = false;
             try {
-                files.prune(name);
+                files.prune(name, prepared.operation());
             } catch (IOException retentionFailure) {
                 runtime.environment()
                         .plugin()
