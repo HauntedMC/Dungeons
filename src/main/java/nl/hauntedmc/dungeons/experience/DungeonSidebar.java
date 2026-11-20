@@ -18,15 +18,13 @@ final class DungeonSidebar {
     private final Map<String, Component> rows = new HashMap<>();
     private final Map<String, Object> substitutions = new HashMap<>();
 
-    DungeonSidebar(
-            ExperiencePresentation policy, Player viewer, Component dungeon, Component state) {
+    DungeonSidebar(ExperiencePresentation policy, Player viewer, Component dungeon) {
         this.policy = policy;
         this.viewer = viewer;
         this.dungeon = dungeon;
         for (String key : ExperiencePresentation.WIDGETS) substitutions.put(key, Component.empty());
         substitutions.put("time_left", Component.empty());
         substitutions.put("dungeon", dungeon);
-        row("state", state);
     }
 
     void runDetails(PlayableInstance instance) {

@@ -89,13 +89,11 @@ final class ObservationHud implements AutoCloseable {
             lease.renew(Duration.ofSeconds(10));
             var board =
                     new DungeonSidebar(
-                            policy,
-                            player,
-                            instance.getDungeon().getDisplayNameComponent(),
-                            Component.text("● ", NamedTextColor.AQUA)
-                                    .append(
-                                            LangUtils.component(
-                                                    "experience.ui-observing", player, false)));
+                            policy, player, instance.getDungeon().getDisplayNameComponent());
+            board.row(
+                    "state",
+                    Component.text("● ", NamedTextColor.AQUA)
+                            .append(LangUtils.component("experience.ui-observing", player, false)));
             board.runDetails(instance);
             board.row("leave", Component.text("/dungeon leave", NamedTextColor.GRAY));
             lease.update(

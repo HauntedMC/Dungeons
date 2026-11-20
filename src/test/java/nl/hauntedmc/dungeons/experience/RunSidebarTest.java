@@ -77,6 +77,8 @@ class RunSidebarTest {
             service.joined(f.run, session);
             tick.run();
             var solo = lines(latest.get());
+            assertFalse(
+                    solo.stream().anyMatch(line -> line.contains("In progress")), solo.toString());
             assertTrue(
                     solo.stream().anyMatch(line -> line.contains("Run time  1:23")),
                     solo.toString());
@@ -93,6 +95,7 @@ class RunSidebarTest {
             var hard = mock(DungeonDifficulty.class);
             when(hard.getNamespace()).thenReturn("hard");
             when(hard.getDisplayNameComponent()).thenReturn(Component.text("Nightmare"));
+            session.setExperiencePreference("profile", "minimal");
             f.run.setDifficulty(hard);
             clock.run();
             f.run.getPlayerLives().put(id, 1);
@@ -117,6 +120,14 @@ class RunSidebarTest {
                     untimed.stream()
                             .anyMatch(
                                     line -> line.contains("Lives") || line.contains("Time left")));
+            runtime.setQueueRegistry(
+                    mock(nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry.class));
+            when(player.getGameMode()).thenReturn(org.bukkit.GameMode.SPECTATOR);
+            tick.run();
+            assertTrue(lines(latest.get()).stream().anyMatch(line -> line.contains("Spectat")));
+            session.setExperiencePreference("profile", "immersive");
+            tick.run();
+            assertNull(latest.get(), "Immersive must still hide the scoreboard");
         } finally {
             LangUtils.clear();
         }

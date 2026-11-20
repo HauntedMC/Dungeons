@@ -407,9 +407,10 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                         new DungeonSidebar(
                                 presentation(instance),
                                 player,
-                                instance.getDungeon().getDisplayNameComponent(),
-                                runState(player, state));
-                board.placeholder("state", text(player, stateName(player, state)));
+                                instance.getDungeon().getDisplayNameComponent());
+                String status = stateName(player, state);
+                if (!status.equals("playing")) board.row("state", runState(player, state));
+                board.placeholder("state", text(player, status));
                 board.runDetails(instance);
                 if (run != null
                         && (balanced
@@ -1202,7 +1203,6 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
             return;
         }
         var lines = new ArrayList<Component>();
-        lines.add(Component.text("● ", NamedTextColor.AQUA).append(text(player, "playing")));
         lines.add(text(player, "ui-hud-run-time", "value", clock(0)));
         int time = dungeon.getConfig().getInt("runs.time_limit_minutes", 0);
         int lives = dungeon.getConfig().getInt("players.lives", 0);
