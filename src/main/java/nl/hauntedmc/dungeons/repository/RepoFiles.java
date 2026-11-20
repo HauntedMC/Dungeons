@@ -121,6 +121,12 @@ public final class RepoFiles {
         Path backup = managed(pluginRoot.resolve("backups").resolve(name).resolve("repo-" + id));
         if (!Boolean.TRUE.equals(values.get("committed"))) {
             if (Files.exists(backup)) {
+                // Record rollback intent before consuming the only recovery backup.
+                write(
+                        id,
+                        "kind: install\nname: '"
+                                + name
+                                + "'\nprevious: true\ncommitted: false\nphase: restoring\n");
                 if (Files.exists(live))
                     move(live, root.resolve("staging").resolve("failed-" + UUID.randomUUID()));
                 move(backup, live);

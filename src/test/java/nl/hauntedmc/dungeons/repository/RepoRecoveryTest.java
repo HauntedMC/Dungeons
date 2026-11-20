@@ -28,6 +28,24 @@ class RepoRecoveryTest {
     }
 
     @Test
+    void restartAfterRestoringBackupButBeforeDeletingJournalCompletesRecovery() throws Exception {
+        Path dungeons = Files.createDirectories(root.resolve("dungeons"));
+        var files = new RepoFiles(root, dungeons);
+        Path live = Files.createDirectories(dungeons.resolve("crypt"));
+        Files.writeString(live.resolve("content"), "restored original");
+        UUID id = UUID.randomUUID();
+        Path journal = files.root().resolve("journals/" + id + ".yml");
+        Files.writeString(
+                journal,
+                "kind: install\nname: crypt\nprevious: true\ncommitted: false\nphase: restoring\n");
+
+        files.recover(mock(RepoStore.class));
+
+        assertEquals("restored original", Files.readString(live.resolve("content")));
+        assertFalse(Files.exists(journal));
+    }
+
+    @Test
     void committedInstallKeepsVersionAndSafetyBackup() throws Exception {
         Path dungeons = Files.createDirectories(root.resolve("dungeons"));
         var files = new RepoFiles(root, dungeons);
