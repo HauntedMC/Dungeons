@@ -148,10 +148,10 @@ Global plugin settings and external plugin/resource dependencies are not bundled
 Pull downloads and validates before closing admissions. Existing runs can finish; occupied editors
 must save/close. Editor changes are frozen during the drain, but save/close remain available. The
 final saved local content is checked again before installation. Modified or uninitialized copies
-require `--force`; the command returns a short-lived `--confirm <token>` command bound to the saved
-content and selected release. Confirmed requests reuse the verified download, and the token is
-accepted before potentially lengthy local revalidation. A forced pull still requires compatible, verified content and matching
-UUIDs. Different-UUID name collisions must be archived/resolved explicitly.
+require `--force`. Once preflight finishes, repeat the same command within 10 seconds to replace
+the saved local copy. The second invocation reuses the verified download and checks that the
+local content and selected release still match the preflight. A forced pull still requires
+compatible, verified content and matching UUIDs. Different-UUID name collisions must be archived/resolved explicitly.
 
 Successful updates restore the prior admission state without clearing separately requested
 maintenance. Failures retain maintenance and restore prior files when possible. Every replacement

@@ -8,7 +8,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import nl.hauntedmc.dungeons.config.*;
-import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.persistence.DungeonSchema;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
@@ -46,10 +45,6 @@ public final class RepoService implements AutoCloseable {
     private final Map<UUID, UUID> waitingPulls = new HashMap<>();
     private final RepoApprovals<Prepared> forceApprovals = new RepoApprovals<>();
 
-    private record RollbackPlan(
-            UUID dungeon, RepoVersion version, String bump, String message, UUID head) {}
-
-    private final RepoApprovals<RollbackPlan> rollbackApprovals = new RepoApprovals<>();
     private final Map<StaffOperations.Operation, Job> transferProgress = new IdentityHashMap<>();
     private final ThreadLocal<Job> currentJob = new ThreadLocal<>();
 
@@ -180,7 +175,6 @@ public final class RepoService implements AutoCloseable {
 
     private void reapWaitingPulls() {
         if (closed) return;
-        rollbackApprovals.expired();
         for (var prepared : forceApprovals.expired())
             submit(
                     () -> {
@@ -1014,15 +1008,19 @@ public final class RepoService implements AutoCloseable {
     }
 
     public CompletableFuture<String> pull(
-            String selector,
-            RepoVersion version,
-            boolean force,
-            String token,
-            CommandSender actor) {
+            String selector, RepoVersion version, boolean force, CommandSender actor) {
         String initialScope = cachedScope(selector);
         require(actor, "pull", initialScope);
-        if (force) require(actor, "force", initialScope);
-        var approved = token == null ? null : forceApprovals.claim(actorId(actor), token);
+        if (force) {
+            require(actor, "force", initialScope);
+            runtime.staffOperations().requireContentWritable(initialScope);
+        }
+        String command =
+                "/dungeon repo pull "
+                        + selector
+                        + (version == null ? "" : " --version " + version)
+                        + " --force";
+        var approved = force ? forceApprovals.claim(actorId(actor), command) : null;
         var job = new Job();
         var transfer =
                 runtime.staffOperations()
@@ -1153,7 +1151,7 @@ public final class RepoService implements AutoCloseable {
                                                                                                                                 name,
                                                                                                                                 version,
                                                                                                                                 force,
-                                                                                                                                token,
+                                                                                                                                command,
                                                                                                                                 actor,
                                                                                                                                 approved
                                                                                                                                                 == null
@@ -1260,7 +1258,7 @@ public final class RepoService implements AutoCloseable {
             String name,
             RepoVersion requested,
             boolean force,
-            String token,
+            String command,
             CommandSender actor,
             String approvedRevision)
             throws Exception {
@@ -1316,35 +1314,26 @@ public final class RepoService implements AutoCloseable {
                                                 actor, "pull", name, prepared.validation());
                                         if (!force) return true;
                                         require(actor, "force", name);
+                                        if (!previous && approvedRevision == null) return true;
                                         if (approvedRevision != null) {
                                             if (!approvedRevision.equals(finalRevision))
                                                 throw new IllegalArgumentException(
                                                         "Saved local content changed after confirmation; request a new forced pull");
                                             return true;
                                         }
-                                        var approval =
-                                                forceApprovals.issue(
-                                                        actorId(actor),
-                                                        prepared.release().id(),
-                                                        finalRevision,
-                                                        prepared);
-                                        String command =
-                                                "/dungeon repo pull "
-                                                        + prepared.entry().head().dungeon()
-                                                        + " --version "
-                                                        + prepared.release().version()
-                                                        + " --force --confirm "
-                                                        + approval.token();
-                                        LangUtils.sendRaw(
-                                                actor,
-                                                "Confirm saved local content replacement within 30 seconds: "
-                                                        + command);
+                                        forceApprovals.issue(
+                                                actorId(actor),
+                                                command,
+                                                prepared.release().id(),
+                                                finalRevision,
+                                                prepared);
                                         return false;
                                     })
                             .join();
             if (!confirmed) {
                 retainedForApproval = true;
-                return "Preflight complete; confirmation required. No content replaced";
+                return "Repeat this command within 10 seconds to replace saved local content: "
+                        + command;
             }
             owner(
                             () -> {
@@ -1463,14 +1452,12 @@ public final class RepoService implements AutoCloseable {
             RepoVersion version,
             String bump,
             String message,
-            String token,
             CommandSender actor) {
         RepoVersion.DRAFT.bump(bump);
         String author =
                 actor instanceof Player player
                         ? player.getUniqueId().toString()
                         : "console:" + actor.getName();
-        var approved = token == null ? null : rollbackApprovals.claim(actorId(actor), token);
         var job = new Job();
         var tracked = new AtomicReference<StaffOperations.Operation>();
         return this.<String>submit(
@@ -1496,47 +1483,6 @@ public final class RepoService implements AutoCloseable {
                                                                             job::cancel))
                                             .join());
                             try {
-                                var plan =
-                                        new RollbackPlan(
-                                                source.dungeon(),
-                                                version,
-                                                bump,
-                                                message,
-                                                entry.head().id());
-                                if (approved == null) {
-                                    owner(
-                                                    () -> {
-                                                        require(actor, "publish", entry.name());
-                                                        var approval =
-                                                                rollbackApprovals.issue(
-                                                                        actorId(actor),
-                                                                        source.id(),
-                                                                        entry.head()
-                                                                                .id()
-                                                                                .toString(),
-                                                                        plan);
-                                                        LangUtils.sendRaw(
-                                                                actor,
-                                                                "Confirm publication within 30 seconds: /dungeon repo rollback "
-                                                                        + entry.head().dungeon()
-                                                                        + " "
-                                                                        + version
-                                                                        + " "
-                                                                        + bump
-                                                                        + (message.isBlank()
-                                                                                ? ""
-                                                                                : " " + message)
-                                                                        + " --confirm "
-                                                                        + approval.token());
-                                                        return null;
-                                                    })
-                                            .join();
-                                    return "Rollback publication requires confirmation; history unchanged";
-                                }
-                                if (!approved.release().equals(source.id())
-                                        || !approved.payload().equals(plan))
-                                    throw new IllegalArgumentException(
-                                            "Rollback parameters or repository head changed; request a new confirmation");
                                 var snapshot = download(operation, source);
                                 var validation =
                                         RepoValidation.validate(snapshot, source.dungeon(), true);
@@ -1646,6 +1592,5 @@ public final class RepoService implements AutoCloseable {
         transferProgress.clear();
         waitingPulls.clear();
         forceApprovals.clear();
-        rollbackApprovals.clear();
     }
 }

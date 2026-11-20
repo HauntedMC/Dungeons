@@ -24,10 +24,6 @@ final class RepoCommandHandler implements CommandHandler {
         if (args.length < 1) throw new IllegalArgumentException("Use /dungeon help repo");
         String action = args[0].toLowerCase(Locale.ROOT);
         var input = new ArrayList<>(List.of(args));
-        String token = option(input, "--confirm");
-        if (token != null && !Set.of("pull", "rollback").contains(action))
-            throw new IllegalArgumentException(
-                    "--confirm only applies to forced pulls and rollbacks");
         CompletableFuture<?> result;
         switch (action) {
             case "fetch" -> {
@@ -55,14 +51,11 @@ final class RepoCommandHandler implements CommandHandler {
                 String version = option(input, "--version");
                 boolean force = input.remove("--force");
                 exact(input, 2);
-                if (token != null && !force)
-                    throw new IllegalArgumentException("--confirm requires --force");
                 result =
                         repo.pull(
                                 input.get(1),
                                 version == null ? null : RepoVersion.parse(version),
                                 force,
-                                token,
                                 actor);
             }
             case "rollback" -> {
@@ -73,7 +66,6 @@ final class RepoCommandHandler implements CommandHandler {
                                 RepoVersion.parse(input.get(2)),
                                 input.get(3),
                                 message(input, 4),
-                                token,
                                 actor);
             }
             case "history" -> {
