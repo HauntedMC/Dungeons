@@ -159,7 +159,8 @@ final class RepoCommandHandler implements CommandHandler {
 
     private static String message(List<String> args, int from) {
         String result = String.join(" ", args.subList(from, args.size()));
-        if (result.contains("--")) throw new IllegalArgumentException("Unknown repository option");
+        if (args.subList(from, args.size()).stream().anyMatch(word -> word.startsWith("--")))
+            throw new IllegalArgumentException("Unknown repository option");
         if (result.length() > 1024)
             throw new IllegalArgumentException("Publication message exceeds 1024 characters");
         return result;
