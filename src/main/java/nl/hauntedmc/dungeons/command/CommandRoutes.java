@@ -144,7 +144,18 @@ final class CommandRoutes {
                             Handler.REPO,
                             "history <map> <page>"),
                     r("list", "play", false, Handler.DISCOVERY, "list"),
-                    r("list *filter", "play", false, Handler.DISCOVERY, "list *filter"),
+                    r(
+                            "list <filter-or-page>",
+                            "play",
+                            false,
+                            Handler.DISCOVERY,
+                            "list <filter-or-page>"),
+                    r(
+                            "list <filter> <page>",
+                            "play",
+                            false,
+                            Handler.DISCOVERY,
+                            "list <filter> <page>"),
                     r("info <map>", "play", false, Handler.DISCOVERY, "info <map>"),
                     r("play <map>", "play", true, Handler.GAMEPLAY, "play <map>"),
                     r(

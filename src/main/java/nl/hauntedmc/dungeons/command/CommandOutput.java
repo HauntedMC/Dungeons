@@ -124,7 +124,7 @@ final class CommandOutput {
                     return null;
                 }
 
-                page = Math.max(1, parsed.get());
+                page = parsed.get();
             } else {
                 filter = firstArg;
             }
@@ -136,9 +136,13 @@ final class CommandOutput {
                 return null;
             }
 
-            page = Math.max(1, parsed.get());
+            page = parsed.get();
         }
 
+        if (page < 1) {
+            LangUtils.sendMessage(sender, usageKey);
+            return null;
+        }
         return new FilterPageQuery(filter, page);
     }
 
