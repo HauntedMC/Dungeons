@@ -15,6 +15,7 @@ import nl.hauntedmc.dungeons.content.function.FinishDungeonFunction;
 import nl.hauntedmc.dungeons.content.function.SpawnMobFunction;
 import nl.hauntedmc.dungeons.event.ExperienceEvent;
 import nl.hauntedmc.dungeons.localization.LangUtils;
+import nl.hauntedmc.dungeons.presentation.DungeonUi;
 import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
 import nl.hauntedmc.featureframework.hud.HudFrame;
 import nl.hauntedmc.featureframework.lifecycle.CleanupSequence;
@@ -216,7 +217,17 @@ public final class ExperienceRun implements AutoCloseable {
                                                             .getMaxHealth(living))
                                     <= phase
                             && phases.add(tracked.entity + ":" + phase))
-                        emit("boss-phase", group.id() + ":" + phase, 0);
+                        emit(
+                                "boss-phase",
+                                group.id() + ":" + phase,
+                                0,
+                                DungeonUi.join(
+                                        group.boss().isBlank()
+                                                ? living.name()
+                                                : LangUtils.trusted(group.boss()),
+                                        Component.text(
+                                                Math.round(phase * 100) + "%",
+                                                NamedTextColor.LIGHT_PURPLE)));
             }
         }
     }
@@ -421,16 +432,27 @@ public final class ExperienceRun implements AutoCloseable {
                     && entity instanceof LivingEntity living
                     && living.isValid()
                     && !living.isDead()) {
-                result.add(
-                        new HudFrame.Bar(
-                                Component.text("BOSS  ", NamedTextColor.LIGHT_PURPLE)
-                                        .append(LangUtils.trusted(group.boss())),
-                                (float)
-                                        (living.getHealth()
+                float health =
+                        (float)
+                                Math.clamp(
+                                        living.getHealth()
                                                 / Math.max(
                                                         1,
                                                         nl.hauntedmc.dungeons.util.entity
-                                                                .EntityUtils.getMaxHealth(living))),
+                                                                .EntityUtils.getMaxHealth(living)),
+                                        0,
+                                        1);
+                result.add(
+                        new HudFrame.Bar(
+                                DungeonUi.join(
+                                        LangUtils.trusted(group.boss()),
+                                        Component.text(
+                                                health > 0
+                                                        ? Math.max(1, Math.round(health * 100))
+                                                                + "%"
+                                                        : "0%",
+                                                NamedTextColor.LIGHT_PURPLE)),
+                                health,
                                 BossBar.Color.PURPLE,
                                 BossBar.Overlay.NOTCHED_10));
                 if (result.size() == 2) return result;
@@ -440,20 +462,33 @@ public final class ExperienceRun implements AutoCloseable {
             if (entry.getValue().state.equals("active")
                     || entry.getValue().state.equals("preparing")) {
                 var spec = definition.encounters().get(entry.getKey());
+                var state = entry.getValue();
+                boolean preparing = state.state.equals("preparing");
+                int wave = state.wave + (preparing ? 2 : 1);
+                Component caption =
+                        DungeonUi.join(
+                                LangUtils.trusted(spec.title()),
+                                Component.text(
+                                        "Wave " + wave + "/" + spec.waves().size(),
+                                        NamedTextColor.AQUA));
+                float progress = wave / (float) spec.waves().size();
+                if (preparing) {
+                    int remaining =
+                            Math.max(
+                                    0,
+                                    spec.preparationSeconds()
+                                            - (instance.getTimeElapsed() - state.waveStarts));
+                    caption =
+                            DungeonUi.join(
+                                    caption,
+                                    Component.text("◷ " + remaining + "s", NamedTextColor.GOLD));
+                    progress = remaining / (float) Math.max(1, spec.preparationSeconds());
+                }
                 result.add(
                         new HudFrame.Bar(
-                                LangUtils.trusted(spec.title())
-                                        .append(
-                                                Component.text(
-                                                        "   Wave "
-                                                                + Math.max(
-                                                                        1,
-                                                                        entry.getValue().wave + 1)
-                                                                + "/"
-                                                                + spec.waves().size(),
-                                                        NamedTextColor.AQUA)),
-                                Math.max(0, entry.getValue().wave) / (float) spec.waves().size(),
-                                BossBar.Color.BLUE,
+                                caption,
+                                progress,
+                                preparing ? BossBar.Color.YELLOW : BossBar.Color.BLUE,
                                 BossBar.Overlay.PROGRESS));
                 if (result.size() == 2) return result;
             }
@@ -461,8 +496,20 @@ public final class ExperienceRun implements AutoCloseable {
     }
 
     private void emit(String kind, String id, int value) {
+        var encounter = definition.encounters().get(id);
+        Component title = LangUtils.trusted(encounter.title());
+        if (kind.equals("wave-started"))
+            title =
+                    DungeonUi.join(
+                            title,
+                            Component.text(
+                                    value + "/" + encounter.waves().size(), NamedTextColor.AQUA));
+        emit(kind, id, value, title);
+    }
+
+    private void emit(String kind, String id, int value, Component title) {
         Bukkit.getPluginManager().callEvent(new ExperienceEvent(instance, kind, id, null, value));
-        service.changed(instance, new ObjectiveProgress.Change(kind, id, null, value));
+        service.changed(instance, new ObjectiveProgress.Change(kind, id, null, value), title);
     }
 
     @Override

@@ -478,7 +478,15 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                     && instance.getTimeLeft() > 0) {
                 bars.addFirst(
                         new HudFrame.Bar(
-                                text(player, "remaining", "value", Component.text(clock(instance.getTimeLeft()), DungeonSidebar.countdownColor(instance.getTimeLeft())).decorate(TextDecoration.BOLD)),
+                                text(
+                                        player,
+                                        "remaining",
+                                        "value",
+                                        Component.text(
+                                                        clock(instance.getTimeLeft()),
+                                                        DungeonSidebar.countdownColor(
+                                                                instance.getTimeLeft()))
+                                                .decorate(TextDecoration.BOLD)),
                                 instance.getTimeLeft() / 60f,
                                 instance.getTimeLeft() <= 10
                                         ? BossBar.Color.RED
@@ -539,19 +547,34 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
     Component waypoint(Player player, ExperienceDefinition.Objective goal) {
         var point = goal.point();
         var from = player.getLocation();
-        double dx = point.x() - from.getX(), dy = point.y() - from.getY(), dz = point.z() - from.getZ();
+        double dx = point.x() - from.getX(),
+                dy = point.y() - from.getY(),
+                dz = point.z() - from.getZ();
         double horizontal = Math.hypot(dx, dz);
         double distance = Math.hypot(horizontal, dy);
         Component title = LangUtils.trusted(goal.title());
         if (distance <= point.radius())
-            return DungeonUi.join(Component.text("◆ ", NamedTextColor.GREEN).append(title.colorIfAbsent(NamedTextColor.WHITE)), text(player, "ui-waypoint-here").color(NamedTextColor.GREEN));
+            return DungeonUi.join(
+                    Component.text("◆ ", NamedTextColor.GREEN)
+                            .append(title.colorIfAbsent(NamedTextColor.WHITE)),
+                    text(player, "ui-waypoint-here").color(NamedTextColor.GREEN));
         double relative = Math.toDegrees(Math.atan2(-dx, dz)) - from.getYaw();
-        String arrow = horizontal < 1 ? "◆" : List.of("↑", "↗", "→", "↘", "↓", "↙", "←", "↖")
-                .get(Math.floorMod((int) Math.round(relative / 45), 8));
+        String arrow =
+                horizontal < 1
+                        ? "◆"
+                        : List.of("↑", "↗", "→", "↘", "↓", "↙", "←", "↖")
+                                .get(Math.floorMod((int) Math.round(relative / 45), 8));
         Component range = Component.text(Math.round(distance) + " m", NamedTextColor.WHITE);
         if (Math.abs(dy) >= 3 && Math.abs(dy) > horizontal / 2)
-            range = range.append(Component.space()).append(text(player, dy > 0 ? "ui-waypoint-above" : "ui-waypoint-below").color(NamedTextColor.AQUA));
-        return DungeonUi.join(Component.text(arrow + " ", NamedTextColor.AQUA).append(title.colorIfAbsent(NamedTextColor.WHITE)), range);
+            range =
+                    range.append(Component.space())
+                            .append(
+                                    text(player, dy > 0 ? "ui-waypoint-above" : "ui-waypoint-below")
+                                            .color(NamedTextColor.AQUA));
+        return DungeonUi.join(
+                Component.text(arrow + " ", NamedTextColor.AQUA)
+                        .append(title.colorIfAbsent(NamedTextColor.WHITE)),
+                range);
     }
 
     static String clock(int seconds) {
@@ -722,6 +745,10 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
     }
 
     public void changed(PlayableInstance instance, ObjectiveProgress.Change change) {
+        changed(instance, change, null);
+    }
+
+    void changed(PlayableInstance instance, ObjectiveProgress.Change change, Component eventTitle) {
         for (var session : new ArrayList<>(instance.getPlayers())) {
             Player player = session.getPlayer();
             UUID id = player.getUniqueId();
@@ -732,7 +759,10 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
             state.lastProgress = instance.getTimeElapsed();
             if (change.kind().equals("stage-started")) state.hintOffered = false;
             var run = runs.get(instance);
-            var goal = run == null ? null : run.definition().objectives().get(change.id());
+            var goal =
+                    run != null && change.kind().startsWith("objective-")
+                            ? run.definition().objectives().get(change.id())
+                            : null;
             if (goal != null && !run.progress().visible(goal.id(), id)) continue;
             Component label =
                     goal == null ? Component.text(change.id()) : LangUtils.trusted(goal.title());
@@ -757,7 +787,7 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                                 "target",
                                 run.progress().target(goal.id())));
             else if (!change.kind().equals("objective-progress"))
-                notify(player, change.kind(), label);
+                notify(player, change.kind(), eventTitle == null ? label : eventTitle);
             subscriptions.publish(
                     id,
                     new Change(

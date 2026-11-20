@@ -37,7 +37,13 @@ final class DungeonSidebar {
             metric("elapsed", ExperienceService.clock(instance.getTimeElapsed()));
         else placeholder("elapsed", ExperienceService.clock(0));
         if (instance.getConfig().getInt("runs.time_limit_minutes", 0) > 0)
-            metric("remaining", Component.text(ExperienceService.clock(instance.getTimeLeft()), instance.isStarted() ? countdownColor(instance.getTimeLeft()) : NamedTextColor.WHITE));
+            metric(
+                    "remaining",
+                    Component.text(
+                            ExperienceService.clock(instance.getTimeLeft()),
+                            instance.isStarted()
+                                    ? countdownColor(instance.getTimeLeft())
+                                    : NamedTextColor.WHITE));
     }
 
     static NamedTextColor countdownColor(int seconds) {
@@ -67,7 +73,8 @@ final class DungeonSidebar {
                     case "respawn" -> "⚑ ";
                     default -> "› ";
                 };
-        if (key.equals("lives") && value instanceof Integer lives && lives <= 1) content = content.color(NamedTextColor.RED);
+        if (key.equals("lives") && value instanceof Integer lives && lives <= 1)
+            content = content.color(NamedTextColor.RED);
         var label =
                 LangUtils.component(
                         "experience.ui-hud-" + labelKey,
