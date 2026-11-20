@@ -92,8 +92,7 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
 
     private final Map<UUID, Waiting> waiting = new HashMap<>();
 
-    private record Exit(
-            Participation participation, String signature, String token, long expires) {}
+    private record Exit(Participation participation, String signature, long expires) {}
 
     private final DungeonsRuntime runtime;
     private final java.util.function.LongSupplier nanoTime;
@@ -1029,55 +1028,45 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
     /**
      * Returns true only for an immediate exit or a matching, unexpired consequence confirmation.
      */
-    public boolean requestExit(Player player, String token) {
+    public boolean requestExit(Player player) {
         requireThread();
-        var state = players.get(player.getUniqueId());
+        UUID id = player.getUniqueId();
+        var state = players.get(id);
         var session = runtime.playerSessions().get(player);
-        if (session == null || state != null && session.getInstance() != state.instance) {
-            exits.remove(player.getUniqueId());
-            return token == null && (session == null || session.getInstance() == null);
-        }
-        Exit pending = exits.remove(player.getUniqueId());
-        if (state == null) return token == null;
+        Exit pending = exits.remove(id);
+        if (session == null || state == null) return true;
+        var instance = state.instance;
+        if (session.getInstance() != instance) return session.getInstance() == null;
+        if (instance.isTestPlay()
+                || state.outcome != null
+                || !enabled(instance, "confirm_exit", true)) return true;
+
+        var dungeon = instance.getDungeon();
+        boolean cooldown =
+                dungeon.isAccessCooldownEnabled()
+                        && dungeon.isCooldownOnLeave()
+                        && dungeon.shouldApplyAccessCooldown(instance, id);
+        boolean consumesKey =
+                !instance.getConfig().getList("access.keys.items", List.of()).isEmpty()
+                        && instance.getConfig().getBoolean("access.keys.consume_on_entry", true);
+        if (!instance.isStarted() && !cooldown && !consumesKey) return true;
+
         String signature = exitSignature(session, state);
-        if (token != null
-                && pending != null
-                && pending.token.equals(token)
+        long now = nanoTime.getAsLong();
+        if (pending != null
                 && pending.participation == state
                 && pending.signature.equals(signature)
-                && pending.expires > nanoTime.getAsLong()) return true;
-        if (token == null
-                && (state.outcome != null || !enabled(state.instance, "confirm_exit", true)))
-            return true;
-        String next = UUID.randomUUID().toString();
-        exits.put(
-                player.getUniqueId(),
-                new Exit(
-                        state,
-                        signature,
-                        next,
-                        nanoTime.getAsLong() + Duration.ofSeconds(30).toNanos()));
+                && pending.expires - now > 0) return true;
+        exits.put(id, new Exit(state, signature, now + Duration.ofSeconds(10).toNanos()));
         notify(player, "exit-confirm", null);
         player.sendMessage(
                 text(
                         player,
-                        session.getDungeonSavePoint(state.instance.getDungeon().getWorldName())
-                                        == null
+                        session.getDungeonSavePoint(dungeon.getWorldName()) == null
                                 ? "exit-unsaved"
                                 : "exit-saved"));
-        if (state.instance.getDungeon().isAccessCooldownEnabled()
-                && state.instance.getDungeon().isCooldownOnLeave()
-                && state.instance
-                        .getDungeon()
-                        .shouldApplyAccessCooldown(state.instance, player.getUniqueId()))
-            player.sendMessage(text(player, "exit-cooldown"));
-        if (!state.instance.getConfig().getList("access.keys.items", List.of()).isEmpty()
-                && state.instance.getConfig().getBoolean("access.keys.consume_on_entry", true))
-            player.sendMessage(text(player, "exit-key"));
-        player.sendMessage(
-                action(player, "confirm-leave", "/dungeon leave " + next)
-                        .append(Component.space())
-                        .append(action(player, "stay", "/dungeon guide")));
+        if (cooldown) player.sendMessage(text(player, "exit-cooldown"));
+        if (consumesKey) player.sendMessage(text(player, "exit-key"));
         return false;
     }
 

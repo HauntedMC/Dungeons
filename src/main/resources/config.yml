@@ -34,8 +34,6 @@ instances:
 commands:
   # int. Entries shown per page in paginated command output such as /dungeon list and /dungeon help.
   list_page_size: 10
-  # int. Seconds allowed between the first and second /dungeon map delete command.
-  delete_confirmation_seconds: 10
 
 access:
   keys:

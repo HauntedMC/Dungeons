@@ -56,7 +56,7 @@ final class GameplayCommandHandler implements CommandHandler {
             case "testplay" -> this.handleTestPlayCommand(sender, args[1]);
             case "play" -> this.handlePlayCommand(sender, args);
             case "send" -> this.handleSendCommand(sender, args);
-            case "leave" -> this.handleLeaveCommand(sender, args);
+            case "leave" -> this.handleLeaveCommand(sender);
             case "guide", "status", "objectives", "hud", "spectate" ->
                     sender instanceof Player player
                             && playerManager.runtimeExperience() != null
@@ -75,7 +75,7 @@ final class GameplayCommandHandler implements CommandHandler {
     }
 
     /** Runs handle leave command. */
-    private boolean handleLeaveCommand(CommandSender sender, String[] args) {
+    private boolean handleLeaveCommand(CommandSender sender) {
         if (!(sender instanceof Player player)) {
             return false;
         }
@@ -138,7 +138,7 @@ final class GameplayCommandHandler implements CommandHandler {
         var experience = playerManager.runtimeExperience();
         if (experience != null
                 && playerSession.getInstance() instanceof PlayableInstance
-                && !experience.requestExit(player, args.length > 1 ? args[1] : null)) return true;
+                && !experience.requestExit(player)) return true;
         var dungeonName = playerSession.getInstance().getDungeon().getDisplayNameComponent();
         playerSession.getInstance().removePlayer(playerSession);
         LangUtils.sendMessage(

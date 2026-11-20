@@ -154,7 +154,6 @@ final class CommandRoutes {
                             Handler.GAMEPLAY,
                             "play <map> <difficulty>"),
                     r("leave", "play", true, Handler.GAMEPLAY, "leave"),
-                    r("leave <token>", "play", true, Handler.GAMEPLAY, "leave <token>"),
                     r("spectate <player>", "play", true, Handler.GAMEPLAY, "spectate <player>"),
                     r("guide", "play", true, Handler.GAMEPLAY, "guide"),
                     r("status", "play", true, Handler.GAMEPLAY, "status"),
