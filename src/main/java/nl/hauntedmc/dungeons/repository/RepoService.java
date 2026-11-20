@@ -1295,13 +1295,13 @@ public final class RepoService implements AutoCloseable {
                             && (local == null
                                     || !local.dungeonId().equals(prepared.release().dungeon())
                                     || !snapshot.hash().equals(local.contentHash())))
-                        throw new IllegalArgumentException(
+                        throw new StaffOperations.PreflightRejected(
                                 "Local content changed or is uninitialized; use --force after reviewing repo diff");
                     if (!force
                             && requested == null
                             && local != null
                             && local.version().compareTo(prepared.release().version()) > 0)
-                        throw new IllegalArgumentException(
+                        throw new StaffOperations.PreflightRejected(
                                 "Pull would downgrade; select --version explicitly");
                     if (!force
                             && local != null
@@ -1320,7 +1320,7 @@ public final class RepoService implements AutoCloseable {
                                         if (!previous && approvedRevision == null) return true;
                                         if (approvedRevision != null) {
                                             if (!approvedRevision.equals(finalRevision))
-                                                throw new IllegalArgumentException(
+                                                throw new StaffOperations.PreflightRejected(
                                                         "Saved local content changed after confirmation; request a new forced pull");
                                             return true;
                                         }

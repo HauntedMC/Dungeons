@@ -7,6 +7,7 @@ import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
@@ -36,6 +37,13 @@ public final class StaffOperations implements AutoCloseable {
         SUCCEEDED,
         FAILED,
         CANCELLED
+    }
+
+    /** The operation declined to proceed before changing the live map. */
+    public static final class PreflightRejected extends IllegalArgumentException {
+        public PreflightRejected(String message) {
+            super(message);
+        }
     }
 
     public static final class Operation {
@@ -658,9 +666,13 @@ public final class StaffOperations implements AutoCloseable {
     private void finish(Pending pendingWork, String detail, Throwable failure) {
         Operation op = pendingWork.operation;
         if (closed || pending.get(op.target) != pendingWork) return;
-        if (failure == null
-                && pendingWork.resume
-                && Objects.equals(state.get("maintenance." + op.target), op.reason)) {
+        while (failure instanceof CompletionException && failure.getCause() != null)
+            failure = failure.getCause();
+        boolean resume =
+                pendingWork.resume
+                        && (failure == null || failure instanceof PreflightRejected)
+                        && Objects.equals(state.get("maintenance." + op.target), op.reason);
+        if (resume) {
             try {
                 persist(
                         next ->
@@ -668,12 +680,14 @@ public final class StaffOperations implements AutoCloseable {
                                         "maintenance." + op.target,
                                         pendingWork.previousMaintenance));
             } catch (RuntimeException persistenceFailure) {
-                failure = persistenceFailure;
+                resume = false;
+                if (failure == null) failure = persistenceFailure;
+                else failure.addSuppressed(persistenceFailure);
             }
         }
         pending.remove(op.target, pendingWork);
         disposing.remove(op.target);
-        if (failure == null && pendingWork.resume) preloadResumedMaps(op.target);
+        if (resume) preloadResumedMaps(op.target);
         op.state = failure == null ? State.SUCCEEDED : State.FAILED;
         op.detail =
                 failure == null
