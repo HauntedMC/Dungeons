@@ -218,7 +218,7 @@ public final class ExperienceEditor implements Listener, AutoCloseable {
                         .createWindow(
                                 "experience_editor_" + player.getUniqueId(),
                                 54,
-                                "&8Experience / " + path);
+                                "&8Experience" + (path.isBlank() ? "" : " &7› &8" + path));
         window.setAccessCheck(
                 viewer -> {
                     if (!viewer.getUniqueId().equals(player.getUniqueId())) return false;
@@ -324,7 +324,14 @@ public final class ExperienceEditor implements Listener, AutoCloseable {
 
     private void button(
             GuiWindow window, int slot, String label, Material material, Runnable action) {
-        var button = new Button(label, material, "&e" + label);
+        String color =
+                switch (material) {
+                    case EMERALD -> "&a";
+                    case ANVIL, COMPARATOR -> "&6";
+                    case ARROW -> "&7";
+                    default -> "&b";
+                };
+        var button = new Button(label, material, color + label);
         button.addAction(
                 label,
                 event -> {

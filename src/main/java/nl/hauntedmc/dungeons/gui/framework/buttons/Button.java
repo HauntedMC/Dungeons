@@ -27,7 +27,7 @@ public class Button {
         this.id = id;
         this.item = new ItemStack(mat);
         ItemMeta meta = this.item.getItemMeta();
-        meta.displayName(GuiTextUtils.component(display));
+        meta.displayName(GuiTextUtils.itemName(display));
         meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
         this.item.setItemMeta(meta);
         this.commands = new ArrayList<>();
@@ -91,7 +91,7 @@ public class Button {
     /** Sets display name for this button item. */
     public final void setDisplayName(String display) {
         ItemMeta meta = this.item.getItemMeta();
-        meta.displayName(GuiTextUtils.component(display));
+        meta.displayName(GuiTextUtils.itemName(display));
         this.item.setItemMeta(meta);
     }
 
@@ -115,7 +115,7 @@ public class Button {
 
     /** Appends one lore line to this button item. */
     public final void addLore(String line) {
-        this.appendLore(List.of(GuiTextUtils.component(line)));
+        this.appendLore(List.of(GuiTextUtils.itemLore(line)));
     }
 
     private void appendLore(List<Component> lines) {

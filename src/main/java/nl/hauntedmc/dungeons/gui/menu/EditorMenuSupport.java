@@ -34,9 +34,9 @@ final class EditorMenuSupport {
 
                 if (formatTriggerValues && value instanceof DungeonTrigger trigger) {
                     button.addLore(
-                            ColorUtils.colorize(" &eTrigger: &7" + trigger.getDisplayName()));
+                            ColorUtils.colorize(" &7Trigger  &f" + trigger.getDisplayName()));
                 } else {
-                    button.addLore(ColorUtils.colorize(" &e" + metadata.name() + ": &7" + value));
+                    button.addLore(ColorUtils.colorize(" &7" + metadata.name() + "  &f" + value));
                 }
             } catch (IllegalAccessException exception) {
                 RuntimeContext.plugin()
