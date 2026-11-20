@@ -451,27 +451,8 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                         && (balanced
                                 || setting(instance, "widgets.objective", "auto")
                                         .equals("shown"))) {
-                    var goals = run.progress().views(player.getUniqueId());
-                    var goal =
-                            goals.stream()
-                                    .filter(value -> value.id().equals(state.pinned))
-                                    .findFirst()
-                                    .orElseGet(
-                                            () ->
-                                                    goals.stream()
-                                                            .filter(value -> !value.completed())
-                                                            .findFirst()
-                                                            .orElse(null));
-                    if (goal != null)
-                        widgetRows.put(
-                                "objective",
-                                LangUtils.trusted(goal.title())
-                                        .append(
-                                                Component.text(
-                                                        " "
-                                                                + goal.progress()
-                                                                + "/"
-                                                                + goal.target())));
+                    currentObjective(run, state, player)
+                            .ifPresent(objective -> widgetRows.put("objective", objective));
                 }
                 if (instance.getConfig().getInt("runs.time_limit_minutes", 0) > 0
                         && !setting(instance, "widgets.remaining", "auto").equals("hidden"))
@@ -1144,12 +1125,44 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                                                                     .getInt(
                                                                             "runs.time_limit_minutes")
                                                             * 60))));
+        else if (instance.isStarted())
+            values.add(
+                    stat(
+                            player,
+                            "elapsed",
+                            Component.text(clock(instance.getTimeElapsed() - state.entered))));
         player.sendMessage(DungeonUi.detail(DungeonUi.join(values)));
+        currentObjective(runs.get(instance), state, player)
+                .ifPresent(objective -> player.sendMessage(DungeonUi.detail(objective)));
         player.sendMessage(
                 DungeonUi.detail(
                         DungeonUi.join(
                                 action(player, "ui-guide-action", "/dungeon guide"),
                                 action(player, "ui-leave-short", "/dungeon leave"))));
+    }
+
+    private Optional<Component> currentObjective(
+            ExperienceRun run, Participation state, Player player) {
+        if (run == null || state.outcome != null) return Optional.empty();
+        ObjectiveProgress.View next = null;
+        for (var goal : run.progress().views(player.getUniqueId())) {
+            if (goal.completed()) continue;
+            if (next == null) next = goal;
+            if (goal.id().equals(state.pinned)) {
+                next = goal;
+                break;
+            }
+        }
+        if (next == null) return Optional.empty();
+        Component row =
+                Component.text("◇ ", NamedTextColor.AQUA).append(LangUtils.trusted(next.title()));
+        if (next.target() > 1)
+            row =
+                    row.append(
+                            Component.text(
+                                    "  " + next.progress() + "/" + next.target(),
+                                    NamedTextColor.GOLD));
+        return Optional.of(row);
     }
 
     private Component runState(Player player, Participation state) {
