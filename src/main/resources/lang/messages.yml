@@ -966,6 +966,11 @@ mechanic-editor:
 
 # Dungeon experience (all authored mechanics are optional).
 experience:
+  ui-open-status: "› Bekijk runstatus"
+  ui-guide-hud: "HUD-profiel en meldingen instellen"
+  ui-guide-back: "Terug naar het runoverzicht"
+  ui-switch-on: "✓ Aan · klik om uit te zetten"
+  ui-switch-off: "× Uit · klik om aan te zetten"
   ui-toggle-sounds: "Geluid"
   ui-toggle-titles: "Titels"
   ui-toggle-navigation: "Navigatie"

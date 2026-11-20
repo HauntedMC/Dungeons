@@ -50,6 +50,7 @@ public class PlayMenus {
                                                             false)
                                                     .color(NamedTextColor.DARK_AQUA)
                                                     .decorate(TextDecoration.BOLD)));
+            MenuFrame.apply(window);
             window.setAccessCheck(
                     player -> player.hasPermission("dungeons.play") && dungeon.isEnabled());
             window.addOpenAction(

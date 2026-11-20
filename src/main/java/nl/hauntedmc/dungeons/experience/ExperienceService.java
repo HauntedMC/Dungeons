@@ -20,6 +20,8 @@ import net.kyori.adventure.text.format.TextDecoration;
 import nl.hauntedmc.dungeons.api.DungeonExperienceApi;
 import nl.hauntedmc.dungeons.event.DungeonStartEvent;
 import nl.hauntedmc.dungeons.gui.framework.buttons.Button;
+import nl.hauntedmc.dungeons.gui.framework.window.GuiWindow;
+import nl.hauntedmc.dungeons.gui.menu.MenuFrame;
 import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.presentation.DungeonUi;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
@@ -1475,105 +1477,227 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
     }
 
     private void guide(Player player, Participation state, DungeonPlayerSession session) {
-        String namespace = "experience_" + player.getUniqueId();
+        showGuidePage(player, state, session, false);
+    }
+
+    private void showGuidePage(
+            Player player, Participation state, DungeonPlayerSession session, boolean settings) {
         var window =
                 runtime.guiService()
                         .createWindow(
-                                namespace,
-                                27,
-                                ComponentUtils.serialize(text(player, "guide-title")));
+                                "experience_" + player.getUniqueId(),
+                                settings ? 36 : 27,
+                                ComponentUtils.serialize(
+                                        text(player, settings ? "ui-hud-heading" : "guide-title")));
         window.setAccessCheck(
-                viewer ->
-                        viewer.getUniqueId().equals(player.getUniqueId())
-                                && players.get(player.getUniqueId()) == state);
+                viewer -> viewer == player && players.get(player.getUniqueId()) == state);
+        MenuFrame.apply(window);
+        var instance = state.instance;
         var overview =
                 new Button(
                         "overview",
-                        Material.NETHER_STAR,
+                        Material.RECOVERY_COMPASS,
                         ComponentUtils.serialize(
-                                state.instance
-                                        .getDungeon()
+                                instance.getDungeon()
                                         .getDisplayNameComponent()
                                         .decorate(TextDecoration.BOLD)));
+        overview.addLore(ComponentUtils.serialize(runState(player, state)));
+        Integer lives = instance.getPlayerLives().get(player.getUniqueId());
         overview.addLore(
                 ComponentUtils.serialize(
-                        text(player, stateName(player, state)).color(NamedTextColor.AQUA)));
-        window.addButton(4, overview);
-        addButton(
-                window,
-                10,
-                player,
+                        stat(
+                                player,
+                                "lives",
+                                lives == null
+                                        ? text(player, "ui-no-limit")
+                                        : Component.text(lives))));
+        if (instance.isStarted())
+            overview.addLore(
+                    ComponentUtils.serialize(
+                            stat(
+                                    player,
+                                    "elapsed",
+                                    Component.text(
+                                            clock(instance.getTimeElapsed() - state.entered)))));
+        overview.addLore(
+                ComponentUtils.serialize(
+                        text(player, "ui-open-status").color(NamedTextColor.AQUA)));
+        overview.addAction(
                 "status",
-                Material.COMPASS,
-                () -> handle(player, new String[] {"status"}));
-        if (state.instance.getPlayers().size() > 1)
-            addButton(
-                    window,
-                    11,
-                    player,
-                    "party-guide",
-                    Material.PLAYER_HEAD,
-                    () -> party(player, state));
-        addButton(
-                window, 12, player, "rules", Material.BOOK, () -> runRules(player, state.instance));
-        if (runs.containsKey(state.instance)
-                && !runs.get(state.instance).definition().objectives().isEmpty())
-            addButton(
-                    window,
-                    14,
-                    player,
-                    "objectives",
-                    Material.WRITABLE_BOOK,
-                    () -> handle(player, new String[] {"objectives"}));
-        addButton(
-                window,
-                16,
-                player,
-                "leave",
-                Material.OAK_DOOR,
-                () -> player.performCommand("dungeon leave"));
-        if (incompatible(session, state.instance))
-            addButton(
-                    window,
-                    18,
-                    player,
-                    "fresh-start",
-                    Material.SPONGE,
-                    () -> handle(player, new String[] {"objectives", "fresh"}));
-        addButton(
-                window,
-                20,
-                player,
-                "balanced",
-                Material.PAINTING,
-                () -> handle(player, new String[] {"hud", "balanced"}));
-        addButton(
-                window,
-                21,
-                player,
-                "minimal",
-                Material.PAPER,
-                () -> handle(player, new String[] {"hud", "minimal"}));
-        addButton(
-                window,
-                22,
-                player,
-                "immersive",
-                Material.FEATHER,
-                () -> handle(player, new String[] {"hud", "immersive"}));
-        addButton(
-                window,
-                24,
-                player,
-                "history",
-                Material.CLOCK,
-                () -> {
-                    player.sendMessage(DungeonUi.heading(text(player, "history")));
-                    if (state.history.isEmpty())
-                        player.sendMessage(DungeonUi.detail(text(player, "ui-no-history")));
-                    else state.history.forEach(line -> player.sendMessage(DungeonUi.detail(line)));
+                event -> {
+                    player.closeInventory();
+                    runStatus(player, state);
                 });
+        window.addButton(4, overview);
+        if (settings) {
+            String selected = session.experiencePreference("profile", "inherit");
+            var profiles = List.of("balanced", "minimal", "immersive", "inherit");
+            var materials =
+                    List.of(
+                            Material.PRISMARINE_CRYSTALS,
+                            Material.QUARTZ,
+                            Material.ECHO_SHARD,
+                            Material.COMPARATOR);
+            for (int i = 0; i < profiles.size(); i++) {
+                String profile = profiles.get(i);
+                var button =
+                        guideButton(
+                                player,
+                                profile.equals("inherit") ? "ui-inherit" : profile,
+                                materials.get(i),
+                                "ui-menu-" + profile,
+                                profile.equals(selected)
+                                        ? NamedTextColor.GREEN
+                                        : NamedTextColor.WHITE);
+                if (profile.equals(selected)) {
+                    button.setEnchanted(true);
+                    button.addLore(
+                            ComponentUtils.serialize(
+                                    text(player, "ui-active").color(NamedTextColor.GREEN)));
+                }
+                button.addAction(
+                        profile,
+                        event -> {
+                            session.setExperiencePreference("profile", profile);
+                            turnPage(player, state, session, true);
+                        });
+                window.addButton(10 + i * 2, button);
+            }
+            var toggles = List.of("sounds", "titles", "navigation");
+            var icons = List.of(Material.NOTE_BLOCK, Material.NAME_TAG, Material.COMPASS);
+            for (int i = 0; i < toggles.size(); i++) {
+                String toggle = toggles.get(i);
+                boolean on =
+                        session.experiencePreference(
+                                        toggle, toggle.equals("navigation") ? "false" : "true")
+                                .equals("true");
+                var button =
+                        guideButton(
+                                player,
+                                "ui-toggle-" + toggle,
+                                icons.get(i),
+                                on ? "ui-switch-on" : "ui-switch-off",
+                                on ? NamedTextColor.GREEN : NamedTextColor.GRAY);
+                button.addAction(
+                        toggle,
+                        event -> {
+                            session.setExperiencePreference(toggle, String.valueOf(!on));
+                            turnPage(player, state, session, true);
+                        });
+                window.addButton(20 + i * 2, button);
+            }
+            var back =
+                    guideButton(
+                            player,
+                            "ui-guide-action",
+                            Material.ARROW,
+                            "ui-guide-back",
+                            NamedTextColor.AQUA);
+            back.addAction("back", event -> turnPage(player, state, session, false));
+            window.addButton(28, back);
+        } else {
+            boolean party = instance.getPlayers().size() > 1;
+            boolean objectives =
+                    runs.containsKey(instance)
+                            && !runs.get(instance).definition().objectives().isEmpty();
+            int slot = 12 - (party ? 1 : 0) - (objectives ? 1 : 0);
+            if (objectives) {
+                addButton(
+                        window,
+                        slot,
+                        player,
+                        "objectives",
+                        Material.TARGET,
+                        () -> handle(player, new String[] {"objectives"}));
+                slot += 2;
+            }
+            addButton(
+                    window,
+                    slot,
+                    player,
+                    "rules",
+                    Material.WRITTEN_BOOK,
+                    () -> runRules(player, instance));
+            addButton(
+                    window,
+                    slot + 2,
+                    player,
+                    "history",
+                    Material.CLOCK,
+                    () -> {
+                        player.sendMessage(DungeonUi.heading(text(player, "history")));
+                        if (state.history.isEmpty())
+                            player.sendMessage(DungeonUi.detail(text(player, "ui-no-history")));
+                        else
+                            state.history.forEach(
+                                    line -> player.sendMessage(DungeonUi.detail(line)));
+                    });
+            if (party)
+                addButton(
+                        window,
+                        slot + 4,
+                        player,
+                        "party-guide",
+                        Material.PLAYER_HEAD,
+                        () -> party(player, state));
+            var hud =
+                    guideButton(
+                            player,
+                            "ui-hud-heading",
+                            Material.COMPARATOR,
+                            "ui-guide-hud",
+                            NamedTextColor.AQUA);
+            hud.addAction("hud", event -> turnPage(player, state, session, true));
+            window.addButton(19, hud);
+            if (incompatible(session, instance))
+                addButton(
+                        window,
+                        22,
+                        player,
+                        "fresh-start",
+                        Material.SPONGE,
+                        () -> handle(player, new String[] {"objectives", "fresh"}));
+            addButton(
+                    window,
+                    25,
+                    player,
+                    "leave",
+                    Material.DARK_OAK_DOOR,
+                    () -> player.performCommand("dungeon leave"));
+        }
         window.open(player);
+    }
+
+    private void turnPage(
+            Player player, Participation state, DungeonPlayerSession session, boolean settings) {
+        var source = player.getOpenInventory().getTopInventory();
+        Bukkit.getScheduler()
+                .runTask(
+                        runtime.environment().plugin(),
+                        () -> {
+                            if (!closed
+                                    && player.isOnline()
+                                    && players.get(player.getUniqueId()) == state
+                                    && player.getOpenInventory().getTopInventory() == source)
+                                showGuidePage(player, state, session, settings);
+                        });
+    }
+
+    private Button guideButton(
+            Player player,
+            String label,
+            Material material,
+            String description,
+            NamedTextColor color) {
+        var button =
+                new Button(
+                        label,
+                        material,
+                        ComponentUtils.serialize(
+                                text(player, label).color(color).decorate(TextDecoration.BOLD)));
+        button.addLore(
+                ComponentUtils.serialize(text(player, description).color(NamedTextColor.GRAY)));
+        return button;
     }
 
     private void party(Player viewer, Participation state) {
@@ -1624,43 +1748,23 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
     }
 
     private void addButton(
-            nl.hauntedmc.dungeons.gui.framework.window.GuiWindow window,
+            GuiWindow window,
             int slot,
             Player player,
             String label,
             Material material,
             Runnable action) {
-        boolean profile = List.of("balanced", "minimal", "immersive").contains(label);
-        var session = runtime.playerSessions().get(player);
-        var state = players.get(player.getUniqueId());
-        boolean selected =
-                profile
-                        && session != null
-                        && state != null
-                        && label.equals(profile(session, state.instance));
         NamedTextColor accent =
                 label.equals("leave") || label.equals("fresh-start")
                         ? NamedTextColor.GOLD
-                        : selected ? NamedTextColor.GREEN : NamedTextColor.AQUA;
-        String title = label.equals("leave") ? "ui-leave-short" : label;
+                        : NamedTextColor.WHITE;
         var button =
-                new Button(
-                        label,
+                guideButton(
+                        player,
+                        label.equals("leave") ? "ui-leave-short" : label,
                         material,
-                        ComponentUtils.serialize(
-                                text(player, title).color(accent).decorate(TextDecoration.BOLD)));
-        button.addLore(
-                ComponentUtils.serialize(
-                        text(player, "ui-menu-" + label).color(NamedTextColor.GRAY)));
-        button.addLore(
-                ComponentUtils.serialize(
-                        text(
-                                        player,
-                                        selected
-                                                ? "ui-active"
-                                                : profile ? "ui-menu-select" : "ui-menu-click")
-                                .color(accent)));
-        if (selected) button.setEnchanted(true);
+                        "ui-menu-" + label,
+                        accent);
         button.addAction(
                 label,
                 event -> {
