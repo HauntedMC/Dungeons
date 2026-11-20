@@ -88,7 +88,14 @@ class StaffCommandContractTest {
             assertThrows(IllegalArgumentException.class, () -> h.playerId("Unknown"));
             assertEquals(p.player.getUniqueId(), h.playerId("Staff"));
             assertEquals(60000, StaffCommandHandler.duration("1M"));
-            for (String invalid : List.of("0s", "-1h", "2years", "999999999w"))
+            for (String invalid :
+                    List.of(
+                            "0s",
+                            "-1h",
+                            "2years",
+                            "999999999w",
+                            "9223372036854775807w",
+                            "9223372036854775808w"))
                 assertThrows(
                         IllegalArgumentException.class,
                         () -> StaffCommandHandler.duration(invalid));

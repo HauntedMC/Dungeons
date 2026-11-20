@@ -984,10 +984,16 @@ public final class StaffCommandHandler implements CommandHandler {
                     case "d" -> 86400000L;
                     default -> 604800000L;
                 };
-        long value = Math.multiplyExact(Long.parseLong(matcher.group(1)), unit);
-        if (value > 3650L * 86400000L)
+        long maxDuration = 3650L * 86_400_000L;
+        long count;
+        try {
+            count = Long.parseLong(matcher.group(1));
+        } catch (NumberFormatException tooLarge) {
             throw new IllegalArgumentException("Duration must be at most 10 years");
-        return value;
+        }
+        if (count > maxDuration / unit)
+            throw new IllegalArgumentException("Duration must be at most 10 years");
+        return count * unit;
     }
 
     private static void need(String[] a, int min, String usage) {
