@@ -187,6 +187,12 @@ public final class DungeonCommand implements TabExecutor {
                 var resolved = this.dungeonManager.get(values.get("map").getFirst());
                 if (resolved != null) values.put("map", List.of(resolved.getWorldName()));
             }
+            if (route.handler() == CommandRoutes.Handler.STAFF
+                    && values.containsKey("map")
+                    && values.get("map").getFirst().equalsIgnoreCase("all")
+                    && !route.operation().startsWith("restrict "))
+                throw new IllegalArgumentException(
+                        "Select one dungeon. Use /dungeon help server for server-wide commands.");
             if (!this.allowed(sender, route, values)) {
                 LangUtils.sendMessage(sender, "general.errors.no-permission");
                 return true;

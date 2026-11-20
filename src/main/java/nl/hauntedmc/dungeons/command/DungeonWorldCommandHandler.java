@@ -40,7 +40,7 @@ final class DungeonWorldCommandHandler {
         String worldName = args[1].trim();
         String mapName = args[2].trim();
         StaffPermissions.require(sender, "edit", mapName);
-        if (!this.isSafeImportWorldName(mapName))
+        if (!this.isSafeNewMapName(mapName))
             throw new IllegalArgumentException("Invalid dungeon name");
         if (!this.isSafeImportWorldName(worldName)) {
             LangUtils.sendMessage(
@@ -172,7 +172,7 @@ final class DungeonWorldCommandHandler {
         }
 
         String worldName = args[1].trim();
-        if (!this.isSafeImportWorldName(worldName)) {
+        if (!this.isSafeNewMapName(worldName)) {
             LangUtils.sendMessage(player, "commands.dungeon.create.failed-to-create");
             return true;
         }
@@ -276,6 +276,12 @@ final class DungeonWorldCommandHandler {
     /** Returns whether safe import world name. */
     private boolean isSafeImportWorldName(String worldName) {
         return !worldName.isBlank() && worldName.matches("[A-Za-z0-9_-]+");
+    }
+
+    private boolean isSafeNewMapName(String name) {
+        return this.isSafeImportWorldName(name)
+                && !name.equalsIgnoreCase("all")
+                && !name.equalsIgnoreCase("current");
     }
 
     /** Resolves dungeon save folder. */

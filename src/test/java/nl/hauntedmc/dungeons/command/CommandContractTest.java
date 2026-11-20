@@ -91,6 +91,20 @@ class CommandContractTest {
     }
 
     @Test
+    void mapSpecificStaffCommandsCannotDispatchServerWideOperations() throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var command = new CommandFixture(f);
+            command.permissions.add("dungeons.staff.reload");
+            command.permissions.add("dungeons.staff.maintenance");
+            var staff = mock(StaffCommandHandler.class);
+            command.root.setStaffCommandHandler(staff);
+            command.execute("map", "reload", "all");
+            command.execute("map", "maintenance", "ALL", "on");
+            verifyNoInteractions(staff);
+        }
+    }
+
+    @Test
     void canonicalSettingsCompleteTypedValuesForAnAuthorizedMap() throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
             var command = new CommandFixture(f);
