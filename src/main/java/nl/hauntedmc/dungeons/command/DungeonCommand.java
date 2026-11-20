@@ -259,7 +259,13 @@ public final class DungeonCommand implements TabExecutor {
         String capability = route.permission().substring(6);
         var map = values.get("map");
         if (map != null) {
-            var dungeon = this.dungeonManager.get(map.getFirst());
+            var dungeon =
+                    route.handler() == CommandRoutes.Handler.SETTINGS
+                            ? this.configCommandHandler.resolveDungeon(sender, map.getFirst())
+                            : this.dungeonManager.get(map.getFirst());
+            if (route.handler() == CommandRoutes.Handler.SETTINGS
+                    && map.getFirst().equalsIgnoreCase("current")
+                    && dungeon == null) return false;
             String scope = dungeon == null ? map.getFirst() : dungeon.getWorldName();
             if (dungeon == null
                     && route.handler() == CommandRoutes.Handler.REPO
@@ -347,6 +353,13 @@ public final class DungeonCommand implements TabExecutor {
             String next = pattern[args.length - 1];
             if (!next.startsWith("<") && !next.startsWith("*")) suggestions.add(next);
             else if (next.equals("<map>")) {
+                if (route.handler() == CommandRoutes.Handler.SETTINGS && sender instanceof Player) {
+                    var current = new LinkedHashMap<>(values);
+                    current.put("map", List.of("current"));
+                    if (this.allowed(sender, route, current)) suggestions.add("current");
+                }
+                if (route.syntax().startsWith("map create ")
+                        || route.syntax().startsWith("map import ")) continue;
                 for (var dungeon : this.dungeonManager.getLoadedDungeons()) {
                     if ((route.operation().startsWith("play ")
                                     || route.operation().startsWith("send "))
@@ -382,8 +395,21 @@ public final class DungeonCommand implements TabExecutor {
                                 || dungeon.isEnabled()))
                     suggestions.addAll(dungeon.getDifficultyLevels().keySet());
             } else if (next.equals("<setting>") && values.containsKey("map")) {
-                var dungeon = this.dungeonManager.get(values.get("map").getFirst());
+                var dungeon =
+                        this.configCommandHandler.resolveDungeon(
+                                sender, values.get("map").getFirst());
                 if (dungeon != null) suggestions.addAll(DungeonConfigRegistry.getKeys(dungeon, ""));
+            } else if (next.equals("*value") && route.handler() == CommandRoutes.Handler.SETTINGS) {
+                var dungeon =
+                        this.configCommandHandler.resolveDungeon(
+                                sender, values.get("map").getFirst());
+                if (dungeon != null)
+                    suggestions.addAll(
+                            this.configCommandHandler.completeSettingValue(
+                                    dungeon,
+                                    pattern[3],
+                                    values.get("setting").getFirst(),
+                                    args[args.length - 1]));
             } else if (next.equals("<environment>"))
                 suggestions.addAll(List.of("normal", "nether", "the_end"));
             else if (next.equals("<type>"))

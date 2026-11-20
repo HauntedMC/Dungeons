@@ -16,7 +16,6 @@ import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
 import nl.hauntedmc.dungeons.runtime.staff.SettingValidation;
 import nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard;
-import nl.hauntedmc.dungeons.util.command.CommandUtils;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -121,66 +120,14 @@ public final class DungeonConfigCommandHandler {
         };
     }
 
-    /** Produces tab completions for {@code /dungeon map settings}. */
-    public List<String> handleTabComplete(CommandSender sender, String[] args) {
-        List<String> options = new ArrayList<>();
-        if (!CommandUtils.hasAnyDungeonEditAccess(sender)) {
-            return options;
-        }
-
-        if (args.length <= 1) {
-            return this.completeDungeonTarget(sender, "");
-        }
-
-        if (args.length == 2) {
-            return this.completeDungeonTarget(sender, args[1]);
-        }
-
-        DungeonDefinition dungeon = this.resolveDungeon(sender, args[1]);
-        if (dungeon == null) {
-            return options;
-        }
-
-        if (args.length == 3) {
-            options.add("help");
-            options.add("list");
-            options.addAll(DungeonConfigRegistry.getKeys(dungeon, args[2]));
-            return options;
-        }
-
-        DungeonConfigEntry entry = DungeonConfigRegistry.resolve(dungeon, args[2]);
-        if (entry == null || !entry.supports(dungeon)) {
-            return options;
-        }
-
-        List<String> values =
-                new ArrayList<>(this.completeValue(entry, dungeon, this.joinArgs(args, 3)));
-        if (this.isRuleSetting(entry)) {
-            values.addAll(this.completeSimple(this.joinArgs(args, 3), List.of("inherit")));
-        }
-        return values;
-    }
-
-    /** Runs complete dungeon target. */
-    private List<String> completeDungeonTarget(CommandSender sender, String rawQuery) {
-        List<String> options = new ArrayList<>();
-        String query = rawQuery == null ? "" : rawQuery.toLowerCase(Locale.ROOT);
-
-        if (sender instanceof Player player && ("current".contains(query) || query.isBlank())) {
-            DungeonDefinition currentDungeon = this.resolveDungeon(player, "current");
-            if (currentDungeon != null && this.hasEditAccess(sender, currentDungeon)) {
-                options.add("current");
-            }
-        }
-
-        for (DungeonDefinition dungeon : this.dungeonManager.getLoadedDungeons()) {
-            if ((query.isBlank() || dungeon.getWorldName().toLowerCase(Locale.ROOT).contains(query))
-                    && this.hasEditAccess(sender, dungeon)) {
-                options.add(dungeon.getWorldName());
-            }
-        }
-
-        return options;
+    public List<String> completeSettingValue(
+            DungeonDefinition dungeon, String action, String setting, String query) {
+        DungeonConfigEntry entry =
+                DungeonConfigRegistry.resolve(dungeon, setting.toLowerCase(Locale.ROOT));
+        if (entry == null || !entry.supports(dungeon)) return List.of();
+        if (action.equals("remove"))
+            return this.completeList(query, dungeon.getConfig().getStringList(entry.getPath()));
+        return this.completeValue(entry, dungeon, query);
     }
 
     private boolean clearSetting(
@@ -695,11 +642,6 @@ public final class DungeonConfigCommandHandler {
         }
 
         List<String> matches = new ArrayList<>();
-        if (prefix.isBlank()
-                && (token.isBlank() || "clear".contains(token.toLowerCase(Locale.ROOT)))) {
-            matches.add("clear");
-        }
-
         for (String candidate : candidates) {
             if (alreadySelected.contains(candidate.toUpperCase(Locale.ROOT))) {
                 continue;
@@ -888,16 +830,12 @@ public final class DungeonConfigCommandHandler {
 
     /** Returns whether it has edit access. */
     private boolean hasEditAccess(CommandSender sender, DungeonDefinition dungeon) {
-        if (!(sender instanceof Player player)) {
-            return true;
-        }
-
-        return CommandUtils.hasDungeonEditAccess(player, dungeon.getWorldName())
-                || CommandUtils.hasPermissionSilent(player, "dungeons.role.operator");
+        return nl.hauntedmc.dungeons.runtime.staff.StaffPermissions.allows(
+                sender, "edit", dungeon.getWorldName());
     }
 
     /** Resolves dungeon. */
-    private DungeonDefinition resolveDungeon(CommandSender sender, String input) {
+    public DungeonDefinition resolveDungeon(CommandSender sender, String input) {
         if (input.equalsIgnoreCase("current") && sender instanceof Player player) {
             DungeonPlayerSession playerSession = this.playerManager.get(player);
             if (playerSession != null && playerSession.getInstance() != null) {

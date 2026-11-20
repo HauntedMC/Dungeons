@@ -91,6 +91,24 @@ class CommandContractTest {
     }
 
     @Test
+    void canonicalSettingsCompleteTypedValuesForAnAuthorizedMap() throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var command = new CommandFixture(f);
+            command.permissions.add("dungeons.staff.edit.crypt");
+            var args = new String[] {"map", "settings", "crypt", "set", "enabled", ""};
+            assertEquals(
+                    List.of("false", "true"),
+                    command.root.onTabComplete(
+                            command.caller.player, mock(Command.class), "dungeon", args));
+            command.permissions.remove("dungeons.staff.edit.crypt");
+            assertEquals(
+                    List.of(),
+                    command.root.onTabComplete(
+                            command.caller.player, mock(Command.class), "dungeon", args));
+        }
+    }
+
+    @Test
     void editorOpenWithoutReasonDispatchesAndCompletesScopedDungeonNames() throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {
             var command = new CommandFixture(f);
