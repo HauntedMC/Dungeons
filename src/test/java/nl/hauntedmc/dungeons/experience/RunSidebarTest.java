@@ -133,6 +133,25 @@ class RunSidebarTest {
         }
     }
 
+    @Test
+    void waypointSeparatesArrivalFromAnObjectiveOnAnotherFloor(@TempDir Path directory) throws Exception {
+        try (var fixture = new RunFixture(directory, new YamlConfiguration())) {
+            LangUtils.initialize();
+            var player = new PlayerState().player;
+            when(player.locale()).thenReturn(Locale.ENGLISH);
+            var goal = mock(ExperienceDefinition.Objective.class);
+            when(goal.title()).thenReturn("Vault");
+            var from = player.getLocation();
+            var service = new ExperienceService(fixture.paper.runtime);
+            when(goal.point()).thenReturn(new ExperienceDefinition.Point(from.getX(), from.getY() + 12, from.getZ(), 2));
+            assertTrue(ComponentUtils.plainText(service.waypoint(player, goal)).contains("12 m ▲ Above"));
+            when(goal.point()).thenReturn(new ExperienceDefinition.Point(from.getX(), from.getY() + 1, from.getZ(), 2));
+            assertTrue(ComponentUtils.plainText(service.waypoint(player, goal)).contains("Here"));
+        } finally {
+            LangUtils.clear();
+        }
+    }
+
     private static List<String> lines(HudFrame.Sidebar frame) {
         return frame.lines().stream().map(ComponentUtils::plainText).toList();
     }

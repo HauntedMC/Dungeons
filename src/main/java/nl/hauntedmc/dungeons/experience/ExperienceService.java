@@ -478,7 +478,7 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                     && instance.getTimeLeft() > 0) {
                 bars.addFirst(
                         new HudFrame.Bar(
-                                text(player, "remaining", "value", clock(instance.getTimeLeft())),
+                                text(player, "remaining", "value", Component.text(clock(instance.getTimeLeft()), DungeonSidebar.countdownColor(instance.getTimeLeft())).decorate(TextDecoration.BOLD)),
                                 instance.getTimeLeft() / 60f,
                                 instance.getTimeLeft() <= 10
                                         ? BossBar.Color.RED
@@ -530,24 +530,28 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                     && run.progress().active(goal.id(), player.getUniqueId())
                     && run.progress().visible(goal.id(), player.getUniqueId())
                     && !run.progress().completed(goal.id(), player.getUniqueId())) {
-                var point = goal.point();
-                double dx = point.x() - player.getLocation().getX(),
-                        dz = point.z() - player.getLocation().getZ();
-                double relative =
-                        Math.toDegrees(Math.atan2(-dx, dz)) - player.getLocation().getYaw();
-                String arrow =
-                        List.of("↑", "↗", "→", "↘", "↓", "↙", "←", "↖")
-                                .get(Math.floorMod((int) Math.round(relative / 45), 8));
-                return new HudFrame.ActionBar(
-                        Component.text(arrow + "  ", NamedTextColor.AQUA)
-                                .append(LangUtils.trusted(goal.title()))
-                                .append(
-                                        Component.text(
-                                                "   " + Math.round(Math.hypot(dx, dz)) + " m",
-                                                NamedTextColor.WHITE)));
+                return new HudFrame.ActionBar(waypoint(player, goal));
             }
         }
         return null;
+    }
+
+    Component waypoint(Player player, ExperienceDefinition.Objective goal) {
+        var point = goal.point();
+        var from = player.getLocation();
+        double dx = point.x() - from.getX(), dy = point.y() - from.getY(), dz = point.z() - from.getZ();
+        double horizontal = Math.hypot(dx, dz);
+        double distance = Math.hypot(horizontal, dy);
+        Component title = LangUtils.trusted(goal.title());
+        if (distance <= point.radius())
+            return DungeonUi.join(Component.text("◆ ", NamedTextColor.GREEN).append(title.colorIfAbsent(NamedTextColor.WHITE)), text(player, "ui-waypoint-here").color(NamedTextColor.GREEN));
+        double relative = Math.toDegrees(Math.atan2(-dx, dz)) - from.getYaw();
+        String arrow = horizontal < 1 ? "◆" : List.of("↑", "↗", "→", "↘", "↓", "↙", "←", "↖")
+                .get(Math.floorMod((int) Math.round(relative / 45), 8));
+        Component range = Component.text(Math.round(distance) + " m", NamedTextColor.WHITE);
+        if (Math.abs(dy) >= 3 && Math.abs(dy) > horizontal / 2)
+            range = range.append(Component.space()).append(text(player, dy > 0 ? "ui-waypoint-above" : "ui-waypoint-below").color(NamedTextColor.AQUA));
+        return DungeonUi.join(Component.text(arrow + " ", NamedTextColor.AQUA).append(title.colorIfAbsent(NamedTextColor.WHITE)), range);
     }
 
     static String clock(int seconds) {

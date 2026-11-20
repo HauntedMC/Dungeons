@@ -37,7 +37,13 @@ final class DungeonSidebar {
             metric("elapsed", ExperienceService.clock(instance.getTimeElapsed()));
         else placeholder("elapsed", ExperienceService.clock(0));
         if (instance.getConfig().getInt("runs.time_limit_minutes", 0) > 0)
-            metric("remaining", ExperienceService.clock(instance.getTimeLeft()));
+            metric("remaining", Component.text(ExperienceService.clock(instance.getTimeLeft()), instance.isStarted() ? countdownColor(instance.getTimeLeft()) : NamedTextColor.WHITE));
+    }
+
+    static NamedTextColor countdownColor(int seconds) {
+        if (seconds <= 10) return NamedTextColor.RED;
+        if (seconds <= 60) return NamedTextColor.GOLD;
+        return NamedTextColor.WHITE;
     }
 
     void row(String key, Component value) {
@@ -56,10 +62,12 @@ final class DungeonSidebar {
         String symbol =
                 switch (key) {
                     case "lives" -> "♥ ";
-                    case "elapsed", "remaining" -> "◷ ";
+                    case "elapsed" -> "◷ ";
+                    case "remaining" -> "⌛ ";
                     case "respawn" -> "⚑ ";
                     default -> "› ";
                 };
+        if (key.equals("lives") && value instanceof Integer lives && lives <= 1) content = content.color(NamedTextColor.RED);
         var label =
                 LangUtils.component(
                         "experience.ui-hud-" + labelKey,
@@ -70,7 +78,7 @@ final class DungeonSidebar {
                 key,
                 Component.text(
                                 symbol,
-                                key.equals("lives") ? NamedTextColor.RED : NamedTextColor.DARK_AQUA)
+                                key.equals("lives") ? NamedTextColor.RED : NamedTextColor.AQUA)
                         .append(label));
         if (!key.equals("party") && !key.equals("respawn")) substitutions.put(key, content);
         if (key.equals("remaining")) substitutions.put("time_left", content);
