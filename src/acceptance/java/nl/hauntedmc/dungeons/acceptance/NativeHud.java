@@ -193,16 +193,18 @@ final class NativeHud {
             AcceptancePlugin test, org.bukkit.entity.Player player) {
         test.runtime().experience().handle(player, new String[] {"guide"});
         require(
-                player.getOpenInventory().getTopInventory().getSize() == 27,
+                player.getOpenInventory().getTopInventory().getSize() == 18,
                 "Guide did not open on Paper");
-        click(player, 19);
+        click(player, 9);
         return test.await(
                         "Guide opens HUD settings",
-                        () -> player.getOpenInventory().getTopInventory().getSize() == 36)
+                        () ->
+                                player.getOpenInventory().getTopInventory().getItem(9).getType()
+                                        == org.bukkit.Material.ARROW)
                 .thenCompose(
                         ignored -> {
                             var before = player.getOpenInventory().getTopInventory();
-                            click(player, 12);
+                            click(player, 4);
                             return test.await(
                                     "HUD profile applied and page refreshed",
                                     () ->
@@ -227,36 +229,39 @@ final class NativeHud {
                             require(
                                     Boolean.valueOf(wasOn)
                                             .equals(
-                                                    before.getItem(24)
+                                                    before.getItem(16)
                                                             .getItemMeta()
                                                             .getEnchantmentGlintOverride()),
                                     "Navigation icon did not match the saved preference");
-                            click(player, 24);
+                            click(player, 16);
                             return test.await(
                                     "Navigation icon reflects the new preference",
                                     () -> {
                                         var after = player.getOpenInventory().getTopInventory();
                                         return after != before
-                                                && after.getSize() == 36
+                                                && after.getSize() == 18
                                                 && Boolean.toString(!wasOn)
                                                         .equals(
                                                                 session.experiencePreference(
                                                                         "navigation", "false"))
                                                 && Boolean.valueOf(!wasOn)
                                                         .equals(
-                                                                after.getItem(24)
+                                                                after.getItem(16)
                                                                         .getItemMeta()
                                                                         .getEnchantmentGlintOverride());
                                     });
                         })
                 .thenCompose(
                         ignored -> {
-                            click(player, 28);
+                            click(player, 9);
                             return test.await(
                                     "HUD settings return to guide",
                                     () ->
-                                            player.getOpenInventory().getTopInventory().getSize()
-                                                    == 27);
+                                            player.getOpenInventory()
+                                                            .getTopInventory()
+                                                            .getItem(9)
+                                                            .getType()
+                                                    == org.bukkit.Material.COMPARATOR);
                         })
                 .thenRun(player::closeInventory);
     }

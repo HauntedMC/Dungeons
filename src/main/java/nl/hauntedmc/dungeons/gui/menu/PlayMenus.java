@@ -42,7 +42,7 @@ public class PlayMenus {
                     RuntimeContext.guiService()
                             .createWindow(
                                     difficultyPage(prefix, page),
-                                    36,
+                                    difficulties.size() <= 7 ? 27 : 36,
                                     ComponentUtils.serialize(
                                             LangUtils.component(
                                                             "experience.ui-menu-difficulty",
@@ -136,7 +136,7 @@ public class PlayMenus {
                                 "revivalmenu",
                                 27,
                                 LangUtils.getMessage("experience.ui-revive-title", false));
-        MenuFrame.apply(gui);
+
         gui.addOpenAction(
                 "populate",
                 event -> {
