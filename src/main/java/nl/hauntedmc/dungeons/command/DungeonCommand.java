@@ -415,6 +415,8 @@ public final class DungeonCommand implements TabExecutor {
             else if (next.equals("<type>"))
                 suggestions.addAll(List.of("static", "branching", "open"));
             else if (next.equals("<state>")) suggestions.addAll(List.of("on", "off"));
+            else if (next.equals("<recipe>"))
+                suggestions.addAll(List.of("loot", "dragon", "waves", "adventure"));
             else if (next.equals("<enabled>")) suggestions.addAll(List.of("true", "false"));
             else if (next.equals("<objective>")
                     && sender instanceof Player player
