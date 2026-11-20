@@ -178,6 +178,7 @@ experience:
   ui-time-label: 'Time'
   ui-lives-label: 'Lives'
   ui-party-label: 'Max party'
+  ui-unlimited-run: "Unlimited lives and time"
   ui-no-limit: 'Unlimited'
   ui-rules-heading: 'RUN RULES'
   ui-key-kept: 'Entry key required · kept on entry'

@@ -830,10 +830,7 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                                 instance.getDungeon().getDisplayNameComponent(),
                                 text(session.getPlayer(), "ui-run-summary")
                                         .color(NamedTextColor.GRAY))));
-        report.add(
-                text(
-                        session.getPlayer(),
-                        state.outcome == null ? "expedition-ended" : state.outcome));
+        if (state.outcome != null) report.add(runState(session.getPlayer(), state));
         report.add(
                 DungeonUi.join(
                         stat(
@@ -841,6 +838,7 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                                 "elapsed",
                                 Component.text(clock(instance.getTimeElapsed() - state.entered))),
                         stat(session.getPlayer(), "deaths", Component.text(state.lostLives))));
+        int summarySize = report.size();
         var mechanics = runs.get(instance);
         if (mechanics != null) {
             long completed =
@@ -878,7 +876,7 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
         reports.put(id, List.copyOf(report));
         if (session.getPlayer().isOnline()) {
             Player player = session.getPlayer();
-            showReport(player, report.subList(0, 3));
+            showReport(player, report.subList(0, summarySize));
             String map = instance.getDungeon().getWorldName();
             String difficulty =
                     instance.getDifficulty() == null
@@ -888,7 +886,7 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
             player.sendMessage(
                     DungeonUi.detail(
                             DungeonUi.join(
-                                    action(player, "report-details", "/dungeon status"),
+                                    report.size() > summarySize ? action(player, "report-details", "/dungeon status") : Component.empty(),
                                     action(player, "dungeon-info", "/dungeon info " + map),
                                     action(
                                             player,
@@ -954,40 +952,19 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
     public void briefing(
             CommandSender viewer, nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition dungeon) {
         boolean available = dungeon.isEnabled();
-        viewer.sendMessage(
-                DungeonUi.heading(dungeon.getDisplayNameComponent())
-                        .hoverEvent(
-                                net.kyori.adventure.text.event.HoverEvent.showText(
-                                        Component.text(
-                                                "/dungeon info " + dungeon.getWorldName(),
-                                                NamedTextColor.GRAY))));
-        NamedTextColor availability = available ? NamedTextColor.GREEN : NamedTextColor.RED;
-        viewer.sendMessage(
-                DungeonUi.detail(
-                        runIndicator(
-                                text(viewer, available ? "ui-available" : "ui-unavailable"),
-                                availability)));
+        viewer.sendMessage(DungeonUi.join(DungeonUi.heading(dungeon.getDisplayNameComponent()),
+                runIndicator(text(viewer, available ? "ui-available" : "ui-unavailable"), available ? NamedTextColor.GREEN : NamedTextColor.RED)));
         String description = dungeon.getConfig().getString("experience.description", "");
         if (!description.isBlank())
             viewer.sendMessage(DungeonUi.detail(LangUtils.trusted(description)));
         int lives = dungeon.getConfig().getInt("players.lives", 0);
         int minutes = dungeon.getConfig().getInt("runs.time_limit_minutes", 0);
-        viewer.sendMessage(
-                DungeonUi.detail(
-                        DungeonUi.join(
-                                stat(
-                                        viewer,
-                                        "lives",
-                                        lives > 0
-                                                ? Component.text(lives)
-                                                : text(viewer, "ui-no-limit")),
-                                stat(
-                                        viewer,
-                                        "time",
-                                        minutes > 0
-                                                ? Component.text(clock(minutes * 60))
-                                                : text(viewer, "ui-no-limit")),
-                                stat(viewer, "party", Component.text(dungeon.getMaxTeamSize())))));
+        var limits = new ArrayList<Component>();
+        limits.add(stat(viewer, "party", Component.text(dungeon.getMaxTeamSize())));
+        if (lives > 0) limits.add(stat(viewer, "lives", Component.text(lives)));
+        if (minutes > 0) limits.add(stat(viewer, "time", Component.text(clock(minutes * 60))));
+        if (lives == 0 && minutes == 0) limits.add(text(viewer, "ui-unlimited-run").color(NamedTextColor.GRAY));
+        viewer.sendMessage(DungeonUi.detail(DungeonUi.join(limits)));
         if (!dungeon.getAccessKeys().isEmpty())
             viewer.sendMessage(
                     DungeonUi.detail(
@@ -1031,16 +1008,9 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
     private void runStatus(Player player, Participation state) {
         var instance = state.instance;
         player.sendMessage(DungeonUi.heading(instance.getDungeon().getDisplayNameComponent()));
-        var values = new ArrayList<Component>();
-        values.add(runState(player, state));
-        Integer lives = instance.getPlayerLives().get(player.getUniqueId());
-        values.add(
-                stat(
-                        player,
-                        "lives",
-                        lives == null ? text(player, "ui-no-limit") : Component.text(lives)));
-        runClock(player, state).ifPresent(values::add);
-        player.sendMessage(DungeonUi.detail(DungeonUi.join(values)));
+        var facts = runFacts(player, state);
+        for (int offset = 0; offset < facts.size(); offset += 3)
+            player.sendMessage(DungeonUi.detail(DungeonUi.join(facts.subList(offset, Math.min(offset + 3, facts.size())))));
         currentObjective(runs.get(instance), state, player)
                 .ifPresent(objective -> player.sendMessage(DungeonUi.detail(objective)));
         player.sendMessage(
@@ -1050,16 +1020,18 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                                 action(player, "ui-leave-short", "/dungeon leave"))));
     }
 
-    private Optional<Component> runClock(Player player, Participation state) {
+    private List<Component> runFacts(Player player, Participation state) {
         var instance = state.instance;
+        var facts = new ArrayList<Component>();
+        if (instance.getDifficulty() != null) facts.add(instance.getDifficulty().getDisplayNameComponent());
+        if (!stateName(player, state).equals("playing")) facts.add(runState(player, state));
+        if (instance.isStarted()) facts.add(text(player, "ui-hud-run-time", "value", clock(instance.getTimeElapsed())));
         if (instance.getConfig().getInt("runs.time_limit_minutes", 0) > 0)
-            return Optional.of(stat(player, "time", Component.text(clock(instance.getTimeLeft()))));
-        if (!instance.isStarted()) return Optional.empty();
-        return Optional.of(
-                stat(
-                        player,
-                        "elapsed",
-                        Component.text(clock(instance.getTimeElapsed() - state.entered))));
+            facts.add(text(player, "ui-hud-remaining", "value", clock(instance.getTimeLeft())));
+        if (instance.isLivesEnabled()) facts.add(stat(player, "lives", Component.text(instance.getPlayerLives().getOrDefault(player.getUniqueId(), instance.getConfig().getInt("players.lives")))));
+        var team = runtime.hasTeamService() ? runtime.teamService().getTeam(player.getUniqueId()) : null;
+        if (team != null) facts.add(text(player, "ui-hud-party", "value", team.size()));
+        return facts;
     }
 
     private Optional<Component> currentObjective(
@@ -1504,17 +1476,7 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                                 instance.getDungeon()
                                         .getDisplayNameComponent()
                                         .decorate(TextDecoration.BOLD)));
-        overview.addLore(ComponentUtils.serialize(runState(player, state)));
-        Integer lives = instance.getPlayerLives().get(player.getUniqueId());
-        overview.addLore(
-                ComponentUtils.serialize(
-                        stat(
-                                player,
-                                "lives",
-                                lives == null
-                                        ? text(player, "ui-no-limit")
-                                        : Component.text(lives))));
-        runClock(player, state).ifPresent(time -> overview.addLore(ComponentUtils.serialize(time)));
+        runFacts(player, state).forEach(fact -> overview.addLore(ComponentUtils.serialize(fact)));
         currentObjective(runs.get(instance), state, player)
                 .ifPresent(objective -> overview.addLore(ComponentUtils.serialize(objective)));
         overview.addLore(

@@ -1010,6 +1010,7 @@ experience:
   ui-time-label: 'Tijd'
   ui-lives-label: 'Levens'
   ui-party-label: 'Teamlimiet'
+  ui-unlimited-run: "Geen tijd- of levenslimiet"
   ui-no-limit: 'Onbeperkt'
   ui-rules-heading: 'RUNREGELS'
   ui-key-kept: 'Dungeon Key nodig · je houdt de key'
