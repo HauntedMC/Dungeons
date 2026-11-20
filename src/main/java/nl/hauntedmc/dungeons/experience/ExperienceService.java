@@ -907,15 +907,18 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
     }
 
     private boolean incompatible(DungeonPlayerSession session, PlayableInstance instance) {
-        return session.incompatibleExperienceCheckpoint(
-                instance.getDungeon().getDungeonId().toString(),
-                instance.experienceDefinition(),
-                instance.getDifficulty() == null ? "" : instance.getDifficulty().getNamespace());
+        return !instance.isTestPlay()
+                && session.incompatibleExperienceCheckpoint(
+                        instance.getDungeon().getDungeonId().toString(),
+                        instance.experienceDefinition(),
+                        instance.getDifficulty() == null
+                                ? ""
+                                : instance.getDifficulty().getNamespace());
     }
 
     public void savePoint(DungeonPlayerSession session) {
         var state = players.get(session.getPlayer().getUniqueId());
-        if (state == null) return;
+        if (state == null || state.instance.isTestPlay()) return;
         if (incompatible(session, state.instance)) {
             notify(session.getPlayer(), "incompatible-save", null);
             return;

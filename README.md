@@ -115,7 +115,9 @@ initialized automatically as unpublished `0.0.0` drafts and can be played locall
 without valid `.dungeon-repo.yml` metadata are disabled for gameplay and warm-world preloading.**
 They remain inspectable/editable. Run `/dungeon repo init <map>` on each legacy map to initialize
 it, preserving its UUID, enabled preference, progression and keys. Initialization does not publish
-or attach an older map to a release already in the repository.
+or attach an older map to a release already in the repository. Administrators can use
+`/dungeon edit testplay <map>` to start a private test run of a local map, including
+uninitialized or disabled maps.
 
 | Command | Purpose |
 | --- | --- |

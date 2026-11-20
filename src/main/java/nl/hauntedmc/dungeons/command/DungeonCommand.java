@@ -378,7 +378,8 @@ public final class DungeonCommand implements TabExecutor {
             } else if (next.equals("<difficulty>") && values.containsKey("map")) {
                 var dungeon = this.dungeonManager.get(values.get("map").getFirst());
                 if (dungeon != null
-                        && (route.handler() != CommandRoutes.Handler.GAMEPLAY || dungeon.isEnabled()))
+                        && (route.handler() != CommandRoutes.Handler.GAMEPLAY
+                                || dungeon.isEnabled()))
                     suggestions.addAll(dungeon.getDifficultyLevels().keySet());
             } else if (next.equals("<setting>") && values.containsKey("map")) {
                 var dungeon = this.dungeonManager.get(values.get("map").getFirst());

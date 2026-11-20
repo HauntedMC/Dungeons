@@ -72,6 +72,12 @@ public class OpenDungeon extends StaticDungeon {
         }
     }
 
+    @Override
+    protected PlayableInstance createTestPlaySession(CountDownLatch latch) {
+        // Keep test worlds out of the shared open-world pools.
+        return super.createPlaySession(latch, null);
+    }
+
     /** Performs register loading instance. */
     private void registerLoadingInstance(OpenInstance instance) {
         this.instances.add(instance);

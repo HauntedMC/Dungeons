@@ -368,6 +368,12 @@ final class CommandRoutes {
                             true,
                             Handler.STAFF,
                             "edit <map> *reason"),
+                    r(
+                            "edit testplay <map>",
+                            "staff.testplay",
+                            true,
+                            Handler.GAMEPLAY,
+                            "testplay <map>"),
                     r("edit experience", "staff.edit", true, Handler.EDIT, "edit experience"),
                     r(
                             "edit experience *action",

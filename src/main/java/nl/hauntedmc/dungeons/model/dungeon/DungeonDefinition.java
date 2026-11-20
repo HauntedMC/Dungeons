@@ -550,6 +550,14 @@ public abstract class DungeonDefinition {
             int requestedPlayers,
             @Nullable UUID startedTeamLeaderId);
 
+    public boolean prepareTestPlay(Player player) {
+        return this.prepareIsolatedInstance(player, "", null, instance -> {}, 0L, true);
+    }
+
+    protected PlayableInstance createTestPlaySession(CountDownLatch latch) {
+        return this.createPlaySession(latch, null);
+    }
+
     /** Shared cancellation/publication lifecycle for static and generated isolated runs. */
     protected final boolean prepareIsolatedInstance(
             Player player,
@@ -557,6 +565,22 @@ public abstract class DungeonDefinition {
             @Nullable UUID startedTeamLeaderId,
             Consumer<PlayableInstance> prepareAdmission,
             long admissionDelay) {
+        return this.prepareIsolatedInstance(
+                player,
+                difficultyName,
+                startedTeamLeaderId,
+                prepareAdmission,
+                admissionDelay,
+                false);
+    }
+
+    protected final boolean prepareIsolatedInstance(
+            Player player,
+            String difficultyName,
+            @Nullable UUID startedTeamLeaderId,
+            Consumer<PlayableInstance> prepareAdmission,
+            long admissionDelay,
+            boolean testPlay) {
         DungeonPlayerSession session = this.playerSessions().get(player);
         if (session == null) return false;
         return new InstancePreparation(
@@ -567,7 +591,8 @@ public abstract class DungeonDefinition {
                         startedTeamLeaderId,
                         this.preparationTimeout(),
                         prepareAdmission,
-                        admissionDelay)
+                        admissionDelay,
+                        testPlay)
                 .start();
     }
 
@@ -666,6 +691,7 @@ public abstract class DungeonDefinition {
     }
 
     public boolean shouldApplyAccessCooldown(@Nullable DungeonInstance instance, UUID playerId) {
+        if (instance instanceof PlayableInstance play && play.isTestPlay()) return false;
         Player player = Bukkit.getPlayer(playerId);
         if (player != null
                 && CommandUtils.hasPermissionSilent(player, "dungeons.bypass.cooldown")) {

@@ -55,6 +55,7 @@ final class GameplayCommandHandler implements CommandHandler {
     @Override
     public boolean handleCommand(CommandSender sender, String[] args) {
         return switch (args[0].toLowerCase(Locale.ROOT)) {
+            case "testplay" -> this.handleTestPlayCommand(sender, args[1]);
             case "play" -> this.handlePlayCommand(sender, args);
             case "send" -> this.handleSendCommand(sender, args);
             case "leave" -> this.handleLeaveCommand(sender, args);
@@ -205,6 +206,29 @@ final class GameplayCommandHandler implements CommandHandler {
 
         LangUtils.sendMessage(player, "commands.stuck.success");
         playerSession.sendToCheckpoint();
+        return true;
+    }
+
+    private boolean handleTestPlayCommand(CommandSender sender, String name) {
+        if (!(sender instanceof Player player)) return false;
+        var dungeon = this.dungeonManager.get(name);
+        if (dungeon == null) throw new IllegalArgumentException("Unknown dungeon: " + name);
+        nl.hauntedmc.dungeons.runtime.staff.StaffPermissions.require(
+                player, "testplay", dungeon.getWorldName());
+        var session = this.playerManager.get(player);
+        if (session == null
+                || session.isAwaitingDungeon()
+                || session.getInstance() != null
+                || session.isObserving()
+                || this.queueManager.getQueue(session) != null)
+            throw new IllegalArgumentException(
+                    "Leave your current dungeon or queue before testplay");
+        if (dungeon.isSaving())
+            throw new IllegalArgumentException("Wait for the map save to finish");
+        var staff = dungeon.getRuntime().staffOperations();
+        if (staff != null) staff.requireContentWritable(dungeon.getWorldName());
+        if (!dungeon.prepareTestPlay(player))
+            throw new IllegalArgumentException("Could not start testplay");
         return true;
     }
 

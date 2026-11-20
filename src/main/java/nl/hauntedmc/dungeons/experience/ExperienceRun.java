@@ -80,7 +80,7 @@ public final class ExperienceRun implements AutoCloseable {
 
     public void restore(nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession session) {
         UUID id = session.getPlayer().getUniqueId();
-        if (!restored.add(id)) return;
+        if (instance.isTestPlay() || !restored.add(id)) return;
         String dungeonId = instance.getDungeon().getDungeonId().toString();
         if (session.getExperienceSavePoint(instance.getDungeon().getWorldName(), dungeonId) != null
                 && !session.incompatibleExperienceCheckpoint(dungeonId, definition, difficulty())) {

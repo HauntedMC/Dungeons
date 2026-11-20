@@ -29,6 +29,7 @@ final class InstancePreparation implements PreparationRegistry.Pending {
     private final @Nullable UUID leader;
     private final Consumer<PlayableInstance> prepareAdmission;
     private final long admissionDelay;
+    private final boolean testPlay;
     private final long deadline;
     private final PreparationRegistry registry;
     private final CountDownLatch initialized = new CountDownLatch(1);
@@ -50,7 +51,8 @@ final class InstancePreparation implements PreparationRegistry.Pending {
             @Nullable UUID leader,
             Duration timeout,
             Consumer<PlayableInstance> prepareAdmission,
-            long admissionDelay) {
+            long admissionDelay,
+            boolean testPlay) {
         this.dungeon = dungeon;
         this.player = player;
         this.session = session;
@@ -58,6 +60,7 @@ final class InstancePreparation implements PreparationRegistry.Pending {
         this.leader = leader;
         this.prepareAdmission = prepareAdmission;
         this.admissionDelay = admissionDelay;
+        this.testPlay = testPlay;
         this.deadline = System.nanoTime() + timeout.toNanos();
         this.registry = dungeon.runtime().preparations();
     }
@@ -116,13 +119,17 @@ final class InstancePreparation implements PreparationRegistry.Pending {
             return;
         }
         try {
-            PlayableInstance created = dungeon.createPlaySession(initialized, leader);
+            PlayableInstance created =
+                    testPlay
+                            ? dungeon.createTestPlaySession(initialized)
+                            : dungeon.createPlaySession(initialized, leader);
             instance = created;
             if (created != null) {
                 // Track even a late result until disposal really succeeds. Failed unloads must
                 // continue consuming capacity and remain available to normal disposal retries.
                 if (!dungeon.instances.contains(created)) dungeon.instances.add(created);
                 dungeon.activeInstances().registerActiveInstance(created);
+                if (testPlay) created.setTestPlayer(player.getUniqueId());
                 created.setDifficulty(difficulty);
                 if (remaining() == 0L && !isCancelled()) fail(TIMEOUT, null);
             }
@@ -189,7 +196,7 @@ final class InstancePreparation implements PreparationRegistry.Pending {
             admitted = true;
             registry.remove(session, this);
             try {
-                dungeon.completeReservedAccessKey(session);
+                if (!testPlay) dungeon.completeReservedAccessKey(session);
                 message("instance.lifecycle.entered");
             } finally {
                 session.setAwaitingDungeon(false);
