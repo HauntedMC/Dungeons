@@ -1117,14 +1117,7 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                         player,
                         "lives",
                         lives == null ? text(player, "ui-no-limit") : Component.text(lives)));
-        if (instance.getConfig().getInt("runs.time_limit_minutes", 0) > 0)
-            values.add(stat(player, "time", Component.text(clock(instance.getTimeLeft()))));
-        else if (instance.isStarted())
-            values.add(
-                    stat(
-                            player,
-                            "elapsed",
-                            Component.text(clock(instance.getTimeElapsed() - state.entered))));
+        runClock(player, state).ifPresent(values::add);
         player.sendMessage(DungeonUi.detail(DungeonUi.join(values)));
         currentObjective(runs.get(instance), state, player)
                 .ifPresent(objective -> player.sendMessage(DungeonUi.detail(objective)));
@@ -1133,6 +1126,18 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                         DungeonUi.join(
                                 action(player, "ui-guide-action", "/dungeon guide"),
                                 action(player, "ui-leave-short", "/dungeon leave"))));
+    }
+
+    private Optional<Component> runClock(Player player, Participation state) {
+        var instance = state.instance;
+        if (instance.getConfig().getInt("runs.time_limit_minutes", 0) > 0)
+            return Optional.of(stat(player, "time", Component.text(clock(instance.getTimeLeft()))));
+        if (!instance.isStarted()) return Optional.empty();
+        return Optional.of(
+                stat(
+                        player,
+                        "elapsed",
+                        Component.text(clock(instance.getTimeElapsed() - state.entered))));
     }
 
     private Optional<Component> currentObjective(
@@ -1587,14 +1592,9 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                                 lives == null
                                         ? text(player, "ui-no-limit")
                                         : Component.text(lives))));
-        if (instance.isStarted())
-            overview.addLore(
-                    ComponentUtils.serialize(
-                            stat(
-                                    player,
-                                    "elapsed",
-                                    Component.text(
-                                            clock(instance.getTimeElapsed() - state.entered)))));
+        runClock(player, state).ifPresent(time -> overview.addLore(ComponentUtils.serialize(time)));
+        currentObjective(runs.get(instance), state, player)
+                .ifPresent(objective -> overview.addLore(ComponentUtils.serialize(objective)));
         overview.addLore(
                 ComponentUtils.serialize(
                         text(player, "ui-open-status").color(NamedTextColor.AQUA)));
