@@ -322,22 +322,27 @@ public final class StaffCommandHandler implements CommandHandler {
                 StaffPermissions.require(actor, "inspect", a[1]);
                 content.backups(a[1]).forEach(line -> tell(actor, line));
             }
-            case "unarchive", "purge" -> {
-                need(a, 2, action + " <archive-id>");
-                String capability = action.equals("purge") ? "purge" : "restore";
-                StaffPermissions.require(actor, capability, null);
-                if (action.equals("purge")
-                        && !confirmed(actor, input, action, a[1], content.archiveRevision(a[1])))
-                    return;
+            case "purge" -> {
+                need(a, 2, "purge <archive-id>");
+                StaffPermissions.require(actor, "purge", null);
+                if (!confirmed(actor, input, action, a[1], content.archiveRevision(a[1]))) return;
+                var operation =
+                        ops.runArchivePurge(actor, a[1], () -> content.archiveAction(a[1], true));
+                tell(actor, "Operation " + operation.shortId() + ": " + operation.detail);
+            }
+            case "unarchive" -> {
+                need(a, 2, "unarchive <archive-id>");
+                StaffPermissions.require(actor, "restore", null);
                 String name = content.archivedDungeonName(a[1]);
+                content.requireRestorableArchive(a[1]);
                 var operation =
                         ops.drain(
                                 actor,
-                                capability,
+                                "restore",
                                 action,
                                 name,
                                 action,
-                                () -> content.archiveAction(a[1], action.equals("purge")));
+                                () -> content.archiveAction(a[1], false));
                 tell(actor, "Operation " + operation.shortId() + ": " + operation.detail);
             }
             case "operations" -> {

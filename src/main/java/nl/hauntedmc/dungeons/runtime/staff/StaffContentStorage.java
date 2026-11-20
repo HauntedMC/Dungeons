@@ -202,13 +202,20 @@ public final class StaffContentStorage {
                                         }));
     }
 
+    public void requireRestorableArchive(String id) {
+        archiveRevision(id);
+        String name = archivedDungeonName(id);
+        if (child(runtime.dungeonFiles(), name).exists()
+                || runtime.dungeonCatalog().get(name) != null)
+            throw new IllegalArgumentException("Dungeon name is already in use");
+    }
+
     public CompletableFuture<String> archiveAction(String id, boolean purge) {
         String name = archivedDungeonName(id);
         File source = child(new File(root, "archives"), id);
         File destination = child(runtime.dungeonFiles(), name);
         if (!source.isDirectory()) throw new IllegalArgumentException("Archive not found");
-        if (!purge && (destination.exists() || runtime.dungeonCatalog().get(name) != null))
-            throw new IllegalArgumentException("Dungeon name is already in use");
+        if (!purge) requireRestorableArchive(id);
         return filesystem(
                         source,
                         () -> {

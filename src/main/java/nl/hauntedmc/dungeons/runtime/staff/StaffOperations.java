@@ -448,6 +448,54 @@ public final class StaffOperations implements AutoCloseable {
             operation.repositoryCancellation = cancellation;
     }
 
+    public Operation runArchivePurge(
+            CommandSender actor, String archive, Supplier<CompletableFuture<String>> work) {
+        requireOpen();
+        StaffPermissions.require(actor, "purge", null);
+        var operation = new Operation(actor.getName(), "purge", "all", "Archive purge");
+        operation.state = State.RUNNING;
+        operation.detail = "Purging " + archive;
+        operations.put(operation.id, operation);
+        remember(operation);
+        trim();
+        audit(actor, operation.action, archive, operation.shortId() + " RUNNING");
+        try {
+            work.get()
+                    .whenComplete(
+                            (detail, failure) ->
+                                    owner(
+                                            () ->
+                                                    finishArchivePurge(
+                                                            actor, archive, operation, detail,
+                                                            failure)));
+        } catch (RuntimeException failure) {
+            finishArchivePurge(actor, archive, operation, null, failure);
+        }
+        return operation;
+    }
+
+    private void finishArchivePurge(
+            CommandSender actor,
+            String archive,
+            Operation operation,
+            String detail,
+            Throwable failure) {
+        if (closed) return;
+        operation.state = failure == null ? State.SUCCEEDED : State.FAILED;
+        operation.detail =
+                failure == null
+                        ? detail
+                        : Objects.toString(failure.getMessage(), "Archive purge failed");
+        remember(operation);
+        audit(
+                actor,
+                operation.action,
+                archive,
+                operation.shortId() + " " + operation.state + " " + operation.detail);
+        LangUtils.sendRaw(
+                actor, operation.shortId() + " " + operation.state + ": " + operation.detail);
+    }
+
     public Operation trackRepository(
             CommandSender actor,
             String capability,
