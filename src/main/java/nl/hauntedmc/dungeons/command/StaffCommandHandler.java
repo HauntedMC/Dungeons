@@ -360,6 +360,9 @@ public final class StaffCommandHandler implements CommandHandler {
                 need(a, 2, "unarchive <archive-id>");
                 StaffPermissions.require(actor, "restore", null);
                 String name = content.archivedDungeonName(a[1]);
+                if (name.equalsIgnoreCase("all"))
+                    throw new IllegalArgumentException(
+                            "Cannot restore an archive named all as a map");
                 content.requireRestorableArchive(a[1]);
                 var operation =
                         ops.drain(

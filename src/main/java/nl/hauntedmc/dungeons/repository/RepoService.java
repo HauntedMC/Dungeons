@@ -1032,6 +1032,9 @@ public final class RepoService implements AutoCloseable {
                             var entry = remote(selector);
                             Target local = owner(() -> findLocal(entry)).join();
                             String scope = local == null ? entry.name() : local.name();
+                            if (scope.equalsIgnoreCase("all"))
+                                throw new IllegalArgumentException(
+                                        "Cannot install a map named all");
                             owner(
                                             () -> {
                                                 require(actor, "pull", scope);
@@ -1118,6 +1121,9 @@ public final class RepoService implements AutoCloseable {
                                                             ? prepared.entry().name()
                                                             : local.name();
                                             try {
+                                                if (name.equalsIgnoreCase("all"))
+                                                    throw new IllegalArgumentException(
+                                                            "Cannot install a map named all");
                                                 require(actor, "pull", name);
                                                 if (force) require(actor, "force", name);
                                                 var operation =

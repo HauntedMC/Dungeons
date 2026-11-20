@@ -303,6 +303,9 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
 
         StaffPermissions.require(sender, "edit", dungeon.getWorldName());
         String name = dungeon.getWorldName();
+        if (name.equalsIgnoreCase("all"))
+            throw new IllegalArgumentException(
+                    "Rename this legacy map to use map-specific admission commands");
         var ops = dungeon.getRuntime().staffOperations();
         if (ops != null) ops.requireContentWritable(name);
         boolean changed = dungeon.isConfiguredEnabled() != enabled;
