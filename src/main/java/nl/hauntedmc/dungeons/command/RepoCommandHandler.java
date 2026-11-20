@@ -73,15 +73,14 @@ final class RepoCommandHandler implements CommandHandler {
                     throw new IllegalArgumentException("Use repo history <dungeon> [page]");
                 result = repo.history(input.get(1), actor, page(input, 2));
             }
-            case "status", "diff" -> {
-                if (input.size() > (action.equals("diff") ? 3 : 2)
-                        || action.equals("diff") && input.size() < 2)
-                    throw new IllegalArgumentException("Use repo " + action + " <dungeon>");
-                result =
-                        repo.status(
-                                input.size() == 2 ? input.get(1) : null,
-                                actor,
-                                action.equals("diff"));
+            case "status" -> {
+                if (input.size() > 2) throw new IllegalArgumentException("Use repo status [map]");
+                result = repo.status(input.size() == 2 ? input.get(1) : null, actor, false);
+            }
+            case "diff" -> {
+                if (input.size() < 2 || input.size() > 3)
+                    throw new IllegalArgumentException("Use repo diff <map> [page]");
+                result = repo.status(input.get(1), actor, true, page(input, 2));
             }
             default -> throw new IllegalArgumentException("Use /dungeon help repo");
         }
