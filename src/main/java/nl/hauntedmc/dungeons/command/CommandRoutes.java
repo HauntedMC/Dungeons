@@ -337,15 +337,21 @@ final class CommandRoutes {
                             Handler.MAP,
                             "dungeon keys add <map>"),
                     r(
-                            "map keys remove <map> <key>",
+                            "map keys remove <map>",
                             "staff.keys",
                             true,
+                            Handler.MAP,
+                            "dungeon keys remove <map>"),
+                    r(
+                            "map keys remove <map> <key>",
+                            "staff.keys",
+                            false,
                             Handler.MAP,
                             "dungeon keys remove <map> <key>"),
                     r(
                             "map keys clear <map>",
                             "staff.keys",
-                            true,
+                            false,
                             Handler.MAP,
                             "dungeon keys clear <map>"),
                     r(

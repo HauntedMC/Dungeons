@@ -155,6 +155,36 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
         var before = dungeon.getAccessKeys().stream().map(key -> key.getKeyId()).toList();
         var ops = dungeon.getRuntime().staffOperations();
         if (ops != null) ops.requireContentWritable(dungeon.getWorldName());
+        var operation = args.clone();
+        String selection = "";
+        if (args[2].equalsIgnoreCase("remove")) {
+            if (args.length == 4) {
+                if (!(sender instanceof Player player))
+                    throw new IllegalArgumentException("Specify a key ID from the console");
+                ItemStack held = player.getInventory().getItemInMainHand();
+                var matching =
+                        dungeon.getAccessKeys().stream()
+                                .filter(key -> key.matches(held))
+                                .map(AccessKeyDefinition::getKeyId)
+                                .toList();
+                if (matching.isEmpty())
+                    throw new IllegalArgumentException(
+                            "The held item does not match a configured access key");
+                selection = matching.toString();
+            } else {
+                int index = before.indexOf(args[4]) + 1;
+                if (index == 0) {
+                    try {
+                        index = Integer.parseInt(args[4]);
+                    } catch (NumberFormatException invalid) {
+                        throw new IllegalArgumentException("Unknown key ID: " + args[4]);
+                    }
+                }
+                if (index < 1 || index > before.size())
+                    throw new IllegalArgumentException("Unknown key ID: " + args[4]);
+                operation[4] = Integer.toString(index);
+            }
+        }
         if (args[2].equalsIgnoreCase("remove") || args[2].equalsIgnoreCase("clear")) {
             if (ops == null)
                 throw new IllegalStateException("Staff confirmation service unavailable");
@@ -166,7 +196,9 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
                             + ":"
                             + dungeon.getConfig().saveToString()
                             + ":"
-                            + before,
+                            + before
+                            + ":"
+                            + selection,
                     String.join(" ", args))) {
                 LangUtils.sendRaw(
                         sender,
@@ -174,15 +206,6 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
                                 + CommandRoutes.canonicalCommand(
                                         CommandRoutes.Handler.MAP, List.of(args)));
                 return true;
-            }
-        }
-        var operation = args.clone();
-        if (args[2].equalsIgnoreCase("remove") && args.length == 5) {
-            for (int index = 0; index < dungeon.getAccessKeys().size(); index++) {
-                if (dungeon.getAccessKeys().get(index).getKeyId().equals(args[4])) {
-                    operation[4] = String.valueOf(index + 1);
-                    break;
-                }
             }
         }
         boolean result = this.handleKeysCommand(sender, operation);
@@ -385,29 +408,25 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
 
     /** Runs handle remove allkeys command. */
     private boolean handleRemoveAllkeysCommand(CommandSender sender, String[] args) {
-        if (!(sender instanceof Player player)) {
-            return false;
-        }
-
         if (args.length != 2) {
-            LangUtils.sendMessage(player, "commands.dungeon.keys.clear.usage");
+            LangUtils.sendMessage(sender, "commands.dungeon.keys.clear.usage");
             return true;
         }
 
         DungeonDefinition dungeon = this.dungeonManager.get(args[1]);
         if (dungeon == null) {
             LangUtils.sendMessage(
-                    player,
+                    sender,
                     "commands.dungeon.keys.clear.dungeon-not-found",
                     LangUtils.placeholder("dungeon", args[1]));
             return true;
         }
 
-        StaffPermissions.require(player, "keys", dungeon.getWorldName());
+        StaffPermissions.require(sender, "keys", dungeon.getWorldName());
 
         int removedCount = dungeon.removeAllAccessKeys();
         LangUtils.sendMessage(
-                player,
+                sender,
                 "commands.dungeon.keys.clear.success",
                 LangUtils.placeholder("count", String.valueOf(removedCount)));
         return true;
