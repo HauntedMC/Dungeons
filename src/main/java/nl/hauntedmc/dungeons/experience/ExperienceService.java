@@ -605,6 +605,7 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
             var goal = run.definition().objectives().get(state.pinned);
             if (goal != null
                     && goal.point() != null
+                    && run.progress().active(goal.id(), player.getUniqueId())
                     && run.progress().visible(goal.id(), player.getUniqueId())
                     && !run.progress().completed(goal.id(), player.getUniqueId())) {
                 var point = goal.point();
@@ -1148,7 +1149,8 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
         }
         if (next == null) return Optional.empty();
         Component row =
-                Component.text("◇ ", NamedTextColor.AQUA).append(LangUtils.trusted(next.title()));
+                Component.text(next.id().equals(state.pinned) ? "◆ " : "◇ ", NamedTextColor.AQUA)
+                        .append(LangUtils.trusted(next.title()));
         if (next.target() > 1)
             row =
                     row.append(
@@ -1444,55 +1446,71 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                 notify(player, "fresh-confirmed", null);
                 return true;
             }
-            if (run == null || run.progress().views(player.getUniqueId()).isEmpty()) {
-                if (args.length == 3 && args[1].equals("pin"))
+            var views =
+                    run == null
+                            ? List.<ObjectiveProgress.View>of()
+                            : run.progress().views(player.getUniqueId());
+            if (args.length == 3 && args[1].equals("pin")) {
+                var goal = views.stream().filter(view -> view.id().equals(args[2])).findFirst();
+                if (goal.isEmpty()) {
                     LangUtils.sendMessage(player, "experience.objective-not-visible");
-                else notify(player, "exploration", null);
+                } else if (goal.get().completed()) {
+                    LangUtils.sendMessage(player, "experience.ui-already-complete");
+                } else {
+                    state.pinned = args[2];
+                    Component confirmation =
+                            text(
+                                    player,
+                                    "ui-pinned",
+                                    "value",
+                                    LangUtils.trusted(goal.get().title()));
+                    if (run.definition().objectives().get(args[2]).point() != null
+                            && backend != null
+                            && enabled(state.instance, "enabled", true)
+                            && enabled(state.instance, "channels.actionbar", true)
+                            && !session.experiencePreference("navigation", "false").equals("true"))
+                        confirmation =
+                                DungeonUi.join(
+                                        confirmation,
+                                        DungeonUi.action(
+                                                text(player, "ui-enable-navigation"),
+                                                "/dungeon hud navigation true",
+                                                NamedTextColor.AQUA));
+                    player.sendMessage(DungeonUi.detail(confirmation));
+                }
                 return true;
             }
-            if (args.length > 2 && args[1].equals("pin")) {
-                if (run.progress().views(player.getUniqueId()).stream()
-                        .noneMatch(goal -> goal.id().equals(args[2]))) {
-                    LangUtils.sendMessage(player, "experience.objective-not-visible");
-                    return true;
-                }
-                state.pinned = args[2];
+            boolean hintsOnly = args.length == 2 && args[1].equals("hint");
+            if (views.isEmpty() && !hintsOnly) {
+                notify(player, "exploration", null);
+                return true;
             }
-            if (args.length > 1 && args[1].equals("hint")) {
-                for (var view : run.progress().views(player.getUniqueId()))
-                    if (!view.completed()) {
-                        var goal = run.definition().objectives().get(view.id());
-                        if (!goal.hint().isBlank())
-                            player.sendMessage(DungeonUi.detail(LangUtils.trusted(goal.hint())));
+            boolean hasHints = false;
+            if (!hintsOnly) player.sendMessage(DungeonUi.heading(text(player, "objectives")));
+            for (var goal : views) {
+                var definition = run.definition().objectives().get(goal.id());
+                if (!goal.completed() && !definition.hint().isBlank()) {
+                    hasHints = true;
+                    if (hintsOnly) {
+                        player.sendMessage(DungeonUi.heading(LangUtils.trusted(goal.title())));
+                        player.sendMessage(DungeonUi.detail(LangUtils.trusted(definition.hint())));
                     }
-            } else {
-                player.sendMessage(DungeonUi.heading(text(player, "objectives")));
-                for (var goal : run.progress().views(player.getUniqueId())) {
-                    NamedTextColor color =
-                            goal.completed() ? NamedTextColor.GREEN : NamedTextColor.AQUA;
-                    Component name = LangUtils.trusted(goal.title());
+                }
+                if (!hintsOnly)
                     player.sendMessage(
                             DungeonUi.detail(
-                                    DungeonUi.join(
-                                                    Component.text(
-                                                                    goal.completed()
-                                                                            ? "✓ "
-                                                                            : goal.id()
-                                                                                            .equals(
-                                                                                                    state.pinned)
-                                                                                    ? "◆ "
-                                                                                    : "○ ",
-                                                                    color)
-                                                            .append(name),
-                                                    Component.text(
-                                                            goal.progress() + "/" + goal.target(),
-                                                            color))
-                                            .clickEvent(
-                                                    ClickEvent.runCommand(
-                                                            "/dungeon objectives pin "
-                                                                    + goal.id()))));
-                }
+                                    objectiveRow(
+                                            player,
+                                            goal,
+                                            definition,
+                                            goal.id().equals(state.pinned))));
             }
+            if (hintsOnly && !hasHints)
+                player.sendMessage(DungeonUi.detail(text(player, "ui-no-hints")));
+            if (!hintsOnly && hasHints)
+                player.sendMessage(
+                        DungeonUi.detail(
+                                action(player, "ui-view-hints", "/dungeon objectives hint")));
             return true;
         }
         if (command.equals("status")) {
@@ -1501,6 +1519,37 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
         }
         guide(player, state, session);
         return true;
+    }
+
+    private Component objectiveRow(
+            Player player,
+            ObjectiveProgress.View goal,
+            ExperienceDefinition.Objective definition,
+            boolean pinned) {
+        Component title = LangUtils.trusted(goal.title());
+        NamedTextColor color = goal.completed() ? NamedTextColor.GREEN : NamedTextColor.AQUA;
+        Component row =
+                Component.text(goal.completed() ? "✓ " : pinned ? "◆ " : "◇ ", color).append(title);
+        if (goal.target() > 1)
+            row =
+                    row.append(
+                            Component.text(
+                                    "  " + goal.progress() + "/" + goal.target(),
+                                    NamedTextColor.GOLD));
+        Component hover =
+                definition.description().isBlank()
+                        ? Component.empty()
+                        : LangUtils.trusted(definition.description());
+        if (!goal.completed() && !pinned) {
+            Component instruction = text(player, "ui-click-pin").color(NamedTextColor.AQUA);
+            hover =
+                    hover.equals(Component.empty())
+                            ? instruction
+                            : hover.append(Component.newline()).append(instruction);
+            row = row.clickEvent(ClickEvent.runCommand("/dungeon objectives pin " + goal.id()));
+        }
+        if (!hover.equals(Component.empty())) row = row.hoverEvent(hover);
+        return row;
     }
 
     private void guide(Player player, Participation state, DungeonPlayerSession session) {

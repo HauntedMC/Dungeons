@@ -22,6 +22,67 @@ class PresentationContractTest {
     @TempDir Path directory;
 
     @Test
+    void objectiveActionsFollowProgressAndEmptyHintsGiveFeedback() throws Exception {
+        try (var fixture = new RunFixture(directory, new YamlConfiguration())) {
+            var yaml = new YamlConfiguration();
+            yaml.set("objectives.vault.title", "Find the vault");
+            yaml.save(new java.io.File(fixture.dungeon.getFolder(), "experience.yml"));
+            when(fixture.world.getSpawnLocation())
+                    .thenReturn(new org.bukkit.Location(fixture.world, 0, 70, 0));
+            fixture.run.loadGame();
+            var command = new CommandContractTest.CommandFixture(fixture);
+            command.permissions.add("dungeons.play");
+            var player = command.caller.player;
+            when(player.locale()).thenReturn(Locale.ENGLISH);
+            var runtime = fixture.paper.runtime;
+            var service = new ExperienceService(runtime);
+            runtime.setExperience(service);
+            var session = runtime.playerSessions().get(player);
+            session.setInstance(fixture.run);
+            service.joined(fixture.run, session);
+            LangUtils.initialize();
+
+            command.execute("objectives", "hint");
+            var output = ArgumentCaptor.forClass(Component.class);
+            verify(player, atLeastOnce()).sendMessage(output.capture());
+            assertTrue(
+                    output.getAllValues().stream()
+                            .map(ComponentUtils::plainText)
+                            .anyMatch(line -> line.contains("No hints available")));
+
+            clearInvocations(player);
+            command.execute("objectives", "pin", "vault");
+            var pinned = ArgumentCaptor.forClass(Component.class);
+            verify(player).sendMessage(pinned.capture());
+            assertTrue(
+                    ComponentUtils.plainText(pinned.getValue())
+                            .contains("Pinned · Find the vault"));
+
+            service.mechanics(fixture.run)
+                    .progress()
+                    .advance("vault", player.getUniqueId(), 1, "found");
+            clearInvocations(player);
+            command.execute("objectives");
+            var completed = ArgumentCaptor.forClass(Component.class);
+            verify(player, atLeastOnce()).sendMessage(completed.capture());
+            assertTrue(
+                    completed.getAllValues().stream()
+                            .map(ComponentUtils::plainText)
+                            .anyMatch(line -> line.contains("✓ Find the vault")));
+            assertTrue(
+                    completed.getAllValues().stream()
+                            .noneMatch(
+                                    line ->
+                                            containsClick(
+                                                    line,
+                                                    ClickEvent.runCommand(
+                                                            "/dungeon objectives pin vault"))));
+        } finally {
+            LangUtils.clear();
+        }
+    }
+
+    @Test
     void statusShowsPendingPreparationBeforeAFreshQueueEntryHasBeenRendered() throws Exception {
         try (var fixture = new RunFixture(directory, new YamlConfiguration())) {
             var command = new CommandContractTest.CommandFixture(fixture);

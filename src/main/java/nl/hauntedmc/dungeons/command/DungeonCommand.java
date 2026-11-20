@@ -629,7 +629,8 @@ public final class DungeonCommand implements TabExecutor {
                         .view(player.getUniqueId())
                         .ifPresent(
                                 snapshot ->
-                                        snapshot.objectives()
+                                        snapshot.objectives().stream()
+                                                .filter(objective -> !objective.completed())
                                                 .forEach(
                                                         objective ->
                                                                 suggestions.add(objective.id())));
