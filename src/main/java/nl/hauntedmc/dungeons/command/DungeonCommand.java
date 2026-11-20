@@ -348,6 +348,9 @@ public final class DungeonCommand implements TabExecutor {
             if (!next.startsWith("<") && !next.startsWith("*")) suggestions.add(next);
             else if (next.equals("<map>")) {
                 for (var dungeon : this.dungeonManager.getLoadedDungeons()) {
+                    if ((route.operation().startsWith("play ")
+                                    || route.operation().startsWith("send "))
+                            && !dungeon.isEnabled()) continue;
                     var candidate = new LinkedHashMap<>(values);
                     candidate.put("map", List.of(dungeon.getWorldName()));
                     if (this.allowed(sender, route, candidate))
@@ -374,7 +377,9 @@ public final class DungeonCommand implements TabExecutor {
                 Bukkit.getOnlinePlayers().forEach(player -> suggestions.add(player.getName()));
             } else if (next.equals("<difficulty>") && values.containsKey("map")) {
                 var dungeon = this.dungeonManager.get(values.get("map").getFirst());
-                if (dungeon != null) suggestions.addAll(dungeon.getDifficultyLevels().keySet());
+                if (dungeon != null
+                        && (route.handler() != CommandRoutes.Handler.GAMEPLAY || dungeon.isEnabled()))
+                    suggestions.addAll(dungeon.getDifficultyLevels().keySet());
             } else if (next.equals("<setting>") && values.containsKey("map")) {
                 var dungeon = this.dungeonManager.get(values.get("map").getFirst());
                 if (dungeon != null) suggestions.addAll(DungeonConfigRegistry.getKeys(dungeon, ""));
