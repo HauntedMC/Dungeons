@@ -739,7 +739,10 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                         state,
                         key,
                         "chat",
-                        !transientNotice || !enabled(state.instance, "channels.actionbar", true)))
+                        !transientNotice
+                                || backend == null
+                                || !enabled(state.instance, "enabled", true)
+                                || !enabled(state.instance, "channels.actionbar", true)))
             player.sendMessage(LangUtils.notice(message));
         if (state != null) {
             if (notification(state, key, "actionbar", transientNotice))
