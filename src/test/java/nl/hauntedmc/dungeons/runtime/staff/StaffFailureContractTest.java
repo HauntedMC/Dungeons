@@ -122,6 +122,20 @@ class StaffFailureContractTest {
     }
 
     @Test
+    void restoreRejectsAnOlderMapWithTheSameNameAndDifferentIdentity() throws Exception {
+        try (var f = new StaffFixture(directory)) {
+            var storage = new StaffContentStorage(f.runtime);
+            Path copy = Files.createDirectories(directory.resolve("backups/crypt/older"));
+            Files.writeString(
+                    copy.resolve("config.yml"), "dungeon:\n  id: " + UUID.randomUUID() + "\n");
+
+            assertThrows(
+                    IllegalArgumentException.class, () -> storage.restore(f.run.dungeon, "older"));
+            assertTrue(f.run.dungeon.getFolder().isDirectory());
+        }
+    }
+
+    @Test
     void failedRestoreLoadsRollBackFilesAndFailedUnarchiveRemainsRetryable() throws Exception {
         try (var f = new StaffFixture(directory)) {
             var storage = new StaffContentStorage(f.runtime);

@@ -14,7 +14,6 @@ import nl.hauntedmc.dungeons.repository.RepoFiles;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
-import org.bukkit.configuration.file.YamlConfiguration;
 
 /** Filesystem work runs after drain. Backups never contain progression or key ledgers. */
 public final class StaffContentStorage {
@@ -96,16 +95,23 @@ public final class StaffContentStorage {
         File file = new File(copy, "config.yml");
         if (!copy.isDirectory()) throw new IllegalArgumentException("Backup not found");
         try {
-            ConfigurationFile.loadSnapshot(new YamlConfiguration(), file);
-        } catch (Exception failure) {
+            requireBackupIdentity(file.toPath(), dungeon.getDungeonId());
+        } catch (IOException failure) {
             throw new IllegalArgumentException("Backup configuration is unreadable", failure);
         }
         return id + "/" + copy.lastModified() + "/" + file.lastModified();
     }
 
+    private void requireBackupIdentity(Path config, UUID identity) throws IOException {
+        if (!(RepoContent.readYaml(config).get("dungeon") instanceof Map<?, ?> values)
+                || !identity.toString().equalsIgnoreCase(Objects.toString(values.get("id"), "")))
+            throw new IllegalArgumentException("Backup belongs to a different dungeon identity");
+    }
+
     public CompletableFuture<String> restore(DungeonDefinition dungeon, String id) {
         backupRevision(dungeon, id);
         String name = dungeon.getWorldName();
+        UUID identity = dungeon.getDungeonId();
         File live = managed(dungeon.getFolder());
         File copy = child(new File(root, "backups/" + name), id);
         UUID operation = UUID.randomUUID();
@@ -122,6 +128,7 @@ public final class StaffContentStorage {
                                         copy,
                                         replacement.toFile(),
                                         file -> !RUNTIME_FILES.contains(file.getName()));
+                                requireBackupIdentity(replacement.resolve("config.yml"), identity);
                                 files.install(operation, name, replacement);
                                 return files;
                             } catch (IOException | RuntimeException failure) {
