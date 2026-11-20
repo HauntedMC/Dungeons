@@ -125,8 +125,10 @@ class StaffCommandContractTest {
         try (var f = new StaffFixture(directory)) {
             var h = handler(f);
             UUID id = UUID.randomUUID();
-            execute(h, f, "RELOAD", "config");
+            execute(h, f, "RELOAD-CONFIG");
             verify(f.lifecycle).reloadConfigs();
+            assertFalse(f.ops.maintenance("crypt"));
+            assertTrue(f.ops.operations().isEmpty());
             execute(h, f, "reload", "all");
             when(f.repository.loadDungeon(f.run.dungeon.getFolder())).thenReturn(f.run.dungeon);
             execute(h, f, "reload", "crypt");

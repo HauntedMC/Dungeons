@@ -573,7 +573,7 @@ final class CommandRoutes {
                             "staff.reload",
                             false,
                             Handler.STAFF,
-                            "reload config"),
+                            "reload-config"),
                     r("server reload maps", "staff.reload", false, Handler.STAFF, "reload all"),
                     r("server reload all", "staff.reload", false, Handler.STAFF, "reload-all all"),
                     r(

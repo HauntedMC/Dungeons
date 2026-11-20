@@ -294,6 +294,11 @@ public final class StaffCommandHandler implements CommandHandler {
                 ops.maintenance(actor, a[1], a[2].equals("on"), "Maintenance");
                 tell(actor, "Maintenance " + a[2] + " for " + a[1] + ": " + ops.impact(a[1]));
             }
+            case "reload-config" -> {
+                StaffPermissions.require(actor, "reload", null);
+                lifecycle.reloadConfigs();
+                tell(actor, "Configuration reloaded");
+            }
             case "reload", "reload-all", "archive", "backup", "restore" ->
                     contentOperation(actor, a, input);
             case "archive-info" -> {
@@ -398,7 +403,7 @@ public final class StaffCommandHandler implements CommandHandler {
         String target = a[1];
         String capability =
                 a[0].equals("archive") ? "delete" : a[0].equals("reload-all") ? "reload" : a[0];
-        boolean global = target.equals("all") || target.equals("config");
+        boolean global = target.equals("all");
         if (global && !List.of("reload", "reload-all").contains(a[0]))
             throw new IllegalArgumentException("Select one dungeon");
         var d = global ? null : dungeon(target);
@@ -428,11 +433,6 @@ public final class StaffCommandHandler implements CommandHandler {
                             return switch (a[0]) {
                                 case "reload", "reload-all" -> {
                                     if (a[0].equals("reload-all")) lifecycle.reloadConfigs();
-                                    if (target.equals("config")) {
-                                        lifecycle.reloadConfigs();
-                                        yield CompletableFuture.completedFuture(
-                                                "Configuration reloaded");
-                                    }
                                     if (target.equals("all"))
                                         yield runtime.dungeonCatalog()
                                                 .reloadAllAsync()
