@@ -117,9 +117,12 @@ final class RepoCommandHandler implements CommandHandler {
                                                                         detail.getMessage(),
                                                                         "Operation failed")));
                                             } else if (value instanceof Collection<?> lines) {
-                                                if (lines.isEmpty() && action.equals("list")) {
+                                                if (lines.isEmpty()
+                                                        && List.of("list", "history")
+                                                                .contains(action)) {
                                                     LangUtils.sendMessage(
-                                                            actor, "repository.list-empty");
+                                                            actor,
+                                                            "repository." + action + "-empty");
                                                 } else {
                                                     lines.forEach(
                                                             line ->

@@ -77,6 +77,7 @@ repository:
   started: '<HauntedMC:Text>Repository operation started.'
   failed: '<HauntedMC:Error>Repository operation failed: {detail}'
   list-empty: '<HauntedMC:Text>No published dungeons found on this page.'
+  history-empty: '<HauntedMC:Text>No releases found on this history page.'
 
 mechanic-editor:
   ask-value: '&eEnter {setting}. Current value: {value}'
