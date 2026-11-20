@@ -135,6 +135,7 @@ class StaffCommandContractTest {
             execute(h, f, "backup", "crypt");
             f.flush();
             assertFalse(new StaffContentStorage(f.runtime).backups("crypt").isEmpty());
+            assertFalse(f.ops.maintenance("crypt"));
             var completion = new CompletableFuture<String>();
             var op =
                     f.ops.drain(

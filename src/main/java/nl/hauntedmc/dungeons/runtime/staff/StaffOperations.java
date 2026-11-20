@@ -237,6 +237,16 @@ public final class StaffOperations implements AutoCloseable {
         persist(next -> next.set(path, enabled ? reason : null));
         audit(actor, "maintenance", dungeon, reason, before + " -> " + (enabled ? reason : "open"));
         if (enabled) cancelStarts(dungeon);
+        else preloadResumedMaps(dungeon);
+    }
+
+    private void preloadResumedMaps(String scope) {
+        for (var dungeon : runtime.dungeonCatalog().getLoadedDungeons()) {
+            if ((scope.equals("all") || scope.equals(dungeon.getWorldName()))
+                    && dungeon.isEnabled()
+                    && dungeon instanceof nl.hauntedmc.dungeons.content.dungeon.OpenDungeon open)
+                open.schedulePreLoadIfNeeded();
+        }
     }
 
     public String entryBlock(UUID player, String dungeon) {
@@ -391,7 +401,7 @@ public final class StaffOperations implements AutoCloseable {
         return drainInternal(actor, capability, action, target, reason, work, false);
     }
 
-    public Operation repositoryDrain(
+    public Operation drainAndResume(
             CommandSender actor,
             String capability,
             String action,
@@ -615,6 +625,7 @@ public final class StaffOperations implements AutoCloseable {
         }
         pending.remove(op.target, pendingWork);
         disposing.remove(op.target);
+        if (failure == null && pendingWork.resume) preloadResumedMaps(op.target);
         op.state = failure == null ? State.SUCCEEDED : State.FAILED;
         op.detail =
                 failure == null

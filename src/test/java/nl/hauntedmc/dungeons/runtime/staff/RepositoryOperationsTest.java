@@ -17,7 +17,7 @@ class RepositoryOperationsTest {
     void successfulPullResumesPriorStateButNeverClearsIndependentMaintenance() throws Exception {
         try (var fixture = new StaffFixture(directory)) {
             var first =
-                    fixture.ops.repositoryDrain(
+                    fixture.ops.drainAndResume(
                             fixture.actor,
                             "repo.pull",
                             "repo-pull",
@@ -28,7 +28,7 @@ class RepositoryOperationsTest {
             assertFalse(fixture.ops.maintenance("crypt"));
             var pending = new CompletableFuture<String>();
             var second =
-                    fixture.ops.repositoryDrain(
+                    fixture.ops.drainAndResume(
                             fixture.actor,
                             "repo.pull",
                             "repo-pull",
@@ -71,7 +71,7 @@ class RepositoryOperationsTest {
     void failedPullKeepsAdmissionsClosed() throws Exception {
         try (var fixture = new StaffFixture(directory)) {
             var op =
-                    fixture.ops.repositoryDrain(
+                    fixture.ops.drainAndResume(
                             fixture.actor,
                             "repo.pull",
                             "repo-pull",

@@ -418,45 +418,42 @@ public final class StaffCommandHandler implements CommandHandler {
                         a[0],
                         target,
                         d.getConfig().saveToString() + ops.impact(target))) return;
+        java.util.function.Supplier<CompletableFuture<String>> work =
+                () -> {
+                    if (d != null && runtime.dungeonCatalog().get(target) != d)
+                        throw new IllegalArgumentException(
+                                "Dungeon was replaced while waiting; request the operation"
+                                        + " again");
+                    return switch (a[0]) {
+                        case "reload", "reload-all" -> {
+                            if (a[0].equals("reload-all")) lifecycle.reloadConfigs();
+                            if (target.equals("all"))
+                                yield runtime.dungeonCatalog()
+                                        .reloadAllAsync()
+                                        .thenApply(
+                                                report -> {
+                                                    if (!report.isEmpty())
+                                                        throw new IllegalStateException(
+                                                                "Failed loads: " + report);
+                                                    return "Dungeon catalog reloaded";
+                                                });
+                            if (runtime.dungeonCatalog().loadDungeon(d.getFolder()) == null)
+                                throw new IllegalStateException(
+                                        "Replacement failed validation; last working"
+                                                + " definition retained");
+                            yield CompletableFuture.completedFuture("Dungeon reloaded");
+                        }
+                        case "archive" -> ops.archive(d);
+                        case "backup" -> content.backup(d).thenApply(id -> "Backup " + id);
+                        case "restore" -> content.restore(d, a[2]);
+                        default -> throw new IllegalArgumentException("Unknown content action");
+                    };
+                };
+        String scope = global ? "all" : target;
         var operation =
-                ops.drain(
-                        actor,
-                        capability,
-                        a[0],
-                        global ? "all" : target,
-                        a[0],
-                        () -> {
-                            if (d != null && runtime.dungeonCatalog().get(target) != d)
-                                throw new IllegalArgumentException(
-                                        "Dungeon was replaced while waiting; request the operation"
-                                                + " again");
-                            return switch (a[0]) {
-                                case "reload", "reload-all" -> {
-                                    if (a[0].equals("reload-all")) lifecycle.reloadConfigs();
-                                    if (target.equals("all"))
-                                        yield runtime.dungeonCatalog()
-                                                .reloadAllAsync()
-                                                .thenApply(
-                                                        report -> {
-                                                            if (!report.isEmpty())
-                                                                throw new IllegalStateException(
-                                                                        "Failed loads: " + report);
-                                                            return "Dungeon catalog reloaded";
-                                                        });
-                                    if (runtime.dungeonCatalog().loadDungeon(d.getFolder()) == null)
-                                        throw new IllegalStateException(
-                                                "Replacement failed validation; last working"
-                                                        + " definition retained");
-                                    yield CompletableFuture.completedFuture("Dungeon reloaded");
-                                }
-                                case "archive" -> ops.archive(d);
-                                case "backup" -> content.backup(d).thenApply(id -> "Backup " + id);
-                                case "restore" -> content.restore(d, a[2]);
-                                default ->
-                                        throw new IllegalArgumentException(
-                                                "Unknown content action");
-                            };
-                        });
+                List.of("reload", "reload-all", "backup").contains(a[0])
+                        ? ops.drainAndResume(actor, capability, a[0], scope, a[0], work)
+                        : ops.drain(actor, capability, a[0], scope, a[0], work);
         tell(
                 actor,
                 "Operation "

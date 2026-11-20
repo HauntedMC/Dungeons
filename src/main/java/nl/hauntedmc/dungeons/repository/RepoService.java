@@ -1128,7 +1128,7 @@ public final class RepoService implements AutoCloseable {
                                                 if (force) require(actor, "force", name);
                                                 var operation =
                                                         runtime.staffOperations()
-                                                                .repositoryDrain(
+                                                                .drainAndResume(
                                                                         actor,
                                                                         "repo.pull",
                                                                         "repo-pull",
