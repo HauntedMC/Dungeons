@@ -57,23 +57,11 @@ public final class DungeonQueueCoordinator {
 
     /** Queues or starts a dungeon for a solo player or their active team. */
     public void sendToDungeon(Player player, String dungeonName, String difficulty) {
-        DungeonDefinition requested =
-                this.dungeonManager == null ? null : this.dungeonManager.get(dungeonName);
-        if (requested != null
-                && requested.getRuntime() != null
-                && requested.getRuntime().staffOperations() != null) {
-            String blocked =
-                    requested
-                            .getRuntime()
-                            .staffOperations()
-                            .entryBlock(player.getUniqueId(), dungeonName);
-            if (blocked != null) {
-                LangUtils.sendRaw(player, blocked);
-                return;
-            }
-        }
         DungeonTeam team = this.teamManager.getTeam(player.getUniqueId());
         if (team != null) {
+            DungeonDefinition requested =
+                    this.dungeonManager == null ? null : this.dungeonManager.get(dungeonName);
+            if (requested != null && !this.entryAllowed(player, requested)) return;
             if (!team.isLeader(player.getUniqueId())) {
                 LangUtils.sendMessage(player, "commands.play.team.only-leader-start");
                 return;
@@ -138,7 +126,8 @@ public final class DungeonQueueCoordinator {
         }
     }
 
-    private void sendSoloToDungeon(Player player, String dungeonName, String difficulty) {
+    /** Requests solo admission even when the player belongs to a team. */
+    public void sendSoloToDungeon(Player player, String dungeonName, String difficulty) {
         DungeonPlayerSession playerSession = this.playerManager.get(player);
         DungeonDefinition targetDungeon =
                 this.dungeonManager == null ? null : this.dungeonManager.get(dungeonName);
@@ -474,12 +463,26 @@ public final class DungeonQueueCoordinator {
         return started;
     }
 
+    private boolean entryAllowed(Player player, DungeonDefinition dungeon) {
+        if (dungeon.getRuntime() == null || dungeon.getRuntime().staffOperations() == null)
+            return true;
+        String blocked =
+                dungeon.getRuntime()
+                        .staffOperations()
+                        .entryBlock(player.getUniqueId(), dungeon.getWorldName());
+        if (blocked == null) return true;
+        LangUtils.sendRaw(player, blocked);
+        return false;
+    }
+
     private boolean validateSoloRequest(
             DungeonPlayerSession dungeonPlayer, DungeonDefinition dungeon) {
         Player player = dungeonPlayer.getPlayer();
         if (player == null || !player.isOnline()) {
             return false;
         }
+
+        if (!this.entryAllowed(player, dungeon)) return false;
 
         if (!dungeon.isEnabled()) {
             LangUtils.sendMessage(

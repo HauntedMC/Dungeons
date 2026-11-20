@@ -331,7 +331,7 @@ final class GameplayCommandHandler implements CommandHandler {
                 || session.isObserving()
                 || this.queueManager.getQueue(session) != null)
             throw new IllegalArgumentException("Player already has an active dungeon operation");
-        this.dungeonQueueCoordinator.sendToDungeon(target, dungeon.getWorldName(), difficulty);
+        this.dungeonQueueCoordinator.sendSoloToDungeon(target, dungeon.getWorldName(), difficulty);
         if (dungeon.getRuntime().staffOperations() != null)
             dungeon.getRuntime()
                     .staffOperations()

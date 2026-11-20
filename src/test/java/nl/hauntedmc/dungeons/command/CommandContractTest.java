@@ -224,7 +224,7 @@ class CommandContractTest {
             verifyNoInteractions(command.coordinator);
             command.permissions.add("dungeons.play.send");
             command.execute("player", "Other", "send", "crypt");
-            verify(command.coordinator).sendToDungeon(other.player, "crypt", "");
+            verify(command.coordinator).sendSoloToDungeon(other.player, "crypt", "");
             clearInvocations(command.coordinator);
             session.setAwaitingDungeon(true);
             command.execute("player", "Other", "send", "crypt");
@@ -350,7 +350,7 @@ class CommandContractTest {
                             mock(Command.class),
                             "dungeon",
                             new String[] {"player", "Explorer", "send", "crypt"}));
-            verify(command.coordinator).sendToDungeon(command.caller.player, "crypt", "");
+            verify(command.coordinator).sendSoloToDungeon(command.caller.player, "crypt", "");
             command.root.onCommand(
                     console, mock(Command.class), "dungeon", new String[] {"edit", "crypt"});
             assertTrue(f.scheduler.asynchronous.isEmpty());
