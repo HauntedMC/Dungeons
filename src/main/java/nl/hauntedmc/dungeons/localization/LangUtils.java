@@ -6,6 +6,7 @@ import java.util.Locale;
 import java.util.Map;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.util.text.ComponentUtils;
 import nl.hauntedmc.featureframework.toolkit.io.localization.Language;
@@ -18,7 +19,8 @@ import org.bukkit.entity.Player;
 /** HauntedMC localization boundary; legacy string accessors remain for Bukkit model/UI codecs. */
 public final class LangUtils {
     private static final Component DEFAULT_PREFIX =
-            Component.text("[Dungeons] ", HauntedMcColor.BRAND.textColor());
+            Component.text("Dungeons ", HauntedMcColor.BRAND.textColor())
+                    .append(Component.text("› ", NamedTextColor.GRAY));
     private static volatile DungeonMessages messages;
 
     private LangUtils() {}

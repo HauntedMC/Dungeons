@@ -2,16 +2,19 @@ package nl.hauntedmc.dungeons.gui.menu;
 
 import java.util.ArrayList;
 import java.util.List;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import nl.hauntedmc.dungeons.content.function.RevivePlayerFunction;
 import nl.hauntedmc.dungeons.gui.framework.buttons.Button;
 import nl.hauntedmc.dungeons.gui.framework.window.GuiInventory;
 import nl.hauntedmc.dungeons.gui.framework.window.GuiWindow;
 import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
-import nl.hauntedmc.dungeons.model.dungeon.DungeonDifficulty;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
+import nl.hauntedmc.dungeons.util.text.ComponentUtils;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -22,64 +25,126 @@ public class PlayMenus {
 
     /** Builds and registers the dungeon difficulty selector GUI. */
     public static void initializeDifficultySelector(DungeonDefinition dungeon) {
-        if (dungeon.isUseDifficultyLevels()) {
-            List<DungeonDifficulty> difficulties =
-                    new ArrayList<>(dungeon.getDifficultyLevels().values());
-            int guiSize = 9;
-            if (difficulties.size() > 9) {
-                guiSize = 27;
-            }
-
-            GuiWindow gui =
+        if (!dungeon.isUseDifficultyLevels()) return;
+        var difficulties = new ArrayList<>(dungeon.getDifficultyLevels().values());
+        if (difficulties.isEmpty()) return;
+        String prefix = "difficulty_" + dungeon.getWorldName();
+        int pageSize = 14;
+        int pages = (difficulties.size() + pageSize - 1) / pageSize;
+        for (int index = 0; index < pages; index++) {
+            int page = index;
+            var options =
+                    List.copyOf(
+                            difficulties.subList(
+                                    page * pageSize,
+                                    Math.min(difficulties.size(), (page + 1) * pageSize)));
+            var window =
                     RuntimeContext.guiService()
                             .createWindow(
-                                    "difficulty_" + dungeon.getWorldName(),
-                                    guiSize,
-                                    LangUtils.getMessage("menus.difficulty-select.title", false));
-            gui.addOpenAction(
-                    "experience-briefing",
+                                    difficultyPage(prefix, page),
+                                    36,
+                                    ComponentUtils.serialize(
+                                            LangUtils.component(
+                                                            "experience.ui-menu-difficulty",
+                                                            null,
+                                                            false)
+                                                    .color(NamedTextColor.DARK_AQUA)
+                                                    .decorate(TextDecoration.BOLD)));
+            window.setAccessCheck(
+                    player -> player.hasPermission("dungeons.play") && dungeon.isEnabled());
+            window.addOpenAction(
+                    "difficulty-options",
                     event -> {
-                        if (RuntimeContext.runtime().experience() != null)
-                            RuntimeContext.runtime()
-                                    .experience()
-                                    .briefing((Player) event.getPlayer(), dungeon);
+                        Player player = (Player) event.getPlayer();
+                        var inventory = window.getInventoryFor(player);
+                        var title =
+                                new Button(
+                                        "map",
+                                        Material.COMPASS,
+                                        ComponentUtils.serialize(
+                                                dungeon.getDisplayNameComponent()
+                                                        .decorate(TextDecoration.BOLD)));
+                        title.addLore(
+                                ComponentUtils.serialize(
+                                        LangUtils.component(
+                                                        "experience.ui-menu-difficulty",
+                                                        player,
+                                                        false)
+                                                .color(NamedTextColor.GRAY)));
+                        inventory.setButton(4, title);
+                        for (int option = 0; option < options.size(); option++) {
+                            var difficulty = options.get(option);
+                            Button button =
+                                    new Button(difficulty.getNamespace(), difficulty.getIcon());
+                            button.addLore(
+                                    ComponentUtils.serialize(
+                                            LangUtils.component(
+                                                            "experience.ui-menu-join",
+                                                            player,
+                                                            false)
+                                                    .color(NamedTextColor.GREEN)));
+                            button.addAction(
+                                    "enter",
+                                    click -> {
+                                        player.closeInventory();
+                                        RuntimeContext.dungeonQueueCoordinator()
+                                                .sendToDungeon(
+                                                        player,
+                                                        dungeon.getWorldName(),
+                                                        difficulty.getNamespace());
+                                    });
+                            int row = option / 7;
+                            int count = Math.min(7, options.size() - row * 7);
+                            inventory.setButton(
+                                    (row + 1) * 9 + (9 - count) / 2 + option % 7, button);
+                        }
+                        if (page > 0)
+                            inventory.setButton(
+                                    30, difficultyNavigation(player, prefix, page - 1, "previous"));
+                        if (page + 1 < pages)
+                            inventory.setButton(
+                                    32, difficultyNavigation(player, prefix, page + 1, "next"));
                     });
-            if (!difficulties.isEmpty()) {
-                for (int i = 0; i < difficulties.size(); i++) {
-                    DungeonDifficulty difficulty = difficulties.get(i);
-                    Button button =
-                            new Button(
-                                    dungeon.getWorldName() + "_" + difficulty.getNamespace(),
-                                    difficulty.getIcon());
-                    button.addAction(
-                            "click",
-                            click -> {
-                                Player player = (Player) click.getWhoClicked();
-                                RuntimeContext.dungeonQueueCoordinator()
-                                        .sendToDungeon(
-                                                player,
-                                                dungeon.getWorldName(),
-                                                difficulty.getNamespace());
-                                player.closeInventory();
-                            });
-                    gui.addButton(i, button);
-                }
-            }
         }
+    }
+
+    private static Button difficultyNavigation(
+            Player player, String prefix, int page, String direction) {
+        var button =
+                new Button(
+                        direction,
+                        Material.ARROW,
+                        ComponentUtils.serialize(
+                                LangUtils.component("commands.ui." + direction, player, false)
+                                        .color(NamedTextColor.AQUA)));
+        button.addAction(
+                "page",
+                click -> RuntimeContext.guiService().openGui(player, difficultyPage(prefix, page)));
+        return button;
+    }
+
+    private static String difficultyPage(String prefix, int page) {
+        return page == 0 ? prefix : prefix + ":" + page;
     }
 
     /** Builds and registers the player revival confirmation GUI. */
     public static void initializeRevivalMenu() {
         GuiWindow gui =
                 RuntimeContext.guiService()
-                        .createWindow("revivalmenu", 27, "&8Choose who to revive");
+                        .createWindow(
+                                "revivalmenu",
+                                27,
+                                LangUtils.getMessage("experience.ui-revive-title", false));
         gui.addOpenAction(
                 "populate",
                 event -> {
                     Player player = (Player) event.getPlayer();
                     DungeonPlayerSession dungeonPlayer =
                             RuntimeContext.playerSessions().get(player);
-                    PlayableInstance instance = dungeonPlayer.getInstance().asPlayInstance();
+                    PlayableInstance instance =
+                            dungeonPlayer == null || dungeonPlayer.getInstance() == null
+                                    ? null
+                                    : dungeonPlayer.getInstance().asPlayInstance();
                     if (instance == null) {
                         event.setCancelled(true);
                     } else if (!(dungeonPlayer.getActiveFunction()
@@ -95,7 +160,7 @@ public class PlayMenus {
                         int slot = 0;
 
                         for (DungeonPlayerSession playerSession : instance.getPlayers()) {
-                            if (!instance.getLivingPlayers().contains(playerSession)) {
+                            if (slot < 27 && !instance.getLivingPlayers().contains(playerSession)) {
                                 Player instancePlayer = playerSession.getPlayer();
                                 ItemStack skull = new ItemStack(Material.PLAYER_HEAD);
                                 SkullMeta meta = (SkullMeta) skull.getItemMeta();
@@ -106,7 +171,19 @@ public class PlayMenus {
                                 skull.setItemMeta(meta);
                                 Button button =
                                         new Button("revive_" + instancePlayer.getName(), skull);
-                                button.setDisplayName("&3&lRevive " + instancePlayer.getName());
+                                button.setDisplayName(
+                                        ComponentUtils.serialize(
+                                                Component.text(
+                                                                instancePlayer.getName(),
+                                                                NamedTextColor.AQUA)
+                                                        .decorate(TextDecoration.BOLD)));
+                                button.addLore(
+                                        ComponentUtils.serialize(
+                                                LangUtils.component(
+                                                                "experience.ui-revive-action",
+                                                                player,
+                                                                false)
+                                                        .color(NamedTextColor.GREEN)));
                                 button.addAction(
                                         "revive",
                                         clickEvent -> {
@@ -125,7 +202,7 @@ public class PlayMenus {
                     Player player = (Player) event.getPlayer();
                     DungeonPlayerSession dungeonPlayer =
                             RuntimeContext.playerSessions().get(player);
-                    dungeonPlayer.setActiveFunction(null);
+                    if (dungeonPlayer != null) dungeonPlayer.setActiveFunction(null);
                 });
     }
 }

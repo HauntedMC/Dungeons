@@ -9,12 +9,16 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.format.NamedTextColor;
 import nl.hauntedmc.dungeons.config.DungeonConfigView;
 import nl.hauntedmc.dungeons.config.PluginConfigView;
 import nl.hauntedmc.dungeons.event.DungeonDisposeEvent;
 import nl.hauntedmc.dungeons.event.PlayerLeaveDungeonEvent;
 import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
+import nl.hauntedmc.dungeons.presentation.DungeonUi;
 import nl.hauntedmc.dungeons.runtime.instance.DungeonInstance;
 import nl.hauntedmc.dungeons.runtime.instance.play.OpenInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
@@ -208,7 +212,11 @@ public final class DungeonTeamService implements Listener {
         this.invitesByTarget.put(target.getUniqueId(), invite);
         this.send(leader, "commands.team.invite.sent", target.getName());
         this.send(target, "commands.team.invite.received", leader.getName());
-        this.send(target, "commands.team.invite.how-to-respond");
+        target.sendMessage(
+                DungeonUi.detail(
+                        DungeonUi.join(
+                                teamAction(target, "accept", NamedTextColor.GREEN),
+                                teamAction(target, "decline", NamedTextColor.GOLD))));
         return true;
     }
 
@@ -409,9 +417,26 @@ public final class DungeonTeamService implements Listener {
                                         "commands.team.info.states.queued", requester, false)
                                 : LangUtils.component(
                                         "commands.team.info.states.idle", requester, false);
-        this.send(requester, "commands.team.info.leader", this.getLeaderName(team));
-        this.send(requester, "commands.team.info.members", String.join(", ", memberNames));
-        this.send(requester, "commands.team.info.state", state);
+        NamedTextColor accent = team.isQueued() ? NamedTextColor.GOLD : NamedTextColor.GREEN;
+        requester.sendMessage(
+                DungeonUi.heading(
+                        DungeonUi.join(
+                                LangUtils.component("commands.ui.team-title", requester, false),
+                                state.color(accent))));
+        requester.sendMessage(
+                DungeonUi.detail(
+                        LangUtils.component(
+                                "commands.team.info.leader",
+                                requester,
+                                false,
+                                LangUtils.placeholder("leader", this.getLeaderName(team)))));
+        requester.sendMessage(
+                DungeonUi.detail(
+                        LangUtils.component(
+                                "commands.team.info.members",
+                                requester,
+                                false,
+                                LangUtils.placeholder("members", String.join(", ", memberNames)))));
         if (team.getQueuedDungeonName() != null) {
             Object difficulty =
                     team.getQueuedDifficulty() == null || team.getQueuedDifficulty().isEmpty()
@@ -420,26 +445,39 @@ public final class DungeonTeamService implements Listener {
                                     requester,
                                     false)
                             : team.getQueuedDifficulty();
-            this.send(
-                    requester,
-                    "commands.team.info.dungeon",
-                    team.getQueuedDungeonName(),
-                    difficulty);
+            requester.sendMessage(
+                    DungeonUi.detail(
+                            LangUtils.component(
+                                    "commands.team.info.dungeon",
+                                    requester,
+                                    false,
+                                    LangUtils.placeholder("dungeon", team.getQueuedDungeonName()),
+                                    LangUtils.placeholder("difficulty", difficulty))));
         }
-
         if (team.isLeader(requester.getUniqueId())) {
-            if (team.isStarted()) {
-                this.send(requester, "commands.team.info.leader-controls-started");
-            } else {
-                this.send(requester, "commands.team.info.leader-controls-idle");
-            }
-        } else if (team.isStarted()) {
-            this.send(requester, "commands.team.info.member-controls-started");
+            var disband =
+                    teamAction(requester, "disband", NamedTextColor.GOLD)
+                            .clickEvent(ClickEvent.suggestCommand("/dungeon team disband"));
+            var invite =
+                    team.isLocked()
+                            ? Component.empty()
+                            : teamAction(requester, "invite", NamedTextColor.AQUA)
+                                    .clickEvent(ClickEvent.suggestCommand("/dungeon team invite "));
+            requester.sendMessage(DungeonUi.detail(DungeonUi.join(invite, disband)));
         } else {
-            this.send(requester, "commands.team.info.member-controls-idle");
+            requester.sendMessage(
+                    DungeonUi.detail(
+                            teamAction(requester, "leave", NamedTextColor.GOLD)
+                                    .clickEvent(ClickEvent.suggestCommand("/dungeon team leave"))));
         }
-
         return true;
+    }
+
+    private Component teamAction(Player player, String action, NamedTextColor color) {
+        return DungeonUi.action(
+                LangUtils.component("commands.ui.team-" + action, player, false),
+                "/dungeon team " + action,
+                color);
     }
 
     /** Handles `/team kick` validation and member removal. */
@@ -846,21 +884,6 @@ public final class DungeonTeamService implements Listener {
             case "commands.team.revoke.success" ->
                     LangUtils.sendMessage(
                             player, messageKey, LangUtils.placeholder("player", args[0]));
-            case "commands.team.info.leader" ->
-                    LangUtils.sendMessage(
-                            player, messageKey, LangUtils.placeholder("leader", args[0]));
-            case "commands.team.info.members" ->
-                    LangUtils.sendMessage(
-                            player, messageKey, LangUtils.placeholder("members", args[0]));
-            case "commands.team.info.state" ->
-                    LangUtils.sendMessage(
-                            player, messageKey, LangUtils.placeholder("state", args[0]));
-            case "commands.team.info.dungeon" ->
-                    LangUtils.sendMessage(
-                            player,
-                            messageKey,
-                            LangUtils.placeholder("dungeon", args[0]),
-                            LangUtils.placeholder("difficulty", args[1]));
             case "commands.team.queued" ->
                     LangUtils.sendMessage(
                             player, messageKey, LangUtils.placeholder("dungeon", args[0]));

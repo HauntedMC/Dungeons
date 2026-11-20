@@ -31,16 +31,16 @@ public record ExperiencePresentation(
                     "state",
                     "difficulty",
                     "",
-                    "stage",
-                    "objective",
                     "remaining",
-                    "elapsed",
                     "lives",
+                    "elapsed",
                     "party",
                     "respawn",
                     "",
-                    "help",
-                    "leave");
+                    "stage",
+                    "objective",
+                    "",
+                    "help");
 
     public ExperiencePresentation {
         flags = Map.copyOf(flags);

@@ -9,6 +9,7 @@ import nl.hauntedmc.dungeons.config.PluginConfigView;
 import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
+import nl.hauntedmc.dungeons.presentation.DungeonUi;
 import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
 import org.bukkit.Location;
@@ -159,7 +160,7 @@ final class CommandOutput {
             String noMatchKey,
             String footerKey,
             int requestedPage) {
-        LangUtils.sendRaw(sender, headerLine);
+        sender.sendMessage(DungeonUi.heading(headerLine));
         if (lines.isEmpty()) {
             LangUtils.sendMessage(sender, noMatchKey);
             return;
@@ -171,13 +172,16 @@ final class CommandOutput {
         int startIndex = (page - 1) * pageSize;
         int endIndex = Math.min(startIndex + pageSize, lines.size());
         for (int i = startIndex; i < endIndex; i++) {
-            LangUtils.sendRaw(sender, lines.get(i));
+            sender.sendMessage(DungeonUi.detail(lines.get(i)));
         }
 
-        LangUtils.sendMessage(
-                sender,
-                footerKey,
-                LangUtils.placeholder("page", String.valueOf(page)),
-                LangUtils.placeholder("total_pages", String.valueOf(totalPages)));
+        sender.sendMessage(
+                DungeonUi.detail(
+                        LangUtils.component(
+                                footerKey,
+                                sender,
+                                false,
+                                LangUtils.placeholder("page", String.valueOf(page)),
+                                LangUtils.placeholder("total_pages", String.valueOf(totalPages)))));
     }
 }

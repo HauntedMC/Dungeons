@@ -10,8 +10,10 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import nl.hauntedmc.dungeons.api.DungeonExperienceApi;
 import nl.hauntedmc.dungeons.localization.LangUtils;
+import nl.hauntedmc.dungeons.presentation.DungeonUi;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
 import nl.hauntedmc.featureframework.hud.HudFrame;
@@ -88,15 +90,19 @@ final class ObservationHud implements AutoCloseable {
             }
             lease.renew(Duration.ofSeconds(10));
             var lines = new ArrayList<Component>();
-            lines.add(LangUtils.component("experience.observing", player, false, Map.of()));
-            lines.add(Component.text("/dungeon guide"));
-            lines.add(Component.text("/dungeon leave"));
+            lines.add(
+                    Component.text("● ", NamedTextColor.AQUA)
+                            .append(LangUtils.component("experience.ui-observing", player, false)));
+            lines.add(Component.empty());
+            lines.add(Component.text("/dungeon leave", NamedTextColor.GRAY));
             String profile = policy.profile(session.experiencePreference("profile", "inherit"));
             lease.update(
                     profile.equals("immersive")
                             ? null
                             : new HudFrame.Sidebar(
-                                    instance.getDungeon().getDisplayNameComponent(), lines));
+                                    DungeonUi.heading(
+                                            instance.getDungeon().getDisplayNameComponent()),
+                                    lines));
         }
         for (UUID id : new ArrayList<>(leases.keySet())) if (!seen.contains(id)) release(id);
     }

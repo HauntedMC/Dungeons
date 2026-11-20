@@ -91,7 +91,7 @@ class LocalizedDeliveryTest {
                             Component.text("Heading ")
                                     .append(Component.text("[Dungeons] is literal")));
             assertEquals(
-                    "[Dungeons] Heading [Dungeons] is literal", ComponentUtils.plainText(text));
+                    "Dungeons › Heading [Dungeons] is literal", ComponentUtils.plainText(text));
             var state = new PlayerState();
             MessageUtils.sendClickableCommand(
                     state.player,
@@ -127,9 +127,9 @@ class LocalizedDeliveryTest {
             fixture.run.messagePlayers("test.notice", LangUtils.placeholder("name", input));
             var capture = ArgumentCaptor.forClass(Component.class);
             verify(english.player).sendMessage(capture.capture());
-            assertEquals("[Dungeons] Hello " + input, ComponentUtils.plainText(capture.getValue()));
+            assertEquals("Dungeons › Hello " + input, ComponentUtils.plainText(capture.getValue()));
             verify(dutch.player).sendMessage(capture.capture());
-            assertEquals("[Dungeons] Hoi " + input, ComponentUtils.plainText(capture.getValue()));
+            assertEquals("Dungeons › Hoi " + input, ComponentUtils.plainText(capture.getValue()));
             assertFalse(ComponentUtils.plainText(capture.getValue()).contains("§"));
         } finally {
             LangUtils.clear();

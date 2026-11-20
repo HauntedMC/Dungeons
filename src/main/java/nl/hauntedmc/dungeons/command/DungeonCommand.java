@@ -9,6 +9,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TreeSet;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import nl.hauntedmc.dungeons.bootstrap.LifecycleCoordinator;
 import nl.hauntedmc.dungeons.command.CommandOutput.FilterPageQuery;
 import nl.hauntedmc.dungeons.command.config.DungeonConfigCommandHandler;
@@ -17,6 +18,7 @@ import nl.hauntedmc.dungeons.gui.framework.GuiService;
 import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
+import nl.hauntedmc.dungeons.presentation.DungeonUi;
 import nl.hauntedmc.dungeons.registry.FunctionRegistry;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
@@ -313,9 +315,15 @@ public final class DungeonCommand implements TabExecutor {
     }
 
     private void canonicalHelp(CommandSender sender, String[] path) {
-        String prefix = String.join(" ", path).toLowerCase(Locale.ROOT);
-        LangUtils.sendRaw(sender, prefix.isBlank() ? "Commands" : prefix);
+        int page = 1;
+        if (path.length >= 2 && path[path.length - 2].equalsIgnoreCase("--page")) {
+            page = Integer.parseInt(path[path.length - 1]);
+            if (page < 1) throw new IllegalArgumentException("Page must be positive");
+            path = Arrays.copyOf(path, path.length - 2);
+        }
+        String prefix = String.join(" ", path);
         var lines = new LinkedHashSet<String>();
+        var topics = new LinkedHashSet<String>();
         for (var route : CommandRoutes.ALL) {
             String[] pattern = route.syntax().split(" ");
             if (path.length > pattern.length
@@ -338,15 +346,114 @@ public final class DungeonCommand implements TabExecutor {
             String usage = route.usage();
             for (var value : values.entrySet())
                 usage = usage.replace("<" + value.getKey() + ">", value.getValue().getFirst());
-            if (prefix.isBlank()) {
-                String root = usage.split(" ")[0];
-                if (List.of("map", "edit", "player", "instance", "queue", "server", "team", "repo")
-                        .contains(root)) usage = root + " … (use /dungeon help " + root + ")";
-            }
+            topics.add(pattern[0]);
             lines.add("/dungeon " + usage);
         }
-        if (lines.isEmpty()) LangUtils.sendRaw(sender, "No accessible commands match this path.");
-        else lines.forEach(line -> LangUtils.sendRaw(sender, line));
+        Component heading = LangUtils.component("commands.ui.help", sender, false);
+        sender.sendMessage(
+                DungeonUi.heading(
+                        prefix.isBlank()
+                                ? heading
+                                : DungeonUi.join(
+                                        heading, Component.text(prefix, NamedTextColor.GRAY))));
+        if (lines.isEmpty()) {
+            sender.sendMessage(
+                    DungeonUi.detail(LangUtils.component("commands.ui.help-empty", sender, false)));
+            return;
+        }
+        if (prefix.isBlank()) {
+            sendHelpTopics(sender, topics);
+            return;
+        }
+        int totalPages = (lines.size() + 8) / 9;
+        page = Math.min(page, totalPages);
+        lines.stream()
+                .skip((page - 1L) * 9)
+                .limit(9)
+                .forEach(line -> sender.sendMessage(DungeonUi.detail(DungeonUi.syntax(line))));
+        if (totalPages > 1) {
+            String help = "/dungeon help " + prefix + " --page ";
+            Component previous =
+                    page > 1
+                            ? DungeonUi.action(
+                                    Component.text("‹"), help + (page - 1), NamedTextColor.AQUA)
+                            : Component.empty();
+            Component next =
+                    page < totalPages
+                            ? DungeonUi.action(
+                                    Component.text("›"), help + (page + 1), NamedTextColor.AQUA)
+                            : Component.empty();
+            sender.sendMessage(
+                    DungeonUi.detail(
+                            DungeonUi.join(
+                                    previous,
+                                    Component.text(page + " / " + totalPages, NamedTextColor.GRAY),
+                                    next)));
+        }
+    }
+
+    private void sendHelpTopics(CommandSender sender, java.util.Set<String> topics) {
+        var sections =
+                List.of(
+                        Map.entry("discovery", List.of("list", "info", "play")),
+                        Map.entry(
+                                "run",
+                                List.of(
+                                        "guide",
+                                        "status",
+                                        "objectives",
+                                        "lives",
+                                        "stuck",
+                                        "leave",
+                                        "spectate",
+                                        "hud")),
+                        Map.entry("party", List.of("team")),
+                        Map.entry(
+                                "staff",
+                                List.of(
+                                        "map",
+                                        "edit",
+                                        "player",
+                                        "instance",
+                                        "queue",
+                                        "server",
+                                        "repo")));
+        for (var section : sections) {
+            var buttons =
+                    section.getValue().stream()
+                            .filter(topics::contains)
+                            .map(
+                                    topic ->
+                                            DungeonUi.action(
+                                                    LangUtils.component(
+                                                            "commands.ui.topic-" + topic,
+                                                            sender,
+                                                            false),
+                                                    (List.of(
+                                                                                    "list",
+                                                                                    "guide",
+                                                                                    "status",
+                                                                                    "objectives",
+                                                                                    "hud",
+                                                                                    "team")
+                                                                            .contains(topic)
+                                                                    ? "/dungeon "
+                                                                    : "/dungeon help ")
+                                                            + topic,
+                                                    NamedTextColor.AQUA))
+                            .toList();
+            if (buttons.isEmpty()) continue;
+            sender.sendMessage(
+                    DungeonUi.detail(
+                            LangUtils.component(
+                                    "commands.ui.section-" + section.getKey(), sender, false)));
+            for (int offset = 0; offset < buttons.size(); offset += 4)
+                sender.sendMessage(
+                        DungeonUi.detail(
+                                DungeonUi.join(
+                                        buttons.subList(
+                                                offset, Math.min(offset + 4, buttons.size())))));
+        }
     }
 
     private List<String> completeCanonical(CommandSender sender, String[] args) {
@@ -502,27 +609,25 @@ public final class DungeonCommand implements TabExecutor {
     private boolean publicInfo(CommandSender sender, String name) {
         var dungeon = this.dungeonManager.get(name);
         if (dungeon == null) throw new IllegalArgumentException("Unknown dungeon: " + name);
-        LangUtils.sendRaw(
-                sender,
-                dungeon.getDisplayNameComponent()
-                        .append(Component.text(" (" + dungeon.getWorldName() + ")")));
-        LangUtils.sendRaw(
-                sender,
-                Component.text(
-                                "Type: "
-                                        + this.output.getDungeonTypeName(dungeon)
-                                        + "; team limit: "
-                                        + dungeon.getMaxTeamSize()
-                                        + "; difficulties: ")
-                        .append(this.output.formatDungeonDifficulties(sender, dungeon)));
-        LangUtils.sendRaw(
-                sender,
-                "Available: "
-                        + dungeon.isEnabled()
-                        + "; keys required: "
-                        + !dungeon.getAccessKeys().isEmpty());
-        if (sender instanceof Player player && this.playerManager.runtimeExperience() != null)
-            this.playerManager.runtimeExperience().briefing(player, dungeon);
+        var experience = this.playerManager.runtimeExperience();
+        if (experience != null) experience.briefing(sender, dungeon);
+        else {
+            sender.sendMessage(DungeonUi.heading(dungeon.getDisplayNameComponent()));
+            sender.sendMessage(
+                    DungeonUi.detail(
+                            DungeonUi.join(
+                                    LangUtils.component(
+                                                    dungeon.isEnabled()
+                                                            ? "experience.ui-available"
+                                                            : "experience.ui-unavailable",
+                                                    sender,
+                                                    false)
+                                            .color(
+                                                    dungeon.isEnabled()
+                                                            ? NamedTextColor.GREEN
+                                                            : NamedTextColor.RED),
+                                    this.output.formatDungeonDifficulties(sender, dungeon))));
+        }
         return true;
     }
 
@@ -550,20 +655,29 @@ public final class DungeonCommand implements TabExecutor {
         List<DungeonDefinition> dungeons = this.output.getFilteredDungeons(query.filter(), false);
         List<Component> lines = new ArrayList<>();
         for (DungeonDefinition dungeon : dungeons) {
+            boolean available = dungeon.isEnabled();
+            Component map =
+                    dungeon.getDisplayNameComponent()
+                            .clickEvent(
+                                    net.kyori.adventure.text.event.ClickEvent.runCommand(
+                                            "/dungeon info " + dungeon.getWorldName()));
             lines.add(
-                    LangUtils.component(
-                            "commands.list.line",
-                            sender,
-                            false,
-                            LangUtils.placeholder("dungeon", dungeon.getWorldName()),
-                            LangUtils.placeholder("display", dungeon.getDisplayNameComponent()),
-                            LangUtils.placeholder(
-                                    "team_size", String.valueOf(dungeon.getMaxTeamSize())),
-                            LangUtils.placeholder(
-                                    "difficulties",
-                                    this.output.formatDungeonDifficulties(sender, dungeon))));
+                    DungeonUi.join(
+                            Component.text(
+                                            "● ",
+                                            available ? NamedTextColor.GREEN : NamedTextColor.RED)
+                                    .append(map),
+                            LangUtils.component(
+                                            "experience.ui-"
+                                                    + (available ? "available" : "unavailable"),
+                                            sender,
+                                            false)
+                                    .color(NamedTextColor.GRAY),
+                            DungeonUi.metric(
+                                    LangUtils.component("experience.ui-party-label", sender, false)
+                                            .color(NamedTextColor.GRAY),
+                                    Component.text(dungeon.getMaxTeamSize()))));
         }
-
         this.output.sendPaginatedLines(
                 sender,
                 LangUtils.component("commands.list.header", sender, false),

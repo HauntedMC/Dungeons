@@ -16,10 +16,12 @@ import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import nl.hauntedmc.dungeons.api.DungeonExperienceApi;
 import nl.hauntedmc.dungeons.event.DungeonStartEvent;
 import nl.hauntedmc.dungeons.gui.framework.buttons.Button;
 import nl.hauntedmc.dungeons.localization.LangUtils;
+import nl.hauntedmc.dungeons.presentation.DungeonUi;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
@@ -31,6 +33,7 @@ import nl.hauntedmc.featureframework.lifecycle.CleanupSequence;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.EnderCrystal;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -286,20 +289,31 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                         () -> {
                             if (closed || session.getInstance() != instance || !player.isOnline())
                                 return;
-                            notify(
-                                    player,
-                                    "welcome",
-                                    instance.getDungeon().getDisplayNameComponent());
-                            briefing(player, instance);
+                            if (notification(value, "welcome", "enabled", false))
+                                notify(
+                                        player,
+                                        "welcome",
+                                        instance.getDungeon().getDisplayNameComponent());
                             if (incompatible(session, instance)) {
                                 notify(player, "incompatible-save", null);
                                 player.sendMessage(
                                         action(player, "fresh-start", "/dungeon objectives fresh"));
                             }
                             player.sendMessage(
-                                    action(player, "guide", "/dungeon guide")
-                                            .append(Component.space())
-                                            .append(action(player, "leave", "/dungeon leave")));
+                                    DungeonUi.detail(
+                                            DungeonUi.join(
+                                                    action(
+                                                            player,
+                                                            "ui-guide-action",
+                                                            "/dungeon guide"),
+                                                    action(
+                                                            player,
+                                                            "ui-status-action",
+                                                            "/dungeon status"),
+                                                    action(
+                                                            player,
+                                                            "ui-leave-short",
+                                                            "/dungeon leave"))));
                         },
                         3);
     }
@@ -338,7 +352,7 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
         return presentation(instance).profile(session.experiencePreference("profile", "inherit"));
     }
 
-    private Component text(Player player, String key, Object... values) {
+    private Component text(CommandSender player, String key, Object... values) {
         var replacements = new LinkedHashMap<String, Object>();
         for (int i = 0; i + 1 < values.length; i += 2)
             replacements.put(values[i].toString(), values[i + 1]);
@@ -346,12 +360,35 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
     }
 
     private Component action(Player player, String key, String command) {
-        return text(player, key).clickEvent(ClickEvent.runCommand(command));
+        String label =
+                switch (key) {
+                    case "guide" -> "ui-guide-action";
+                    case "leave" -> "ui-leave-short";
+                    case "cancel" -> "ui-cancel-action";
+                    case "report-details" -> "ui-report-action";
+                    case "dungeon-info" -> "ui-info-action";
+                    case "play-again" -> "ui-replay-action";
+                    default -> key;
+                };
+        NamedTextColor color =
+                key.startsWith("leave") || key.equals("ui-leave-short") || key.equals("cancel")
+                        ? NamedTextColor.GOLD
+                        : NamedTextColor.AQUA;
+        return DungeonUi.action(text(player, label).color(color), command, color);
     }
 
     private void line(Map<String, Component> widgets, Player player, String key, Object value) {
-        Component row = text(player, key, "value", value);
-        widgets.put(key, row);
+        Component valueText =
+                value instanceof Component component
+                        ? component
+                        : Component.text(String.valueOf(value));
+        if (key.equals("state")) {
+            widgets.put(key, valueText);
+        } else {
+            widgets.put(
+                    key,
+                    text(player, "ui-hud-" + key, "value", valueText.color(NamedTextColor.WHITE)));
+        }
     }
 
     private HudService.Lease channel(
@@ -379,7 +416,7 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
         if (enabled(instance, "channels.sidebar", true)) {
             var widgetRows = new LinkedHashMap<String, Component>();
             if (!immersive) {
-                line(widgetRows, player, "state", text(player, stateName(player, state)));
+                line(widgetRows, player, "state", runState(player, state));
                 if (instance.getDifficulty() != null)
                     line(widgetRows, player, "difficulty", instance.getDifficulty().getNamespace());
                 if (run != null
@@ -457,7 +494,7 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                                                     < 0.01
                                             ? "spawn"
                                             : "checkpoint"));
-                widgetRows.put("help", Component.text("/dungeon guide", NamedTextColor.GRAY));
+                widgetRows.put("help", text(player, "ui-hud-tip").color(NamedTextColor.GRAY));
                 widgetRows.put("leave", Component.text("/dungeon leave", NamedTextColor.GRAY));
             }
             Map<String, Object> substitutions = new LinkedHashMap<>();
@@ -484,7 +521,7 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
             String titleTemplate = setting(instance, "sidebar.title", "");
             Component sidebarTitle =
                     titleTemplate.isBlank()
-                            ? instance.getDungeon().getDisplayNameComponent()
+                            ? DungeonUi.heading(instance.getDungeon().getDisplayNameComponent())
                             : LangUtils.trusted(titleTemplate, substitutions);
             channel(player, state, HudService.Channel.SIDEBAR)
                     .update(
@@ -784,6 +821,11 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
         queueFeedback();
     }
 
+    public boolean isParticipating(Player player, PlayableInstance run) {
+        var participation = players.get(player.getUniqueId());
+        return participation != null && participation.instance == run;
+    }
+
     public boolean completed(UUID player, PlayableInstance instance) {
         var state = players.get(player);
         return state != null && state.instance == instance && "completed".equals(state.outcome);
@@ -818,18 +860,23 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
         release(state);
         exits.remove(id);
         var report = new ArrayList<Component>();
-        report.add(instance.getDungeon().getDisplayNameComponent());
+        report.add(
+                DungeonUi.heading(
+                        DungeonUi.join(
+                                instance.getDungeon().getDisplayNameComponent(),
+                                text(session.getPlayer(), "ui-run-summary")
+                                        .color(NamedTextColor.GRAY))));
         report.add(
                 text(
                         session.getPlayer(),
                         state.outcome == null ? "expedition-ended" : state.outcome));
         report.add(
-                text(
-                        session.getPlayer(),
-                        "elapsed",
-                        "value",
-                        clock(instance.getTimeElapsed() - state.entered)));
-        report.add(text(session.getPlayer(), "lives-lost", "value", state.lostLives));
+                DungeonUi.join(
+                        stat(
+                                session.getPlayer(),
+                                "elapsed",
+                                Component.text(clock(instance.getTimeElapsed() - state.entered))),
+                        stat(session.getPlayer(), "deaths", Component.text(state.lostLives))));
         var mechanics = runs.get(instance);
         if (mechanics != null) {
             long completed =
@@ -866,30 +913,29 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                                                             / 1000))));
         reports.put(id, List.copyOf(report));
         if (session.getPlayer().isOnline()) {
-            report.forEach(line -> session.getPlayer().sendMessage(LangUtils.notice(line)));
-            session.getPlayer()
-                    .sendMessage(
-                            action(session.getPlayer(), "report-details", "/dungeon status")
-                                    .append(Component.space())
-                                    .append(
-                                            action(
-                                                    session.getPlayer(),
-                                                    "dungeon-info",
-                                                    "/dungeon info "
-                                                            + instance.getDungeon().getWorldName()))
-                                    .append(Component.space())
-                                    .append(
-                                            action(
-                                                    session.getPlayer(),
-                                                    "play-again",
-                                                    "/dungeon play "
-                                                            + instance.getDungeon().getWorldName()
-                                                            + (instance.getDifficulty() == null
-                                                                    ? ""
-                                                                    : " "
-                                                                            + instance.getDifficulty()
-                                                                                    .getNamespace()))));
+            Player player = session.getPlayer();
+            showReport(player, report.subList(0, 3));
+            String map = instance.getDungeon().getWorldName();
+            String difficulty =
+                    instance.getDifficulty() == null
+                                    || !player.hasPermission("dungeons.play.difficulty")
+                            ? ""
+                            : " " + instance.getDifficulty().getNamespace();
+            player.sendMessage(
+                    DungeonUi.detail(
+                            DungeonUi.join(
+                                    action(player, "report-details", "/dungeon status"),
+                                    action(player, "dungeon-info", "/dungeon info " + map),
+                                    action(
+                                            player,
+                                            "play-again",
+                                            "/dungeon play " + map + difficulty))));
         }
+    }
+
+    private void showReport(Player player, List<Component> report) {
+        player.sendMessage(report.getFirst());
+        report.stream().skip(1).forEach(line -> player.sendMessage(DungeonUi.detail(line)));
     }
 
     public void dispose(PlayableInstance instance) {
@@ -942,65 +988,131 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
     }
 
     public void briefing(
-            Player player, nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition dungeon) {
+            CommandSender viewer, nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition dungeon) {
+        boolean available = dungeon.isEnabled();
+        viewer.sendMessage(
+                DungeonUi.heading(dungeon.getDisplayNameComponent())
+                        .hoverEvent(
+                                net.kyori.adventure.text.event.HoverEvent.showText(
+                                        Component.text(
+                                                "/dungeon info " + dungeon.getWorldName(),
+                                                NamedTextColor.GRAY))));
+        NamedTextColor availability = available ? NamedTextColor.GREEN : NamedTextColor.RED;
+        viewer.sendMessage(
+                DungeonUi.detail(
+                        Component.text("● ", availability)
+                                .append(
+                                        text(viewer, available ? "ui-available" : "ui-unavailable")
+                                                .color(availability))));
         String description = dungeon.getConfig().getString("experience.description", "");
         if (!description.isBlank())
-            player.sendMessage(LangUtils.notice(LangUtils.trusted(description)));
-        int lives = dungeon.getConfig().getInt("players.lives", 0),
-                minutes = dungeon.getConfig().getInt("runs.time_limit_minutes", 0);
-        player.sendMessage(
-                text(player, "lives", "value", lives == 0 ? text(player, "unlimited") : lives));
-        player.sendMessage(
-                text(player, minutes == 0 ? "untimed" : "remaining", "value", clock(minutes * 60)));
-        player.sendMessage(text(player, "party-limit", "value", dungeon.getMaxTeamSize()));
+            viewer.sendMessage(DungeonUi.detail(LangUtils.trusted(description)));
+        int lives = dungeon.getConfig().getInt("players.lives", 0);
+        int minutes = dungeon.getConfig().getInt("runs.time_limit_minutes", 0);
+        viewer.sendMessage(
+                DungeonUi.detail(
+                        DungeonUi.join(
+                                stat(
+                                        viewer,
+                                        "lives",
+                                        lives > 0
+                                                ? Component.text(lives)
+                                                : text(viewer, "ui-no-limit")),
+                                stat(
+                                        viewer,
+                                        "time",
+                                        minutes > 0
+                                                ? Component.text(clock(minutes * 60))
+                                                : text(viewer, "ui-no-limit")),
+                                stat(viewer, "party", Component.text(dungeon.getMaxTeamSize())))));
         if (!dungeon.getAccessKeys().isEmpty())
-            player.sendMessage(
-                    text(
-                            player,
-                            dungeon.getConfig().getBoolean("access.keys.consume_on_entry", true)
-                                    ? "entry-key-consumed"
-                                    : "entry-key-required"));
-        player.sendMessage(
-                text(
-                        player,
-                        dungeon.getConfig().getBoolean("players.spectate_on_death", true)
-                                ? "entry-spectator"
-                                : "entry-eliminated"));
-        player.sendMessage(
-                text(
-                        player,
-                        dungeon.getConfig().getBoolean("players.keep_on_entry.inventory", true)
-                                ? "entry-inventory-kept"
-                                : "inventory-restored"));
-        player.sendMessage(text(player, "spawn-explanation"));
-        if (dungeon.isAccessCooldownEnabled()) player.sendMessage(text(player, "entry-cooldown"));
+            viewer.sendMessage(
+                    DungeonUi.detail(
+                            text(
+                                            viewer,
+                                            dungeon.getConfig()
+                                                            .getBoolean(
+                                                                    "access.keys.consume_on_entry",
+                                                                    true)
+                                                    ? "ui-key-spent"
+                                                    : "ui-key-kept")
+                                    .color(NamedTextColor.GOLD)));
+        if (lives > 0)
+            viewer.sendMessage(
+                    DungeonUi.detail(
+                            text(
+                                    viewer,
+                                    dungeon.getConfig()
+                                                    .getBoolean("players.spectate_on_death", true)
+                                            ? "entry-spectator"
+                                            : "entry-eliminated")));
+        if (!dungeon.getConfig().getBoolean("players.keep_on_entry.inventory", true))
+            viewer.sendMessage(DungeonUi.detail(text(viewer, "inventory-restored")));
+        if (dungeon.isAccessCooldownEnabled())
+            viewer.sendMessage(DungeonUi.detail(text(viewer, "entry-cooldown")));
+        if (available && viewer.hasPermission("dungeons.play"))
+            viewer.sendMessage(
+                    DungeonUi.detail(
+                            DungeonUi.action(
+                                    text(viewer, "ui-enter-action").color(NamedTextColor.AQUA),
+                                    "/dungeon play " + dungeon.getWorldName(),
+                                    NamedTextColor.AQUA)));
     }
 
-    private void briefing(Player player, PlayableInstance instance) {
-        String description = setting(instance, "description", "");
-        if (!description.isBlank())
-            player.sendMessage(LangUtils.notice(LangUtils.trusted(description)));
+    private Component stat(CommandSender viewer, String key, Component value) {
+        return DungeonUi.metric(
+                text(viewer, "ui-" + key + "-label").color(NamedTextColor.GRAY),
+                value.color(NamedTextColor.WHITE));
+    }
+
+    private void runStatus(Player player, Participation state) {
+        var instance = state.instance;
+        player.sendMessage(DungeonUi.heading(instance.getDungeon().getDisplayNameComponent()));
+        var values = new ArrayList<Component>();
+        values.add(runState(player, state));
+        Integer lives = instance.getPlayerLives().get(player.getUniqueId());
+        values.add(
+                stat(
+                        player,
+                        "lives",
+                        lives == null ? text(player, "ui-no-limit") : Component.text(lives)));
         if (instance.getConfig().getInt("runs.time_limit_minutes", 0) > 0)
-            player.sendMessage(
-                    text(
+            values.add(
+                    stat(
                             player,
-                            "remaining",
-                            "value",
-                            clock(
-                                    instance.getTimeLeft() > 0
-                                            ? instance.getTimeLeft()
-                                            : instance.getConfig().getInt("runs.time_limit_minutes")
-                                                    * 60)));
-        int lives =
-                instance.getPlayerLives()
-                        .getOrDefault(
-                                player.getUniqueId(),
-                                instance.getConfig().getInt("players.lives", 0));
+                            "time",
+                            Component.text(
+                                    clock(
+                                            instance.isStarted()
+                                                    ? instance.getTimeLeft()
+                                                    : instance.getConfig()
+                                                                    .getInt(
+                                                                            "runs.time_limit_minutes")
+                                                            * 60))));
+        player.sendMessage(DungeonUi.detail(DungeonUi.join(values)));
         player.sendMessage(
-                text(player, "lives", "value", lives == 0 ? text(player, "unlimited") : lives));
-        player.sendMessage(text(player, "spawn-explanation"));
+                DungeonUi.detail(
+                        DungeonUi.join(
+                                action(player, "ui-guide-action", "/dungeon guide"),
+                                action(player, "ui-leave-short", "/dungeon leave"))));
+    }
+
+    private Component runState(Player player, Participation state) {
+        String key = stateName(player, state);
+        NamedTextColor color =
+                switch (key) {
+                    case "playing", "completed" -> NamedTextColor.GREEN;
+                    case "lobby", "spectating" -> NamedTextColor.GOLD;
+                    default -> NamedTextColor.RED;
+                };
+        return Component.text("● ", color).append(text(player, key).color(color));
+    }
+
+    private void runRules(Player player, PlayableInstance instance) {
+        player.sendMessage(DungeonUi.heading(text(player, "ui-rules-heading")));
+        player.sendMessage(DungeonUi.detail(text(player, "spawn-explanation")));
         if (!instance.getConfig().getBoolean("players.keep_on_entry.inventory", true))
-            player.sendMessage(text(player, "inventory-restored"));
+            player.sendMessage(DungeonUi.detail(text(player, "inventory-restored")));
     }
 
     private String exitSignature(DungeonPlayerSession session, Participation state) {
@@ -1058,15 +1170,27 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                 && pending.signature.equals(signature)
                 && pending.expires - now > 0) return true;
         exits.put(id, new Exit(state, signature, now + Duration.ofSeconds(10).toNanos()));
-        notify(player, "exit-confirm", null);
         player.sendMessage(
-                text(
-                        player,
-                        session.getDungeonSavePoint(dungeon.getWorldName()) == null
-                                ? "exit-unsaved"
-                                : "exit-saved"));
-        if (cooldown) player.sendMessage(text(player, "exit-cooldown"));
-        if (consumesKey) player.sendMessage(text(player, "exit-key"));
+                DungeonUi.heading(text(player, "ui-leave-heading").color(NamedTextColor.GOLD)));
+        player.sendMessage(
+                DungeonUi.detail(
+                        text(
+                                player,
+                                session.getDungeonSavePoint(dungeon.getWorldName()) == null
+                                        ? "ui-leave-unsaved"
+                                        : "ui-leave-progress")));
+        var costs = new ArrayList<Component>();
+        if (cooldown) costs.add(text(player, "ui-leave-cooldown").color(NamedTextColor.GOLD));
+        if (consumesKey) costs.add(text(player, "ui-leave-key").color(NamedTextColor.GOLD));
+        if (!costs.isEmpty()) player.sendMessage(DungeonUi.detail(DungeonUi.join(costs)));
+        player.sendMessage(
+                DungeonUi.detail(
+                        DungeonUi.join(
+                                DungeonUi.action(
+                                        text(player, "ui-leave-action").color(NamedTextColor.GOLD),
+                                        "/dungeon leave",
+                                        NamedTextColor.GOLD),
+                                text(player, "ui-leave-repeat").color(NamedTextColor.GRAY))));
         return false;
     }
 
@@ -1085,13 +1209,13 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
             return;
         }
         var lines = new ArrayList<Component>();
-        lines.add(text(player, "playing"));
+        lines.add(Component.text("● ", NamedTextColor.AQUA).append(text(player, "playing")));
         int time = dungeon.getConfig().getInt("runs.time_limit_minutes", 0);
         int lives = dungeon.getConfig().getInt("players.lives", 0);
-        if (time > 0) lines.add(text(player, "remaining", "value", clock(time * 60)));
-        if (lives > 0) lines.add(text(player, "lives", "value", lives));
-        lines.add(Component.text("/dungeon guide"));
-        lines.add(Component.text("/dungeon leave"));
+        if (time > 0) lines.add(text(player, "ui-hud-remaining", "value", clock(time * 60)));
+        if (lives > 0) lines.add(text(player, "ui-hud-lives", "value", lives));
+        lines.add(Component.empty());
+        lines.add(text(player, "ui-hud-tip").color(NamedTextColor.GRAY));
         var previous = previews.remove(player.getUniqueId());
         if (previous != null) previous.close();
         var lease =
@@ -1101,7 +1225,8 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                         HudService.Channel.SIDEBAR,
                         HudService.CONTEXT,
                         Duration.ofSeconds(10));
-        lease.update(new HudFrame.Sidebar(dungeon.getDisplayNameComponent(), lines));
+        lease.update(
+                new HudFrame.Sidebar(DungeonUi.heading(dungeon.getDisplayNameComponent()), lines));
         previews.put(player.getUniqueId(), lease);
         notify(player, "editor-preview", null);
     }
@@ -1138,10 +1263,40 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
         }
         if (command.equals("hud")) {
             if (args.length == 1) {
-                for (String profile : List.of("balanced", "minimal", "immersive", "inherit"))
+                player.sendMessage(DungeonUi.heading(text(player, "ui-hud-heading")));
+                String selected = session.experiencePreference("profile", "inherit");
+                for (String profile : List.of("balanced", "minimal", "immersive", "inherit")) {
+                    Component label =
+                            text(player, profile.equals("inherit") ? "ui-inherit" : profile)
+                                    .color(
+                                            profile.equals(selected)
+                                                    ? NamedTextColor.GREEN
+                                                    : NamedTextColor.AQUA);
                     player.sendMessage(
-                            Component.text(profile)
-                                    .clickEvent(ClickEvent.runCommand("/dungeon hud " + profile)));
+                            DungeonUi.detail(
+                                    DungeonUi.join(
+                                            DungeonUi.action(
+                                                    label,
+                                                    "/dungeon hud " + profile,
+                                                    profile.equals(selected)
+                                                            ? NamedTextColor.GREEN
+                                                            : NamedTextColor.AQUA),
+                                            text(player, "ui-menu-" + profile)
+                                                    .color(NamedTextColor.GRAY))));
+                }
+                var toggles = new ArrayList<Component>();
+                for (String toggle : List.of("sounds", "titles", "navigation")) {
+                    boolean on = session.experiencePreference(toggle, "true").equals("true");
+                    Component label =
+                            text(player, "ui-toggle-" + toggle)
+                                    .append(Component.text(on ? " ✓" : " –"));
+                    toggles.add(
+                            DungeonUi.action(
+                                    label,
+                                    "/dungeon hud " + toggle + " " + !on,
+                                    on ? NamedTextColor.GREEN : NamedTextColor.GRAY));
+                }
+                player.sendMessage(DungeonUi.detail(DungeonUi.join(toggles)));
                 return true;
             }
             String option = args[1].toLowerCase(Locale.ROOT);
@@ -1155,7 +1310,14 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
             } else {
                 throw new IllegalArgumentException("Use /dungeon help hud");
             }
-            notify(player, "settings-updated", null);
+            Component saved = text(player, "ui-settings-saved").color(NamedTextColor.GREEN);
+            if (state != null
+                    && backend != null
+                    && !notification(state, "settings-updated", "chat", false)) {
+                if (notification(state, "settings-updated", "enabled", true)
+                        && notification(state, "settings-updated", "actionbar", true))
+                    actionBar(player, saved, 2, HudService.CONTEXT);
+            } else deliverNotification(player, "settings-updated", saved);
             return true;
         }
         if (state == null
@@ -1183,7 +1345,7 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                 return true;
             }
             var report = reports.get(player.getUniqueId());
-            if (report != null && command.equals("status")) report.forEach(player::sendMessage);
+            if (report != null && command.equals("status")) showReport(player, report);
             else notify(player, "not-participating", null);
             return true;
         }
@@ -1217,29 +1379,40 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                     if (!view.completed()) {
                         var goal = run.definition().objectives().get(view.id());
                         if (!goal.hint().isBlank())
-                            player.sendMessage(LangUtils.notice(LangUtils.trusted(goal.hint())));
+                            player.sendMessage(DungeonUi.detail(LangUtils.trusted(goal.hint())));
                     }
-            } else
-                for (var goal : run.progress().views(player.getUniqueId()))
+            } else {
+                player.sendMessage(DungeonUi.heading(text(player, "objectives")));
+                for (var goal : run.progress().views(player.getUniqueId())) {
+                    NamedTextColor color =
+                            goal.completed() ? NamedTextColor.GREEN : NamedTextColor.AQUA;
+                    Component name = LangUtils.trusted(goal.title());
                     player.sendMessage(
-                            LangUtils.trusted(goal.title())
-                                    .append(
-                                            Component.text(
-                                                    " " + goal.progress() + "/" + goal.target()))
-                                    .clickEvent(
-                                            ClickEvent.runCommand(
-                                                    "/dungeon objectives pin " + goal.id())));
+                            DungeonUi.detail(
+                                    DungeonUi.join(
+                                                    Component.text(
+                                                                    goal.completed()
+                                                                            ? "✓ "
+                                                                            : goal.id()
+                                                                                            .equals(
+                                                                                                    state.pinned)
+                                                                                    ? "◆ "
+                                                                                    : "○ ",
+                                                                    color)
+                                                            .append(name),
+                                                    Component.text(
+                                                            goal.progress() + "/" + goal.target(),
+                                                            color))
+                                            .clickEvent(
+                                                    ClickEvent.runCommand(
+                                                            "/dungeon objectives pin "
+                                                                    + goal.id()))));
+                }
+            }
             return true;
         }
         if (command.equals("status")) {
-            player.sendMessage(
-                    LangUtils.notice(
-                            state.instance
-                                    .getDungeon()
-                                    .getDisplayNameComponent()
-                                    .append(Component.text(" — "))
-                                    .append(text(player, stateName(player, state)))));
-            briefing(player, state.instance);
+            runStatus(player, state);
             return true;
         }
         guide(player, state, session);
@@ -1258,6 +1431,19 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                 viewer ->
                         viewer.getUniqueId().equals(player.getUniqueId())
                                 && players.get(player.getUniqueId()) == state);
+        var overview =
+                new Button(
+                        "overview",
+                        Material.NETHER_STAR,
+                        ComponentUtils.serialize(
+                                state.instance
+                                        .getDungeon()
+                                        .getDisplayNameComponent()
+                                        .decorate(TextDecoration.BOLD)));
+        overview.addLore(
+                ComponentUtils.serialize(
+                        text(player, stateName(player, state)).color(NamedTextColor.AQUA)));
+        window.addButton(4, overview);
         addButton(
                 window,
                 10,
@@ -1274,7 +1460,7 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                     Material.PLAYER_HEAD,
                     () -> party(player, state));
         addButton(
-                window, 12, player, "rules", Material.BOOK, () -> briefing(player, state.instance));
+                window, 12, player, "rules", Material.BOOK, () -> runRules(player, state.instance));
         if (runs.containsKey(state.instance)
                 && !runs.get(state.instance).definition().objectives().isEmpty())
             addButton(
@@ -1326,11 +1512,17 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                 player,
                 "history",
                 Material.CLOCK,
-                () -> state.history.forEach(player::sendMessage));
+                () -> {
+                    player.sendMessage(DungeonUi.heading(text(player, "history")));
+                    if (state.history.isEmpty())
+                        player.sendMessage(DungeonUi.detail(text(player, "ui-no-history")));
+                    else state.history.forEach(line -> player.sendMessage(DungeonUi.detail(line)));
+                });
         window.open(player);
     }
 
     private void party(Player viewer, Participation state) {
+        viewer.sendMessage(DungeonUi.heading(text(viewer, "party-guide")));
         for (var member : state.instance.getPlayers()) {
             Player player = member.getPlayer();
             if (player != viewer && !viewer.canSee(player)) continue;
@@ -1339,14 +1531,24 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                     !player.isOnline()
                             ? "offline"
                             : player.getGameMode() == GameMode.SPECTATOR ? "spectating" : "playing";
-            Component label = Component.text(player.getName() + " · ").append(text(viewer, status));
+            NamedTextColor color =
+                    status.equals("offline")
+                            ? NamedTextColor.GRAY
+                            : status.equals("spectating")
+                                    ? NamedTextColor.GOLD
+                                    : NamedTextColor.GREEN;
+            Component label =
+                    DungeonUi.join(
+                            Component.text("● ", color)
+                                    .append(Component.text(player.getName(), NamedTextColor.WHITE)),
+                            text(viewer, status).color(color));
             if (viewer.getGameMode() == GameMode.SPECTATOR
                     && player.isOnline()
                     && state.instance.getLivingPlayers().contains(member))
                 label =
                         label.clickEvent(
                                 ClickEvent.runCommand("/dungeon spectate " + player.getName()));
-            viewer.sendMessage(label);
+            viewer.sendMessage(DungeonUi.detail(label));
             if (!player.isOnline()
                     && participation != null
                     && state.instance
@@ -1373,7 +1575,37 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
             String label,
             Material material,
             Runnable action) {
-        var button = new Button(label, material, ComponentUtils.serialize(text(player, label)));
+        boolean profile = List.of("balanced", "minimal", "immersive").contains(label);
+        var session = runtime.playerSessions().get(player);
+        var state = players.get(player.getUniqueId());
+        boolean selected =
+                profile
+                        && session != null
+                        && state != null
+                        && label.equals(profile(session, state.instance));
+        NamedTextColor accent =
+                label.equals("leave") || label.equals("fresh-start")
+                        ? NamedTextColor.GOLD
+                        : selected ? NamedTextColor.GREEN : NamedTextColor.AQUA;
+        String title = label.equals("leave") ? "ui-leave-short" : label;
+        var button =
+                new Button(
+                        label,
+                        material,
+                        ComponentUtils.serialize(
+                                text(player, title).color(accent).decorate(TextDecoration.BOLD)));
+        button.addLore(
+                ComponentUtils.serialize(
+                        text(player, "ui-menu-" + label).color(NamedTextColor.GRAY)));
+        button.addLore(
+                ComponentUtils.serialize(
+                        text(
+                                        player,
+                                        selected
+                                                ? "ui-active"
+                                                : profile ? "ui-menu-select" : "ui-menu-click")
+                                .color(accent)));
+        if (selected) button.setEnchanted(true);
         button.addAction(
                 label,
                 event -> {
@@ -1458,21 +1690,25 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                                 LEASE);
             state.sidebar.renew(LEASE);
             String profile = policy.profile(session.experiencePreference("profile", "inherit"));
-            List<Component> lines =
-                    List.of(
-                            text(player, preparing ? "preparing-label" : "queue-label"),
-                            Component.text(state.queue.getDifficulty()),
-                            text(
-                                    player,
-                                    "elapsed",
-                                    "value",
-                                    clock((int) state.queue.getWaitingSeconds())),
-                            Component.empty(),
-                            Component.text("/dungeon leave"));
+            var lines = new ArrayList<Component>();
+            lines.add(
+                    text(player, preparing ? "preparing-label" : "queue-label")
+                            .color(NamedTextColor.GOLD));
+            if (!state.queue.getDifficulty().isBlank())
+                lines.add(text(player, "ui-hud-difficulty", "value", state.queue.getDifficulty()));
+            lines.add(
+                    text(
+                            player,
+                            "ui-hud-elapsed",
+                            "value",
+                            clock((int) state.queue.getWaitingSeconds())));
+            lines.add(Component.empty());
+            lines.add(Component.text("/dungeon leave", NamedTextColor.GRAY));
             state.sidebar.update(
                     profile.equals("immersive")
                             ? null
-                            : new HudFrame.Sidebar(dungeon.getDisplayNameComponent(), lines));
+                            : new HudFrame.Sidebar(
+                                    DungeonUi.heading(dungeon.getDisplayNameComponent()), lines));
         }
     }
 
@@ -1544,7 +1780,11 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
         if (event.getInstance() instanceof PlayableInstance instance) {
             mechanics(instance);
             for (var session : instance.getPlayers())
-                if (session.getPlayer().isOnline()) notify(session.getPlayer(), "started", null);
+                if (session.getPlayer().isOnline())
+                    deliverNotification(
+                            session.getPlayer(),
+                            "started",
+                            text(session.getPlayer(), "ui-started").color(NamedTextColor.GREEN));
         }
     }
 
@@ -1720,7 +1960,7 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                             var state = players.get(event.getPlayer().getUniqueId());
                             if (!closed && state != null) {
                                 notify(event.getPlayer(), "reconnected", null);
-                                briefing(event.getPlayer(), state.instance);
+                                runStatus(event.getPlayer(), state);
                             }
                         },
                         5);

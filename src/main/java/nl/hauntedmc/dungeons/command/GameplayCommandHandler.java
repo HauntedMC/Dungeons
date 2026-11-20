@@ -136,15 +136,19 @@ final class GameplayCommandHandler implements CommandHandler {
         }
 
         var experience = playerManager.runtimeExperience();
-        if (experience != null
-                && playerSession.getInstance() instanceof PlayableInstance
-                && !experience.requestExit(player)) return true;
-        var dungeonName = playerSession.getInstance().getDungeon().getDisplayNameComponent();
-        playerSession.getInstance().removePlayer(playerSession);
-        LangUtils.sendMessage(
-                player,
-                "commands.leave.left-dungeon",
-                LangUtils.placeholder("dungeon", dungeonName));
+        var instance = playerSession.getInstance();
+        boolean showsReport = false;
+        if (experience != null && instance instanceof PlayableInstance run) {
+            if (!experience.requestExit(player)) return true;
+            showsReport = experience.isParticipating(player, run);
+        }
+        instance.removePlayer(playerSession);
+        if (!showsReport)
+            LangUtils.sendMessage(
+                    player,
+                    "commands.leave.left-dungeon",
+                    LangUtils.placeholder(
+                            "dungeon", instance.getDungeon().getDisplayNameComponent()));
         return true;
     }
 
@@ -295,7 +299,7 @@ final class GameplayCommandHandler implements CommandHandler {
         }
         if (useDifficulty) {
             if (difficulty.isEmpty()) {
-                if (showMenu) {
+                if (showMenu && !dungeon.getDifficultyLevels().isEmpty()) {
                     this.guiService.openGui(targetPlayer, "difficulty_" + dungeon.getWorldName());
                     return true;
                 }

@@ -16,6 +16,40 @@ general:
     players-only: '<HauntedMC:Error>Only players can do that.'
 
 commands:
+  ui:
+    team-title: "Dungeon team"
+    team-accept: "Accept"
+    team-decline: "Decline"
+    team-invite: "Invite"
+    team-disband: "Disband"
+    team-leave: "Leave team"
+    next: "Next ›"
+    previous: "‹ Previous"
+    help: 'Dungeon commands'
+    help-empty: 'No commands match this path.'
+    section-discovery: '<HauntedMC:Muted>FIND A DUNGEON'
+    section-run: '<HauntedMC:Muted>IN A RUN'
+    section-party: '<HauntedMC:Muted>PLAY TOGETHER'
+    section-staff: '<HauntedMC:Muted>STAFF TOOLS'
+    topic-list: 'Browse'
+    topic-info: 'Dungeon info'
+    topic-play: 'Play'
+    topic-guide: 'Guide'
+    topic-status: 'Status'
+    topic-objectives: 'Objectives'
+    topic-lives: 'Lives'
+    topic-stuck: 'Unstuck'
+    topic-leave: 'Leave'
+    topic-spectate: 'Spectate'
+    topic-hud: 'HUD'
+    topic-team: 'Team'
+    topic-map: 'Maps'
+    topic-edit: 'Editor'
+    topic-player: 'Players'
+    topic-instance: 'Instances'
+    topic-queue: 'Queues'
+    topic-server: 'Server'
+    topic-repo: 'Repository'
   edit:
     start:
       points:
@@ -35,10 +69,10 @@ commands:
         success: '<HauntedMC:Success>First spawnpoint set to {x}, {y}, {z} with yaw {yaw}.'
   list:
     usage: '<HauntedMC:Success>/dungeon list <HauntedMC:Accent>[filter] [page] <HauntedMC:Text>| <HauntedMC:Warning>Show available dungeons.'
-    header: '<HauntedMC:Brand>-= Available Dungeons =-'
+    header: Dungeon browser
     line: ' <HauntedMC:Social>{dungeon} <HauntedMC:Muted>• <HauntedMC:Text>{display} <HauntedMC:Muted>• <HauntedMC:Text>team {team_size} <HauntedMC:Muted>• <HauntedMC:Text>difficulties {difficulties}'
     no-match: '<HauntedMC:Error>No dungeons match that filter.'
-    footer: '<HauntedMC:Brand>-= Page {page} of {total_pages} =-'
+    footer: '<HauntedMC:Muted>Page {page} / {total_pages}'
     default-difficulty: default
   play:
     usage: '<HauntedMC:Success>/dungeon play <HauntedMC:Warning><dungeon> [difficulty] <HauntedMC:Text>| <HauntedMC:Warning>Start a dungeon run.'
@@ -60,6 +94,16 @@ commands:
     infinite-lives: '<HauntedMC:Success>You have unlimited lives in this dungeon.'
     lives-remaining: '<HauntedMC:Success>You have <HauntedMC:Warning>{lives}<HauntedMC:Success> lives remaining.'
   team:
+    info:
+      leader: '<HauntedMC:Muted>Leader <HauntedMC:Text>{leader}'
+      members: '<HauntedMC:Muted>Members <HauntedMC:Text>{members}'
+      dungeon: '<HauntedMC:Muted>Dungeon <HauntedMC:Text>{dungeon} <HauntedMC:Muted>· {difficulty}'
+      states:
+        running: In progress
+        queued: Queued
+        idle: Ready
+      labels:
+        default-difficulty: default
     help:
       # Lists replace the entire default list, so keep all supported team commands.
       lines:
@@ -74,6 +118,10 @@ commands:
       - '<HauntedMC:Success>/dungeon team info <HauntedMC:Text>| <HauntedMC:Warning>Show your current team.'
 
 repository:
+  ui-list: "Published maps"
+  ui-status: "Repository status"
+  ui-diff: "Local changes"
+  ui-history: "Release history"
   started: '<HauntedMC:Text>Repository operation started.'
   failed: '<HauntedMC:Error>Repository operation failed: {detail}'
   list-empty: '<HauntedMC:Text>No published dungeons found on this page.'
@@ -86,6 +134,67 @@ mechanic-editor:
 
 # Dungeon experience (all authored mechanics are optional).
 experience:
+  ui-toggle-sounds: "Sounds"
+  ui-toggle-titles: "Titles"
+  ui-toggle-navigation: "Navigation"
+  ui-inherit: "Server default"
+  ui-run-summary: "Run summary"
+  ui-observing: "Observing"
+  ui-revive-action: "Click to revive"
+  ui-revive-title: "Revive a teammate"
+  ui-hud-difficulty: "<HauntedMC:Muted>Difficulty  <HauntedMC:Text>{value}"
+  ui-hud-remaining: "<HauntedMC:Muted>Time left  <HauntedMC:Text>{value}"
+  ui-hud-elapsed: "<HauntedMC:Muted>Elapsed  <HauntedMC:Text>{value}"
+  ui-hud-lives: "<HauntedMC:Muted>Lives  <HauntedMC:Text>{value}"
+  ui-hud-party: "<HauntedMC:Muted>Party  <HauntedMC:Text>{value}"
+  ui-hud-respawn: "<HauntedMC:Muted>Respawn  <HauntedMC:Text>{value}"
+  ui-enter-action: "Enter"
+  ui-settings-saved: "HUD settings saved."
+  ui-available: 'Open'
+  ui-unavailable: 'Unavailable'
+  ui-time-label: 'Time'
+  ui-lives-label: 'Lives'
+  ui-party-label: 'Max party'
+  ui-no-limit: 'Unlimited'
+  ui-rules-heading: 'RUN RULES'
+  ui-key-kept: 'Entry key required · kept on entry'
+  ui-key-spent: 'Entry key required · consumed on entry'
+  ui-leave-heading: 'Leave this run?'
+  ui-leave-repeat: '/dungeon leave · 10s'
+  ui-leave-progress: 'Progress since your last save will be lost.'
+  ui-leave-unsaved: 'Unsaved progress will be lost.'
+  ui-leave-cooldown: 'Starts an access cooldown.'
+  ui-leave-key: 'Used keys stay spent.'
+  ui-leave-action: 'Confirm leave'
+  ui-guide-action: 'Guide'
+  ui-leave-short: 'Leave'
+  ui-status-action: 'Status'
+  ui-cancel-action: 'Cancel'
+  ui-report-action: 'Run details'
+  ui-info-action: 'Dungeon info'
+  ui-replay-action: 'Play again'
+  ui-hud-heading: 'HUD preferences'
+  ui-hud-tip: '/dungeon guide'
+  ui-no-history: 'No recent run feedback.'
+  ui-active: 'Selected'
+  ui-menu-status: 'Check lives, time and your current state.'
+  ui-menu-party-guide: 'See who is active or spectating.'
+  ui-menu-rules: 'Review entry and recovery rules.'
+  ui-menu-objectives: 'See revealed objectives and hints.'
+  ui-menu-leave: 'Review what you lose when you leave.'
+  ui-menu-fresh-start: 'Discard the incompatible checkpoint.'
+  ui-menu-balanced: 'Show objectives and run details.'
+  ui-menu-minimal: 'Show a smaller scoreboard.'
+  ui-menu-immersive: 'Hide the dungeon scoreboard.'
+  ui-menu-history: 'Read recent run feedback.'
+  ui-menu-inherit: 'Use the server’s default HUD profile.'
+  ui-menu-click: 'Click to open'
+  ui-menu-select: 'Click to select'
+  ui-menu-difficulty: 'Choose difficulty'
+  ui-menu-join: 'Click to enter'
+  ui-elapsed-label: 'Played'
+  ui-deaths-label: 'Deaths'
+  ui-started: 'Run started'
   welcome: "<HauntedMC:Text>Welcome to {value}."
   guide: "<HauntedMC:Text>[Dungeon Guide]"
   guide-title: "<HauntedMC:Text>Dungeon Guide"
@@ -117,20 +226,20 @@ experience:
   inventory-restored: "<HauntedMC:Text>Your outside inventory is stored and restored when you leave. Dungeon loot follows this map’s inventory rules."
   hint-available: "<HauntedMC:Text>A hint is available: /dungeon objectives hint"
   progress: "<HauntedMC:Text>{value}: {count}/{target}"
-  objective-completed: "<HauntedMC:Success>Objective completed: {value}"
-  stage-started: "<HauntedMC:Text>New stage: {value}"
-  stage-completed: "<HauntedMC:Text>Stage completed: {value}"
-  track-completed: "<HauntedMC:Text>Adventure completed: {value}"
-  encounter-started: "<HauntedMC:Text>Encounter started: {value}"
-  encounter-completed: "<HauntedMC:Text>Encounter completed: {value}"
-  encounter-failed: "<HauntedMC:Text>Encounter stopped: {value}. Check the dungeon guide."
+  objective-completed: "<HauntedMC:Success> ✓ Objective completed: {value}"
+  stage-started: "<HauntedMC:Accent> ◆ New stage: {value}"
+  stage-completed: "<HauntedMC:Success> ✓ Stage completed: {value}"
+  track-completed: "<HauntedMC:Success> ✓ Adventure completed: {value}"
+  encounter-started: "<HauntedMC:Warning> ◆ Encounter started: {value}"
+  encounter-completed: "<HauntedMC:Success> ✓ Encounter completed: {value}"
+  encounter-failed: "<HauntedMC:Error> ! Encounter stopped: {value}. Check the dungeon guide."
   encounter-reset: "<HauntedMC:Text>Encounter reset: {value}"
-  wave-started: "<HauntedMC:Text>Next wave: {value}"
-  boss-phase: "<HauntedMC:Text>Boss phase changed: {value}"
+  wave-started: "<HauntedMC:Warning> ◆ Next wave: {value}"
+  boss-phase: "<HauntedMC:Warning> ◆ Boss phase changed: {value}"
   victory: "<HauntedMC:Success>VICTORY"
   expedition-ended: "<HauntedMC:Text>Expedition ended."
   lives-lost: "<HauntedMC:Text>Deaths  {value}"
-  saved: "<HauntedMC:Success>Your save point has been saved."
+  saved: "<HauntedMC:Success> ✓ Your save point has been saved."
   exit-confirm: "<HauntedMC:Text>Repeat /dungeon leave within 10 seconds to confirm."
   exit-unsaved: "<HauntedMC:Text>Live run progress is not saved by leaving. A future visit starts from its configured entry or a previously saved point."
   exit-saved: "<HauntedMC:Text>Your last durable save point remains available; progress since that save is not saved by leaving."
@@ -158,7 +267,7 @@ experience:
   preparing: "<HauntedMC:Text>Preparing {value} · {time}"
   preparing-label: "<HauntedMC:Text>Preparing dungeon"
   queue-label: "<HauntedMC:Text>Queued"
-  timeout: "<HauntedMC:Text>Time is up. Your dungeon run has ended."
+  timeout: "<HauntedMC:Warning> ! Time is up. Your dungeon run has ended."
   untimed: "<HauntedMC:Text>No time limit."
   party-limit: "<HauntedMC:Text>Party limit: {value}"
   entry-key-consumed: "<HauntedMC:Text>A matching entry key is consumed when you enter."
@@ -171,11 +280,11 @@ experience:
   objectives-finished: "<HauntedMC:Text>Objectives completed: {value}"
   tracked-kills: "<HauntedMC:Text>Encounter kills: {value}"
   next-entry: "<HauntedMC:Text>Next entry in {value}"
-  death-spectator: "<HauntedMC:Text>Your lives are exhausted. You are now spectating. /dungeon guide · /dungeon leave"
-  death-eliminated: "<HauntedMC:Text>Your lives are exhausted. You are leaving this dungeon."
-  objective-revealed: "<HauntedMC:Text>New objective discovered: {value}"
+  death-spectator: "<HauntedMC:Warning> ! Your lives are exhausted. You are now spectating. /dungeon guide · /dungeon leave"
+  death-eliminated: "<HauntedMC:Error> ! Your lives are exhausted. You are leaving this dungeon."
+  objective-revealed: "<HauntedMC:Accent> ◆ New objective discovered: {value}"
   report-details: "<HauntedMC:Text>[Run details]"
   dungeon-info: "<HauntedMC:Text>[Dungeon info]"
   play-again: "<HauntedMC:Text>[Play again]"
-  checkpoint-activated: "<HauntedMC:Text>Respawn checkpoint activated."
+  checkpoint-activated: "<HauntedMC:Accent> ◆ Respawn checkpoint activated."
   observing: "<HauntedMC:Text>Observing · not participating"

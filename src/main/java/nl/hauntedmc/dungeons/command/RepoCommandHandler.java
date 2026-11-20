@@ -2,7 +2,10 @@ package nl.hauntedmc.dungeons.command;
 
 import java.util.*;
 import java.util.concurrent.*;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import nl.hauntedmc.dungeons.localization.LangUtils;
+import nl.hauntedmc.dungeons.presentation.DungeonUi;
 import nl.hauntedmc.dungeons.repository.*;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import nl.hauntedmc.dungeons.runtime.staff.StaffPermissions;
@@ -124,11 +127,31 @@ final class RepoCommandHandler implements CommandHandler {
                                                             actor,
                                                             "repository." + action + "-empty");
                                                 } else {
-                                                    lines.forEach(
-                                                            line ->
-                                                                    LangUtils.sendRaw(
+                                                    actor.sendMessage(
+                                                            DungeonUi.heading(
+                                                                    LangUtils.component(
+                                                                            "repository.ui-"
+                                                                                    + action,
                                                                             actor,
-                                                                            String.valueOf(line)));
+                                                                            false)));
+                                                    for (Object resultLine : lines) {
+                                                        String line = String.valueOf(resultLine);
+                                                        NamedTextColor color =
+                                                                line.startsWith("+ ")
+                                                                        ? NamedTextColor.GREEN
+                                                                        : line.startsWith("- ")
+                                                                                ? NamedTextColor.RED
+                                                                                : line.startsWith(
+                                                                                                "~ ")
+                                                                                        ? NamedTextColor
+                                                                                                .GOLD
+                                                                                        : NamedTextColor
+                                                                                                .WHITE;
+                                                        actor.sendMessage(
+                                                                DungeonUi.detail(
+                                                                        Component.text(
+                                                                                line, color)));
+                                                    }
                                                 }
                                             } else LangUtils.sendRaw(actor, String.valueOf(value));
                                         });
