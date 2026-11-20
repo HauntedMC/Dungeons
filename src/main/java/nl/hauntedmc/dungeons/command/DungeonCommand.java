@@ -336,8 +336,7 @@ public final class DungeonCommand implements TabExecutor {
                 if (part.startsWith("<"))
                     values.put(part.substring(1, part.length() - 1), List.of(path[index]));
                 else if (part.startsWith("*")) break;
-                else if (!part.toLowerCase(Locale.ROOT)
-                        .startsWith(path[index].toLowerCase(Locale.ROOT))) {
+                else if (!part.equalsIgnoreCase(path[index])) {
                     matches = false;
                     break;
                 }
