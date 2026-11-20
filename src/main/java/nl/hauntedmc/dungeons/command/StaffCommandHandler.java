@@ -413,16 +413,15 @@ public final class StaffCommandHandler implements CommandHandler {
             throw new IllegalArgumentException("Select one dungeon");
         var d = global ? null : dungeon(target);
         StaffPermissions.require(actor, capability, global ? null : target);
-        if (List.of("archive", "restore").contains(a[0]) && d.getEditSession() != null)
-            throw new IllegalArgumentException(
-                    "Close the editor before requesting a destructive operation");
-        if (List.of("archive", "restore").contains(a[0])
-                && !confirmed(
-                        actor,
-                        input,
-                        a[0],
-                        target,
-                        d.getConfig().saveToString() + ops.impact(target))) return;
+        if (List.of("archive", "restore").contains(a[0])) {
+            if (d.getEditSession() != null)
+                throw new IllegalArgumentException(
+                        "Close the editor before requesting a destructive operation");
+            String revision =
+                    d.getDungeonId() + "/" + d.getConfig().saveToString() + ops.impact(target);
+            if (a[0].equals("restore")) revision += content.backupRevision(d, a[2]);
+            if (!confirmed(actor, input, a[0], target, revision)) return;
+        }
         java.util.function.Supplier<CompletableFuture<String>> work =
                 () -> {
                     if (d != null && runtime.dungeonCatalog().get(target) != d)

@@ -95,15 +95,21 @@ public final class StaffContentStorage {
                 });
     }
 
-    public CompletableFuture<String> restore(DungeonDefinition dungeon, String id) {
+    public String backupRevision(DungeonDefinition dungeon, String id) {
         File copy = child(new File(root, "backups/" + dungeon.getWorldName()), id);
+        File file = new File(copy, "config.yml");
         if (!copy.isDirectory()) throw new IllegalArgumentException("Backup not found");
         try {
-            var config = new YamlConfiguration();
-            ConfigurationFile.loadSnapshot(config, new File(copy, "config.yml"));
+            ConfigurationFile.loadSnapshot(new YamlConfiguration(), file);
         } catch (Exception failure) {
             throw new IllegalArgumentException("Backup configuration is unreadable", failure);
         }
+        return id + "/" + copy.lastModified() + "/" + file.lastModified();
+    }
+
+    public CompletableFuture<String> restore(DungeonDefinition dungeon, String id) {
+        backupRevision(dungeon, id);
+        File copy = child(new File(root, "backups/" + dungeon.getWorldName()), id);
         return backup(dungeon, id)
                 .thenCompose(
                         safety -> {

@@ -377,6 +377,18 @@ class StaffCommandContractTest {
     }
 
     @Test
+    void aMissingBackupCannotPutTheMapIntoMaintenance() throws Exception {
+        try (var f = new StaffFixture(directory)) {
+            var h = handler(f);
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> execute(h, f, "restore", "crypt", "missing"));
+            assertFalse(f.ops.maintenance("crypt"));
+            assertTrue(f.ops.operations().isEmpty());
+        }
+    }
+
+    @Test
     void archiveRestorePurgeAndMalformattedCommandsCannotSkipConfirmation() throws Exception {
         try (var f = new StaffFixture(directory)) {
             var h = handler(f);
