@@ -419,7 +419,9 @@ public final class DungeonCommand implements TabExecutor {
             } else if (next.equals("<environment>"))
                 suggestions.addAll(List.of("normal", "nether", "the_end"));
             else if (next.equals("<type>"))
-                suggestions.addAll(List.of("static", "branching", "open"));
+                suggestions.addAll(
+                        nl.hauntedmc.dungeons.registry.DungeonTypeRegistry.getDungeonTypes()
+                                .keySet());
             else if (next.equals("<state>")) suggestions.addAll(List.of("on", "off"));
             else if (next.equals("<recipe>"))
                 suggestions.addAll(List.of("loot", "dragon", "waves", "adventure"));

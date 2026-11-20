@@ -431,7 +431,12 @@ class CommandContractTest {
 
     @Test
     void creationCopiesTheUnloadedWorldBeforeLoadingAndConfiguringTheDungeon() throws Exception {
-        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+        try (var _ =
+                        new StaticMapSnapshot(
+                                nl.hauntedmc.dungeons.registry.DungeonTypeRegistry.class, "types");
+                var f = new RunFixture(directory, new YamlConfiguration())) {
+            nl.hauntedmc.dungeons.registry.DungeonTypeRegistry.register(
+                    StaticDungeon.class, "static");
             var command = new CommandFixture(f);
             command.permissions.add("dungeons.staff.edit");
             var source = Files.createDirectories(directory.resolve("temporary-world"));
@@ -476,11 +481,17 @@ class CommandContractTest {
 
     @Test
     void creationRejectsAnExistingUnloadedModernWorld() throws Exception {
-        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+        try (var _ =
+                        new StaticMapSnapshot(
+                                nl.hauntedmc.dungeons.registry.DungeonTypeRegistry.class, "types");
+                var f = new RunFixture(directory, new YamlConfiguration())) {
+            nl.hauntedmc.dungeons.registry.DungeonTypeRegistry.register(
+                    StaticDungeon.class, "static");
             var command = new CommandFixture(f);
             command.permissions.add("dungeons.staff.edit");
             Files.createDirectories(directory.resolve("world/dimensions/minecraft/existing"));
             command.execute("map", "create", "existing", "static");
+            command.execute("map", "create", "invalid-type", "nonexistent");
             f.paper.bukkit.verify(() -> Bukkit.createWorld(any(WorldCreator.class)), never());
             assertTrue(f.scheduler.asynchronous.isEmpty());
         }

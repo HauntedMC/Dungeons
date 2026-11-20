@@ -204,13 +204,19 @@ final class DungeonWorldCommandHandler {
             return true;
         }
 
-        String dungeonType = args.length >= 3 ? args[2] : "";
+        String dungeonType = args.length >= 3 ? args[2].toLowerCase(Locale.ROOT) : "static";
+        if (!nl.hauntedmc.dungeons.registry.DungeonTypeRegistry.getDungeonTypes()
+                .containsKey(dungeonType))
+            throw new IllegalArgumentException("Unknown dungeon type: " + dungeonType);
         String generatorType = args.length == 4 ? args[3] : "";
 
         String tempWorldName = this.createTemporaryWorldName(worldName);
         WorldCreator loader = new WorldCreator(tempWorldName);
         if (!generatorType.isEmpty()) {
-            loader.generator(generatorType);
+            loader.generator(generatorType, sender);
+            if (loader.generator() == null)
+                throw new IllegalArgumentException(
+                        "Dungeon generator could not be resolved: " + generatorType);
         } else {
             loader.type(WorldType.FLAT);
         }
