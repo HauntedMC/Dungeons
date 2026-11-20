@@ -736,26 +736,32 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
 
     public void notify(Player player, String key, Component value) {
         deliverNotification(
-                player, key, text(player, key, "value", value == null ? Component.empty() : value));
+                player,
+                key,
+                text(player, key, "value", value == null ? Component.empty() : value),
+                value);
     }
 
     private void deliverNotification(Player player, String key, Component message) {
+        deliverNotification(player, key, message, null);
+    }
+
+    private void deliverNotification(
+            Player player, String key, Component message, Component subject) {
         var state = players.get(player.getUniqueId());
         if (state != null && !notification(state, key, "enabled", true)) return;
+        boolean transientNotice =
+                java.util.Set.of("started", "objective-progress", "wave-started", "boss-phase")
+                        .contains(key);
         if (state == null
                 || notification(
                         state,
                         key,
                         "chat",
-                        !java.util.Set.of("objective-progress", "wave-started", "boss-phase")
-                                .contains(key))) player.sendMessage(LangUtils.notice(message));
+                        !transientNotice || !enabled(state.instance, "channels.actionbar", true)))
+            player.sendMessage(LangUtils.notice(message));
         if (state != null) {
-            if (notification(
-                    state,
-                    key,
-                    "actionbar",
-                    java.util.Set.of("objective-progress", "wave-started", "boss-phase")
-                            .contains(key)))
+            if (notification(state, key, "actionbar", transientNotice))
                 actionBar(
                         player,
                         message,
@@ -765,15 +771,22 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                     state,
                     key,
                     "title",
-                    java.util.Set.of("stage-started", "encounter-started").contains(key)))
+                    java.util.Set.of("stage-started", "encounter-started").contains(key))) {
+                boolean named =
+                        subject != null
+                                && !subject.equals(Component.empty())
+                                && (key.equals("stage-started") || key.equals("encounter-started"));
                 title(
                         player,
                         new HudFrame.Title(
-                                message,
-                                Component.empty(),
+                                named ? subject.decorate(TextDecoration.BOLD) : message,
+                                named
+                                        ? text(player, "ui-title-" + key).color(NamedTextColor.GOLD)
+                                        : Component.empty(),
                                 Duration.ofMillis(200),
                                 Duration.ofSeconds(2),
                                 Duration.ofMillis(300)));
+            }
             var session = runtime.playerSessions().get(player);
             if (session != null
                     && session.experiencePreference("sounds", "true").equals("true")

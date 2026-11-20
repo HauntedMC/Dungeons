@@ -143,6 +143,8 @@ mechanic-editor:
 # Dungeon experience (all authored mechanics are optional).
 experience:
   ui-revive-empty: "Everyone is alive"
+  ui-title-stage-started: "New stage"
+  ui-title-encounter-started: "Encounter started"
   ui-open-status: "› View run status"
   ui-guide-hud: "Choose a HUD profile and alerts"
   ui-guide-back: "Return to the run overview"

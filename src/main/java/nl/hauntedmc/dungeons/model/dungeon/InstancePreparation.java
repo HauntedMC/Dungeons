@@ -69,7 +69,10 @@ final class InstancePreparation implements PreparationRegistry.Pending {
         if (!registry.register(session, this)) return false;
         session.setAwaitingDungeon(true);
         try {
-            message("instance.lifecycle.loading");
+            LangUtils.sendActionBar(
+                    player,
+                    "instance.lifecycle.loading",
+                    LangUtils.placeholder("dungeon", dungeon.getDisplayNameComponent()));
             Bukkit.getScheduler().runTaskAsynchronously(dungeon.plugin(), this::awaitPreparation);
             return true;
         } catch (Throwable failure) {

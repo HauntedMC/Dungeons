@@ -227,7 +227,7 @@ public class OpenDungeon extends StaticDungeon {
             return false;
         }
 
-        LangUtils.sendMessage(
+        LangUtils.sendActionBar(
                 player,
                 "instance.lifecycle.loading",
                 LangUtils.placeholder("dungeon", this.getDisplayNameComponent()));
