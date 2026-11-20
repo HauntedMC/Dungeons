@@ -19,7 +19,7 @@ public final class RepoFiles {
         Files.createDirectories(root.resolve("journals"));
         Files.createDirectories(root.resolve("staging"));
         managed(root);
-        managed(this.dungeons);
+        if (!this.dungeons.equals(this.pluginRoot)) managed(this.dungeons);
     }
 
     public Path root() {
