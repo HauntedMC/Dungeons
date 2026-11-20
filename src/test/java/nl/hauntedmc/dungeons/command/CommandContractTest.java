@@ -27,10 +27,8 @@ import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.registry.FunctionRegistry;
 import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
-import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
 import nl.hauntedmc.dungeons.runtime.instance.play.BranchingInstance;
 import nl.hauntedmc.dungeons.runtime.queue.*;
-import nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard;
 import nl.hauntedmc.dungeons.runtime.staff.StaffOperations;
 import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
 import nl.hauntedmc.dungeons.support.*;
@@ -499,24 +497,29 @@ class CommandContractTest {
 
     @Test
     void canonicalDebugCommandsReachTheInstanceActions() throws Exception {
-        try (var f = new RunFixture(directory, new YamlConfiguration());
-                var guard = Mockito.mockStatic(StaffEditGuard.class)) {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
             var command = new CommandFixture(f);
             command.permissions.add("dungeons.staff.edit");
             var instance = mock(BranchingInstance.class);
             var room = mock(InstanceRoom.class);
-            when(instance.as(BranchingInstance.class)).thenReturn(instance);
-            when(instance.as(PlayableInstance.class)).thenReturn(instance);
+            when(room.getDoors())
+                    .thenReturn(
+                            Map.of(
+                                    "north",
+                                    mock(
+                                            nl.hauntedmc.dungeons.generation.room.ConnectorDoor
+                                                    .class)));
             when(instance.getRoom(any(Location.class))).thenReturn(room);
             var session = f.paper.runtime.playerSessions().get(command.caller.player);
             when(instance.getRuntime()).thenReturn(f.paper.runtime);
             var inspected = mock(BranchingDungeon.class);
             when(inspected.getWorldName()).thenReturn("crypt");
             when(instance.getDungeon()).thenReturn(inspected);
-            guard.when(() -> StaffEditGuard.editor(command.caller.player, session))
-                    .thenReturn(true);
             session.setInstance(instance);
             command.permissions.add("dungeons.staff.diagnostics");
+            command.execute("edit", "test", "doors", "all");
+            verifyNoInteractions(room);
+            when(instance.isTestPlay()).thenReturn(true);
             command.execute("edit", "test", "doors", "north");
             command.execute("edit", "test", "doors", "all");
             command.execute("edit", "test", "map");

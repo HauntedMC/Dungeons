@@ -24,7 +24,6 @@ import nl.hauntedmc.dungeons.runtime.instance.ActiveInstanceRegistry;
 import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueCoordinator;
 import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry;
-import nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard;
 import nl.hauntedmc.dungeons.runtime.staff.StaffPermissions;
 import nl.hauntedmc.dungeons.runtime.team.DungeonTeamService;
 import org.bukkit.Bukkit;
@@ -207,12 +206,7 @@ public final class DungeonCommand implements TabExecutor {
                 case MAP -> this.dungeonCommandGroup.handleCommand(sender, operation);
                 case SETTINGS -> this.configCommandHandler.handleCommand(sender, operation);
                 case EDIT -> this.editCommandGroup.handleCommand(sender, operation);
-                case DEBUG -> {
-                    if (!(sender instanceof Player player)
-                            || !StaffEditGuard.editor(player, this.playerManager.get(player)))
-                        throw new IllegalArgumentException("Open an authorized editor first");
-                    yield this.debugCommandGroup.handleCommand(sender, operation);
-                }
+                case DEBUG -> this.debugCommandGroup.handleCommand(sender, operation);
                 case STAFF -> {
                     if (this.staffCommandHandler == null)
                         throw new IllegalStateException("Staff services unavailable");
@@ -383,6 +377,8 @@ public final class DungeonCommand implements TabExecutor {
                                     .contentRepository()
                                     .cachedNames(sender, capability));
                 }
+            } else if (next.equals("<door>")) {
+                suggestions.addAll(this.debugCommandGroup.handleTabComplete(sender, args));
             } else if (next.equals("<key>") && values.containsKey("map")) {
                 var dungeon = this.dungeonManager.get(values.get("map").getFirst());
                 if (dungeon != null) {
