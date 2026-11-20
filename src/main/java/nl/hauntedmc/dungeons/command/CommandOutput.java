@@ -159,7 +159,8 @@ final class CommandOutput {
             List<Component> lines,
             String noMatchKey,
             String footerKey,
-            int requestedPage) {
+            int requestedPage,
+            String pageCommand) {
         sender.sendMessage(DungeonUi.heading(headerLine));
         if (lines.isEmpty()) {
             LangUtils.sendMessage(sender, noMatchKey);
@@ -175,13 +176,19 @@ final class CommandOutput {
             sender.sendMessage(DungeonUi.detail(lines.get(i)));
         }
 
+        if (totalPages == 1) return;
         sender.sendMessage(
                 DungeonUi.detail(
-                        LangUtils.component(
-                                footerKey,
-                                sender,
-                                false,
-                                LangUtils.placeholder("page", String.valueOf(page)),
-                                LangUtils.placeholder("total_pages", String.valueOf(totalPages)))));
+                        DungeonUi.pager(
+                                LangUtils.component(
+                                        footerKey,
+                                        sender,
+                                        false,
+                                        LangUtils.placeholder("page", String.valueOf(page)),
+                                        LangUtils.placeholder(
+                                                "total_pages", String.valueOf(totalPages))),
+                                page,
+                                totalPages,
+                                pageCommand)));
     }
 }

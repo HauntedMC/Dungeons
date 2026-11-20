@@ -174,6 +174,10 @@ class PresentationContractTest {
             command.execute("help", "play");
             var usage = ArgumentCaptor.forClass(Component.class);
             verify(player, atLeastOnce()).sendMessage(usage.capture());
+            var displayed = usage.getAllValues().stream().map(ComponentUtils::plainText).toList();
+            assertTrue(displayed.getFirst().contains("/dungeon play"));
+            assertTrue(displayed.stream().skip(1).noneMatch(line -> line.contains("/dungeon")));
+            assertTrue(displayed.stream().anyMatch(line -> line.contains("<map> <difficulty>")));
             assertTrue(
                     usage.getAllValues().stream()
                             .map(ComponentUtils::plainText)

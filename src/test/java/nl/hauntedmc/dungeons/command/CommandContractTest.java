@@ -76,7 +76,7 @@ class CommandContractTest {
             command.execute("list");
             var messages = ArgumentCaptor.forClass(Component.class);
             verify(command.caller.player, Mockito.atLeastOnce()).sendMessage(messages.capture());
-            assertTrue(messages.getAllValues().size() >= 3);
+            assertEquals(2, messages.getAllValues().size(), "One map needs only a heading and its entry");
             for (var message : messages.getAllValues()) {
                 String plain = ComponentUtils.plainText(message);
                 assertFalse(plain.contains("§"), plain);

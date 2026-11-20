@@ -588,7 +588,8 @@ final class DungeonDefinitionCommandHandler implements CommandHandler {
                 lines,
                 "commands.dungeon.list.no-match",
                 "commands.dungeon.list.footer",
-                query.page());
+                query.page(),
+                "/dungeon map list " + (query.filter().isEmpty() ? "" : query.filter() + " "));
         return true;
     }
 

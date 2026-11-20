@@ -389,12 +389,12 @@ public final class DungeonCommand implements TabExecutor {
                                 : "commands.ui.category-" + category,
                         sender,
                         false);
+        String context = "/dungeon " + prefix;
         sender.sendMessage(
                 DungeonUi.heading(
                         prefix.isBlank()
                                 ? heading
-                                : DungeonUi.join(
-                                        heading, Component.text(prefix, NamedTextColor.GRAY))));
+                                : Component.text(context, NamedTextColor.WHITE)));
         if (lines.isEmpty()) {
             sender.sendMessage(
                     DungeonUi.detail(LangUtils.component("commands.ui.help-empty", sender, false)));
@@ -404,30 +404,24 @@ public final class DungeonCommand implements TabExecutor {
             sendHelpTopics(sender, topics, category);
             return;
         }
-        int totalPages = (lines.size() + 8) / 9;
+        int totalPages = (lines.size() + 5) / 6;
         page = Math.min(page, totalPages);
         lines.stream()
-                .skip((page - 1L) * 9)
-                .limit(9)
-                .forEach(line -> sender.sendMessage(DungeonUi.detail(DungeonUi.syntax(line))));
+                .skip((page - 1L) * 6)
+                .limit(6)
+                .forEach(
+                        line ->
+                                sender.sendMessage(
+                                        DungeonUi.detail(DungeonUi.syntax(line, context))));
         if (totalPages > 1) {
             String help = "/dungeon help " + prefix + " --page ";
-            Component previous =
-                    page > 1
-                            ? DungeonUi.action(
-                                    Component.text("‹"), help + (page - 1), NamedTextColor.AQUA)
-                            : Component.empty();
-            Component next =
-                    page < totalPages
-                            ? DungeonUi.action(
-                                    Component.text("›"), help + (page + 1), NamedTextColor.AQUA)
-                            : Component.empty();
             sender.sendMessage(
                     DungeonUi.detail(
-                            DungeonUi.join(
-                                    previous,
-                                    Component.text(page + " / " + totalPages, NamedTextColor.GRAY),
-                                    next)));
+                            DungeonUi.pager(
+                                    Component.text(page + " / " + totalPages),
+                                    page,
+                                    totalPages,
+                                    help)));
         }
     }
 
@@ -690,30 +684,55 @@ public final class DungeonCommand implements TabExecutor {
         }
 
         List<DungeonDefinition> dungeons = this.output.getFilteredDungeons(query.filter(), false);
+        dungeons.sort(java.util.Comparator.comparing(DungeonDefinition::isEnabled).reversed());
+        var nameCounts =
+                dungeons.stream()
+                        .collect(
+                                java.util.stream.Collectors.groupingBy(
+                                        dungeon ->
+                                                nl.hauntedmc.dungeons.util.text.ComponentUtils
+                                                        .plainText(
+                                                                dungeon.getDisplayNameComponent())
+                                                        .toLowerCase(Locale.ROOT),
+                                        java.util.stream.Collectors.counting()));
         List<Component> lines = new ArrayList<>();
         for (DungeonDefinition dungeon : dungeons) {
             boolean available = dungeon.isEnabled();
-            Component map =
-                    dungeon.getDisplayNameComponent()
-                            .clickEvent(
-                                    net.kyori.adventure.text.event.ClickEvent.runCommand(
-                                            "/dungeon info " + dungeon.getWorldName()));
+            Component name = dungeon.getDisplayNameComponent();
+            String plain = nl.hauntedmc.dungeons.util.text.ComponentUtils.plainText(name);
+            if (!available) name = Component.text(plain, NamedTextColor.GRAY);
+            if (nameCounts.get(plain.toLowerCase(Locale.ROOT)) > 1)
+                name =
+                        name.append(
+                                Component.text(
+                                        "  (" + dungeon.getWorldName() + ")", NamedTextColor.GRAY));
+            var capacity =
+                    DungeonUi.metric(
+                            LangUtils.component("experience.ui-party-label", sender, false),
+                            Component.text(dungeon.getMaxTeamSize()));
+            var availability =
+                    LangUtils.component(
+                            "experience.ui-" + (available ? "available" : "unavailable"),
+                            sender,
+                            false);
+            String command = "/dungeon info " + dungeon.getWorldName();
+            Component row =
+                    Component.text(
+                                    available ? "◆ " : "– ",
+                                    available ? NamedTextColor.GREEN : NamedTextColor.GRAY)
+                            .append(name);
             lines.add(
                     DungeonUi.join(
-                            Component.text(
-                                            "● ",
-                                            available ? NamedTextColor.GREEN : NamedTextColor.RED)
-                                    .append(map),
-                            LangUtils.component(
-                                            "experience.ui-"
-                                                    + (available ? "available" : "unavailable"),
-                                            sender,
-                                            false)
-                                    .color(NamedTextColor.GRAY),
-                            DungeonUi.metric(
-                                    LangUtils.component("experience.ui-party-label", sender, false)
-                                            .color(NamedTextColor.GRAY),
-                                    Component.text(dungeon.getMaxTeamSize()))));
+                                    row,
+                                    available ? capacity : availability.color(NamedTextColor.GRAY))
+                            .hoverEvent(
+                                    availability
+                                            .append(Component.newline())
+                                            .append(capacity)
+                                            .append(Component.newline())
+                                            .append(Component.text(command, NamedTextColor.AQUA)))
+                            .clickEvent(
+                                    net.kyori.adventure.text.event.ClickEvent.runCommand(command)));
         }
         this.output.sendPaginatedLines(
                 sender,
@@ -721,7 +740,8 @@ public final class DungeonCommand implements TabExecutor {
                 lines,
                 "commands.list.no-match",
                 "commands.list.footer",
-                query.page());
+                query.page(),
+                "/dungeon list " + (query.filter().isEmpty() ? "" : query.filter() + " "));
         return true;
     }
 }

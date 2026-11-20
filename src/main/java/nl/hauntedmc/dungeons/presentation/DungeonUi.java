@@ -18,8 +18,7 @@ public final class DungeonUi {
     }
 
     public static Component detail(Component content) {
-        return Component.text("│  ", NamedTextColor.DARK_GRAY)
-                .append(content.colorIfAbsent(NamedTextColor.WHITE));
+        return Component.text("   ").append(content.colorIfAbsent(NamedTextColor.WHITE));
     }
 
     public static Component metric(Component label, Component value) {
@@ -45,20 +44,35 @@ public final class DungeonUi {
                 .clickEvent(ClickEvent.runCommand(command));
     }
 
-    public static Component syntax(String command) {
+    public static Component pager(Component label, int page, int pages, String commandPrefix) {
+        var parts = new java.util.ArrayList<Component>();
+        if (page > 1) parts.add(pageLink("‹", commandPrefix + (page - 1)));
+        parts.add(label.colorIfAbsent(NamedTextColor.GRAY));
+        if (page < pages) parts.add(pageLink("›", commandPrefix + (page + 1)));
+        return Component.join(JoinConfiguration.separator(Component.text("   ")), parts);
+    }
+
+    private static Component pageLink(String arrow, String command) {
+        return Component.text(arrow, NamedTextColor.AQUA)
+                .decorate(TextDecoration.BOLD)
+                .hoverEvent(Component.text(command))
+                .clickEvent(ClickEvent.runCommand(command));
+    }
+
+    public static Component syntax(String command, String context) {
         var row = Component.text();
-        String[] tokens = command.split(" ");
+        String visible =
+                command.regionMatches(true, 0, context + " ", 0, context.length() + 1)
+                        ? command.substring(context.length() + 1)
+                        : command;
+        String[] tokens = visible.split(" ");
         for (int index = 0; index < tokens.length; index++) {
             if (index > 0) row.append(Component.space());
             String token = tokens[index];
             row.append(
                     Component.text(
                             token,
-                            index == 0
-                                    ? NamedTextColor.GRAY
-                                    : token.startsWith("<")
-                                            ? NamedTextColor.GOLD
-                                            : NamedTextColor.WHITE));
+                            token.startsWith("<") ? NamedTextColor.GOLD : NamedTextColor.WHITE));
         }
         int argument = command.indexOf(" <");
         String suggestion = argument < 0 ? command : command.substring(0, argument + 1);
