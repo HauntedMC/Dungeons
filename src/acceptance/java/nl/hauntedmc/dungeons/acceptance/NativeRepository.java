@@ -174,7 +174,36 @@ final class NativeRepository {
                 .dungeonCatalog()
                 .get(id)
                 .setSaveConfig("dungeon.display_name", "Unpublished local work");
-        return test.onMain(repository.pull(id, null, true, actor))
+        return test.onMain(repository.pull(id, null, false, actor))
+                .thenCompose(
+                        ignored ->
+                                test.await(
+                                        "dirty repository pull rejected",
+                                        () -> {
+                                            var operation =
+                                                    test.runtime()
+                                                            .staffOperations()
+                                                            .operations()
+                                                            .getLast();
+                                            if (!operation.action.equals("repo-pull")
+                                                    || operation.state
+                                                            != StaffOperations.State.FAILED)
+                                                return false;
+                                            require(
+                                                    operation.detail.contains(
+                                                            "Local content changed"),
+                                                    "Unexpected pull failure: " + operation.detail);
+                                            var local = test.runtime().dungeonCatalog().get(id);
+                                            require(
+                                                    local.isEnabled(),
+                                                    "Rejected pull left a playable map in maintenance");
+                                            require(
+                                                    local.getDisplayName()
+                                                            .contains("Unpublished local work"),
+                                                    "Rejected pull replaced saved local content");
+                                            return true;
+                                        }))
+                .thenCompose(ignored -> test.onMain(repository.pull(id, null, true, actor)))
                 .thenCompose(ignored -> awaitPull(test))
                 .thenCompose(
                         ignored -> {
