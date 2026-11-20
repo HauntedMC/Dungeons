@@ -22,6 +22,44 @@ class PresentationContractTest {
     @TempDir Path directory;
 
     @Test
+    void statusShowsPendingPreparationBeforeAFreshQueueEntryHasBeenRendered() throws Exception {
+        try (var fixture = new RunFixture(directory, new YamlConfiguration())) {
+            var command = new CommandContractTest.CommandFixture(fixture);
+            var player = command.caller.player;
+            when(player.locale()).thenReturn(Locale.ENGLISH);
+            var runtime = fixture.paper.runtime;
+            runtime.setQueueRegistry(command.queues);
+            var service = new ExperienceService(runtime);
+            runtime.setExperience(service);
+            var session = runtime.playerSessions().get(player);
+            var pending =
+                    mock(nl.hauntedmc.dungeons.runtime.instance.PreparationRegistry.Pending.class);
+            when(pending.dungeon()).thenReturn(fixture.dungeon);
+            runtime.preparations().register(session, pending);
+            session.setAwaitingDungeon(true);
+            LangUtils.initialize();
+
+            command.execute("status");
+
+            var output = ArgumentCaptor.forClass(Component.class);
+            verify(player, atLeastOnce()).sendMessage(output.capture());
+            assertTrue(
+                    output.getAllValues().stream()
+                            .map(ComponentUtils::plainText)
+                            .anyMatch(line -> line.contains("Preparing dungeon")));
+            assertTrue(
+                    output.getAllValues().stream()
+                            .anyMatch(
+                                    line ->
+                                            containsClick(
+                                                    line,
+                                                    ClickEvent.runCommand("/dungeon leave"))));
+        } finally {
+            LangUtils.clear();
+        }
+    }
+
+    @Test
     void helpUsesClickableTopicsAndPagesInsteadOfDumpingEveryRoute() throws Exception {
         try (var fixture = new RunFixture(directory, new YamlConfiguration())) {
             var command = new CommandContractTest.CommandFixture(fixture);

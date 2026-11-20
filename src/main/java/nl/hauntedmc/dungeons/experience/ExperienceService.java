@@ -1401,20 +1401,28 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
             return true;
         }
         if (state == null) {
-            var queue = runtime.queueRegistry().getQueue(session);
-            if (queue != null) {
-                player.sendMessage(DungeonUi.heading(queue.getDungeon().getDisplayNameComponent()));
-                player.sendMessage(
-                        DungeonUi.detail(
-                                DungeonUi.join(
-                                        runIndicator(
-                                                text(player, "queue-label"), NamedTextColor.GOLD),
-                                        text(
-                                                player,
-                                                "ui-hud-elapsed",
-                                                "value",
-                                                clock((int) queue.getWaitingSeconds())),
-                                        action(player, "cancel", "/dungeon leave"))));
+            var pending = waitingSnapshot(session);
+            if (pending.isPresent()) {
+                var snapshot = pending.get();
+                player.sendMessage(DungeonUi.heading(snapshot.title()));
+                var details = new ArrayList<Component>();
+                details.add(
+                        runIndicator(
+                                text(
+                                        player,
+                                        snapshot.state().equals("preparing")
+                                                ? "preparing-label"
+                                                : "queue-label"),
+                                NamedTextColor.GOLD));
+                if (snapshot.elapsedSeconds() > 0)
+                    details.add(
+                            text(
+                                    player,
+                                    "ui-hud-elapsed",
+                                    "value",
+                                    clock(snapshot.elapsedSeconds())));
+                details.add(action(player, "cancel", "/dungeon leave"));
+                player.sendMessage(DungeonUi.detail(DungeonUi.join(details)));
                 return true;
             }
             var report = reports.get(player.getUniqueId());
@@ -1890,6 +1898,32 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
         }
     }
 
+    private Optional<Snapshot> waitingSnapshot(DungeonPlayerSession session) {
+        if (session == null) return Optional.empty();
+        var queue = runtime.queueRegistry().getQueue(session);
+        boolean preparing = queue == null;
+        var pending = preparing ? runtime.preparations().pendingDungeon(session) : null;
+        if (preparing) {
+            var previous = waiting.get(session.getPlayer().getUniqueId());
+            if (previous != null
+                    && session.isAwaitingDungeon()
+                    && (pending == null || previous.queue.getDungeon() == pending))
+                queue = previous.queue;
+        }
+        var dungeon = queue == null ? pending : queue.getDungeon();
+        if (dungeon == null) return Optional.empty();
+        return Optional.of(
+                new Snapshot(
+                        dungeon.getDungeonId(),
+                        preparing ? "preparing" : "queued",
+                        dungeon.getDisplayNameComponent(),
+                        queue == null ? "" : queue.getDifficulty(),
+                        queue == null ? 0 : (int) queue.getWaitingSeconds(),
+                        null,
+                        null,
+                        List.of()));
+    }
+
     @Override
     public Optional<Snapshot> view(UUID viewer) {
         requireThread();
@@ -1900,21 +1934,7 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
             var observation =
                     observers == null ? Optional.<Snapshot>empty() : observers.view(viewer);
             if (observation.isPresent()) return observation;
-            var queued = waiting.get(viewer);
-            if (queued == null) return Optional.empty();
-            return Optional.of(
-                    new Snapshot(
-                            queued.queue.getDungeon().getDungeonId(),
-                            runtime.queueRegistry().getQueue(runtime.playerSessions().get(viewer))
-                                            == null
-                                    ? "preparing"
-                                    : "queued",
-                            queued.queue.getDungeon().getDisplayNameComponent(),
-                            queued.queue.getDifficulty(),
-                            (int) queued.queue.getWaitingSeconds(),
-                            null,
-                            null,
-                            List.of()));
+            return waitingSnapshot(runtime.playerSessions().get(viewer));
         }
         var instance = state.instance;
         var run = runs.get(instance);
