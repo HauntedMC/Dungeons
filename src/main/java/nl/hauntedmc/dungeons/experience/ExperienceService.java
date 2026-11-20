@@ -710,9 +710,9 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                         1.2f);
         }
         if (state != null
+                && !key.equals("settings-updated")
                 && (!key.equals("objective-progress") || notification(state, key, "chat", false))) {
-            if (state.history.size() == 20) state.history.removeFirst();
-            state.history.addLast(message);
+            record(player, message);
         }
     }
 
@@ -1232,8 +1232,14 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
             return true;
         }
         if (command.equals("status")) {
+            player.sendMessage(
+                    LangUtils.notice(
+                            state.instance
+                                    .getDungeon()
+                                    .getDisplayNameComponent()
+                                    .append(Component.text(" — "))
+                                    .append(text(player, stateName(player, state)))));
             briefing(player, state.instance);
-            state.history.forEach(player::sendMessage);
             return true;
         }
         guide(player, state, session);

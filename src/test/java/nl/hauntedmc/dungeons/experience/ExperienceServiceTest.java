@@ -21,6 +21,28 @@ import org.junit.jupiter.api.Test;
 
 class ExperienceServiceTest {
     @Test
+    void statusDoesNotReplayPreviousRunMessages(
+            @org.junit.jupiter.api.io.TempDir java.nio.file.Path directory) throws Exception {
+        try (var fixture =
+                new nl.hauntedmc.dungeons.support.RunFixture(
+                        directory, new org.bukkit.configuration.file.YamlConfiguration())) {
+            var player = new nl.hauntedmc.dungeons.support.PlayerState();
+            var session = fixture.session(player);
+            var service = new ExperienceService(fixture.paper.runtime);
+            service.joined(fixture.run, session);
+            var previous =
+                    net.kyori.adventure.text.Component.text("Your display settings were saved.");
+            for (int count = 0; count < 8; count++) service.record(player.player, previous);
+
+            assertTrue(service.handle(player.player, new String[] {"status"}));
+
+            verify(player.player, atLeastOnce())
+                    .sendMessage(any(net.kyori.adventure.text.Component.class));
+            verify(player.player, never()).sendMessage(previous);
+        }
+    }
+
+    @Test
     void repeatedStartupOwnsExactlyOneRegistrationAndTimer() {
         try (var paper = new PaperBoundary();
                 var handlers = mockStatic(HandlerList.class)) {
