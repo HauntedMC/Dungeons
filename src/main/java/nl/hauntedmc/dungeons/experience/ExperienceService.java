@@ -23,6 +23,7 @@ import nl.hauntedmc.dungeons.gui.framework.buttons.Button;
 import nl.hauntedmc.dungeons.gui.framework.window.GuiWindow;
 import nl.hauntedmc.dungeons.gui.menu.MenuFrame;
 import nl.hauntedmc.dungeons.localization.LangUtils;
+import nl.hauntedmc.dungeons.presentation.DungeonSettings;
 import nl.hauntedmc.dungeons.presentation.DungeonUi;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
@@ -411,16 +412,8 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                 board.placeholder("state", text(player, status));
                 board.runDetails(instance);
                 if (run != null
-                        && (balanced
-                                || setting(instance, "widgets.stage", "auto").equals("shown"))) {
-                    for (var track : run.definition().tracks().values()) {
-                        var stage = run.progress().currentStage(track, player.getUniqueId());
-                        if (stage != null) {
-                            board.row("stage", LangUtils.trusted(stage.title()));
-                            break;
-                        }
-                    }
-                }
+                        && (balanced || setting(instance, "widgets.stage", "auto").equals("shown")))
+                    currentStage(run, player).ifPresent(stage -> board.row("stage", stage));
                 if (run != null
                         && (balanced
                                 || setting(instance, "widgets.objective", "auto")
@@ -428,13 +421,7 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                     currentObjective(run, state, player)
                             .ifPresent(objective -> board.row("objective", objective));
                 }
-                if (instance.isLivesEnabled())
-                    board.metric(
-                            "lives",
-                            instance.getPlayerLives()
-                                    .getOrDefault(
-                                            player.getUniqueId(),
-                                            instance.getConfig().getInt("players.lives")));
+                if (instance.isLivesEnabled()) board.metric("lives", livesLeft(instance, player));
                 else board.metric("lives", "∞");
                 var team =
                         runtime.hasTeamService()
@@ -443,13 +430,8 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                 if (team != null) board.metric("party", team.size());
                 var respawn = session.getDungeonRespawn();
                 String visibility = setting(instance, "widgets.respawn", "auto");
-                if (respawn != null && !visibility.equals("hidden")) {
-                    var start = instance.getStartLoc();
-                    boolean checkpoint =
-                            start != null
-                                    && (!java.util.Objects.equals(
-                                                    start.getWorld(), respawn.getWorld())
-                                            || start.distanceSquared(respawn) >= 0.01);
+                if (respawn != null && !visibility.equals("hidden") && canRespawn(player, state)) {
+                    boolean checkpoint = isCheckpoint(instance, respawn);
                     if (visibility.equals("shown")
                             || presentation(instance).rows().isPresent()
                             || balanced && checkpoint)
@@ -987,13 +969,20 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
             viewer.sendMessage(DungeonUi.detail(LangUtils.trusted(description)));
         int lives = dungeon.getConfig().getInt("players.lives", 0);
         int minutes = dungeon.getConfig().getInt("runs.time_limit_minutes", 0);
-        var limits = new ArrayList<Component>();
-        limits.add(stat(viewer, "party", Component.text(dungeon.getMaxTeamSize())));
-        if (lives > 0) limits.add(stat(viewer, "lives", Component.text(lives)));
-        if (minutes > 0) limits.add(stat(viewer, "time", Component.text(clock(minutes * 60))));
-        if (lives == 0 && minutes == 0)
-            limits.add(text(viewer, "ui-unlimited-run").color(NamedTextColor.GRAY));
-        viewer.sendMessage(DungeonUi.detail(DungeonUi.join(limits)));
+        viewer.sendMessage(
+                DungeonUi.detail(
+                        DungeonUi.join(
+                                stat(viewer, "party", Component.text(dungeon.getMaxTeamSize())),
+                                stat(
+                                        viewer,
+                                        "lives",
+                                        Component.text(lives > 0 ? Integer.toString(lives) : "∞")),
+                                stat(
+                                        viewer,
+                                        "time",
+                                        minutes > 0
+                                                ? Component.text(clock(minutes * 60))
+                                                : text(viewer, "ui-no-limit")))));
         if (!dungeon.getAccessKeys().isEmpty())
             viewer.sendMessage(
                     DungeonUi.detail(
@@ -1019,13 +1008,20 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
             viewer.sendMessage(DungeonUi.detail(text(viewer, "inventory-restored")));
         if (dungeon.isAccessCooldownEnabled())
             viewer.sendMessage(DungeonUi.detail(text(viewer, "entry-cooldown")));
-        if (available && viewer.hasPermission("dungeons.play"))
+        if (viewer.hasPermission("dungeons.play"))
             viewer.sendMessage(
                     DungeonUi.detail(
-                            DungeonUi.action(
-                                    text(viewer, "ui-enter-action").color(NamedTextColor.AQUA),
-                                    "/dungeon play " + dungeon.getWorldName(),
-                                    NamedTextColor.AQUA)));
+                            DungeonUi.join(
+                                    available
+                                            ? DungeonUi.action(
+                                                    text(viewer, "ui-enter-action"),
+                                                    "/dungeon play " + dungeon.getWorldName(),
+                                                    NamedTextColor.AQUA)
+                                            : Component.empty(),
+                                    DungeonUi.action(
+                                            text(viewer, "rules-ui.settings-heading"),
+                                            "/dungeon info " + dungeon.getWorldName() + " settings",
+                                            NamedTextColor.AQUA))));
     }
 
     private Component stat(CommandSender viewer, String key, Component value) {
@@ -1034,25 +1030,38 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                 value.color(NamedTextColor.WHITE));
     }
 
-    private void runStatus(Player player, Participation state) {
+    private void runStatus(Player player, Participation state, DungeonPlayerSession session) {
         var instance = state.instance;
         player.sendMessage(DungeonUi.heading(instance.getDungeon().getDisplayNameComponent()));
-        var facts = runFacts(player, state);
+        var facts = runFacts(player, state, session);
         for (int offset = 0; offset < facts.size(); offset += 3)
             player.sendMessage(
                     DungeonUi.detail(
                             DungeonUi.join(
                                     facts.subList(offset, Math.min(offset + 3, facts.size())))));
-        currentObjective(runs.get(instance), state, player)
+        var run = runs.get(instance);
+        if (state.outcome == null)
+            currentStage(run, player)
+                    .ifPresent(
+                            stage ->
+                                    player.sendMessage(
+                                            DungeonUi.detail(
+                                                    DungeonUi.metric(
+                                                            text(player, "rules-ui.stage-label")
+                                                                    .color(NamedTextColor.GRAY),
+                                                            stage))));
+        currentObjective(run, state, player)
                 .ifPresent(objective -> player.sendMessage(DungeonUi.detail(objective)));
         player.sendMessage(
                 DungeonUi.detail(
                         DungeonUi.join(
                                 action(player, "ui-guide-action", "/dungeon guide"),
+                                action(player, "ui-rules-heading", "/dungeon rules"),
                                 action(player, "ui-leave-short", "/dungeon leave"))));
     }
 
-    private List<Component> runFacts(Player player, Participation state) {
+    private List<Component> runFacts(
+            Player player, Participation state, DungeonPlayerSession session) {
         var instance = state.instance;
         var facts = new ArrayList<Component>();
         if (instance.getDifficulty() != null)
@@ -1062,23 +1071,59 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
             facts.add(text(player, "ui-hud-run-time", "value", clock(instance.getTimeElapsed())));
         if (instance.getConfig().getInt("runs.time_limit_minutes", 0) > 0)
             facts.add(text(player, "ui-hud-remaining", "value", clock(instance.getTimeLeft())));
-        if (instance.isLivesEnabled())
-            facts.add(
-                    stat(
-                            player,
-                            "lives",
-                            Component.text(
-                                    instance.getPlayerLives()
-                                            .getOrDefault(
-                                                    player.getUniqueId(),
-                                                    instance.getConfig()
-                                                            .getInt("players.lives")))));
+        facts.add(stat(player, "lives", livesValue(instance, player)));
         var team =
                 runtime.hasTeamService()
                         ? runtime.teamService().getTeam(player.getUniqueId())
                         : null;
         if (team != null) facts.add(text(player, "ui-hud-party", "value", team.size()));
+        var respawn = session.getDungeonRespawn();
+        if (respawn != null && canRespawn(player, state))
+            facts.add(
+                    text(
+                            player,
+                            "ui-hud-respawn",
+                            "value",
+                            respawnLabel(player, instance, respawn)));
         return facts;
+    }
+
+    private static int livesLeft(PlayableInstance instance, Player player) {
+        return instance.getPlayerLives()
+                .getOrDefault(player.getUniqueId(), instance.getConfig().getInt("players.lives"));
+    }
+
+    private static Component livesValue(PlayableInstance instance, Player player) {
+        return instance.isLivesEnabled()
+                ? Component.text(livesLeft(instance, player))
+                : Component.text("∞");
+    }
+
+    private static boolean canRespawn(Player player, Participation state) {
+        return state.outcome == null
+                && player.getGameMode() != GameMode.SPECTATOR
+                && (!state.instance.isLivesEnabled() || livesLeft(state.instance, player) > 0);
+    }
+
+    private static boolean isCheckpoint(PlayableInstance instance, org.bukkit.Location respawn) {
+        var start = instance.getStartLoc();
+        return start != null
+                && (!java.util.Objects.equals(start.getWorld(), respawn.getWorld())
+                        || start.distanceSquared(respawn) >= 0.01);
+    }
+
+    private Component respawnLabel(
+            Player player, PlayableInstance instance, org.bukkit.Location respawn) {
+        return text(player, isCheckpoint(instance, respawn) ? "checkpoint" : "spawn");
+    }
+
+    private Optional<Component> currentStage(ExperienceRun run, Player player) {
+        if (run == null) return Optional.empty();
+        for (var track : run.definition().tracks().values()) {
+            var stage = run.progress().currentStage(track, player.getUniqueId());
+            if (stage != null) return Optional.of(LangUtils.trusted(stage.title()));
+        }
+        return Optional.empty();
     }
 
     private Optional<Component> currentObjective(
@@ -1121,11 +1166,107 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
         return Component.text("● ", color).append(state.color(color));
     }
 
-    private void runRules(Player player, PlayableInstance instance) {
-        player.sendMessage(DungeonUi.heading(text(player, "ui-rules-heading")));
-        player.sendMessage(DungeonUi.detail(text(player, "spawn-explanation")));
-        if (!instance.getConfig().getBoolean("players.keep_on_entry.inventory", true))
-            player.sendMessage(DungeonUi.detail(text(player, "inventory-restored")));
+    private void runRules(Player player, Participation state, DungeonPlayerSession session) {
+        var instance = state.instance;
+        var config = instance.getConfig();
+        player.sendMessage(
+                DungeonUi.heading(
+                        DungeonUi.join(
+                                text(player, "ui-rules-heading"),
+                                instance.getDungeon().getDisplayNameComponent())));
+        int minutes = config.getInt("runs.time_limit_minutes", 0);
+        player.sendMessage(
+                DungeonUi.detail(
+                        DungeonUi.join(
+                                stat(player, "lives", livesValue(instance, player)),
+                                DungeonUi.metric(
+                                        text(player, "rules-ui.time-limit"),
+                                        minutes > 0
+                                                ? Component.text(clock(minutes * 60))
+                                                : text(player, "ui-no-limit")))));
+        if (instance.isLivesEnabled())
+            player.sendMessage(
+                    DungeonUi.detail(
+                            text(
+                                    player,
+                                    instance.getDungeon()
+                                                    .getConfig()
+                                                    .getBoolean("players.spectate_on_death", true)
+                                            ? "entry-spectator"
+                                            : "entry-eliminated")));
+        var respawn = session.getDungeonRespawn();
+        if (respawn != null && canRespawn(player, state)) {
+            player.sendMessage(
+                    DungeonUi.detail(
+                            DungeonUi.join(
+                                    text(
+                                            player,
+                                            "ui-hud-respawn",
+                                            "value",
+                                            respawnLabel(player, instance, respawn)),
+                                    Component.text(
+                                            "%d, %d, %d"
+                                                    .formatted(
+                                                            respawn.getBlockX(),
+                                                            respawn.getBlockY(),
+                                                            respawn.getBlockZ()),
+                                            NamedTextColor.GRAY))));
+        }
+        if (respawn != null && isCheckpoint(instance, respawn) && !instance.isTestPlay())
+            player.sendMessage(DungeonUi.detail(text(player, "rules-ui.savepoint-note")));
+        var run = runs.get(instance);
+        var objectives =
+                run == null
+                        ? List.<ObjectiveProgress.View>of()
+                        : run.progress().views(player.getUniqueId());
+        Component progress =
+                objectives.isEmpty()
+                        ? text(player, "rules-ui.no-visible-objectives")
+                        : text(
+                                player,
+                                "rules-ui.objective-progress",
+                                "count",
+                                objectives.stream()
+                                        .filter(ObjectiveProgress.View::completed)
+                                        .count(),
+                                "total",
+                                objectives.size());
+        player.sendMessage(
+                DungeonUi.detail(
+                        DungeonUi.metric(
+                                text(player, "objectives").color(NamedTextColor.GRAY), progress)));
+        player.sendMessage(
+                DungeonUi.detail(
+                        text(
+                                player,
+                                config.getBoolean("players.keep_on_entry.inventory", true)
+                                        ? "rules-ui.inventory-kept"
+                                        : "inventory-restored")));
+        player.sendMessage(
+                DungeonUi.detail(
+                        DungeonUi.join(
+                                action(
+                                        player,
+                                        "rules-ui.settings-heading",
+                                        "/dungeon rules settings"),
+                                objectives.isEmpty()
+                                        ? Component.empty()
+                                        : action(player, "objectives", "/dungeon objectives"),
+                                action(player, "ui-guide-action", "/dungeon guide"))));
+    }
+
+    private void dungeonSettings(Player player, PlayableInstance instance) {
+        DungeonSettings.show(player, instance.getDungeon(), instance.getConfig());
+        if (instance.getFunctions().values().stream()
+                .anyMatch(
+                        nl.hauntedmc.dungeons.content.function.AllowBlockFunction.class
+                                ::isInstance))
+            player.sendMessage(DungeonUi.detail(text(player, "rules-ui.block-overrides")));
+        player.sendMessage(
+                DungeonUi.detail(
+                        DungeonUi.join(
+                                action(player, "ui-rules-heading", "/dungeon rules"),
+                                action(player, "ui-guide-action", "/dungeon guide"))));
     }
 
     private String exitSignature(DungeonPlayerSession session, Participation state) {
@@ -1247,12 +1388,19 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
     public boolean handle(Player player, String[] args) {
         if (args.length == 0) return false;
         String command = args[0].toLowerCase(Locale.ROOT);
-        if (!List.of("guide", "status", "objectives", "hud", "spectate").contains(command))
+        if (!List.of("guide", "status", "rules", "objectives", "hud", "spectate").contains(command))
             return false;
         var state = players.get(player.getUniqueId());
         var session = runtime.playerSessions().get(player);
         if (session == null) {
             notify(player, "not-participating", null);
+            return true;
+        }
+        if (command.equals("rules")) {
+            if (state == null) notify(player, "not-participating", null);
+            else if (args.length == 2 && args[1].equals("settings"))
+                dungeonSettings(player, state.instance);
+            else runRules(player, state, session);
             return true;
         }
         if (command.equals("spectate")) {
@@ -1458,7 +1606,7 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
             return true;
         }
         if (command.equals("status")) {
-            runStatus(player, state);
+            runStatus(player, state, session);
             return true;
         }
         guide(player, state, session);
@@ -1521,7 +1669,8 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                                 instance.getDungeon()
                                         .getDisplayNameComponent()
                                         .decorate(TextDecoration.BOLD)));
-        runFacts(player, state).forEach(fact -> overview.addLore(ComponentUtils.serialize(fact)));
+        runFacts(player, state, session)
+                .forEach(fact -> overview.addLore(ComponentUtils.serialize(fact)));
         currentObjective(runs.get(instance), state, player)
                 .ifPresent(objective -> overview.addLore(ComponentUtils.serialize(objective)));
         overview.addLore(
@@ -1531,7 +1680,7 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                 "status",
                 event -> {
                     player.closeInventory();
-                    runStatus(player, state);
+                    runStatus(player, state, session);
                 });
         window.addButton(0, overview);
         if (settings) {
@@ -1623,24 +1772,29 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
             boolean objectives =
                     runs.containsKey(instance)
                             && !runs.get(instance).definition().objectives().isEmpty();
-            int slot = 5 - (party ? 1 : 0) - (objectives ? 1 : 0);
             if (objectives) {
                 addButton(
                         window,
-                        slot,
+                        2,
                         player,
                         "objectives",
                         Material.TARGET,
                         () -> handle(player, new String[] {"objectives"}));
-                slot += 2;
             }
             addButton(
                     window,
-                    slot,
+                    4,
                     player,
                     "rules",
                     Material.WRITTEN_BOOK,
-                    () -> runRules(player, instance));
+                    () -> runRules(player, state, session));
+            addButton(
+                    window,
+                    6,
+                    player,
+                    "settings",
+                    Material.IRON_PICKAXE,
+                    () -> dungeonSettings(player, instance));
             var history =
                     new Button(
                             "history",
@@ -1672,7 +1826,7 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
             if (party)
                 addButton(
                         window,
-                        slot + 2,
+                        8,
                         player,
                         "run-roster",
                         Material.PLAYER_HEAD,
@@ -1798,7 +1952,11 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
         var button =
                 guideButton(
                         player,
-                        label.equals("leave") ? "ui-leave-short" : label,
+                        switch (label) {
+                            case "leave" -> "ui-leave-short";
+                            case "settings" -> "rules-ui.settings-heading";
+                            default -> label;
+                        },
                         material,
                         "ui-menu-" + label,
                         accent);
@@ -2165,9 +2323,10 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                         runtime.environment().plugin(),
                         () -> {
                             var state = players.get(event.getPlayer().getUniqueId());
-                            if (!closed && state != null) {
+                            var session = runtime.playerSessions().get(event.getPlayer());
+                            if (!closed && state != null && session != null) {
                                 notify(event.getPlayer(), "reconnected", null);
-                                runStatus(event.getPlayer(), state);
+                                runStatus(event.getPlayer(), state, session);
                             }
                         },
                         5);

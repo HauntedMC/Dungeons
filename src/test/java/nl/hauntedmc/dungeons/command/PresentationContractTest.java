@@ -11,15 +11,82 @@ import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import nl.hauntedmc.dungeons.experience.ExperienceService;
 import nl.hauntedmc.dungeons.localization.LangUtils;
+import nl.hauntedmc.dungeons.runtime.instance.listener.PlayListener;
 import nl.hauntedmc.dungeons.support.RunFixture;
 import nl.hauntedmc.dungeons.util.text.ComponentUtils;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 
 class PresentationContractTest {
     @TempDir Path directory;
+
+    @Test
+    void discoveryAndRunSettingsShowActualPermissionsEvenWithCommandsRestricted() throws Exception {
+        var config = new YamlConfiguration();
+        config.set("rules.building.break_blocks", false);
+        config.set("rules.building.place_blocks", true);
+        config.set("rules.combat.pvp", true);
+        config.set("rules.movement.ender_pearls", false);
+        try (var fixture = new RunFixture(directory, config)) {
+            LangUtils.initialize();
+            var runtime = fixture.paper.runtime;
+            var command = new CommandContractTest.CommandFixture(fixture);
+            var player = command.caller.player;
+            when(player.locale()).thenReturn(Locale.ENGLISH);
+            command.permissions.add("dungeons.play");
+            var service = new ExperienceService(runtime);
+            runtime.setExperience(service);
+
+            command.execute("info", "crypt");
+            var briefing = ArgumentCaptor.forClass(Component.class);
+            verify(player, atLeastOnce()).sendMessage(briefing.capture());
+            assertTrue(
+                    briefing.getAllValues().stream()
+                            .anyMatch(
+                                    line ->
+                                            containsClick(
+                                                    line,
+                                                    ClickEvent.runCommand(
+                                                            "/dungeon info crypt settings"))));
+            clearInvocations(player);
+
+            command.execute("info", "crypt", "settings");
+            var preview = ArgumentCaptor.forClass(Component.class);
+            verify(player, atLeastOnce()).sendMessage(preview.capture());
+            var expected = preview.getAllValues().stream().map(ComponentUtils::plainText).toList();
+            assertTrue(expected.stream().anyMatch(line -> line.contains("Break blocks Blocked")));
+            assertTrue(expected.stream().anyMatch(line -> line.contains("Place blocks Allowed")));
+            assertTrue(expected.stream().anyMatch(line -> line.contains("PvP Allowed")));
+            assertTrue(expected.stream().anyMatch(line -> line.contains("Ender Pearls Blocked")));
+
+            var session = runtime.playerSessions().get(player);
+            session.setInstance(fixture.run);
+            when(player.getWorld()).thenReturn(fixture.world);
+            service.joined(fixture.run, session);
+            command.permissions.clear();
+            var event =
+                    new PlayerCommandPreprocessEvent(
+                            player, "/du rules settings", java.util.Set.of());
+            new PlayListener(fixture.run).onCommand(event);
+            assertFalse(event.isCancelled());
+            clearInvocations(player);
+
+            command.execute("rules", "settings");
+            var active = ArgumentCaptor.forClass(Component.class);
+            verify(player, atLeastOnce()).sendMessage(active.capture());
+            assertEquals(
+                    expected,
+                    active.getAllValues().stream()
+                            .limit(expected.size())
+                            .map(ComponentUtils::plainText)
+                            .toList());
+        } finally {
+            LangUtils.clear();
+        }
+    }
 
     @Test
     void objectiveActionsFollowProgressAndEmptyHintsGiveFeedback() throws Exception {
@@ -39,8 +106,24 @@ class PresentationContractTest {
             runtime.setExperience(service);
             var session = runtime.playerSessions().get(player);
             session.setInstance(fixture.run);
+            session.setDungeonRespawn(new org.bukkit.Location(fixture.world, 12, 71, 9));
             service.joined(fixture.run, session);
             LangUtils.initialize();
+
+            clearInvocations(player);
+            command.execute("rules");
+            var rules = ArgumentCaptor.forClass(Component.class);
+            verify(player, atLeastOnce()).sendMessage(rules.capture());
+            var facts = rules.getAllValues().stream().map(ComponentUtils::plainText).toList();
+            assertTrue(facts.stream().anyMatch(line -> line.contains("Lives ∞")));
+            assertTrue(
+                    facts.stream()
+                            .anyMatch(
+                                    line ->
+                                            line.contains("Checkpoint")
+                                                    && line.contains("12, 71, 9")));
+            assertTrue(facts.stream().anyMatch(line -> line.contains("Objectives 0/1 complete")));
+            clearInvocations(player);
 
             command.execute("objectives", "hint");
             var output = ArgumentCaptor.forClass(Component.class);

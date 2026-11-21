@@ -44,6 +44,7 @@ commands:
     topic-play: 'Play'
     topic-guide: 'Guide'
     topic-status: 'Status'
+    topic-rules: 'Run rules'
     topic-objectives: 'Objectives'
     topic-lives: 'Lives'
     topic-stuck: 'Unstuck'
@@ -192,9 +193,33 @@ experience:
   ui-time-label: 'Time'
   ui-lives-label: 'Lives'
   ui-party-label: 'Max party'
-  ui-unlimited-run: "Unlimited lives and time"
   ui-no-limit: 'Unlimited'
-  ui-rules-heading: 'RUN RULES'
+  ui-rules-heading: 'Run rules'
+  rules-ui:
+    settings-heading: 'Dungeon settings'
+    allowed: 'Allowed'
+    blocked: 'Blocked'
+    exceptions: 'Hover for exceptions'
+    game-mode: 'Game mode'
+    break-blocks: 'Break blocks'
+    place-blocks: 'Place blocks'
+    break-placed: 'Break player-placed blocks'
+    place-entities: 'Place entities'
+    pvp: 'PvP'
+    buckets: 'Buckets'
+    pearls: 'Ender Pearls'
+    chorus: 'Chorus Fruit'
+    durability: 'Durability protected'
+    armor: 'Armor'
+    weapons: 'Weapons'
+    tools: 'Tools'
+    block-overrides: 'Some puzzle blocks have their own rules.'
+    time-limit: 'Time limit'
+    stage-label: 'Stage'
+    savepoint-note: 'Checkpoints set your respawn. Savepoints can also save progress for your next run.'
+    no-visible-objectives: 'None revealed'
+    objective-progress: '{count}/{total} complete'
+    inventory-kept: 'You keep your inventory on entry.'
   ui-key-kept: 'Entry key required · kept on entry'
   ui-key-spent: 'Entry key required · consumed on entry'
   ui-leave-heading: 'Leave this run?'
@@ -216,7 +241,8 @@ experience:
   ui-active: 'Selected'
   ui-menu-status: 'Check your remaining lives and time.'
   ui-menu-party-guide: 'See who is active or spectating.'
-  ui-menu-rules: 'Review entry and recovery rules.'
+  ui-menu-rules: 'Lives, respawn, time limit and objectives.'
+  ui-menu-settings: 'Building, PvP and utility items.'
   ui-menu-objectives: 'See revealed objectives and hints.'
   ui-menu-leave: 'Review what you lose when you leave.'
   ui-menu-fresh-start: 'Discard your old savepoint and start fresh.'
@@ -239,7 +265,7 @@ experience:
   stay: "<HauntedMC:Text>[Keep playing]"
   cancel: "<HauntedMC:Text>[Cancel queue]"
   objectives: "<HauntedMC:Text>Objectives"
-  rules: "<HauntedMC:Text>Rules & recovery"
+  rules: "<HauntedMC:Text>Run rules"
   status: "<HauntedMC:Text>Current status"
   history: "<HauntedMC:Text>Recent feedback"
   balanced: "<HauntedMC:Text>Balanced"

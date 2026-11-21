@@ -195,6 +195,15 @@ final class NativeHud {
         require(
                 player.getOpenInventory().getTopInventory().getSize() == 18,
                 "Guide did not open on Paper");
+        var guide = player.getOpenInventory().getTopInventory();
+        require(
+                guide.getItem(4).getType() == org.bukkit.Material.WRITTEN_BOOK
+                        && guide.getItem(6).getType() == org.bukkit.Material.IRON_PICKAXE,
+                "Guide did not expose separate Run rules and Dungeon settings");
+        click(player, 4);
+        test.runtime().experience().handle(player, new String[] {"guide"});
+        click(player, 6);
+        test.runtime().experience().handle(player, new String[] {"guide"});
         click(player, 9);
         return test.await(
                         "Guide opens HUD settings",
