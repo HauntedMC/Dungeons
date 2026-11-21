@@ -9,10 +9,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import nl.hauntedmc.dungeons.config.ConfigurationFile;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
+import nl.hauntedmc.dungeons.repository.RepoContent;
+import nl.hauntedmc.dungeons.repository.RepoFiles;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
-import org.bukkit.configuration.file.YamlConfiguration;
 
 /** Filesystem work runs after drain. Backups never contain progression or key ledgers. */
 public final class StaffContentStorage {
@@ -28,8 +29,6 @@ public final class StaffContentStorage {
                     ".dungeons-editor-recovery");
     private final DungeonsRuntime runtime;
     private final File root;
-
-    private record Swap(File live, File previous, File staging) {}
 
     public StaffContentStorage(DungeonsRuntime runtime) {
         this.runtime = runtime;
@@ -61,10 +60,6 @@ public final class StaffContentStorage {
     }
 
     public CompletableFuture<String> backup(DungeonDefinition dungeon) {
-        return backup(dungeon, null);
-    }
-
-    private CompletableFuture<String> backup(DungeonDefinition dungeon, String retained) {
         File source = managed(dungeon.getFolder());
         String id = System.currentTimeMillis() + "-" + UUID.randomUUID();
         File destination = child(new File(root, "backups/" + dungeon.getWorldName()), id);
@@ -87,7 +82,7 @@ public final class StaffContentStorage {
                     int excess = copies.size() - 10;
                     for (String copy : copies) {
                         if (excess <= 0) break;
-                        if (copy.equals(retained) || copy.equals(id)) continue;
+                        if (copy.equals(id)) continue;
                         FileUtils.deleteDirectory(child(destination.getParentFile(), copy));
                         excess--;
                     }
@@ -95,111 +90,123 @@ public final class StaffContentStorage {
                 });
     }
 
-    public CompletableFuture<String> restore(DungeonDefinition dungeon, String id) {
+    public String backupRevision(DungeonDefinition dungeon, String id) {
         File copy = child(new File(root, "backups/" + dungeon.getWorldName()), id);
+        File file = new File(copy, "config.yml");
         if (!copy.isDirectory()) throw new IllegalArgumentException("Backup not found");
         try {
-            var config = new YamlConfiguration();
-            ConfigurationFile.loadSnapshot(config, new File(copy, "config.yml"));
-        } catch (Exception failure) {
+            requireBackupIdentity(file.toPath(), dungeon.getDungeonId());
+        } catch (IOException failure) {
             throw new IllegalArgumentException("Backup configuration is unreadable", failure);
         }
-        return backup(dungeon, id)
-                .thenCompose(
-                        safety -> {
-                            var swap =
-                                    new Swap(
-                                            managed(dungeon.getFolder()),
-                                            managed(
-                                                    new File(
-                                                            root,
-                                                            "staging/previous-"
-                                                                    + UUID.randomUUID())),
-                                            managed(
-                                                    new File(
-                                                            root,
-                                                            "staging/restore-"
-                                                                    + UUID.randomUUID())));
-                            return filesystem(swap.live, () -> install(swap, copy))
-                                    .thenCompose(
-                                            ignored ->
-                                                    owner(
-                                                                    () ->
-                                                                            runtime.dungeonCatalog()
-                                                                                            .loadDungeon(
-                                                                                                    swap.live)
-                                                                                    != null)
-                                                            .handle(
-                                                                    (loaded, failure) ->
-                                                                            failure == null
-                                                                                    && Boolean.TRUE
-                                                                                            .equals(
-                                                                                                    loaded)))
-                                    .thenCompose(
-                                            loaded ->
-                                                    loaded
-                                                            ? CompletableFuture.completedFuture(
-                                                                    "Restored "
-                                                                            + id
-                                                                            + "; safety backup "
-                                                                            + safety)
-                                                            : rollback(swap, safety));
-                        });
+        return id + "/" + copy.lastModified() + "/" + file.lastModified();
     }
 
-    private boolean install(Swap swap, File copy) throws IOException {
-        rejectLinks(swap.live.toPath());
-        rejectLinks(copy.toPath());
-        FileUtils.copyDirectory(
-                copy, swap.staging, file -> !RUNTIME_FILES.contains(file.getName()));
-        Files.createDirectories(swap.previous.toPath().getParent());
-        Files.move(swap.live.toPath(), swap.previous.toPath(), StandardCopyOption.ATOMIC_MOVE);
-        try {
-            Files.move(swap.staging.toPath(), swap.live.toPath(), StandardCopyOption.ATOMIC_MOVE);
-        } catch (IOException failure) {
-            try {
-                Files.move(
-                        swap.previous.toPath(), swap.live.toPath(), StandardCopyOption.ATOMIC_MOVE);
-            } catch (IOException rollback) {
-                failure.addSuppressed(rollback);
-            }
-            throw failure;
-        }
-        return true;
+    private void requireBackupIdentity(Path config, UUID identity) throws IOException {
+        if (!(RepoContent.readYaml(config).get("dungeon") instanceof Map<?, ?> values)
+                || !identity.toString().equalsIgnoreCase(Objects.toString(values.get("id"), "")))
+            throw new IllegalArgumentException("Backup belongs to a different dungeon identity");
     }
 
-    private CompletableFuture<String> rollback(Swap swap, String safety) {
+    public CompletableFuture<String> restore(DungeonDefinition dungeon, String id) {
+        backupRevision(dungeon, id);
+        String name = dungeon.getWorldName();
+        UUID identity = dungeon.getDungeonId();
+        File live = managed(dungeon.getFolder());
+        File copy = child(new File(root, "backups/" + name), id);
+        UUID operation = UUID.randomUUID();
         return filesystem(
-                        swap.live,
+                        live,
                         () -> {
-                            File failed =
-                                    managed(new File(root, "staging/failed-" + UUID.randomUUID()));
-                            Files.move(
-                                    swap.live.toPath(),
-                                    failed.toPath(),
-                                    StandardCopyOption.ATOMIC_MOVE);
-                            Files.move(
-                                    swap.previous.toPath(),
-                                    swap.live.toPath(),
-                                    StandardCopyOption.ATOMIC_MOVE);
-                            return false;
+                            var files = new RepoFiles(root.toPath(), live.toPath().getParent());
+                            Path stage = files.stage(operation);
+                            try {
+                                rejectLinks(live.toPath());
+                                rejectLinks(copy.toPath());
+                                Path replacement = stage.resolve("restore");
+                                FileUtils.copyDirectory(
+                                        copy,
+                                        replacement.toFile(),
+                                        file -> !RUNTIME_FILES.contains(file.getName()));
+                                requireBackupIdentity(replacement.resolve("config.yml"), identity);
+                                files.install(operation, name, replacement);
+                                return files;
+                            } catch (IOException | RuntimeException failure) {
+                                try {
+                                    files.rollback(operation);
+                                    RepoContent.deleteTree(stage);
+                                } catch (IOException | RuntimeException rollbackFailure) {
+                                    failure.addSuppressed(rollbackFailure);
+                                }
+                                throw failure;
+                            }
                         })
                 .thenCompose(
-                        ignored ->
-                                owner(
-                                        () -> {
-                                            if (runtime.dungeonCatalog().loadDungeon(swap.live)
-                                                    == null)
-                                                throw new IllegalStateException(
-                                                        "Prior files restored, but reload also"
-                                                                + " failed; maintenance retained."
-                                                                + " Safety backup "
-                                                                + safety);
-                                            throw new IllegalStateException(
-                                                    "Backup did not load; previous template"
-                                                            + " restored. Safety backup "
-                                                            + safety);
-                                        }));
+                        files ->
+                                owner(() -> runtime.dungeonCatalog().loadDungeon(live) != null)
+                                        .handle(
+                                                (loaded, failure) ->
+                                                        failure == null
+                                                                && Boolean.TRUE.equals(loaded))
+                                        .thenCompose(
+                                                loaded ->
+                                                        filesystem(
+                                                                live,
+                                                                () -> {
+                                                                    if (loaded) {
+                                                                        files.commit(
+                                                                                operation, name,
+                                                                                true);
+                                                                        RepoContent.deleteTree(
+                                                                                files.stage(
+                                                                                        operation));
+                                                                        try {
+                                                                            files.prune(
+                                                                                    name,
+                                                                                    operation);
+                                                                        } catch (
+                                                                                IOException
+                                                                                        cleanup) {
+                                                                            runtime.environment()
+                                                                                    .logger()
+                                                                                    .warn(
+                                                                                            "Backup restored; could not prune old safety backups",
+                                                                                            cleanup);
+                                                                        }
+                                                                        return "Restored "
+                                                                                + id
+                                                                                + "; safety backup repo-"
+                                                                                + operation;
+                                                                    }
+                                                                    files.rollback(operation);
+                                                                    RepoContent.deleteTree(
+                                                                            files.stage(operation));
+                                                                    return null;
+                                                                }))
+                                        .thenCompose(
+                                                result ->
+                                                        result != null
+                                                                ? CompletableFuture.completedFuture(
+                                                                        result)
+                                                                : owner(
+                                                                        () -> {
+                                                                            if (runtime.dungeonCatalog()
+                                                                                            .loadDungeon(
+                                                                                                    live)
+                                                                                    == null)
+                                                                                throw new IllegalStateException(
+                                                                                        "Prior files restored, but reload also failed; maintenance retained");
+                                                                            throw new IllegalStateException(
+                                                                                    "Backup did not load; previous template restored");
+                                                                        })));
+    }
+
+    public void requireRestorableArchive(String id) {
+        archiveRevision(id);
+        String name = archivedDungeonName(id);
+        if (child(runtime.dungeonFiles(), name).exists()
+                || runtime.dungeonCatalog().get(name) != null)
+            throw new IllegalArgumentException("Dungeon name is already in use");
     }
 
     public CompletableFuture<String> archiveAction(String id, boolean purge) {
@@ -207,8 +214,7 @@ public final class StaffContentStorage {
         File source = child(new File(root, "archives"), id);
         File destination = child(runtime.dungeonFiles(), name);
         if (!source.isDirectory()) throw new IllegalArgumentException("Archive not found");
-        if (!purge && (destination.exists() || runtime.dungeonCatalog().get(name) != null))
-            throw new IllegalArgumentException("Dungeon name is already in use");
+        if (!purge) requireRestorableArchive(id);
         return filesystem(
                         source,
                         () -> {

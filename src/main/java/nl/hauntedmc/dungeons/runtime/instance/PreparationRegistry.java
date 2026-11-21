@@ -31,8 +31,13 @@ public final class PreparationRegistry {
     }
 
     public String dungeonName(DungeonPlayerSession session) {
+        var dungeon = pendingDungeon(session);
+        return dungeon == null ? null : dungeon.getWorldName();
+    }
+
+    public @Nullable DungeonDefinition pendingDungeon(DungeonPlayerSession session) {
         Pending attempt = pending.get(session);
-        return attempt == null ? null : attempt.dungeon().getWorldName();
+        return attempt == null ? null : attempt.dungeon();
     }
 
     public boolean contains(DungeonPlayerSession session) {

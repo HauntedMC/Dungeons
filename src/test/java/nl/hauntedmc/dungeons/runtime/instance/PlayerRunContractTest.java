@@ -72,6 +72,17 @@ class PlayerRunContractTest {
     }
 
     @Test
+    void anInstanceWorldCannotBeSavedAsAPermanentExit() throws Exception {
+        try (var f = new RunFixture(directory, settings())) {
+            f.paper.runtime.activeInstances().registerActiveInstance(f.run);
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> f.dungeon.setExit(new Location(f.world, 0, 70, 0)));
+            assertNull(f.dungeon.getExitLoc());
+        }
+    }
+
+    @Test
     void acceptedDepartureUsesTheConfiguredExitWhileCancelledDepartureKeepsTheReturnPosition()
             throws Exception {
         for (boolean useExit : List.of(false, true)) {
@@ -219,6 +230,7 @@ class PlayerRunContractTest {
         var settings = settings();
         settings.set("runs.time_limit_minutes", 1);
         try (var fixture = new RunFixture(directory, settings)) {
+            assertEquals(60, fixture.run.getTimeLeft(), "Lobby countdown");
             var first = fixture.session(new PlayerState());
             var second = fixture.session(new PlayerState());
             fixture.run.addPlayer(first);

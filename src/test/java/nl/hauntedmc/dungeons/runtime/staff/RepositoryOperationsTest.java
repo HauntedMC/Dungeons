@@ -17,7 +17,7 @@ class RepositoryOperationsTest {
     void successfulPullResumesPriorStateButNeverClearsIndependentMaintenance() throws Exception {
         try (var fixture = new StaffFixture(directory)) {
             var first =
-                    fixture.ops.repositoryDrain(
+                    fixture.ops.drainAndResume(
                             fixture.actor,
                             "repo.pull",
                             "repo-pull",
@@ -28,7 +28,7 @@ class RepositoryOperationsTest {
             assertFalse(fixture.ops.maintenance("crypt"));
             var pending = new CompletableFuture<String>();
             var second =
-                    fixture.ops.repositoryDrain(
+                    fixture.ops.drainAndResume(
                             fixture.actor,
                             "repo.pull",
                             "repo-pull",
@@ -68,10 +68,31 @@ class RepositoryOperationsTest {
     }
 
     @Test
+    void rejectedPullReopensAdmissionsWithoutReportingAnInstallation() throws Exception {
+        try (var fixture = new StaffFixture(directory)) {
+            var op =
+                    fixture.ops.drainAndResume(
+                            fixture.actor,
+                            "repo.pull",
+                            "repo-pull",
+                            "crypt",
+                            "Repository preflight",
+                            () ->
+                                    CompletableFuture.failedFuture(
+                                            new java.util.concurrent.CompletionException(
+                                                    new StaffOperations.PreflightRejected(
+                                                            "Local content changed"))));
+            assertEquals(StaffOperations.State.FAILED, op.state);
+            assertEquals("Local content changed", op.detail);
+            assertFalse(fixture.ops.maintenance("crypt"));
+        }
+    }
+
+    @Test
     void failedPullKeepsAdmissionsClosed() throws Exception {
         try (var fixture = new StaffFixture(directory)) {
             var op =
-                    fixture.ops.repositoryDrain(
+                    fixture.ops.drainAndResume(
                             fixture.actor,
                             "repo.pull",
                             "repo-pull",

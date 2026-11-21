@@ -157,6 +157,19 @@ public class BranchingDungeon extends DungeonDefinition {
             String difficultyName,
             int requestedPlayers,
             @Nullable UUID startedTeamLeaderId) {
+        return this.prepareBranchingRun(player, difficultyName, startedTeamLeaderId, false);
+    }
+
+    @Override
+    public boolean prepareTestPlay(Player player) {
+        return this.prepareBranchingRun(player, "", null, true);
+    }
+
+    private boolean prepareBranchingRun(
+            Player player,
+            String difficultyName,
+            @Nullable UUID startedTeamLeaderId,
+            boolean testPlay) {
         return this.prepareIsolatedInstance(
                 player,
                 difficultyName,
@@ -171,7 +184,8 @@ public class BranchingDungeon extends DungeonDefinition {
                                 "Generated instance has no safe start point");
                     }
                 },
-                1L);
+                1L,
+                testPlay);
     }
 
     /** Creates play session. */

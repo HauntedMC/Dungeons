@@ -37,11 +37,6 @@ public final class PluginConfigView {
         return Math.max(1, getInt(config, "commands.list_page_size", 10));
     }
 
-    /** Returns confirmation window in seconds for destructive dungeon commands. */
-    public static int getCommandDeleteConfirmationSeconds(FileConfiguration config) {
-        return Math.max(1, getInt(config, "commands.delete_confirmation_seconds", 10));
-    }
-
     /** Returns whether unique issued-key validation and rotation are enabled globally. */
     public static boolean isUniqueAccessKeyValidationEnabled(FileConfiguration config) {
         return getBoolean(config, "access.keys.unique_validation_enabled", false);

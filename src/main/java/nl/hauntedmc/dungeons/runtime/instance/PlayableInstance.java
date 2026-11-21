@@ -343,11 +343,24 @@ public abstract class PlayableInstance extends DungeonInstance {
         }
     }
 
+    private UUID testPlayer;
+
+    public void setTestPlayer(UUID player) {
+        this.testPlayer = player;
+    }
+
+    public boolean isTestPlay() {
+        return this.testPlayer != null;
+    }
+
     /** Adds a player to the playable run and applies entry state rules. */
     @Override
     public void addPlayer(DungeonPlayerSession playerSession) {
         if (this.disposing || this.loadFailed) return;
-        if (this.runtime().staffOperations() != null
+        if (this.isTestPlay() && !this.testPlayer.equals(playerSession.getPlayer().getUniqueId()))
+            return;
+        if (!this.isTestPlay()
+                && this.runtime().staffOperations() != null
                 && (!this.dungeon.isEnabled()
                         || this.runtime()
                                         .staffOperations()
@@ -364,7 +377,8 @@ public abstract class PlayableInstance extends DungeonInstance {
             return;
         }
         // Commit access policy before join commands can grant money/items or change other services.
-        if (playerSession.hasReservedAccessKey(this.dungeon.getWorldName())
+        if (!this.isTestPlay()
+                && playerSession.hasReservedAccessKey(this.dungeon.getWorldName())
                 && !this.dungeon.completeReservedAccessKey(playerSession))
             throw new IllegalStateException("Could not commit dungeon access key usage");
         Player player = playerSession.getPlayer();
@@ -386,7 +400,8 @@ public abstract class PlayableInstance extends DungeonInstance {
                         this.experienceDefinition,
                         this.difficulty == null ? "" : this.difficulty.getNamespace()))
             storedSavePoint = null;
-        Location savePoint = storedSavePoint == null ? null : storedSavePoint.clone();
+        Location savePoint =
+                this.isTestPlay() || storedSavePoint == null ? null : storedSavePoint.clone();
 
         if (savePoint == null) {
             Location destination = this.startLocation;
@@ -623,8 +638,11 @@ public abstract class PlayableInstance extends DungeonInstance {
         this.timeLeft = Math.addExact(this.timeLeft, seconds);
     }
 
+    /** The configured duration in the lobby, then the live countdown once the run starts. */
     public int getTimeLeft() {
-        return this.timeLeft;
+        return this.started
+                ? this.timeLeft
+                : Math.max(0, this.config.getInt("runs.time_limit_minutes", 0)) * 60;
     }
 
     /** Returns the current run status text. */

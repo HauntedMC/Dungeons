@@ -40,7 +40,7 @@ final class DungeonWorldCommandHandler {
         String worldName = args[1].trim();
         String mapName = args[2].trim();
         StaffPermissions.require(sender, "edit", mapName);
-        if (!this.isSafeImportWorldName(mapName))
+        if (!this.isSafeNewMapName(mapName))
             throw new IllegalArgumentException("Invalid dungeon name");
         if (!this.isSafeImportWorldName(worldName)) {
             LangUtils.sendMessage(
@@ -172,7 +172,7 @@ final class DungeonWorldCommandHandler {
         }
 
         String worldName = args[1].trim();
-        if (!this.isSafeImportWorldName(worldName)) {
+        if (!this.isSafeNewMapName(worldName)) {
             LangUtils.sendMessage(player, "commands.dungeon.create.failed-to-create");
             return true;
         }
@@ -204,13 +204,19 @@ final class DungeonWorldCommandHandler {
             return true;
         }
 
-        String dungeonType = args.length >= 3 ? args[2] : "";
+        String dungeonType = args.length >= 3 ? args[2].toLowerCase(Locale.ROOT) : "static";
+        if (!nl.hauntedmc.dungeons.registry.DungeonTypeRegistry.getDungeonTypes()
+                .containsKey(dungeonType))
+            throw new IllegalArgumentException("Unknown dungeon type: " + dungeonType);
         String generatorType = args.length == 4 ? args[3] : "";
 
         String tempWorldName = this.createTemporaryWorldName(worldName);
         WorldCreator loader = new WorldCreator(tempWorldName);
         if (!generatorType.isEmpty()) {
-            loader.generator(generatorType);
+            loader.generator(generatorType, sender);
+            if (loader.generator() == null)
+                throw new IllegalArgumentException(
+                        "Dungeon generator could not be resolved: " + generatorType);
         } else {
             loader.type(WorldType.FLAT);
         }
@@ -276,6 +282,12 @@ final class DungeonWorldCommandHandler {
     /** Returns whether safe import world name. */
     private boolean isSafeImportWorldName(String worldName) {
         return !worldName.isBlank() && worldName.matches("[A-Za-z0-9_-]+");
+    }
+
+    private boolean isSafeNewMapName(String name) {
+        return this.isSafeImportWorldName(name)
+                && !name.equalsIgnoreCase("all")
+                && !name.equalsIgnoreCase("current");
     }
 
     /** Resolves dungeon save folder. */

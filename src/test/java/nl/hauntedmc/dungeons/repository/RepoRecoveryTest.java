@@ -28,6 +28,24 @@ class RepoRecoveryTest {
     }
 
     @Test
+    void restartAfterRestoringBackupButBeforeDeletingJournalCompletesRecovery() throws Exception {
+        Path dungeons = Files.createDirectories(root.resolve("dungeons"));
+        var files = new RepoFiles(root, dungeons);
+        Path live = Files.createDirectories(dungeons.resolve("crypt"));
+        Files.writeString(live.resolve("content"), "restored original");
+        UUID id = UUID.randomUUID();
+        Path journal = files.root().resolve("journals/" + id + ".yml");
+        Files.writeString(
+                journal,
+                "kind: install\nname: crypt\nprevious: true\ncommitted: false\nphase: restoring\n");
+
+        files.recover(mock(RepoStore.class));
+
+        assertEquals("restored original", Files.readString(live.resolve("content")));
+        assertFalse(Files.exists(journal));
+    }
+
+    @Test
     void committedInstallKeepsVersionAndSafetyBackup() throws Exception {
         Path dungeons = Files.createDirectories(root.resolve("dungeons"));
         var files = new RepoFiles(root, dungeons);
@@ -41,6 +59,23 @@ class RepoRecoveryTest {
         new RepoFiles(root, dungeons).recover(mock(RepoStore.class));
         assertEquals("new", Files.readString(live.resolve("content")));
         assertEquals("old", Files.readString(backup.resolve("content")));
+    }
+
+    @Test
+    void pruningKeepsTheCurrentSafetyBackupEvenIfItsTimestampIsOld() throws Exception {
+        var files = new RepoFiles(root, Files.createDirectories(root.resolve("dungeons")));
+        UUID installed = UUID.randomUUID();
+        Path backups = Files.createDirectories(root.resolve("backups/crypt"));
+        Path safety = Files.createDirectory(backups.resolve("repo-" + installed));
+        for (int i = 0; i < 10; i++) Files.createDirectory(backups.resolve("backup-" + i));
+        Files.setLastModifiedTime(safety, java.nio.file.attribute.FileTime.fromMillis(1));
+
+        files.prune("crypt", installed);
+
+        assertTrue(Files.isDirectory(safety));
+        try (var remaining = Files.list(backups)) {
+            assertEquals(10, remaining.count());
+        }
     }
 
     @Test

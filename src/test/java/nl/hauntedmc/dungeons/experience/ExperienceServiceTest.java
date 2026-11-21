@@ -3,23 +3,92 @@ package nl.hauntedmc.dungeons.experience;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.nio.file.Path;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import net.kyori.adventure.text.Component;
 import nl.hauntedmc.dungeons.api.DungeonExperienceApi;
 import nl.hauntedmc.dungeons.content.function.SpawnMobFunction;
+import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
+import nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry;
 import nl.hauntedmc.dungeons.support.PaperBoundary;
+import nl.hauntedmc.dungeons.support.PlayerState;
+import nl.hauntedmc.dungeons.support.RunFixture;
+import nl.hauntedmc.dungeons.util.text.ComponentUtils;
 import nl.hauntedmc.featureframework.hud.HudService;
 import org.bukkit.Bukkit;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.ServicesManager;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scheduler.BukkitTask;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.mockito.ArgumentCaptor;
 
 class ExperienceServiceTest {
+    @Test
+    void statusAfterLeavingShowsNoActiveDungeonAndDoesNotReplayTheExitReport(
+            @TempDir Path directory) throws Exception {
+        try (var fixture = new RunFixture(directory, new YamlConfiguration())) {
+            LangUtils.initialize();
+            fixture.paper.runtime.setQueueRegistry(mock(DungeonQueueRegistry.class));
+            var player = new PlayerState();
+            when(player.player.locale()).thenReturn(Locale.ENGLISH);
+            var session = fixture.session(player);
+            var service = new ExperienceService(fixture.paper.runtime);
+            service.joined(fixture.run, session);
+            service.reward(player.player, Component.text("Vault token"), 1);
+            clearInvocations(player.player);
+
+            service.departed(fixture.run, session);
+            var messages = ArgumentCaptor.forClass(Component.class);
+            verify(player.player, atLeastOnce()).sendMessage(messages.capture());
+            var report = messages.getAllValues().stream().map(ComponentUtils::plainText).toList();
+            assertEquals(1, report.stream().filter(line -> line.contains("Run summary")).count());
+            assertTrue(report.stream().anyMatch(line -> line.contains("Vault token")));
+
+            clearInvocations(player.player);
+            assertTrue(service.handle(player.player, new String[] {"status"}));
+            assertTrue(service.handle(player.player, new String[] {"status"}));
+            var statuses = ArgumentCaptor.forClass(Component.class);
+            verify(player.player, times(2)).sendMessage(statuses.capture());
+            assertTrue(
+                    statuses.getAllValues().stream()
+                            .map(ComponentUtils::plainText)
+                            .allMatch(
+                                    line -> line.contains("You are not currently in a dungeon.")));
+        } finally {
+            LangUtils.clear();
+        }
+    }
+
+    @Test
+    void statusDoesNotReplayPreviousRunMessages(
+            @org.junit.jupiter.api.io.TempDir java.nio.file.Path directory) throws Exception {
+        try (var fixture =
+                new nl.hauntedmc.dungeons.support.RunFixture(
+                        directory, new org.bukkit.configuration.file.YamlConfiguration())) {
+            var player = new nl.hauntedmc.dungeons.support.PlayerState();
+            var session = fixture.session(player);
+            var service = new ExperienceService(fixture.paper.runtime);
+            service.joined(fixture.run, session);
+            var previous =
+                    net.kyori.adventure.text.Component.text("Your display settings were saved.");
+            for (int count = 0; count < 8; count++) service.record(player.player, previous);
+
+            assertTrue(service.handle(player.player, new String[] {"status"}));
+
+            verify(player.player, atLeastOnce())
+                    .sendMessage(any(net.kyori.adventure.text.Component.class));
+            verify(player.player, never()).sendMessage(previous);
+        }
+    }
+
     @Test
     void repeatedStartupOwnsExactlyOneRegistrationAndTimer() {
         try (var paper = new PaperBoundary();

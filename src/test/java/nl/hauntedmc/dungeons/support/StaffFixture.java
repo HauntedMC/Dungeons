@@ -172,15 +172,6 @@ public final class StaffFixture implements AutoCloseable {
                 .forEach(CapturedScheduler.Job::run);
     }
 
-    public String token() {
-        return messages.stream()
-                .filter(m -> m.contains("--confirm "))
-                .reduce((a, b) -> b)
-                .orElseThrow()
-                .split("--confirm ")[1]
-                .strip();
-    }
-
     @Override
     public void close() {
         ops.close();

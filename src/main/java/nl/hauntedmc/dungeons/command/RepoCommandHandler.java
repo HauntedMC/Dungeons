@@ -2,7 +2,10 @@ package nl.hauntedmc.dungeons.command;
 
 import java.util.*;
 import java.util.concurrent.*;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import nl.hauntedmc.dungeons.localization.LangUtils;
+import nl.hauntedmc.dungeons.presentation.DungeonUi;
 import nl.hauntedmc.dungeons.repository.*;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import nl.hauntedmc.dungeons.runtime.staff.StaffPermissions;
@@ -24,10 +27,6 @@ final class RepoCommandHandler implements CommandHandler {
         if (args.length < 1) throw new IllegalArgumentException("Use /dungeon help repo");
         String action = args[0].toLowerCase(Locale.ROOT);
         var input = new ArrayList<>(List.of(args));
-        String token = option(input, "--confirm");
-        if (token != null && !Set.of("pull", "rollback").contains(action))
-            throw new IllegalArgumentException(
-                    "--confirm only applies to forced pulls and rollbacks");
         CompletableFuture<?> result;
         switch (action) {
             case "fetch" -> {
@@ -55,14 +54,11 @@ final class RepoCommandHandler implements CommandHandler {
                 String version = option(input, "--version");
                 boolean force = input.remove("--force");
                 exact(input, 2);
-                if (token != null && !force)
-                    throw new IllegalArgumentException("--confirm requires --force");
                 result =
                         repo.pull(
                                 input.get(1),
                                 version == null ? null : RepoVersion.parse(version),
                                 force,
-                                token,
                                 actor);
             }
             case "rollback" -> {
@@ -73,7 +69,6 @@ final class RepoCommandHandler implements CommandHandler {
                                 RepoVersion.parse(input.get(2)),
                                 input.get(3),
                                 message(input, 4),
-                                token,
                                 actor);
             }
             case "history" -> {
@@ -81,15 +76,14 @@ final class RepoCommandHandler implements CommandHandler {
                     throw new IllegalArgumentException("Use repo history <dungeon> [page]");
                 result = repo.history(input.get(1), actor, page(input, 2));
             }
-            case "status", "diff" -> {
-                if (input.size() > (action.equals("diff") ? 3 : 2)
-                        || action.equals("diff") && input.size() < 2)
-                    throw new IllegalArgumentException("Use repo " + action + " <dungeon>");
-                result =
-                        repo.status(
-                                input.size() == 2 ? input.get(1) : null,
-                                actor,
-                                action.equals("diff"));
+            case "status" -> {
+                if (input.size() > 2) throw new IllegalArgumentException("Use repo status [map]");
+                result = repo.status(input.size() == 2 ? input.get(1) : null, actor, false);
+            }
+            case "diff" -> {
+                if (input.size() < 2 || input.size() > 3)
+                    throw new IllegalArgumentException("Use repo diff <map> [page]");
+                result = repo.status(input.get(1), actor, true, page(input, 2));
             }
             default -> throw new IllegalArgumentException("Use /dungeon help repo");
         }
@@ -125,13 +119,41 @@ final class RepoCommandHandler implements CommandHandler {
                                                                 Objects.toString(
                                                                         detail.getMessage(),
                                                                         "Operation failed")));
-                                            } else if (value instanceof Collection<?> lines)
-                                                lines.forEach(
-                                                        line ->
-                                                                LangUtils.sendRaw(
-                                                                        actor,
-                                                                        String.valueOf(line)));
-                                            else LangUtils.sendRaw(actor, String.valueOf(value));
+                                            } else if (value instanceof Collection<?> lines) {
+                                                if (lines.isEmpty()
+                                                        && List.of("list", "history")
+                                                                .contains(action)) {
+                                                    LangUtils.sendMessage(
+                                                            actor,
+                                                            "repository." + action + "-empty");
+                                                } else {
+                                                    actor.sendMessage(
+                                                            DungeonUi.heading(
+                                                                    LangUtils.component(
+                                                                            "repository.ui-"
+                                                                                    + action,
+                                                                            actor,
+                                                                            false)));
+                                                    for (Object resultLine : lines) {
+                                                        String line = String.valueOf(resultLine);
+                                                        NamedTextColor color =
+                                                                line.startsWith("+ ")
+                                                                        ? NamedTextColor.GREEN
+                                                                        : line.startsWith("- ")
+                                                                                ? NamedTextColor.RED
+                                                                                : line.startsWith(
+                                                                                                "~ ")
+                                                                                        ? NamedTextColor
+                                                                                                .GOLD
+                                                                                        : NamedTextColor
+                                                                                                .WHITE;
+                                                        actor.sendMessage(
+                                                                DungeonUi.detail(
+                                                                        Component.text(
+                                                                                line, color)));
+                                                    }
+                                                }
+                                            } else LangUtils.sendRaw(actor, String.valueOf(value));
                                         });
                     } catch (RuntimeException shuttingDown) {
                         /* Durable journals own interrupted outcomes. */
@@ -163,7 +185,8 @@ final class RepoCommandHandler implements CommandHandler {
 
     private static String message(List<String> args, int from) {
         String result = String.join(" ", args.subList(from, args.size()));
-        if (result.contains("--")) throw new IllegalArgumentException("Unknown repository option");
+        if (args.subList(from, args.size()).stream().anyMatch(word -> word.startsWith("--")))
+            throw new IllegalArgumentException("Unknown repository option");
         if (result.length() > 1024)
             throw new IllegalArgumentException("Publication message exceeds 1024 characters");
         return result;

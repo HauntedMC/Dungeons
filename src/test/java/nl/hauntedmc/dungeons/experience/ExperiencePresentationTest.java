@@ -64,7 +64,7 @@ class ExperiencePresentationTest {
                         "elapsed", net.kyori.adventure.text.Component.text("Elapsed"));
         policy = ExperiencePresentation.resolve(local, global);
         assertEquals(
-                java.util.List.of(widgets.get("remaining"), widgets.get("elapsed")),
+                java.util.List.of(widgets.get("elapsed"), widgets.get("remaining")),
                 policy.layout(widgets, java.util.Map.of()));
         local.set(
                 "experience.sidebar.rows",

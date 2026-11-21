@@ -3,8 +3,8 @@ package nl.hauntedmc.dungeons.gui.hotbar.menuitems;
 import java.util.ArrayList;
 import java.util.List;
 import net.kyori.adventure.text.Component;
+import nl.hauntedmc.dungeons.gui.framework.text.GuiTextUtils;
 import nl.hauntedmc.dungeons.util.text.ColorUtils;
-import nl.hauntedmc.dungeons.util.text.ComponentUtils;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -29,7 +29,7 @@ public class MenuButton {
     public void setDisplayName(String displayName) {
         this.displayName = ColorUtils.fullColor(displayName);
         ItemMeta meta = this.item.getItemMeta();
-        meta.displayName(ComponentUtils.component(this.displayName));
+        meta.displayName(GuiTextUtils.itemName(this.displayName));
         this.item.setItemMeta(meta);
     }
 
@@ -41,7 +41,7 @@ public class MenuButton {
             lore = new ArrayList<>();
         }
 
-        lore.add(ComponentUtils.component(line));
+        lore.add(GuiTextUtils.itemLore(line));
         meta.lore(lore);
         this.item.setItemMeta(meta);
     }

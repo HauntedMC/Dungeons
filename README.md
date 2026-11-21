@@ -115,7 +115,9 @@ initialized automatically as unpublished `0.0.0` drafts and can be played locall
 without valid `.dungeon-repo.yml` metadata are disabled for gameplay and warm-world preloading.**
 They remain inspectable/editable. Run `/dungeon repo init <map>` on each legacy map to initialize
 it, preserving its UUID, enabled preference, progression and keys. Initialization does not publish
-or attach an older map to a release already in the repository.
+or attach an older map to a release already in the repository. Administrators can use
+`/dungeon edit testplay <map>` to start a private test run of a local map, including
+uninitialized or disabled maps.
 
 | Command | Purpose |
 | --- | --- |
@@ -146,10 +148,10 @@ Global plugin settings and external plugin/resource dependencies are not bundled
 Pull downloads and validates before closing admissions. Existing runs can finish; occupied editors
 must save/close. Editor changes are frozen during the drain, but save/close remain available. The
 final saved local content is checked again before installation. Modified or uninitialized copies
-require `--force`; the command returns a short-lived `--confirm <token>` command bound to the saved
-content and selected release. Confirmed requests reuse the verified download, and the token is
-accepted before potentially lengthy local revalidation. A forced pull still requires compatible, verified content and matching
-UUIDs. Different-UUID name collisions must be archived/resolved explicitly.
+require `--force`. Once preflight finishes, repeat the same command within 10 seconds to replace
+the saved local copy. The second invocation reuses the verified download and checks that the
+local content and selected release still match the preflight. A forced pull still requires
+compatible, verified content and matching UUIDs. Different-UUID name collisions must be archived/resolved explicitly.
 
 Successful updates restore the prior admission state without clearing separately requested
 maintenance. Failures retain maintenance and restore prior files when possible. Every replacement
@@ -207,12 +209,13 @@ bundled HUD API across Paper plugin class loaders so both plugins arbitrate thro
 root `messages.yml` there once, preserving their text and formatting. If both files already exist,
 the canonical `lang/messages.yml` stays authoritative and the old file moves to
 `backups/messages-legacy-<id>.yml`. Fresh installs never create a root message file. Missing bundled
-keys are merged; custom keys and translations are retained. Restart or use
-`/dungeon server reload config <reason>` to reload messages.
+keys are merged. On startup, the gameplay terminology update replaces values that exactly match
+the previous bundled text. Edited values and explicit Dutch overrides are retained. Restart or
+use `/dungeon server reload config` to reload messages.
 
 Templates accept legacy formatting, MiniMessage and `<HauntedMC:Brand>`, `<HauntedMC:Success>`,
 `<HauntedMC:Warning>`, `<HauntedMC:Error>` and the other shared theme items. Placeholder strings are
-literal components, so a player name or staff reason cannot inject colors or click actions. Explicit
+literal components, so a player name cannot inject colors or click actions. Explicit
 component placeholders preserve intentionally supplied interactive actions. Legacy UI conversion
 does not parse the resulting text a second time. Chat, action bars, kick notices and command output
 share the theme; authored dungeon narrative retains its configured formatting.
@@ -263,6 +266,8 @@ not durability of progression or recovery state.
 
 Every dungeon has an adaptive HUD, guide, entry information and exit confirmation. Vanilla loot maps need no objectives or extra mechanics file. Optional flat objectives, staged tracks, existing bosses and wave encounters can be combined independently. Use `/dungeon guide`, `/dungeon hud` and `/dungeon edit experience`.
 
+The scoreboard shows the selected difficulty below the map name and the shared run time, including for players who join late. Timed runs also show a countdown. The team count follows the player’s dungeon team roster, and remaining lives appear on maps with a life limit.
+
 ## Dungeon scripting
 
 Dungeon scripting supports timer and variable-change triggers, player/world conditions,
@@ -271,9 +276,11 @@ health effects, conditional groups and runtime validation.
 ## Administration
 
 Use `/dungeon help` to discover commands; staff inspection and confirmations appear in chat.
+Destructive commands such as archiving or restoring a map and purging an archive ask you to
+repeat the same command within 10 seconds.
 There is no admin dashboard inventory.
 
-- `/dungeon edit open <dungeon>` opens the world editor; an optional reason may follow the name.
+- `/dungeon edit open <dungeon>` opens the world editor.
 - `/dungeon edit save` saves changes, and `/dungeon edit close` leaves the editor.
 - `/dungeon help map` covers creation, imports, validation, settings, keys, backups and archives.
 - `/dungeon help instance`, `/dungeon help player`, `/dungeon help queue` and `/dungeon help server` cover runtime administration.

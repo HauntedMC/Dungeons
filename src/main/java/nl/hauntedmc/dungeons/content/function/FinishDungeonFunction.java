@@ -82,7 +82,7 @@ public class FinishDungeonFunction extends DungeonFunction {
                             LangUtils.placeholder(
                                     "dungeon", instance.getDungeon().getDisplayNameComponent()));
                 DungeonDefinition dungeon = instance.getDungeon();
-                if (!dungeon.hasPlayerCompletedDungeon(player)) {
+                if (!instance.isTestPlay() && !dungeon.hasPlayerCompletedDungeon(player)) {
                     dungeon.setPlayerCompletedDungeon(player);
                 }
 

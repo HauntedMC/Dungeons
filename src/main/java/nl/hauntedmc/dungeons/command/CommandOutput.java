@@ -9,6 +9,7 @@ import nl.hauntedmc.dungeons.config.PluginConfigView;
 import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
+import nl.hauntedmc.dungeons.presentation.DungeonUi;
 import nl.hauntedmc.dungeons.runtime.dungeon.DungeonRepository;
 import nl.hauntedmc.dungeons.util.command.InputUtils;
 import org.bukkit.Location;
@@ -124,7 +125,7 @@ final class CommandOutput {
                     return null;
                 }
 
-                page = Math.max(1, parsed.get());
+                page = parsed.get();
             } else {
                 filter = firstArg;
             }
@@ -136,9 +137,13 @@ final class CommandOutput {
                 return null;
             }
 
-            page = Math.max(1, parsed.get());
+            page = parsed.get();
         }
 
+        if (page < 1) {
+            LangUtils.sendMessage(sender, usageKey);
+            return null;
+        }
         return new FilterPageQuery(filter, page);
     }
 
@@ -154,8 +159,9 @@ final class CommandOutput {
             List<Component> lines,
             String noMatchKey,
             String footerKey,
-            int requestedPage) {
-        LangUtils.sendRaw(sender, headerLine);
+            int requestedPage,
+            String pageCommand) {
+        sender.sendMessage(DungeonUi.heading(headerLine));
         if (lines.isEmpty()) {
             LangUtils.sendMessage(sender, noMatchKey);
             return;
@@ -167,13 +173,22 @@ final class CommandOutput {
         int startIndex = (page - 1) * pageSize;
         int endIndex = Math.min(startIndex + pageSize, lines.size());
         for (int i = startIndex; i < endIndex; i++) {
-            LangUtils.sendRaw(sender, lines.get(i));
+            sender.sendMessage(DungeonUi.detail(lines.get(i)));
         }
 
-        LangUtils.sendMessage(
-                sender,
-                footerKey,
-                LangUtils.placeholder("page", String.valueOf(page)),
-                LangUtils.placeholder("total_pages", String.valueOf(totalPages)));
+        if (totalPages == 1) return;
+        sender.sendMessage(
+                DungeonUi.detail(
+                        DungeonUi.pager(
+                                LangUtils.component(
+                                        footerKey,
+                                        sender,
+                                        false,
+                                        LangUtils.placeholder("page", String.valueOf(page)),
+                                        LangUtils.placeholder(
+                                                "total_pages", String.valueOf(totalPages))),
+                                page,
+                                totalPages,
+                                pageCommand)));
     }
 }

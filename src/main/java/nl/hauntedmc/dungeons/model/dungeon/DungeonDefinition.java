@@ -550,6 +550,14 @@ public abstract class DungeonDefinition {
             int requestedPlayers,
             @Nullable UUID startedTeamLeaderId);
 
+    public boolean prepareTestPlay(Player player) {
+        return this.prepareIsolatedInstance(player, "", null, instance -> {}, 0L, true);
+    }
+
+    protected PlayableInstance createTestPlaySession(CountDownLatch latch) {
+        return this.createPlaySession(latch, null);
+    }
+
     /** Shared cancellation/publication lifecycle for static and generated isolated runs. */
     protected final boolean prepareIsolatedInstance(
             Player player,
@@ -557,6 +565,22 @@ public abstract class DungeonDefinition {
             @Nullable UUID startedTeamLeaderId,
             Consumer<PlayableInstance> prepareAdmission,
             long admissionDelay) {
+        return this.prepareIsolatedInstance(
+                player,
+                difficultyName,
+                startedTeamLeaderId,
+                prepareAdmission,
+                admissionDelay,
+                false);
+    }
+
+    protected final boolean prepareIsolatedInstance(
+            Player player,
+            String difficultyName,
+            @Nullable UUID startedTeamLeaderId,
+            Consumer<PlayableInstance> prepareAdmission,
+            long admissionDelay,
+            boolean testPlay) {
         DungeonPlayerSession session = this.playerSessions().get(player);
         if (session == null) return false;
         return new InstancePreparation(
@@ -567,7 +591,8 @@ public abstract class DungeonDefinition {
                         startedTeamLeaderId,
                         this.preparationTimeout(),
                         prepareAdmission,
-                        admissionDelay)
+                        admissionDelay,
+                        testPlay)
                 .start();
     }
 
@@ -666,6 +691,7 @@ public abstract class DungeonDefinition {
     }
 
     public boolean shouldApplyAccessCooldown(@Nullable DungeonInstance instance, UUID playerId) {
+        if (instance instanceof PlayableInstance play && play.isTestPlay()) return false;
         Player player = Bukkit.getPlayer(playerId);
         if (player != null
                 && CommandUtils.hasPermissionSilent(player, "dungeons.bypass.cooldown")) {
@@ -984,12 +1010,20 @@ public abstract class DungeonDefinition {
     }
 
     public void setExit(@Nullable Location exitLoc) {
+        if (exitLoc != null) {
+            var world = exitLoc.getWorld();
+            if (world == null
+                    || this.activeInstances() != null
+                            && this.activeInstances().getDungeonInstance(world.getName()) != null)
+                throw new IllegalArgumentException(
+                        "Set the exit from a permanent world using /dungeon map settings "
+                                + this.worldName
+                                + " set exit-location here");
+        }
         this.exitLoc = exitLoc;
         if (exitLoc == null) {
             this.config.set("locations.exit", null);
         } else {
-            Location target = exitLoc.clone();
-            target.setWorld(null);
             LocationUtils.writeExternalLocation("locations.exit", this.config, exitLoc);
         }
         this.saveConfig();
@@ -1068,6 +1102,10 @@ public abstract class DungeonDefinition {
     /** Administrator-authored formatting is explicit; ordinary placeholder strings stay literal. */
     public Component getDisplayNameComponent() {
         return LangUtils.trusted(this.displayName);
+    }
+
+    public boolean isConfiguredEnabled() {
+        return this.enabled;
     }
 
     public boolean isEnabled() {

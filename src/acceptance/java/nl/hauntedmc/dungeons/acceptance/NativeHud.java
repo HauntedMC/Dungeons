@@ -90,6 +90,7 @@ final class NativeHud {
                                                         && !hasAmbientBoss(player)
                                                         && probe.actionBar().isEmpty();
                                             })
+                                    .thenCompose(ignored -> exerciseGuide(test, player))
                                     .thenCompose(
                                             ignored -> {
                                                 Bukkit.getServicesManager()
@@ -186,6 +187,95 @@ final class NativeHud {
                                 probe.close();
                             }
                         });
+    }
+
+    private static CompletionStage<Void> exerciseGuide(
+            AcceptancePlugin test, org.bukkit.entity.Player player) {
+        test.runtime().experience().handle(player, new String[] {"guide"});
+        require(
+                player.getOpenInventory().getTopInventory().getSize() == 18,
+                "Guide did not open on Paper");
+        click(player, 9);
+        return test.await(
+                        "Guide opens HUD settings",
+                        () ->
+                                player.getOpenInventory().getTopInventory().getItem(9).getType()
+                                        == org.bukkit.Material.ARROW)
+                .thenCompose(
+                        ignored -> {
+                            var before = player.getOpenInventory().getTopInventory();
+                            click(player, 4);
+                            return test.await(
+                                    "HUD profile applied and page refreshed",
+                                    () ->
+                                            "minimal"
+                                                            .equals(
+                                                                    test.runtime()
+                                                                            .playerSessions()
+                                                                            .get(player)
+                                                                            .experiencePreference(
+                                                                                    "profile",
+                                                                                    "inherit"))
+                                                    && player.getOpenInventory().getTopInventory()
+                                                            != before);
+                        })
+                .thenCompose(
+                        ignored -> {
+                            var before = player.getOpenInventory().getTopInventory();
+                            var session = test.runtime().playerSessions().get(player);
+                            boolean wasOn =
+                                    Boolean.parseBoolean(
+                                            session.experiencePreference("navigation", "false"));
+                            require(
+                                    Boolean.valueOf(wasOn)
+                                            .equals(
+                                                    before.getItem(16)
+                                                            .getItemMeta()
+                                                            .getEnchantmentGlintOverride()),
+                                    "Navigation icon did not match the saved preference");
+                            click(player, 16);
+                            return test.await(
+                                    "Navigation icon reflects the new preference",
+                                    () -> {
+                                        var after = player.getOpenInventory().getTopInventory();
+                                        return after != before
+                                                && after.getSize() == 18
+                                                && Boolean.toString(!wasOn)
+                                                        .equals(
+                                                                session.experiencePreference(
+                                                                        "navigation", "false"))
+                                                && Boolean.valueOf(!wasOn)
+                                                        .equals(
+                                                                after.getItem(16)
+                                                                        .getItemMeta()
+                                                                        .getEnchantmentGlintOverride());
+                                    });
+                        })
+                .thenCompose(
+                        ignored -> {
+                            click(player, 9);
+                            return test.await(
+                                    "HUD settings return to guide",
+                                    () ->
+                                            player.getOpenInventory()
+                                                            .getTopInventory()
+                                                            .getItem(9)
+                                                            .getType()
+                                                    == org.bukkit.Material.COMPARATOR);
+                        })
+                .thenRun(player::closeInventory);
+    }
+
+    private static void click(org.bukkit.entity.Player player, int slot) {
+        var event =
+                new org.bukkit.event.inventory.InventoryClickEvent(
+                        player.getOpenInventory(),
+                        org.bukkit.event.inventory.InventoryType.SlotType.CONTAINER,
+                        slot,
+                        org.bukkit.event.inventory.ClickType.LEFT,
+                        org.bukkit.event.inventory.InventoryAction.PICKUP_ALL);
+        Bukkit.getPluginManager().callEvent(event);
+        require(event.isCancelled(), "Guide allowed a control to be picked up");
     }
 
     private static HudService.Lease claim(

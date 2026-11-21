@@ -115,6 +115,88 @@ class BundledTranslationTest {
     }
 
     @Test
+    void dutchGameplayTermsMatchTheHudMenusAndChat() {
+        var dutch = messages(Language.NL);
+        var player = mock(Player.class);
+        var labels =
+                Map.of(
+                        "commands.ui.topic-guide", "Guide",
+                        "experience.guide-title", "Dungeon Guide",
+                        "experience.objectives", "Objectives",
+                        "experience.spawn", "Spawnpoint",
+                        "experience.checkpoint", "Checkpoint",
+                        "experience.spectating", "Spectator Mode",
+                        "experience.lobby", "Lobby");
+        labels.forEach(
+                (key, value) ->
+                        assertEquals(
+                                value,
+                                ComponentUtils.plainText(
+                                        dutch.message(key, player, false, Map.of())),
+                                key));
+        assertEquals(
+                "Difficulty  Hard",
+                ComponentUtils.plainText(
+                        dutch.message(
+                                "experience.ui-hud-difficulty",
+                                player,
+                                false,
+                                Map.of("value", "Hard"))));
+        assertTrue(dutch.template("experience.spawn-explanation", player).contains("checkpoint"));
+        assertTrue(dutch.template("experience.ui-leave-progress", player).contains("savepoint"));
+        assertEquals(
+                " ◆ Volgende wave · Skeletons",
+                ComponentUtils.plainText(
+                        dutch.message(
+                                "experience.wave-started",
+                                player,
+                                false,
+                                Map.of("value", "Skeletons"))));
+    }
+
+    @Test
+    void startupUpdatesPreviousBundledWordingAndRetainsOperatorOverrides() throws Exception {
+        Path lang = Files.createDirectories(directory.resolve("lang"));
+        Files.writeString(
+                lang.resolve("messages.yml"),
+                """
+                experience:
+                  spawn: '<HauntedMC:Text>Startpunt'
+                  objectives: 'Server objectives'
+                  balanced: '<HauntedMC:Text>Gebalanceerd'
+                commands:
+                  edit:
+                    help:
+                      lines: ['Custom editor help']
+                """);
+        Files.writeString(
+                lang.resolve("messages_NL.yml"),
+                """
+                experience:
+                  balanced: '<HauntedMC:Text>Gebalanceerd'
+                """);
+        Files.writeString(
+                lang.resolve("messages_EN.yml"),
+                """
+                experience:
+                  fresh-start: '<HauntedMC:Text>[Start fresh]'
+                  spawn: 'Server spawn'
+                """);
+        var player = mock(Player.class);
+        var dutch = messages(Language.NL);
+        assertEquals("<HauntedMC:Text>Spawnpoint", dutch.template("experience.spawn", player));
+        assertEquals("Server objectives", dutch.template("experience.objectives", player));
+        assertEquals("<HauntedMC:Text>Balanced", dutch.template("experience.balanced", null));
+        assertEquals("<HauntedMC:Text>Gebalanceerd", dutch.template("experience.balanced", player));
+        assertEquals(
+                List.of("Custom editor help"), dutch.lines("commands.edit.help.lines", player));
+        var english = messages(Language.EN);
+        assertEquals(
+                "<HauntedMC:Text>Start fresh", english.template("experience.fresh-start", player));
+        assertEquals("Server spawn", english.template("experience.spawn", player));
+    }
+
+    @Test
     void everyExampleKeyMatchesTheDefaultTypeAndPlaceholderContract() throws Exception {
         var defaults = resource("lang/messages.yml");
         var example = resource("lang/messages_EN.yml");

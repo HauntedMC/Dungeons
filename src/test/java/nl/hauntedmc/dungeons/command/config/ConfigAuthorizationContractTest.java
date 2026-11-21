@@ -41,7 +41,7 @@ class ConfigAuthorizationContractTest {
                             catalog,
                             mock(PlayerSessionRegistry.class),
                             mock(ActiveInstanceRegistry.class));
-            var request = new String[] {"config", "crypt", "max-team-size", "2"};
+            var request = new String[] {"config", "crypt", "set", "max-team-size", "2"};
             assertTrue(commands.handleCommand(sender, request));
             assertEquals(4, crypt.getMaxTeamSize());
             when(sender.hasPermission("dungeons.staff.edit.crypt")).thenReturn(true);
@@ -76,7 +76,8 @@ class ConfigAuthorizationContractTest {
                             mock(ActiveInstanceRegistry.class));
             for (String invalid : new String[] {"NaN", "Infinity", "-Infinity", "1e309"}) {
                 commands.handleCommand(
-                        sender, new String[] {"config", "crypt", "trunk.straightness", invalid});
+                        sender,
+                        new String[] {"config", "crypt", "set", "trunk.straightness", invalid});
                 assertEquals(
                         0.5, settings.getDouble("generator.branching.trunk.straightness"), invalid);
             }
@@ -119,30 +120,49 @@ class ConfigAuthorizationContractTest {
             for (var row : cases) {
                 commands.handleCommand(
                         state.player,
-                        new String[] {"config", "crypt", (String) row.get(0), (String) row.get(1)});
+                        new String[] {
+                            "config", "crypt", "set", (String) row.get(0), (String) row.get(1)
+                        });
                 assertEquals(
                         row.get(3), f.dungeon.getConfig().get((String) row.get(2)), row.toString());
             }
             commands.handleCommand(
-                    state.player, new String[] {"config", "crypt", "max-team-size", "3.5"});
+                    state.player, new String[] {"config", "crypt", "set", "max-team-size", "3.5"});
             commands.handleCommand(
-                    state.player, new String[] {"config", "crypt", "gamemode", "invalid"});
+                    state.player, new String[] {"config", "crypt", "set", "gamemode", "invalid"});
             commands.handleCommand(
                     state.player,
                     new String[] {
-                        "config", "crypt", "block-break-whitelist", "STONE,NO_SUCH_BLOCK"
+                        "config", "crypt", "set", "block-break-whitelist", "STONE,NO_SUCH_BLOCK"
                     });
             var file = new YamlConfiguration();
             file.load(directory.resolve("crypt/config.yml").toFile());
             for (var row : cases) assertEquals(row.get(3), file.get((String) row.get(2)));
             commands.handleCommand(
-                    state.player, new String[] {"config", "crypt", "start-location", "here"});
+                    state.player,
+                    new String[] {"config", "crypt", "set", "start-location", "here"});
             file.load(directory.resolve("crypt/config.yml").toFile());
             var reloaded = f.paper.dungeon(directory.resolve("crypt"), file);
             assertNull(reloaded.getStartSpawn().getWorld());
             assertFalse(file.contains("locations.start.world"));
             assertEquals(state.location.getX(), f.dungeon.getStartSpawn().getX());
             assertEquals(state.location.getYaw(), f.dungeon.getStartSpawn().getYaw());
+            commands.handleCommand(
+                    state.player,
+                    new String[] {"config", "crypt", "set", "join-commands", "clear"});
+            assertEquals(List.of("clear"), f.dungeon.getJoinCommands());
+            commands.handleCommand(
+                    state.player,
+                    new String[] {"config", "crypt", "set", "join-commands", "add", "coins"});
+            assertEquals(List.of("add coins"), f.dungeon.getJoinCommands());
+            commands.handleCommand(
+                    state.player,
+                    new String[] {"config", "crypt", "add", "join-commands", "clear"});
+            assertEquals(List.of("add coins", "clear"), f.dungeon.getJoinCommands());
+            commands.handleCommand(
+                    state.player, new String[] {"config", "crypt", "clear", "join-commands"});
+            assertTrue(f.dungeon.getJoinCommands().isEmpty());
+
             assertSame(state.originWorld, state.location.getWorld());
         }
     }

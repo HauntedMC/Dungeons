@@ -6,7 +6,6 @@ import java.lang.reflect.Proxy;
 import java.nio.file.*;
 import java.util.concurrent.*;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.regex.Pattern;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import nl.hauntedmc.dungeons.repository.*;
@@ -81,8 +80,7 @@ final class NativeRepository {
                         })
                 .thenCompose(
                         ignored ->
-                                test.onMain(
-                                        repository.pull(id.toString(), null, false, null, console)))
+                                test.onMain(repository.pull(id.toString(), null, false, console)))
                 .thenCompose(
                         ignored ->
                                 test.await(
@@ -111,6 +109,18 @@ final class NativeRepository {
                             require(
                                     !restored.getConfig().getBoolean("dungeon.enabled"),
                                     "First install was enabled automatically");
+                            require(
+                                    ops.mapMaintenance(restored.getWorldName()),
+                                    "Repository installation unexpectedly cleared previous maintenance");
+                            require(
+                                    Bukkit.dispatchCommand(
+                                            console,
+                                            "dungeon map enable " + restored.getWorldName()),
+                                    "Map enable was not dispatched");
+                            require(
+                                    restored.isEnabled()
+                                            && !ops.mapMaintenance(restored.getWorldName()),
+                                    "Map enable did not reopen a synced map left in maintenance");
                             require(
                                     restored.getConfig().get("locations.exit") == null,
                                     "Publisher's external exit leaked to a first installation");
@@ -164,15 +174,47 @@ final class NativeRepository {
                 .dungeonCatalog()
                 .get(id)
                 .setSaveConfig("dungeon.display_name", "Unpublished local work");
-        return test.onMain(repository.pull(id, null, true, null, actor))
+        return test.onMain(repository.pull(id, null, false, actor))
+                .thenCompose(
+                        ignored ->
+                                test.await(
+                                        "dirty repository pull rejected",
+                                        () -> {
+                                            var operation =
+                                                    test.runtime()
+                                                            .staffOperations()
+                                                            .operations()
+                                                            .getLast();
+                                            if (!operation.action.equals("repo-pull")
+                                                    || operation.state
+                                                            != StaffOperations.State.FAILED)
+                                                return false;
+                                            require(
+                                                    operation.detail.contains(
+                                                            "Local content changed"),
+                                                    "Unexpected pull failure: " + operation.detail);
+                                            var local = test.runtime().dungeonCatalog().get(id);
+                                            require(
+                                                    local.isEnabled(),
+                                                    "Rejected pull left a playable map in maintenance");
+                                            require(
+                                                    local.getDisplayName()
+                                                            .contains("Unpublished local work"),
+                                                    "Rejected pull replaced saved local content");
+                                            return true;
+                                        }))
+                .thenCompose(ignored -> test.onMain(repository.pull(id, null, true, actor)))
                 .thenCompose(ignored -> awaitPull(test))
                 .thenCompose(
                         ignored -> {
-                            String token = token(output);
-                            output.clear();
-                            return test.onMain(
-                                    repository.pull(
-                                            id, RepoVersion.parse("1.1.0"), true, token, actor));
+                            require(
+                                    output.stream()
+                                            .anyMatch(
+                                                    line ->
+                                                            line.contains(
+                                                                    "Repeat this command within 10 seconds")),
+                                    "Confirmation was not delivered: " + output);
+                            return test.onMain(repository.pull(id, null, true, actor));
                         })
                 .thenCompose(ignored -> awaitPull(test))
                 .thenCompose(
@@ -184,27 +226,12 @@ final class NativeRepository {
                                             .getDisplayName()
                                             .contains("Repository revised map"),
                                     "Confirmed forced pull did not replace dirty content");
-                            output.clear();
                             return test.onMain(
                                     repository.rollback(
                                             id,
                                             RepoVersion.FIRST,
                                             "patch",
                                             "Native rollback",
-                                            null,
-                                            actor));
-                        })
-                .thenCompose(
-                        ignored -> {
-                            String token = token(output);
-                            output.clear();
-                            return test.onMain(
-                                    repository.rollback(
-                                            id,
-                                            RepoVersion.FIRST,
-                                            "patch",
-                                            "Native rollback",
-                                            token,
                                             actor));
                         })
                 .thenCompose(
@@ -237,15 +264,6 @@ final class NativeRepository {
                             "Repository force flow failed: " + operation.detail);
                     return operation.state == StaffOperations.State.SUCCEEDED;
                 });
-    }
-
-    private static String token(java.util.List<String> output) {
-        var pattern = Pattern.compile("--confirm ([0-9a-f-]{36})");
-        for (String line : output) {
-            var match = pattern.matcher(line);
-            if (match.find()) return match.group(1);
-        }
-        throw new AssertionError("Confirmation was not delivered: " + output);
     }
 
     static CompletionStage<Void> restart(AcceptancePlugin test) throws Exception {

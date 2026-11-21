@@ -32,21 +32,17 @@ class StaffOperationsContractTest {
             var now = new AtomicLong(1);
             var ops = new StaffOperations(f.run.paper.runtime, now::get);
             var other = actor("Other");
-            UUID token = ops.confirm(f.actor, "archive", "crypt", "v1", "reason", null);
-            assertNotNull(ops.confirm(other, "archive", "crypt", "v1", "reason", token.toString()));
-            assertNotNull(
-                    ops.confirm(f.actor, "archive", "other", "v1", "reason", token.toString()));
-            token = ops.confirm(f.actor, "archive", "crypt", "v1", "reason", null);
-            assertNotNull(
-                    ops.confirm(f.actor, "archive", "crypt", "v2", "reason", token.toString()));
-            token = ops.confirm(f.actor, "archive", "crypt", "v1", "reason", null);
-            now.addAndGet(TimeUnit.SECONDS.toNanos(31));
-            assertNotNull(
-                    ops.confirm(f.actor, "archive", "crypt", "v1", "reason", token.toString()));
-            token = ops.confirm(f.actor, "archive", "crypt", "v1", "reason", null);
-            assertNull(ops.confirm(f.actor, "archive", "crypt", "v1", "reason", token.toString()));
-            assertNotNull(
-                    ops.confirm(f.actor, "archive", "crypt", "v1", "reason", token.toString()));
+            assertFalse(ops.confirm(f.actor, "archive", "crypt", "v1", "command"));
+            assertFalse(ops.confirm(other, "archive", "crypt", "v1", "command"));
+            assertFalse(ops.confirm(f.actor, "restore", "crypt", "v1", "command"));
+            assertFalse(ops.confirm(f.actor, "archive", "other", "v1", "command"));
+            assertFalse(ops.confirm(f.actor, "archive", "crypt", "v2", "command"));
+            assertFalse(ops.confirm(f.actor, "archive", "crypt", "v2", "different"));
+            assertFalse(ops.confirm(f.actor, "archive", "crypt", "v1", "command"));
+            now.addAndGet(TimeUnit.SECONDS.toNanos(10));
+            assertFalse(ops.confirm(f.actor, "archive", "crypt", "v1", "command"));
+            assertTrue(ops.confirm(f.actor, "archive", "crypt", "v1", "command"));
+            assertFalse(ops.confirm(f.actor, "archive", "crypt", "v1", "command"));
         }
     }
 

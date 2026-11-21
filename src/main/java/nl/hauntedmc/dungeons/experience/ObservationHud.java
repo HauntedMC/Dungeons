@@ -10,11 +10,11 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import nl.hauntedmc.dungeons.api.DungeonExperienceApi;
 import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.runtime.DungeonsRuntime;
 import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
-import nl.hauntedmc.featureframework.hud.HudFrame;
 import nl.hauntedmc.featureframework.hud.HudService;
 import nl.hauntedmc.featureframework.lifecycle.CleanupSequence;
 import org.bukkit.Bukkit;
@@ -87,16 +87,20 @@ final class ObservationHud implements AutoCloseable {
                 leases.put(id, lease);
             }
             lease.renew(Duration.ofSeconds(10));
-            var lines = new ArrayList<Component>();
-            lines.add(LangUtils.component("experience.observing", player, false, Map.of()));
-            lines.add(Component.text("/dungeon guide"));
-            lines.add(Component.text("/dungeon leave"));
-            String profile = policy.profile(session.experiencePreference("profile", "inherit"));
+            var board =
+                    new DungeonSidebar(
+                            policy, player, instance.getDungeon().getDisplayNameComponent());
+            board.row(
+                    "state",
+                    Component.text("● ", NamedTextColor.AQUA)
+                            .append(LangUtils.component("experience.ui-observing", player, false)));
+            board.runDetails(instance);
+            board.row("leave", Component.text("/dungeon leave", NamedTextColor.GRAY));
             lease.update(
-                    profile.equals("immersive")
+                    policy.profile(session.experiencePreference("profile", "inherit"))
+                                    .equals("immersive")
                             ? null
-                            : new HudFrame.Sidebar(
-                                    instance.getDungeon().getDisplayNameComponent(), lines));
+                            : board.frame());
         }
         for (UUID id : new ArrayList<>(leases.keySet())) if (!seen.contains(id)) release(id);
     }

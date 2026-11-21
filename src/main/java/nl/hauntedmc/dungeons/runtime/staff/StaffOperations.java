@@ -7,6 +7,7 @@ import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
@@ -38,6 +39,13 @@ public final class StaffOperations implements AutoCloseable {
         CANCELLED
     }
 
+    /** The operation declined to proceed before changing the live map. */
+    public static final class PreflightRejected extends IllegalArgumentException {
+        public PreflightRejected(String message) {
+            super(message);
+        }
+    }
+
     public static final class Operation {
         public UUID id = UUID.randomUUID();
         public final String actor;
@@ -62,13 +70,7 @@ public final class StaffOperations implements AutoCloseable {
     }
 
     private record Confirmation(
-            String actor,
-            String action,
-            String target,
-            String revision,
-            String parameters,
-            long expires,
-            UUID token) {}
+            String action, String target, String revision, String parameters, long expires) {}
 
     private record Pending(
             Operation operation,
@@ -210,6 +212,10 @@ public final class StaffOperations implements AutoCloseable {
                 || state.contains("maintenance." + dungeon);
     }
 
+    public boolean mapMaintenance(String dungeon) {
+        return state.contains("maintenance." + dungeon);
+    }
+
     public String maintenanceReason(String dungeon) {
         return state.getString(
                 "maintenance." + dungeon, state.getString("maintenance.all", "Maintenance"));
@@ -239,6 +245,16 @@ public final class StaffOperations implements AutoCloseable {
         persist(next -> next.set(path, enabled ? reason : null));
         audit(actor, "maintenance", dungeon, reason, before + " -> " + (enabled ? reason : "open"));
         if (enabled) cancelStarts(dungeon);
+        else preloadResumedMaps(dungeon);
+    }
+
+    private void preloadResumedMaps(String scope) {
+        for (var dungeon : runtime.dungeonCatalog().getLoadedDungeons()) {
+            if ((scope.equals("all") || scope.equals(dungeon.getWorldName()))
+                    && dungeon.isEnabled()
+                    && dungeon instanceof nl.hauntedmc.dungeons.content.dungeon.OpenDungeon open)
+                open.schedulePreLoadIfNeeded();
+        }
     }
 
     public String entryBlock(UUID player, String dungeon) {
@@ -357,41 +373,30 @@ public final class StaffOperations implements AutoCloseable {
     }
 
     /** Confirmation authorizes exactly one actor, action, revision and parameter set. */
-    public UUID confirm(
-            CommandSender actor,
-            String action,
-            String target,
-            String revision,
-            String parameters,
-            String token) {
+    public boolean confirm(
+            CommandSender actor, String action, String target, String revision, String parameters) {
         requireOpen();
         String identity =
                 actor instanceof Player p
                         ? p.getUniqueId().toString()
                         : "console:" + actor.getName();
-        Confirmation previous = confirmations.get(identity);
+        long now = clock.getAsLong();
+        confirmations.values().removeIf(entry -> now - entry.expires >= 0);
+        Confirmation previous = confirmations.remove(identity);
         if (previous != null
-                && previous.expires > clock.getAsLong()
                 && previous.action.equals(action)
                 && previous.target.equals(target)
                 && previous.revision.equals(revision)
-                && previous.parameters.equals(parameters)
-                && previous.token.toString().equals(token)) {
-            confirmations.remove(identity);
-            return null;
-        }
-        UUID next = UUID.randomUUID();
+                && previous.parameters.equals(parameters)) return true;
         confirmations.put(
                 identity,
                 new Confirmation(
-                        identity,
-                        action,
-                        target,
-                        revision,
-                        parameters,
-                        clock.getAsLong() + TimeUnit.SECONDS.toNanos(30),
-                        next));
-        return next;
+                        action, target, revision, parameters, now + TimeUnit.SECONDS.toNanos(10)));
+        return false;
+    }
+
+    public void audit(CommandSender actor, String action, String target, String outcome) {
+        audit(actor, action, target, null, outcome);
     }
 
     public Operation drain(
@@ -404,7 +409,7 @@ public final class StaffOperations implements AutoCloseable {
         return drainInternal(actor, capability, action, target, reason, work, false);
     }
 
-    public Operation repositoryDrain(
+    public Operation drainAndResume(
             CommandSender actor,
             String capability,
             String action,
@@ -449,6 +454,54 @@ public final class StaffOperations implements AutoCloseable {
         requireOpen();
         if (operation.state == State.WAITING || operation.state == State.RUNNING)
             operation.repositoryCancellation = cancellation;
+    }
+
+    public Operation runArchivePurge(
+            CommandSender actor, String archive, Supplier<CompletableFuture<String>> work) {
+        requireOpen();
+        StaffPermissions.require(actor, "purge", null);
+        var operation = new Operation(actor.getName(), "purge", "all", "Archive purge");
+        operation.state = State.RUNNING;
+        operation.detail = "Purging " + archive;
+        operations.put(operation.id, operation);
+        remember(operation);
+        trim();
+        audit(actor, operation.action, archive, operation.shortId() + " RUNNING");
+        try {
+            work.get()
+                    .whenComplete(
+                            (detail, failure) ->
+                                    owner(
+                                            () ->
+                                                    finishArchivePurge(
+                                                            actor, archive, operation, detail,
+                                                            failure)));
+        } catch (RuntimeException failure) {
+            finishArchivePurge(actor, archive, operation, null, failure);
+        }
+        return operation;
+    }
+
+    private void finishArchivePurge(
+            CommandSender actor,
+            String archive,
+            Operation operation,
+            String detail,
+            Throwable failure) {
+        if (closed) return;
+        operation.state = failure == null ? State.SUCCEEDED : State.FAILED;
+        operation.detail =
+                failure == null
+                        ? detail
+                        : Objects.toString(failure.getMessage(), "Archive purge failed");
+        remember(operation);
+        audit(
+                actor,
+                operation.action,
+                archive,
+                operation.shortId() + " " + operation.state + " " + operation.detail);
+        LangUtils.sendRaw(
+                actor, operation.shortId() + " " + operation.state + ": " + operation.detail);
     }
 
     public Operation trackRepository(
@@ -613,9 +666,13 @@ public final class StaffOperations implements AutoCloseable {
     private void finish(Pending pendingWork, String detail, Throwable failure) {
         Operation op = pendingWork.operation;
         if (closed || pending.get(op.target) != pendingWork) return;
-        if (failure == null
-                && pendingWork.resume
-                && Objects.equals(state.get("maintenance." + op.target), op.reason)) {
+        while (failure instanceof CompletionException && failure.getCause() != null)
+            failure = failure.getCause();
+        boolean resume =
+                pendingWork.resume
+                        && (failure == null || failure instanceof PreflightRejected)
+                        && Objects.equals(state.get("maintenance." + op.target), op.reason);
+        if (resume) {
             try {
                 persist(
                         next ->
@@ -623,11 +680,14 @@ public final class StaffOperations implements AutoCloseable {
                                         "maintenance." + op.target,
                                         pendingWork.previousMaintenance));
             } catch (RuntimeException persistenceFailure) {
-                failure = persistenceFailure;
+                resume = false;
+                if (failure == null) failure = persistenceFailure;
+                else failure.addSuppressed(persistenceFailure);
             }
         }
         pending.remove(op.target, pendingWork);
         disposing.remove(op.target);
+        if (resume) preloadResumedMaps(op.target);
         op.state = failure == null ? State.SUCCEEDED : State.FAILED;
         op.detail =
                 failure == null
@@ -713,7 +773,7 @@ public final class StaffOperations implements AutoCloseable {
 
     public void audit(
             CommandSender actor, String action, String target, String reason, String outcome) {
-        requireReason(reason);
+        if (reason != null) requireReason(reason);
         String line =
                 Instant.now()
                         + " actor="
@@ -722,8 +782,7 @@ public final class StaffOperations implements AutoCloseable {
                         + safe(action)
                         + " target="
                         + safe(target)
-                        + " reason="
-                        + safe(reason)
+                        + (reason == null ? "" : " reason=" + safe(reason))
                         + " result="
                         + safe(outcome)
                         + "\n";

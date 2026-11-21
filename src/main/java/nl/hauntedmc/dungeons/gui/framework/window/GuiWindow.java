@@ -124,7 +124,7 @@ public class GuiWindow implements Listener {
                     new GuiInventory(
                             this,
                             Bukkit.createInventory(
-                                    player, this.size, GuiTextUtils.component(this.display)));
+                                    player, this.size, GuiTextUtils.title(this.display)));
             this.inventories.put(player, gui);
         }
 

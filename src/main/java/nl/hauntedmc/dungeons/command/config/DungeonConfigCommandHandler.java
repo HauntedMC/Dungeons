@@ -16,7 +16,6 @@ import nl.hauntedmc.dungeons.runtime.player.DungeonPlayerSession;
 import nl.hauntedmc.dungeons.runtime.player.PlayerSessionRegistry;
 import nl.hauntedmc.dungeons.runtime.staff.SettingValidation;
 import nl.hauntedmc.dungeons.runtime.staff.StaffEditGuard;
-import nl.hauntedmc.dungeons.util.command.CommandUtils;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -86,120 +85,99 @@ public final class DungeonConfigCommandHandler {
             return true;
         }
 
-        DungeonConfigEntry entry = DungeonConfigRegistry.resolve(dungeon, action);
+        if (args.length < 4) {
+            this.sendUsage(sender);
+            return true;
+        }
+        DungeonConfigEntry entry =
+                DungeonConfigRegistry.resolve(dungeon, args[3].toLowerCase(Locale.ROOT));
         if (entry == null || !entry.supports(dungeon)) {
             LangUtils.sendMessage(
                     sender,
                     "commands.config.unknown-setting",
-                    LangUtils.placeholder("setting", args[2]),
+                    LangUtils.placeholder("setting", args[3]),
                     LangUtils.placeholder("dungeon", dungeon.getWorldName()));
             return true;
         }
 
-        if (args.length == 3) {
+        if (action.equals("get")) {
             this.showSetting(sender, dungeon, entry);
             return true;
         }
-
-        return this.applySetting(sender, dungeon, entry, this.joinArgs(args, 3));
+        StaffEditGuard.configuration(sender, dungeon, entry.getPath());
+        String value = this.joinArgs(args, 4).trim();
+        return switch (action) {
+            case "set" -> this.applySetting(sender, dungeon, entry, value);
+            case "inherit" ->
+                    this.isRuleSetting(entry)
+                            ? this.persistValue(sender, dungeon, entry, null)
+                            : this.sendInvalidValue(
+                                    sender, entry, "Only rule settings can inherit.");
+            case "clear" -> this.clearSetting(sender, dungeon, entry);
+            case "add", "remove" ->
+                    this.changeList(sender, dungeon, entry, value, action.equals("add"));
+            default -> throw new IllegalArgumentException("Use /dungeon help map settings");
+        };
     }
 
-    /** Produces tab completions for {@code /dungeon map settings}. */
-    public List<String> handleTabComplete(CommandSender sender, String[] args) {
-        List<String> options = new ArrayList<>();
-        if (!CommandUtils.hasAnyDungeonEditAccess(sender)) {
-            return options;
-        }
-
-        if (args.length <= 1) {
-            return this.completeDungeonTarget(sender, "");
-        }
-
-        if (args.length == 2) {
-            return this.completeDungeonTarget(sender, args[1]);
-        }
-
-        DungeonDefinition dungeon = this.resolveDungeon(sender, args[1]);
-        if (dungeon == null) {
-            return options;
-        }
-
-        if (args.length == 3) {
-            options.add("help");
-            options.add("list");
-            options.addAll(DungeonConfigRegistry.getKeys(dungeon, args[2]));
-            return options;
-        }
-
-        DungeonConfigEntry entry = DungeonConfigRegistry.resolve(dungeon, args[2]);
-        if (entry == null || !entry.supports(dungeon)) {
-            return options;
-        }
-
-        List<String> values =
-                new ArrayList<>(this.completeValue(entry, dungeon, this.joinArgs(args, 3)));
-        if (this.isRuleSetting(entry)) {
-            values.addAll(this.completeSimple(this.joinArgs(args, 3), List.of("inherit")));
-        }
-        return values;
+    public List<String> completeSettingValue(
+            DungeonDefinition dungeon, String action, String setting, String query) {
+        DungeonConfigEntry entry =
+                DungeonConfigRegistry.resolve(dungeon, setting.toLowerCase(Locale.ROOT));
+        if (entry == null || !entry.supports(dungeon)) return List.of();
+        if (action.equals("remove"))
+            return this.completeList(query, dungeon.getConfig().getStringList(entry.getPath()));
+        return this.completeValue(entry, dungeon, query);
     }
 
-    /** Runs complete dungeon target. */
-    private List<String> completeDungeonTarget(CommandSender sender, String rawQuery) {
-        List<String> options = new ArrayList<>();
-        String query = rawQuery == null ? "" : rawQuery.toLowerCase(Locale.ROOT);
-
-        if (sender instanceof Player player && ("current".contains(query) || query.isBlank())) {
-            DungeonDefinition currentDungeon = this.resolveDungeon(player, "current");
-            if (currentDungeon != null && this.hasEditAccess(sender, currentDungeon)) {
-                options.add("current");
+    private boolean clearSetting(
+            CommandSender sender, DungeonDefinition dungeon, DungeonConfigEntry entry) {
+        return switch (entry.getValueType()) {
+            case MATERIAL_LIST, ENTITY_TYPE_LIST, STRING_LIST ->
+                    this.persistValue(sender, dungeon, entry, List.of());
+            case LOCATION -> {
+                if (!entry.getKey().equals("exit-location"))
+                    yield this.sendInvalidValue(
+                            sender, entry, "Only the exit location can be cleared.");
+                dungeon.setExit(null);
+                this.sendUpdated(sender, dungeon, entry, "<cleared>", true);
+                yield true;
             }
-        }
-
-        for (DungeonDefinition dungeon : this.dungeonManager.getLoadedDungeons()) {
-            if ((query.isBlank() || dungeon.getWorldName().toLowerCase(Locale.ROOT).contains(query))
-                    && this.hasEditAccess(sender, dungeon)) {
-                options.add(dungeon.getWorldName());
-            }
-        }
-
-        return options;
+            default ->
+                    this.sendInvalidValue(
+                            sender, entry, "Only lists and the exit location can be cleared.");
+        };
     }
 
-    /** Applies setting. */
+    private boolean changeList(
+            CommandSender sender,
+            DungeonDefinition dungeon,
+            DungeonConfigEntry entry,
+            String value,
+            boolean add) {
+        List<String> changes =
+                switch (entry.getValueType()) {
+                    case MATERIAL_LIST -> this.parseMaterialList(value);
+                    case ENTITY_TYPE_LIST -> this.parseEntityTypeList(value);
+                    case STRING_LIST -> this.parseStringList(value);
+                    default -> null;
+                };
+        if (changes == null || changes.isEmpty())
+            return this.sendInvalidValue(
+                    sender, entry, "Add and remove require a list setting and valid values");
+        var candidate = new ArrayList<>(dungeon.getConfig().getStringList(entry.getPath()));
+        if (add) {
+            for (String change : changes) if (!candidate.contains(change)) candidate.add(change);
+        } else candidate.removeAll(changes);
+        return this.persistValue(sender, dungeon, entry, candidate);
+    }
+
+    /** Applies a literal setting value. */
     private boolean applySetting(
             CommandSender sender,
             DungeonDefinition dungeon,
             DungeonConfigEntry entry,
             String rawValue) {
-        StaffEditGuard.configuration(sender, dungeon, entry.getPath());
-        rawValue = rawValue == null ? "" : rawValue.trim();
-
-        if (this.isRuleSetting(entry) && rawValue.equalsIgnoreCase("inherit")) {
-            return this.persistValue(sender, dungeon, entry, null);
-        }
-
-        if (rawValue.startsWith("add ") || rawValue.startsWith("remove ")) {
-            boolean add = rawValue.startsWith("add ");
-            String supplied = rawValue.substring(add ? 4 : 7).trim();
-            List<String> changes =
-                    switch (entry.getValueType()) {
-                        case MATERIAL_LIST -> this.parseMaterialList(supplied);
-                        case ENTITY_TYPE_LIST -> this.parseEntityTypeList(supplied);
-                        case STRING_LIST -> this.parseStringList(supplied);
-                        default -> null;
-                    };
-            if (changes == null || changes.isEmpty())
-                return this.sendInvalidValue(
-                        sender, entry, "add/remove requires a list setting and valid values");
-            var candidate = new ArrayList<>(dungeon.getConfig().getStringList(entry.getPath()));
-            if (add) {
-                for (String change : changes)
-                    if (!candidate.contains(change)) candidate.add(change);
-            } else candidate.removeAll(changes);
-            return this.persistValue(sender, dungeon, entry, candidate);
-        }
-
         // Branch creation and deletion mutate a structured subsection rather than a single scalar
         // config value, so they bypass the generic value-type parser below.
         if (entry.getPath().startsWith("generator.")) {
@@ -247,7 +225,7 @@ public final class DungeonConfigCommandHandler {
                     return this.sendInvalidValue(
                             sender,
                             entry,
-                            "Expected a comma separated list of valid Bukkit materials, or clear.");
+                            "Expected a comma separated list of valid Bukkit materials.");
                 }
                 return this.persistValue(sender, dungeon, entry, parsed);
             }
@@ -257,8 +235,7 @@ public final class DungeonConfigCommandHandler {
                     return this.sendInvalidValue(
                             sender,
                             entry,
-                            "Expected a comma separated list of valid Bukkit entity types, or"
-                                    + " clear.");
+                            "Expected a comma separated list of valid Bukkit entity types.");
                 }
                 return this.persistValue(sender, dungeon, entry, parsed);
             }
@@ -338,9 +315,8 @@ public final class DungeonConfigCommandHandler {
         }
 
         String lowered = rawValue.toLowerCase(Locale.ROOT);
-        if (!lowered.equals("here")
-                && !(entry.getKey().equals("exit-location") && lowered.equals("clear"))) {
-            return this.sendInvalidValue(sender, entry, "Use here, or clear for exit-location.");
+        if (!lowered.equals("here")) {
+            return this.sendInvalidValue(sender, entry, "Use here to set a location.");
         }
 
         if (!entry.getKey().equals("exit-location")
@@ -368,18 +344,9 @@ public final class DungeonConfigCommandHandler {
                 return true;
             }
             case "exit-location" -> {
-                if (lowered.equals("clear")) {
-                    dungeon.setExit(null);
-                    this.sendUpdated(sender, dungeon, entry, "<cleared>", true);
-                } else {
-                    dungeon.setExit(player.getLocation());
-                    this.sendUpdated(
-                            sender,
-                            dungeon,
-                            entry,
-                            this.formatLocation(dungeon.getExitLoc()),
-                            true);
-                }
+                dungeon.setExit(player.getLocation());
+                this.sendUpdated(
+                        sender, dungeon, entry, this.formatLocation(dungeon.getExitLoc()), true);
                 return true;
             }
         }
@@ -675,11 +642,6 @@ public final class DungeonConfigCommandHandler {
         }
 
         List<String> matches = new ArrayList<>();
-        if (prefix.isBlank()
-                && (token.isBlank() || "clear".contains(token.toLowerCase(Locale.ROOT)))) {
-            matches.add("clear");
-        }
-
         for (String candidate : candidates) {
             if (alreadySelected.contains(candidate.toUpperCase(Locale.ROOT))) {
                 continue;
@@ -745,10 +707,6 @@ public final class DungeonConfigCommandHandler {
 
     /** Runs parse material list. */
     private List<String> parseMaterialList(String rawValue) {
-        if (rawValue.equalsIgnoreCase("clear")) {
-            return new ArrayList<>();
-        }
-
         List<String> values = new ArrayList<>();
         for (String token : rawValue.split(",")) {
             String trimmed = token.trim();
@@ -767,10 +725,6 @@ public final class DungeonConfigCommandHandler {
 
     /** Runs parse entity type list. */
     private List<String> parseEntityTypeList(String rawValue) {
-        if (rawValue.equalsIgnoreCase("clear")) {
-            return new ArrayList<>();
-        }
-
         List<String> values = new ArrayList<>();
         for (String token : rawValue.split(",")) {
             String trimmed = token.trim();
@@ -789,10 +743,6 @@ public final class DungeonConfigCommandHandler {
 
     /** Runs parse string list. */
     private List<String> parseStringList(String rawValue) {
-        if (rawValue.equalsIgnoreCase("clear")) {
-            return new ArrayList<>();
-        }
-
         List<String> values = new ArrayList<>();
         for (String token : rawValue.split(",")) {
             String trimmed = token.trim();
@@ -880,16 +830,12 @@ public final class DungeonConfigCommandHandler {
 
     /** Returns whether it has edit access. */
     private boolean hasEditAccess(CommandSender sender, DungeonDefinition dungeon) {
-        if (!(sender instanceof Player player)) {
-            return true;
-        }
-
-        return CommandUtils.hasDungeonEditAccess(player, dungeon.getWorldName())
-                || CommandUtils.hasPermissionSilent(player, "dungeons.role.operator");
+        return nl.hauntedmc.dungeons.runtime.staff.StaffPermissions.allows(
+                sender, "edit", dungeon.getWorldName());
     }
 
     /** Resolves dungeon. */
-    private DungeonDefinition resolveDungeon(CommandSender sender, String input) {
+    public DungeonDefinition resolveDungeon(CommandSender sender, String input) {
         if (input.equalsIgnoreCase("current") && sender instanceof Player player) {
             DungeonPlayerSession playerSession = this.playerManager.get(player);
             if (playerSession != null && playerSession.getInstance() != null) {

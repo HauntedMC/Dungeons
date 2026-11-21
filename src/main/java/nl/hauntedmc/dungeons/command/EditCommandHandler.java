@@ -67,6 +67,7 @@ final class EditCommandHandler implements CommandHandler {
                 if (!StaffEditGuard.editor(player, session))
                     throw new IllegalArgumentException("Open an authorized editor first");
                 session.getInstance().getDungeon().setExit(player.getLocation());
+                LangUtils.sendRaw(player, "Dungeon exit updated");
                 yield true;
             }
             case "items" -> this.handleItemsCommand(sender, args);

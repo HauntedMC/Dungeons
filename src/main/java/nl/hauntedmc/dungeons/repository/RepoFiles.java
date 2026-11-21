@@ -19,7 +19,7 @@ public final class RepoFiles {
         Files.createDirectories(root.resolve("journals"));
         Files.createDirectories(root.resolve("staging"));
         managed(root);
-        managed(this.dungeons);
+        if (!this.dungeons.equals(this.pluginRoot)) managed(this.dungeons);
     }
 
     public Path root() {
@@ -121,6 +121,12 @@ public final class RepoFiles {
         Path backup = managed(pluginRoot.resolve("backups").resolve(name).resolve("repo-" + id));
         if (!Boolean.TRUE.equals(values.get("committed"))) {
             if (Files.exists(backup)) {
+                // Record rollback intent before consuming the only recovery backup.
+                write(
+                        id,
+                        "kind: install\nname: '"
+                                + name
+                                + "'\nprevious: true\ncommitted: false\nphase: restoring\n");
                 if (Files.exists(live))
                     move(live, root.resolve("staging").resolve("failed-" + UUID.randomUUID()));
                 move(backup, live);
@@ -175,7 +181,7 @@ public final class RepoFiles {
         }
     }
 
-    public void prune(String name) throws IOException {
+    public void prune(String name, UUID installed) throws IOException {
         // Never prune while another journal could refer to a recovery backup.
         try (var journals = Files.list(root.resolve("journals"))) {
             if (journals.findAny().isPresent()) return;
@@ -186,8 +192,14 @@ public final class RepoFiles {
                     files.filter(path -> Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS))
                             .sorted(Comparator.comparingLong(RepoFiles::modified).reversed())
                             .toList();
-            for (int i = 10; i < backups.size(); i++)
-                RepoContent.deleteTree(managed(backups.get(i)));
+            int excess = backups.size() - 10;
+            String safety = "repo-" + installed;
+            for (int index = backups.size() - 1; excess > 0; index--) {
+                Path backup = backups.get(index);
+                if (backup.getFileName().toString().equals(safety)) continue;
+                RepoContent.deleteTree(managed(backup));
+                excess--;
+            }
         }
     }
 

@@ -88,6 +88,9 @@ permissions:
   dungeons.staff.scripts:
     description: Dungeon staff capability - scripts
     default: false
+  dungeons.staff.testplay:
+    description: Test local dungeons in an isolated run
+    default: false
   dungeons.staff.timer:
     description: Dungeon staff capability - timer
     default: false
@@ -131,6 +134,7 @@ permissions:
       dungeons.staff.lives: true
       dungeons.staff.timer: true
       dungeons.staff.edit: true
+      dungeons.staff.testplay: true
       dungeons.staff.keys: true
       dungeons.staff.reload: true
       dungeons.staff.recovery: true
@@ -152,6 +156,7 @@ permissions:
       dungeons.staff.delete: true
       dungeons.staff.diagnostics: true
       dungeons.staff.edit: true
+      dungeons.staff.testplay: true
       dungeons.staff.inspect: true
       dungeons.staff.keys: true
       dungeons.staff.lives: true

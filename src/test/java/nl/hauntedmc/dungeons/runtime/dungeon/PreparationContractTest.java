@@ -55,6 +55,29 @@ class PreparationContractTest {
 
     @Test
     @Timeout(10)
+    void testplayAdmitsOnlyTheTesterToAnUninitializedMap() throws Exception {
+        try (var f = new RunFixture(directory, new YamlConfiguration())) {
+            var dungeon = new PreparedDungeon(f, directory.resolve("local-only"));
+            var tester = f.session(new PlayerState());
+            var other = f.session(new PlayerState());
+            f.paper.runtime.setStaffOperations(
+                    mock(nl.hauntedmc.dungeons.runtime.staff.StaffOperations.class));
+            assertFalse(dungeon.isRepositoryInitialized());
+            assertFalse(dungeon.instantiate(tester.getPlayer()));
+            assertTrue(dungeon.prepareTestPlay(tester.getPlayer()));
+            finishPreparation(f);
+            f.scheduler.readyImmediate.remove().run();
+            assertSame(dungeon.created, tester.getInstance());
+            assertTrue(dungeon.created.isTestPlay());
+            assertFalse(tester.isAwaitingDungeon());
+            dungeon.created.addPlayer(other);
+            assertNull(other.getInstance());
+            assertEquals(List.of(tester), List.copyOf(dungeon.created.getPlayers()));
+        }
+    }
+
+    @Test
+    @Timeout(10)
     void aSchedulerFailureAfterPlayerAttachmentRollsBackThePartialAdmissionBeforeDisposal()
             throws Exception {
         try (var f = new RunFixture(directory, new YamlConfiguration())) {

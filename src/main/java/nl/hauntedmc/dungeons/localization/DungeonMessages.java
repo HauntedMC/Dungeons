@@ -113,7 +113,10 @@ public final class DungeonMessages extends ComponentLocalization {
     }
 
     public Component prefix(Audience audience) {
-        return render(template("general.prefix", audience), Map.of()).append(Component.space());
+        String prefix = template("general.prefix", audience);
+        if ("<HauntedMC:Brand>[Dungeons]<HauntedMC:Text>".equals(prefix))
+            prefix = "<HauntedMC:Brand>Dungeons <HauntedMC:Muted>›<HauntedMC:Text>";
+        return render(prefix, Map.of()).append(Component.space());
     }
 
     public synchronized Component render(String template, Map<String, ?> values) {

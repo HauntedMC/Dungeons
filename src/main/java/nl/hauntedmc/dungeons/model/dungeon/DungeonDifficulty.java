@@ -2,6 +2,7 @@ package nl.hauntedmc.dungeons.model.dungeon;
 
 import java.util.ArrayList;
 import java.util.List;
+import net.kyori.adventure.text.Component;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
 import nl.hauntedmc.dungeons.util.text.ComponentUtils;
 import org.bukkit.Material;
@@ -13,6 +14,7 @@ import org.bukkit.inventory.meta.components.CustomModelDataComponent;
 /** Immutable difficulty preset loaded from a dungeon configuration section. */
 public class DungeonDifficulty {
     private final String namespace;
+    private final Component displayName;
     private ItemStack icon;
     private final double mobHealthScale;
     private final double mobSpawnScale;
@@ -21,6 +23,8 @@ public class DungeonDifficulty {
     /** Creates a difficulty definition from one named config section. */
     public DungeonDifficulty(ConfigurationSection config) {
         this.namespace = config.getName();
+        this.displayName =
+                ComponentUtils.component(config.getString("icon.display_name", this.namespace));
         this.mobHealthScale = config.getDouble("scaling.mob_health", 0.0);
         this.mobSpawnScale = config.getDouble("scaling.mob_count", 0.0);
         this.mobDamageScale = config.getDouble("scaling.mob_damage", 0.0);
@@ -36,9 +40,7 @@ public class DungeonDifficulty {
                 meta.setCustomModelDataComponent(component);
             }
 
-            meta.displayName(
-                    ComponentUtils.component(
-                            config.getString("icon.display_name", this.namespace)));
+            meta.displayName(displayName);
             List<String> lore = new ArrayList<>(config.getStringList("icon.lore"));
             meta.lore(ComponentUtils.components(lore));
             this.icon.setItemMeta(meta);
@@ -56,6 +58,10 @@ public class DungeonDifficulty {
     /** Returns a cloned icon item for menu rendering. */
     public ItemStack getIcon() {
         return this.icon.clone();
+    }
+
+    public Component getDisplayNameComponent() {
+        return displayName;
     }
 
     /** Returns the config namespace identifier of this difficulty. */

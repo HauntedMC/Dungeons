@@ -48,7 +48,12 @@ public class CheckpointFunction extends DungeonFunction {
             loc.setYaw((float) this.yaw);
             loc.setPitch((float) this.pitch);
             playerSession.setDungeonRespawn(loc);
-            if (this.savePoint && this.instance.as(BranchingInstance.class) == null) {
+            if (this.savePoint
+                    && this.instance.as(BranchingInstance.class) == null
+                    && !(this.instance
+                                    instanceof
+                                    nl.hauntedmc.dungeons.runtime.instance.PlayableInstance play
+                            && play.isTestPlay())) {
                 if (this.runtime() != null && this.runtime().experience() != null)
                     this.runtime().experience().savePoint(playerSession);
                 else

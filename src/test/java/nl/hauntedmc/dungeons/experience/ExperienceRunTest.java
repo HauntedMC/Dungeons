@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import net.kyori.adventure.bossbar.BossBar;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import nl.hauntedmc.dungeons.event.ExperienceEvent;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.runtime.instance.PlayableInstance;
@@ -38,6 +40,10 @@ class ExperienceRunTest {
         final List<LivingEntity> mobs = new ArrayList<>();
 
         Fixture() throws Exception {
+            this(0, List.of("first"));
+        }
+
+        Fixture(int preparation, List<String> waves) throws Exception {
             var access =
                     mock(
                             io.papermc.paper.registry.RegistryAccess.class,
@@ -66,11 +72,11 @@ class ExperienceRunTest {
                         location: {x: 0, y: 70, z: 0}
                     encounters:
                       arena:
-                        preparation_seconds: 0
                         timeout_seconds: 10
-                        waves:
-                          first: {groups: [guards]}
                     """);
+            yaml.set("encounters.arena.preparation_seconds", preparation);
+            for (var wave : waves)
+                yaml.set("encounters.arena.waves." + wave + ".groups", List.of("guards"));
             var instance = mock(PlayableInstance.class);
             when(instance.experienceDefinition()).thenReturn(ExperienceDefinition.parse(yaml));
             when(instance.isStarted()).thenReturn(true);
@@ -107,6 +113,7 @@ class ExperienceRunTest {
                     .callEvent(any());
             run = new ExperienceRun(instance, mock(ExperienceService.class));
             run.start("arena");
+            seconds.set(preparation);
             run.tick();
             assertEquals(1, scheduler.jobs.size());
         }
@@ -147,6 +154,33 @@ class ExperienceRunTest {
             fixture.run.tick();
             assertEquals(1, fixture.count("encounter-completed"));
             assertEquals(1, fixture.count("encounter-reset"));
+        }
+    }
+
+    @Test
+    void waveBarShowsTheUpcomingWaveAndCountsDownBetweenWaves() throws Exception {
+        try (var fixture = new Fixture(4, List.of("first", "second"))) {
+            var active = fixture.run.bars().getFirst();
+            assertEquals(0.5f, active.progress());
+            assertTrue(
+                    PlainTextComponentSerializer.plainText()
+                            .serialize(active.title())
+                            .contains("Wave 1/2"));
+            for (int i = 0; i < 4; i++) fixture.spawnTick();
+            fixture.mobs.forEach(mob -> fixture.run.death(mob, null, false));
+            fixture.run.tick();
+            fixture.seconds.addAndGet(2);
+            var preparing = fixture.run.bars().getFirst();
+            String caption = PlainTextComponentSerializer.plainText().serialize(preparing.title());
+            assertTrue(caption.contains("Wave 2/2"));
+            assertTrue(caption.contains("2s"));
+            assertEquals(BossBar.Color.YELLOW, preparing.color());
+            assertEquals(0.5f, preparing.progress());
+            fixture.seconds.addAndGet(2);
+            fixture.run.tick();
+            var second = fixture.run.bars().getFirst();
+            assertEquals(BossBar.Color.BLUE, second.color());
+            assertEquals(1f, second.progress());
         }
     }
 
