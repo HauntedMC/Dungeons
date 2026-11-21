@@ -435,7 +435,7 @@ public final class ExperienceService implements DungeonExperienceApi, Listener, 
                                     .getOrDefault(
                                             player.getUniqueId(),
                                             instance.getConfig().getInt("players.lives")));
-                else board.placeholder("lives", text(player, "unlimited"));
+                else board.metric("lives", "∞");
                 var team =
                         runtime.hasTeamService()
                                 ? runtime.teamService().getTeam(player.getUniqueId())

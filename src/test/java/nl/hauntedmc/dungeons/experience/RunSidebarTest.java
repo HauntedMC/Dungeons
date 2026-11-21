@@ -116,10 +116,8 @@ class RunSidebarTest {
             tick.run();
             var untimed = lines(latest.get());
             assertTrue(untimed.stream().anyMatch(line -> line.contains("Run time")));
-            assertFalse(
-                    untimed.stream()
-                            .anyMatch(
-                                    line -> line.contains("Lives") || line.contains("Time left")));
+            assertTrue(untimed.stream().anyMatch(line -> line.contains("Lives  ∞")));
+            assertFalse(untimed.stream().anyMatch(line -> line.contains("Time left")));
             runtime.setQueueRegistry(
                     mock(nl.hauntedmc.dungeons.runtime.queue.DungeonQueueRegistry.class));
             when(player.getGameMode()).thenReturn(org.bukkit.GameMode.SPECTATOR);
