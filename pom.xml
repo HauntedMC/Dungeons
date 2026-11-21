@@ -36,7 +36,7 @@
         <connection>scm:git:https://github.com/HauntedMC/Dungeons.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/HauntedMC/Dungeons.git</developerConnection>
         <url>https://github.com/HauntedMC/Dungeons</url>
-        <tag>v1.5.5</tag>
+        <tag>v1.6.0</tag>
     </scm>
     <issueManagement>
         <system>GitHub</system>
@@ -54,11 +54,11 @@
         </repository>
     </distributionManagement>
     <properties>
-        <revision>1.5.5</revision>
+        <revision>1.6.0</revision>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- Isolate javac from Maven: the in-process JDK 25 compiler crashes on this test classpath. -->
         <maven.compiler.fork>true</maven.compiler.fork>
-        <project.build.outputTimestamp>2026-11-13T00:00:00Z</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2026-11-21T00:00:00Z</project.build.outputTimestamp>
         <haunted.featureframework.version>2.2.5</haunted.featureframework.version>
         <haunted.theme.version>1.2.5</haunted.theme.version>
         <haunted.serverfeatures.version>5.4.7</haunted.serverfeatures.version>
