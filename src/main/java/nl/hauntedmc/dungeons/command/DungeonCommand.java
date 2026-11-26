@@ -18,6 +18,7 @@ import nl.hauntedmc.dungeons.gui.framework.GuiService;
 import nl.hauntedmc.dungeons.localization.LangUtils;
 import nl.hauntedmc.dungeons.model.dungeon.DungeonDefinition;
 import nl.hauntedmc.dungeons.plugin.DungeonsPlugin;
+import nl.hauntedmc.dungeons.presentation.DungeonSettings;
 import nl.hauntedmc.dungeons.presentation.DungeonUi;
 import nl.hauntedmc.dungeons.registry.FunctionRegistry;
 import nl.hauntedmc.dungeons.runtime.RuntimeContext;
@@ -51,6 +52,7 @@ public final class DungeonCommand implements TabExecutor {
                             List.of(
                                     "guide",
                                     "status",
+                                    "rules",
                                     "objectives",
                                     "lives",
                                     "stuck",
@@ -251,7 +253,7 @@ public final class DungeonCommand implements TabExecutor {
                 }
                 case DISCOVERY ->
                         operation[0].equals("info")
-                                ? this.publicInfo(sender, operation[1])
+                                ? this.publicInfo(sender, operation[1], operation.length == 3)
                                 : this.handleListCommand(sender, operation);
                 case QUERY ->
                         throw new IllegalStateException("Database query services unavailable");
@@ -271,7 +273,15 @@ public final class DungeonCommand implements TabExecutor {
     }
 
     private static boolean selfControl(String root) {
-        return java.util.Set.of("guide", "status", "objectives", "hud", "spectate", "help", "leave")
+        return java.util.Set.of(
+                        "guide",
+                        "status",
+                        "rules",
+                        "objectives",
+                        "hud",
+                        "spectate",
+                        "help",
+                        "leave")
                 .contains(root.toLowerCase(Locale.ROOT));
     }
 
@@ -454,7 +464,8 @@ public final class DungeonCommand implements TabExecutor {
             } else if (category.equals(section.getKey())) {
                 for (String topic : available) {
                     String command =
-                            List.of("list", "guide", "status", "objectives", "hud").contains(topic)
+                            List.of("list", "guide", "status", "rules", "objectives", "hud")
+                                            .contains(topic)
                                     ? "/dungeon " + topic
                                     : "/dungeon help " + topic;
                     sender.sendMessage(
@@ -637,9 +648,13 @@ public final class DungeonCommand implements TabExecutor {
                 .toList();
     }
 
-    private boolean publicInfo(CommandSender sender, String name) {
+    private boolean publicInfo(CommandSender sender, String name, boolean settings) {
         var dungeon = this.dungeonManager.get(name);
         if (dungeon == null) throw new IllegalArgumentException("Unknown dungeon: " + name);
+        if (settings) {
+            DungeonSettings.show(sender, dungeon, dungeon.getConfig());
+            return true;
+        }
         var experience = this.playerManager.runtimeExperience();
         if (experience != null) experience.briefing(sender, dungeon);
         else {

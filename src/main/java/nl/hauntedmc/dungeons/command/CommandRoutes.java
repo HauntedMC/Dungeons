@@ -175,6 +175,12 @@ final class CommandRoutes {
                             Handler.DISCOVERY,
                             "list <filter> <page>"),
                     r("info <map>", "play", false, Handler.DISCOVERY, "info <map>"),
+                    r(
+                            "info <map> settings",
+                            "play",
+                            false,
+                            Handler.DISCOVERY,
+                            "info <map> settings"),
                     r("play <map>", "play", true, Handler.GAMEPLAY, "play <map>"),
                     r(
                             "play <map> <difficulty>",
@@ -186,6 +192,8 @@ final class CommandRoutes {
                     r("spectate <player>", "play", true, Handler.GAMEPLAY, "spectate <player>"),
                     r("guide", "play", true, Handler.GAMEPLAY, "guide"),
                     r("status", "play", true, Handler.GAMEPLAY, "status"),
+                    r("rules", "play", true, Handler.GAMEPLAY, "rules"),
+                    r("rules settings", "play", true, Handler.GAMEPLAY, "rules settings"),
                     r("objectives", "play", true, Handler.GAMEPLAY, "objectives"),
                     r("objectives hint", "play", true, Handler.GAMEPLAY, "objectives hint"),
                     r(

@@ -642,7 +642,7 @@ public class PlayListener extends InstanceListener {
                     trimmed.replaceFirst("^(?:dungeons:)?(?:du|dungeon)(?= |$)", "dungeon");
             boolean participantControl =
                     canonical.matches(
-                            "dungeon(?: (?:guide|status|objectives|hud|spectate|help|leave)(?: .*)?)?");
+                            "dungeon(?: (?:guide|status|rules|objectives|hud|spectate|help|leave)(?: .*)?)?");
             if (participantControl) return;
             boolean commandAllowed = false;
             if (!this.instance.getConfig().getBoolean("rules.commands.allow_all")) {

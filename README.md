@@ -266,7 +266,9 @@ not durability of progression or recovery state.
 
 Every dungeon has an adaptive HUD, guide, entry information and exit confirmation. Vanilla loot maps need no objectives or extra mechanics file. Optional flat objectives, staged tracks, existing bosses and wave encounters can be combined independently. Use `/dungeon guide`, `/dungeon hud` and `/dungeon edit experience`.
 
-The scoreboard shows the selected difficulty below the map name and the shared run time, including for players who join late. Timed runs also show a countdown. The team count follows the player’s dungeon team roster, and remaining lives appear on maps with a life limit.
+The Guide links to **Run rules** and **Dungeon settings**. Use `/dungeon rules` for lives, respawn, the time limit and revealed objectives. Use `/dungeon rules settings` during the run or `/dungeon info <map> settings` before joining to check building, PvP and utility item permissions. Hover over a block rule to see its material exceptions.
+
+The scoreboard shows the selected difficulty below the map name and the shared run time, including for players who join late. Timed runs also show a countdown. The team count follows the player’s dungeon team roster, and the lives row shows remaining lives or `∞`.
 
 ## Dungeon scripting
 

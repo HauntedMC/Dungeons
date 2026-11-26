@@ -59,7 +59,7 @@ final class GameplayCommandHandler implements CommandHandler {
             case "play" -> this.handlePlayCommand(sender, args);
             case "send" -> this.handleSendCommand(sender, args);
             case "leave" -> this.handleLeaveCommand(sender);
-            case "guide", "status", "objectives", "hud", "spectate" ->
+            case "guide", "status", "rules", "objectives", "hud", "spectate" ->
                     sender instanceof Player player
                             && playerManager.runtimeExperience() != null
                             && playerManager.runtimeExperience().handle(player, args);
